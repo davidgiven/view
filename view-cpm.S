@@ -1,5 +1,6 @@
 #include "cpm65.inc"
 #include "driver.inc"
+#include "zif.inc"
 
 ; Constants
 buffer_keyboard                             = 0
