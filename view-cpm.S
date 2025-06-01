@@ -7952,7 +7952,8 @@ zproc readline
     zloop
         ; Read a key without echo.
 
-        ldy #BDOS_CONSOLE_INPUT
+        ldy #BDOS_DIRECT_IO
+        ldx #0xfd
         jsr BDOS
         tax
 
@@ -8005,7 +8006,7 @@ zproc readline
         ; Graphic character?
 
         cmp #32
-        zif cs
+        zif ge
             ldy #MAX_COMMAND_LENGTH
             cpy input_buffer_ptr
             zif cs
@@ -8022,7 +8023,7 @@ zproc readline
     lda #0x0d
     sta input_buffer, x
     ldx #0
-    sta input_buffer_ptr
+    stx input_buffer_ptr
     clc
     rts
 zendproc
