@@ -5322,9 +5322,11 @@ loop_ca2c7:
     sta line_lengths,x
     dex
     bne loop_ca2c7
-    jsr home_cursor
-    lda #0x0b
-    ldy #1
+    ldy #SCREEN_SCROLLDOWN
+    jsr SCREEN
+    ldx #0
+    ldy #0
+    jsr set_cursor_position
     jmp ca351
 
 ca2dc:
@@ -5392,12 +5394,12 @@ loop_ca31f:
     bcc ca348
     inc l0012
 ca348:
-    ldy screen_height
-    lda #0x0a
+    ldy #SCREEN_SCROLLUP
+    jsr SCREEN
     ldx #0
+    ldy screen_height
     jsr set_cursor_position
 ca351:
-    jsr oswrch                                                        ; Write character
     lda l0070
     sta l0033
     inc input_buffer_ptr+1
