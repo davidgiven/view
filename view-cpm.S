@@ -1,7 +1,9 @@
+#include "cpm65.inc"
+#include "driver.inc"
+
 ; Constants
 buffer_keyboard                             = 0
 MAX_LINE_LENGTH                             = 132
-osbyte_acknowledge_escape                   = 126
 osbyte_enter_language                       = 142
 osbyte_flush_buffer                         = 21
 osbyte_read_char_at_cursor                  = 135
@@ -29,7 +31,6 @@ current_edit_line_ptr: .fill 2
 current_format_line_ptr: .fill 2
 current_ruler_ptr: .fill 2
 ptr4: .fill 2
-zp_initialisation_canary: .fill 1
 page: .fill 2
 top: .fill 2
 himem: .fill 2
@@ -130,7 +131,6 @@ highlight2_code: .fill 1
 format_mode_flag: .fill 1
 justifying_flag: .fill 1
 insert_mode_flag: .fill 1
-is_tube_flag: .fill 1
 screen_height: .fill 1
 screen_width: .fill 1
 microspacing_flag: .fill 1
@@ -156,10 +156,9 @@ l050e                           = DATA-0x400+0x050e
 l050f                           = DATA-0x400+0x050f
 l0510                           = DATA-0x400+0x0510
 l0511                           = DATA-0x400+0x0511
-l0545                           = DATA-0x400+0x0545
+current_line_buffer                           = DATA-0x400+0x0545
 l05cc                           = DATA-0x400+0x05cc
-document_initialisation_canary  = DATA-0x400+0x05ce
-current_ruler                   = DATA-0x400+0x05cf
+current_ruler_buffer                   = DATA-0x400+0x05cf
 output_buffer                   = DATA-0x400+0x0654
 header_text_maybe               = DATA-0x400+0x06d8
 footer_text_maybe               = DATA-0x400+0x071a
@@ -180,48 +179,19 @@ main:
     ldx #0xff
     txs
     stx error_handling_mode
-    jsr caf79
-    lda #osbyte_read_oshwm
-    jsr osbyte                                                        ; Read top of operating system RAM address (OSHWM)
-    cpx oshwm                                                         ; X and Y contain the address of OSHWM (low, high)
-    bne c80f3
-    cpy oshwm+1
-    bne c80f3
-    jsr sub_c8e86
-    bne c80f3
-    jsr ca93c
-    jmp enter_cli_mode
-
-c80f3:
+    jsr system_init
     jsr initialise_document
-; ***************************************************************************************
 enter_cli_mode:
     jsr clear_screen
-    lda #osbyte_set_cursor_editing
-    ldx #0
-    jsr osbyte                                                        ; Enable cursor editing (X=0)
-    lda #osbyte_read_write_function_key_status
-    ldx #1
-    ldy #0
-    jsr osbyte                                                        ; Write function key status, value X=1
-    jsr cursor_on
     ldx #0
     jsr print_x_words_of_help
-    jsr sub_c8e86
-    beq c811f
-    jsr osnewl                                                        ; Write newline (characters 10 and 13)
-    jsr sub_c8eae
-    jmp c8139
-
-c811f:
     jsr print_inline_string
     .ascii "\r\rBytes free "
     .byte 0
 
     jsr compute_bytes_free
     jsr render_number_to_screen
-    jsr osnewl                                                        ; Write newline (characters 10 and 13)
-c8139:
+    jsr bdos_print_newline
     jsr sub_c89e5
     bit l003c
     bvs c816d
@@ -255,7 +225,7 @@ loop_c819a:
     lda printer_driver_name,x
     cmp #0x0d
     beq c81a7
-    jsr osasci                                                        ; Write character
+    jsr bdos_print_char                                                        ; Write character
     inx
     bne loop_c819a
 c81a7:
@@ -266,7 +236,7 @@ c81a7:
     .byte 0
 
 c81b3:
-    jsr osnewl                                                        ; Write newline (characters 10 and 13)
+    jsr bdos_print_newline
 c81b6:
     ldx #0
     ldy #0
@@ -299,12 +269,11 @@ c81e7:
     bne c81ba
     tya
     beq c81f3
-    jsr osnewl                                                        ; Write newline (characters 10 and 13)
+    jsr bdos_print_newline
 c81f3:
-    jsr osnewl                                                        ; Write newline (characters 10 and 13)
+    jsr bdos_print_newline
 ; ***************************************************************************************
 cli:
-    jsr acknowledge_escape
     jsr stop_printing
     ldx #0xff
     stx error_handling_mode
@@ -331,13 +300,6 @@ cli:
     tay                                                               ; Y=0x00
     jsr osword                                                        ; Read line from input stream (exits with C=1 if ESCAPE pressed)
     bcc input_line_not_escaped
-    jsr acknowledge_escape
-    jsr sub_c8e86
-    beq c8238
-    jsr sub_c8eae
-    jmp cli
-
-c8238:
     jmp c9b33
 
 ; ***************************************************************************************
@@ -370,14 +332,6 @@ c8263:
     .byte 0xff
 
 c826e:
-    ror
-    bcc c827c
-    jsr sub_c8e86
-    beq c827c
-    jsr sub_c8eb1
-    jmp cli
-
-c827c:
     lda input_buffer_ptr+1
     ldy #4
     jsr call_through_jumptable
@@ -628,7 +582,7 @@ sheets_cmd:
     jsr sub_c845e
     jsr sub_c8ebe
     jsr stop_printing
-    jsr osnewl                                                        ; Write newline (characters 10 and 13)
+    jsr bdos_print_newline
     jmp cli
 
 ; ***************************************************************************************
@@ -650,8 +604,7 @@ stop_printing:
     lda #6
     jsr call_printer_driver
 c8459:
-    lda #0x0f
-    jmp oswrch                                                        ; Write character 15
+    rts
 
 sub_c845e:
     sta print_flags
@@ -663,7 +616,6 @@ sub_c845e:
 edit_cmd:
     jsr sub_c8e49
     jsr error_if_cassette_filesystem
-    jsr sub_cafca
     jsr sub_c8e1f
     lda #2
     sta error_handling_mode
@@ -708,12 +660,12 @@ more_cmd:
     ldx l003a
 loop_c84c4:
     lda (current_ruler_ptr),y
-    sta current_ruler,y
+    sta current_ruler_buffer,y
     iny
     dex
     bne loop_c84c4
     lda #0x0d
-    sta current_ruler,y
+    sta current_ruler_buffer,y
     jsr sub_c89d3
     jsr cb07a
     jsr sub_c8535
@@ -825,36 +777,6 @@ c85b0:
 
 ; ***************************************************************************************
 mode_cmd:
-    jsr parse_integer_from_command
-    beq c85ec
-    inx
-    dex
-    bne c85ec
-    sta l0084
-    lda is_tube_flag
-    ror
-    bcs c85df
-    jsr sub_c8e86
-    bne c85df
-    lda #osbyte_read_himem_for_mode
-    ldx l0084                                                         ; X=MODE number
-    jsr osbyte                                                        ; Read top of user memory for a given screen mode X
-    cpy top+1                                                         ; X and Y contain the address (low, high)
-    bcc c85dc
-    bne c85df
-    cpx top
-    bcs c85df
-c85dc:
-    jmp c853f
-
-c85df:
-    lda #0x16
-    jsr oswrch                                                        ; Write character 22
-    lda l0084
-    jsr oswrch                                                        ; Write character
-    jmp caf79
-
-c85ec:
     jsr print_inline_string
     .ascii "Bad mode"
     .byte 0xff
@@ -1078,11 +1000,11 @@ c8787:
     lda #0xff
     sta l0012
 c878b:
-    jsr osnewl                                                        ; Write newline (characters 10 and 13)
+    jsr bdos_print_newline
     jmp cli
 
 c8791:
-    jsr osnewl                                                        ; Write newline (characters 10 and 13)
+    jsr bdos_print_newline
     jmp c853f
 
 ; ***************************************************************************************
@@ -1209,7 +1131,6 @@ c8862:
 load_cmd:
     jsr sub_c8e49
     jsr error_if_cassette_filesystem
-    jsr sub_cafca
     jsr sub_c8e1f
     jsr sub_c8849
     beq return_8
@@ -1417,7 +1338,7 @@ loop_c89fa:
     lda document_filename,y
     cmp #0x0d
     beq c8a07
-    jsr osasci                                                        ; Write character
+    jsr bdos_print_char                                                        ; Write character
     iny
     bne loop_c89fa
 c8a07:
@@ -1432,7 +1353,7 @@ loop_c8a15:
     lda another_filename,y
     iny
 c8a19:
-    jsr osasci                                                        ; Write character
+    jsr bdos_print_char                                                        ; Write character
     cmp #0x0d
     bne loop_c8a15
     rts
@@ -2135,33 +2056,9 @@ test_for_cassette_filesystem:
 return_21:
     rts
 
-sub_c8e86:
-    lda #0xaa
-    cmp zp_initialisation_canary
-    bne return_22
-    ldy #0
-    cmp (oshwm),y
-    bne return_22
-    lda top
-    sec
-    sbc #1
-    sta tmp8
-    lda top+1
-    sbc #0
-    sta tmp9
-    lda #0x0d
-    cmp document_initialisation_canary
-    bne return_22
-    cmp (tmp8),y
-    bne return_22
-    iny                                                               ; Y=0x01
-    lda (tmp8),y
-return_22:
-    rts
-
-sub_c8eae:
-    jsr osnewl                                                        ; Write newline (characters 10 and 13)
-sub_c8eb1:
+display_nl_then_no_text:
+    jsr bdos_print_newline
+display_no_text:
     jsr print_inline_string
     .ascii "No text\r"
     .byte 0
@@ -2195,11 +2092,11 @@ c8edb:
     sta l0032
     tay                                                               ; Y=0x00
     sta (last_macro_ptr),y
-    lda #<(current_ruler)
+    lda #<(current_ruler_buffer)
     sta current_ruler_ptr
-    lda #>(current_ruler)
+    lda #>(current_ruler_buffer)
     sta current_ruler_ptr+1
-    jsr find_margins_of_current_ruler
+    jsr find_margins_of_current_ruler_buffer
     jsr sub_c8e33
     bne c8f0d
     inc l0032
@@ -2222,9 +2119,8 @@ return_23:
 
 c8f1a:
     jsr stop_printing
-    jsr acknowledge_escape
     jsr sub_c902c
-    jsr osnewl                                                        ; Write newline (characters 10 and 13)
+    jsr bdos_print_newline
     jmp cli
 
 c8f29:
@@ -2253,12 +2149,12 @@ c8f3b:
     ldx #0
 loop_c8f5d:
     lda (tmp0),y
-    sta current_ruler,x
+    sta current_ruler_buffer,x
     iny
     inx
     cmp #0x0d
     bne loop_c8f5d
-    jsr find_margins_of_current_ruler
+    jsr find_margins_of_current_ruler_buffer
 c8f6b:
     jmp c900e
 
@@ -2615,7 +2511,7 @@ c91a7:
     beq c91da
     iny
 loop_c91b2:
-    sta l0545,x
+    sta current_line_buffer,x
     inx
     cmp #0x0d
     beq c91c2
@@ -2683,7 +2579,7 @@ c9209:
     cmp #0x2c ; ','
     beq c9223
 c921b:
-    sta l0545,x
+    sta current_line_buffer,x
     inx
     cpx #0x82
     bcc c9209
@@ -3093,12 +2989,12 @@ c9472:
     lda #0x2a ; '*'
 c947e:
     jsr set_inverted_text_if_not_mode_7
-    jsr osasci                                                        ; Write character
+    jsr bdos_print_char                                                        ; Write character
     pla
     jmp set_normal_text_if_not_mode_7
 
 c9488:
-    jmp osasci                                                        ; Write character
+    jmp bdos_print_char                                                        ; Write character
 
 ; ***************************************************************************************
 prepare_printer_driver:
@@ -3145,7 +3041,7 @@ default_printer_driver:
 c94c0:
     cmp #0x80
     bcs return_35
-    jmp osasci                                                        ; Write character
+    jmp bdos_print_char                                                        ; Write character
 
 c94c7:
     lda #2
@@ -6077,8 +5973,8 @@ ca6ae:
 render_number_to_screen:
     stx tmp8
     sty tmp9
-    lda #<(oswrch)
-    ldy #>(oswrch)
+    lda #<(bdos_print_char)
+    ldy #>(bdos_print_char)
 ; ***************************************************************************************
 ; On Entry:
 ;     TMP8/TMP9: 16-bit number
@@ -6200,33 +6096,14 @@ read_char:
     cmp #0x1b                                                         ; A=character read
     clc
     bne return_65
-    jsr acknowledge_escape
     sec
 return_65:
     rts
 
 ; ***************************************************************************************
-acknowledge_escape:
-    pha
-    txa
-    pha
-    tya
-    pha
-    ldx #0
-    ldy #0
-    lda #osbyte_acknowledge_escape
-    jsr osbyte                                                        ; Clear escape condition and perform escape effects
-    pla
-    tay
-    pla
-    tax
-    pla
-    rts
-
-; ***************************************************************************************
 clear_screen:
-    lda #0x0c
-    jmp oswrch
+    ldy #SCREEN_CLEAR
+    jmp SCREEN
 
 ; ***************************************************************************************
 cursor_off:
@@ -6291,7 +6168,7 @@ print_inline_string:
     beq ca80f                                                         ; ALWAYS branch
 
 loop_ca80b:
-    jsr osasci                                                        ; Write character
+    jsr bdos_print_char                                                        ; Write character
     iny
 ca80f:
     lda (tmp2),y
@@ -6308,7 +6185,7 @@ ca81f:
     jmp (tmp2)
 
 ca824:
-    jsr osnewl                                                        ; Write newline (characters 10 and 13)
+    jsr bdos_print_newline
     jmp cli
 
 ; ***************************************************************************************
@@ -6317,7 +6194,7 @@ print_x_words_of_help:
     beq ca832                                                         ; ALWAYS branch
 
 ca82e:
-    jsr oswrch                                                        ; Write character
+    jsr bdos_print_char
     iny
 ca832:
     lda la83d,y
@@ -6390,16 +6267,8 @@ call_through_jumptable:
     clc
     adc jumptable_ptrs,y
     sta tmp8
-    lda is_tube_flag
-    bpl ca8a1
-    and #1
-    bne ca8a4
-ca8a1:
-    inc la8a5
-ca8a4:
-la8a5 = ca8a4+1
     lda #0
-    adc lb152,y
+    adc jumptable_ptrs+1,y
     sta tmp9
     ldy #0
     lda (tmp8),y
@@ -6889,7 +6758,7 @@ cab91:
     adc #0
     sta current_ruler_ptr+1
 ; ***************************************************************************************
-find_margins_of_current_ruler:
+find_margins_of_current_ruler_buffer:
     jsr sub_cabc4
 loop_caba5:
     lda (current_ruler_ptr),y
@@ -7558,32 +7427,42 @@ sub_caf71:
 return_81:
     rts
 
-caf79:
-    lda #osbyte_reserved_for_application_software
-    ldx #0xff
-    stx is_tube_flag
-    ldy #1
-    jsr osbyte                                                        ; Reserved for application software
-    cpy #1
-    bne caf91
-    sty is_tube_flag
-caf91:
-    lda #osbyte_read_himem
-    jsr osbyte                                                        ; Read top of user memory (HIMEM)
-    stx himem                                                         ; X and Y contain the address of HIMEM (low, high)
-    sty himem+1
-    lda #osbyte_read_vdu_variable
-    ldx #9
-    jsr osbyte                                                        ; Read the text window bottom position (VDU variable X=9)
-    sty screen_width                                                  ; Y is the text window right position
-    stx screen_height                                                 ; X is the text window bottom position
-    jsr detect_tube
-    bcs return_82
-    ror is_tube_flag
-    clc
-    rol is_tube_flag
-return_82:
+system_init:
+    ldy #BIOS_GETTPA
+    lda #BANK_MAIN
+    jsr BIOS
+    stx himem+1
+    lda #0
+    sta himem+0
+
+    lda #<cpm_ram
+    sta oshwm+0
+    lda #>cpm_ram
+    sta oshwm+1
+
+    ldy #BIOS_FINDDRV
+    lda #DRVID_SCREEN
+    ldx #0
+    jsr BIOS
+    bcs noscreen
+    sta SCREEN+1
+    stx SCREEN+2
+
+    ldy #SCREEN_GETSIZE
+    jsr SCREEN
+    sta screen_width
+    stx screen_height
     rts
+
+noscreen:
+    jsr print_inline_string
+    .ascii "No SCREEN\n"
+    .byte 0
+    ldy #BDOS_EXIT_PROGRAM
+    jmp BDOS
+
+SCREEN:
+    jmp 0x1234
 
 ; ***************************************************************************************
 detect_tube:
@@ -7610,33 +7489,21 @@ compute_bytes_free:
 return_84:
     rts
 
-sub_cafca:
-    jsr sub_c8e86
-    beq return_84
 ; ***************************************************************************************
 initialise_document:
-    lda zp_initialisation_canary
-    cmp #0xaa
-    bne cafdc
-    lda document_initialisation_canary
-    cmp #0x0d
-    beq cafee
-cafdc:
     lda #0
     sta printer_driver_name
     sta format_mode_flag
     sta justifying_flag
     sta insert_mode_flag
-    ldx #0x14
+    ldx #(input_buffer_ptr+2 - print_flags)
 loop_cafe9:
     sta print_flags,x
     dex
     bpl loop_cafe9
 cafee:
-    lda #osbyte_read_oshwm
-    jsr osbyte                                                        ; Read top of operating system RAM address (OSHWM)
-    stx oshwm                                                         ; X and Y contain the address of OSHWM (low, high)
-    sty oshwm+1
+    ldx oshwm                                                         ; X and Y contain the address of OSHWM (low, high)
+    ldy oshwm+1
     iny
     inx
     stx page
@@ -7648,7 +7515,6 @@ caffe:
     sty l003c
     sty xpos
     lda #0xaa
-    sta zp_initialisation_canary
     sta (oshwm),y
     lda page
     sec
@@ -7658,25 +7524,24 @@ caffe:
     sbc #0
     sta tmp9
     lda #0x0d
-    sta document_initialisation_canary
     sta (tmp8),y
     lda page
     sta top
     lda page+1
     sta top+1
-    lda #<(l0545)
+    lda #<(current_line_buffer)
     sta ptr1
     clc
     adc #3
     sta current_edit_line_ptr
     sta current_format_line_ptr
-    lda #>(l0545)
+    lda #>(current_line_buffer)
     sta ptr1+1
     adc #0
     sta current_edit_line_ptr+1
     sta current_format_line_ptr+1
-    lda #<(current_ruler)
-    ldy #>(current_ruler)
+    lda #<(current_ruler_buffer)
+    ldy #>(current_ruler_buffer)
     jsr create_default_ruler
     iny
     lda #0x0d
@@ -7990,15 +7855,94 @@ jumptable4:
     .word ep_fmt_cmd, lj_fmt_cmd, pb_fmt_cmd
 
 osbyte:
-osnewl:
-oswrch:
-osasci:
-osword:
-oscli:
-osfind:
-osfile:
-osbget:
-osbput:
-osrdch:
-osargs:
+    jsr print_inline_string
+    .ascii "osbyte\n"
+    .byte 0
     brk
+
+oswrch:
+    jsr print_inline_string
+    .ascii "oswrch\n"
+    .byte 0
+    brk
+
+osword:
+    jsr print_inline_string
+    .ascii "osword\n"
+    .byte 0
+    brk
+
+oscli:
+    jsr print_inline_string
+    .ascii "oscli\n"
+    .byte 0
+    brk
+
+osfind:
+    jsr print_inline_string
+    .ascii "osfind\n"
+    .byte 0
+    brk
+
+osfile:
+    jsr print_inline_string
+    .ascii "osfile\n"
+    .byte 0
+    brk
+
+osbget:
+    jsr print_inline_string
+    .ascii "osbget\n"
+    .byte 0
+    brk
+
+osbput:
+    jsr print_inline_string
+    .ascii "osbput\n"
+    .byte 0
+    brk
+
+osrdch:
+    jsr print_inline_string
+    .ascii "osrdch\n"
+    .byte 0
+    brk
+
+osargs:
+    jsr print_inline_string
+    .ascii "osargs\n"
+    .byte 0
+    brk
+
+    brk
+
+bdos_print_char:
+    pha
+    txa
+    pha
+    tya
+    pha
+    tsx
+    lda 0x0103,x
+    ldy #BDOS_CONSOLE_OUTPUT
+    jsr BDOS
+    pla
+    tay
+    pla
+    tax
+    pla
+    cmp #13
+    bne 1f
+    pha
+    lda #10
+    jsr bdos_print_char
+    pla
+1:
+    rts
+
+bdos_print_newline:
+    pha
+    lda #13
+    jsr bdos_print_char
+    pla
+    rts
