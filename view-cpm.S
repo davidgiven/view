@@ -71,14 +71,6 @@ l004a: .fill 1
 ptr2: .fill 2
 rw_file_handle: .fill 1
 error_handling_mode: .fill 1
-area_start_ptr: .fill 2
-area_end_ptr: .fill 2
-l0063: .fill 1
-l0064: .fill 1
-l0065: .fill 1
-l0066: .fill 1
-l0067: .fill 1
-l0068: .fill 1
 print_flags: .fill 1
 edit_input_file_handle: .fill 1
 edit_output_file_handle: .fill 1
@@ -86,7 +78,7 @@ l006d: .fill 1
 l006e: .fill 1
 l006f: .fill 1
 l0070: .fill 1
-l0071: .fill 1
+hscroll_pos: .fill 1
 l0072: .fill 1
 l0073: .fill 1
 l0074: .fill 1
@@ -96,7 +88,7 @@ ypos: .fill 1
 print_xpos: .fill 1
 l0079: .fill 1
 l007a: .fill 1
-l007d: .fill 1
+cursor_moved_flag: .fill 1
 l007e: .fill 1
 input_buffer_ptr: .fill 2
 l0081: .fill 1
@@ -140,7 +132,15 @@ current_tab_key: .fill 1
 folding_flag: .fill 1
 ruler_right_stop: .fill 1
 ruler_left_stop: .fill 1
+
+__begin_pointer_array:
 markers_array: .fill 12
+area_start_ptr: .fill 2
+area_end_ptr: .fill 2
+doc_ptr1: .fill 2
+doc_ptr2: .fill 2
+doc_ptr3: .fill 2
+__end_pointer_array:
 
 printer_driver_block            = DATA-0x400+0x0400
 input_buffer                    = DATA-0x400+0x0500
@@ -258,12 +258,12 @@ c81ba:
 
 c81db:
     lda #0x2c ; ','
-    jsr oswrch                                                        ; Write character 44
+    jsr screen_putchar
 c81e0:
     txa
     lsr
     adc #0x31 ; '1'
-    jsr oswrch                                                        ; Write character
+    jsr screen_putchar
 c81e7:
     inx
     inx
@@ -435,10 +435,10 @@ sub_c8371:
     ldx #0
 c837d:
     lda tmp9
-    cmp l0066
+    cmp doc_ptr2+1
     bne c8389
     lda tmp8
-    cmp l0065
+    cmp doc_ptr2+0
     beq c8398
 c8389:
     lda (tmp8),y
@@ -552,8 +552,6 @@ return_5:
 
 ; ***************************************************************************************
 screen_cmd:
-    lda #0x0e
-    jsr oswrch                                                        ; Write character 14
     jmp print_to_screen
 
 ; ***************************************************************************************
@@ -729,7 +727,7 @@ read_cmd:
     lda tmp4
     ldy tmp5
     jsr sub_c8d9a
-    jsr sub_caa15
+    jsr make_space_for_line
     jsr c8c8d
     beq c8584
     bcs c8598
@@ -864,7 +862,7 @@ count_cmd:
     sta l0082
 c86b8:
     ldy #0
-    jsr sub_caf6f
+    jsr deref_and_check_for_command_prefix
     bne c86ea
     ldx #0
     iny
@@ -897,7 +895,7 @@ c86df:
 
 c86ea:
     ldy #0
-    jsr sub_ca5ab
+    jsr draw_char
     and #0x7f
     ldx #0
     ldy l0082
@@ -958,7 +956,7 @@ format_cmd:
     jsr cabcb
     jsr sub_caf5f
     lda #0x10
-    jsr sub_cab0f
+    jsr wipe_buffer
     lda current_edit_line_ptr
     sta current_format_line_ptr
     lda current_edit_line_ptr+1
@@ -968,7 +966,7 @@ c876d:
     bvs c8791
     bcs c8787
     lda #0x2e ; '.'
-    jsr oswrch                                                        ; Write character 46
+    jsr bdos_print_char
     lda ptr4
     ldy ptr4+1
     cpy area_end_ptr+1
@@ -1383,11 +1381,11 @@ c8a86:
 c8a87:
     cpx l004a
     bcc c8a5b
-    lda l0065
+    lda doc_ptr2+0
     sec
     sbc ptr2
     sta input_buffer_ptr+1
-    lda l0066
+    lda doc_ptr2+1
     sbc ptr2+1
     sta l0081
     ldx l0082
@@ -1415,7 +1413,7 @@ c8aa3:
     ora tmp6
     beq c8ada
     sta tmp6
-    jsr sub_caa15
+    jsr make_space_for_line
     bcc c8ada
     rts
 
@@ -1535,29 +1533,29 @@ c8b7b:
     ldx #0
     stx l0049
     stx l0081
-    lda l0065
+    lda doc_ptr2+0
     sta tmp8
-    lda l0066
+    lda doc_ptr2+1
     sta tmp9
 c8b91:
     lda tmp9
-    cmp l0068
+    cmp doc_ptr3+1
     bcc c8b9f
     bne c8b78
     lda tmp8
-    cmp l0067
+    cmp doc_ptr3+0
     bcs c8b78
 c8b9f:
     ldy #0
     lda (tmp8),y
-    jsr sub_caf71
+    jsr check_for_command_prefix
     bne c8bb7
     lda tmp8
     clc
     adc #3
-    sta l0065
+    sta doc_ptr2+0
     lda tmp9
-    sta l0066
+    sta doc_ptr2+1
     bcc c8b7b
     bcs c8bdf                                                         ; ALWAYS branch
 
@@ -1568,7 +1566,7 @@ c8bbc:
     iny
     lda (tmp8),y
     beq c8bdb
-    jsr sub_caf71
+    jsr check_for_command_prefix
     beq c8bdb
     lda header_text_maybe,x
     cmp #0x20 ; ' '
@@ -1582,10 +1580,10 @@ c8bd7:
     cmp l0083
     beq c8c33
 c8bdb:
-    inc l0065
+    inc doc_ptr2+0
     bne c8b7b
 c8bdf:
-    inc l0066
+    inc doc_ptr2+1
     bne c8b7b
 c8be3:
     lda l0083
@@ -1642,12 +1640,12 @@ c8c33:
     bne c8c3e
     inc tmp9
 c8c3e:
-    lda l0065
-    ldy l0066
+    lda doc_ptr2+0
+    ldy doc_ptr2+1
     ldx tmp8
-    stx l0065
+    stx doc_ptr2+0
     ldx tmp9
-    stx l0066
+    stx doc_ptr2+1
     sta ptr2
     sty ptr2+1
     ldx #0
@@ -1692,13 +1690,13 @@ c8c7a:
 
 sub_c8c7c:
     lda area_start_ptr
-    sta l0065
+    sta doc_ptr2+0
     lda area_start_ptr+1
-    sta l0066
+    sta doc_ptr2+1
     lda area_end_ptr
-    sta l0067
+    sta doc_ptr3+0
     lda area_end_ptr+1
-    sta l0068
+    sta doc_ptr3+1
     rts
 
 c8c8d:
@@ -1715,14 +1713,14 @@ c8c95:
     bcc c8caf
     ldx l0084
     bne c8c95
-    jsr sub_caf71
+    jsr check_for_command_prefix
     bne c8c95
     ldx #0xfd
     stx l0083
 c8caf:
     cmp #0x20 ; ' '
     bcs c8cc8
-    jsr sub_ca600
+    jsr check_for_control_code
     beq c8cc8
     cmp #0x1a
     beq c8cc8
@@ -2119,7 +2117,7 @@ c8f3b:
     jsr sub_c916a
     ldy #0
     sty input_buffer_ptr+1
-    jsr sub_caf6f
+    jsr deref_and_check_for_command_prefix
     bne c8fce_thunk
     ldy #3
     sty input_buffer_ptr+1
@@ -2830,7 +2828,7 @@ sub_c93c8:
 c93ce:
     lda (tmp2),y
     bmi c93e6
-    jsr sub_ca600
+    jsr check_for_control_code
     bne c93d9
     inc l0081
 c93d9:
@@ -2961,7 +2959,7 @@ print_char_just_to_printer:
     jmp (printer_driver_ptr)
 
 c9472:
-    jsr sub_ca600
+    jsr check_for_control_code
     bne c9488
     pha
     lda #0x2d ; '-'
@@ -3113,7 +3111,7 @@ c9537:
     beq c955e
 c953e:
     sta output_buffer,x
-    jsr sub_ca600
+    jsr check_for_control_code
     bne c9548
     inc l0083
 c9548:
@@ -3400,7 +3398,7 @@ c96b8:
 c96ce:
     ldy #0
     lda (last_macro_ptr),y
-    jsr sub_caf71
+    jsr check_for_command_prefix
     bne c96f8
     jsr lookup_formatting_command
     cpx #5
@@ -3743,7 +3741,7 @@ c98d9:
     sty l0081
     sty l0039
     lda #0x1a
-    jsr sub_cab0f
+    jsr wipe_buffer
     lda l0042
     beq c98f6
     ldy #0
@@ -3842,14 +3840,14 @@ c9974:
     jmp c9a8d
 
 sub_c9977:
-    inc l007d
+    inc cursor_moved_flag
     ldy #4
     sty print_xpos
     ldy #0
     sty input_buffer_ptr
     sty l007e
     lda (ptr4),y
-    jsr sub_caf71
+    jsr check_for_command_prefix
     beq c9974
 c998a:
     lda format_mode_flag
@@ -3863,7 +3861,7 @@ c998a:
     adc #1
     sta input_buffer_ptr+1
     lda #0x10
-    jsr sub_cab0f
+    jsr wipe_buffer
     lda ptr4
     sta tmp6
     lda ptr4+1
@@ -3956,7 +3954,7 @@ c9a2e:
     ror bottom_margin
 c9a38:
     iny
-    jsr sub_ca600
+    jsr check_for_control_code
     beq c9a40
     inc l0039
 c9a40:
@@ -4056,7 +4054,7 @@ sub_c9ac1:
 c9ad5:
     lda (tmp4),y
     beq c9b2f
-    jsr sub_caf71
+    jsr check_for_command_prefix
     beq c9b2f
     cmp #0x0d
     beq c9b2f
@@ -4137,7 +4135,7 @@ c9b44:
     cmp l0072
     bcc c9b73
     beq c9b73
-    ldx l007d
+    ldx cursor_moved_flag
     bne c9b6a
     jsr get_line_length
     lda format_mode_flag
@@ -4173,7 +4171,7 @@ c9b86:
     inc l0075
 c9b8f:
     lda #0
-    sta l007d
+    sta cursor_moved_flag
     jsr sub_ca276
 c9b96:
     jsr read_char
@@ -4246,7 +4244,7 @@ c9c09:
     sta (current_edit_line_ptr),y
     ldy l0074
     bne c9c14
-    jsr oswrch                                                        ; Write character
+    jsr screen_putchar
 c9c14:
     inc xpos
     jsr ca684
@@ -4321,7 +4319,7 @@ c9c82:
     sta top_margin
     ldy xpos
     sty input_buffer_ptr+1
-    jsr sub_caf33
+    jsr draw_previous_word
     jsr sub_ca608
     lda l0072
     cmp ruler_left_stop
@@ -4355,7 +4353,7 @@ c9cb9:
     lda ptr4+1
     adc #0
     sta tmp5
-    jsr sub_caa15
+    jsr make_space_for_line
     bcc c9cd0
     jmp ca941
 
@@ -4463,7 +4461,7 @@ f15_up_key:
     lda tmp1
     sta ptr4+1
     inc l0079
-    inc l007d
+    inc cursor_moved_flag
 return_53:
     rts
 
@@ -4492,7 +4490,7 @@ return_key:
 c9d98:
     jsr sub_c9de1
 c9d9b:
-    inc l007d
+    inc cursor_moved_flag
     lda ptr4
     ldy ptr4+1
     jsr sub_cab1a
@@ -4519,7 +4517,7 @@ c9dbd:
     tax
     ldy #0
     lda (current_format_line_ptr),y
-    jsr sub_caf71
+    jsr check_for_command_prefix
     bne c9dcd
     inx
     inx
@@ -4539,7 +4537,7 @@ f6_insert_line_key:
     ldy ptr4+1
     inc l0079
 sub_c9de1:
-    inc l007d
+    inc cursor_moved_flag
 c9de3:
     sta tmp4
     sty tmp5
@@ -4547,7 +4545,7 @@ c9de3:
     sta tmp6
     lda #0
     sta tmp7
-    jsr sub_caa15
+    jsr make_space_for_line
     bcs c9dfd
     lda #0x0d
     ldy #0
@@ -4620,7 +4618,7 @@ f9_delete_char_key:
 ; ***************************************************************************************
 f7_delete_line_key:
     jsr ca93c
-    inc l007d
+    inc cursor_moved_flag
     lda ptr4
     sta tmp4
     lda ptr4+1
@@ -4657,7 +4655,7 @@ sf2_release_margins_key:
 
 ; ***************************************************************************************
 f4_beginning_of_line_key:
-    inc l007d
+    inc cursor_moved_flag
 c9e94:
     lda #0
     sta xpos
@@ -4665,7 +4663,7 @@ c9e94:
 
 ; ***************************************************************************************
 f5_end_of_line_key:
-    inc l007d
+    inc cursor_moved_flag
 c9e9b:
     jsr get_line_length
     sty xpos
@@ -4680,7 +4678,7 @@ cf7_join_lines_key:
     sta tmp1
     jsr cab29
     beq c9eda
-    jsr sub_caf71
+    jsr check_for_command_prefix
     beq c9eda
     dey
     tya
@@ -4735,7 +4733,7 @@ edit_command_loop:
     cmp #0x5b ; '['
     bcs edit_command_loop
     sta l0081
-    jsr oswrch                                                        ; Write character
+    jsr screen_putchar
     ldy input_buffer_ptr+1
     iny
     sty input_buffer_ptr+1
@@ -4786,7 +4784,7 @@ c9f5f:
 sf9_delete_command_key:
     ldy #0
     lda (current_format_line_ptr),y
-    jsr sub_caf71
+    jsr check_for_command_prefix
     bne return_56
     tya
     sta (current_format_line_ptr),y
@@ -4797,7 +4795,7 @@ sf9_delete_command_key:
     jsr sub_caf5f
     inc l0074
     inc l006d
-    inc l007d
+    inc cursor_moved_flag
 return_56:
     rts
 
@@ -4820,7 +4818,7 @@ c9f80:
 sf12_left_key:
     ldy xpos
     beq c9f80
-    jsr sub_caf33
+    jsr draw_previous_word
     bne return_57
     cmp #0x20 ; ' '
     beq c9f80
@@ -4852,7 +4850,7 @@ c9fc3:
     lda current_edit_line_ptr+1
     sta tmp1
     ldy xpos
-    jsr sub_ca5ab
+    jsr draw_char
     cmp #0x20 ; ' '
     bne return_58
 ; ***************************************************************************************
@@ -4870,13 +4868,13 @@ sf13_right_key:
 loop_c9ff8:
     cpy input_buffer_ptr+1
     bcs ca00f
-    jsr sub_ca5ab
+    jsr draw_char
     cmp #0x20 ; ' '
     bne loop_c9ff8
 loop_ca003:
     cpy input_buffer_ptr+1
     bcs ca00f
-    jsr sub_ca5ab
+    jsr draw_char
     cmp #0x20 ; ' '
     beq loop_ca003
     dey
@@ -4950,7 +4948,7 @@ sf15_up_key:
     inc l0079
     inc l006f
 sub_ca071:
-    inc l007d
+    inc cursor_moved_flag
     stx input_buffer_ptr+1
     jsr ca93c
     lda ptr4
@@ -4990,7 +4988,7 @@ sf14_down_key:
     inc l0079
     inc l006f
 sub_ca0af:
-    inc l007d
+    inc cursor_moved_flag
     stx input_buffer_ptr+1
     jsr ca93c
     lda ptr4
@@ -5131,7 +5129,7 @@ return_60:
 ; ***************************************************************************************
 cf0_delete_block_key:
     jsr ca93c
-    inc l007d
+    inc cursor_moved_flag
     jsr reset_area_to_marks_1_2
     bcs ca1c9
     lda area_start_ptr
@@ -5154,8 +5152,8 @@ sf0_move_block_key:
     stx l006f
     jsr sub_c89d3
     jsr cb05a
-    lda l0063
-    ldy l0064
+    lda doc_ptr1+0
+    ldy doc_ptr1+1
     jsr cabcb
     jmp clear_marks_1_2
 
@@ -5165,16 +5163,16 @@ f11_copy_key:
     jsr reset_area_to_marks_1_2
     bcs ca1c9
     jsr sub_ca1cc
-    lda l0063
-    ldy l0064
+    lda doc_ptr1+0
+    ldy doc_ptr1+1
     jmp cabcb
 
 ca1c9:
     jmp beep
 
 sub_ca1cc:
-    lda l0063
-    ldy l0064
+    lda doc_ptr1+0
+    ldy doc_ptr1+1
     cpy area_start_ptr+1
     bcc ca1ea
     bne ca1da
@@ -5199,11 +5197,11 @@ ca1ea:
     lda area_end_ptr+1
     sbc area_start_ptr+1
     sta tmp7
-    lda l0063
+    lda doc_ptr1+0
     sta tmp4
-    lda l0064
+    lda doc_ptr1+1
     sta tmp5
-    jsr sub_caa15
+    jsr make_space_for_line
     bcs ca265
     lda area_start_ptr
     sta tmp8
@@ -5236,9 +5234,9 @@ ca229:
     lda tmp7
     pha
     lda tmp4
-    sta l0063
+    sta doc_ptr1+0
     lda tmp5
-    sta l0064
+    sta doc_ptr1+1
     lda tmp2
     ldy tmp3
     sec
@@ -5247,8 +5245,8 @@ ca229:
     dey
 ca24d:
     jsr cac78
-    lda l0063
-    ldy l0064
+    lda doc_ptr1+0
+    ldy doc_ptr1+1
     jsr cac78
     pla
     sta tmp7
@@ -5256,7 +5254,7 @@ ca24d:
     sta tmp6
     lda #1
     sta l0073
-    sta l007d
+    sta cursor_moved_flag
     clc
     rts
 
@@ -5411,15 +5409,15 @@ ca35e:
 ca360:
     ldy l0034
     jsr cab91
-    jsr sub_caa8f
+    jsr unpack_line_into_buffer
     jsr sub_ca608
     lda screen_width
     lsr
     sta l0083
     lda l0072
-    cmp l0071
+    cmp hscroll_pos
     bcc ca381
-    lda l0071
+    lda hscroll_pos
     clc
     adc screen_width
     sbc #3
@@ -5432,7 +5430,7 @@ ca381:
     bcs ca38a
     lda #0
 ca38a:
-    sta l0071
+    sta hscroll_pos
     lda #1
     sta l0073
     sta input_buffer_ptr+1
@@ -5486,7 +5484,7 @@ ca3de:
     ldy l0034
     jsr cab91
 ca3e7:
-    jsr sub_caa8f
+    jsr unpack_line_into_buffer
     jsr sub_caacb
     jsr display_status_word
     lda l0074
@@ -5503,7 +5501,7 @@ ca3ff:
 ca406:
     lda l0072
     sec
-    sbc l0071
+    sbc hscroll_pos
     clc
     adc #3
     tax
@@ -5587,10 +5585,10 @@ sub_ca486:
     sty l0083
     sty input_buffer_ptr+1
     sty l0039
-    jsr sub_caf6f
+    jsr deref_and_check_for_command_prefix
     bne ca4b4
     ldy #3
-    lda l0071
+    lda hscroll_pos
     bne ca4b4
     ldy #1
     jsr sub_ca4d7
@@ -5605,9 +5603,9 @@ ca4b4:
 ca4bc:
     jsr ca4e9
 loop_ca4bf:
-    jsr sub_ca5ab
+    jsr draw_char
 loop_ca4c2:
-    jsr sub_ca4dd
+    jsr render_xchar
     dex
     bne loop_ca4c2
     cmp #0x0d
@@ -5619,15 +5617,15 @@ loop_ca4c2:
     rts
 
 sub_ca4d7:
-    jsr sub_ca5ab
+    jsr draw_char
     jmp ca4e9
 
-sub_ca4dd:
+render_xchar:
     inc l0039
     stx l0084
     ldx input_buffer_ptr+1
     inc input_buffer_ptr+1
-    cpx l0071
+    cpx hscroll_pos
     bcc ca533
 ca4e9:
     pha
@@ -5657,7 +5655,7 @@ ca50e:
     ldx #0
 ca514:
     pla
-    jsr sub_ca600
+    jsr check_for_control_code
     bne ca522
     lda #0x2d ; '-'
     bcs ca50e
@@ -5671,7 +5669,7 @@ ca523:
     bne ca529
     lda #0x20 ; ' '
 ca529:
-    jsr oswrch                                                        ; Write character 32
+    jsr screen_putchar
     txa
     bne ca532
     jsr set_normal_text_if_not_mode_7
@@ -5738,10 +5736,7 @@ ca58c:
 
 ; ***************************************************************************************
 set_text_colour:
-    lda #0x11
-    jsr oswrch                                                        ; Write character 17
-    txa
-    jmp oswrch                                                        ; Write character
+    rts
 
 sub_ca597:
     ldx l0082
@@ -5750,13 +5745,13 @@ sub_ca597:
     beq return_62
     lda l0084
 loop_ca5a2:
-    jsr oswrch                                                        ; Write character
+    jsr screen_putchar
     dec line_lengths,x
     bne loop_ca5a2
 return_62:
     rts
 
-sub_ca5ab:
+draw_char:
     lda (tmp0),y
     iny
 sub_ca5ae:
@@ -5818,7 +5813,7 @@ ca5fa:
     sec
     rts
 
-sub_ca600:
+check_for_control_code:
     cmp #0x1c
     beq return_63
     cmp #0x1d
@@ -5838,7 +5833,7 @@ loop_ca615:
     cpy xpos
     beq ca63d
     sta l0039
-    jsr sub_ca5ab
+    jsr draw_char
     txa
     clc
     adc l0039
@@ -5849,7 +5844,7 @@ ca624:
     tay                                                               ; Y=0x00
 loop_ca629:
     sta l0039
-    jsr sub_ca5ab
+    jsr draw_char
     txa
     clc
     adc l0039
@@ -5888,13 +5883,13 @@ sub_ca651:
     ldx #0x20 ; ' '
 ca666:
     txa
-    jsr oswrch                                                        ; Write character
+    jsr screen_putchar
     lda #0x4a ; 'J'
     ldx justifying_flag
     beq ca672
     lda #0x20 ; ' '
 ca672:
-    jsr oswrch                                                        ; Write character 32
+    jsr screen_putchar
     lda #0x49 ; 'I'
     ldx insert_mode_flag
     bne ca681
@@ -5903,9 +5898,11 @@ ca672:
 
 ; ***************************************************************************************
 home_cursor:
-    lda #0x1e
+    ldx #0
+    ldy #0
+    jmp set_cursor_position
 ca681:
-    jmp oswrch                                                        ; Write character 30
+    jmp screen_putchar
 
 ca684:
     ldx ypos
@@ -6072,7 +6069,11 @@ flush_and_read_char:
     jsr osbyte                                                        ; Flush the keyboard buffer (X=0)
 ; ***************************************************************************************
 read_char:
-    jsr osrdch                                                        ; Read a character from the current input stream
+    lda #0xff
+    tax
+    ldy #SCREEN_GETCHAR
+    jsr SCREEN
+    bcs read_char
     cmp #0x1b                                                         ; A=character read
     clc
     bne return_65
@@ -6111,10 +6112,13 @@ cursor_on:
 
 ; ***************************************************************************************
 save_cursor_position:
-    lda #osbyte_read_text_cursor_pos
-    jsr osbyte                                                        ; Read input cursor position (Sets X=POS and Y=VPOS)
-    stx tmp4                                                          ; X is the horizontal text position ('POS')
-    sty tmp5                                                          ; Y is the vertical text position ('VPOS')
+    ldy #SCREEN_GETCURSOR
+    jsr SCREEN
+    pha
+    txa
+    tay
+    pla
+    tax
     rts
 
 ; ***************************************************************************************
@@ -6122,14 +6126,29 @@ restore_cursor_position:
     ldx tmp4
     ldy tmp5
 ; ***************************************************************************************
+; On Entry:
+;     X: X position
+;     Y: Y position
+; ***************************************************************************************
 set_cursor_position:
     pha
-    lda #0x1f
-    jsr oswrch                                                        ; Write character 31
     txa
-    jsr oswrch                                                        ; Write character
+    pha
     tya
-    jsr oswrch                                                        ; Write character
+    pha
+
+    txa
+    pha
+    tya
+    tax
+    pla
+    ldy #SCREEN_SETCURSOR
+    jsr SCREEN
+
+    pla
+    tay
+    pla
+    tax
     pla
 return_34:
     rts
@@ -6284,7 +6303,7 @@ ca8df:
     sec
     sbc l0084
     sta tmp6
-    jsr sub_caa15
+    jsr make_space_for_line
     bcs return_66
 ca8ed:
     lda l006e
@@ -6409,10 +6428,10 @@ sub_ca9b0:
     sta tmp3
     adc tmp7
     sta tmp9
-    ldx #0x53 ; 'S'
+    ldx #0
 ca9c3:
-    ldy ptr1+1,x
-    lda ptr1,x
+    ldy __begin_pointer_array+1,x
+    lda __begin_pointer_array+0,x
     cpy tmp5
     bcc ca9f1
     bne ca9d1
@@ -6425,23 +6444,23 @@ ca9d1:
     cmp tmp8
     bcs ca9e7
 ca9db:
-    cpx #0x5f ; '_'
+    cpx #12
     bcs ca9e7
     lda #0
-    sta ptr1,x
-    sta ptr1+1,x
+    sta __begin_pointer_array+0,x
+    sta __begin_pointer_array+1,x
     beq ca9f1                                                         ; ALWAYS branch
 
 ca9e7:
     sbc tmp6
-    sta ptr1,x
-    lda ptr1+1,x
+    sta __begin_pointer_array+0,x
+    lda __begin_pointer_array+1,x
     sbc tmp7
-    sta ptr1+1,x
+    sta __begin_pointer_array+1,x
 ca9f1:
     inx
     inx
-    cpx #0x69 ; 'i'
+    cpx #22
     bne ca9c3
 loop_ca9f7:
     ldy #0
@@ -6464,7 +6483,7 @@ caa08:
     sta top+1
     rts
 
-sub_caa15:
+make_space_for_line:
     lda top
     sta tmp2
     clc
@@ -6484,10 +6503,10 @@ sub_caa15:
 caa32:
     stx top
     sty top+1
-    ldx #0x53 ; 'S'
+    ldx #0
 loop_caa38:
-    ldy ptr1+1,x
-    lda ptr1,x
+    ldy __begin_pointer_array+1,x
+    lda __begin_pointer_array+0,x
     cpy tmp5
     bcc caa51
     bne caa46
@@ -6496,14 +6515,14 @@ loop_caa38:
 caa46:
     clc
     adc tmp6
-    sta ptr1,x
-    lda ptr1+1,x
+    sta __begin_pointer_array+0,x
+    lda __begin_pointer_array+1,x
     adc tmp7
-    sta ptr1+1,x
+    sta __begin_pointer_array+1,x
 caa51:
     inx
     inx
-    cpx #0x69 ; 'i'
+    cpx #22
     bne loop_caa38
 caa57:
     lda tmp2
@@ -6545,20 +6564,20 @@ caa82:
 return_67:
     rts
 
-sub_caa8f:
+unpack_line_into_buffer:
     lda l006e
     bne return_68
     lda #1
     sta l006e
 sub_caa97:
     lda #0x10
-    jsr sub_cab0f
+    jsr wipe_buffer
     jsr sub_caf5f
     ldy #0
     lda (ptr4),y
     ldx current_edit_line_ptr
     ldy current_edit_line_ptr+1
-    jsr sub_caf71
+    jsr check_for_command_prefix
     bne caab7
     bcs caab0
     sta l006e
@@ -6609,7 +6628,7 @@ caae8:
 get_line_length:
     ldy #0
     lda (current_format_line_ptr),y
-    jsr sub_caf71
+    jsr check_for_command_prefix
     php
     ldy #0x84
 loop_caafb:
@@ -6630,7 +6649,7 @@ cab06:
 return_69:
     rts
 
-sub_cab0f:
+wipe_buffer:
     ldy #0
     ldx #0x89
 loop_cab13:
@@ -6826,7 +6845,7 @@ cac20:
     tax
     ldy #0
     lda (ptr4),y
-    jsr sub_caf71
+    jsr check_for_command_prefix
     bne cac3e
     txa
     cpx #3
@@ -6888,7 +6907,7 @@ cac7b:
     ldx #0x85
     ldy #1
     lda (tmp8),y
-    jsr sub_caf71
+    jsr check_for_command_prefix
     bne cac8d
     inx
     inx
@@ -6927,7 +6946,7 @@ cacad:
     sta tmp6
     lda #0
     sta tmp7
-    jsr sub_caa15
+    jsr make_space_for_line
     lda #0x0d
     ldy #0
     sta (tmp4),y
@@ -6946,8 +6965,6 @@ sub_cacd7:
     bcc return_74
 ; ***************************************************************************************
 beep:
-    lda #7
-    jsr oswrch                                                        ; Write character 7
 loop_caced:
     sec
 return_74:
@@ -7023,7 +7040,7 @@ sub_cad47:
     ldy #0
     lda (current_format_line_ptr),y
     ldy xpos
-    jsr sub_caf71
+    jsr check_for_command_prefix
     bne cad5c
     iny
     iny
@@ -7033,10 +7050,10 @@ cad5c:
 cad5d:
     clc
     adc ptr4
-    sta ptr1,x
+    sta markers_array+0,x
     lda ptr4+1
     adc #0
-    sta ptr1+1,x
+    sta markers_array+1,x
     rts
 
 ; ***************************************************************************************
@@ -7352,7 +7369,7 @@ caf31:
 return_79:
     rts
 
-sub_caf33:
+draw_previous_word:
     lda current_edit_line_ptr
     sta tmp0
     lda current_edit_line_ptr+1
@@ -7362,20 +7379,20 @@ sub_caf33:
 loop_caf3f:
     dey
     beq caf55
-    jsr sub_ca5ab
+    jsr draw_char
     dey
     cmp #0x20 ; ' '
     beq loop_caf3f
 loop_caf4a:
     dey
-    jsr sub_ca5ab
+    jsr draw_char
     cmp #0x20 ; ' '
     beq caf55
     dey
     bne loop_caf4a
 caf55:
     sty xpos
-    jsr sub_ca5ab
+    jsr draw_char
     dey
     rts
 
@@ -7397,9 +7414,9 @@ caf60:
 return_80:
     rts
 
-sub_caf6f:
+deref_and_check_for_command_prefix:
     lda (tmp0),y
-sub_caf71:
+check_for_command_prefix:
     cmp #0x80
     beq return_81
     cmp #0x81
@@ -7505,6 +7522,7 @@ caffe:
     sta tmp9
     lda #0x0d
     sta (tmp8),y
+    sta current_line_buffer + 0x89
     lda page
     sta top
     lda page+1
@@ -7590,28 +7608,10 @@ loop_cb0a8:
     sta line_lengths,x
     dex
     bpl loop_cb0a8
-    lda #0x0d
-    jsr oswrch                                                        ; Write character 13
-    lda #0x0f
-    jsr oswrch                                                        ; Write character 15
-    lda #osbyte_read_write_function_key_status
-    ldy #0
-    ldx #0x8c
-    jsr osbyte                                                        ; Write function key status, value X=140
-    lda #osbyte_read_write_shift_function_key_status
-    ldy #0
-    ldx #0x9c
-    jsr osbyte                                                        ; Write SHIFT+function keys status, value X=156
-    lda #osbyte_read_write_ctrl_function_key_status
-    sta l003d
-    ldy #0
-    ldx #0xac
-    jsr osbyte                                                        ; Write CTRL+function keys status, value X=172
-    lda #osbyte_set_cursor_editing
     ldx #2
     stx l0073
     stx l0076
-    jmp osbyte                                                        ; Disable cursor editing (edit keys act as soft keys f11 to f15) (X=2)
+    rts
 
 ; ***************************************************************************************
 create_default_ruler:
@@ -7841,9 +7841,11 @@ osbyte:
     brk
 
 oswrch:
+    pha
     jsr print_inline_string
     .ascii "oswrch\n"
     .byte 0
+    pla
     brk
 
 osword:
@@ -7882,18 +7884,10 @@ osbput:
     .byte 0
     brk
 
-osrdch:
-    jsr print_inline_string
-    .ascii "osrdch\n"
-    .byte 0
-    brk
-
 osargs:
     jsr print_inline_string
     .ascii "osargs\n"
     .byte 0
-    brk
-
     brk
 
 bdos_print_char:
@@ -7926,6 +7920,26 @@ bdos_print_newline:
     jsr bdos_print_char
     pla
     rts
+
+zproc screen_putchar
+    pha
+    txa
+    pha
+    tya
+    pha
+
+    tsx
+    lda 0x103, x
+    ldy #SCREEN_PUTCHAR
+    jsr SCREEN
+
+    pla
+    tay
+    pla
+    tax
+    pla
+    rts
+zendproc
 
 ; Read a line from the keyboard input input_buffer.
 ; This is a hacked and customised copy of the BDOS routine.
