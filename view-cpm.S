@@ -4,6 +4,7 @@
 
 ; Constants
 buffer_keyboard                             = 0
+MAX_COMMAND_LENGTH                          = 68
 MAX_LINE_LENGTH                             = 132
 osbyte_enter_language                       = 142
 osbyte_flush_buffer                         = 21
@@ -285,23 +286,13 @@ cli_loop:
     .ascii "=>"
     .byte 0
 
-    lda #0x44                   ; maximum line length
-    sta input_buffer
+    jsr readline
     lda #<input_buffer
     sta tmp0                    ; tmp0/1 used for parsing
     ldx #>input_buffer
     stx tmp1
-    ldy #BDOS_READ_LINE
-    jsr BDOS
     
-    ldx input_buffer+1          ; number of chars read
-    lda #0x0d
-    sta input_buffer+2, x       ; make sure string is terminated
-    lda #2
-    sta input_buffer_ptr
-    
-    jmp input_line_not_escaped
-    ; TODO: fall through to start editor
+    bcc input_line_not_escaped
     jmp run_editor
 
 ; ***************************************************************************************
@@ -7935,3 +7926,87 @@ bdos_print_newline:
     jsr bdos_print_char
     pla
     rts
+
+; Read a line from the keyboard input input_buffer.
+; This is a hacked and customised copy of the BDOS routine.
+zproc readline
+    lda #0
+    sta input_buffer_ptr
+
+    zloop
+        ; Read a key without echo.
+
+        ldy #BDOS_CONSOLE_INPUT
+        jsr BDOS
+        tax
+
+        ; Delete?
+
+        cmp #8
+        zif eq
+            lda #127
+        zendif
+        cmp #127
+        zif eq
+            ldy input_buffer_ptr
+            zif ne
+                dec input_buffer_ptr
+                jsr bdos_print_char
+            zendif
+            zcontinue
+        zendif
+
+        ; Delete line?
+
+        cmp #21
+        zif eq
+            ldy input_buffer_ptr
+            zif ne
+                zrepeat
+                    lda #127
+                    jsr bdos_print_char
+                    dey
+                zuntil eq
+                sty input_buffer_ptr
+            zendif
+            zcontinue
+        zendif
+
+        ; Finished?
+
+        cmp #13
+        zbreakif eq
+        cmp #10
+        zbreakif eq
+        cmp #27
+        zif eq
+            lda #0
+            sta input_buffer_ptr
+            sec
+            rts
+        zendif
+
+        ; Graphic character?
+
+        cmp #32
+        zif cs
+            ldy #MAX_COMMAND_LENGTH
+            cpy input_buffer_ptr
+            zif cs
+                ldy input_buffer_ptr
+                sta input_buffer, y
+                jsr bdos_print_char
+                inc input_buffer_ptr
+            zendif
+        zendif
+    zendloop
+
+    jsr bdos_print_newline
+    ldx input_buffer_ptr
+    lda #0x0d
+    sta input_buffer, x
+    ldx #0
+    sta input_buffer_ptr
+    clc
+    rts
+zendproc
