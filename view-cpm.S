@@ -181,9 +181,9 @@ main:
     stx error_handling_mode
     jsr system_init
     jsr initialise_document
-enter_cli_mode:
+run_cli:
     jsr clear_screen
-    ldx #0
+    ldx #1
     jsr print_x_words_of_help
     jsr print_inline_string
     .ascii "\r\rBytes free "
@@ -273,7 +273,7 @@ c81e7:
 c81f3:
     jsr bdos_print_newline
 ; ***************************************************************************************
-cli:
+cli_loop:
     jsr stop_printing
     ldx #0xff
     stx error_handling_mode
@@ -284,43 +284,31 @@ cli:
     .ascii "=>"
     .byte 0
 
-    ldx #<input_buffer
-    stx tmp0
+    lda #0x44                   ; maximum line length
+    sta input_buffer
+    lda #<input_buffer
+    sta tmp0                    ; tmp0/1 used for parsing
     ldx #>input_buffer
     stx tmp1
-    ldx #0x44 ; 'D'
-    stx tmp2
-    ldx #0x20 ; ' '
-    stx tmp3
-    ldx #0x7e ; '~'
-    stx tmp4
-    ldx #<(tmp0)
-    lda #osword_read_line
+    ldy #BDOS_READ_LINE
+    jsr BDOS
+    
+    ldx input_buffer+1          ; number of chars read
+    lda #0x0d
+    sta input_buffer+2, x       ; make sure string is terminated
+    lda #2
     sta input_buffer_ptr
-    tay                                                               ; Y=0x00
-    jsr osword                                                        ; Read line from input stream (exits with C=1 if ESCAPE pressed)
-    bcc input_line_not_escaped
-    jmp c9b33
+    
+    jmp input_line_not_escaped
+    ; TODO: fall through to start editor
+    jmp run_editor
 
 ; ***************************************************************************************
 esc_key:
     jsr ca93c
-    jmp enter_cli_mode
+    jmp run_cli
 
 input_line_not_escaped:
-    ldy #0
-    jsr sub_c8e2d
-    beq c8255
-    sty input_buffer_ptr
-    cmp #0x2a ; '*'
-    bne input_line_not_oscli
-    ldx #<(input_buffer)
-    ldy #>(input_buffer)
-    jsr oscli
-c8255:
-    jmp cli
-
-input_line_not_oscli:
     jsr parse_command
     sty input_buffer_ptr+1
     bcs c8263
@@ -335,7 +323,7 @@ c826e:
     lda input_buffer_ptr+1
     ldy #4
     jsr call_through_jumptable
-    jmp enter_cli_mode
+    jmp run_cli
 
 ; ***************************************************************************************
 search_cmd:
@@ -348,7 +336,7 @@ search_cmd:
     jsr c8b7b
     bne c82fa
     jsr cabcb
-    jmp c9b33
+    jmp run_editor
 
 ; ***************************************************************************************
 change_cmd:
@@ -583,7 +571,7 @@ sheets_cmd:
     jsr sub_c8ebe
     jsr stop_printing
     jsr bdos_print_newline
-    jmp cli
+    jmp cli_loop
 
 ; ***************************************************************************************
 print_cmd:
@@ -592,7 +580,7 @@ print_cmd:
 ; ***************************************************************************************
 print_to_screen:
     jsr sub_c8ebe
-    jmp cli
+    jmp cli_loop
 
 ; ***************************************************************************************
 stop_printing:
@@ -645,7 +633,7 @@ loop_c8490:
 c84a8:
     jsr c850d
 c84ab:
-    jmp cli
+    jmp cli_loop
 
 ; ***************************************************************************************
 more_cmd:
@@ -773,7 +761,7 @@ c8598:
     jsr sub_ca9b0
 c85b0:
     jsr close_file
-    jmp cli
+    jmp cli_loop
 
 ; ***************************************************************************************
 mode_cmd:
@@ -866,7 +854,7 @@ field_cmd:
 c8699:
     sta current_tab_key
 c869b:
-    jmp cli
+    jmp cli_loop
 
 ; ***************************************************************************************
 count_cmd:
@@ -1001,7 +989,7 @@ c8787:
     sta l0012
 c878b:
     jsr bdos_print_newline
-    jmp cli
+    jmp cli_loop
 
 c8791:
     jsr bdos_print_newline
@@ -1235,7 +1223,7 @@ c891f:
     sty l0511
     lda #0
     jsr do_osfile_with_block
-    jmp cli
+    jmp cli_loop
 
 ; ***************************************************************************************
 do_osfile_with_block:
@@ -2025,7 +2013,7 @@ sub_c8e54:
     bcs return_20
 c8e5d:
     jsr sub_c89e5
-    jmp cli
+    jmp cli_loop
 
 ; ***************************************************************************************
 error_if_cassette_filesystem:
@@ -2121,7 +2109,7 @@ c8f1a:
     jsr stop_printing
     jsr sub_c902c
     jsr bdos_print_newline
-    jmp cli
+    jmp cli_loop
 
 c8f29:
     lda #0x40 ; '@'
@@ -4136,10 +4124,10 @@ c9b31:
     clc
     rts
 
-c9b33:
+run_editor:
     jsr enter_editor_mode
 ; ***************************************************************************************
-run_editor:
+editor_loop:
     lda format_mode_flag
     pha
     lda l006e
@@ -4225,11 +4213,11 @@ c9bbb:
     bcs c9b96
     ldy #0
     jsr call_through_jumptable
-    jmp run_editor
+    jmp editor_loop
 
 c9bca:
     jsr beep
-    jmp run_editor
+    jmp editor_loop
 
 enter_printable_character:
     ldy xpos
@@ -4332,7 +4320,7 @@ c9c67:
     cpy ruler_right_stop
     bcs c9c82
 c9c7f:
-    jmp run_editor
+    jmp editor_loop
 
 c9c82:
     jsr get_line_length
@@ -4429,7 +4417,7 @@ c9d15:
     jsr return_key
     lda top_margin
     sta xpos
-    jmp run_editor
+    jmp editor_loop
 
 c9d28:
     lda (current_edit_line_ptr),y
@@ -6186,7 +6174,7 @@ ca81f:
 
 ca824:
     jsr bdos_print_newline
-    jmp cli
+    jmp cli_loop
 
 ; ***************************************************************************************
 print_x_words_of_help:
@@ -6207,7 +6195,7 @@ ca832:
 la83d:
     .ascii "VIEW"
     .byte 0
-    .ascii "B3.0"
+    .ascii "B3.0 for CP/M-65"
     .byte 0
 
 ; ***************************************************************************************
@@ -6369,7 +6357,7 @@ ca941:
     ldx #0xff
     txs
     jsr sub_ca94a
-    jmp run_editor
+    jmp editor_loop
 
 sub_ca94a:
     jsr cursor_off

@@ -353,7 +353,7 @@ oscli                           = &fff7
     jsr check_for_bad_document                                        ; 80e6: 20 86 8e     ..
     bne c80f3                                                         ; 80e9: d0 08       ..
     jsr ca93c                                                         ; 80eb: 20 3c a9     <.
-    jmp enter_cli_mode                                                ; 80ee: 4c f6 80    L..
+    jmp run_cli                                                       ; 80ee: 4c f6 80    L..
 
 ; &80f1 referenced 1 time by &80c5
 .brk_handler_ptr
@@ -366,7 +366,7 @@ l80f2 = brk_handler_ptr+1
     jsr initialise_document                                           ; 80f3: 20 cf af     ..
 ; ***************************************************************************************
 ; &80f6 referenced 3 times by &80ee, &823e, &8283
-.enter_cli_mode
+.run_cli
     jsr clear_screen                                                  ; 80f6: 20 82 a7     ..
     lda #osbyte_set_cursor_editing                                    ; 80f9: a9 04       ..
     ldx #0                                                            ; 80fb: a2 00       ..
@@ -496,7 +496,7 @@ l80f2 = brk_handler_ptr+1
     jsr osnewl                                                        ; 81f3: 20 e7 ff     ..            ; Write newline (characters 10 and 13)
 ; ***************************************************************************************
 ; &81f6 referenced 14 times by &8235, &8255, &8279, &843d, &8448, &84ab, &85b3, &869b, &878e, &8949, &8a4c, &8e60, &8f26, &a827
-.cli
+.cli_loop
     jsr acknowledge_escape                                            ; 81f6: 20 6e a7     n.
     jsr stop_printing                                                 ; 81f9: 20 4b 84     K.
     ldx #&ff                                                          ; 81fc: a2 ff       ..
@@ -528,17 +528,17 @@ l80f2 = brk_handler_ptr+1
     jsr check_for_bad_document                                        ; 822d: 20 86 8e     ..
     beq c8238                                                         ; 8230: f0 06       ..
     jsr display_nl_then_no_text                                       ; 8232: 20 ae 8e     ..
-    jmp cli                                                           ; 8235: 4c f6 81    L..
+    jmp cli_loop                                                      ; 8235: 4c f6 81    L..
 
 ; &8238 referenced 1 time by &8230
 .c8238
-    jmp c9b33                                                         ; 8238: 4c 33 9b    L3.
+    jmp run_editor                                                    ; 8238: 4c 33 9b    L3.
 
 ; ***************************************************************************************
 ; &823b referenced 2 times by &836e, &a273
 .esc_key
     jsr ca93c                                                         ; 823b: 20 3c a9     <.
-    jmp enter_cli_mode                                                ; 823e: 4c f6 80    L..
+    jmp run_cli                                                       ; 823e: 4c f6 80    L..
 
 ; &8241 referenced 1 time by &8228
 .input_line_not_escaped
@@ -553,7 +553,7 @@ l80f2 = brk_handler_ptr+1
     jsr oscli                                                         ; 8252: 20 f7 ff     ..
 ; &8255 referenced 1 time by &8246
 .c8255
-    jmp cli                                                           ; 8255: 4c f6 81    L..
+    jmp cli_loop                                                      ; 8255: 4c f6 81    L..
 
 ; &8258 referenced 1 time by &824c
 .input_line_not_oscli
@@ -575,14 +575,14 @@ l80f2 = brk_handler_ptr+1
     jsr check_for_bad_document                                        ; 8271: 20 86 8e     ..
     beq c827c                                                         ; 8274: f0 06       ..
     jsr display_no_text                                               ; 8276: 20 b1 8e     ..
-    jmp cli                                                           ; 8279: 4c f6 81    L..
+    jmp cli_loop                                                      ; 8279: 4c f6 81    L..
 
 ; &827c referenced 2 times by &826f, &8274
 .c827c
     lda input_buffer_ptr+1                                            ; 827c: a5 80       ..
     ldy #4                                                            ; 827e: a0 04       ..
     jsr call_through_jumptable                                        ; 8280: 20 92 a8     ..
-    jmp enter_cli_mode                                                ; 8283: 4c f6 80    L..
+    jmp run_cli                                                       ; 8283: 4c f6 80    L..
 
 ; ***************************************************************************************
 .search_cmd
@@ -595,7 +595,7 @@ l80f2 = brk_handler_ptr+1
     jsr c8b7b                                                         ; 8296: 20 7b 8b     {.
     bne c82fa                                                         ; 8299: d0 5f       ._
     jsr cabcb                                                         ; 829b: 20 cb ab     ..
-    jmp c9b33                                                         ; 829e: 4c 33 9b    L3.
+    jmp run_editor                                                    ; 829e: 4c 33 9b    L3.
 
 ; ***************************************************************************************
 .change_cmd
@@ -863,7 +863,7 @@ l80f2 = brk_handler_ptr+1
     jsr sub_c8ebe                                                     ; 8434: 20 be 8e     ..
     jsr stop_printing                                                 ; 8437: 20 4b 84     K.
     jsr osnewl                                                        ; 843a: 20 e7 ff     ..            ; Write newline (characters 10 and 13)
-    jmp cli                                                           ; 843d: 4c f6 81    L..
+    jmp cli_loop                                                      ; 843d: 4c f6 81    L..
 
 ; ***************************************************************************************
 .print_cmd
@@ -873,7 +873,7 @@ l80f2 = brk_handler_ptr+1
 ; &8445 referenced 1 time by &842c
 .print_to_screen
     jsr sub_c8ebe                                                     ; 8445: 20 be 8e     ..
-    jmp cli                                                           ; 8448: 4c f6 81    L..
+    jmp cli_loop                                                      ; 8448: 4c f6 81    L..
 
 ; ***************************************************************************************
 ; &844b referenced 9 times by &81f9, &8437, &853f, &8862, &89e5, &8a2e, &8f1a, &9011, &92a1
@@ -934,7 +934,7 @@ l80f2 = brk_handler_ptr+1
     jsr c850d                                                         ; 84a8: 20 0d 85     ..
 ; &84ab referenced 4 times by &84be, &84e6, &84f4, &8506
 .c84ab
-    jmp cli                                                           ; 84ab: 4c f6 81    L..
+    jmp cli_loop                                                      ; 84ab: 4c f6 81    L..
 
 ; ***************************************************************************************
 .more_cmd
@@ -1072,7 +1072,7 @@ l80f2 = brk_handler_ptr+1
 ; &85b0 referenced 1 time by &8532
 .c85b0
     jsr close_file                                                    ; 85b0: 20 8f 8d     ..
-    jmp cli                                                           ; 85b3: 4c f6 81    L..
+    jmp cli_loop                                                      ; 85b3: 4c f6 81    L..
 
 ; ***************************************************************************************
 .mode_cmd
@@ -1210,7 +1210,7 @@ l80f2 = brk_handler_ptr+1
     sta current_tab_key                                               ; 8699: 85 7b       .{
 ; &869b referenced 3 times by &867b, &8687, &86a4
 .c869b
-    jmp cli                                                           ; 869b: 4c f6 81    L..
+    jmp cli_loop                                                      ; 869b: 4c f6 81    L..
 
 ; ***************************************************************************************
 .count_cmd
@@ -1363,7 +1363,7 @@ l80f2 = brk_handler_ptr+1
 ; &878b referenced 1 time by &8754
 .c878b
     jsr osnewl                                                        ; 878b: 20 e7 ff     ..            ; Write newline (characters 10 and 13)
-    jmp cli                                                           ; 878e: 4c f6 81    L..
+    jmp cli_loop                                                      ; 878e: 4c f6 81    L..
 
 ; &8791 referenced 1 time by &8770
 .c8791
@@ -1621,7 +1621,7 @@ l80f2 = brk_handler_ptr+1
     sty l0511                                                         ; 8941: 8c 11 05    ...
     lda #0                                                            ; 8944: a9 00       ..
     jsr do_osfile_with_block                                          ; 8946: 20 4c 89     L.
-    jmp cli                                                           ; 8949: 4c f6 81    L..
+    jmp cli_loop                                                      ; 8949: 4c f6 81    L..
 
 ; ***************************************************************************************
 ; &894c referenced 3 times by &881d, &884b, &8946
@@ -1792,7 +1792,7 @@ l80f2 = brk_handler_ptr+1
 
 ; &8a4c referenced 1 time by &8a45
 .c8a4c
-    jmp cli                                                           ; 8a4c: 4c f6 81    L..
+    jmp cli_loop                                                      ; 8a4c: 4c f6 81    L..
 
 ; &8a4f referenced 2 times by &82c0, &834e
 .sub_c8a4f
@@ -2544,7 +2544,7 @@ l80f2 = brk_handler_ptr+1
 ; &8e5d referenced 2 times by &8e52, &8e56
 .c8e5d
     jsr sub_c89e5                                                     ; 8e5d: 20 e5 89     ..
-    jmp cli                                                           ; 8e60: 4c f6 81    L..
+    jmp cli_loop                                                      ; 8e60: 4c f6 81    L..
 
 ; ***************************************************************************************
 ; &8e63 referenced 2 times by &846b, &887a
@@ -2681,7 +2681,7 @@ l80f2 = brk_handler_ptr+1
     jsr acknowledge_escape                                            ; 8f1d: 20 6e a7     n.
     jsr sub_c902c                                                     ; 8f20: 20 2c 90     ,.
     jsr osnewl                                                        ; 8f23: 20 e7 ff     ..            ; Write newline (characters 10 and 13)
-    jmp cli                                                           ; 8f26: 4c f6 81    L..
+    jmp cli_loop                                                      ; 8f26: 4c f6 81    L..
 
 ; &8f29 referenced 1 time by &8f10
 .c8f29
@@ -4965,12 +4965,13 @@ l94b2 = default_printer_driver_ptr+1
     clc                                                               ; 9b31: 18          .
     rts                                                               ; 9b32: 60          `
 
+; ***************************************************************************************
 ; &9b33 referenced 2 times by &8238, &829e
-.c9b33
+.run_editor
     jsr enter_editor_mode                                             ; 9b33: 20 9b b0     ..
 ; ***************************************************************************************
 ; &9b36 referenced 5 times by &9bc7, &9bcd, &9c7f, &9d25, &a947
-.run_editor
+.editor_loop
     lda format_mode_flag                                              ; 9b36: a5 4f       .O
     pha                                                               ; 9b38: 48          H
     lda l006e                                                         ; 9b39: a5 6e       .n
@@ -5067,12 +5068,12 @@ l94b2 = default_printer_driver_ptr+1
     bcs c9b96                                                         ; 9bc0: b0 d4       ..
     ldy #0                                                            ; 9bc2: a0 00       ..
     jsr call_through_jumptable                                        ; 9bc4: 20 92 a8     ..
-    jmp run_editor                                                    ; 9bc7: 4c 36 9b    L6.
+    jmp editor_loop                                                   ; 9bc7: 4c 36 9b    L6.
 
 ; &9bca referenced 2 times by &9bd4, &9bdb
 .c9bca
     jsr beep                                                          ; 9bca: 20 e8 ac     ..
-    jmp run_editor                                                    ; 9bcd: 4c 36 9b    L6.
+    jmp editor_loop                                                   ; 9bcd: 4c 36 9b    L6.
 
 ; &9bd0 referenced 1 time by &9baa
 .enter_printable_character
@@ -5188,7 +5189,7 @@ l94b2 = default_printer_driver_ptr+1
     bcs c9c82                                                         ; 9c7d: b0 03       ..
 ; &9c7f referenced 5 times by &9c07, &9c6b, &9c6f, &9c73, &9c78
 .c9c7f
-    jmp run_editor                                                    ; 9c7f: 4c 36 9b    L6.
+    jmp editor_loop                                                   ; 9c7f: 4c 36 9b    L6.
 
 ; &9c82 referenced 1 time by &9c7d
 .c9c82
@@ -5296,7 +5297,7 @@ l94b2 = default_printer_driver_ptr+1
     jsr return_key                                                    ; 9d1e: 20 7b 9d     {.
     lda top_margin                                                    ; 9d21: a5 22       ."
     sta xpos                                                          ; 9d23: 85 40       .@
-    jmp run_editor                                                    ; 9d25: 4c 36 9b    L6.
+    jmp editor_loop                                                   ; 9d25: 4c 36 9b    L6.
 
 ; &9d28 referenced 1 time by &9d0f
 .c9d28
@@ -7316,7 +7317,7 @@ la69b = la69a+1
 ; &a824 referenced 1 time by &a811
 .ca824
     jsr osnewl                                                        ; a824: 20 e7 ff     ..            ; Write newline (characters 10 and 13)
-    jmp cli                                                           ; a827: 4c f6 81    L..
+    jmp cli_loop                                                      ; a827: 4c f6 81    L..
 
 ; ***************************************************************************************
 ; &a82a referenced 2 times by &806d, &810e
@@ -7535,7 +7536,7 @@ la8a5 = ca8a4+1
     ldx #&ff                                                          ; a941: a2 ff       ..
     txs                                                               ; a943: 9a          .
     jsr sub_ca94a                                                     ; a944: 20 4a a9     J.
-    jmp run_editor                                                    ; a947: 4c 36 9b    L6.
+    jmp editor_loop                                                   ; a947: 4c 36 9b    L6.
 
 ; &a94a referenced 2 times by &836b, &a944
 .sub_ca94a
@@ -9685,7 +9686,7 @@ save pydis_start, pydis_end
 ;     area_end_ptr:                         14
 ;     area_end_ptr+0:                       14
 ;     area_end_ptr+1:                       14
-;     cli:                                  14
+;     cli_loop:                             14
 ;     l003c:                                14
 ;     l0042:                                14
 ;     l007d:                                14
@@ -9810,6 +9811,7 @@ save pydis_start, pydis_end
 ;     cab91:                                 5
 ;     cac78:                                 5
 ;     cb05a:                                 5
+;     editor_loop:                           5
 ;     header_text_maybe:                     5
 ;     himem:                                 5
 ;     himem+0:                               5
@@ -9823,7 +9825,6 @@ save pydis_start, pydis_end
 ;     ptr2+1:                                5
 ;     ptr3+1:                                5
 ;     ptr5+1:                                5
-;     run_editor:                            5
 ;     sub_c8df4:                             5
 ;     sub_c8e1f:                             5
 ;     sub_c8e49:                             5
@@ -9918,7 +9919,6 @@ save pydis_start, pydis_end
 ;     document_filename:                     3
 ;     document_initialisation_canary:        3
 ;     draw_prompt_characters:                3
-;     enter_cli_mode:                        3
 ;     expand_line:                           3
 ;     flush_and_read_char:                   3
 ;     footers_enabled_flag:                  3
@@ -9950,6 +9950,7 @@ save pydis_start, pydis_end
 ;     return_76:                             3
 ;     return_8:                              3
 ;     rhs_extra_margin:                      3
+;     run_cli:                               3
 ;     set_text_colour:                       3
 ;     sub_c845e:                             3
 ;     sub_c8535:                             3
@@ -10035,7 +10036,6 @@ save pydis_start, pydis_end
 ;     c9aa5:                                 2
 ;     c9ae9:                                 2
 ;     c9aef:                                 2
-;     c9b33:                                 2
 ;     c9b6a:                                 2
 ;     c9b84:                                 2
 ;     c9b96:                                 2
@@ -10174,6 +10174,7 @@ save pydis_start, pydis_end
 ;     return_71:                             2
 ;     return_83:                             2
 ;     return_85:                             2
+;     run_editor:                            2
 ;     setup_CRTC_10_write:                   2
 ;     sub_c8310:                             2
 ;     sub_c8361:                             2
