@@ -82,7 +82,7 @@ hscroll_pos: .fill 1
 l0072: .fill 1
 l0073: .fill 1
 l0074: .fill 1
-l0075: .fill 1
+flags_need_redrawing_flag: .fill 1
 l0076: .fill 1
 ypos: .fill 1
 print_xpos: .fill 1
@@ -313,7 +313,7 @@ c8263:
 
 c826e:
     lda input_buffer_ptr+1
-    ldy #4
+    ldy #2
     jsr call_through_jumptable
     jmp run_cli
 
@@ -327,7 +327,7 @@ search_cmd:
     jsr sub_c8c7c
     jsr c8b7b
     bne c82fa
-    jsr cabcb
+    jsr move_cursor_to_address
     jmp run_editor
 
 ; ***************************************************************************************
@@ -345,7 +345,7 @@ loop_c82b3:
     bne c82b9
     inc ptr3+1
 c82b9:
-    jsr cabcb
+    jsr move_cursor_to_address
     lda #0
     sta print_xpos
     jsr sub_c8a4f
@@ -388,7 +388,7 @@ replace_cmd:
     beq c82e7
     jsr c8b7b
     bne c82fa
-    jsr cabcb
+    jsr move_cursor_to_address
     jsr enter_editor_mode
 c832d:
     jsr sub_c8361
@@ -413,7 +413,7 @@ c8349:
 c8356:
     jsr c8b7b
     bne return_2
-    jsr cabcb
+    jsr move_cursor_to_address
     jmp c832d
 
 sub_c8361:
@@ -467,7 +467,7 @@ c83a3:
     bne c83ca
     jsr sub_c8310
     beq c83da
-    jsr sub_c8c63
+    jsr to_uppercase
     sta l0082
     ldx #0xfe
 loop_c83b8:
@@ -631,7 +631,7 @@ more_cmd:
     jsr parse_marks_from_command
     lda area_start_ptr
     ldy area_start_ptr+1
-    jsr cabcb
+    jsr move_cursor_to_address
     jsr sub_c8d48
     bne c84ab
     ldy #0
@@ -723,7 +723,7 @@ read_cmd:
     ldy area_start_ptr+1
     sta tmp4
     sty tmp5
-    jsr cabcb
+    jsr move_cursor_to_address
     lda tmp4
     ldy tmp5
     jsr sub_c8d9a
@@ -953,7 +953,7 @@ format_cmd:
     beq c878b
     lda area_start_ptr
     ldy area_start_ptr+1
-    jsr cabcb
+    jsr move_cursor_to_address
     jsr sub_caf5f
     lda #0x10
     jsr wipe_buffer
@@ -1665,7 +1665,7 @@ return_13:
 sub_c8c5f:
     bit folding_flag
     bmi return_14
-sub_c8c63:
+to_uppercase:
     jsr is_uppercase
     bcs return_14
     and #0xdf
@@ -3471,7 +3471,7 @@ return_45:
 ; ***************************************************************************************
 execute_formatting_command:
     txa
-    ldy #2
+    ldy #0
     ldx #0
     stx l0030
     jsr call_through_jumptable
@@ -3507,7 +3507,7 @@ c9783:
 c9788:
     iny
     lda (tmp8),y
-    jsr sub_c8c63
+    jsr to_uppercase
     inx
     cmp l97b0,x
     beq c9788
@@ -4153,7 +4153,7 @@ c9b86:
     pla
     cmp format_mode_flag
     beq c9b8f
-    inc l0075
+    inc flags_need_redrawing_flag
 c9b8f:
     lda #0
     sta cursor_moved_flag
@@ -4172,26 +4172,20 @@ c9b9f:
     cmp #0x7f
     bcc enter_printable_character
 enter_nonprintable_character:
-    ldy #0
-loop_c9bae:
-    lda non_function_key_table,y
-    bmi c9b96
-    iny
-    cmp l0038
-    bne loop_c9bae
     tya
-    adc #0x86
-c9bbb:
-    sec
-    sbc #0x88
-    cmp #0x34 ; '4'
+    ldx #<non_function_key_table
+    ldy #>non_function_key_table
+    jsr look_up_address_in_table
     bcs c9b96
-    ldy #0
-    jsr call_through_jumptable
+    jsr jsr_tmp6
     jmp editor_loop
+    
+jsr_tmp6:
+    jmp (tmp6)
 
 c9bca:
     jsr beep
+c9bbb:
     jmp editor_loop
 
 enter_printable_character:
@@ -4871,27 +4865,72 @@ return_58:
 ; ***************************************************************************************
 sf7_set_marker_key:
     jsr ca93c
-    jsr sub_cacd7
+    jsr prompt_for_marker
     bcs return_58
-    txa
-    adc #0x53 ; 'S'
-    tax
-    jsr sub_cad47
+set_marker:
+    jsr set_marker_to_here
     jmp ca035
+
+set_marker_1:
+    lda #'1'
+    .byte 0x2c          ; skip next two bytes
+set_marker_2:
+    lda #'2'
+    .byte 0x2c          ; skip next two bytes
+set_marker_3:
+    lda #'3'
+    .byte 0x2c          ; skip next two bytes
+set_marker_4:
+    lda #'4'
+    .byte 0x2c          ; skip next two bytes
+set_marker_5:
+    lda #'5'
+    .byte 0x2c          ; skip next two bytes
+set_marker_6:
+    lda #'6'
+    pha
+    jsr ca93c
+    pla
+    jsr lookup_marker
+    jmp set_marker
 
 ; ***************************************************************************************
 sf6_go_to_marker_key:
     jsr ca93c
-    jsr sub_cacd7
+    jsr prompt_for_marker
     bcs return_58
     beq return_58
+go_to_marker:
     lda markers_array,x
     ldy markers_array+1,x
-    jsr cabcb
+    jsr move_cursor_to_address
 ca035:
     lda #1
     sta l0073
     jmp ca684
+
+go_to_marker_1:
+    lda #'1'
+    .byte 0x2c          ; skip next two bytes
+go_to_marker_2:
+    lda #'2'
+    .byte 0x2c          ; skip next two bytes
+go_to_marker_3:
+    lda #'3'
+    .byte 0x2c          ; skip next two bytes
+go_to_marker_4:
+    lda #'4'
+    .byte 0x2c          ; skip next two bytes
+go_to_marker_5:
+    lda #'5'
+    .byte 0x2c          ; skip next two bytes
+go_to_marker_6:
+    lda #'6'
+    pha
+    jsr ca93c
+    pla
+    jsr lookup_marker
+    jmp go_to_marker
 
 ; ***************************************************************************************
 f0_format_block_key:
@@ -5032,7 +5071,7 @@ sf3_delete_to_char_key:
     ldx #0x43 ; 'C'
     ldy #0x48 ; 'H'
     jsr draw_prompt_characters
-    inc l0075
+    inc flags_need_redrawing_flag
     jsr read_char
     cmp #9
     beq ca12a
@@ -5091,7 +5130,7 @@ cf2_format_mode_key:
 ca15e:
     eor #1
     sta format_mode_flag
-    inc l0075
+    inc flags_need_redrawing_flag
     rts
 
 ; ***************************************************************************************
@@ -5099,7 +5138,7 @@ cf3_justify_mode_key:
     lda justifying_flag
     eor #0xff
     sta justifying_flag
-    inc l0075
+    inc flags_need_redrawing_flag
     rts
 
 ; ***************************************************************************************
@@ -5107,7 +5146,7 @@ cf4_insert_mode_key:
     lda insert_mode_flag
     eor #0xff
     sta insert_mode_flag
-    inc l0075
+    inc flags_need_redrawing_flag
 return_60:
     rts
 
@@ -5119,7 +5158,7 @@ cf0_delete_block_key:
     bcs ca1c9
     lda area_start_ptr
     ldy area_start_ptr+1
-    jsr cabcb
+    jsr move_cursor_to_address
     jsr ca741
     jsr sub_c89d3
     jsr cb05a
@@ -5139,7 +5178,7 @@ sf0_move_block_key:
     jsr cb05a
     lda doc_ptr1+0
     ldy doc_ptr1+1
-    jsr cabcb
+    jsr move_cursor_to_address
     jmp clear_marks_1_2
 
 ; ***************************************************************************************
@@ -5150,7 +5189,7 @@ f11_copy_key:
     jsr sub_ca1cc
     lda doc_ptr1+0
     ldy doc_ptr1+1
-    jmp cabcb
+    jmp move_cursor_to_address
 
 ca1c9:
     jmp beep
@@ -5174,7 +5213,7 @@ ca1e6:
     lda area_start_ptr
     ldy area_start_ptr+1
 ca1ea:
-    jsr cabcb
+    jsr move_cursor_to_address
     lda area_end_ptr
     sec
     sbc area_start_ptr
@@ -5251,7 +5290,7 @@ cf1_next_match_key:
     jsr ca93c
     jsr c8b7b
     bne ca273
-    jmp cabcb
+    jmp move_cursor_to_address
 
 ca273:
     jmp esc_key
@@ -5482,7 +5521,7 @@ ca3e7:
     ldy current_format_line_ptr+1
     jsr sub_ca486
 ca3ff:
-    lda l0075
+    lda flags_need_redrawing_flag
     beq ca406
     jsr sub_ca651
 ca406:
@@ -5700,29 +5739,29 @@ set_normal_text_if_not_mode_7:
     pha
     txa
     pha
-    ldx #7
-    jsr set_text_colour
-    ldx #0x80
-    bne ca587                                                         ; ALWAYS branch
+    tya
+    pha
+    ldy #SCREEN_SETSTYLE
+    lda #0
+    jsr SCREEN
+    jmp 1f
 
 ; ***************************************************************************************
 set_inverted_text_if_not_mode_7:
     pha
     txa
     pha
-    ldx #0
-    jsr set_text_colour
-    ldx #0x87
-ca587:
-    jsr set_text_colour
+    tya
+    pha
+    ldy #SCREEN_SETSTYLE
+    lda #STYLE_REVERSE
+    jsr SCREEN
+1:
+    pla
+    tay
     pla
     tax
-ca58c:
     pla
-    rts
-
-; ***************************************************************************************
-set_text_colour:
     rts
 
 sub_ca597:
@@ -5859,7 +5898,7 @@ display_status_word:
     jsr sub_ca486
 sub_ca651:
     lda #0
-    sta l0075
+    sta flags_need_redrawing_flag
     jsr home_cursor
     ldx #0x46 ; 'F'
     lda format_mode_flag
@@ -5953,7 +5992,7 @@ ca6c2:
     ldx #0
 loop_ca6c4:
     lda tmp9
-    cmp lb145,y
+    cmp decimal_table+1,y
     bcc ca6e5
     bne ca6d4
     lda tmp8
@@ -5964,7 +6003,7 @@ ca6d4:
     sbc decimal_table,y
     sta tmp8
     lda tmp9
-    sbc lb145,y
+    sbc decimal_table+1,y
     sta tmp9
     inx
     bne loop_ca6c4
@@ -6074,10 +6113,6 @@ clear_screen:
     jmp SCREEN
 
 ; ***************************************************************************************
-cursor_off:
-    rts
-
-; ***************************************************************************************
 draw_prompt_characters:
     stx tmp2
     sty tmp3
@@ -6086,26 +6121,23 @@ draw_prompt_characters:
     jsr home_cursor
     jsr set_inverted_text_if_not_mode_7
     lda tmp2
-    jsr oswrch                                                        ; Write character
+    jsr screen_putchar
     lda tmp3
-    jsr oswrch                                                        ; Write character
+    jsr screen_putchar
     jsr set_normal_text_if_not_mode_7
     lda #0x20 ; ' '
-    jsr oswrch                                                        ; Write character 32
+    jsr screen_putchar
     jsr restore_cursor_position
-; ***************************************************************************************
 cursor_on:
+cursor_off:
     rts
 
 ; ***************************************************************************************
 save_cursor_position:
     ldy #SCREEN_GETCURSOR
     jsr SCREEN
-    pha
-    txa
-    tay
-    pla
-    tax
+    sta tmp4
+    stx tmp5
     rts
 
 ; ***************************************************************************************
@@ -6263,6 +6295,35 @@ call_through_jumptable:
     lda (tmp8),y
     sta tmp7
     jmp (tmp6)
+
+; On entry: YX is the address of the table, A is the value
+; On exit, tmp6 is the routine; C if error, !C if success
+zproc look_up_address_in_table
+    stx tmp8
+    sty tmp9
+    sta tmp6
+    ldy #0
+    zloop
+        lda (tmp8), y
+        zbreakif eq
+        cmp tmp6
+        zif eq
+            iny
+            lda (tmp8), y
+            sta tmp6
+            iny
+            lda (tmp8), y
+            sta tmp7
+            clc
+            rts
+        zendif
+        iny
+        iny
+        iny
+    zendloop
+    sec
+    rts
+zendproc
 
 sub_ca8b9:
     lda l006e
@@ -6773,7 +6834,7 @@ sub_cabc4:
 return_72:
     rts
 
-cabcb:
+move_cursor_to_address:
     sta tmp8
     sty tmp9
     lda ptr4
@@ -6942,11 +7003,11 @@ cacad:
     lda tmp5
     sta tmp9
     bne cac7b
-sub_cacd7:
+prompt_for_marker:
     ldx #0x4d ; 'M'
     ldy #0x4b ; 'K'
     jsr draw_prompt_characters
-    inc l0075
+    inc flags_need_redrawing_flag
     jsr read_char
     jsr lookup_marker
     bcc return_74
@@ -7010,8 +7071,8 @@ reset_area_to_marks_1_2:
     sta area_end_ptr
     lda markers_array+1,x
     sta area_end_ptr+1
-    ldx #0x63 ; 'c'
-    jsr sub_cad47
+    ldx #(doc_ptr1-__begin_pointer_array)/2
+    jsr set_marker_to_here
     jsr sanitise_area
     clc
     bne return_76
@@ -7020,7 +7081,7 @@ cad45:
 return_76:
     rts
 
-sub_cad47:
+set_marker_to_here:
     jsr get_line_length
     cpy xpos
     bcc cad5d
@@ -7397,7 +7458,7 @@ caf60:
     ror format_mode_flag
     cmp format_mode_flag
     beq return_80
-    inc l0075
+    inc flags_need_redrawing_flag
 return_80:
     rts
 
@@ -7662,41 +7723,197 @@ loop_cb108:
     sta footer_margin
     jmp c92f0
 
+zproc control_key_to_ascii
+    cmp #0x20
+    zif lt
+        ora #0x40
+    zendif
+    jmp to_uppercase
+zendproc
+
+zproc q_command_key
+    ldx #'^'
+    ldy #'Q'
+    jsr draw_prompt_characters
+    inc flags_need_redrawing_flag
+    jsr read_char
+    jsr control_key_to_ascii
+    ldx #<q_key_table
+    ldy #>q_key_table
+1:
+    jsr look_up_address_in_table
+    zif cc
+        jmp (tmp6)
+    zendif
+    rts
+zendproc
+
+zproc o_command_key
+    ldx #'^'
+    ldy #'O'
+    jsr draw_prompt_characters
+    inc flags_need_redrawing_flag
+    jsr read_char
+    jsr control_key_to_ascii
+    ldx #<o_key_table
+    ldy #>o_key_table
+    jmp 1b
+zendproc
+
+zproc k_command_key
+    ldx #'^'
+    ldy #'K'
+    jsr draw_prompt_characters
+    inc flags_need_redrawing_flag
+    jsr read_char
+    jsr control_key_to_ascii
+    ldx #<k_key_table
+    ldy #>k_key_table
+    jmp 1b
+zendproc
+
 decimal_table:
-lb145 = decimal_table+1
-    .word 0x2710, 0x03e8, 0x64, 0x0a
+    .word 10000, 1000, 100, 10
+
 non_function_key_table:
-    .byte 0x1b, 0x0d, 0x7f, 9, 0xff
+    .byte '['-'@' ; escape
+    .word esc_key
+    .byte 'M'-'@' ; return
+    .word return_key
+    .byte 0x7f ; delete
+    .word delete_key
+    .byte 'I'-'@' ; tab
+    .word tab_key
+    .byte 'E'-'@' ; up
+    .word f15_up_key
+    .byte SCREEN_KEY_UP
+    .word f15_up_key
+    .byte 'S'-'@' ; left
+    .word f12_left_key
+    .byte SCREEN_KEY_LEFT
+    .word f12_left_key
+    .byte 'D'-'@' ; right
+    .word f13_right_key
+    .byte SCREEN_KEY_RIGHT
+    .word f13_right_key
+    .byte 'X'-'@' ; down
+    .word f14_down_key
+    .byte SCREEN_KEY_DOWN
+    .word f14_down_key
+    .byte 'A'-'@' ; word left
+    .word sf12_left_key
+    .byte 'F'-'@' ; word right
+    .word sf13_right_key
+    .byte 'C'-'@' ; page down
+    .word sf14_down_key
+    .byte 'R'-'@' ; page up
+    .word sf15_up_key
+    .byte 'G'-'@' ; delete char
+    .word f9_delete_char_key
+    .byte 'H'-'@' ; insert char
+    .word f8_insert_char_key
+    .byte 'Y'-'@' ; delete line
+    .word f7_delete_line_key
+    .byte 'V'-'@' ; insert on/off
+    .word cf4_insert_mode_key
+    .byte 'N'-'@' ; insert blank line
+    .word f6_insert_line_key
+    .byte 'B'-'@' ; format block
+    .word f0_format_block_key
+    .byte 'T'-'@' ; delete to char
+    .word sf3_delete_to_char_key
+    .byte 'L'-'@' ; next search match
+    .word cf1_next_match_key
+    .byte 'J'-'@' ; join lines
+    .word cf7_join_lines_key
+    .byte 'P'-'@' ; swap case
+    .word sf1_swap_case_key
+    .byte 'O'-'@' ; O-command
+    .word o_command_key
+    .byte 'Q'-'@' ; Q-command
+    .word q_command_key
+    .byte 'K'-'@' ; K-command
+    .word k_command_key
+    .byte 0
+
+q_key_table:
+    .byte 'R'     ; beginning of file
+    .word f1_top_of_text_key
+    .byte 'C'     ; end of file
+    .word f2_bottom_of_text_key
+    .byte 'S'     ; beginning of line
+    .word f4_beginning_of_line_key
+    .byte 'D'     ; end of line
+    .word f5_end_of_line_key
+    .byte 'Y'     ; delete to end of line
+    .word f3_delete_to_eol_key
+    .byte 'J'     ; split lines
+    .word cf6_split_line_key
+    .byte 'M'     ; go to marker
+    .word sf6_go_to_marker_key
+    .byte '1'     ; go to marker
+    .word go_to_marker_1
+    .byte '2'     ; go to marker
+    .word go_to_marker_2
+    .byte '3'     ; go to marker
+    .word go_to_marker_3
+    .byte '4'     ; go to marker
+    .word go_to_marker_4
+    .byte '5'     ; go to marker
+    .word go_to_marker_5
+    .byte '6'     ; go to marker
+    .word go_to_marker_6
+    .byte 0
+
+o_key_table:
+    .byte 'J'     ; justification on/off
+    .word cf3_justify_mode_key
+    .byte 'X'     ; margin release
+    .word sf2_release_margins_key
+    .byte 'C'     ; edit command
+    .word sf8_edit_command_key
+    .byte 'D'     ; delete command
+    .word sf9_delete_command_key
+    .byte 'F'     ; format mode
+    .word cf2_format_mode_key
+    .byte 'M'     ; mark as ruler
+    .word cf8_mark_as_ruler_key
+    .byte 'R'     ; copy ruler
+    .word sf11_copy_key
+    .byte 'S'     ; standard ruler
+    .word cf5_default_ruler_key
+    .byte 'U'     ; highlight 1
+    .word sf4_highlight1_key
+    .byte 'B'     ; highlight 2
+    .word sf5_highlight2_key
+    .byte 0
+
+k_key_table:
+    .byte 'M'     ; set marker
+    .word sf7_set_marker_key
+    .byte 'C'     ; copy block
+    .word f11_copy_key
+    .byte 'V'     ; move block
+    .word sf0_move_block_key
+    .byte 'Y'     ; delete block
+    .word cf0_delete_block_key
+    .byte '1'     ; set marker
+    .word set_marker_1
+    .byte '2'     ; set marker
+    .word set_marker_2
+    .byte '3'     ; set marker
+    .word set_marker_3
+    .byte '4'     ; set marker
+    .word set_marker_4
+    .byte '5'     ; set marker
+    .word set_marker_5
+    .byte '6'     ; set marker
+    .word set_marker_6
+    .byte 0
+    
 jumptable_ptrs:
 lb152 = jumptable_ptrs+1
-    .word jumptable0_editor, jumptable2_format, jumptable4_cli
-jumptable0_editor:
-    .word                  esc_key,             return_key
-    .word               delete_key,                tab_key
-    .word      f0_format_block_key,     f1_top_of_text_key
-    .word    f2_bottom_of_text_key,   f3_delete_to_eol_key
-    .word f4_beginning_of_line_key,     f5_end_of_line_key
-    .word       f6_insert_line_key,     f7_delete_line_key
-    .word       f8_insert_char_key,     f9_delete_char_key
-    .word                return_34,           f11_copy_key
-    .word             f12_left_key,          f13_right_key
-    .word             f14_down_key,             f15_up_key
-    .word       sf0_move_block_key,      sf1_swap_case_key
-    .word  sf2_release_margins_key, sf3_delete_to_char_key
-    .word       sf4_highlight1_key,     sf5_highlight2_key
-    .word     sf6_go_to_marker_key,     sf7_set_marker_key
-    .word     sf8_edit_command_key, sf9_delete_command_key
-    .word                return_34,          sf11_copy_key
-    .word            sf12_left_key,         sf13_right_key
-    .word            sf14_down_key,            sf15_up_key
-    .word     cf0_delete_block_key,     cf1_next_match_key
-    .word      cf2_format_mode_key,   cf3_justify_mode_key
-    .word      cf4_insert_mode_key,  cf5_default_ruler_key
-    .word       cf6_split_line_key,     cf7_join_lines_key
-    .word    cf8_mark_as_ruler_key,              return_34
-    .word                return_34,              return_34
-    .word f4_beginning_of_line_key,     f5_end_of_line_key
-    .word    f2_bottom_of_text_key,     f1_top_of_text_key
+    .word jumptable2_format, jumptable4_cli
 jumptable4_cli:
     .word   quit_cmd,   new_cmd,     format_cmd,   setup_cmd
     .word   read_cmd,  more_cmd,     screen_cmd,  sheets_cmd
@@ -7705,6 +7922,7 @@ jumptable4_cli:
     .word   name_cmd,  mode_cmd,     finish_cmd,   print_cmd
     .word change_cmd, write_cmd,       edit_cmd, replace_cmd
     .word   load_cmd
+
     .ascii "Mark Colton"
     .byte 0
 ; 'QUIT' -> 0, flag=1
