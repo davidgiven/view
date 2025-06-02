@@ -9082,9 +9082,10 @@ lb145 = decimal_table+1
 ; &b151 referenced 1 time by &a894
 .jumptable_ptrs
 lb152 = jumptable_ptrs+1
-    equw jumptable1, jumptable4, jumptable2, jumptable3               ; b151: 59 b1 cf... Y..
+    equw        jumptable0_editor, jumptable2_format, jumptable4_cli  ; b151: 59 b1 cf... Y..
+    equw jumptable6_errorhandling                                     ; b157: f3 b1       ..
 ; &b152 referenced 1 time by &a8a6
-.jumptable1
+.jumptable0_editor
     equw                  esc_key,             return_key             ; b159: 3b 82 7b... ;.{
     equw               delete_key,                tab_key             ; b15d: 00 9e 30... ..0
     equw      f0_format_block_key,     f1_top_of_text_key             ; b161: 3c a0 5e... <.^
@@ -9112,7 +9113,7 @@ lb152 = jumptable_ptrs+1
     equw f4_beginning_of_line_key,     f5_end_of_line_key             ; b1b9: 92 9e 99... ...
     equw    f2_bottom_of_text_key,     f1_top_of_text_key             ; b1bd: 9c a0 5e... ..^
 ; overlapping: asl a                                                  ; b1c1: 0a          .
-.jumptable2
+.jumptable4_cli
     equw   quit_cmd,   new_cmd,     format_cmd,   setup_cmd           ; b1c1: 0a 85 97... ...
     equw   read_cmd,  more_cmd,     screen_cmd,  sheets_cmd           ; b1c9: 58 85 ae... X..
     equw   save_cmd, count_cmd,      field_cmd, printer_cmd           ; b1d1: 06 89 9e... ...
@@ -9121,7 +9122,7 @@ lb152 = jumptable_ptrs+1
     equw change_cmd, write_cmd,       edit_cmd, replace_cmd           ; b1e9: a1 82 1d... ...
     equw   load_cmd                                                   ; b1f1: 77 88       w.
 ; overlapping: sta new_cmd                                            ; b1c2: 85 97       ..
-.jumptable3
+.jumptable6_errorhandling
     equw sub_c8d1b, sub_c8d7f, c84a8                                  ; b1f3: 1b 8d 7f... ...
     equs "Mark Colton"                                                ; b1f9: 4d 61 72... Mar
     equb 0                                                            ; b204: 00          .
@@ -9231,7 +9232,7 @@ lb2a1 = commands_table+1
     equs "PB"                                                         ; b2cc: 50 42       PB
     equb &ff                                                          ; b2ce: ff          .
 ; overlapping: cmp lf894,y                                            ; b2cf: d9 94 f8    ...
-.jumptable4
+.jumptable2_format
     equw ce_fmt_cmd, rj_fmt_cmd, df_fmt_cmd, dh_fmt_cmd, dm_fmt_cmd   ; b2cf: d9 94 f8... ...
     equw  return_34, em_fmt_cmd, pe_fmt_cmd, tm_fmt_cmd, bm_fmt_cmd   ; b2d9: f9 a7 ba... ...
     equw pl_fmt_cmd, ts_fmt_cmd, fo_fmt_cmd, he_fmt_cmd, ht_fmt_cmd   ; b2e3: dc 95 e4... ...

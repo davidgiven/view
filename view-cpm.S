@@ -1789,14 +1789,6 @@ get_byte_from_file:
     stx l0082
     jmp osbget                                                        ; Read a single byte from an open file Y
 
-sub_c8d1b:
-    ldx l0082
-    txs
-    lda #0
-    sta l0082
-    sec
-    rts
-
 sub_c8d24:
     lda page
     ldy page+1
@@ -1855,13 +1847,6 @@ put_byte_to_file:
     tsx
     stx l0084
     jmp osbput                                                        ; Write a single byte A to an open file Y
-
-sub_c8d7f:
-    ldx l0084
-    inx
-    inx
-    txs
-    rts
 
 ; ***************************************************************************************
 ; On Entry:
@@ -7684,8 +7669,8 @@ non_function_key_table:
     .byte 0x1b, 0x0d, 0x7f, 9, 0xff
 jumptable_ptrs:
 lb152 = jumptable_ptrs+1
-    .word jumptable1, jumptable4, jumptable2, jumptable3
-jumptable1:
+    .word jumptable0_editor, jumptable2_format, jumptable4_cli
+jumptable0_editor:
     .word                  esc_key,             return_key
     .word               delete_key,                tab_key
     .word      f0_format_block_key,     f1_top_of_text_key
@@ -7712,8 +7697,7 @@ jumptable1:
     .word                return_34,              return_34
     .word f4_beginning_of_line_key,     f5_end_of_line_key
     .word    f2_bottom_of_text_key,     f1_top_of_text_key
-; overlapping: asl
-jumptable2:
+jumptable4_cli:
     .word   quit_cmd,   new_cmd,     format_cmd,   setup_cmd
     .word   read_cmd,  more_cmd,     screen_cmd,  sheets_cmd
     .word   save_cmd, count_cmd,      field_cmd, printer_cmd
@@ -7721,9 +7705,6 @@ jumptable2:
     .word   name_cmd,  mode_cmd,     finish_cmd,   print_cmd
     .word change_cmd, write_cmd,       edit_cmd, replace_cmd
     .word   load_cmd
-; overlapping: sta new_cmd
-jumptable3:
-    .word sub_c8d1b, sub_c8d7f, c84a8
     .ascii "Mark Colton"
     .byte 0
 ; 'QUIT' -> 0, flag=1
@@ -7829,7 +7810,7 @@ lb2a1 = commands_table+1
     .ascii "PB"
     .byte 0xff
 ; overlapping: cmp lf894,y
-jumptable4:
+jumptable2_format:
     .word ce_fmt_cmd, rj_fmt_cmd, df_fmt_cmd, dh_fmt_cmd, dm_fmt_cmd
     .word  return_34, em_fmt_cmd, pe_fmt_cmd, tm_fmt_cmd, bm_fmt_cmd
     .word pl_fmt_cmd, ts_fmt_cmd, fo_fmt_cmd, he_fmt_cmd, ht_fmt_cmd
