@@ -24,6 +24,13 @@ osfind_close                                = 0
 osword_read_cmos_clock                      = 14
 osword_read_line                            = 0
 
+; File structure
+
+FS_FCB = 0
+FS_BUFFERPTR = FS_FCB + FCB__SIZE
+FS_BUFFER = FS_BUFFERPTR + 1
+FS__SIZE = FS_BUFFER + 128
+
 ; Memory locations
 
 .section .zp, "zax", @nobits
@@ -48,7 +55,7 @@ oshwm: .fill 2
 l0021: .fill 1
 l0030: .fill 1
 l0031: .fill 1
-l0032: .fill 1
+printing_from_file_flag: .fill 1
 l0033: .fill 1
 l0034: .fill 1
 l0038: .fill 1
@@ -164,16 +171,20 @@ current_ruler_buffer            = DATA-0x400+0x05cf
 output_buffer                   = DATA-0x400+0x0654
 header_text_maybe               = DATA-0x400+0x06d8
 footer_text_maybe               = DATA-0x400+0x071a
-filename_buffer               = DATA-0x400+0x075c
+filename_buffer                 = DATA-0x400+0x075c
 output_filename                 = DATA-0x400+0x0770
 printer_driver_name             = DATA-0x400+0x0784
 register_value_array            = DATA-0x400+0x0798
 register_value_l                = DATA-0x400+0x07ae
 register_value_p                = DATA-0x400+0x07b6
-line_lengths                    = DATA-0x400+0x07cc
-input_filename                  = DATA-0x400+0x07ec
 
-DATA:   .fill 0x400
+DATA:   .fill 0x400-20-32
+
+line_lengths:                   .fill 32
+input_filename:                 .fill 20
+
+input_file:                     .fill FS__SIZE
+output_file:                    .fill FS__SIZE
 
 .text
 .global main
@@ -563,8 +574,8 @@ screen_cmd:
 ; ***************************************************************************************
 sheets_cmd:
     lda #0xc0
-    jsr sub_c845e
-    jsr sub_c8ebe
+    jsr start_printing
+    jsr print_document
     jsr stop_printing
     jsr bdos_print_newline
     jmp cli_loop
@@ -572,10 +583,10 @@ sheets_cmd:
 ; ***************************************************************************************
 print_cmd:
     lda #0x80
-    jsr sub_c845e
+    jsr start_printing
 ; ***************************************************************************************
 print_to_screen:
-    jsr sub_c8ebe
+    jsr print_document
     jmp cli_loop
 
 ; ***************************************************************************************
@@ -590,7 +601,12 @@ stop_printing:
 c8459:
     rts
 
-sub_c845e:
+start_printing:
+    jsr print_inline_string
+    .ascii "Sorry, can't print yet\r"
+    .byte 0
+    jmp cli_loop
+
     sta print_flags
     jsr prepare_printer_driver
     lda #3
@@ -637,7 +653,10 @@ more_cmd:
     lda area_start_ptr
     ldy area_start_ptr+1
     jsr move_cursor_to_address
-    jsr sub_c8d48
+
+    ldx #<output_file
+    ldy #>output_file
+    jsr write_area_to_file_yx
     bne c84ab
     ldy #0
     ldx l003a
@@ -666,7 +685,10 @@ finish_cmd:
     jsr sub_c8e54
 loop_c84ee:
     jsr reset_area_to_entire_document
-    jsr sub_c8d48
+    
+    ldx #<output_file
+    ldy #>output_file
+    jsr write_area_to_file_yx
     bne c84ab
     jsr sub_c89d3
     jsr cb07a
@@ -684,22 +706,51 @@ c850d:
     lda #0
     sta l0041
     sta file_edit_flags
-    ldx #edit_input_file_handle                                       ; X=address of ZP var containing handle
-    jsr close_file_indirect
-    ldx #edit_output_file_handle                                      ; X=address of ZP var containing handle
-    jmp close_file_indirect
+
+    ldx #<output_file
+    ldy #>output_file
+    jsr close_file
+    jmp cli_loop
 
 ; ***************************************************************************************
+save_cmd:
 write_cmd:
-    jsr parse_filename_from_command
+    jsr parse_optional_filename_from_command
+    zif eq
+        bit file_edit_flags
+        zif vc
+            jmp bad_filename_error
+        zendif
+
+        ldx #0
+        zrepeat
+            lda input_filename,x
+            sta filename_buffer,x
+            inx
+            cmp #0x0d
+        zuntil eq
+    zendif
     jsr parse_marks_from_command
     jsr sanitise_area
     beq return_6
-    lda #0x80
-    jsr open_file
-    sta rw_file_handle
-    jsr sub_c8d51
-    jmp c85b0
+
+    ldx #<input_buffer
+    ldy #>input_buffer
+    jsr open_output_file
+
+    ldx #<input_buffer
+    ldy #>input_buffer
+    jsr write_area_to_file_yx
+
+    ldx #<input_buffer
+    ldy #>input_buffer
+    lda #0
+    jsr put_byte_to_file
+
+    ldx #<input_buffer
+    ldy #>input_buffer
+    jsr close_file
+    jmp cli_loop
 
 sub_c8535:
     jsr compute_bytes_free
@@ -754,8 +805,14 @@ c8598:
     sbc tmp1
     sta tmp7
     jsr sub_ca9b0
-c85b0:
-    jsr close_file
+close_rw_file_and_return_to_cli:
+    ldy #BDOS_CLOSE_FILE
+    lda #<input_buffer
+    ldx #>input_buffer
+    jsr BDOS
+    zif cs
+        jmp file_error
+    zendif
     jmp cli_loop
 
 ; ***************************************************************************************
@@ -1208,92 +1265,18 @@ return_9:
     rts
 
 ; ***************************************************************************************
-save_cmd:
-    jsr parse_optional_filename_from_command
-    zif eq
-        bne c891f
-        bit file_edit_flags
-        zif vc
-            jmp bad_filename_error
-        zendif
-
-        ldx #0
-        zrepeat
-            lda input_filename,x
-            sta filename_buffer,x
-            inx
-            cmp #0x0d
-        zuntil eq
-    zendif
-
-c891f:
-    jsr zero_terminate_filename_buffer
-    jsr convert_filename_to_fcb
-    zif cs
-        jmp bad_filename_error
-    zendif
-
-    ldy #BDOS_DELETE_FILE
-    lda #<input_buffer
-    ldx #>input_buffer
-    jsr BDOS
-
-    jsr reset_fcb
-    ldy #BDOS_CREATE_FILE
-    lda #<input_buffer
-    ldx #>input_buffer
-    jsr BDOS
-    bcs file_error
-
-    lda page
-    sta tmp6
-    lda page+1
-    sta tmp7
-    zrepeat
-        ldy #BDOS_SET_DMA_ADDRESS
-        lda tmp6
-        ldx tmp7
-        jsr BDOS
-
-        ldy #BDOS_WRITE_SEQUENTIAL
-        lda #<input_buffer
-        ldx #>input_buffer
-        jsr BDOS
-        bcs file_error
-
-        lda tmp6
-        eor #0x80
-        sta tmp6
-        zif pl
-            inc tmp7
-        zendif
-
-        lda top+1
-        cmp tmp6+1
-        zif eq
-            lda top+0
-            cmp tmp6+0
-        zendif
-    zuntil lt
-
-    ldy #BDOS_CLOSE_FILE
-    lda #<input_buffer
-    ldx #>input_buffer
-    jsr BDOS
-    bcs file_error
-
-    jmp cli_loop
-
-file_error:
+zproc file_error
     jsr print_inline_string
     .ascii "File error"
     .byte 0
     jmp cli_loop
+zendproc
 
 zproc convert_filename_to_fcb
-    ldy #BDOS_SET_DMA_ADDRESS
     lda #<input_buffer
     ldx #>input_buffer
+zproc convert_filename_to_fcb_xa
+    ldy #BDOS_SET_DMA_ADDRESS
     jsr BDOS
     ldy #BDOS_PARSEFILENAME
     lda #<filename_buffer
@@ -1923,59 +1906,36 @@ c8d39:
     plp
     rts
 
-sub_c8d48:
-    jsr sanitise_area
-    beq return_17
-    lda edit_output_file_handle
-    sta rw_file_handle
-sub_c8d51:
+; Does not include trailing zero!
+write_area_to_file_yx:
+    stx tmp4
+    sty tmp5
+
     lda area_start_ptr
     sta tmp8
     lda area_start_ptr+1
     sta tmp9
-    lda #1
-    sta error_handling_mode
-c8d5d:
-    ldy #0
-    lda (tmp8),y
-    ldy rw_file_handle
-    jsr put_byte_to_file
-    inc tmp8
-    bne c8d6c
-    inc tmp9
-c8d6c:
-    lda tmp9
-    cmp area_end_ptr+1
-    bne c8d5d
-    lda tmp8
-    cmp area_end_ptr
-    bne c8d5d
+
+    zrepeat
+        ldy #0
+        lda (tmp8),y
+        ldx tmp4
+        ldy tmp5
+        jsr put_byte_to_file
+        inc tmp8
+        zif eq
+            inc tmp9
+        zendif
+
+        lda tmp9
+        cmp area_end_ptr+1
+        zif eq
+            lda tmp8
+            cmp area_end_ptr
+        zendif
+    zuntil eq
 return_17:
     rts
-
-; ***************************************************************************************
-put_byte_to_file:
-    tsx
-    stx l0084
-    jmp osbput                                                        ; Write a single byte A to an open file Y
-
-; ***************************************************************************************
-; On Entry:
-;     X: address of ZP var containing handle
-; ***************************************************************************************
-close_file_indirect:
-    lda 0,x
-    beq return_17
-    sta rw_file_handle
-    lda #0
-    sta 0,x
-; ***************************************************************************************
-close_file:
-    lda #0xff
-    sta error_handling_mode
-    lda #osfind_close
-    ldy rw_file_handle
-    jmp osfind                                                        ; Close one or all files
 
 sub_c8d9a:
     ldx #0
@@ -2051,7 +2011,8 @@ loop_c8dfb:
 bad_filename_error:
     jsr print_inline_string
     .ascii "Bad filename"
-    .byte 0xff
+    .byte 0
+    jmp cli_loop
 
 parse_filename_from_command:
     jsr parse_optional_filename_from_command
@@ -2110,7 +2071,7 @@ display_no_text:
 
     rts
 
-sub_c8ebe:
+print_document:
     jsr check_not_continuous_editing
     jsr sub_c8535
     jsr sub_cb104
@@ -2134,7 +2095,7 @@ c8edb:
     lda #0
     sta l0031
     sta print_xpos
-    sta l0032
+    sta printing_from_file_flag
     tay                                                               ; Y=0x00
     sta (last_macro_ptr),y
     lda #<(current_ruler_buffer)
@@ -2144,14 +2105,13 @@ c8edb:
     jsr find_margins_of_current_ruler_buffer
     jsr sub_c8e33
     bne c8f0d
-    inc l0032
+    inc printing_from_file_flag
     lda page
     sta ptr6
     lda page+1
     sta ptr6+1
     bne c8f30
 c8f0a:
-    jsr sub_c902c
 c8f0d:
     jsr parse_optional_filename_from_command
     bne c8f29
@@ -2164,7 +2124,6 @@ return_23:
 
 c8f1a:
     jsr stop_printing
-    jsr sub_c902c
     jsr bdos_print_newline
     jmp cli_loop
 
@@ -2251,7 +2210,7 @@ get_next_macro_in_linked_list:
 
 c8fb9:
     lda macro_executing_flag
-    bne nested_subroutine_error
+    bne nested_macro_error
     lda tmp6
     clc
     adc #4
@@ -2300,18 +2259,13 @@ c900e:
     jmp c8f30
 
 ; ***************************************************************************************
-nested_subroutine_error:
+nested_macro_error:
     jsr stop_printing
     jsr print_inline_string
     .ascii "Nested macro call"
     .byte 0
 
     jmp c8f1a
-
-sub_c902c:
-    lda l0032
-    bne return_24
-    jmp close_file
 
 return_24:
     rts
@@ -2654,7 +2608,7 @@ c923c:
     rts
 
 sub_c9241:
-    lda l0032
+    lda printing_from_file_flag
     beq c9260
     ldy #0
 loop_c9247:
@@ -2737,7 +2691,7 @@ c92cc:
 
 c92cf:
     lda #0xc0
-    jsr sub_c845e
+    jsr start_printing
 c92d4:
     lda l0038
     beq c92f0
@@ -3446,7 +3400,6 @@ c96a2:
     bne c96b8
     cpx #0x97
     bcs c96b8
-    jsr sub_c902c
     jmp display_not_enough_memory
 
 c96b8:
@@ -8251,3 +8204,118 @@ zproc readline
     clc
     rts
 zendproc
+
+; YX = pointer to file structure
+; Input filename is in filename_buffer
+; Uses tmp6/tmp7.
+zproc open_output_file
+    stx tmp6
+    sty tmp7
+    jsr zero_terminate_filename_buffer
+    
+    ; Parse the filename.
+
+    lda tmp6
+    ldx tmp7
+    jsr convert_filename_to_fcb_xa
+    zif cs
+        jmp bad_filename_error
+    zendif
+
+    ; Delete any existing file.
+
+    ldy #BDOS_DELETE_FILE
+    lda tmp6
+    ldx tmp7
+    jsr BDOS
+
+    ; Create a new file.
+
+    jsr reset_fcb
+    ldy #BDOS_CREATE_FILE
+    lda tmp6
+    ldx tmp7
+    jsr bdos_and_file_error
+
+    ldy #FS_BUFFERPTR
+    lda #FS_BUFFER
+    sta (tmp6), y
+    rts
+zendproc
+
+zproc bdos_and_file_error
+    jsr BDOS
+    zif cs
+        jmp file_error
+    zendif
+    rts
+zendproc
+
+; FS pointer in tmp6/tmp7.
+zproc flush_file
+    clc
+    lda tmp6
+    adc #FS_BUFFER
+    pha
+    lda tmp7
+    adc #0
+    tax
+    pla
+    ldy #BDOS_SET_DMA_ADDRESS
+    jsr BDOS
+
+    ldy #BDOS_WRITE_SEQUENTIAL
+    lda tmp6
+    ldx tmp7
+    jsr bdos_and_file_error
+
+    ldy #FS_BUFFER
+    lda #0
+    zrepeat
+        sta (tmp6), y
+        iny
+        cpy #FS_BUFFER+128
+    zuntil eq
+    rts
+zendproc
+
+zproc close_file
+    stx tmp6
+    sty tmp7
+
+    ldy #FS_BUFFERPTR
+    lda (tmp6), y
+    cmp #FS_BUFFER
+    zif ne
+        jsr flush_file
+    zendif
+
+    ldy #BDOS_CLOSE_FILE
+    lda tmp6
+    ldx tmp7
+    jmp bdos_and_file_error
+zendproc
+
+zproc put_byte_to_file
+    stx tmp6
+    sty tmp7
+
+    pha
+    ldy #FS_BUFFERPTR
+    lda (tmp6), y
+    tay
+    pla
+    sta (tmp6), y
+
+    iny
+    cpy #FS_BUFFER + 128
+    zif eq
+        jsr flush_file
+        ldy #FS_BUFFER
+    zendif
+    tya
+    ldy #FS_BUFFERPTR
+    sta (tmp6), y
+    rts
+zendproc
+

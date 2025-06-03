@@ -58,7 +58,7 @@ two_sided_flag                  = &002e
 left_margin                     = &002f
 l0030                           = &0030
 l0031                           = &0031
-l0032                           = &0032
+printing_from_file_flag         = &0032
 l0033                           = &0033
 l0034                           = &0034
 screen_height                   = &0035
@@ -857,8 +857,8 @@ l80f2 = brk_handler_ptr+1
 ; ***************************************************************************************
 .sheets_cmd
     lda #&c0                                                          ; 842f: a9 c0       ..
-    jsr sub_c845e                                                     ; 8431: 20 5e 84     ^.
-    jsr sub_c8ebe                                                     ; 8434: 20 be 8e     ..
+    jsr start_printing                                                ; 8431: 20 5e 84     ^.
+    jsr print_document                                                ; 8434: 20 be 8e     ..
     jsr stop_printing                                                 ; 8437: 20 4b 84     K.
     jsr osnewl                                                        ; 843a: 20 e7 ff     ..            ; Write newline (characters 10 and 13)
     jmp cli_loop                                                      ; 843d: 4c f6 81    L..
@@ -866,11 +866,11 @@ l80f2 = brk_handler_ptr+1
 ; ***************************************************************************************
 .print_cmd
     lda #&80                                                          ; 8440: a9 80       ..
-    jsr sub_c845e                                                     ; 8442: 20 5e 84     ^.
+    jsr start_printing                                                ; 8442: 20 5e 84     ^.
 ; ***************************************************************************************
 ; &8445 referenced 1 time by &842c
 .print_to_screen
-    jsr sub_c8ebe                                                     ; 8445: 20 be 8e     ..
+    jsr print_document                                                ; 8445: 20 be 8e     ..
     jmp cli_loop                                                      ; 8448: 4c f6 81    L..
 
 ; ***************************************************************************************
@@ -888,8 +888,9 @@ l80f2 = brk_handler_ptr+1
     lda #&0f                                                          ; 8459: a9 0f       ..
     jmp oswrch                                                        ; 845b: 4c ee ff    L..            ; Write character 15
 
+; ***************************************************************************************
 ; &845e referenced 3 times by &8431, &8442, &92d1
-.sub_c845e
+.start_printing
     sta __end_pointer_array                                           ; 845e: 85 69       .i
     jsr prepare_printer_driver                                        ; 8460: 20 8b 94     ..
     lda #3                                                            ; 8463: a9 03       ..
@@ -941,7 +942,7 @@ l80f2 = brk_handler_ptr+1
     lda area_start_ptr                                                ; 84b4: a5 5f       ._
     ldy area_start_ptr+1                                              ; 84b6: a4 60       .`
     jsr move_cursor_to_address                                        ; 84b8: 20 cb ab     ..
-    jsr sub_c8d48                                                     ; 84bb: 20 48 8d     H.
+    jsr write_area_to_output_fh                                       ; 84bb: 20 48 8d     H.
     bne c84ab                                                         ; 84be: d0 eb       ..
     ldy #0                                                            ; 84c0: a0 00       ..
     ldx l003a                                                         ; 84c2: a6 3a       .:
@@ -973,7 +974,7 @@ l80f2 = brk_handler_ptr+1
 ; &84ee referenced 1 time by &8508
 .loop_c84ee
     jsr reset_area_to_entire_document                                 ; 84ee: 20 fd ac     ..
-    jsr sub_c8d48                                                     ; 84f1: 20 48 8d     H.
+    jsr write_area_to_output_fh                                       ; 84f1: 20 48 8d     H.
     bne c84ab                                                         ; 84f4: d0 b5       ..
     jsr sub_c89d3                                                     ; 84f6: 20 d3 89     ..
     jsr cb07a                                                         ; 84f9: 20 7a b0     z.
@@ -1006,8 +1007,8 @@ l80f2 = brk_handler_ptr+1
     lda #&80                                                          ; 8528: a9 80       ..
     jsr open_file                                                     ; 852a: 20 58 88     X.
     sta rw_file_handle                                                ; 852d: 85 4d       .M
-    jsr sub_c8d51                                                     ; 852f: 20 51 8d     Q.
-    jmp c85b0                                                         ; 8532: 4c b0 85    L..
+    jsr write_area_to_rw_fh                                           ; 852f: 20 51 8d     Q.
+    jmp close_rw_file_and_return_to_cli                               ; 8532: 4c b0 85    L..
 
 ; &8535 referenced 3 times by &84d8, &855e, &8ec1
 .sub_c8535
@@ -1068,8 +1069,9 @@ l80f2 = brk_handler_ptr+1
     sbc tmp1                                                          ; 85a9: e5 86       ..
     sta tmp7                                                          ; 85ab: 85 8c       ..
     jsr sub_ca9b0                                                     ; 85ad: 20 b0 a9     ..
+; ***************************************************************************************
 ; &85b0 referenced 1 time by &8532
-.c85b0
+.close_rw_file_and_return_to_cli
     jsr close_file                                                    ; 85b0: 20 8f 8d     ..
     jmp cli_loop                                                      ; 85b3: 4c f6 81    L..
 
@@ -2340,14 +2342,16 @@ l80f2 = brk_handler_ptr+1
     plp                                                               ; 8d46: 28          (
     rts                                                               ; 8d47: 60          `
 
+; ***************************************************************************************
 ; &8d48 referenced 2 times by &84bb, &84f1
-.sub_c8d48
+.write_area_to_output_fh
     jsr sanitise_area                                                 ; 8d48: 20 5d 89     ].
     beq return_17                                                     ; 8d4b: f0 2b       .+
     lda edit_output_file_handle                                       ; 8d4d: a5 6b       .k
     sta rw_file_handle                                                ; 8d4f: 85 4d       .M
+; ***************************************************************************************
 ; &8d51 referenced 1 time by &852f
-.sub_c8d51
+.write_area_to_rw_fh
     lda area_start_ptr                                                ; 8d51: a5 5f       ._
     sta tmp8                                                          ; 8d53: 85 8d       ..
     lda area_start_ptr+1                                              ; 8d55: a5 60       .`
@@ -2627,8 +2631,9 @@ l80f2 = brk_handler_ptr+1
 
     rts                                                               ; 8ebd: 60          `
 
+; ***************************************************************************************
 ; &8ebe referenced 2 times by &8434, &8445
-.sub_c8ebe
+.print_document
     jsr check_not_continuous_editing                                  ; 8ebe: 20 49 8e     I.
     jsr sub_c8535                                                     ; 8ec1: 20 35 85     5.
     jsr sub_cb104                                                     ; 8ec4: 20 04 b1     ..
@@ -2653,7 +2658,7 @@ l80f2 = brk_handler_ptr+1
     lda #0                                                            ; 8ee3: a9 00       ..
     sta l0031                                                         ; 8ee5: 85 31       .1
     sta print_xpos                                                    ; 8ee7: 85 78       .x
-    sta l0032                                                         ; 8ee9: 85 32       .2
+    sta printing_from_file_flag                                       ; 8ee9: 85 32       .2
     tay                                                               ; 8eeb: a8          .              ; Y=&00
     sta (last_macro_ptr),y                                            ; 8eec: 91 1b       ..
     lda #<(current_ruler_buffer)                                      ; 8eee: a9 cf       ..
@@ -2663,7 +2668,7 @@ l80f2 = brk_handler_ptr+1
     jsr find_margins_of_current_ruler                                 ; 8ef6: 20 a2 ab     ..
     jsr sub_c8e33                                                     ; 8ef9: 20 33 8e     3.
     bne c8f0d                                                         ; 8efc: d0 0f       ..
-    inc l0032                                                         ; 8efe: e6 32       .2
+    inc printing_from_file_flag                                       ; 8efe: e6 32       .2
     lda page                                                          ; 8f00: a5 0b       ..
     sta ptr6                                                          ; 8f02: 85 13       ..
     lda page+1                                                        ; 8f04: a5 0c       ..
@@ -2787,7 +2792,7 @@ l80f2 = brk_handler_ptr+1
 ; &8fb9 referenced 1 time by &8fa7
 .c8fb9
     lda macro_executing_flag                                          ; 8fb9: a5 2d       .-
-    bne nested_subroutine_error                                       ; 8fbb: d0 54       .T
+    bne nested_macro_error                                            ; 8fbb: d0 54       .T
     lda tmp6                                                          ; 8fbd: a5 8b       ..
     clc                                                               ; 8fbf: 18          .
     adc #4                                                            ; 8fc0: 69 04       i.
@@ -2843,7 +2848,7 @@ l80f2 = brk_handler_ptr+1
 
 ; ***************************************************************************************
 ; &9011 referenced 1 time by &8fbb
-.nested_subroutine_error
+.nested_macro_error
     jsr stop_printing                                                 ; 9011: 20 4b 84     K.
     jsr print_inline_string                                           ; 9014: 20 fa a7     ..
     equs "Nested macro call"                                          ; 9017: 4e 65 73... Nes
@@ -2853,7 +2858,7 @@ l80f2 = brk_handler_ptr+1
 
 ; &902c referenced 3 times by &8f0a, &8f20, &96b2
 .sub_c902c
-    lda l0032                                                         ; 902c: a5 32       .2
+    lda printing_from_file_flag                                       ; 902c: a5 32       .2
     bne return_24                                                     ; 902e: d0 03       ..
     jmp close_file                                                    ; 9030: 4c 8f 8d    L..
 
@@ -3247,7 +3252,7 @@ l80f2 = brk_handler_ptr+1
 
 ; &9241 referenced 2 times by &9198, &96c8
 .sub_c9241
-    lda l0032                                                         ; 9241: a5 32       .2
+    lda printing_from_file_flag                                       ; 9241: a5 32       .2
     beq c9260                                                         ; 9243: f0 1b       ..
     ldy #0                                                            ; 9245: a0 00       ..
 ; &9247 referenced 1 time by &925c
@@ -3342,7 +3347,7 @@ l80f2 = brk_handler_ptr+1
 ; &92cf referenced 1 time by &92ca
 .c92cf
     lda #&c0                                                          ; 92cf: a9 c0       ..
-    jsr sub_c845e                                                     ; 92d1: 20 5e 84     ^.
+    jsr start_printing                                                ; 92d1: 20 5e 84     ^.
 ; &92d4 referenced 2 times by &929f, &92c6
 .c92d4
     lda l0038                                                         ; 92d4: a5 38       .8
@@ -9888,13 +9893,13 @@ save pydis_start, pydis_end
 ;     folding_flag:                           4
 ;     footer_margin:                          4
 ;     header_margin:                          4
-;     l0032:                                  4
 ;     l050a:                                  4
 ;     l050b:                                  4
 ;     line_spacing:                           4
 ;     lookup_marker:                          4
 ;     page_length:                            4
 ;     parse_boolean_from_fmt_cmd:             4
+;     printing_from_file_flag:                4
 ;     read_char:                              4
 ;     render_number_to_screen:                4
 ;     return_22:                              4
@@ -9988,7 +9993,7 @@ save pydis_start, pydis_end
 ;     rhs_extra_margin:                       3
 ;     run_cli:                                3
 ;     set_text_colour:                        3
-;     sub_c845e:                              3
+;     start_printing:                         3
 ;     sub_c8535:                              3
 ;     sub_c8e54:                              3
 ;     sub_c902c:                              3
@@ -10187,6 +10192,7 @@ save pydis_start, pydis_end
 ;     output_filename:                        2
 ;     parse_mark_from_command:                2
 ;     prepare_printer_driver:                 2
+;     print_document:                         2
 ;     print_newline:                          2
 ;     print_x_words_of_help:                  2
 ;     printer_driver_ptr+1:                   2
@@ -10226,8 +10232,6 @@ save pydis_start, pydis_end
 ;     sub_c8c7c:                              2
 ;     sub_c8cfe:                              2
 ;     sub_c8d24:                              2
-;     sub_c8d48:                              2
-;     sub_c8ebe:                              2
 ;     sub_c9173:                              2
 ;     sub_c9228:                              2
 ;     sub_c9241:                              2
@@ -10255,6 +10259,7 @@ save pydis_start, pydis_end
 ;     to_uppercase:                           2
 ;     unpack_line_into_buffer:                2
 ;     word_command_str:                       2
+;     write_area_to_output_fh:                2
 ;     write_hex_to_output_buffer:             2
 ;     add_macro_to_linked_list:               1
 ;     brk_handler_ptr:                        1
@@ -10296,7 +10301,6 @@ save pydis_start, pydis_end
 ;     c84e8:                                  1
 ;     c8584:                                  1
 ;     c8598:                                  1
-;     c85b0:                                  1
 ;     c85dc:                                  1
 ;     c8608:                                  1
 ;     c8617:                                  1
@@ -10645,6 +10649,7 @@ save pydis_start, pydis_end
 ;     cb38b:                                  1
 ;     cb393:                                  1
 ;     claim_private_workspace_handler:        1
+;     close_rw_file_and_return_to_cli:        1
 ;     create_go_command:                      1
 ;     default_printer_driver_ptr:             1
 ;     detect_mode_7:                          1
@@ -10788,7 +10793,7 @@ save pydis_start, pydis_end
 ;     loop_cb0e9:                             1
 ;     loop_cb108:                             1
 ;     loop_cb32f:                             1
-;     nested_subroutine_error:                1
+;     nested_macro_error:                     1
 ;     non_function_key_table:                 1
 ;     osargs:                                 1
 ;     osbget:                                 1
@@ -10872,7 +10877,6 @@ save pydis_start, pydis_end
 ;     sub_c8c53:                              1
 ;     sub_c8d00:                              1
 ;     sub_c8d28:                              1
-;     sub_c8d51:                              1
 ;     sub_c8d9a:                              1
 ;     sub_c8da2:                              1
 ;     sub_c8e2d:                              1
@@ -10896,6 +10900,7 @@ save pydis_start, pydis_end
 ;     sub_caedd:                              1
 ;     sub_cb104:                              1
 ;     sub_cb31b:                              1
+;     write_area_to_rw_fh:                    1
 
 ; Stats:
 ;     Total size (Code + Data) = 16384 bytes
