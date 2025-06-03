@@ -5430,9 +5430,8 @@ loop_ca2c7:
     bne loop_ca2c7
     ldy #SCREEN_SCROLLDOWN
     jsr SCREEN
-    ldx #0
-    ldy #0
-    jsr set_cursor_position
+    jsr home_cursor
+    ldy #1
     jmp ca351
 
 ca2dc:
