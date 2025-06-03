@@ -2915,7 +2915,7 @@ c93f2:
     lda (tmp2),y
     bmi c93e6
     iny
-    jsr render_date_time_to_output_buffer
+    jsr render_register
     jmp c93ce
 
 sub_c93fd:
@@ -3198,7 +3198,7 @@ c955e:
     cmp #0x0d
     beq c953e
     iny
-    jsr render_date_time_to_output_buffer
+    jsr render_register
     jmp c9537
 
 ; ***************************************************************************************
@@ -7212,70 +7212,21 @@ render_register:
     ldy #0
     sty tmp8
     sty tmp9
-    bcs cada2
-    bit lada6
-    cmp #0x44 ; 'D'
-    beq cada3
-    cmp #0x54 ; 'T'
-    beq cada3
-    lda (tmp6),y
-    sta tmp8
-    iny                                                               ; Y=0x01
-    lda (tmp6),y
-    sta tmp9
-cada2:
+    zif cc
+        bit lada6
+        lda (tmp6),y
+        sta tmp8
+        iny                                                               ; Y=0x01
+        lda (tmp6),y
+        sta tmp9
+        jsr render_number_to_output_buffer
+    zendif
     clv
-cada3:
     ldy l0084
     rts
 
 lada6:
     .byte 0x40
-
-; ***************************************************************************************
-render_date_time_to_output_buffer:
-    jsr render_register
-    sty l0084
-    bvc cadea
-    pha
-    stx l0082
-    lda #0
-    sta input_buffer
-    ldx #<(input_buffer)
-    ldy #>(input_buffer)
-    lda #osword_read_cmos_clock
-    jsr osword                                                        ; Read CMOS clock
-    lda input_buffer
-    beq cade7
-    pla
-    ldy #4
-    ldx #0x0b
-    cmp #0x44 ; 'D'
-    beq cadd1
-    ldy #0x10
-    ldx #8
-cadd1:
-    stx l0083
-    ldx l0082
-loop_cadd5:
-    lda input_buffer,y
-    sta output_buffer,x
-    inx
-    cpx #0x83
-    beq caded
-    iny
-    dec l0083
-    bne loop_cadd5
-    beq caded                                                         ; ALWAYS branch
-
-cade7:
-    pla
-    ldx l0082
-cadea:
-    jsr render_number_to_output_buffer
-caded:
-    ldy l0084
-    rts
 
 sub_cadf0:
     ldx #8
