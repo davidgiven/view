@@ -304,7 +304,7 @@ input_line_not_escaped:
     jsr parse_command
     sty input_buffer_ptr+1
     bcs c8263
-    cpy #0x19
+    cpy #(jumptable4_cli_end-jumptable4_cli)/2
     bcc c826e
 c8263:
     jsr print_inline_string
@@ -316,6 +316,12 @@ c826e:
     ldy #2
     jsr call_through_jumptable
     jmp run_cli
+
+; ***************************************************************************************
+zproc bye_cmd
+    ldy #BDOS_EXIT_PROGRAM
+    jmp BDOS
+zendproc
 
 ; ***************************************************************************************
 search_cmd:
@@ -7948,7 +7954,8 @@ jumptable4_cli:
     .word search_cmd, clear_cmd, microspace_cmd,    fold_cmd
     .word   name_cmd,  mode_cmd,     finish_cmd,   print_cmd
     .word change_cmd, write_cmd,       edit_cmd, replace_cmd
-    .word   load_cmd
+    .word   load_cmd,   bye_cmd
+jumptable4_cli_end:
 
     .ascii "Mark Colton"
     .byte 0
@@ -8027,7 +8034,11 @@ parser_table:
     .byte 0x81
 ; 'LOAD' -> 24, flag=0
     .byte 0x17, 0x34, 0x3a, 0x3f
-    .byte 0x80, 0
+    .byte 0x80
+; 'BYE' -> 25, flag=1
+    .byte 0x39, 0x22, 0x3e
+    .byte 0x81
+    .byte 0
 commands_table:
 lb2a1 = commands_table+1
     .ascii "CE"
