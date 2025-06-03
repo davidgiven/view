@@ -640,7 +640,7 @@ l80f2 = brk_handler_ptr+1
 
 ; &830d referenced 1 time by &82c3
 .c830d
-    jmp c853f                                                         ; 830d: 4c 3f 85    L?.
+    jmp display_not_enough_memory                                     ; 830d: 4c 3f 85    L?.
 
 ; &8310 referenced 2 times by &83a3, &83ac
 .sub_c8310
@@ -906,7 +906,7 @@ l80f2 = brk_handler_ptr+1
     lda #&40 ; '@'                                                    ; 8478: a9 40       .@
     jsr open_file                                                     ; 847a: 20 58 88     X.
     sta edit_input_file_handle                                        ; 847d: 85 6a       .j
-    jsr sub_c88f8                                                     ; 847f: 20 f8 88     ..
+    jsr set_document_name_to_filename_buffer                          ; 847f: 20 f8 88     ..
     jsr parse_filename_from_command                                   ; 8482: 20 1f 8e     ..
     lda #&80                                                          ; 8485: a9 80       ..
     jsr open_file                                                     ; 8487: 20 58 88     X.
@@ -1016,8 +1016,9 @@ l80f2 = brk_handler_ptr+1
     bne return_6                                                      ; 8539: d0 1c       ..
     cpx #&96                                                          ; 853b: e0 96       ..
     bcs return_6                                                      ; 853d: b0 18       ..
+; ***************************************************************************************
 ; &853f referenced 5 times by &830d, &85dc, &8794, &88ac, &96b5
-.c853f
+.display_not_enough_memory
     jsr stop_printing                                                 ; 853f: 20 4b 84     K.
     jsr print_inline_string                                           ; 8542: 20 fa a7     ..
     equs "Not enough memory"                                          ; 8545: 4e 6f 74... Not
@@ -1095,7 +1096,7 @@ l80f2 = brk_handler_ptr+1
     bcs c85df                                                         ; 85da: b0 03       ..
 ; &85dc referenced 1 time by &85d4
 .c85dc
-    jmp c853f                                                         ; 85dc: 4c 3f 85    L?.
+    jmp display_not_enough_memory                                     ; 85dc: 4c 3f 85    L?.
 
 ; &85df referenced 4 times by &85c4, &85c9, &85d6, &85da
 .c85df
@@ -1366,7 +1367,7 @@ l80f2 = brk_handler_ptr+1
 ; &8791 referenced 1 time by &8770
 .c8791
     jsr osnewl                                                        ; 8791: 20 e7 ff     ..            ; Write newline (characters 10 and 13)
-    jmp c853f                                                         ; 8794: 4c 3f 85    L?.
+    jmp display_not_enough_memory                                     ; 8794: 4c 3f 85    L?.
 
 ; ***************************************************************************************
 .new_cmd
@@ -1442,7 +1443,7 @@ l80f2 = brk_handler_ptr+1
     lda #0                                                            ; 8816: a9 00       ..
     sta l0506                                                         ; 8818: 8d 06 05    ...
     lda #&ff                                                          ; 881b: a9 ff       ..
-    jsr do_osfile_with_block                                          ; 881d: 20 4c 89     L.
+    jsr do_osfile_with_filename                                       ; 881d: 20 4c 89     L.
     ldx #0                                                            ; 8820: a2 00       ..
 ; &8822 referenced 1 time by &882b
 .loop_c8822
@@ -1479,9 +1480,9 @@ l80f2 = brk_handler_ptr+1
 ; &8849 referenced 2 times by &87e7, &8883
 .sub_c8849
     lda #5                                                            ; 8849: a9 05       ..
-    jsr do_osfile_with_block                                          ; 884b: 20 4c 89     L.
+    jsr do_osfile_with_filename                                       ; 884b: 20 4c 89     L.
     tay                                                               ; 884e: a8          .
-    beq c8862                                                         ; 884f: f0 11       ..
+    beq display_file_not_found                                        ; 884f: f0 11       ..
     lda l050a                                                         ; 8851: ad 0a 05    ...
     ora l050b                                                         ; 8854: 0d 0b 05    ...
     rts                                                               ; 8857: 60          `
@@ -1494,8 +1495,9 @@ l80f2 = brk_handler_ptr+1
     jsr osfind                                                        ; 885c: 20 ce ff     ..            ; Open or close file(s)
     tay                                                               ; 885f: a8          .
     bne return_8                                                      ; 8860: d0 d6       ..
+; ***************************************************************************************
 ; &8862 referenced 1 time by &884f
-.c8862
+.display_file_not_found
     jsr stop_printing                                                 ; 8862: 20 4b 84     K.
     jsr print_inline_string                                           ; 8865: 20 fa a7     ..
     equs "File not found"                                             ; 8868: 46 69 6c... Fil
@@ -1528,7 +1530,7 @@ l80f2 = brk_handler_ptr+1
     bcc c88af                                                         ; 88aa: 90 03       ..
 ; &88ac referenced 3 times by &888e, &88a0, &88a6
 .c88ac
-    jmp c853f                                                         ; 88ac: 4c 3f 85    L?.
+    jmp display_not_enough_memory                                     ; 88ac: 4c 3f 85    L?.
 
 ; &88af referenced 2 times by &88a4, &88aa
 .c88af
@@ -1543,7 +1545,7 @@ l80f2 = brk_handler_ptr+1
     lda #0                                                            ; 88c4: a9 00       ..
     sta l0506                                                         ; 88c6: 8d 06 05    ...
     lda #&ff                                                          ; 88c9: a9 ff       ..
-    jsr sub_c8956                                                     ; 88cb: 20 56 89     V.
+    jsr do_osfile_with_block                                          ; 88cb: 20 56 89     V.
     lda tmp8                                                          ; 88ce: a5 8d       ..
     sta top                                                           ; 88d0: 85 0d       ..
     lda tmp9                                                          ; 88d2: a5 8e       ..
@@ -1552,7 +1554,7 @@ l80f2 = brk_handler_ptr+1
     tya                                                               ; 88d8: 98          .              ; A=&00
     sta (top),y                                                       ; 88d9: 91 0d       ..
     sty xpos                                                          ; 88db: 84 40       .@
-    jsr sub_c88f4                                                     ; 88dd: 20 f4 88     ..
+    jsr reset_document_name_after_load                                ; 88dd: 20 f4 88     ..
     jsr clear_cmd                                                     ; 88e0: 20 91 b0     ..
     jmp cb07a                                                         ; 88e3: 4c 7a b0    Lz.
 
@@ -1565,12 +1567,14 @@ l80f2 = brk_handler_ptr+1
     sta file_edit_flags                                               ; 88ef: 85 3c       .<
     plp                                                               ; 88f1: 28          (
     beq return_9                                                      ; 88f2: f0 11       ..
+; ***************************************************************************************
 ; &88f4 referenced 1 time by &88dd
-.sub_c88f4
+.reset_document_name_after_load
     lda #&40 ; '@'                                                    ; 88f4: a9 40       .@
     sta file_edit_flags                                               ; 88f6: 85 3c       .<
+; ***************************************************************************************
 ; &88f8 referenced 1 time by &847f
-.sub_c88f8
+.set_document_name_to_filename_buffer
     ldx #0                                                            ; 88f8: a2 00       ..
 ; &88fa referenced 1 time by &8903
 .loop_c88fa
@@ -1618,18 +1622,19 @@ l80f2 = brk_handler_ptr+1
     stx l0510                                                         ; 893e: 8e 10 05    ...
     sty l0511                                                         ; 8941: 8c 11 05    ...
     lda #0                                                            ; 8944: a9 00       ..
-    jsr do_osfile_with_block                                          ; 8946: 20 4c 89     L.
+    jsr do_osfile_with_filename                                       ; 8946: 20 4c 89     L.
     jmp cli_loop                                                      ; 8949: 4c f6 81    L..
 
 ; ***************************************************************************************
 ; &894c referenced 3 times by &881d, &884b, &8946
-.do_osfile_with_block
+.do_osfile_with_filename
     ldx #<document_filename                                           ; 894c: a2 5c       .\
     stx input_buffer                                                  ; 894e: 8e 00 05    ...
     ldy #>document_filename                                           ; 8951: a0 07       ..
     sty l0501                                                         ; 8953: 8c 01 05    ...
+; ***************************************************************************************
 ; &8956 referenced 1 time by &88cb
-.sub_c8956
+.do_osfile_with_block
     ldx #<(input_buffer)                                              ; 8956: a2 00       ..
     ldy #>(input_buffer)                                              ; 8958: a0 05       ..
     jmp osfile                                                        ; 895a: 4c dd ff    L..
@@ -4137,7 +4142,7 @@ l94b2 = default_printer_driver_ptr+1
     cpx #&97                                                          ; 96ae: e0 97       ..
     bcs c96b8                                                         ; 96b0: b0 06       ..
     jsr sub_c902c                                                     ; 96b2: 20 2c 90     ,.
-    jmp c853f                                                         ; 96b5: 4c 3f 85    L?.
+    jmp display_not_enough_memory                                     ; 96b5: 4c 3f 85    L?.
 
 ; &96b8 referenced 2 times by &96ac, &96b0
 .c96b8
@@ -9827,7 +9832,6 @@ save pydis_start, pydis_end
 ;     sub_ca9b0:                              6
 ;     ypos:                                   6
 ;     c82fa:                                  5
-;     c853f:                                  5
 ;     c8b11:                                  5
 ;     c8c23:                                  5
 ;     c8cc8:                                  5
@@ -9842,6 +9846,7 @@ save pydis_start, pydis_end
 ;     cac78:                                  5
 ;     cb05a:                                  5
 ;     check_not_continuous_editing:           5
+;     display_not_enough_memory:              5
 ;     editor_loop:                            5
 ;     header_text_maybe:                      5
 ;     himem:                                  5
@@ -9946,7 +9951,7 @@ save pydis_start, pydis_end
 ;     cursor_off:                             3
 ;     cursor_on:                              3
 ;     deref_and_check_for_command_prefix:     3
-;     do_osfile_with_block:                   3
+;     do_osfile_with_filename:                3
 ;     document_initialisation_canary:         3
 ;     draw_prompt_characters:                 3
 ;     expand_line:                            3
@@ -10312,7 +10317,6 @@ save pydis_start, pydis_end
 ;     c87cb:                                  1
 ;     c882f:                                  1
 ;     c8834:                                  1
-;     c8862:                                  1
 ;     c8912:                                  1
 ;     c891f:                                  1
 ;     c896b:                                  1
@@ -10644,8 +10648,10 @@ save pydis_start, pydis_end
 ;     create_go_command:                      1
 ;     default_printer_driver_ptr:             1
 ;     detect_mode_7:                          1
+;     display_file_not_found:                 1
 ;     display_no_text:                        1
 ;     display_status_word:                    1
+;     do_osfile_with_block:                   1
 ;     enter_nonprintable_character:           1
 ;     enter_printable_character:              1
 ;     escape_flag:                            1
@@ -10797,6 +10803,7 @@ save pydis_start, pydis_end
 ;     register_value_array:                   1
 ;     render_number_to_callback:              1
 ;     render_number_to_output_buffer:         1
+;     reset_document_name_after_load:         1
 ;     restore_cursor_position:                1
 ;     return_1:                               1
 ;     return_10:                              1
@@ -10859,10 +10866,8 @@ save pydis_start, pydis_end
 ;     return_key:                             1
 ;     save_cursor_position:                   1
 ;     service_handler:                        1
+;     set_document_name_to_filename_buffer:   1
 ;     sub_c8371:                              1
-;     sub_c88f4:                              1
-;     sub_c88f8:                              1
-;     sub_c8956:                              1
 ;     sub_c8c51:                              1
 ;     sub_c8c53:                              1
 ;     sub_c8d00:                              1

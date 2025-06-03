@@ -370,7 +370,7 @@ c82fa:
     .byte 0xff
 
 c830d:
-    jmp c853f
+    jmp display_not_enough_memory
 
 sub_c8310:
     iny
@@ -599,7 +599,7 @@ edit_cmd:
     lda #0x40 ; '@'
     jsr open_file
     sta edit_input_file_handle
-    jsr sub_c88f8
+    jsr set_document_name_to_filename_buffer
     jsr parse_filename_from_command
     lda #0x80
     jsr open_file
@@ -701,7 +701,7 @@ sub_c8535:
     bne return_6
     cpx #0x96
     bcs return_6
-c853f:
+display_not_enough_memory:
     jsr stop_printing
     jsr print_inline_string
     .ascii "Not enough memory"
@@ -982,7 +982,7 @@ c878b:
 
 c8791:
     jsr bdos_print_newline
-    jmp c853f
+    jmp display_not_enough_memory
 
 ; ***************************************************************************************
 new_cmd:
@@ -1051,7 +1051,7 @@ c8801:
     lda #0
     sta l0506
     lda #0xff
-    jsr do_osfile_with_block
+    jsr do_osfile_with_buffer
     ldx #0
 loop_c8822:
     lda filename_buffer,x
@@ -1082,9 +1082,9 @@ parse_integer_from_command:
 
 sub_c8849:
     lda #5
-    jsr do_osfile_with_block
+    jsr do_osfile_with_buffer
     tay
-    beq c8862
+    beq display_file_not_found
     lda l050a
     ora l050b
     rts
@@ -1096,7 +1096,7 @@ open_file:
     jsr osfind                                                        ; Open or close file(s)
     tay
     bne return_8
-c8862:
+display_file_not_found:
     jsr stop_printing
     jsr print_inline_string
     .ascii "File not found"
@@ -1106,52 +1106,75 @@ c8862:
 load_cmd:
     jsr check_not_continuous_editing
     jsr parse_filename_from_command
-    jsr sub_c8849
-    beq return_8
-    lda l050c
-    ora l050d
-    bne c88ac
-    lda l050a
-    clc
-    adc page
-    sta tmp8
-    tax
-    lda l050b
-    adc page+1
-    sta tmp9
-    bcs c88ac
-    cmp himem+1
-    bcc c88af
-    bne c88ac
-    cpx himem
-    bcc c88af
-c88ac:
-    jmp c853f
+    jsr zero_terminate_filename_buffer
+    jsr convert_filename_to_fcb
+    zif cs
+        jmp bad_filename_error
+    zendif
 
-c88af:
-    lda #osbyte_read_high_order_address
-    jsr osbyte                                                        ; Read the filing system 'machine high order address'
-    stx l0504                                                         ; X and Y contain the machine high order address (low, high)
-    sty l0505
+    ldy #BDOS_OPEN_FILE
+    lda #<input_buffer
+    ldx #>input_buffer
+    jsr BDOS
+    bcs display_file_not_found
+
+    ; Load the file into memory.
+
     lda page
-    sta l0502
+    sta tmp6
     lda page+1
-    sta l0503
-    lda #0
-    sta l0506
-    lda #0xff
-    jsr sub_c8956
-    lda tmp8
+    sta tmp7
+    zloop
+        ldy #BDOS_SET_DMA_ADDRESS
+        lda tmp6
+        ldx tmp7
+        jsr BDOS
+
+        lda tmp6
+        eor #0x80
+        sta tmp6
+        zif pl
+            inc tmp7
+        zendif
+
+        lda himem+1
+        cmp tmp6+1
+        zif eq
+            lda himem+0
+            cmp tmp6+0
+        zendif
+        blt c88ac
+
+        ldy #BDOS_READ_SEQUENTIAL
+        lda #<input_buffer
+        ldx #>input_buffer
+        jsr BDOS
+        zbreakif cs
+    zendloop
+
+    ; Find the end of it.
+
+    lda page
     sta top
-    lda tmp9
+    lda page+1
     sta top+1
     ldy #0
-    tya                                                               ; A=0x00
-    sta (top),y
-    sty xpos
-    jsr sub_c88f4
+    zloop
+        lda (top), y
+        zbreakif eq
+
+        inc top
+        zif eq
+            inc top+1
+        zendif
+    zendloop
+
+    jsr reset_document_name_after_load
     jsr clear_cmd
     jmp cb07a
+
+c88ac:
+    jmp display_not_enough_memory
 
 ; ***************************************************************************************
 name_cmd:
@@ -1162,18 +1185,20 @@ name_cmd:
     sta file_edit_flags
     plp
     beq return_9
-sub_c88f4:
+reset_document_name_after_load:
     lda #0x40 ; '@'
     sta file_edit_flags
-sub_c88f8:
+set_document_name_to_filename_buffer:
     ldx #0
 loop_c88fa:
     lda filename_buffer,x
     sta input_filename,x
     inx
-    cmp #0x0d
-    bne loop_c88fa
+    cmp #0x21
+    bge loop_c88fa
 return_9:
+    lda #0x0d
+    sta input_filename-1, x
     rts
 
 ; ***************************************************************************************
@@ -1197,14 +1222,7 @@ save_cmd:
 
 c891f:
     jsr zero_terminate_filename_buffer
-    ldy #BDOS_SET_DMA_ADDRESS
-    lda #<input_buffer
-    ldx #>input_buffer
-    jsr BDOS
-    ldy #BDOS_PARSEFILENAME
-    lda #<filename_buffer
-    ldx #>filename_buffer
-    jsr BDOS
+    jsr convert_filename_to_fcb
     zif cs
         jmp bad_filename_error
     zendif
@@ -1214,6 +1232,7 @@ c891f:
     ldx #>input_buffer
     jsr BDOS
 
+    jsr reset_fcb
     ldy #BDOS_CREATE_FILE
     lda #<input_buffer
     ldx #>input_buffer
@@ -1265,6 +1284,28 @@ file_error:
     .byte 0
     jmp cli_loop
 
+zproc convert_filename_to_fcb
+    ldy #BDOS_SET_DMA_ADDRESS
+    lda #<input_buffer
+    ldx #>input_buffer
+    jsr BDOS
+    ldy #BDOS_PARSEFILENAME
+    lda #<filename_buffer
+    ldx #>filename_buffer
+    jmp BDOS
+zendproc
+
+zproc reset_fcb
+    ldx #FCB_EX
+    lda #0
+    zrepeat
+        sta input_buffer, x
+        inx
+        cpx #FCB__SIZE
+    zuntil eq
+    rts
+zendproc
+
 zproc zero_terminate_filename_buffer
     ldx #0
     lda #0x0d
@@ -1280,12 +1321,12 @@ zproc zero_terminate_filename_buffer
 zendproc
 
 ; ***************************************************************************************
-do_osfile_with_block:
+do_osfile_with_buffer:
     ldx #<filename_buffer
     stx input_buffer
     ldy #>filename_buffer
     sty l0501
-sub_c8956:
+do_osfile_with_block:
     ldx #<(input_buffer)
     ldy #>(input_buffer)
     jmp osfile
@@ -3400,7 +3441,7 @@ c96a2:
     cpx #0x97
     bcs c96b8
     jsr sub_c902c
-    jmp c853f
+    jmp display_not_enough_memory
 
 c96b8:
     lda last_macro_ptr
