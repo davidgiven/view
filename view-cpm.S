@@ -55,7 +55,7 @@ l0038: .fill 1
 l0039: .fill 1
 l003a: .fill 1
 l003b: .fill 1
-l003c: .fill 1
+file_edit_flags: .fill 1
 l003d: .fill 1
 xpos: .fill 1
 l0041: .fill 1
@@ -158,20 +158,20 @@ l050e                           = DATA-0x400+0x050e
 l050f                           = DATA-0x400+0x050f
 l0510                           = DATA-0x400+0x0510
 l0511                           = DATA-0x400+0x0511
-current_line_buffer                           = DATA-0x400+0x0545
+current_line_buffer             = DATA-0x400+0x0545
 l05cc                           = DATA-0x400+0x05cc
-current_ruler_buffer                   = DATA-0x400+0x05cf
+current_ruler_buffer            = DATA-0x400+0x05cf
 output_buffer                   = DATA-0x400+0x0654
 header_text_maybe               = DATA-0x400+0x06d8
 footer_text_maybe               = DATA-0x400+0x071a
-filename                        = DATA-0x400+0x075c
-another_filename                = DATA-0x400+0x0770
+filename_buffer               = DATA-0x400+0x075c
+output_filename                 = DATA-0x400+0x0770
 printer_driver_name             = DATA-0x400+0x0784
 register_value_array            = DATA-0x400+0x0798
 register_value_l                = DATA-0x400+0x07ae
 register_value_p                = DATA-0x400+0x07b6
 line_lengths                    = DATA-0x400+0x07cc
-document_filename               = DATA-0x400+0x07ec
+input_filename                  = DATA-0x400+0x07ec
 
 DATA:   .fill 0x400
 
@@ -194,10 +194,10 @@ run_cli:
     jsr compute_bytes_free
     jsr render_number_to_screen
     jsr bdos_print_newline
-    jsr sub_c89e5
-    bit l003c
+    jsr display_document_file_state
+    bit file_edit_flags
     bvs c816d
-    lda l003c
+    lda file_edit_flags
     ror
     bcc c816d
     jsr print_inline_string
@@ -592,24 +592,23 @@ sub_c845e:
 
 ; ***************************************************************************************
 edit_cmd:
-    jsr sub_c8e49
-    jsr error_if_cassette_filesystem
-    jsr sub_c8e1f
+    jsr check_not_continuous_editing
+    jsr parse_filename_from_command
     lda #2
     sta error_handling_mode
     lda #0x40 ; '@'
     jsr open_file
     sta edit_input_file_handle
     jsr sub_c88f8
-    jsr sub_c8e1f
+    jsr parse_filename_from_command
     lda #0x80
     jsr open_file
     sta edit_output_file_handle
     ldx #0
     stx l0041
 loop_c8490:
-    lda filename,x
-    sta another_filename,x
+    lda filename_buffer,x
+    sta output_filename,x
     inx
     cmp #0x0d
     bne loop_c8490
@@ -617,7 +616,7 @@ loop_c8490:
     jsr sub_c8d24
     beq c84a8
     lda #1
-    sta l003c
+    sta file_edit_flags
     rts
 
 c84a8:
@@ -678,7 +677,7 @@ quit_cmd:
 c850d:
     lda #0
     sta l0041
-    sta l003c
+    sta file_edit_flags
     ldx #edit_input_file_handle                                       ; X=address of ZP var containing handle
     jsr close_file_indirect
     ldx #edit_output_file_handle                                      ; X=address of ZP var containing handle
@@ -686,7 +685,7 @@ c850d:
 
 ; ***************************************************************************************
 write_cmd:
-    jsr sub_c8e1f
+    jsr parse_filename_from_command
     jsr parse_marks_from_command
     jsr sanitise_area
     beq return_6
@@ -713,7 +712,7 @@ return_6:
 
 ; ***************************************************************************************
 read_cmd:
-    jsr sub_c8e1f
+    jsr parse_filename_from_command
     jsr parse_marks_from_command
     jsr sub_c8535
     lda #0x40 ; '@'
@@ -987,7 +986,7 @@ c8791:
 
 ; ***************************************************************************************
 new_cmd:
-    jsr sub_c8e49
+    jsr check_not_continuous_editing
     jmp initialise_document
 
 ; ***************************************************************************************
@@ -1027,10 +1026,8 @@ c87d1:
 
 ; ***************************************************************************************
 printer_cmd:
-    jsr sub_c8df4
+    jsr parse_optional_filename_from_command
     beq c882f
-    jsr test_for_cassette_filesystem
-    bcc c8801
     jsr sub_c8849
     beq c87d1
     lda l050c
@@ -1057,7 +1054,7 @@ c8801:
     jsr do_osfile_with_block
     ldx #0
 loop_c8822:
-    lda filename,x
+    lda filename_buffer,x
     sta printer_driver_name,x
     inx
     cmp #0x0d
@@ -1094,8 +1091,8 @@ sub_c8849:
 
 ; ***************************************************************************************
 open_file:
-    ldy #>(filename)
-    ldx #<(filename)
+    ldy #>(filename_buffer)
+    ldx #<(filename_buffer)
     jsr osfind                                                        ; Open or close file(s)
     tay
     bne return_8
@@ -1107,9 +1104,8 @@ c8862:
 
 ; ***************************************************************************************
 load_cmd:
-    jsr sub_c8e49
-    jsr error_if_cassette_filesystem
-    jsr sub_c8e1f
+    jsr check_not_continuous_editing
+    jsr parse_filename_from_command
     jsr sub_c8849
     beq return_8
     lda l050c
@@ -1159,21 +1155,21 @@ c88af:
 
 ; ***************************************************************************************
 name_cmd:
-    jsr sub_c8e49
-    jsr sub_c8df4
+    jsr check_not_continuous_editing
+    jsr parse_optional_filename_from_command
     php
     lda #0
-    sta l003c
+    sta file_edit_flags
     plp
     beq return_9
 sub_c88f4:
     lda #0x40 ; '@'
-    sta l003c
+    sta file_edit_flags
 sub_c88f8:
     ldx #0
 loop_c88fa:
-    lda filename,x
-    sta document_filename,x
+    lda filename_buffer,x
+    sta input_filename,x
     inx
     cmp #0x0d
     bne loop_c88fa
@@ -1182,44 +1178,112 @@ return_9:
 
 ; ***************************************************************************************
 save_cmd:
-    jsr sub_c8df4
-    bne c891f
-    bit l003c
-    bvs c8912
-    jmp c8e0f
+    jsr parse_optional_filename_from_command
+    zif eq
+        bne c891f
+        bit file_edit_flags
+        zif vc
+            jmp bad_filename_error
+        zendif
 
-c8912:
-    ldx #0
-loop_c8914:
-    lda document_filename,x
-    sta filename,x
-    inx
-    cmp #0x0d
-    bne loop_c8914
+        ldx #0
+        zrepeat
+            lda input_filename,x
+            sta filename_buffer,x
+            inx
+            cmp #0x0d
+        zuntil eq
+    zendif
+
 c891f:
+    jsr zero_terminate_filename_buffer
+    ldy #BDOS_SET_DMA_ADDRESS
+    lda #<input_buffer
+    ldx #>input_buffer
+    jsr BDOS
+    ldy #BDOS_PARSEFILENAME
+    lda #<filename_buffer
+    ldx #>filename_buffer
+    jsr BDOS
+    zif cs
+        jmp bad_filename_error
+    zendif
+
+    ldy #BDOS_DELETE_FILE
+    lda #<input_buffer
+    ldx #>input_buffer
+    jsr BDOS
+
+    ldy #BDOS_CREATE_FILE
+    lda #<input_buffer
+    ldx #>input_buffer
+    jsr BDOS
+    bcs file_error
+
     lda page
-    sta l050a
+    sta tmp6
     lda page+1
-    sta l050b
-    lda top
-    sta l050e
-    lda top+1
-    sta l050f
-    lda #osbyte_read_high_order_address
-    jsr osbyte                                                        ; Read the filing system 'machine high order address'
-    stx l050c                                                         ; X and Y contain the machine high order address (low, high)
-    sty l050d
-    stx l0510
-    sty l0511
-    lda #0
-    jsr do_osfile_with_block
+    sta tmp7
+    zrepeat
+        ldy #BDOS_SET_DMA_ADDRESS
+        lda tmp6
+        ldx tmp7
+        jsr BDOS
+
+        ldy #BDOS_WRITE_SEQUENTIAL
+        lda #<input_buffer
+        ldx #>input_buffer
+        jsr BDOS
+        bcs file_error
+
+        lda tmp6
+        eor #0x80
+        sta tmp6
+        zif pl
+            inc tmp7
+        zendif
+
+        lda top+1
+        cmp tmp6+1
+        zif eq
+            lda top+0
+            cmp tmp6+0
+        zendif
+    zuntil lt
+
+    ldy #BDOS_CLOSE_FILE
+    lda #<input_buffer
+    ldx #>input_buffer
+    jsr BDOS
+    bcs file_error
+
     jmp cli_loop
+
+file_error:
+    jsr print_inline_string
+    .ascii "File error"
+    .byte 0
+    jmp cli_loop
+
+zproc zero_terminate_filename_buffer
+    ldx #0
+    lda #0x0d
+    zloop
+        cmp filename_buffer, x
+        zbreakif eq
+        inx
+    zendloop
+
+    lda #0
+    sta filename_buffer, x
+    rts
+zendproc
 
 ; ***************************************************************************************
 do_osfile_with_block:
-    ldx #<filename
+    ldx #<filename_buffer
     stx input_buffer
-    ldy #>filename
+    ldy #>filename_buffer
     sty l0501
 sub_c8956:
     ldx #<(input_buffer)
@@ -1303,24 +1367,24 @@ sub_c89d3:
     ldy tmp5
     jmp cac78
 
-sub_c89e5:
+display_document_file_state:
     jsr stop_printing
     jsr print_inline_string
     .ascii "Editing "
     .byte 0
 
-    lda l003c
+    lda file_edit_flags
     beq c8a21
     ldy #0
 loop_c89fa:
-    lda document_filename,y
+    lda input_filename,y
     cmp #0x0d
     beq c8a07
     jsr bdos_print_char                                                        ; Write character
     iny
     bne loop_c89fa
 c8a07:
-    bit l003c
+    bit file_edit_flags
     bvs c8a19
     jsr print_inline_string
     .ascii " to "
@@ -1328,7 +1392,7 @@ c8a07:
 
     ldy #0
 loop_c8a15:
-    lda another_filename,y
+    lda output_filename,y
     iny
 c8a19:
     jsr bdos_print_char                                                        ; Write character
@@ -1922,7 +1986,7 @@ c8dce:
 return_18:
     rts
 
-sub_c8df4:
+parse_optional_filename_from_command:
     jsr sub_c8e33
     beq return_19
     ldx #0
@@ -1933,24 +1997,24 @@ loop_c8dfb:
     iny
     cmp l007e
     beq c8e25
-    sta filename,x
+    sta filename_buffer,x
     inx
     cpx #0x14
     bne loop_c8dfb
-c8e0f:
+bad_filename_error:
     jsr print_inline_string
     .ascii "Bad filename"
     .byte 0xff
 
-sub_c8e1f:
-    jsr sub_c8df4
-    beq c8e0f
+parse_filename_from_command:
+    jsr parse_optional_filename_from_command
+    beq bad_filename_error
 return_19:
     rts
 
 c8e25:
     lda #0x0d
-    sta filename,x
+    sta filename_buffer,x
     sty input_buffer_ptr
 return_20:
     rts
@@ -1972,52 +2036,23 @@ loop_c8e3b:
     bne return_20
     iny
     bne loop_c8e3b
-sub_c8e49:
-    bit l003c
+check_not_continuous_editing:
+    bit file_edit_flags
     bvs return_20
-    lda l003c
+    lda file_edit_flags
     ror
     bcc return_20
     bcs c8e5d                                                         ; ALWAYS branch
 
 sub_c8e54:
-    bit l003c
+    bit file_edit_flags
     bvs c8e5d
-    lda l003c
+    lda file_edit_flags
     ror
     bcs return_20
 c8e5d:
-    jsr sub_c89e5
+    jsr display_document_file_state
     jmp cli_loop
-
-; ***************************************************************************************
-error_if_cassette_filesystem:
-    jsr test_for_cassette_filesystem
-    bcs return_21
-    jsr print_inline_string
-    .ascii "Not with cassette"
-    .byte 0xff
-
-; ***************************************************************************************
-test_for_cassette_filesystem:
-    lda #0
-    tay                                                               ; Y=0x00
-    jsr osargs                                                        ; Get filing system number (A=0, Y=0)
-    ; A is the filing system number:
-    ;     A=0, no filing system selected
-    ;     A=1, 1200 baud CFS
-    ;     A=2, 300 baud CFS
-    ;     A=3, ROM filing system
-    ;     A=4, Disc filing system
-    ;     A=5, Network filing system
-    ;     A=6, Teletext filing system
-    ;     A=7, IEEE filing system
-    ;     A=8, ADFS
-    ;     A=9, Host filing system
-    ;     A=10, Videodisc filing system
-    cmp #3                                                            ; A=filing system number
-return_21:
-    rts
 
 display_nl_then_no_text:
     jsr bdos_print_newline
@@ -2029,7 +2064,7 @@ display_no_text:
     rts
 
 sub_c8ebe:
-    jsr sub_c8e49
+    jsr check_not_continuous_editing
     jsr sub_c8535
     jsr sub_cb104
     lda top
@@ -2071,7 +2106,7 @@ c8edb:
 c8f0a:
     jsr sub_c902c
 c8f0d:
-    jsr sub_c8df4
+    jsr parse_optional_filename_from_command
     bne c8f29
     lda l0031
     bpl return_23
@@ -7557,7 +7592,7 @@ cafee:
 caffe:
     sty page+1
     ldy #0
-    sty l003c
+    sty file_edit_flags
     sty xpos
     lda #0xaa
     sta (oshwm),y
@@ -8055,12 +8090,6 @@ osword:
     .byte 0
     brk
 
-oscli:
-    jsr print_inline_string
-    .ascii "oscli\n"
-    .byte 0
-    brk
-
 osfind:
     jsr print_inline_string
     .ascii "osfind\n"
@@ -8082,12 +8111,6 @@ osbget:
 osbput:
     jsr print_inline_string
     .ascii "osbput\n"
-    .byte 0
-    brk
-
-osargs:
-    jsr print_inline_string
-    .ascii "osargs\n"
     .byte 0
     brk
 

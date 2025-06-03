@@ -68,7 +68,7 @@ l0038                           = &0038
 l0039                           = &0039
 l003a                           = &003a
 l003b                           = &003b
-l003c                           = &003c
+file_edit_flags                 = &003c
 l003d                           = &003d
 ruler_right_stop                = &003e
 ruler_left_stop                 = &003f
@@ -167,14 +167,14 @@ current_ruler_buffer            = &05cf
 output_buffer                   = &0654
 header_text_maybe               = &06d8
 footer_text_maybe               = &071a
-filename                        = &075c
-another_filename                = &0770
+filename_buffer                 = &075c
+output_filename                 = &0770
 printer_driver_name             = &0784
 register_value_array            = &0798
 register_value_l                = &07ae
 register_value_p                = &07b6
 line_lengths                    = &07cc
-document_filename               = &07ec
+input_filename                  = &07ec
 rom_workspace_array             = &0df0
 lf894                           = &f894
 osfind                          = &ffce
@@ -393,10 +393,10 @@ l80f2 = brk_handler_ptr+1
     jsr osnewl                                                        ; 8136: 20 e7 ff     ..            ; Write newline (characters 10 and 13)
 ; &8139 referenced 1 time by &811c
 .c8139
-    jsr sub_c89e5                                                     ; 8139: 20 e5 89     ..
-    bit l003c                                                         ; 813c: 24 3c       $<
+    jsr display_document_file_state                                   ; 8139: 20 e5 89     ..
+    bit file_edit_flags                                               ; 813c: 24 3c       $<
     bvs c816d                                                         ; 813e: 70 2d       p-
-    lda l003c                                                         ; 8140: a5 3c       .<
+    lda file_edit_flags                                               ; 8140: a5 3c       .<
     ror a                                                             ; 8142: 6a          j
     bcc c816d                                                         ; 8143: 90 28       .(
     jsr print_inline_string                                           ; 8145: 20 fa a7     ..
@@ -897,17 +897,17 @@ l80f2 = brk_handler_ptr+1
 
 ; ***************************************************************************************
 .edit_cmd
-    jsr sub_c8e49                                                     ; 8468: 20 49 8e     I.
+    jsr check_not_continuous_editing                                  ; 8468: 20 49 8e     I.
     jsr error_if_cassette_filesystem                                  ; 846b: 20 63 8e     c.
     jsr initialise_document_if_document_bad                           ; 846e: 20 ca af     ..
-    jsr sub_c8e1f                                                     ; 8471: 20 1f 8e     ..
+    jsr parse_filename_from_command                                   ; 8471: 20 1f 8e     ..
     lda #2                                                            ; 8474: a9 02       ..
     sta error_handling_mode                                           ; 8476: 85 4e       .N
     lda #&40 ; '@'                                                    ; 8478: a9 40       .@
     jsr open_file                                                     ; 847a: 20 58 88     X.
     sta edit_input_file_handle                                        ; 847d: 85 6a       .j
     jsr sub_c88f8                                                     ; 847f: 20 f8 88     ..
-    jsr sub_c8e1f                                                     ; 8482: 20 1f 8e     ..
+    jsr parse_filename_from_command                                   ; 8482: 20 1f 8e     ..
     lda #&80                                                          ; 8485: a9 80       ..
     jsr open_file                                                     ; 8487: 20 58 88     X.
     sta edit_output_file_handle                                       ; 848a: 85 6b       .k
@@ -915,8 +915,8 @@ l80f2 = brk_handler_ptr+1
     stx l0041                                                         ; 848e: 86 41       .A
 ; &8490 referenced 1 time by &8499
 .loop_c8490
-    lda filename,x                                                    ; 8490: bd 5c 07    .\.
-    sta another_filename,x                                            ; 8493: 9d 70 07    .p.
+    lda filename_buffer,x                                             ; 8490: bd 5c 07    .\.
+    sta output_filename,x                                             ; 8493: 9d 70 07    .p.
     inx                                                               ; 8496: e8          .
     cmp #&0d                                                          ; 8497: c9 0d       ..
     bne loop_c8490                                                    ; 8499: d0 f5       ..
@@ -924,7 +924,7 @@ l80f2 = brk_handler_ptr+1
     jsr sub_c8d24                                                     ; 849e: 20 24 8d     $.
     beq c84a8                                                         ; 84a1: f0 05       ..
     lda #1                                                            ; 84a3: a9 01       ..
-    sta l003c                                                         ; 84a5: 85 3c       .<
+    sta file_edit_flags                                               ; 84a5: 85 3c       .<
     rts                                                               ; 84a7: 60          `
 
 ; &84a8 referenced 1 time by &84a1
@@ -991,7 +991,7 @@ l80f2 = brk_handler_ptr+1
 .c850d
     lda #0                                                            ; 850d: a9 00       ..
     sta l0041                                                         ; 850f: 85 41       .A
-    sta l003c                                                         ; 8511: 85 3c       .<
+    sta file_edit_flags                                               ; 8511: 85 3c       .<
     ldx #edit_input_file_handle                                       ; 8513: a2 6a       .j             ; X=address of ZP var containing handle
     jsr close_file_indirect                                           ; 8515: 20 85 8d     ..
     ldx #edit_output_file_handle                                      ; 8518: a2 6b       .k             ; X=address of ZP var containing handle
@@ -999,7 +999,7 @@ l80f2 = brk_handler_ptr+1
 
 ; ***************************************************************************************
 .write_cmd
-    jsr sub_c8e1f                                                     ; 851d: 20 1f 8e     ..
+    jsr parse_filename_from_command                                   ; 851d: 20 1f 8e     ..
     jsr parse_marks_from_command                                      ; 8520: 20 89 89     ..
     jsr sanitise_area                                                 ; 8523: 20 5d 89     ].
     beq return_6                                                      ; 8526: f0 2f       ./
@@ -1029,7 +1029,7 @@ l80f2 = brk_handler_ptr+1
 
 ; ***************************************************************************************
 .read_cmd
-    jsr sub_c8e1f                                                     ; 8558: 20 1f 8e     ..
+    jsr parse_filename_from_command                                   ; 8558: 20 1f 8e     ..
     jsr parse_marks_from_command                                      ; 855b: 20 89 89     ..
     jsr sub_c8535                                                     ; 855e: 20 35 85     5.
     lda #&40 ; '@'                                                    ; 8561: a9 40       .@
@@ -1370,7 +1370,7 @@ l80f2 = brk_handler_ptr+1
 
 ; ***************************************************************************************
 .new_cmd
-    jsr sub_c8e49                                                     ; 8797: 20 49 8e     I.
+    jsr check_not_continuous_editing                                  ; 8797: 20 49 8e     I.
     jmp initialise_document                                           ; 879a: 4c cf af    L..
 
 ; ***************************************************************************************
@@ -1414,7 +1414,7 @@ l80f2 = brk_handler_ptr+1
 
 ; ***************************************************************************************
 .printer_cmd
-    jsr sub_c8df4                                                     ; 87dd: 20 f4 8d     ..
+    jsr parse_optional_filename_from_command                          ; 87dd: 20 f4 8d     ..
     beq c882f                                                         ; 87e0: f0 4d       .M
     jsr test_for_cassette_filesystem                                  ; 87e2: 20 7d 8e     }.
     bcc c8801                                                         ; 87e5: 90 1a       ..
@@ -1446,7 +1446,7 @@ l80f2 = brk_handler_ptr+1
     ldx #0                                                            ; 8820: a2 00       ..
 ; &8822 referenced 1 time by &882b
 .loop_c8822
-    lda filename,x                                                    ; 8822: bd 5c 07    .\.
+    lda filename_buffer,x                                             ; 8822: bd 5c 07    .\.
     sta printer_driver_name,x                                         ; 8825: 9d 84 07    ...
     inx                                                               ; 8828: e8          .
     cmp #&0d                                                          ; 8829: c9 0d       ..
@@ -1489,8 +1489,8 @@ l80f2 = brk_handler_ptr+1
 ; ***************************************************************************************
 ; &8858 referenced 5 times by &847a, &8487, &852a, &8563, &8f2b
 .open_file
-    ldy #>(filename)                                                  ; 8858: a0 07       ..
-    ldx #<(filename)                                                  ; 885a: a2 5c       .\
+    ldy #>(filename_buffer)                                           ; 8858: a0 07       ..
+    ldx #<(filename_buffer)                                           ; 885a: a2 5c       .\
     jsr osfind                                                        ; 885c: 20 ce ff     ..            ; Open or close file(s)
     tay                                                               ; 885f: a8          .
     bne return_8                                                      ; 8860: d0 d6       ..
@@ -1503,10 +1503,10 @@ l80f2 = brk_handler_ptr+1
 
 ; ***************************************************************************************
 .load_cmd
-    jsr sub_c8e49                                                     ; 8877: 20 49 8e     I.
+    jsr check_not_continuous_editing                                  ; 8877: 20 49 8e     I.
     jsr error_if_cassette_filesystem                                  ; 887a: 20 63 8e     c.
     jsr initialise_document_if_document_bad                           ; 887d: 20 ca af     ..
-    jsr sub_c8e1f                                                     ; 8880: 20 1f 8e     ..
+    jsr parse_filename_from_command                                   ; 8880: 20 1f 8e     ..
     jsr sub_c8849                                                     ; 8883: 20 49 88     I.
     beq return_8                                                      ; 8886: f0 b0       ..
     lda l050c                                                         ; 8888: ad 0c 05    ...
@@ -1558,24 +1558,24 @@ l80f2 = brk_handler_ptr+1
 
 ; ***************************************************************************************
 .name_cmd
-    jsr sub_c8e49                                                     ; 88e6: 20 49 8e     I.
-    jsr sub_c8df4                                                     ; 88e9: 20 f4 8d     ..
+    jsr check_not_continuous_editing                                  ; 88e6: 20 49 8e     I.
+    jsr parse_optional_filename_from_command                          ; 88e9: 20 f4 8d     ..
     php                                                               ; 88ec: 08          .
     lda #0                                                            ; 88ed: a9 00       ..
-    sta l003c                                                         ; 88ef: 85 3c       .<
+    sta file_edit_flags                                               ; 88ef: 85 3c       .<
     plp                                                               ; 88f1: 28          (
     beq return_9                                                      ; 88f2: f0 11       ..
 ; &88f4 referenced 1 time by &88dd
 .sub_c88f4
     lda #&40 ; '@'                                                    ; 88f4: a9 40       .@
-    sta l003c                                                         ; 88f6: 85 3c       .<
+    sta file_edit_flags                                               ; 88f6: 85 3c       .<
 ; &88f8 referenced 1 time by &847f
 .sub_c88f8
     ldx #0                                                            ; 88f8: a2 00       ..
 ; &88fa referenced 1 time by &8903
 .loop_c88fa
-    lda filename,x                                                    ; 88fa: bd 5c 07    .\.
-    sta document_filename,x                                           ; 88fd: 9d ec 07    ...
+    lda filename_buffer,x                                             ; 88fa: bd 5c 07    .\.
+    sta input_filename,x                                              ; 88fd: 9d ec 07    ...
     inx                                                               ; 8900: e8          .
     cmp #&0d                                                          ; 8901: c9 0d       ..
     bne loop_c88fa                                                    ; 8903: d0 f5       ..
@@ -1585,19 +1585,19 @@ l80f2 = brk_handler_ptr+1
 
 ; ***************************************************************************************
 .save_cmd
-    jsr sub_c8df4                                                     ; 8906: 20 f4 8d     ..
+    jsr parse_optional_filename_from_command                          ; 8906: 20 f4 8d     ..
     bne c891f                                                         ; 8909: d0 14       ..
-    bit l003c                                                         ; 890b: 24 3c       $<
+    bit file_edit_flags                                               ; 890b: 24 3c       $<
     bvs c8912                                                         ; 890d: 70 03       p.
-    jmp c8e0f                                                         ; 890f: 4c 0f 8e    L..
+    jmp bad_filename_error                                            ; 890f: 4c 0f 8e    L..
 
 ; &8912 referenced 1 time by &890d
 .c8912
     ldx #0                                                            ; 8912: a2 00       ..
 ; &8914 referenced 1 time by &891d
 .loop_c8914
-    lda document_filename,x                                           ; 8914: bd ec 07    ...
-    sta filename,x                                                    ; 8917: 9d 5c 07    .\.
+    lda input_filename,x                                              ; 8914: bd ec 07    ...
+    sta filename_buffer,x                                             ; 8917: 9d 5c 07    .\.
     inx                                                               ; 891a: e8          .
     cmp #&0d                                                          ; 891b: c9 0d       ..
     bne loop_c8914                                                    ; 891d: d0 f5       ..
@@ -1624,9 +1624,9 @@ l80f2 = brk_handler_ptr+1
 ; ***************************************************************************************
 ; &894c referenced 3 times by &881d, &884b, &8946
 .do_osfile_with_block
-    ldx #<filename                                                    ; 894c: a2 5c       .\
+    ldx #<document_filename                                           ; 894c: a2 5c       .\
     stx input_buffer                                                  ; 894e: 8e 00 05    ...
-    ldy #>filename                                                    ; 8951: a0 07       ..
+    ldy #>document_filename                                           ; 8951: a0 07       ..
     sty l0501                                                         ; 8953: 8c 01 05    ...
 ; &8956 referenced 1 time by &88cb
 .sub_c8956
@@ -1722,19 +1722,20 @@ l80f2 = brk_handler_ptr+1
     ldy tmp5                                                          ; 89e0: a4 8a       ..
     jmp cac78                                                         ; 89e2: 4c 78 ac    Lx.
 
+; ***************************************************************************************
 ; &89e5 referenced 2 times by &8139, &8e5d
-.sub_c89e5
+.display_document_file_state
     jsr stop_printing                                                 ; 89e5: 20 4b 84     K.
     jsr print_inline_string                                           ; 89e8: 20 fa a7     ..
     equs "Editing "                                                   ; 89eb: 45 64 69... Edi
     equb 0                                                            ; 89f3: 00          .
 
-    lda l003c                                                         ; 89f4: a5 3c       .<
+    lda file_edit_flags                                               ; 89f4: a5 3c       .<
     beq c8a21                                                         ; 89f6: f0 29       .)
     ldy #0                                                            ; 89f8: a0 00       ..
 ; &89fa referenced 1 time by &8a05
 .loop_c89fa
-    lda document_filename,y                                           ; 89fa: b9 ec 07    ...
+    lda input_filename,y                                              ; 89fa: b9 ec 07    ...
     cmp #&0d                                                          ; 89fd: c9 0d       ..
     beq c8a07                                                         ; 89ff: f0 06       ..
     jsr osasci                                                        ; 8a01: 20 e3 ff     ..            ; Write character
@@ -1742,7 +1743,7 @@ l80f2 = brk_handler_ptr+1
     bne loop_c89fa                                                    ; 8a05: d0 f3       ..
 ; &8a07 referenced 1 time by &89ff
 .c8a07
-    bit l003c                                                         ; 8a07: 24 3c       $<
+    bit file_edit_flags                                               ; 8a07: 24 3c       $<
     bvs c8a19                                                         ; 8a09: 70 0e       p.
     jsr print_inline_string                                           ; 8a0b: 20 fa a7     ..
     equs " to "                                                       ; 8a0e: 20 74 6f...  to
@@ -1751,7 +1752,7 @@ l80f2 = brk_handler_ptr+1
     ldy #0                                                            ; 8a13: a0 00       ..
 ; &8a15 referenced 1 time by &8a1e
 .loop_c8a15
-    lda another_filename,y                                            ; 8a15: b9 70 07    .p.
+    lda output_filename,y                                             ; 8a15: b9 70 07    .p.
     iny                                                               ; 8a18: c8          .
 ; &8a19 referenced 1 time by &8a09
 .c8a19
@@ -2464,8 +2465,9 @@ l80f2 = brk_handler_ptr+1
 .return_18
     rts                                                               ; 8df3: 60          `
 
+; ***************************************************************************************
 ; &8df4 referenced 5 times by &87dd, &88e9, &8906, &8e1f, &8f0d
-.sub_c8df4
+.parse_optional_filename_from_command
     jsr sub_c8e33                                                     ; 8df4: 20 33 8e     3.
     beq return_19                                                     ; 8df7: f0 2b       .+
     ldx #0                                                            ; 8df9: a2 00       ..
@@ -2477,20 +2479,22 @@ l80f2 = brk_handler_ptr+1
     iny                                                               ; 8e02: c8          .
     cmp l007e                                                         ; 8e03: c5 7e       .~
     beq c8e25                                                         ; 8e05: f0 1e       ..
-    sta filename,x                                                    ; 8e07: 9d 5c 07    .\.
+    sta filename_buffer,x                                             ; 8e07: 9d 5c 07    .\.
     inx                                                               ; 8e0a: e8          .
     cpx #&14                                                          ; 8e0b: e0 14       ..
     bne loop_c8dfb                                                    ; 8e0d: d0 ec       ..
+; ***************************************************************************************
 ; &8e0f referenced 2 times by &890f, &8e22
-.c8e0f
+.bad_filename_error
     jsr print_inline_string                                           ; 8e0f: 20 fa a7     ..
     equs "Bad filename"                                               ; 8e12: 42 61 64... Bad
     equb &ff                                                          ; 8e1e: ff          .
 
+; ***************************************************************************************
 ; &8e1f referenced 5 times by &8471, &8482, &851d, &8558, &8880
-.sub_c8e1f
-    jsr sub_c8df4                                                     ; 8e1f: 20 f4 8d     ..
-    beq c8e0f                                                         ; 8e22: f0 eb       ..
+.parse_filename_from_command
+    jsr parse_optional_filename_from_command                          ; 8e1f: 20 f4 8d     ..
+    beq bad_filename_error                                            ; 8e22: f0 eb       ..
 ; &8e24 referenced 1 time by &8df7
 .return_19
     rts                                                               ; 8e24: 60          `
@@ -2498,7 +2502,7 @@ l80f2 = brk_handler_ptr+1
 ; &8e25 referenced 2 times by &8e00, &8e05
 .c8e25
     lda #&0d                                                          ; 8e25: a9 0d       ..
-    sta filename,x                                                    ; 8e27: 9d 5c 07    .\.
+    sta filename_buffer,x                                             ; 8e27: 9d 5c 07    .\.
     sty input_buffer_ptr                                              ; 8e2a: 84 7f       ..
 ; &8e2c referenced 6 times by &8e37, &8e40, &8e44, &8e4b, &8e50, &8e5b
 .return_20
@@ -2524,25 +2528,26 @@ l80f2 = brk_handler_ptr+1
     bne return_20                                                     ; 8e44: d0 e6       ..
     iny                                                               ; 8e46: c8          .
     bne loop_c8e3b                                                    ; 8e47: d0 f2       ..
+; ***************************************************************************************
 ; &8e49 referenced 5 times by &8468, &8797, &8877, &88e6, &8ebe
-.sub_c8e49
-    bit l003c                                                         ; 8e49: 24 3c       $<
+.check_not_continuous_editing
+    bit file_edit_flags                                               ; 8e49: 24 3c       $<
     bvs return_20                                                     ; 8e4b: 70 df       p.
-    lda l003c                                                         ; 8e4d: a5 3c       .<
+    lda file_edit_flags                                               ; 8e4d: a5 3c       .<
     ror a                                                             ; 8e4f: 6a          j
     bcc return_20                                                     ; 8e50: 90 da       ..
     bcs c8e5d                                                         ; 8e52: b0 09       ..             ; ALWAYS branch
 
 ; &8e54 referenced 3 times by &84ae, &84eb, &850a
 .sub_c8e54
-    bit l003c                                                         ; 8e54: 24 3c       $<
+    bit file_edit_flags                                               ; 8e54: 24 3c       $<
     bvs c8e5d                                                         ; 8e56: 70 05       p.
-    lda l003c                                                         ; 8e58: a5 3c       .<
+    lda file_edit_flags                                               ; 8e58: a5 3c       .<
     ror a                                                             ; 8e5a: 6a          j
     bcs return_20                                                     ; 8e5b: b0 cf       ..
 ; &8e5d referenced 2 times by &8e52, &8e56
 .c8e5d
-    jsr sub_c89e5                                                     ; 8e5d: 20 e5 89     ..
+    jsr display_document_file_state                                   ; 8e5d: 20 e5 89     ..
     jmp cli_loop                                                      ; 8e60: 4c f6 81    L..
 
 ; ***************************************************************************************
@@ -2619,7 +2624,7 @@ l80f2 = brk_handler_ptr+1
 
 ; &8ebe referenced 2 times by &8434, &8445
 .sub_c8ebe
-    jsr sub_c8e49                                                     ; 8ebe: 20 49 8e     I.
+    jsr check_not_continuous_editing                                  ; 8ebe: 20 49 8e     I.
     jsr sub_c8535                                                     ; 8ec1: 20 35 85     5.
     jsr sub_cb104                                                     ; 8ec4: 20 04 b1     ..
     lda top                                                           ; 8ec7: a5 0d       ..
@@ -2664,7 +2669,7 @@ l80f2 = brk_handler_ptr+1
     jsr sub_c902c                                                     ; 8f0a: 20 2c 90     ,.
 ; &8f0d referenced 1 time by &8efc
 .c8f0d
-    jsr sub_c8df4                                                     ; 8f0d: 20 f4 8d     ..
+    jsr parse_optional_filename_from_command                          ; 8f0d: 20 f4 8d     ..
     bne c8f29                                                         ; 8f10: d0 17       ..
     lda l0031                                                         ; 8f12: a5 31       .1
     bpl return_23                                                     ; 8f14: 10 03       ..
@@ -8879,7 +8884,7 @@ la8a5 = ca8a4+1
 .caffe
     sty page+1                                                        ; affe: 84 0c       ..
     ldy #0                                                            ; b000: a0 00       ..
-    sty l003c                                                         ; b002: 84 3c       .<
+    sty file_edit_flags                                               ; b002: 84 3c       .<
     sty xpos                                                          ; b004: 84 40       .@
     lda #&aa                                                          ; b006: a9 aa       ..
     sta zp_initialisation_canary                                      ; b008: 85 0a       ..
@@ -9655,1237 +9660,1237 @@ lb2a1 = commands_table+1
 save pydis_start, pydis_end
 
 ; Label references by decreasing frequency:
-;     tmp8:                                109
-;     tmp9:                                 81
-;     tmp0:                                 75
-;     l0083:                                74
-;     l0084:                                71
-;     input_buffer_ptr+1:                   61
-;     tmp6:                                 61
-;     xpos:                                 61
-;     l0082:                                54
-;     ptr4:                                 52
-;     ptr4+0:                               52
-;     l0081:                                50
-;     tmp1:                                 47
-;     l0039:                                46
-;     tmp4:                                 44
-;     current_edit_line_ptr:                43
-;     current_edit_line_ptr+0:              43
-;     tmp7:                                 43
-;     ptr4+1:                               41
-;     current_format_line_ptr:              38
-;     current_format_line_ptr+0:            38
-;     oswrch:                               36
-;     print_inline_string:                  36
-;     tmp2:                                 33
-;     tmp5:                                 32
-;     l0046:                                24
-;     ca93c:                                23
-;     ruler_left_stop:                      23
-;     tmp3:                                 22
-;     format_mode_flag:                     21
-;     osbyte:                               21
-;     output_buffer:                        19
-;     area_start_ptr:                       18
-;     area_start_ptr+0:                     18
-;     area_start_ptr+1:                     18
-;     top:                                  18
-;     top+0:                                18
-;     l0048:                                16
-;     l0074:                                16
-;     osnewl:                               16
-;     top+1:                                16
-;     current_edit_line_ptr+1:              15
-;     input_buffer_ptr:                     15
-;     input_buffer_ptr+0:                   15
-;     last_macro_ptr:                       15
-;     last_macro_ptr+0:                     15
-;     line_buffer_needs_unpacking_flag:     15
-;     ptr1:                                 15
-;     ptr1+0:                               15
-;     __begin_pointer_array:                14
-;     __end_pointer_array:                  14
-;     area_end_ptr:                         14
-;     area_end_ptr+0:                       14
-;     area_end_ptr+1:                       14
-;     check_for_command_prefix:             14
-;     cli_loop:                             14
-;     cursor_moved_flag:                    14
-;     l003c:                                14
-;     l0042:                                14
-;     markers_array:                        14
-;     markers_array+0:                      14
-;     print_flags:                          14
-;     print_xpos:                           14
-;     current_format_line_ptr+1:            13
-;     l0043:                                13
-;     l0045:                                13
-;     l006f:                                13
-;     line_lengths:                         13
-;     markers_array+1:                      13
-;     move_cursor_to_address:               13
-;     page:                                 13
-;     page+0:                               13
-;     ptr1+1:                               13
-;     ruler_right_stop:                     13
-;     evaluate_expression_from_fmt_cmd:     12
-;     get_line_length:                      12
-;     l0038:                                12
-;     l0047:                                12
-;     l0070:                                12
-;     l0072:                                12
-;     l0073:                                12
-;     page+1:                               12
-;     screen_height:                        12
-;     draw_char:                            11
-;     input_buffer:                         11
-;     l0012:                                11
-;     l0079:                                11
-;     l007e:                                10
-;     oshwm:                                10
-;     oshwm+0:                              10
-;     c8b7b:                                 9
-;     exit_from_service_call:                9
-;     flags_need_redrawing_flag:             9
-;     l0011:                                 9
-;     l0044:                                 9
-;     l006d:                                 9
-;     l007a:                                 9
-;     microspacing_flag:                     9
-;     rw_file_handle:                        9
-;     screen_width:                          9
-;     stop_printing:                         9
-;     ca741:                                 8
-;     current_ruler_ptr:                     8
-;     current_ruler_ptr+0:                   8
-;     doc_ptr2:                              8
-;     doc_ptr2+0:                            8
-;     doc_ptr2+1:                            8
-;     is_uppercase:                          8
-;     l0031:                                 8
-;     l003d:                                 8
-;     l0076:                                 8
-;     last_macro_ptr+1:                      8
-;     osasci:                                8
-;     ptr2:                                  8
-;     ptr2+0:                                8
-;     ptr3:                                  8
-;     ptr3+0:                                8
-;     return_55:                             8
-;     sub_c8e33:                             8
-;     sub_ca536:                             8
-;     top_margin:                            8
-;     beep:                                  7
-;     bottom_margin:                         7
-;     c9b2f:                                 7
-;     error_handling_mode:                   7
-;     l0021:                                 7
-;     l0033:                                 7
-;     make_space_for_line:                   7
-;     parse_marks_from_command:              7
-;     ptr5:                                  7
-;     ptr5+0:                                7
-;     ptr6:                                  7
-;     ptr6+0:                                7
-;     ptr6+1:                                7
-;     sanitise_area:                         7
-;     sub_cab1a:                             7
-;     sub_cab37:                             7
-;     c8c95:                                 6
-;     ca1c9:                                 6
-;     ca30d:                                 6
-;     cac20:                                 6
-;     check_for_bad_document:                6
-;     check_for_control_code:                6
-;     current_screen_mode:                   6
-;     doc_ptr1:                              6
-;     doc_ptr1+0:                            6
-;     doc_ptr1+1:                            6
-;     filename:                              6
-;     get_current_fmt_cmd_byte:              6
-;     hscroll_pos:                           6
-;     insert_mode_flag:                      6
-;     is_tube_flag:                          6
-;     l003a:                                 6
-;     l003b:                                 6
-;     l0041:                                 6
-;     macro_executing_flag:                  6
-;     print_vertical_space:                  6
-;     printer_driver_name:                   6
-;     register_value_p:                      6
-;     register_value_p+0:                    6
-;     return_20:                             6
-;     return_47:                             6
-;     return_58:                             6
-;     set_cursor_position:                   6
-;     sub_ca9b0:                             6
-;     ypos:                                  6
-;     c82fa:                                 5
-;     c853f:                                 5
-;     c8b11:                                 5
-;     c8c23:                                 5
-;     c8cc8:                                 5
-;     c9048:                                 5
-;     c930d:                                 5
-;     c937b:                                 5
-;     c950f:                                 5
-;     c9c7f:                                 5
-;     c9e94:                                 5
-;     cab29:                                 5
-;     cab91:                                 5
-;     cac78:                                 5
-;     cb05a:                                 5
-;     editor_loop:                           5
-;     header_text_maybe:                     5
-;     himem:                                 5
-;     himem+0:                               5
-;     himem+1:                               5
-;     justifying_flag:                       5
-;     l0034:                                 5
-;     l0049:                                 5
-;     l004a:                                 5
-;     open_file:                             5
-;     page_eject_fmt:                        5
-;     ptr2+1:                                5
-;     ptr3+1:                                5
-;     ptr5+1:                                5
-;     sub_c8df4:                             5
-;     sub_c8e1f:                             5
-;     sub_c8e49:                             5
-;     sub_ca276:                             5
-;     sub_ca608:                             5
-;     sub_caa97:                             5
-;     acknowledge_escape:                    4
-;     c84ab:                                 4
-;     c85df:                                 4
-;     c87d1:                                 4
-;     c8b64:                                 4
-;     c9355:                                 4
-;     c9426:                                 4
-;     c9821:                                 4
-;     c9974:                                 4
-;     c9a8d:                                 4
-;     c9b73:                                 4
-;     ca151:                                 4
-;     ca4e9:                                 4
-;     ca941:                                 4
-;     call_printer_driver:                   4
-;     call_through_jumptable:                4
-;     cb07a:                                 4
-;     compute_bytes_free:                    4
-;     edit_command_loop:                     4
-;     folding_flag:                          4
-;     footer_margin:                         4
-;     header_margin:                         4
-;     l0032:                                 4
-;     l050a:                                 4
-;     l050b:                                 4
-;     line_spacing:                          4
-;     lookup_marker:                         4
-;     page_length:                           4
-;     parse_boolean_from_fmt_cmd:            4
-;     read_char:                             4
-;     render_number_to_screen:               4
-;     return_22:                             4
-;     rom_workspace_array:                   4
-;     set_inverted_text_if_not_mode_7:       4
-;     set_normal_text_if_not_mode_7:         4
-;     sub_c89d3:                             4
-;     sub_c9431:                             4
-;     sub_ca5ae:                             4
-;     sub_cab6e:                             4
-;     sub_caec2:                             4
-;     two_sided_flag:                        4
-;     wipe_buffer:                           4
-;     c80f3:                                 3
-;     c82e7:                                 3
-;     c869b:                                 3
-;     c870d:                                 3
-;     c88ac:                                 3
-;     c8a84:                                 3
-;     c8b47:                                 3
-;     c8b78:                                 3
-;     c8bdb:                                 3
-;     c8c8d:                                 3
-;     c8f1a:                                 3
-;     c8fe6:                                 3
-;     c90f8:                                 3
-;     c91f5:                                 3
-;     c9209:                                 3
-;     c9223:                                 3
-;     c9263:                                 3
-;     c985c:                                 3
-;     c995c:                                 3
-;     c9a58:                                 3
-;     c9b06:                                 3
-;     c9b31:                                 3
-;     c9b86:                                 3
-;     c9c1d:                                 3
-;     c9c43:                                 3
-;     ca12a:                                 3
-;     ca514:                                 3
-;     ca5d1:                                 3
-;     ca5d5:                                 3
-;     ca9e7:                                 3
-;     ca9f1:                                 3
-;     cabdf:                                 3
-;     cae03:                                 3
-;     cae64:                                 3
-;     caed4:                                 3
-;     caf55:                                 3
-;     caf5c:                                 3
-;     clear_cmd:                             3
-;     current_ruler_buffer:                  3
-;     current_ruler_ptr+1:                   3
-;     cursor_off:                            3
-;     cursor_on:                             3
-;     deref_and_check_for_command_prefix:    3
-;     do_osfile_with_block:                  3
-;     document_filename:                     3
-;     document_initialisation_canary:        3
-;     draw_prompt_characters:                3
-;     expand_line:                           3
-;     flush_and_read_char:                   3
-;     footers_enabled_flag:                  3
-;     headers_enabled_flag:                  3
-;     highlight1_code:                       3
-;     home_cursor:                           3
-;     initialise_document:                   3
-;     l0030:                                 3
-;     l0102:                                 3
-;     l050c:                                 3
-;     l050d:                                 3
-;     l97b0:                                 3
-;     left_margin:                           3
-;     os_text_ptr:                           3
-;     parse_integer_from_command:            3
-;     parser_table:                          3
-;     print_char:                            3
-;     printer_driver_ptr:                    3
-;     printer_driver_ptr+0:                  3
-;     register_value_l:                      3
-;     register_value_l+0:                    3
-;     reset_area_to_marks_1_2:               3
-;     return_2:                              3
-;     return_36:                             3
-;     return_44:                             3
-;     return_46:                             3
-;     return_56:                             3
-;     return_6:                              3
-;     return_76:                             3
-;     return_8:                              3
-;     rhs_extra_margin:                      3
-;     run_cli:                               3
-;     set_text_colour:                       3
-;     sub_c845e:                             3
-;     sub_c8535:                             3
-;     sub_c8e54:                             3
-;     sub_c902c:                             3
-;     sub_c93b6:                             3
-;     sub_c93c8:                             3
-;     sub_c93fd:                             3
-;     sub_c95b2:                             3
-;     sub_ca486:                             3
-;     sub_cae06:                             3
-;     sub_caf5f:                             3
-;     zp_initialisation_canary:              3
-;     another_filename:                      2
-;     c816d:                                 2
-;     c827c:                                 2
-;     c837d:                                 2
-;     c83ca:                                 2
-;     c83da:                                 2
-;     c850d:                                 2
-;     c85ec:                                 2
-;     c867d:                                 2
-;     c86b8:                                 2
-;     c8703:                                 2
-;     c8715:                                 2
-;     c871f:                                 2
-;     c876d:                                 2
-;     c8787:                                 2
-;     c87b4:                                 2
-;     c8801:                                 2
-;     c88af:                                 2
-;     c8977:                                 2
-;     c8a86:                                 2
-;     c8aa3:                                 2
-;     c8ada:                                 2
-;     c8b6a:                                 2
-;     c8c33:                                 2
-;     c8c3e:                                 2
-;     c8c7a:                                 2
-;     c8cdb:                                 2
-;     c8d39:                                 2
-;     c8d5d:                                 2
-;     c8e0f:                                 2
-;     c8e25:                                 2
-;     c8e5d:                                 2
-;     c8f30:                                 2
-;     c8f3b:                                 2
-;     c8f6b:                                 2
-;     c8fce:                                 2
-;     c8ffb:                                 2
-;     c900e:                                 2
-;     c9064:                                 2
-;     c90a0:                                 2
-;     c90b6:                                 2
-;     c9115:                                 2
-;     c91a7:                                 2
-;     c9225:                                 2
-;     c92d4:                                 2
-;     c92f0:                                 2
-;     c93b8:                                 2
-;     c93ce:                                 2
-;     c93e6:                                 2
-;     c9415:                                 2
-;     c951c:                                 2
-;     c9529:                                 2
-;     c9537:                                 2
-;     c953e:                                 2
-;     c96a2:                                 2
-;     c96b8:                                 2
-;     c96f8:                                 2
-;     c9788:                                 2
-;     c97ae:                                 2
-;     c9804:                                 2
-;     c9847:                                 2
-;     c9967:                                 2
-;     c99c9:                                 2
-;     c99e4:                                 2
-;     c9a21:                                 2
-;     c9a2e:                                 2
-;     c9a40:                                 2
-;     c9a60:                                 2
-;     c9aa5:                                 2
-;     c9ae9:                                 2
-;     c9aef:                                 2
-;     c9b6a:                                 2
-;     c9b84:                                 2
-;     c9b96:                                 2
-;     c9bca:                                 2
-;     c9bf2:                                 2
-;     c9c00:                                 2
-;     c9c48:                                 2
-;     c9c67:                                 2
-;     c9d9b:                                 2
-;     c9de3:                                 2
-;     c9e3a:                                 2
-;     c9e9b:                                 2
-;     c9eda:                                 2
-;     c9f80:                                 2
-;     c9fab:                                 2
-;     ca00f:                                 2
-;     ca07c:                                 2
-;     ca0ba:                                 2
-;     ca1ea:                                 2
-;     ca219:                                 2
-;     ca28e:                                 2
-;     ca2dc:                                 2
-;     ca2e6:                                 2
-;     ca2f1:                                 2
-;     ca313:                                 2
-;     ca35e:                                 2
-;     ca3b2:                                 2
-;     ca3de:                                 2
-;     ca461:                                 2
-;     ca4b4:                                 2
-;     ca50e:                                 2
-;     ca532:                                 2
-;     ca58c:                                 2
-;     ca5f8:                                 2
-;     ca666:                                 2
-;     ca681:                                 2
-;     ca684:                                 2
-;     ca6e5:                                 2
-;     ca6fe:                                 2
-;     ca739:                                 2
-;     ca753:                                 2
-;     ca82e:                                 2
-;     ca84c:                                 2
-;     ca890:                                 2
-;     ca8ed:                                 2
-;     ca8f8:                                 2
-;     ca919:                                 2
-;     caa51:                                 2
-;     caa82:                                 2
-;     caad5:                                 2
-;     cab75:                                 2
-;     cabf6:                                 2
-;     cabf9:                                 2
-;     cac17:                                 2
-;     cac3e:                                 2
-;     cac5c:                                 2
-;     cac8f:                                 2
-;     cad45:                                 2
-;     cada3:                                 2
-;     caded:                                 2
-;     cae35:                                 2
-;     cae78:                                 2
-;     caeb7:                                 2
-;     caf2a:                                 2
-;     caf31:                                 2
-;     cb30c:                                 2
-;     cb363:                                 2
-;     cf8_mark_as_ruler_key:                 2
-;     clear_marks_1_2:                       2
-;     clear_screen:                          2
-;     close_file:                            2
-;     close_file_indirect:                   2
-;     commands_table:                        2
-;     complete_CRTC_10_write:                2
-;     create_default_ruler:                  2
-;     current_line_buffer:                   2
-;     current_tab_key:                       2
-;     decimal_table:                         2
-;     decimal_table+1:                       2
-;     detect_tube:                           2
-;     display_nl_then_no_text:               2
-;     doc_ptr3:                              2
-;     doc_ptr3+0:                            2
-;     doc_ptr3+1:                            2
-;     draw_previous_word:                    2
-;     edit_input_file_handle:                2
-;     edit_output_file_handle:               2
-;     enter_editor_mode:                     2
-;     error_if_cassette_filesystem:          2
-;     esc_key:                               2
-;     expand_escaped_string:                 2
-;     f13_right_key:                         2
-;     f6_insert_line_key:                    2
-;     find_margins_of_current_ruler:         2
-;     finished_editing_command:              2
-;     first_macro_ptr:                       2
-;     first_macro_ptr+0:                     2
-;     first_macro_ptr+1:                     2
-;     get_next_fmt_cmd_byte:                 2
-;     get_register_address:                  2
-;     initialise_document_if_document_bad:   2
-;     l0103:                                 2
-;     l0502:                                 2
-;     l0503:                                 2
-;     l0504:                                 2
-;     l0505:                                 2
-;     l0506:                                 2
-;     line_lengths+1:                        2
-;     lookup_formatting_command:             2
-;     oscli:                                 2
-;     osfind:                                2
-;     oshwm+1:                               2
-;     osword:                                2
-;     parse_mark_from_command:               2
-;     prepare_printer_driver:                2
-;     print_newline:                         2
-;     print_x_words_of_help:                 2
-;     printer_driver_ptr+1:                  2
-;     prompt_for_marker:                     2
-;     register_value_l+1:                    2
-;     register_value_p+1:                    2
-;     render_date_time_to_output_buffer:     2
-;     render_header_or_footer:               2
-;     render_new_page:                       2
-;     render_register:                       2
-;     reset_area_to_entire_document:         2
-;     return_11:                             2
-;     return_14:                             2
-;     return_17:                             2
-;     return_25:                             2
-;     return_28:                             2
-;     return_37:                             2
-;     return_38:                             2
-;     return_42:                             2
-;     return_54:                             2
-;     return_66:                             2
-;     return_67:                             2
-;     return_68:                             2
-;     return_71:                             2
-;     return_83:                             2
-;     return_85:                             2
-;     run_editor:                            2
-;     set_marker_to_here:                    2
-;     setup_CRTC_10_write:                   2
-;     sub_c8310:                             2
-;     sub_c8361:                             2
-;     sub_c83f0:                             2
-;     sub_c8412:                             2
-;     sub_c8849:                             2
-;     sub_c89e5:                             2
-;     sub_c8a4f:                             2
-;     sub_c8c5f:                             2
-;     sub_c8c7c:                             2
-;     sub_c8cfe:                             2
-;     sub_c8d24:                             2
-;     sub_c8d48:                             2
-;     sub_c8ebe:                             2
-;     sub_c9173:                             2
-;     sub_c9228:                             2
-;     sub_c9241:                             2
-;     sub_c9393:                             2
-;     sub_c93a1:                             2
-;     sub_c93be:                             2
-;     sub_c9407:                             2
-;     sub_c941a:                             2
-;     sub_c9445:                             2
-;     sub_c9830:                             2
-;     sub_c9936:                             2
-;     sub_c9977:                             2
-;     sub_c9aa9:                             2
-;     sub_ca1cc:                             2
-;     sub_ca4d7:                             2
-;     sub_ca597:                             2
-;     sub_ca8b9:                             2
-;     sub_ca94a:                             2
-;     sub_cac41:                             2
-;     sub_cadf0:                             2
-;     sub_caed6:                             2
-;     sub_caef4:                             2
-;     system_init:                           2
-;     test_for_cassette_filesystem:          2
-;     to_uppercase:                          2
-;     unpack_line_into_buffer:               2
-;     word_command_str:                      2
-;     write_hex_to_output_buffer:            2
-;     add_macro_to_linked_list:              1
-;     brk_handler_ptr:                       1
-;     brkv:                                  1
-;     c805a:                                 1
-;     c80aa:                                 1
-;     c80b1:                                 1
-;     c811f:                                 1
-;     c8139:                                 1
-;     c8163:                                 1
-;     c81a7:                                 1
-;     c81b3:                                 1
-;     c81b6:                                 1
-;     c81ba:                                 1
-;     c81db:                                 1
-;     c81e0:                                 1
-;     c81e7:                                 1
-;     c81f3:                                 1
-;     c8238:                                 1
-;     c8255:                                 1
-;     c8263:                                 1
-;     c826e:                                 1
-;     c82b9:                                 1
-;     c830d:                                 1
-;     c832d:                                 1
-;     c8349:                                 1
-;     c8356:                                 1
-;     c836b:                                 1
-;     c8389:                                 1
-;     c8390:                                 1
-;     c8398:                                 1
-;     c83a3:                                 1
-;     c83c8:                                 1
-;     c83d1:                                 1
-;     c8402:                                 1
-;     c8410:                                 1
-;     c8459:                                 1
-;     c84a8:                                 1
-;     c84e8:                                 1
-;     c8584:                                 1
-;     c8598:                                 1
-;     c85b0:                                 1
-;     c85dc:                                 1
-;     c8608:                                 1
-;     c8617:                                 1
-;     c8649:                                 1
-;     c8669:                                 1
-;     c8672:                                 1
-;     c8681:                                 1
-;     c8699:                                 1
-;     c86d1:                                 1
-;     c86db:                                 1
-;     c86df:                                 1
-;     c86ea:                                 1
-;     c86ff:                                 1
-;     c871d:                                 1
-;     c878b:                                 1
-;     c8791:                                 1
-;     c87b2:                                 1
-;     c87cb:                                 1
-;     c882f:                                 1
-;     c8834:                                 1
-;     c8862:                                 1
-;     c8912:                                 1
-;     c891f:                                 1
-;     c896b:                                 1
-;     c89b3:                                 1
-;     c89c1:                                 1
-;     c8a07:                                 1
-;     c8a19:                                 1
-;     c8a21:                                 1
-;     c8a40:                                 1
-;     c8a4c:                                 1
-;     c8a5b:                                 1
-;     c8a6c:                                 1
-;     c8a87:                                 1
-;     c8aca:                                 1
-;     c8af3:                                 1
-;     c8b0d:                                 1
-;     c8b1f:                                 1
-;     c8b38:                                 1
-;     c8b4d:                                 1
-;     c8b6b:                                 1
-;     c8b91:                                 1
-;     c8b9f:                                 1
-;     c8bb7:                                 1
-;     c8bbc:                                 1
-;     c8bd7:                                 1
-;     c8bdf:                                 1
-;     c8be3:                                 1
-;     c8bf2:                                 1
-;     c8bf7:                                 1
-;     c8c30:                                 1
-;     c8caf:                                 1
-;     c8cf1:                                 1
-;     c8cf2:                                 1
-;     c8cfa:                                 1
-;     c8d0a:                                 1
-;     c8d6c:                                 1
-;     c8daf:                                 1
-;     c8dce:                                 1
-;     c8edb:                                 1
-;     c8f0a:                                 1
-;     c8f0d:                                 1
-;     c8f29:                                 1
-;     c8f6e:                                 1
-;     c8f7a:                                 1
-;     c8f92:                                 1
-;     c8fb9:                                 1
-;     c8fd5:                                 1
-;     c9009:                                 1
-;     c9034:                                 1
-;     c906b:                                 1
-;     c906f:                                 1
-;     c9087:                                 1
-;     c908a:                                 1
-;     c908c:                                 1
-;     c9090:                                 1
-;     c9092:                                 1
-;     c90e2:                                 1
-;     c9101:                                 1
-;     c912b:                                 1
-;     c913b:                                 1
-;     c9142:                                 1
-;     c9154:                                 1
-;     c915b:                                 1
-;     c9160:                                 1
-;     c9163:                                 1
-;     c9177:                                 1
-;     c9184:                                 1
-;     c91a3:                                 1
-;     c91c2:                                 1
-;     c91cc:                                 1
-;     c91d0:                                 1
-;     c91da:                                 1
-;     c921b:                                 1
-;     c9231:                                 1
-;     c923c:                                 1
-;     c9254:                                 1
-;     c925a:                                 1
-;     c9260:                                 1
-;     c927c:                                 1
-;     c9284:                                 1
-;     c928c:                                 1
-;     c92cc:                                 1
-;     c92cf:                                 1
-;     c92e8:                                 1
-;     c932e:                                 1
-;     c9363:                                 1
-;     c93a7:                                 1
-;     c93aa:                                 1
-;     c93d9:                                 1
-;     c93f2:                                 1
-;     c943c:                                 1
-;     c9453:                                 1
-;     c9462:                                 1
-;     c9468:                                 1
-;     c9472:                                 1
-;     c947e:                                 1
-;     c9488:                                 1
-;     c949e:                                 1
-;     c94c0:                                 1
-;     c94c7:                                 1
-;     c94cb:                                 1
-;     c94cd:                                 1
-;     c9548:                                 1
-;     c9555:                                 1
-;     c955e:                                 1
-;     c9575:                                 1
-;     c9598:                                 1
-;     c959c:                                 1
-;     c959e:                                 1
-;     c95aa:                                 1
-;     c9642:                                 1
-;     c964c:                                 1
-;     c968d:                                 1
-;     c968f:                                 1
-;     c96ce:                                 1
-;     c9716:                                 1
-;     c9719:                                 1
-;     c9725:                                 1
-;     c974c:                                 1
-;     c977f:                                 1
-;     c9783:                                 1
-;     c97c0:                                 1
-;     c97d5:                                 1
-;     c97dc:                                 1
-;     c97f7:                                 1
-;     c981c:                                 1
-;     c9861:                                 1
-;     c986d:                                 1
-;     c9871:                                 1
-;     c988c:                                 1
-;     c98b2:                                 1
-;     c98b5:                                 1
-;     c98bd:                                 1
-;     c98d3:                                 1
-;     c98d9:                                 1
-;     c98f6:                                 1
-;     c98fa:                                 1
-;     c9912:                                 1
-;     c991c:                                 1
-;     c9920:                                 1
-;     c9922:                                 1
-;     c994a:                                 1
-;     c9969:                                 1
-;     c998a:                                 1
-;     c99b6:                                 1
-;     c99c7:                                 1
-;     c99e0:                                 1
-;     c99ee:                                 1
-;     c9a0a:                                 1
-;     c9a11:                                 1
-;     c9a38:                                 1
-;     c9a5d:                                 1
-;     c9a87:                                 1
-;     c9aa4:                                 1
-;     c9ad5:                                 1
-;     c9b1a:                                 1
-;     c9b20:                                 1
-;     c9b23:                                 1
-;     c9b44:                                 1
-;     c9b8f:                                 1
-;     c9b9f:                                 1
-;     c9bbb:                                 1
-;     c9c09:                                 1
-;     c9c14:                                 1
-;     c9c31:                                 1
-;     c9c4a:                                 1
-;     c9c56:                                 1
-;     c9c82:                                 1
-;     c9c9d:                                 1
-;     c9ca2:                                 1
-;     c9cb9:                                 1
-;     c9cd0:                                 1
-;     c9cdb:                                 1
-;     c9cf2:                                 1
-;     c9cf5:                                 1
-;     c9d0d:                                 1
-;     c9d15:                                 1
-;     c9d28:                                 1
-;     c9d30:                                 1
-;     c9d98:                                 1
-;     c9dbd:                                 1
-;     c9dcd:                                 1
-;     c9dfd:                                 1
-;     c9e81:                                 1
-;     c9f5f:                                 1
-;     c9fc3:                                 1
-;     ca035:                                 1
-;     ca051:                                 1
-;     ca05b:                                 1
-;     ca093:                                 1
-;     ca097:                                 1
-;     ca0c8:                                 1
-;     ca0d2:                                 1
-;     ca0d6:                                 1
-;     ca0ef:                                 1
-;     ca11a:                                 1
-;     ca122:                                 1
-;     ca15e:                                 1
-;     ca1da:                                 1
-;     ca1e6:                                 1
-;     ca223:                                 1
-;     ca229:                                 1
-;     ca24d:                                 1
-;     ca265:                                 1
-;     ca273:                                 1
-;     ca29c:                                 1
-;     ca2b2:                                 1
-;     ca2e0:                                 1
-;     ca2f9:                                 1
-;     ca307:                                 1
-;     ca348:                                 1
-;     ca351:                                 1
-;     ca360:                                 1
-;     ca381:                                 1
-;     ca38a:                                 1
-;     ca395:                                 1
-;     ca3c1:                                 1
-;     ca3d8:                                 1
-;     ca3e7:                                 1
-;     ca3ff:                                 1
-;     ca406:                                 1
-;     ca422:                                 1
-;     ca479:                                 1
-;     ca4bc:                                 1
-;     ca4f4:                                 1
-;     ca522:                                 1
-;     ca523:                                 1
-;     ca529:                                 1
-;     ca533:                                 1
-;     ca550:                                 1
-;     ca587:                                 1
-;     ca5cf:                                 1
-;     ca5d9:                                 1
-;     ca5e1:                                 1
-;     ca5f1:                                 1
-;     ca5fa:                                 1
-;     ca624:                                 1
-;     ca63b:                                 1
-;     ca63d:                                 1
-;     ca672:                                 1
-;     ca6ae:                                 1
-;     ca6c2:                                 1
-;     ca6d4:                                 1
-;     ca6ec:                                 1
-;     ca6f1:                                 1
-;     ca705:                                 1
-;     ca72b:                                 1
-;     ca74f:                                 1
-;     ca7a5:                                 1
-;     ca80f:                                 1
-;     ca81f:                                 1
-;     ca824:                                 1
-;     ca832:                                 1
-;     ca87e:                                 1
-;     ca887:                                 1
-;     ca8a1:                                 1
-;     ca8a4:                                 1
-;     ca8df:                                 1
-;     ca90a:                                 1
-;     ca911:                                 1
-;     ca92f:                                 1
-;     ca93a:                                 1
-;     ca965:                                 1
-;     ca96e:                                 1
-;     ca97c:                                 1
-;     ca9c3:                                 1
-;     ca9d1:                                 1
-;     ca9db:                                 1
-;     caa08:                                 1
-;     caa32:                                 1
-;     caa46:                                 1
-;     caa57:                                 1
-;     caa65:                                 1
-;     caa75:                                 1
-;     caab0:                                 1
-;     caab7:                                 1
-;     caac8:                                 1
-;     caae8:                                 1
-;     cab06:                                 1
-;     cab3f:                                 1
-;     cab4b:                                 1
-;     cab58:                                 1
-;     cab64:                                 1
-;     cab6c:                                 1
-;     cabad:                                 1
-;     cabb3:                                 1
-;     cabbc:                                 1
-;     cac0b:                                 1
-;     cac1d:                                 1
-;     cac4c:                                 1
-;     cac58:                                 1
-;     cac6f:                                 1
-;     cac7b:                                 1
-;     cac8d:                                 1
-;     cac9a:                                 1
-;     cac9c:                                 1
-;     cacad:                                 1
-;     cad5c:                                 1
-;     cad5d:                                 1
-;     cada2:                                 1
-;     cadd1:                                 1
-;     cade7:                                 1
-;     cadea:                                 1
-;     cadff:                                 1
-;     cae27:                                 1
-;     cae4b:                                 1
-;     cae4d:                                 1
-;     cae52:                                 1
-;     cae5c:                                 1
-;     cae91:                                 1
-;     cae93:                                 1
-;     cae98:                                 1
-;     caef0:                                 1
-;     caf19:                                 1
-;     caf28:                                 1
-;     caf60:                                 1
-;     caf91:                                 1
-;     cafdc:                                 1
-;     cafee:                                 1
-;     caffe:                                 1
-;     cb06c:                                 1
-;     cb0ff:                                 1
-;     cb321:                                 1
-;     cb36f:                                 1
-;     cb383:                                 1
-;     cb38b:                                 1
-;     cb393:                                 1
-;     claim_private_workspace_handler:       1
-;     create_go_command:                     1
-;     default_printer_driver_ptr:            1
-;     detect_mode_7:                         1
-;     display_no_text:                       1
-;     display_status_word:                   1
-;     enter_nonprintable_character:          1
-;     enter_printable_character:             1
-;     escape_flag:                           1
-;     escaped_char_table:                    1
-;     execute_formatting_command:            1
-;     f4_beginning_of_line_key:              1
-;     f9_delete_char_key:                    1
-;     footer_text_maybe:                     1
-;     get_byte_from_file:                    1
-;     get_next_bit_of_relocation_table:      1
-;     get_next_macro_in_linked_list:         1
-;     help_handler:                          1
-;     highlight2_code:                       1
-;     input_line_not_escaped:                1
-;     input_line_not_oscli:                  1
-;     jumptable_ptrs:                        1
-;     l00ef:                                 1
-;     l00f0:                                 1
-;     l00f1:                                 1
-;     l00fd:                                 1
-;     l0101:                                 1
-;     l0501:                                 1
-;     l050e:                                 1
-;     l050f:                                 1
-;     l0510:                                 1
-;     l0511:                                 1
-;     l80f2:                                 1
-;     l83e0:                                 1
-;     l8747:                                 1
-;     l8748:                                 1
-;     l8749:                                 1
-;     l94b2:                                 1
-;     l97b1:                                 1
-;     la69a:                                 1
-;     la69b:                                 1
-;     la83d:                                 1
-;     la8a5:                                 1
-;     la995:                                 1
-;     lada6:                                 1
-;     language_handler:                      1
-;     lb152:                                 1
-;     lb2a1:                                 1
-;     lb39a:                                 1
-;     lookup_macro_name:                     1
-;     loop_c803d:                            1
-;     loop_c8051:                            1
-;     loop_c819a:                            1
-;     loop_c82b3:                            1
-;     loop_c83b8:                            1
-;     loop_c8490:                            1
-;     loop_c84c4:                            1
-;     loop_c84ee:                            1
-;     loop_c8652:                            1
-;     loop_c8674:                            1
-;     loop_c86c2:                            1
-;     loop_c8822:                            1
-;     loop_c88fa:                            1
-;     loop_c8914:                            1
-;     loop_c89fa:                            1
-;     loop_c8a15:                            1
-;     loop_c8a36:                            1
-;     loop_c8a74:                            1
-;     loop_c8ae4:                            1
-;     loop_c8c2a:                            1
-;     loop_c8dfb:                            1
-;     loop_c8e3b:                            1
-;     loop_c8f5d:                            1
-;     loop_c9107:                            1
-;     loop_c91b2:                            1
-;     loop_c91f1:                            1
-;     loop_c9247:                            1
-;     loop_c9381:                            1
-;     loop_c942a:                            1
-;     loop_c944c:                            1
-;     loop_c9516:                            1
-;     loop_c9589:                            1
-;     loop_c973e:                            1
-;     loop_c979d:                            1
-;     loop_c98a2:                            1
-;     loop_c98ec:                            1
-;     loop_c992c:                            1
-;     loop_c99ba:                            1
-;     loop_c9a62:                            1
-;     loop_c9bae:                            1
-;     loop_c9cf9:                            1
-;     loop_c9ff8:                            1
-;     loop_ca003:                            1
-;     loop_ca0e7:                            1
-;     loop_ca132:                            1
-;     loop_ca13d:                            1
-;     loop_ca2c7:                            1
-;     loop_ca31f:                            1
-;     loop_ca3c3:                            1
-;     loop_ca431:                            1
-;     loop_ca465:                            1
-;     loop_ca4bf:                            1
-;     loop_ca4c2:                            1
-;     loop_ca544:                            1
-;     loop_ca5a2:                            1
-;     loop_ca5e5:                            1
-;     loop_ca615:                            1
-;     loop_ca629:                            1
-;     loop_ca6c4:                            1
-;     loop_ca792:                            1
-;     loop_ca80b:                            1
-;     loop_ca851:                            1
-;     loop_ca86a:                            1
-;     loop_ca91c:                            1
-;     loop_ca962:                            1
-;     loop_ca976:                            1
-;     loop_ca983:                            1
-;     loop_ca9f7:                            1
-;     loop_ca9f9:                            1
-;     loop_caa38:                            1
-;     loop_caabd:                            1
-;     loop_caafb:                            1
-;     loop_cab13:                            1
-;     loop_cab2b:                            1
-;     loop_cab4d:                            1
-;     loop_caba5:                            1
-;     loop_caced:                            1
-;     loop_cad12:                            1
-;     loop_cadd5:                            1
-;     loop_cadf4:                            1
-;     loop_cae37:                            1
-;     loop_caea5:                            1
-;     loop_caec8:                            1
-;     loop_caf3f:                            1
-;     loop_caf4a:                            1
-;     loop_cafe9:                            1
-;     loop_cb095:                            1
-;     loop_cb0a8:                            1
-;     loop_cb0e7:                            1
-;     loop_cb0e9:                            1
-;     loop_cb108:                            1
-;     loop_cb32f:                            1
-;     nested_subroutine_error:               1
-;     non_function_key_table:                1
-;     osargs:                                1
-;     osbget:                                1
-;     osbput:                                1
-;     osbyte_handler:                        1
-;     osfile:                                1
-;     osrdch:                                1
-;     parse_command:                         1
-;     print_char_just_to_printer:            1
-;     print_to_screen:                       1
-;     put_byte_to_file:                      1
-;     register_value_array:                  1
-;     render_number_to_callback:             1
-;     render_number_to_output_buffer:        1
-;     restore_cursor_position:               1
-;     return_1:                              1
-;     return_10:                             1
-;     return_12:                             1
-;     return_13:                             1
-;     return_15:                             1
-;     return_16:                             1
-;     return_18:                             1
-;     return_19:                             1
-;     return_21:                             1
-;     return_23:                             1
-;     return_24:                             1
-;     return_26:                             1
-;     return_27:                             1
-;     return_29:                             1
-;     return_3:                              1
-;     return_30:                             1
-;     return_31:                             1
-;     return_32:                             1
-;     return_33:                             1
-;     return_34:                             1
-;     return_35:                             1
-;     return_39:                             1
-;     return_4:                              1
-;     return_40:                             1
-;     return_41:                             1
-;     return_43:                             1
-;     return_45:                             1
-;     return_48:                             1
-;     return_49:                             1
-;     return_5:                              1
-;     return_50:                             1
-;     return_51:                             1
-;     return_52:                             1
-;     return_53:                             1
-;     return_57:                             1
-;     return_59:                             1
-;     return_60:                             1
-;     return_61:                             1
-;     return_62:                             1
-;     return_63:                             1
-;     return_64:                             1
-;     return_65:                             1
-;     return_69:                             1
-;     return_7:                              1
-;     return_70:                             1
-;     return_72:                             1
-;     return_73:                             1
-;     return_74:                             1
-;     return_75:                             1
-;     return_77:                             1
-;     return_78:                             1
-;     return_79:                             1
-;     return_80:                             1
-;     return_81:                             1
-;     return_82:                             1
-;     return_84:                             1
-;     return_86:                             1
-;     return_9:                              1
-;     return_key:                            1
-;     save_cursor_position:                  1
-;     service_handler:                       1
-;     sub_c8371:                             1
-;     sub_c88f4:                             1
-;     sub_c88f8:                             1
-;     sub_c8956:                             1
-;     sub_c8c51:                             1
-;     sub_c8c53:                             1
-;     sub_c8d00:                             1
-;     sub_c8d28:                             1
-;     sub_c8d51:                             1
-;     sub_c8d9a:                             1
-;     sub_c8da2:                             1
-;     sub_c8e2d:                             1
-;     sub_c916a:                             1
-;     sub_c9188:                             1
-;     sub_c939b:                             1
-;     sub_c976c:                             1
-;     sub_c9ac1:                             1
-;     sub_c9de1:                             1
-;     sub_c9e22:                             1
-;     sub_ca071:                             1
-;     sub_ca0af:                             1
-;     sub_ca44e:                             1
-;     sub_ca4dd:                             1
-;     sub_ca651:                             1
-;     sub_ca6f9:                             1
-;     sub_caacb:                             1
-;     sub_cab8b:                             1
-;     sub_cabc4:                             1
-;     sub_cac50:                             1
-;     sub_caedd:                             1
-;     sub_cb104:                             1
-;     sub_cb31b:                             1
+;     tmp8:                                 109
+;     tmp9:                                  81
+;     tmp0:                                  75
+;     l0083:                                 74
+;     l0084:                                 71
+;     input_buffer_ptr+1:                    61
+;     tmp6:                                  61
+;     xpos:                                  61
+;     l0082:                                 54
+;     ptr4:                                  52
+;     ptr4+0:                                52
+;     l0081:                                 50
+;     tmp1:                                  47
+;     l0039:                                 46
+;     tmp4:                                  44
+;     current_edit_line_ptr:                 43
+;     current_edit_line_ptr+0:               43
+;     tmp7:                                  43
+;     ptr4+1:                                41
+;     current_format_line_ptr:               38
+;     current_format_line_ptr+0:             38
+;     oswrch:                                36
+;     print_inline_string:                   36
+;     tmp2:                                  33
+;     tmp5:                                  32
+;     l0046:                                 24
+;     ca93c:                                 23
+;     ruler_left_stop:                       23
+;     tmp3:                                  22
+;     format_mode_flag:                      21
+;     osbyte:                                21
+;     output_buffer:                         19
+;     area_start_ptr:                        18
+;     area_start_ptr+0:                      18
+;     area_start_ptr+1:                      18
+;     top:                                   18
+;     top+0:                                 18
+;     l0048:                                 16
+;     l0074:                                 16
+;     osnewl:                                16
+;     top+1:                                 16
+;     current_edit_line_ptr+1:               15
+;     input_buffer_ptr:                      15
+;     input_buffer_ptr+0:                    15
+;     last_macro_ptr:                        15
+;     last_macro_ptr+0:                      15
+;     line_buffer_needs_unpacking_flag:      15
+;     ptr1:                                  15
+;     ptr1+0:                                15
+;     __begin_pointer_array:                 14
+;     __end_pointer_array:                   14
+;     area_end_ptr:                          14
+;     area_end_ptr+0:                        14
+;     area_end_ptr+1:                        14
+;     check_for_command_prefix:              14
+;     cli_loop:                              14
+;     cursor_moved_flag:                     14
+;     file_edit_flags:                       14
+;     l0042:                                 14
+;     markers_array:                         14
+;     markers_array+0:                       14
+;     print_flags:                           14
+;     print_xpos:                            14
+;     current_format_line_ptr+1:             13
+;     l0043:                                 13
+;     l0045:                                 13
+;     l006f:                                 13
+;     line_lengths:                          13
+;     markers_array+1:                       13
+;     move_cursor_to_address:                13
+;     page:                                  13
+;     page+0:                                13
+;     ptr1+1:                                13
+;     ruler_right_stop:                      13
+;     evaluate_expression_from_fmt_cmd:      12
+;     get_line_length:                       12
+;     l0038:                                 12
+;     l0047:                                 12
+;     l0070:                                 12
+;     l0072:                                 12
+;     l0073:                                 12
+;     page+1:                                12
+;     screen_height:                         12
+;     draw_char:                             11
+;     input_buffer:                          11
+;     l0012:                                 11
+;     l0079:                                 11
+;     l007e:                                 10
+;     oshwm:                                 10
+;     oshwm+0:                               10
+;     c8b7b:                                  9
+;     exit_from_service_call:                 9
+;     flags_need_redrawing_flag:              9
+;     l0011:                                  9
+;     l0044:                                  9
+;     l006d:                                  9
+;     l007a:                                  9
+;     microspacing_flag:                      9
+;     rw_file_handle:                         9
+;     screen_width:                           9
+;     stop_printing:                          9
+;     ca741:                                  8
+;     current_ruler_ptr:                      8
+;     current_ruler_ptr+0:                    8
+;     doc_ptr2:                               8
+;     doc_ptr2+0:                             8
+;     doc_ptr2+1:                             8
+;     is_uppercase:                           8
+;     l0031:                                  8
+;     l003d:                                  8
+;     l0076:                                  8
+;     last_macro_ptr+1:                       8
+;     osasci:                                 8
+;     ptr2:                                   8
+;     ptr2+0:                                 8
+;     ptr3:                                   8
+;     ptr3+0:                                 8
+;     return_55:                              8
+;     sub_c8e33:                              8
+;     sub_ca536:                              8
+;     top_margin:                             8
+;     beep:                                   7
+;     bottom_margin:                          7
+;     c9b2f:                                  7
+;     error_handling_mode:                    7
+;     l0021:                                  7
+;     l0033:                                  7
+;     make_space_for_line:                    7
+;     parse_marks_from_command:               7
+;     ptr5:                                   7
+;     ptr5+0:                                 7
+;     ptr6:                                   7
+;     ptr6+0:                                 7
+;     ptr6+1:                                 7
+;     sanitise_area:                          7
+;     sub_cab1a:                              7
+;     sub_cab37:                              7
+;     c8c95:                                  6
+;     ca1c9:                                  6
+;     ca30d:                                  6
+;     cac20:                                  6
+;     check_for_bad_document:                 6
+;     check_for_control_code:                 6
+;     current_screen_mode:                    6
+;     doc_ptr1:                               6
+;     doc_ptr1+0:                             6
+;     doc_ptr1+1:                             6
+;     filename_buffer:                        6
+;     get_current_fmt_cmd_byte:               6
+;     hscroll_pos:                            6
+;     insert_mode_flag:                       6
+;     is_tube_flag:                           6
+;     l003a:                                  6
+;     l003b:                                  6
+;     l0041:                                  6
+;     macro_executing_flag:                   6
+;     print_vertical_space:                   6
+;     printer_driver_name:                    6
+;     register_value_p:                       6
+;     register_value_p+0:                     6
+;     return_20:                              6
+;     return_47:                              6
+;     return_58:                              6
+;     set_cursor_position:                    6
+;     sub_ca9b0:                              6
+;     ypos:                                   6
+;     c82fa:                                  5
+;     c853f:                                  5
+;     c8b11:                                  5
+;     c8c23:                                  5
+;     c8cc8:                                  5
+;     c9048:                                  5
+;     c930d:                                  5
+;     c937b:                                  5
+;     c950f:                                  5
+;     c9c7f:                                  5
+;     c9e94:                                  5
+;     cab29:                                  5
+;     cab91:                                  5
+;     cac78:                                  5
+;     cb05a:                                  5
+;     check_not_continuous_editing:           5
+;     editor_loop:                            5
+;     header_text_maybe:                      5
+;     himem:                                  5
+;     himem+0:                                5
+;     himem+1:                                5
+;     justifying_flag:                        5
+;     l0034:                                  5
+;     l0049:                                  5
+;     l004a:                                  5
+;     open_file:                              5
+;     page_eject_fmt:                         5
+;     parse_filename_from_command:            5
+;     parse_optional_filename_from_command:   5
+;     ptr2+1:                                 5
+;     ptr3+1:                                 5
+;     ptr5+1:                                 5
+;     sub_ca276:                              5
+;     sub_ca608:                              5
+;     sub_caa97:                              5
+;     acknowledge_escape:                     4
+;     c84ab:                                  4
+;     c85df:                                  4
+;     c87d1:                                  4
+;     c8b64:                                  4
+;     c9355:                                  4
+;     c9426:                                  4
+;     c9821:                                  4
+;     c9974:                                  4
+;     c9a8d:                                  4
+;     c9b73:                                  4
+;     ca151:                                  4
+;     ca4e9:                                  4
+;     ca941:                                  4
+;     call_printer_driver:                    4
+;     call_through_jumptable:                 4
+;     cb07a:                                  4
+;     compute_bytes_free:                     4
+;     edit_command_loop:                      4
+;     folding_flag:                           4
+;     footer_margin:                          4
+;     header_margin:                          4
+;     l0032:                                  4
+;     l050a:                                  4
+;     l050b:                                  4
+;     line_spacing:                           4
+;     lookup_marker:                          4
+;     page_length:                            4
+;     parse_boolean_from_fmt_cmd:             4
+;     read_char:                              4
+;     render_number_to_screen:                4
+;     return_22:                              4
+;     rom_workspace_array:                    4
+;     set_inverted_text_if_not_mode_7:        4
+;     set_normal_text_if_not_mode_7:          4
+;     sub_c89d3:                              4
+;     sub_c9431:                              4
+;     sub_ca5ae:                              4
+;     sub_cab6e:                              4
+;     sub_caec2:                              4
+;     two_sided_flag:                         4
+;     wipe_buffer:                            4
+;     c80f3:                                  3
+;     c82e7:                                  3
+;     c869b:                                  3
+;     c870d:                                  3
+;     c88ac:                                  3
+;     c8a84:                                  3
+;     c8b47:                                  3
+;     c8b78:                                  3
+;     c8bdb:                                  3
+;     c8c8d:                                  3
+;     c8f1a:                                  3
+;     c8fe6:                                  3
+;     c90f8:                                  3
+;     c91f5:                                  3
+;     c9209:                                  3
+;     c9223:                                  3
+;     c9263:                                  3
+;     c985c:                                  3
+;     c995c:                                  3
+;     c9a58:                                  3
+;     c9b06:                                  3
+;     c9b31:                                  3
+;     c9b86:                                  3
+;     c9c1d:                                  3
+;     c9c43:                                  3
+;     ca12a:                                  3
+;     ca514:                                  3
+;     ca5d1:                                  3
+;     ca5d5:                                  3
+;     ca9e7:                                  3
+;     ca9f1:                                  3
+;     cabdf:                                  3
+;     cae03:                                  3
+;     cae64:                                  3
+;     caed4:                                  3
+;     caf55:                                  3
+;     caf5c:                                  3
+;     clear_cmd:                              3
+;     current_ruler_buffer:                   3
+;     current_ruler_ptr+1:                    3
+;     cursor_off:                             3
+;     cursor_on:                              3
+;     deref_and_check_for_command_prefix:     3
+;     do_osfile_with_block:                   3
+;     document_initialisation_canary:         3
+;     draw_prompt_characters:                 3
+;     expand_line:                            3
+;     flush_and_read_char:                    3
+;     footers_enabled_flag:                   3
+;     headers_enabled_flag:                   3
+;     highlight1_code:                        3
+;     home_cursor:                            3
+;     initialise_document:                    3
+;     input_filename:                         3
+;     l0030:                                  3
+;     l0102:                                  3
+;     l050c:                                  3
+;     l050d:                                  3
+;     l97b0:                                  3
+;     left_margin:                            3
+;     os_text_ptr:                            3
+;     parse_integer_from_command:             3
+;     parser_table:                           3
+;     print_char:                             3
+;     printer_driver_ptr:                     3
+;     printer_driver_ptr+0:                   3
+;     register_value_l:                       3
+;     register_value_l+0:                     3
+;     reset_area_to_marks_1_2:                3
+;     return_2:                               3
+;     return_36:                              3
+;     return_44:                              3
+;     return_46:                              3
+;     return_56:                              3
+;     return_6:                               3
+;     return_76:                              3
+;     return_8:                               3
+;     rhs_extra_margin:                       3
+;     run_cli:                                3
+;     set_text_colour:                        3
+;     sub_c845e:                              3
+;     sub_c8535:                              3
+;     sub_c8e54:                              3
+;     sub_c902c:                              3
+;     sub_c93b6:                              3
+;     sub_c93c8:                              3
+;     sub_c93fd:                              3
+;     sub_c95b2:                              3
+;     sub_ca486:                              3
+;     sub_cae06:                              3
+;     sub_caf5f:                              3
+;     zp_initialisation_canary:               3
+;     bad_filename_error:                     2
+;     c816d:                                  2
+;     c827c:                                  2
+;     c837d:                                  2
+;     c83ca:                                  2
+;     c83da:                                  2
+;     c850d:                                  2
+;     c85ec:                                  2
+;     c867d:                                  2
+;     c86b8:                                  2
+;     c8703:                                  2
+;     c8715:                                  2
+;     c871f:                                  2
+;     c876d:                                  2
+;     c8787:                                  2
+;     c87b4:                                  2
+;     c8801:                                  2
+;     c88af:                                  2
+;     c8977:                                  2
+;     c8a86:                                  2
+;     c8aa3:                                  2
+;     c8ada:                                  2
+;     c8b6a:                                  2
+;     c8c33:                                  2
+;     c8c3e:                                  2
+;     c8c7a:                                  2
+;     c8cdb:                                  2
+;     c8d39:                                  2
+;     c8d5d:                                  2
+;     c8e25:                                  2
+;     c8e5d:                                  2
+;     c8f30:                                  2
+;     c8f3b:                                  2
+;     c8f6b:                                  2
+;     c8fce:                                  2
+;     c8ffb:                                  2
+;     c900e:                                  2
+;     c9064:                                  2
+;     c90a0:                                  2
+;     c90b6:                                  2
+;     c9115:                                  2
+;     c91a7:                                  2
+;     c9225:                                  2
+;     c92d4:                                  2
+;     c92f0:                                  2
+;     c93b8:                                  2
+;     c93ce:                                  2
+;     c93e6:                                  2
+;     c9415:                                  2
+;     c951c:                                  2
+;     c9529:                                  2
+;     c9537:                                  2
+;     c953e:                                  2
+;     c96a2:                                  2
+;     c96b8:                                  2
+;     c96f8:                                  2
+;     c9788:                                  2
+;     c97ae:                                  2
+;     c9804:                                  2
+;     c9847:                                  2
+;     c9967:                                  2
+;     c99c9:                                  2
+;     c99e4:                                  2
+;     c9a21:                                  2
+;     c9a2e:                                  2
+;     c9a40:                                  2
+;     c9a60:                                  2
+;     c9aa5:                                  2
+;     c9ae9:                                  2
+;     c9aef:                                  2
+;     c9b6a:                                  2
+;     c9b84:                                  2
+;     c9b96:                                  2
+;     c9bca:                                  2
+;     c9bf2:                                  2
+;     c9c00:                                  2
+;     c9c48:                                  2
+;     c9c67:                                  2
+;     c9d9b:                                  2
+;     c9de3:                                  2
+;     c9e3a:                                  2
+;     c9e9b:                                  2
+;     c9eda:                                  2
+;     c9f80:                                  2
+;     c9fab:                                  2
+;     ca00f:                                  2
+;     ca07c:                                  2
+;     ca0ba:                                  2
+;     ca1ea:                                  2
+;     ca219:                                  2
+;     ca28e:                                  2
+;     ca2dc:                                  2
+;     ca2e6:                                  2
+;     ca2f1:                                  2
+;     ca313:                                  2
+;     ca35e:                                  2
+;     ca3b2:                                  2
+;     ca3de:                                  2
+;     ca461:                                  2
+;     ca4b4:                                  2
+;     ca50e:                                  2
+;     ca532:                                  2
+;     ca58c:                                  2
+;     ca5f8:                                  2
+;     ca666:                                  2
+;     ca681:                                  2
+;     ca684:                                  2
+;     ca6e5:                                  2
+;     ca6fe:                                  2
+;     ca739:                                  2
+;     ca753:                                  2
+;     ca82e:                                  2
+;     ca84c:                                  2
+;     ca890:                                  2
+;     ca8ed:                                  2
+;     ca8f8:                                  2
+;     ca919:                                  2
+;     caa51:                                  2
+;     caa82:                                  2
+;     caad5:                                  2
+;     cab75:                                  2
+;     cabf6:                                  2
+;     cabf9:                                  2
+;     cac17:                                  2
+;     cac3e:                                  2
+;     cac5c:                                  2
+;     cac8f:                                  2
+;     cad45:                                  2
+;     cada3:                                  2
+;     caded:                                  2
+;     cae35:                                  2
+;     cae78:                                  2
+;     caeb7:                                  2
+;     caf2a:                                  2
+;     caf31:                                  2
+;     cb30c:                                  2
+;     cb363:                                  2
+;     cf8_mark_as_ruler_key:                  2
+;     clear_marks_1_2:                        2
+;     clear_screen:                           2
+;     close_file:                             2
+;     close_file_indirect:                    2
+;     commands_table:                         2
+;     complete_CRTC_10_write:                 2
+;     create_default_ruler:                   2
+;     current_line_buffer:                    2
+;     current_tab_key:                        2
+;     decimal_table:                          2
+;     decimal_table+1:                        2
+;     detect_tube:                            2
+;     display_document_file_state:            2
+;     display_nl_then_no_text:                2
+;     doc_ptr3:                               2
+;     doc_ptr3+0:                             2
+;     doc_ptr3+1:                             2
+;     draw_previous_word:                     2
+;     edit_input_file_handle:                 2
+;     edit_output_file_handle:                2
+;     enter_editor_mode:                      2
+;     error_if_cassette_filesystem:           2
+;     esc_key:                                2
+;     expand_escaped_string:                  2
+;     f13_right_key:                          2
+;     f6_insert_line_key:                     2
+;     find_margins_of_current_ruler:          2
+;     finished_editing_command:               2
+;     first_macro_ptr:                        2
+;     first_macro_ptr+0:                      2
+;     first_macro_ptr+1:                      2
+;     get_next_fmt_cmd_byte:                  2
+;     get_register_address:                   2
+;     initialise_document_if_document_bad:    2
+;     l0103:                                  2
+;     l0502:                                  2
+;     l0503:                                  2
+;     l0504:                                  2
+;     l0505:                                  2
+;     l0506:                                  2
+;     line_lengths+1:                         2
+;     lookup_formatting_command:              2
+;     oscli:                                  2
+;     osfind:                                 2
+;     oshwm+1:                                2
+;     osword:                                 2
+;     output_filename:                        2
+;     parse_mark_from_command:                2
+;     prepare_printer_driver:                 2
+;     print_newline:                          2
+;     print_x_words_of_help:                  2
+;     printer_driver_ptr+1:                   2
+;     prompt_for_marker:                      2
+;     register_value_l+1:                     2
+;     register_value_p+1:                     2
+;     render_date_time_to_output_buffer:      2
+;     render_header_or_footer:                2
+;     render_new_page:                        2
+;     render_register:                        2
+;     reset_area_to_entire_document:          2
+;     return_11:                              2
+;     return_14:                              2
+;     return_17:                              2
+;     return_25:                              2
+;     return_28:                              2
+;     return_37:                              2
+;     return_38:                              2
+;     return_42:                              2
+;     return_54:                              2
+;     return_66:                              2
+;     return_67:                              2
+;     return_68:                              2
+;     return_71:                              2
+;     return_83:                              2
+;     return_85:                              2
+;     run_editor:                             2
+;     set_marker_to_here:                     2
+;     setup_CRTC_10_write:                    2
+;     sub_c8310:                              2
+;     sub_c8361:                              2
+;     sub_c83f0:                              2
+;     sub_c8412:                              2
+;     sub_c8849:                              2
+;     sub_c8a4f:                              2
+;     sub_c8c5f:                              2
+;     sub_c8c7c:                              2
+;     sub_c8cfe:                              2
+;     sub_c8d24:                              2
+;     sub_c8d48:                              2
+;     sub_c8ebe:                              2
+;     sub_c9173:                              2
+;     sub_c9228:                              2
+;     sub_c9241:                              2
+;     sub_c9393:                              2
+;     sub_c93a1:                              2
+;     sub_c93be:                              2
+;     sub_c9407:                              2
+;     sub_c941a:                              2
+;     sub_c9445:                              2
+;     sub_c9830:                              2
+;     sub_c9936:                              2
+;     sub_c9977:                              2
+;     sub_c9aa9:                              2
+;     sub_ca1cc:                              2
+;     sub_ca4d7:                              2
+;     sub_ca597:                              2
+;     sub_ca8b9:                              2
+;     sub_ca94a:                              2
+;     sub_cac41:                              2
+;     sub_cadf0:                              2
+;     sub_caed6:                              2
+;     sub_caef4:                              2
+;     system_init:                            2
+;     test_for_cassette_filesystem:           2
+;     to_uppercase:                           2
+;     unpack_line_into_buffer:                2
+;     word_command_str:                       2
+;     write_hex_to_output_buffer:             2
+;     add_macro_to_linked_list:               1
+;     brk_handler_ptr:                        1
+;     brkv:                                   1
+;     c805a:                                  1
+;     c80aa:                                  1
+;     c80b1:                                  1
+;     c811f:                                  1
+;     c8139:                                  1
+;     c8163:                                  1
+;     c81a7:                                  1
+;     c81b3:                                  1
+;     c81b6:                                  1
+;     c81ba:                                  1
+;     c81db:                                  1
+;     c81e0:                                  1
+;     c81e7:                                  1
+;     c81f3:                                  1
+;     c8238:                                  1
+;     c8255:                                  1
+;     c8263:                                  1
+;     c826e:                                  1
+;     c82b9:                                  1
+;     c830d:                                  1
+;     c832d:                                  1
+;     c8349:                                  1
+;     c8356:                                  1
+;     c836b:                                  1
+;     c8389:                                  1
+;     c8390:                                  1
+;     c8398:                                  1
+;     c83a3:                                  1
+;     c83c8:                                  1
+;     c83d1:                                  1
+;     c8402:                                  1
+;     c8410:                                  1
+;     c8459:                                  1
+;     c84a8:                                  1
+;     c84e8:                                  1
+;     c8584:                                  1
+;     c8598:                                  1
+;     c85b0:                                  1
+;     c85dc:                                  1
+;     c8608:                                  1
+;     c8617:                                  1
+;     c8649:                                  1
+;     c8669:                                  1
+;     c8672:                                  1
+;     c8681:                                  1
+;     c8699:                                  1
+;     c86d1:                                  1
+;     c86db:                                  1
+;     c86df:                                  1
+;     c86ea:                                  1
+;     c86ff:                                  1
+;     c871d:                                  1
+;     c878b:                                  1
+;     c8791:                                  1
+;     c87b2:                                  1
+;     c87cb:                                  1
+;     c882f:                                  1
+;     c8834:                                  1
+;     c8862:                                  1
+;     c8912:                                  1
+;     c891f:                                  1
+;     c896b:                                  1
+;     c89b3:                                  1
+;     c89c1:                                  1
+;     c8a07:                                  1
+;     c8a19:                                  1
+;     c8a21:                                  1
+;     c8a40:                                  1
+;     c8a4c:                                  1
+;     c8a5b:                                  1
+;     c8a6c:                                  1
+;     c8a87:                                  1
+;     c8aca:                                  1
+;     c8af3:                                  1
+;     c8b0d:                                  1
+;     c8b1f:                                  1
+;     c8b38:                                  1
+;     c8b4d:                                  1
+;     c8b6b:                                  1
+;     c8b91:                                  1
+;     c8b9f:                                  1
+;     c8bb7:                                  1
+;     c8bbc:                                  1
+;     c8bd7:                                  1
+;     c8bdf:                                  1
+;     c8be3:                                  1
+;     c8bf2:                                  1
+;     c8bf7:                                  1
+;     c8c30:                                  1
+;     c8caf:                                  1
+;     c8cf1:                                  1
+;     c8cf2:                                  1
+;     c8cfa:                                  1
+;     c8d0a:                                  1
+;     c8d6c:                                  1
+;     c8daf:                                  1
+;     c8dce:                                  1
+;     c8edb:                                  1
+;     c8f0a:                                  1
+;     c8f0d:                                  1
+;     c8f29:                                  1
+;     c8f6e:                                  1
+;     c8f7a:                                  1
+;     c8f92:                                  1
+;     c8fb9:                                  1
+;     c8fd5:                                  1
+;     c9009:                                  1
+;     c9034:                                  1
+;     c906b:                                  1
+;     c906f:                                  1
+;     c9087:                                  1
+;     c908a:                                  1
+;     c908c:                                  1
+;     c9090:                                  1
+;     c9092:                                  1
+;     c90e2:                                  1
+;     c9101:                                  1
+;     c912b:                                  1
+;     c913b:                                  1
+;     c9142:                                  1
+;     c9154:                                  1
+;     c915b:                                  1
+;     c9160:                                  1
+;     c9163:                                  1
+;     c9177:                                  1
+;     c9184:                                  1
+;     c91a3:                                  1
+;     c91c2:                                  1
+;     c91cc:                                  1
+;     c91d0:                                  1
+;     c91da:                                  1
+;     c921b:                                  1
+;     c9231:                                  1
+;     c923c:                                  1
+;     c9254:                                  1
+;     c925a:                                  1
+;     c9260:                                  1
+;     c927c:                                  1
+;     c9284:                                  1
+;     c928c:                                  1
+;     c92cc:                                  1
+;     c92cf:                                  1
+;     c92e8:                                  1
+;     c932e:                                  1
+;     c9363:                                  1
+;     c93a7:                                  1
+;     c93aa:                                  1
+;     c93d9:                                  1
+;     c93f2:                                  1
+;     c943c:                                  1
+;     c9453:                                  1
+;     c9462:                                  1
+;     c9468:                                  1
+;     c9472:                                  1
+;     c947e:                                  1
+;     c9488:                                  1
+;     c949e:                                  1
+;     c94c0:                                  1
+;     c94c7:                                  1
+;     c94cb:                                  1
+;     c94cd:                                  1
+;     c9548:                                  1
+;     c9555:                                  1
+;     c955e:                                  1
+;     c9575:                                  1
+;     c9598:                                  1
+;     c959c:                                  1
+;     c959e:                                  1
+;     c95aa:                                  1
+;     c9642:                                  1
+;     c964c:                                  1
+;     c968d:                                  1
+;     c968f:                                  1
+;     c96ce:                                  1
+;     c9716:                                  1
+;     c9719:                                  1
+;     c9725:                                  1
+;     c974c:                                  1
+;     c977f:                                  1
+;     c9783:                                  1
+;     c97c0:                                  1
+;     c97d5:                                  1
+;     c97dc:                                  1
+;     c97f7:                                  1
+;     c981c:                                  1
+;     c9861:                                  1
+;     c986d:                                  1
+;     c9871:                                  1
+;     c988c:                                  1
+;     c98b2:                                  1
+;     c98b5:                                  1
+;     c98bd:                                  1
+;     c98d3:                                  1
+;     c98d9:                                  1
+;     c98f6:                                  1
+;     c98fa:                                  1
+;     c9912:                                  1
+;     c991c:                                  1
+;     c9920:                                  1
+;     c9922:                                  1
+;     c994a:                                  1
+;     c9969:                                  1
+;     c998a:                                  1
+;     c99b6:                                  1
+;     c99c7:                                  1
+;     c99e0:                                  1
+;     c99ee:                                  1
+;     c9a0a:                                  1
+;     c9a11:                                  1
+;     c9a38:                                  1
+;     c9a5d:                                  1
+;     c9a87:                                  1
+;     c9aa4:                                  1
+;     c9ad5:                                  1
+;     c9b1a:                                  1
+;     c9b20:                                  1
+;     c9b23:                                  1
+;     c9b44:                                  1
+;     c9b8f:                                  1
+;     c9b9f:                                  1
+;     c9bbb:                                  1
+;     c9c09:                                  1
+;     c9c14:                                  1
+;     c9c31:                                  1
+;     c9c4a:                                  1
+;     c9c56:                                  1
+;     c9c82:                                  1
+;     c9c9d:                                  1
+;     c9ca2:                                  1
+;     c9cb9:                                  1
+;     c9cd0:                                  1
+;     c9cdb:                                  1
+;     c9cf2:                                  1
+;     c9cf5:                                  1
+;     c9d0d:                                  1
+;     c9d15:                                  1
+;     c9d28:                                  1
+;     c9d30:                                  1
+;     c9d98:                                  1
+;     c9dbd:                                  1
+;     c9dcd:                                  1
+;     c9dfd:                                  1
+;     c9e81:                                  1
+;     c9f5f:                                  1
+;     c9fc3:                                  1
+;     ca035:                                  1
+;     ca051:                                  1
+;     ca05b:                                  1
+;     ca093:                                  1
+;     ca097:                                  1
+;     ca0c8:                                  1
+;     ca0d2:                                  1
+;     ca0d6:                                  1
+;     ca0ef:                                  1
+;     ca11a:                                  1
+;     ca122:                                  1
+;     ca15e:                                  1
+;     ca1da:                                  1
+;     ca1e6:                                  1
+;     ca223:                                  1
+;     ca229:                                  1
+;     ca24d:                                  1
+;     ca265:                                  1
+;     ca273:                                  1
+;     ca29c:                                  1
+;     ca2b2:                                  1
+;     ca2e0:                                  1
+;     ca2f9:                                  1
+;     ca307:                                  1
+;     ca348:                                  1
+;     ca351:                                  1
+;     ca360:                                  1
+;     ca381:                                  1
+;     ca38a:                                  1
+;     ca395:                                  1
+;     ca3c1:                                  1
+;     ca3d8:                                  1
+;     ca3e7:                                  1
+;     ca3ff:                                  1
+;     ca406:                                  1
+;     ca422:                                  1
+;     ca479:                                  1
+;     ca4bc:                                  1
+;     ca4f4:                                  1
+;     ca522:                                  1
+;     ca523:                                  1
+;     ca529:                                  1
+;     ca533:                                  1
+;     ca550:                                  1
+;     ca587:                                  1
+;     ca5cf:                                  1
+;     ca5d9:                                  1
+;     ca5e1:                                  1
+;     ca5f1:                                  1
+;     ca5fa:                                  1
+;     ca624:                                  1
+;     ca63b:                                  1
+;     ca63d:                                  1
+;     ca672:                                  1
+;     ca6ae:                                  1
+;     ca6c2:                                  1
+;     ca6d4:                                  1
+;     ca6ec:                                  1
+;     ca6f1:                                  1
+;     ca705:                                  1
+;     ca72b:                                  1
+;     ca74f:                                  1
+;     ca7a5:                                  1
+;     ca80f:                                  1
+;     ca81f:                                  1
+;     ca824:                                  1
+;     ca832:                                  1
+;     ca87e:                                  1
+;     ca887:                                  1
+;     ca8a1:                                  1
+;     ca8a4:                                  1
+;     ca8df:                                  1
+;     ca90a:                                  1
+;     ca911:                                  1
+;     ca92f:                                  1
+;     ca93a:                                  1
+;     ca965:                                  1
+;     ca96e:                                  1
+;     ca97c:                                  1
+;     ca9c3:                                  1
+;     ca9d1:                                  1
+;     ca9db:                                  1
+;     caa08:                                  1
+;     caa32:                                  1
+;     caa46:                                  1
+;     caa57:                                  1
+;     caa65:                                  1
+;     caa75:                                  1
+;     caab0:                                  1
+;     caab7:                                  1
+;     caac8:                                  1
+;     caae8:                                  1
+;     cab06:                                  1
+;     cab3f:                                  1
+;     cab4b:                                  1
+;     cab58:                                  1
+;     cab64:                                  1
+;     cab6c:                                  1
+;     cabad:                                  1
+;     cabb3:                                  1
+;     cabbc:                                  1
+;     cac0b:                                  1
+;     cac1d:                                  1
+;     cac4c:                                  1
+;     cac58:                                  1
+;     cac6f:                                  1
+;     cac7b:                                  1
+;     cac8d:                                  1
+;     cac9a:                                  1
+;     cac9c:                                  1
+;     cacad:                                  1
+;     cad5c:                                  1
+;     cad5d:                                  1
+;     cada2:                                  1
+;     cadd1:                                  1
+;     cade7:                                  1
+;     cadea:                                  1
+;     cadff:                                  1
+;     cae27:                                  1
+;     cae4b:                                  1
+;     cae4d:                                  1
+;     cae52:                                  1
+;     cae5c:                                  1
+;     cae91:                                  1
+;     cae93:                                  1
+;     cae98:                                  1
+;     caef0:                                  1
+;     caf19:                                  1
+;     caf28:                                  1
+;     caf60:                                  1
+;     caf91:                                  1
+;     cafdc:                                  1
+;     cafee:                                  1
+;     caffe:                                  1
+;     cb06c:                                  1
+;     cb0ff:                                  1
+;     cb321:                                  1
+;     cb36f:                                  1
+;     cb383:                                  1
+;     cb38b:                                  1
+;     cb393:                                  1
+;     claim_private_workspace_handler:        1
+;     create_go_command:                      1
+;     default_printer_driver_ptr:             1
+;     detect_mode_7:                          1
+;     display_no_text:                        1
+;     display_status_word:                    1
+;     enter_nonprintable_character:           1
+;     enter_printable_character:              1
+;     escape_flag:                            1
+;     escaped_char_table:                     1
+;     execute_formatting_command:             1
+;     f4_beginning_of_line_key:               1
+;     f9_delete_char_key:                     1
+;     footer_text_maybe:                      1
+;     get_byte_from_file:                     1
+;     get_next_bit_of_relocation_table:       1
+;     get_next_macro_in_linked_list:          1
+;     help_handler:                           1
+;     highlight2_code:                        1
+;     input_line_not_escaped:                 1
+;     input_line_not_oscli:                   1
+;     jumptable_ptrs:                         1
+;     l00ef:                                  1
+;     l00f0:                                  1
+;     l00f1:                                  1
+;     l00fd:                                  1
+;     l0101:                                  1
+;     l0501:                                  1
+;     l050e:                                  1
+;     l050f:                                  1
+;     l0510:                                  1
+;     l0511:                                  1
+;     l80f2:                                  1
+;     l83e0:                                  1
+;     l8747:                                  1
+;     l8748:                                  1
+;     l8749:                                  1
+;     l94b2:                                  1
+;     l97b1:                                  1
+;     la69a:                                  1
+;     la69b:                                  1
+;     la83d:                                  1
+;     la8a5:                                  1
+;     la995:                                  1
+;     lada6:                                  1
+;     language_handler:                       1
+;     lb152:                                  1
+;     lb2a1:                                  1
+;     lb39a:                                  1
+;     lookup_macro_name:                      1
+;     loop_c803d:                             1
+;     loop_c8051:                             1
+;     loop_c819a:                             1
+;     loop_c82b3:                             1
+;     loop_c83b8:                             1
+;     loop_c8490:                             1
+;     loop_c84c4:                             1
+;     loop_c84ee:                             1
+;     loop_c8652:                             1
+;     loop_c8674:                             1
+;     loop_c86c2:                             1
+;     loop_c8822:                             1
+;     loop_c88fa:                             1
+;     loop_c8914:                             1
+;     loop_c89fa:                             1
+;     loop_c8a15:                             1
+;     loop_c8a36:                             1
+;     loop_c8a74:                             1
+;     loop_c8ae4:                             1
+;     loop_c8c2a:                             1
+;     loop_c8dfb:                             1
+;     loop_c8e3b:                             1
+;     loop_c8f5d:                             1
+;     loop_c9107:                             1
+;     loop_c91b2:                             1
+;     loop_c91f1:                             1
+;     loop_c9247:                             1
+;     loop_c9381:                             1
+;     loop_c942a:                             1
+;     loop_c944c:                             1
+;     loop_c9516:                             1
+;     loop_c9589:                             1
+;     loop_c973e:                             1
+;     loop_c979d:                             1
+;     loop_c98a2:                             1
+;     loop_c98ec:                             1
+;     loop_c992c:                             1
+;     loop_c99ba:                             1
+;     loop_c9a62:                             1
+;     loop_c9bae:                             1
+;     loop_c9cf9:                             1
+;     loop_c9ff8:                             1
+;     loop_ca003:                             1
+;     loop_ca0e7:                             1
+;     loop_ca132:                             1
+;     loop_ca13d:                             1
+;     loop_ca2c7:                             1
+;     loop_ca31f:                             1
+;     loop_ca3c3:                             1
+;     loop_ca431:                             1
+;     loop_ca465:                             1
+;     loop_ca4bf:                             1
+;     loop_ca4c2:                             1
+;     loop_ca544:                             1
+;     loop_ca5a2:                             1
+;     loop_ca5e5:                             1
+;     loop_ca615:                             1
+;     loop_ca629:                             1
+;     loop_ca6c4:                             1
+;     loop_ca792:                             1
+;     loop_ca80b:                             1
+;     loop_ca851:                             1
+;     loop_ca86a:                             1
+;     loop_ca91c:                             1
+;     loop_ca962:                             1
+;     loop_ca976:                             1
+;     loop_ca983:                             1
+;     loop_ca9f7:                             1
+;     loop_ca9f9:                             1
+;     loop_caa38:                             1
+;     loop_caabd:                             1
+;     loop_caafb:                             1
+;     loop_cab13:                             1
+;     loop_cab2b:                             1
+;     loop_cab4d:                             1
+;     loop_caba5:                             1
+;     loop_caced:                             1
+;     loop_cad12:                             1
+;     loop_cadd5:                             1
+;     loop_cadf4:                             1
+;     loop_cae37:                             1
+;     loop_caea5:                             1
+;     loop_caec8:                             1
+;     loop_caf3f:                             1
+;     loop_caf4a:                             1
+;     loop_cafe9:                             1
+;     loop_cb095:                             1
+;     loop_cb0a8:                             1
+;     loop_cb0e7:                             1
+;     loop_cb0e9:                             1
+;     loop_cb108:                             1
+;     loop_cb32f:                             1
+;     nested_subroutine_error:                1
+;     non_function_key_table:                 1
+;     osargs:                                 1
+;     osbget:                                 1
+;     osbput:                                 1
+;     osbyte_handler:                         1
+;     osfile:                                 1
+;     osrdch:                                 1
+;     parse_command:                          1
+;     print_char_just_to_printer:             1
+;     print_to_screen:                        1
+;     put_byte_to_file:                       1
+;     register_value_array:                   1
+;     render_number_to_callback:              1
+;     render_number_to_output_buffer:         1
+;     restore_cursor_position:                1
+;     return_1:                               1
+;     return_10:                              1
+;     return_12:                              1
+;     return_13:                              1
+;     return_15:                              1
+;     return_16:                              1
+;     return_18:                              1
+;     return_19:                              1
+;     return_21:                              1
+;     return_23:                              1
+;     return_24:                              1
+;     return_26:                              1
+;     return_27:                              1
+;     return_29:                              1
+;     return_3:                               1
+;     return_30:                              1
+;     return_31:                              1
+;     return_32:                              1
+;     return_33:                              1
+;     return_34:                              1
+;     return_35:                              1
+;     return_39:                              1
+;     return_4:                               1
+;     return_40:                              1
+;     return_41:                              1
+;     return_43:                              1
+;     return_45:                              1
+;     return_48:                              1
+;     return_49:                              1
+;     return_5:                               1
+;     return_50:                              1
+;     return_51:                              1
+;     return_52:                              1
+;     return_53:                              1
+;     return_57:                              1
+;     return_59:                              1
+;     return_60:                              1
+;     return_61:                              1
+;     return_62:                              1
+;     return_63:                              1
+;     return_64:                              1
+;     return_65:                              1
+;     return_69:                              1
+;     return_7:                               1
+;     return_70:                              1
+;     return_72:                              1
+;     return_73:                              1
+;     return_74:                              1
+;     return_75:                              1
+;     return_77:                              1
+;     return_78:                              1
+;     return_79:                              1
+;     return_80:                              1
+;     return_81:                              1
+;     return_82:                              1
+;     return_84:                              1
+;     return_86:                              1
+;     return_9:                               1
+;     return_key:                             1
+;     save_cursor_position:                   1
+;     service_handler:                        1
+;     sub_c8371:                              1
+;     sub_c88f4:                              1
+;     sub_c88f8:                              1
+;     sub_c8956:                              1
+;     sub_c8c51:                              1
+;     sub_c8c53:                              1
+;     sub_c8d00:                              1
+;     sub_c8d28:                              1
+;     sub_c8d51:                              1
+;     sub_c8d9a:                              1
+;     sub_c8da2:                              1
+;     sub_c8e2d:                              1
+;     sub_c916a:                              1
+;     sub_c9188:                              1
+;     sub_c939b:                              1
+;     sub_c976c:                              1
+;     sub_c9ac1:                              1
+;     sub_c9de1:                              1
+;     sub_c9e22:                              1
+;     sub_ca071:                              1
+;     sub_ca0af:                              1
+;     sub_ca44e:                              1
+;     sub_ca4dd:                              1
+;     sub_ca651:                              1
+;     sub_ca6f9:                              1
+;     sub_caacb:                              1
+;     sub_cab8b:                              1
+;     sub_cabc4:                              1
+;     sub_cac50:                              1
+;     sub_caedd:                              1
+;     sub_cb104:                              1
+;     sub_cb31b:                              1
 
 ; Stats:
 ;     Total size (Code + Data) = 16384 bytes
