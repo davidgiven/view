@@ -618,13 +618,17 @@ edit_cmd:
     jsr parse_filename_from_command
     lda #2
     sta error_handling_mode
+    #if 0
     lda #0x40 ; '@'
     jsr open_file
+    #endif
     sta edit_input_file_handle
     jsr set_document_name_to_filename_buffer
     jsr parse_filename_from_command
+    #if 0
     lda #0x80
     jsr open_file
+    #endif
     sta edit_output_file_handle
     ldx #0
     stx l0041
@@ -670,7 +674,7 @@ loop_c84c4:
     sta current_ruler_buffer,y
     jsr sub_c89d3
     jsr cb07a
-    jsr sub_c8535
+    jsr check_for_at_least_150_bytes_free
     lda l0041
     bne c84e8
     lda top
@@ -752,7 +756,7 @@ write_cmd:
     jsr close_file
     jmp cli_loop
 
-sub_c8535:
+check_for_at_least_150_bytes_free:
     jsr compute_bytes_free
     tya
     bne return_6
@@ -771,10 +775,12 @@ return_6:
 read_cmd:
     jsr parse_filename_from_command
     jsr parse_marks_from_command
-    jsr sub_c8535
-    lda #0x40 ; '@'
-    jsr open_file
-    sta rw_file_handle
+    jsr check_for_at_least_150_bytes_free
+
+    ldx #<input_buffer
+    ldy #>input_buffer
+    jsr open_input_file
+
     lda area_start_ptr
     ldy area_start_ptr+1
     sta tmp4
@@ -782,9 +788,12 @@ read_cmd:
     jsr move_cursor_to_address
     lda tmp4
     ldy tmp5
-    jsr sub_c8d9a
-    jsr make_space_for_line
-    jsr c8c8d
+    jsr compute_required_space_for_insertion
+    jsr make_space_for_insertion
+
+    ldx #<input_buffer
+    ldy #>input_buffer
+    jsr read_block_from_file
     beq c8584
     bcs c8598
 c8584:
@@ -804,15 +813,7 @@ c8598:
     lda ptr5+1
     sbc tmp1
     sta tmp7
-    jsr sub_ca9b0
-close_rw_file_and_return_to_cli:
-    ldy #BDOS_CLOSE_FILE
-    lda #<input_buffer
-    ldx #>input_buffer
-    jsr BDOS
-    zif cs
-        jmp file_error
-    zendif
+    jsr adjust_pointers
     jmp cli_loop
 
 ; ***************************************************************************************
@@ -1091,7 +1092,7 @@ c87d1:
 printer_cmd:
     jsr parse_optional_filename_from_command
     beq c882f
-    jsr sub_c8849
+    ;jsr sub_c8849
     beq c87d1
     lda l050c
     ora l050d
@@ -1143,27 +1144,13 @@ parse_integer_from_command:
     beq return_8
     jmp ca6fe
 
-sub_c8849:
-    lda #5
-    jsr do_osfile_with_buffer
-    tay
-    beq display_file_not_found
-    lda l050a
-    ora l050b
-    rts
-
 ; ***************************************************************************************
-open_file:
-    ldy #>(filename_buffer)
-    ldx #<(filename_buffer)
-    jsr osfind                                                        ; Open or close file(s)
-    tay
-    bne return_8
-display_file_not_found:
+file_not_found_error:
     jsr stop_printing
     jsr print_inline_string
     .ascii "File not found"
-    .byte 0xff
+    .byte 0
+    jmp cli_loop
 
 ; ***************************************************************************************
 load_cmd:
@@ -1179,7 +1166,7 @@ load_cmd:
     lda #<input_buffer
     ldx #>input_buffer
     jsr BDOS
-    bcs display_file_not_found
+    bcs file_not_found_error
 
     ; Load the file into memory.
 
@@ -1392,7 +1379,7 @@ sub_c89d3:
     sta tmp4
     lda area_start_ptr+1
     sta tmp5
-    jsr sub_ca9b0
+    jsr adjust_pointers
     lda tmp4
     ldy tmp5
     jmp cac78
@@ -1507,7 +1494,7 @@ c8aa3:
     ora tmp6
     beq c8ada
     sta tmp6
-    jsr make_space_for_line
+    jsr make_space_for_insertion
     bcc c8ada
     rts
 
@@ -1519,7 +1506,7 @@ c8aca:
     lda #0
     sbc tmp7
     sta tmp7
-    jsr sub_ca9b0
+    jsr adjust_pointers
 c8ada:
     ldy #0
     sty l0081
@@ -1793,16 +1780,18 @@ sub_c8c7c:
     sta doc_ptr3+1
     rts
 
-c8c8d:
+read_block_from_file:
+    stx tmp2
+    sty tmp3
     lda #0
-    sta error_handling_mode
     sta l0083
     sta l0084
 c8c95:
-    ldy rw_file_handle
+    ldx tmp2
+    ldy tmp3
     jsr get_byte_from_file
+    beq c8cf2
     ldy #0
-    bcs c8cf2
     cmp #0x7f
     bcc c8caf
     ldx l0084
@@ -1833,12 +1822,12 @@ c8cc8:
     cpy #0x84
     bne c8cdb
     pha
-    jsr sub_c8cfe
+    jsr write_cr_to_memory
     pla
     inx
 c8cdb:
     inc l0083
-    jsr sub_c8d00
+    jsr write_byte_to_memory
     txa
     beq c8c95
     lda tmp1
@@ -1854,15 +1843,15 @@ c8cf2:
     php
     lda l0084
     beq c8cfa
-    jsr sub_c8cfe
+    jsr write_cr_to_memory
 c8cfa:
     plp
     lda l0082
     rts
 
-sub_c8cfe:
+write_cr_to_memory:
     lda #0x0d
-sub_c8d00:
+write_byte_to_memory:
     ldy #0
     sta (tmp0),y
     inc tmp0
@@ -1878,11 +1867,6 @@ return_16:
     rts
 
 ; ***************************************************************************************
-get_byte_from_file:
-    tsx
-    stx l0082
-    jmp osbget                                                        ; Read a single byte from an open file Y
-
 sub_c8d24:
     lda page
     ldy page+1
@@ -1890,7 +1874,7 @@ sub_c8d28:
     jsr sub_c8da2
     lda edit_input_file_handle
     sta rw_file_handle
-    jsr c8c8d
+    jsr read_block_from_file
     php
     beq c8d39
     bcc c8d39
@@ -1937,7 +1921,7 @@ write_area_to_file_yx:
 return_17:
     rts
 
-sub_c8d9a:
+compute_required_space_for_insertion:
     ldx #0
     stx tmp8
     stx tmp9
@@ -2073,7 +2057,7 @@ display_no_text:
 
 print_document:
     jsr check_not_continuous_editing
-    jsr sub_c8535
+    jsr check_for_at_least_150_bytes_free
     jsr sub_cb104
     lda top
     adc #3
@@ -2128,8 +2112,10 @@ c8f1a:
     jmp cli_loop
 
 c8f29:
+    #if 0
     lda #0x40 ; '@'
     jsr open_file
+    #endif
     sta rw_file_handle
 c8f30:
     lda l0031
@@ -2631,7 +2617,7 @@ return_27:
     rts
 
 c9260:
-    jmp c8c8d
+    jmp read_block_from_file
 
 c9263:
     lda l0038
@@ -4367,7 +4353,7 @@ c9cb9:
     lda ptr4+1
     adc #0
     sta tmp5
-    jsr make_space_for_line
+    jsr make_space_for_insertion
     bcc c9cd0
     jmp ca941
 
@@ -4559,7 +4545,7 @@ c9de3:
     sta tmp6
     lda #0
     sta tmp7
-    jsr make_space_for_line
+    jsr make_space_for_insertion
     bcs c9dfd
     lda #0x0d
     ldy #0
@@ -4642,7 +4628,7 @@ f7_delete_line_key:
     stx tmp6
     lda #0
     sta tmp7
-    jsr sub_ca9b0
+    jsr adjust_pointers
     jsr cb05a
     ldy #0
     lda (ptr4),y
@@ -4706,7 +4692,7 @@ cf7_join_lines_key:
     sta tmp7
     lda #1
     sta tmp6
-    jsr sub_ca9b0
+    jsr adjust_pointers
     lda ptr4
     ldy ptr4+1
     jsr cac78
@@ -5260,7 +5246,7 @@ ca1ea:
     sta tmp4
     lda doc_ptr1+1
     sta tmp5
-    jsr make_space_for_line
+    jsr make_space_for_insertion
     bcs ca265
     lda area_start_ptr
     sta tmp8
@@ -6376,7 +6362,7 @@ sub_ca8b9:
     bcc ca8df
     beq ca8ed
     sta tmp6
-    jsr sub_ca9b0
+    jsr adjust_pointers
     jmp ca8ed
 
 ca8df:
@@ -6385,7 +6371,7 @@ ca8df:
     sec
     sbc l0084
     sta tmp6
-    jsr make_space_for_line
+    jsr make_space_for_insertion
     bcs return_66
 ca8ed:
     lda l006e
@@ -6500,7 +6486,7 @@ la995:
     .ascii "Memory full - Press ESCAPE"
     .byte 0
 
-sub_ca9b0:
+adjust_pointers:
     lda tmp4
     sta tmp2
     clc
@@ -6565,7 +6551,7 @@ caa08:
     sta top+1
     rts
 
-make_space_for_line:
+make_space_for_insertion:
     lda top
     sta tmp2
     clc
@@ -7028,7 +7014,7 @@ cacad:
     sta tmp6
     lda #0
     sta tmp7
-    jsr make_space_for_line
+    jsr make_space_for_insertion
     lda #0x0d
     ldy #0
     sta (tmp4),y
@@ -8045,27 +8031,9 @@ osword:
     .byte 0
     brk
 
-osfind:
-    jsr print_inline_string
-    .ascii "osfind\n"
-    .byte 0
-    brk
-
 osfile:
     jsr print_inline_string
     .ascii "osfile\n"
-    .byte 0
-    brk
-
-osbget:
-    jsr print_inline_string
-    .ascii "osbget\n"
-    .byte 0
-    brk
-
-osbput:
-    jsr print_inline_string
-    .ascii "osbput\n"
     .byte 0
     brk
 
@@ -8205,10 +8173,7 @@ zproc readline
     rts
 zendproc
 
-; YX = pointer to file structure
-; Input filename is in filename_buffer
-; Uses tmp6/tmp7.
-zproc open_output_file
+zproc prepare_to_open_file
     stx tmp6
     sty tmp7
     jsr zero_terminate_filename_buffer
@@ -8221,6 +8186,36 @@ zproc open_output_file
     zif cs
         jmp bad_filename_error
     zendif
+    rts
+zendproc
+
+; YX = pointer to file structure
+; Input filename is in filename_buffer
+; Uses tmp6/tmp7.
+zproc open_input_file
+    jsr prepare_to_open_file
+
+    ; Delete any existing file.
+
+    ldy #BDOS_OPEN_FILE
+    lda tmp6
+    ldx tmp7
+    jsr BDOS
+    zif cs
+        jmp file_not_found_error
+    zendif
+
+    ldy #FS_BUFFERPTR
+    lda #FS_BUFFER+128
+    sta (tmp6), y
+    rts
+zendproc
+
+; YX = pointer to file structure
+; Input filename is in filename_buffer
+; Uses tmp6/tmp7.
+zproc open_output_file
+    jsr prepare_to_open_file
 
     ; Delete any existing file.
 
@@ -8246,13 +8241,12 @@ zendproc
 zproc bdos_and_file_error
     jsr BDOS
     zif cs
-        jmp file_error
+        jmp file_not_found_error
     zendif
     rts
 zendproc
 
-; FS pointer in tmp6/tmp7.
-zproc flush_file
+zproc set_dma_to_buffer_address_of_file
     clc
     lda tmp6
     adc #FS_BUFFER
@@ -8262,7 +8256,12 @@ zproc flush_file
     tax
     pla
     ldy #BDOS_SET_DMA_ADDRESS
-    jsr BDOS
+    jmp BDOS
+zendproc
+
+; FS pointer in tmp6/tmp7.
+zproc flush_file
+    jsr set_dma_to_buffer_address_of_file
 
     ldy #BDOS_WRITE_SEQUENTIAL
     lda tmp6
@@ -8319,3 +8318,36 @@ zproc put_byte_to_file
     rts
 zendproc
 
+; If the value is 0, returns with C set to signal end of file.
+zproc get_byte_from_file
+    stx tmp6
+    sty tmp7
+
+    ldy #FS_BUFFERPTR
+    lda (tmp6), y
+    cmp #FS_BUFFER+128
+    zif eq
+        jsr set_dma_to_buffer_address_of_file
+        ldy #BDOS_READ_SEQUENTIAL
+        lda tmp6
+        ldx tmp7
+        jsr bdos_and_file_error
+
+        lda #FS_BUFFER
+    zendif
+
+    tay
+    lda (tmp6), y
+    pha
+    iny
+    tya
+    ldy #FS_BUFFERPTR
+    sta (tmp6), y
+    pla
+    clc
+    tay                     ; set flags
+    zif eq
+        sec
+    zendif
+    rts
+zendproc

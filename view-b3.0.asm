@@ -957,7 +957,7 @@ l80f2 = brk_handler_ptr+1
     sta current_ruler_buffer,y                                        ; 84cf: 99 cf 05    ...
     jsr sub_c89d3                                                     ; 84d2: 20 d3 89     ..
     jsr cb07a                                                         ; 84d5: 20 7a b0     z.
-    jsr sub_c8535                                                     ; 84d8: 20 35 85     5.
+    jsr check_for_at_least_150_bytes_free                             ; 84d8: 20 35 85     5.
     lda l0041                                                         ; 84db: a5 41       .A
     bne c84e8                                                         ; 84dd: d0 09       ..
     lda top                                                           ; 84df: a5 0d       ..
@@ -1010,8 +1010,9 @@ l80f2 = brk_handler_ptr+1
     jsr write_area_to_rw_fh                                           ; 852f: 20 51 8d     Q.
     jmp close_rw_file_and_return_to_cli                               ; 8532: 4c b0 85    L..
 
+; ***************************************************************************************
 ; &8535 referenced 3 times by &84d8, &855e, &8ec1
-.sub_c8535
+.check_for_at_least_150_bytes_free
     jsr compute_bytes_free                                            ; 8535: 20 be af     ..
     tya                                                               ; 8538: 98          .
     bne return_6                                                      ; 8539: d0 1c       ..
@@ -1033,7 +1034,7 @@ l80f2 = brk_handler_ptr+1
 .read_cmd
     jsr parse_filename_from_command                                   ; 8558: 20 1f 8e     ..
     jsr parse_marks_from_command                                      ; 855b: 20 89 89     ..
-    jsr sub_c8535                                                     ; 855e: 20 35 85     5.
+    jsr check_for_at_least_150_bytes_free                             ; 855e: 20 35 85     5.
     lda #&40 ; '@'                                                    ; 8561: a9 40       .@
     jsr open_file                                                     ; 8563: 20 58 88     X.
     sta rw_file_handle                                                ; 8566: 85 4d       .M
@@ -1044,9 +1045,9 @@ l80f2 = brk_handler_ptr+1
     jsr move_cursor_to_address                                        ; 8570: 20 cb ab     ..
     lda tmp4                                                          ; 8573: a5 89       ..
     ldy tmp5                                                          ; 8575: a4 8a       ..
-    jsr sub_c8d9a                                                     ; 8577: 20 9a 8d     ..
-    jsr make_space_for_line                                           ; 857a: 20 15 aa     ..
-    jsr c8c8d                                                         ; 857d: 20 8d 8c     ..
+    jsr compute_required_space_for_insertion                          ; 8577: 20 9a 8d     ..
+    jsr make_space_for_insertion                                      ; 857a: 20 15 aa     ..
+    jsr read_block_from_file                                          ; 857d: 20 8d 8c     ..
     beq c8584                                                         ; 8580: f0 02       ..
     bcs c8598                                                         ; 8582: b0 14       ..
 ; &8584 referenced 1 time by &8580
@@ -1068,7 +1069,7 @@ l80f2 = brk_handler_ptr+1
     lda ptr5+1                                                        ; 85a7: a5 16       ..
     sbc tmp1                                                          ; 85a9: e5 86       ..
     sta tmp7                                                          ; 85ab: 85 8c       ..
-    jsr sub_ca9b0                                                     ; 85ad: 20 b0 a9     ..
+    jsr adjust_pointers                                               ; 85ad: 20 b0 a9     ..
 ; ***************************************************************************************
 ; &85b0 referenced 1 time by &8532
 .close_rw_file_and_return_to_cli
@@ -1724,7 +1725,7 @@ l80f2 = brk_handler_ptr+1
     sta tmp4                                                          ; 89d5: 85 89       ..
     lda area_start_ptr+1                                              ; 89d7: a5 60       .`
     sta tmp5                                                          ; 89d9: 85 8a       ..
-    jsr sub_ca9b0                                                     ; 89db: 20 b0 a9     ..
+    jsr adjust_pointers                                               ; 89db: 20 b0 a9     ..
     lda tmp4                                                          ; 89de: a5 89       ..
     ldy tmp5                                                          ; 89e0: a4 8a       ..
     jmp cac78                                                         ; 89e2: 4c 78 ac    Lx.
@@ -1878,7 +1879,7 @@ l80f2 = brk_handler_ptr+1
     ora tmp6                                                          ; 8abe: 05 8b       ..
     beq c8ada                                                         ; 8ac0: f0 18       ..
     sta tmp6                                                          ; 8ac2: 85 8b       ..
-    jsr make_space_for_line                                           ; 8ac4: 20 15 aa     ..
+    jsr make_space_for_insertion                                      ; 8ac4: 20 15 aa     ..
     bcc c8ada                                                         ; 8ac7: 90 11       ..
     rts                                                               ; 8ac9: 60          `
 
@@ -1891,7 +1892,7 @@ l80f2 = brk_handler_ptr+1
     lda #0                                                            ; 8ad1: a9 00       ..
     sbc tmp7                                                          ; 8ad3: e5 8c       ..
     sta tmp7                                                          ; 8ad5: 85 8c       ..
-    jsr sub_ca9b0                                                     ; 8ad7: 20 b0 a9     ..
+    jsr adjust_pointers                                               ; 8ad7: 20 b0 a9     ..
 ; &8ada referenced 2 times by &8ac0, &8ac7
 .c8ada
     ldy #0                                                            ; 8ada: a0 00       ..
@@ -2205,8 +2206,9 @@ l80f2 = brk_handler_ptr+1
     sta doc_ptr3+1                                                    ; 8c8a: 85 68       .h
     rts                                                               ; 8c8c: 60          `
 
+; ***************************************************************************************
 ; &8c8d referenced 3 times by &857d, &8d2f, &9260
-.c8c8d
+.read_block_from_file
     lda #0                                                            ; 8c8d: a9 00       ..
     sta error_handling_mode                                           ; 8c8f: 85 4e       .N
     sta l0083                                                         ; 8c91: 85 83       ..
@@ -2249,13 +2251,13 @@ l80f2 = brk_handler_ptr+1
     cpy #&84                                                          ; 8cd1: c0 84       ..
     bne c8cdb                                                         ; 8cd3: d0 06       ..
     pha                                                               ; 8cd5: 48          H
-    jsr sub_c8cfe                                                     ; 8cd6: 20 fe 8c     ..
+    jsr write_cr_to_memory                                            ; 8cd6: 20 fe 8c     ..
     pla                                                               ; 8cd9: 68          h
     inx                                                               ; 8cda: e8          .
 ; &8cdb referenced 2 times by &8ccc, &8cd3
 .c8cdb
     inc l0083                                                         ; 8cdb: e6 83       ..
-    jsr sub_c8d00                                                     ; 8cdd: 20 00 8d     ..
+    jsr write_byte_to_memory                                          ; 8cdd: 20 00 8d     ..
     txa                                                               ; 8ce0: 8a          .
     beq c8c95                                                         ; 8ce1: f0 b2       ..
     lda tmp1                                                          ; 8ce3: a5 86       ..
@@ -2273,18 +2275,20 @@ l80f2 = brk_handler_ptr+1
     php                                                               ; 8cf2: 08          .
     lda l0084                                                         ; 8cf3: a5 84       ..
     beq c8cfa                                                         ; 8cf5: f0 03       ..
-    jsr sub_c8cfe                                                     ; 8cf7: 20 fe 8c     ..
+    jsr write_cr_to_memory                                            ; 8cf7: 20 fe 8c     ..
 ; &8cfa referenced 1 time by &8cf5
 .c8cfa
     plp                                                               ; 8cfa: 28          (
     lda l0082                                                         ; 8cfb: a5 82       ..
     rts                                                               ; 8cfd: 60          `
 
+; ***************************************************************************************
 ; &8cfe referenced 2 times by &8cd6, &8cf7
-.sub_c8cfe
+.write_cr_to_memory
     lda #&0d                                                          ; 8cfe: a9 0d       ..
+; ***************************************************************************************
 ; &8d00 referenced 1 time by &8cdd
-.sub_c8d00
+.write_byte_to_memory
     ldy #0                                                            ; 8d00: a0 00       ..
     sta (tmp0),y                                                      ; 8d02: 91 85       ..
     inc tmp0                                                          ; 8d04: e6 85       ..
@@ -2325,7 +2329,7 @@ l80f2 = brk_handler_ptr+1
     jsr sub_c8da2                                                     ; 8d28: 20 a2 8d     ..
     lda edit_input_file_handle                                        ; 8d2b: a5 6a       .j
     sta rw_file_handle                                                ; 8d2d: 85 4d       .M
-    jsr c8c8d                                                         ; 8d2f: 20 8d 8c     ..
+    jsr read_block_from_file                                          ; 8d2f: 20 8d 8c     ..
     php                                                               ; 8d32: 08          .
     beq c8d39                                                         ; 8d33: f0 04       ..
     bcc c8d39                                                         ; 8d35: 90 02       ..
@@ -2413,8 +2417,9 @@ l80f2 = brk_handler_ptr+1
     ldy rw_file_handle                                                ; 8d95: a4 4d       .M
     jmp osfind                                                        ; 8d97: 4c ce ff    L..            ; Close one or all files
 
+; ***************************************************************************************
 ; &8d9a referenced 1 time by &8577
-.sub_c8d9a
+.compute_required_space_for_insertion
     ldx #0                                                            ; 8d9a: a2 00       ..
     stx tmp8                                                          ; 8d9c: 86 8d       ..
     stx tmp9                                                          ; 8d9e: 86 8e       ..
@@ -2635,7 +2640,7 @@ l80f2 = brk_handler_ptr+1
 ; &8ebe referenced 2 times by &8434, &8445
 .print_document
     jsr check_not_continuous_editing                                  ; 8ebe: 20 49 8e     I.
-    jsr sub_c8535                                                     ; 8ec1: 20 35 85     5.
+    jsr check_for_at_least_150_bytes_free                             ; 8ec1: 20 35 85     5.
     jsr sub_cb104                                                     ; 8ec4: 20 04 b1     ..
     lda top                                                           ; 8ec7: a5 0d       ..
     adc #3                                                            ; 8ec9: 69 03       i.
@@ -3280,7 +3285,7 @@ l80f2 = brk_handler_ptr+1
 
 ; &9260 referenced 1 time by &9243
 .c9260
-    jmp c8c8d                                                         ; 9260: 4c 8d 8c    L..
+    jmp read_block_from_file                                          ; 9260: 4c 8d 8c    L..
 
 ; &9263 referenced 3 times by &8f16, &8f38, &964c
 .c9263
@@ -5250,7 +5255,7 @@ l94b2 = default_printer_driver_ptr+1
     lda ptr4+1                                                        ; 9cc2: a5 09       ..
     adc #0                                                            ; 9cc4: 69 00       i.
     sta tmp5                                                          ; 9cc6: 85 8a       ..
-    jsr make_space_for_line                                           ; 9cc8: 20 15 aa     ..
+    jsr make_space_for_insertion                                      ; 9cc8: 20 15 aa     ..
     bcc c9cd0                                                         ; 9ccb: 90 03       ..
     jmp ca941                                                         ; 9ccd: 4c 41 a9    LA.
 
@@ -5464,7 +5469,7 @@ l94b2 = default_printer_driver_ptr+1
     sta tmp6                                                          ; 9de9: 85 8b       ..
     lda #0                                                            ; 9deb: a9 00       ..
     sta tmp7                                                          ; 9ded: 85 8c       ..
-    jsr make_space_for_line                                           ; 9def: 20 15 aa     ..
+    jsr make_space_for_insertion                                      ; 9def: 20 15 aa     ..
     bcs c9dfd                                                         ; 9df2: b0 09       ..
     lda #&0d                                                          ; 9df4: a9 0d       ..
     ldy #0                                                            ; 9df6: a0 00       ..
@@ -5552,7 +5557,7 @@ l94b2 = default_printer_driver_ptr+1
     stx tmp6                                                          ; 9e60: 86 8b       ..
     lda #0                                                            ; 9e62: a9 00       ..
     sta tmp7                                                          ; 9e64: 85 8c       ..
-    jsr sub_ca9b0                                                     ; 9e66: 20 b0 a9     ..
+    jsr adjust_pointers                                               ; 9e66: 20 b0 a9     ..
     jsr cb05a                                                         ; 9e69: 20 5a b0     Z.
     ldy #0                                                            ; 9e6c: a0 00       ..
     lda (ptr4),y                                                      ; 9e6e: b1 08       ..
@@ -5620,7 +5625,7 @@ l94b2 = default_printer_driver_ptr+1
     sta tmp7                                                          ; 9ec5: 85 8c       ..
     lda #1                                                            ; 9ec7: a9 01       ..
     sta tmp6                                                          ; 9ec9: 85 8b       ..
-    jsr sub_ca9b0                                                     ; 9ecb: 20 b0 a9     ..
+    jsr adjust_pointers                                               ; 9ecb: 20 b0 a9     ..
     lda ptr4                                                          ; 9ece: a5 08       ..
     ldy ptr4+1                                                        ; 9ed0: a4 09       ..
     jsr cac78                                                         ; 9ed2: 20 78 ac     x.
@@ -6171,7 +6176,7 @@ l94b2 = default_printer_driver_ptr+1
     sta tmp4                                                          ; a1fc: 85 89       ..
     lda doc_ptr1+1                                                    ; a1fe: a5 64       .d
     sta tmp5                                                          ; a200: 85 8a       ..
-    jsr make_space_for_line                                           ; a202: 20 15 aa     ..
+    jsr make_space_for_insertion                                      ; a202: 20 15 aa     ..
     bcs ca265                                                         ; a205: b0 5e       .^
     lda area_start_ptr                                                ; a207: a5 5f       ._
     sta tmp8                                                          ; a209: 85 8d       ..
@@ -7474,7 +7479,7 @@ la8a5 = ca8a4+1
     bcc ca8df                                                         ; a8d3: 90 0a       ..
     beq ca8ed                                                         ; a8d5: f0 16       ..
     sta tmp6                                                          ; a8d7: 85 8b       ..
-    jsr sub_ca9b0                                                     ; a8d9: 20 b0 a9     ..
+    jsr adjust_pointers                                               ; a8d9: 20 b0 a9     ..
     jmp ca8ed                                                         ; a8dc: 4c ed a8    L..
 
 ; &a8df referenced 1 time by &a8d3
@@ -7484,7 +7489,7 @@ la8a5 = ca8a4+1
     sec                                                               ; a8e3: 38          8
     sbc l0084                                                         ; a8e4: e5 84       ..
     sta tmp6                                                          ; a8e6: 85 8b       ..
-    jsr make_space_for_line                                           ; a8e8: 20 15 aa     ..
+    jsr make_space_for_insertion                                      ; a8e8: 20 15 aa     ..
     bcs return_66                                                     ; a8eb: b0 4e       .N
 ; &a8ed referenced 2 times by &a8d5, &a8dc
 .ca8ed
@@ -7618,8 +7623,9 @@ la8a5 = ca8a4+1
     equs "Memory full - Press ESCAPE"                                 ; a995: 4d 65 6d... Mem
     equb 0                                                            ; a9af: 00          .
 
+; ***************************************************************************************
 ; &a9b0 referenced 6 times by &85ad, &89db, &8ad7, &9e66, &9ecb, &a8d9
-.sub_ca9b0
+.adjust_pointers
     lda tmp4                                                          ; a9b0: a5 89       ..
     sta tmp2                                                          ; a9b2: 85 87       ..
     clc                                                               ; a9b4: 18          .
@@ -7694,7 +7700,7 @@ la8a5 = ca8a4+1
 
 ; ***************************************************************************************
 ; &aa15 referenced 7 times by &857a, &8ac4, &9cc8, &9def, &a202, &a8e8, &acc4
-.make_space_for_line
+.make_space_for_insertion
     lda top                                                           ; aa15: a5 0d       ..
     sta tmp2                                                          ; aa17: 85 87       ..
     clc                                                               ; aa19: 18          .
@@ -8231,7 +8237,7 @@ la8a5 = ca8a4+1
     sta tmp6                                                          ; acbe: 85 8b       ..
     lda #0                                                            ; acc0: a9 00       ..
     sta tmp7                                                          ; acc2: 85 8c       ..
-    jsr make_space_for_line                                           ; acc4: 20 15 aa     ..
+    jsr make_space_for_insertion                                      ; acc4: 20 15 aa     ..
     lda #&0d                                                          ; acc7: a9 0d       ..
     ldy #0                                                            ; acc9: a0 00       ..
     sta (tmp4),y                                                      ; accb: 91 89       ..
@@ -9797,7 +9803,7 @@ save pydis_start, pydis_end
 ;     error_handling_mode:                    7
 ;     l0021:                                  7
 ;     l0033:                                  7
-;     make_space_for_line:                    7
+;     make_space_for_insertion:               7
 ;     parse_marks_from_command:               7
 ;     ptr5:                                   7
 ;     ptr5+0:                                 7
@@ -9807,6 +9813,7 @@ save pydis_start, pydis_end
 ;     sanitise_area:                          7
 ;     sub_cab1a:                              7
 ;     sub_cab37:                              7
+;     adjust_pointers:                        6
 ;     c8c95:                                  6
 ;     ca1c9:                                  6
 ;     ca30d:                                  6
@@ -9834,7 +9841,6 @@ save pydis_start, pydis_end
 ;     return_47:                              6
 ;     return_58:                              6
 ;     set_cursor_position:                    6
-;     sub_ca9b0:                              6
 ;     ypos:                                   6
 ;     c82fa:                                  5
 ;     c8b11:                                  5
@@ -9922,7 +9928,6 @@ save pydis_start, pydis_end
 ;     c8b47:                                  3
 ;     c8b78:                                  3
 ;     c8bdb:                                  3
-;     c8c8d:                                  3
 ;     c8f1a:                                  3
 ;     c8fe6:                                  3
 ;     c90f8:                                  3
@@ -9950,6 +9955,7 @@ save pydis_start, pydis_end
 ;     caed4:                                  3
 ;     caf55:                                  3
 ;     caf5c:                                  3
+;     check_for_at_least_150_bytes_free:      3
 ;     clear_cmd:                              3
 ;     current_ruler_buffer:                   3
 ;     current_ruler_ptr+1:                    3
@@ -9979,6 +9985,7 @@ save pydis_start, pydis_end
 ;     print_char:                             3
 ;     printer_driver_ptr:                     3
 ;     printer_driver_ptr+0:                   3
+;     read_block_from_file:                   3
 ;     register_value_l:                       3
 ;     register_value_l+0:                     3
 ;     reset_area_to_marks_1_2:                3
@@ -9994,7 +10001,6 @@ save pydis_start, pydis_end
 ;     run_cli:                                3
 ;     set_text_colour:                        3
 ;     start_printing:                         3
-;     sub_c8535:                              3
 ;     sub_c8e54:                              3
 ;     sub_c902c:                              3
 ;     sub_c93b6:                              3
@@ -10230,7 +10236,6 @@ save pydis_start, pydis_end
 ;     sub_c8a4f:                              2
 ;     sub_c8c5f:                              2
 ;     sub_c8c7c:                              2
-;     sub_c8cfe:                              2
 ;     sub_c8d24:                              2
 ;     sub_c9173:                              2
 ;     sub_c9228:                              2
@@ -10260,6 +10265,7 @@ save pydis_start, pydis_end
 ;     unpack_line_into_buffer:                2
 ;     word_command_str:                       2
 ;     write_area_to_output_fh:                2
+;     write_cr_to_memory:                     2
 ;     write_hex_to_output_buffer:             2
 ;     add_macro_to_linked_list:               1
 ;     brk_handler_ptr:                        1
@@ -10650,6 +10656,7 @@ save pydis_start, pydis_end
 ;     cb393:                                  1
 ;     claim_private_workspace_handler:        1
 ;     close_rw_file_and_return_to_cli:        1
+;     compute_required_space_for_insertion:   1
 ;     create_go_command:                      1
 ;     default_printer_driver_ptr:             1
 ;     detect_mode_7:                          1
@@ -10875,9 +10882,7 @@ save pydis_start, pydis_end
 ;     sub_c8371:                              1
 ;     sub_c8c51:                              1
 ;     sub_c8c53:                              1
-;     sub_c8d00:                              1
 ;     sub_c8d28:                              1
-;     sub_c8d9a:                              1
 ;     sub_c8da2:                              1
 ;     sub_c8e2d:                              1
 ;     sub_c916a:                              1
@@ -10901,6 +10906,7 @@ save pydis_start, pydis_end
 ;     sub_cb104:                              1
 ;     sub_cb31b:                              1
 ;     write_area_to_rw_fh:                    1
+;     write_byte_to_memory:                   1
 
 ; Stats:
 ;     Total size (Code + Data) = 16384 bytes
