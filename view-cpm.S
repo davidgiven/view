@@ -39,7 +39,7 @@ ptr1: .fill 2
 current_edit_line_ptr: .fill 2
 current_format_line_ptr: .fill 2
 current_ruler_ptr: .fill 2
-ptr4: .fill 2
+current_line_ptr: .fill 2
 page: .fill 2
 top: .fill 2
 himem: .fill 2
@@ -673,7 +673,7 @@ loop_c84c4:
     lda #0x0d
     sta current_ruler_buffer,y
     jsr sub_c89d3
-    jsr cb07a
+    jsr move_cursor_to_top_of_document
     jsr check_for_at_least_150_bytes_free
     lda l0041
     bne c84e8
@@ -695,7 +695,7 @@ loop_c84ee:
     jsr write_area_to_file_yx
     bne c84ab
     jsr sub_c89d3
-    jsr cb07a
+    jsr move_cursor_to_top_of_document
     jsr cb05a
     lda l0041
     bne c850d
@@ -772,9 +772,20 @@ return_6:
     rts
 
 ; ***************************************************************************************
+load_cmd:
+    jsr check_not_continuous_editing
+    jsr parse_filename_from_command
+    jsr initialise_document
+    jsr reset_area_to_entire_document
+    jsr 1f
+    jsr reset_document_name_after_load
+    jsr clear_cmd
+    jmp move_cursor_to_top_of_document
+
 read_cmd:
     jsr parse_filename_from_command
     jsr parse_marks_from_command
+1:
     jsr check_for_at_least_150_bytes_free
 
     ldx #<input_buffer
@@ -1030,8 +1041,8 @@ c876d:
     bcs c8787
     lda #0x2e ; '.'
     jsr bdos_print_char
-    lda ptr4
-    ldy ptr4+1
+    lda current_line_ptr
+    ldy current_line_ptr+1
     cpy area_end_ptr+1
     bcc c876d
     bne c8787
@@ -1151,80 +1162,6 @@ file_not_found_error:
     .ascii "File not found\r"
     .byte 0
     jmp cli_loop
-
-; ***************************************************************************************
-load_cmd:
-    jsr check_not_continuous_editing
-    jsr parse_filename_from_command
-    jsr zero_terminate_filename_buffer
-    jsr convert_filename_to_fcb
-    zif cs
-        jmp bad_filename_error
-    zendif
-
-    ldy #BDOS_OPEN_FILE
-    lda #<input_buffer
-    ldx #>input_buffer
-    jsr BDOS
-    bcs file_not_found_error
-
-    ; Load the file into memory.
-
-    lda page
-    sta tmp6
-    lda page+1
-    sta tmp7
-    zloop
-        ldy #BDOS_SET_DMA_ADDRESS
-        lda tmp6
-        ldx tmp7
-        jsr BDOS
-
-        lda tmp6
-        eor #0x80
-        sta tmp6
-        zif pl
-            inc tmp7
-        zendif
-
-        lda himem+1
-        cmp tmp6+1
-        zif eq
-            lda himem+0
-            cmp tmp6+0
-        zendif
-        blt c88ac
-
-        ldy #BDOS_READ_SEQUENTIAL
-        lda #<input_buffer
-        ldx #>input_buffer
-        jsr BDOS
-        zbreakif cs
-    zendloop
-
-    ; Find the end of it.
-
-    lda page
-    sta top
-    lda page+1
-    sta top+1
-    ldy #0
-    zloop
-        lda (top), y
-        zbreakif eq
-
-        inc top
-        zif eq
-            inc top+1
-        zendif
-    zendloop
-
-    jsr reset_document_name_after_load
-    jsr clear_cmd
-    jmp cb07a
-
-c88ac:
-    jmp display_not_enough_memory
 
 ; ***************************************************************************************
 name_cmd:
@@ -3853,7 +3790,7 @@ sub_c9977:
     ldy #0
     sty input_buffer_ptr
     sty l007e
-    lda (ptr4),y
+    lda (current_line_ptr),y
     jsr check_for_command_prefix
     beq c9974
 c998a:
@@ -3869,9 +3806,9 @@ c998a:
     sta input_buffer_ptr+1
     lda #0x10
     jsr wipe_buffer
-    lda ptr4
+    lda current_line_ptr
     sta tmp6
-    lda ptr4+1
+    lda current_line_ptr+1
     sta tmp7
     ldy #0
     sty l0047
@@ -3892,7 +3829,7 @@ loop_c99ba:
 c99c7:
     ldy l0047
 c99c9:
-    lda (ptr4),y
+    lda (current_line_ptr),y
     iny
     sty l0047
     cmp #9
@@ -4011,17 +3948,17 @@ c9a87:
     jsr sub_c9aa9
 c9a8d:
     jsr c9e94
-    lda ptr4
-    ldy ptr4+1
+    lda current_line_ptr
+    ldy current_line_ptr+1
     jsr sub_cab1a
     sec
     beq c9aa5
     tya
     clc
     adc tmp0
-    sta ptr4
+    sta current_line_ptr
     bcc c9aa4
-    inc ptr4+1
+    inc current_line_ptr+1
 c9aa4:
     clc
 c9aa5:
@@ -4049,10 +3986,10 @@ return_50:
 sub_c9ac1:
     tya
     sec
-    adc ptr4
+    adc current_line_ptr
     sta tmp8
     sta tmp4
-    lda ptr4+1
+    lda current_line_ptr+1
     adc #0
     sta tmp9
     sta tmp5
@@ -4347,11 +4284,11 @@ c9ca2:
     iny
 c9cb9:
     sty tmp6
-    lda ptr4
+    lda current_line_ptr
     sec
     adc l003b
     sta tmp4
-    lda ptr4+1
+    lda current_line_ptr+1
     adc #0
     sta tmp5
     jsr make_space_for_insertion
@@ -4453,14 +4390,14 @@ return_52:
 ; ***************************************************************************************
 f15_up_key:
     jsr ca93c
-    lda ptr4
-    ldy ptr4+1
+    lda current_line_ptr
+    ldy current_line_ptr+1
     jsr sub_cab37
     bcc return_53
     lda tmp0
-    sta ptr4
+    sta current_line_ptr
     lda tmp1
-    sta ptr4+1
+    sta current_line_ptr+1
     inc l0079
     inc cursor_moved_flag
 return_53:
@@ -4476,32 +4413,32 @@ return_key:
     jsr ca93c
     lda #0
     sta xpos
-    lda ptr4
+    lda current_line_ptr
     sta tmp0
-    lda ptr4+1
+    lda current_line_ptr+1
     sta tmp1
     jsr cab29
     bne c9d9b
     tya
-    ldy ptr4+1
+    ldy current_line_ptr+1
     clc
-    adc ptr4
+    adc current_line_ptr
     bcc c9d98
     iny
 c9d98:
     jsr sub_c9de1
 c9d9b:
     inc cursor_moved_flag
-    lda ptr4
-    ldy ptr4+1
+    lda current_line_ptr
+    ldy current_line_ptr+1
     jsr sub_cab1a
     beq return_54
     tya
     clc
-    adc ptr4
-    sta ptr4
+    adc current_line_ptr
+    sta current_line_ptr
     bcc return_54
-    inc ptr4+1
+    inc current_line_ptr+1
 return_54:
     rts
 
@@ -4524,18 +4461,18 @@ c9dbd:
     inx
     inx
 c9dcd:
-    ldy ptr4+1
+    ldy current_line_ptr+1
     txa
     clc
-    adc ptr4
+    adc current_line_ptr
     bcc c9de3
     iny
     bne c9de3
 ; ***************************************************************************************
 f6_insert_line_key:
     jsr ca93c
-    lda ptr4
-    ldy ptr4+1
+    lda current_line_ptr
+    ldy current_line_ptr+1
     inc l0079
 sub_c9de1:
     inc cursor_moved_flag
@@ -4620,9 +4557,9 @@ f9_delete_char_key:
 f7_delete_line_key:
     jsr ca93c
     inc cursor_moved_flag
-    lda ptr4
+    lda current_line_ptr
     sta tmp4
-    lda ptr4+1
+    lda current_line_ptr+1
     sta tmp5
     ldx l003b
     inx
@@ -4632,15 +4569,15 @@ f7_delete_line_key:
     jsr adjust_pointers
     jsr cb05a
     ldy #0
-    lda (ptr4),y
+    lda (current_line_ptr),y
     bne c9e81
-    lda ptr4
-    ldy ptr4+1
+    lda current_line_ptr
+    ldy current_line_ptr+1
     jsr sub_cab37
     lda tmp0
-    sta ptr4
+    sta current_line_ptr
     lda tmp1
-    sta ptr4+1
+    sta current_line_ptr+1
 c9e81:
     inc l0079
     jmp ca741
@@ -4673,9 +4610,9 @@ c9e9b:
 ; ***************************************************************************************
 cf7_join_lines_key:
     jsr ca93c
-    lda ptr4
+    lda current_line_ptr
     sta tmp0
-    lda ptr4+1
+    lda current_line_ptr+1
     sta tmp1
     jsr cab29
     beq c9eda
@@ -4684,9 +4621,9 @@ cf7_join_lines_key:
     dey
     tya
     clc
-    adc ptr4
+    adc current_line_ptr
     sta tmp4
-    lda ptr4+1
+    lda current_line_ptr+1
     adc #0
     sta tmp5
     lda #0
@@ -4694,8 +4631,8 @@ cf7_join_lines_key:
     lda #1
     sta tmp6
     jsr adjust_pointers
-    lda ptr4
-    ldy ptr4+1
+    lda current_line_ptr
+    ldy current_line_ptr+1
     jsr cac78
     inc l0079
     jmp ca741
@@ -4802,14 +4739,14 @@ return_56:
 
 c9f80:
     jsr ca93c
-    lda ptr4
-    ldy ptr4+1
+    lda current_line_ptr
+    ldy current_line_ptr+1
     jsr sub_cab37
     bcc return_56
     lda tmp0
-    sta ptr4
+    sta current_line_ptr
     lda tmp1
-    sta ptr4+1
+    sta current_line_ptr+1
     jsr sub_caa97
     jsr c9e9b
     dec l006f
@@ -4829,16 +4766,16 @@ return_57:
 c9fab:
     sty xpos
     jsr ca93c
-    lda ptr4
-    ldy ptr4+1
+    lda current_line_ptr
+    ldy current_line_ptr+1
     jsr sub_cab1a
     beq return_58
     tya
     clc
-    adc ptr4
-    sta ptr4
+    adc current_line_ptr
+    sta current_line_ptr
     bcc c9fc3
-    inc ptr4+1
+    inc current_line_ptr+1
 c9fc3:
     jsr sub_caa97
     dec l006f
@@ -4997,8 +4934,8 @@ sub_ca071:
     inc cursor_moved_flag
     stx input_buffer_ptr+1
     jsr ca93c
-    lda ptr4
-    ldy ptr4+1
+    lda current_line_ptr
+    ldy current_line_ptr+1
 ca07c:
     sta tmp2
     sty tmp3
@@ -5016,8 +4953,8 @@ ca093:
     lda tmp2
     ldy tmp3
 ca097:
-    sta ptr4
-    sty ptr4+1
+    sta current_line_ptr
+    sty current_line_ptr+1
     rts
 
 ; ***************************************************************************************
@@ -5037,8 +4974,8 @@ sub_ca0af:
     inc cursor_moved_flag
     stx input_buffer_ptr+1
     jsr ca93c
-    lda ptr4
-    ldy ptr4+1
+    lda current_line_ptr
+    ldy current_line_ptr+1
 ca0ba:
     jsr sub_cab1a
     beq ca0d2
@@ -5059,8 +4996,8 @@ ca0d2:
     lda tmp0
     ldy tmp1
 ca0d6:
-    sta ptr4
-    sty ptr4+1
+    sta current_line_ptr
+    sty current_line_ptr+1
     rts
 
 ; ***************************************************************************************
@@ -5331,11 +5268,11 @@ sub_ca276:
     jmp ca360
 
 ca28e:
-    lda ptr4+1
+    lda current_line_ptr+1
     cmp l0012
     bcc ca29c
     bne ca2dc
-    lda ptr4
+    lda current_line_ptr
     cmp l0011
     bcs ca2dc
 ca29c:
@@ -5353,10 +5290,10 @@ ca29c:
 ca2b2:
     jsr sub_cab37
     ldy tmp1
-    cpy ptr4+1
+    cpy current_line_ptr+1
     bne ca30d
     lda tmp0
-    cmp ptr4
+    cmp current_line_ptr
     bne ca30d
     sty l0012
     sta l0011
@@ -5389,9 +5326,9 @@ ca2e6:
     bne ca2f1
     stx l003d
 ca2f1:
-    cpy ptr4+1
+    cpy current_line_ptr+1
     bne ca2f9
-    cmp ptr4
+    cmp current_line_ptr
     beq ca313
 ca2f9:
     jsr sub_cab1a
@@ -5598,8 +5535,8 @@ sub_ca44e:
     beq ca461
     ldx ypos
 ca461:
-    lda ptr4
-    ldy ptr4+1
+    lda current_line_ptr
+    ldy current_line_ptr+1
 loop_ca465:
     dex
     beq ca479
@@ -6093,8 +6030,8 @@ ca739:
     rts
 
 ca741:
-    ldx ptr4
-    ldy ptr4+1
+    ldx current_line_ptr
+    ldy current_line_ptr+1
     cpy ptr6+1
     bcc ca74f
     bne ca753
@@ -6349,9 +6286,9 @@ zendproc
 sub_ca8b9:
     lda l006e
     beq ca93a
-    lda ptr4
+    lda current_line_ptr
     sta tmp4
-    lda ptr4+1
+    lda current_line_ptr+1
     sta tmp5
     ldy #0
     sty tmp7
@@ -6410,9 +6347,9 @@ loop_ca91c:
     bne ca92f
     tya
     clc
-    adc ptr4
+    adc current_line_ptr
     sta markers_array,x
-    lda ptr4+1
+    lda current_line_ptr+1
     adc #0
     sta markers_array+1,x
     bne loop_ca91c
@@ -6420,7 +6357,7 @@ ca92f:
     pla
     tax
     pla
-    sta (ptr4),y
+    sta (current_line_ptr),y
     iny
     dex
     cmp #0x0d
@@ -6643,7 +6580,7 @@ sub_caa97:
     jsr wipe_buffer
     jsr sub_caf5f
     ldy #0
-    lda (ptr4),y
+    lda (current_line_ptr),y
     ldx current_edit_line_ptr
     ldy current_edit_line_ptr+1
     jsr check_for_command_prefix
@@ -6659,7 +6596,7 @@ caab7:
     sty current_format_line_ptr+1
     ldy #0
 loop_caabd:
-    lda (ptr4),y
+    lda (current_line_ptr),y
     cmp #0x0d
     beq caac8
     sta (current_format_line_ptr),y
@@ -6671,9 +6608,9 @@ return_68:
     rts
 
 sub_caacb:
-    lda ptr4
+    lda current_line_ptr
     sta tmp6
-    lda ptr4+1
+    lda current_line_ptr+1
     sta tmp7
     ldy #0
 caad5:
@@ -6688,7 +6625,7 @@ caad5:
     sta markers_array+1,x
     bne caad5
 caae8:
-    lda (ptr4),y
+    lda (current_line_ptr),y
     cmp #0x0d
     beq return_68
     iny
@@ -6858,8 +6795,8 @@ return_72:
 move_cursor_to_address:
     sta tmp8
     sty tmp9
-    lda ptr4
-    ldy ptr4+1
+    lda current_line_ptr
+    ldy current_line_ptr+1
     cpy tmp9
     bcc cabf9
     bne cabdf
@@ -6906,14 +6843,14 @@ cac17:
 cac1d:
     jsr sub_cac41
 cac20:
-    sta ptr4
-    sty ptr4+1
+    sta current_line_ptr
+    sty current_line_ptr+1
     lda tmp8
     sec
-    sbc ptr4
+    sbc current_line_ptr
     tax
     ldy #0
-    lda (ptr4),y
+    lda (current_line_ptr),y
     jsr check_for_command_prefix
     bne cac3e
     txa
@@ -7118,9 +7055,9 @@ cad5c:
     tya
 cad5d:
     clc
-    adc ptr4
+    adc current_line_ptr
     sta markers_array+0,x
-    lda ptr4+1
+    lda current_line_ptr+1
     adc #0
     sta markers_array+1,x
     rts
@@ -7570,7 +7507,7 @@ caffe:
     dey                                                               ; Y=0xfe
     lda #>(l05cc)
     sta (oshwm),y
-    jsr cb07a
+    jsr move_cursor_to_top_of_document
     jsr clear_cmd
 cb05a:
     ldy page+1
@@ -7583,8 +7520,8 @@ cb05a:
     bne cb06c
     inc top+1
 cb06c:
-    sta ptr4
-    sty ptr4+1
+    sta current_line_ptr
+    sty current_line_ptr+1
     ldy #0
     lda #0x0d
     sta (page),y
@@ -7593,11 +7530,11 @@ cb06c:
 return_85:
     rts
 
-cb07a:
+move_cursor_to_top_of_document:
     lda page
-    sta ptr4
+    sta current_line_ptr
     lda page+1
-    sta ptr4+1
+    sta current_line_ptr+1
     lda #0
     sta xpos
     ldy #0xfe

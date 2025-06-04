@@ -27,7 +27,7 @@ ptr1                            = &0000
 current_edit_line_ptr           = &0002
 current_format_line_ptr         = &0004
 current_ruler_ptr               = &0006
-ptr4                            = &0008
+current_line_ptr                = &0008
 zp_initialisation_canary        = &000a
 page                            = &000b
 top                             = &000d
@@ -956,7 +956,7 @@ l80f2 = brk_handler_ptr+1
     lda #&0d                                                          ; 84cd: a9 0d       ..
     sta current_ruler_buffer,y                                        ; 84cf: 99 cf 05    ...
     jsr sub_c89d3                                                     ; 84d2: 20 d3 89     ..
-    jsr cb07a                                                         ; 84d5: 20 7a b0     z.
+    jsr move_cursor_to_top_of_document                                ; 84d5: 20 7a b0     z.
     jsr check_for_at_least_150_bytes_free                             ; 84d8: 20 35 85     5.
     lda l0041                                                         ; 84db: a5 41       .A
     bne c84e8                                                         ; 84dd: d0 09       ..
@@ -977,7 +977,7 @@ l80f2 = brk_handler_ptr+1
     jsr write_area_to_output_fh                                       ; 84f1: 20 48 8d     H.
     bne c84ab                                                         ; 84f4: d0 b5       ..
     jsr sub_c89d3                                                     ; 84f6: 20 d3 89     ..
-    jsr cb07a                                                         ; 84f9: 20 7a b0     z.
+    jsr move_cursor_to_top_of_document                                ; 84f9: 20 7a b0     z.
     jsr cb05a                                                         ; 84fc: 20 5a b0     Z.
     lda l0041                                                         ; 84ff: a5 41       .A
     bne c850d                                                         ; 8501: d0 0a       ..
@@ -1351,8 +1351,8 @@ l80f2 = brk_handler_ptr+1
     bcs c8787                                                         ; 8772: b0 13       ..
     lda #&2e ; '.'                                                    ; 8774: a9 2e       ..
     jsr oswrch                                                        ; 8776: 20 ee ff     ..            ; Write character 46
-    lda ptr4                                                          ; 8779: a5 08       ..
-    ldy ptr4+1                                                        ; 877b: a4 09       ..
+    lda current_line_ptr                                              ; 8779: a5 08       ..
+    ldy current_line_ptr+1                                            ; 877b: a4 09       ..
     cpy area_end_ptr+1                                                ; 877d: c4 62       .b
     bcc c876d                                                         ; 877f: 90 ec       ..
     bne c8787                                                         ; 8781: d0 04       ..
@@ -1559,7 +1559,7 @@ l80f2 = brk_handler_ptr+1
     sty xpos                                                          ; 88db: 84 40       .@
     jsr reset_document_name_after_load                                ; 88dd: 20 f4 88     ..
     jsr clear_cmd                                                     ; 88e0: 20 91 b0     ..
-    jmp cb07a                                                         ; 88e3: 4c 7a b0    Lz.
+    jmp move_cursor_to_top_of_document                                ; 88e3: 4c 7a b0    Lz.
 
 ; ***************************************************************************************
 .name_cmd
@@ -4682,7 +4682,7 @@ l94b2 = default_printer_driver_ptr+1
     ldy #0                                                            ; 997d: a0 00       ..
     sty input_buffer_ptr                                              ; 997f: 84 7f       ..
     sty l007e                                                         ; 9981: 84 7e       .~
-    lda (ptr4),y                                                      ; 9983: b1 08       ..
+    lda (current_line_ptr),y                                          ; 9983: b1 08       ..
     jsr check_for_command_prefix                                      ; 9985: 20 71 af     q.
     beq c9974                                                         ; 9988: f0 ea       ..
 ; &998a referenced 1 time by &9a84
@@ -4699,9 +4699,9 @@ l94b2 = default_printer_driver_ptr+1
     sta input_buffer_ptr+1                                            ; 999b: 85 80       ..
     lda #&10                                                          ; 999d: a9 10       ..
     jsr wipe_buffer                                                   ; 999f: 20 0f ab     ..
-    lda ptr4                                                          ; 99a2: a5 08       ..
+    lda current_line_ptr                                              ; 99a2: a5 08       ..
     sta tmp6                                                          ; 99a4: 85 8b       ..
-    lda ptr4+1                                                        ; 99a6: a5 09       ..
+    lda current_line_ptr+1                                            ; 99a6: a5 09       ..
     sta tmp7                                                          ; 99a8: 85 8c       ..
     ldy #0                                                            ; 99aa: a0 00       ..
     sty l0047                                                         ; 99ac: 84 47       .G
@@ -4726,7 +4726,7 @@ l94b2 = default_printer_driver_ptr+1
     ldy l0047                                                         ; 99c7: a4 47       .G
 ; &99c9 referenced 2 times by &99e6, &99fe
 .c99c9
-    lda (ptr4),y                                                      ; 99c9: b1 08       ..
+    lda (current_line_ptr),y                                          ; 99c9: b1 08       ..
     iny                                                               ; 99cb: c8          .
     sty l0047                                                         ; 99cc: 84 47       .G
     cmp #9                                                            ; 99ce: c9 09       ..
@@ -4860,17 +4860,17 @@ l94b2 = default_printer_driver_ptr+1
 ; &9a8d referenced 4 times by &9974, &9a16, &9a65, &9a7f
 .c9a8d
     jsr c9e94                                                         ; 9a8d: 20 94 9e     ..
-    lda ptr4                                                          ; 9a90: a5 08       ..
-    ldy ptr4+1                                                        ; 9a92: a4 09       ..
+    lda current_line_ptr                                              ; 9a90: a5 08       ..
+    ldy current_line_ptr+1                                            ; 9a92: a4 09       ..
     jsr sub_cab1a                                                     ; 9a94: 20 1a ab     ..
     sec                                                               ; 9a97: 38          8
     beq c9aa5                                                         ; 9a98: f0 0b       ..
     tya                                                               ; 9a9a: 98          .
     clc                                                               ; 9a9b: 18          .
     adc tmp0                                                          ; 9a9c: 65 85       e.
-    sta ptr4                                                          ; 9a9e: 85 08       ..
+    sta current_line_ptr                                              ; 9a9e: 85 08       ..
     bcc c9aa4                                                         ; 9aa0: 90 02       ..
-    inc ptr4+1                                                        ; 9aa2: e6 09       ..
+    inc current_line_ptr+1                                            ; 9aa2: e6 09       ..
 ; &9aa4 referenced 1 time by &9aa0
 .c9aa4
     clc                                                               ; 9aa4: 18          .
@@ -4903,10 +4903,10 @@ l94b2 = default_printer_driver_ptr+1
 .sub_c9ac1
     tya                                                               ; 9ac1: 98          .
     sec                                                               ; 9ac2: 38          8
-    adc ptr4                                                          ; 9ac3: 65 08       e.
+    adc current_line_ptr                                              ; 9ac3: 65 08       e.
     sta tmp8                                                          ; 9ac5: 85 8d       ..
     sta tmp4                                                          ; 9ac7: 85 89       ..
-    lda ptr4+1                                                        ; 9ac9: a5 09       ..
+    lda current_line_ptr+1                                            ; 9ac9: a5 09       ..
     adc #0                                                            ; 9acb: 69 00       i.
     sta tmp9                                                          ; 9acd: 85 8e       ..
     sta tmp5                                                          ; 9acf: 85 8a       ..
@@ -5248,11 +5248,11 @@ l94b2 = default_printer_driver_ptr+1
 ; &9cb9 referenced 1 time by &9cb4
 .c9cb9
     sty tmp6                                                          ; 9cb9: 84 8b       ..
-    lda ptr4                                                          ; 9cbb: a5 08       ..
+    lda current_line_ptr                                              ; 9cbb: a5 08       ..
     sec                                                               ; 9cbd: 38          8
     adc l003b                                                         ; 9cbe: 65 3b       e;
     sta tmp4                                                          ; 9cc0: 85 89       ..
-    lda ptr4+1                                                        ; 9cc2: a5 09       ..
+    lda current_line_ptr+1                                            ; 9cc2: a5 09       ..
     adc #0                                                            ; 9cc4: 69 00       i.
     sta tmp5                                                          ; 9cc6: 85 8a       ..
     jsr make_space_for_insertion                                      ; 9cc8: 20 15 aa     ..
@@ -5366,14 +5366,14 @@ l94b2 = default_printer_driver_ptr+1
 ; ***************************************************************************************
 .f15_up_key
     jsr ca93c                                                         ; 9d5b: 20 3c a9     <.
-    lda ptr4                                                          ; 9d5e: a5 08       ..
-    ldy ptr4+1                                                        ; 9d60: a4 09       ..
+    lda current_line_ptr                                              ; 9d5e: a5 08       ..
+    ldy current_line_ptr+1                                            ; 9d60: a4 09       ..
     jsr sub_cab37                                                     ; 9d62: 20 37 ab     7.
     bcc return_53                                                     ; 9d65: 90 0c       ..
     lda tmp0                                                          ; 9d67: a5 85       ..
-    sta ptr4                                                          ; 9d69: 85 08       ..
+    sta current_line_ptr                                              ; 9d69: 85 08       ..
     lda tmp1                                                          ; 9d6b: a5 86       ..
-    sta ptr4+1                                                        ; 9d6d: 85 09       ..
+    sta current_line_ptr+1                                            ; 9d6d: 85 09       ..
     inc l0079                                                         ; 9d6f: e6 79       .y
     inc cursor_moved_flag                                             ; 9d71: e6 7d       .}
 ; &9d73 referenced 1 time by &9d65
@@ -5391,16 +5391,16 @@ l94b2 = default_printer_driver_ptr+1
     jsr ca93c                                                         ; 9d7b: 20 3c a9     <.
     lda #0                                                            ; 9d7e: a9 00       ..
     sta xpos                                                          ; 9d80: 85 40       .@
-    lda ptr4                                                          ; 9d82: a5 08       ..
+    lda current_line_ptr                                              ; 9d82: a5 08       ..
     sta tmp0                                                          ; 9d84: 85 85       ..
-    lda ptr4+1                                                        ; 9d86: a5 09       ..
+    lda current_line_ptr+1                                            ; 9d86: a5 09       ..
     sta tmp1                                                          ; 9d88: 85 86       ..
     jsr cab29                                                         ; 9d8a: 20 29 ab     ).
     bne c9d9b                                                         ; 9d8d: d0 0c       ..
     tya                                                               ; 9d8f: 98          .
-    ldy ptr4+1                                                        ; 9d90: a4 09       ..
+    ldy current_line_ptr+1                                            ; 9d90: a4 09       ..
     clc                                                               ; 9d92: 18          .
-    adc ptr4                                                          ; 9d93: 65 08       e.
+    adc current_line_ptr                                              ; 9d93: 65 08       e.
     bcc c9d98                                                         ; 9d95: 90 01       ..
     iny                                                               ; 9d97: c8          .
 ; &9d98 referenced 1 time by &9d95
@@ -5409,16 +5409,16 @@ l94b2 = default_printer_driver_ptr+1
 ; &9d9b referenced 2 times by &9d79, &9d8d
 .c9d9b
     inc cursor_moved_flag                                             ; 9d9b: e6 7d       .}
-    lda ptr4                                                          ; 9d9d: a5 08       ..
-    ldy ptr4+1                                                        ; 9d9f: a4 09       ..
+    lda current_line_ptr                                              ; 9d9d: a5 08       ..
+    ldy current_line_ptr+1                                            ; 9d9f: a4 09       ..
     jsr sub_cab1a                                                     ; 9da1: 20 1a ab     ..
     beq return_54                                                     ; 9da4: f0 0a       ..
     tya                                                               ; 9da6: 98          .
     clc                                                               ; 9da7: 18          .
-    adc ptr4                                                          ; 9da8: 65 08       e.
-    sta ptr4                                                          ; 9daa: 85 08       ..
+    adc current_line_ptr                                              ; 9da8: 65 08       e.
+    sta current_line_ptr                                              ; 9daa: 85 08       ..
     bcc return_54                                                     ; 9dac: 90 02       ..
-    inc ptr4+1                                                        ; 9dae: e6 09       ..
+    inc current_line_ptr+1                                            ; 9dae: e6 09       ..
 ; &9db0 referenced 2 times by &9da4, &9dac
 .return_54
     rts                                                               ; 9db0: 60          `
@@ -5444,10 +5444,10 @@ l94b2 = default_printer_driver_ptr+1
     inx                                                               ; 9dcc: e8          .
 ; &9dcd referenced 1 time by &9dc8
 .c9dcd
-    ldy ptr4+1                                                        ; 9dcd: a4 09       ..
+    ldy current_line_ptr+1                                            ; 9dcd: a4 09       ..
     txa                                                               ; 9dcf: 8a          .
     clc                                                               ; 9dd0: 18          .
-    adc ptr4                                                          ; 9dd1: 65 08       e.
+    adc current_line_ptr                                              ; 9dd1: 65 08       e.
     bcc c9de3                                                         ; 9dd3: 90 0e       ..
     iny                                                               ; 9dd5: c8          .
     bne c9de3                                                         ; 9dd6: d0 0b       ..
@@ -5455,8 +5455,8 @@ l94b2 = default_printer_driver_ptr+1
 ; &9dd8 referenced 2 times by &a0db, &a0f2
 .f6_insert_line_key
     jsr ca93c                                                         ; 9dd8: 20 3c a9     <.
-    lda ptr4                                                          ; 9ddb: a5 08       ..
-    ldy ptr4+1                                                        ; 9ddd: a4 09       ..
+    lda current_line_ptr                                              ; 9ddb: a5 08       ..
+    ldy current_line_ptr+1                                            ; 9ddd: a4 09       ..
     inc l0079                                                         ; 9ddf: e6 79       .y
 ; &9de1 referenced 1 time by &9d98
 .sub_c9de1
@@ -5548,9 +5548,9 @@ l94b2 = default_printer_driver_ptr+1
 .f7_delete_line_key
     jsr ca93c                                                         ; 9e50: 20 3c a9     <.
     inc cursor_moved_flag                                             ; 9e53: e6 7d       .}
-    lda ptr4                                                          ; 9e55: a5 08       ..
+    lda current_line_ptr                                              ; 9e55: a5 08       ..
     sta tmp4                                                          ; 9e57: 85 89       ..
-    lda ptr4+1                                                        ; 9e59: a5 09       ..
+    lda current_line_ptr+1                                            ; 9e59: a5 09       ..
     sta tmp5                                                          ; 9e5b: 85 8a       ..
     ldx l003b                                                         ; 9e5d: a6 3b       .;
     inx                                                               ; 9e5f: e8          .
@@ -5560,15 +5560,15 @@ l94b2 = default_printer_driver_ptr+1
     jsr adjust_pointers                                               ; 9e66: 20 b0 a9     ..
     jsr cb05a                                                         ; 9e69: 20 5a b0     Z.
     ldy #0                                                            ; 9e6c: a0 00       ..
-    lda (ptr4),y                                                      ; 9e6e: b1 08       ..
+    lda (current_line_ptr),y                                          ; 9e6e: b1 08       ..
     bne c9e81                                                         ; 9e70: d0 0f       ..
-    lda ptr4                                                          ; 9e72: a5 08       ..
-    ldy ptr4+1                                                        ; 9e74: a4 09       ..
+    lda current_line_ptr                                              ; 9e72: a5 08       ..
+    ldy current_line_ptr+1                                            ; 9e74: a4 09       ..
     jsr sub_cab37                                                     ; 9e76: 20 37 ab     7.
     lda tmp0                                                          ; 9e79: a5 85       ..
-    sta ptr4                                                          ; 9e7b: 85 08       ..
+    sta current_line_ptr                                              ; 9e7b: 85 08       ..
     lda tmp1                                                          ; 9e7d: a5 86       ..
-    sta ptr4+1                                                        ; 9e7f: 85 09       ..
+    sta current_line_ptr+1                                            ; 9e7f: 85 09       ..
 ; &9e81 referenced 1 time by &9e70
 .c9e81
     inc l0079                                                         ; 9e81: e6 79       .y
@@ -5605,9 +5605,9 @@ l94b2 = default_printer_driver_ptr+1
 ; ***************************************************************************************
 .cf7_join_lines_key
     jsr ca93c                                                         ; 9ea1: 20 3c a9     <.
-    lda ptr4                                                          ; 9ea4: a5 08       ..
+    lda current_line_ptr                                              ; 9ea4: a5 08       ..
     sta tmp0                                                          ; 9ea6: 85 85       ..
-    lda ptr4+1                                                        ; 9ea8: a5 09       ..
+    lda current_line_ptr+1                                            ; 9ea8: a5 09       ..
     sta tmp1                                                          ; 9eaa: 85 86       ..
     jsr cab29                                                         ; 9eac: 20 29 ab     ).
     beq c9eda                                                         ; 9eaf: f0 29       .)
@@ -5616,9 +5616,9 @@ l94b2 = default_printer_driver_ptr+1
     dey                                                               ; 9eb6: 88          .
     tya                                                               ; 9eb7: 98          .
     clc                                                               ; 9eb8: 18          .
-    adc ptr4                                                          ; 9eb9: 65 08       e.
+    adc current_line_ptr                                              ; 9eb9: 65 08       e.
     sta tmp4                                                          ; 9ebb: 85 89       ..
-    lda ptr4+1                                                        ; 9ebd: a5 09       ..
+    lda current_line_ptr+1                                            ; 9ebd: a5 09       ..
     adc #0                                                            ; 9ebf: 69 00       i.
     sta tmp5                                                          ; 9ec1: 85 8a       ..
     lda #0                                                            ; 9ec3: a9 00       ..
@@ -5626,8 +5626,8 @@ l94b2 = default_printer_driver_ptr+1
     lda #1                                                            ; 9ec7: a9 01       ..
     sta tmp6                                                          ; 9ec9: 85 8b       ..
     jsr adjust_pointers                                               ; 9ecb: 20 b0 a9     ..
-    lda ptr4                                                          ; 9ece: a5 08       ..
-    ldy ptr4+1                                                        ; 9ed0: a4 09       ..
+    lda current_line_ptr                                              ; 9ece: a5 08       ..
+    ldy current_line_ptr+1                                            ; 9ed0: a4 09       ..
     jsr cac78                                                         ; 9ed2: 20 78 ac     x.
     inc l0079                                                         ; 9ed5: e6 79       .y
     jmp ca741                                                         ; 9ed7: 4c 41 a7    LA.
@@ -5741,14 +5741,14 @@ l94b2 = default_printer_driver_ptr+1
 ; &9f80 referenced 2 times by &9f9f, &9fa8
 .c9f80
     jsr ca93c                                                         ; 9f80: 20 3c a9     <.
-    lda ptr4                                                          ; 9f83: a5 08       ..
-    ldy ptr4+1                                                        ; 9f85: a4 09       ..
+    lda current_line_ptr                                              ; 9f83: a5 08       ..
+    ldy current_line_ptr+1                                            ; 9f85: a4 09       ..
     jsr sub_cab37                                                     ; 9f87: 20 37 ab     7.
     bcc return_56                                                     ; 9f8a: 90 f3       ..
     lda tmp0                                                          ; 9f8c: a5 85       ..
-    sta ptr4                                                          ; 9f8e: 85 08       ..
+    sta current_line_ptr                                              ; 9f8e: 85 08       ..
     lda tmp1                                                          ; 9f90: a5 86       ..
-    sta ptr4+1                                                        ; 9f92: 85 09       ..
+    sta current_line_ptr+1                                            ; 9f92: 85 09       ..
     jsr sub_caa97                                                     ; 9f94: 20 97 aa     ..
     jsr c9e9b                                                         ; 9f97: 20 9b 9e     ..
     dec l006f                                                         ; 9f9a: c6 6f       .o
@@ -5770,16 +5770,16 @@ l94b2 = default_printer_driver_ptr+1
 .c9fab
     sty xpos                                                          ; 9fab: 84 40       .@
     jsr ca93c                                                         ; 9fad: 20 3c a9     <.
-    lda ptr4                                                          ; 9fb0: a5 08       ..
-    ldy ptr4+1                                                        ; 9fb2: a4 09       ..
+    lda current_line_ptr                                              ; 9fb0: a5 08       ..
+    ldy current_line_ptr+1                                            ; 9fb2: a4 09       ..
     jsr sub_cab1a                                                     ; 9fb4: 20 1a ab     ..
     beq return_58                                                     ; 9fb7: f0 58       .X
     tya                                                               ; 9fb9: 98          .
     clc                                                               ; 9fba: 18          .
-    adc ptr4                                                          ; 9fbb: 65 08       e.
-    sta ptr4                                                          ; 9fbd: 85 08       ..
+    adc current_line_ptr                                              ; 9fbb: 65 08       e.
+    sta current_line_ptr                                              ; 9fbd: 85 08       ..
     bcc c9fc3                                                         ; 9fbf: 90 02       ..
-    inc ptr4+1                                                        ; 9fc1: e6 09       ..
+    inc current_line_ptr+1                                            ; 9fc1: e6 09       ..
 ; &9fc3 referenced 1 time by &9fbf
 .c9fc3
     jsr sub_caa97                                                     ; 9fc3: 20 97 aa     ..
@@ -5903,8 +5903,8 @@ l94b2 = default_printer_driver_ptr+1
     inc cursor_moved_flag                                             ; a071: e6 7d       .}
     stx input_buffer_ptr+1                                            ; a073: 86 80       ..
     jsr ca93c                                                         ; a075: 20 3c a9     <.
-    lda ptr4                                                          ; a078: a5 08       ..
-    ldy ptr4+1                                                        ; a07a: a4 09       ..
+    lda current_line_ptr                                              ; a078: a5 08       ..
+    ldy current_line_ptr+1                                            ; a07a: a4 09       ..
 ; &a07c referenced 2 times by &a08b, &a08f
 .ca07c
     sta tmp2                                                          ; a07c: 85 87       ..
@@ -5925,8 +5925,8 @@ l94b2 = default_printer_driver_ptr+1
     ldy tmp3                                                          ; a095: a4 88       ..
 ; &a097 referenced 1 time by &a091
 .ca097
-    sta ptr4                                                          ; a097: 85 08       ..
-    sty ptr4+1                                                        ; a099: 84 09       ..
+    sta current_line_ptr                                              ; a097: 85 08       ..
+    sty current_line_ptr+1                                            ; a099: 84 09       ..
     rts                                                               ; a09b: 60          `
 
 ; ***************************************************************************************
@@ -5947,8 +5947,8 @@ l94b2 = default_printer_driver_ptr+1
     inc cursor_moved_flag                                             ; a0af: e6 7d       .}
     stx input_buffer_ptr+1                                            ; a0b1: 86 80       ..
     jsr ca93c                                                         ; a0b3: 20 3c a9     <.
-    lda ptr4                                                          ; a0b6: a5 08       ..
-    ldy ptr4+1                                                        ; a0b8: a4 09       ..
+    lda current_line_ptr                                              ; a0b6: a5 08       ..
+    ldy current_line_ptr+1                                            ; a0b8: a4 09       ..
 ; &a0ba referenced 2 times by &a0ca, &a0ce
 .ca0ba
     jsr sub_cab1a                                                     ; a0ba: 20 1a ab     ..
@@ -5973,8 +5973,8 @@ l94b2 = default_printer_driver_ptr+1
     ldy tmp1                                                          ; a0d4: a4 86       ..
 ; &a0d6 referenced 1 time by &a0d0
 .ca0d6
-    sta ptr4                                                          ; a0d6: 85 08       ..
-    sty ptr4+1                                                        ; a0d8: 84 09       ..
+    sta current_line_ptr                                              ; a0d6: 85 08       ..
+    sty current_line_ptr+1                                            ; a0d8: 84 09       ..
     rts                                                               ; a0da: 60          `
 
 ; ***************************************************************************************
@@ -6268,11 +6268,11 @@ l94b2 = default_printer_driver_ptr+1
 
 ; &a28e referenced 2 times by &a283, &a289
 .ca28e
-    lda ptr4+1                                                        ; a28e: a5 09       ..
+    lda current_line_ptr+1                                            ; a28e: a5 09       ..
     cmp l0012                                                         ; a290: c5 12       ..
     bcc ca29c                                                         ; a292: 90 08       ..
     bne ca2dc                                                         ; a294: d0 46       .F
-    lda ptr4                                                          ; a296: a5 08       ..
+    lda current_line_ptr                                              ; a296: a5 08       ..
     cmp l0011                                                         ; a298: c5 11       ..
     bcs ca2dc                                                         ; a29a: b0 40       .@
 ; &a29c referenced 1 time by &a292
@@ -6292,10 +6292,10 @@ l94b2 = default_printer_driver_ptr+1
 .ca2b2
     jsr sub_cab37                                                     ; a2b2: 20 37 ab     7.
     ldy tmp1                                                          ; a2b5: a4 86       ..
-    cpy ptr4+1                                                        ; a2b7: c4 09       ..
+    cpy current_line_ptr+1                                            ; a2b7: c4 09       ..
     bne ca30d                                                         ; a2b9: d0 52       .R
     lda tmp0                                                          ; a2bb: a5 85       ..
-    cmp ptr4                                                          ; a2bd: c5 08       ..
+    cmp current_line_ptr                                              ; a2bd: c5 08       ..
     bne ca30d                                                         ; a2bf: d0 4c       .L
     sty l0012                                                         ; a2c1: 84 12       ..
     sta l0011                                                         ; a2c3: 85 11       ..
@@ -6332,9 +6332,9 @@ l94b2 = default_printer_driver_ptr+1
     stx l003d                                                         ; a2ef: 86 3d       .=
 ; &a2f1 referenced 2 times by &a2e9, &a2ed
 .ca2f1
-    cpy ptr4+1                                                        ; a2f1: c4 09       ..
+    cpy current_line_ptr+1                                            ; a2f1: c4 09       ..
     bne ca2f9                                                         ; a2f3: d0 04       ..
-    cmp ptr4                                                          ; a2f5: c5 08       ..
+    cmp current_line_ptr                                              ; a2f5: c5 08       ..
     beq ca313                                                         ; a2f7: f0 1a       ..
 ; &a2f9 referenced 1 time by &a2f3
 .ca2f9
@@ -6565,8 +6565,8 @@ l94b2 = default_printer_driver_ptr+1
     ldx ypos                                                          ; a45f: a6 77       .w
 ; &a461 referenced 2 times by &a45b, &a45d
 .ca461
-    lda ptr4                                                          ; a461: a5 08       ..
-    ldy ptr4+1                                                        ; a463: a4 09       ..
+    lda current_line_ptr                                              ; a461: a5 08       ..
+    ldy current_line_ptr+1                                            ; a463: a4 09       ..
 ; &a465 referenced 1 time by &a473
 .loop_ca465
     dex                                                               ; a465: ca          .
@@ -7156,8 +7156,8 @@ la69b = la69a+1
 
 ; &a741 referenced 8 times by &839d, &9d1b, &9dfa, &9e83, &9ed7, &a045, &a188, &a8f5
 .ca741
-    ldx ptr4                                                          ; a741: a6 08       ..
-    ldy ptr4+1                                                        ; a743: a4 09       ..
+    ldx current_line_ptr                                              ; a741: a6 08       ..
+    ldy current_line_ptr+1                                            ; a743: a4 09       ..
     cpy ptr6+1                                                        ; a745: c4 14       ..
     bcc ca74f                                                         ; a747: 90 06       ..
     bne ca753                                                         ; a749: d0 08       ..
@@ -7465,9 +7465,9 @@ la8a5 = ca8a4+1
 .sub_ca8b9
     lda line_buffer_needs_unpacking_flag                              ; a8b9: a5 6e       .n
     beq ca93a                                                         ; a8bb: f0 7d       .}
-    lda ptr4                                                          ; a8bd: a5 08       ..
+    lda current_line_ptr                                              ; a8bd: a5 08       ..
     sta tmp4                                                          ; a8bf: 85 89       ..
-    lda ptr4+1                                                        ; a8c1: a5 09       ..
+    lda current_line_ptr+1                                            ; a8c1: a5 09       ..
     sta tmp5                                                          ; a8c3: 85 8a       ..
     ldy #0                                                            ; a8c5: a0 00       ..
     sty tmp7                                                          ; a8c7: 84 8c       ..
@@ -7533,9 +7533,9 @@ la8a5 = ca8a4+1
     bne ca92f                                                         ; a91f: d0 0e       ..
     tya                                                               ; a921: 98          .
     clc                                                               ; a922: 18          .
-    adc ptr4                                                          ; a923: 65 08       e.
+    adc current_line_ptr                                              ; a923: 65 08       e.
     sta __begin_pointer_array,x                                       ; a925: 95 53       .S
-    lda ptr4+1                                                        ; a927: a5 09       ..
+    lda current_line_ptr+1                                            ; a927: a5 09       ..
     adc #0                                                            ; a929: 69 00       i.
     sta markers_array+1,x                                             ; a92b: 95 54       .T
     bne loop_ca91c                                                    ; a92d: d0 ed       ..
@@ -7544,7 +7544,7 @@ la8a5 = ca8a4+1
     pla                                                               ; a92f: 68          h
     tax                                                               ; a930: aa          .
     pla                                                               ; a931: 68          h
-    sta (ptr4),y                                                      ; a932: 91 08       ..
+    sta (current_line_ptr),y                                          ; a932: 91 08       ..
     iny                                                               ; a934: c8          .
     dex                                                               ; a935: ca          .
     cmp #&0d                                                          ; a936: c9 0d       ..
@@ -7803,7 +7803,7 @@ la8a5 = ca8a4+1
     jsr wipe_buffer                                                   ; aa99: 20 0f ab     ..
     jsr sub_caf5f                                                     ; aa9c: 20 5f af     _.
     ldy #0                                                            ; aa9f: a0 00       ..
-    lda (ptr4),y                                                      ; aaa1: b1 08       ..
+    lda (current_line_ptr),y                                          ; aaa1: b1 08       ..
     ldx current_edit_line_ptr                                         ; aaa3: a6 02       ..
     ldy current_edit_line_ptr+1                                       ; aaa5: a4 03       ..
     jsr check_for_command_prefix                                      ; aaa7: 20 71 af     q.
@@ -7822,7 +7822,7 @@ la8a5 = ca8a4+1
     ldy #0                                                            ; aabb: a0 00       ..
 ; &aabd referenced 1 time by &aac6
 .loop_caabd
-    lda (ptr4),y                                                      ; aabd: b1 08       ..
+    lda (current_line_ptr),y                                          ; aabd: b1 08       ..
     cmp #&0d                                                          ; aabf: c9 0d       ..
     beq caac8                                                         ; aac1: f0 05       ..
     sta (current_format_line_ptr),y                                   ; aac3: 91 04       ..
@@ -7837,9 +7837,9 @@ la8a5 = ca8a4+1
 
 ; &aacb referenced 1 time by &a3ea
 .sub_caacb
-    lda ptr4                                                          ; aacb: a5 08       ..
+    lda current_line_ptr                                              ; aacb: a5 08       ..
     sta tmp6                                                          ; aacd: 85 8b       ..
-    lda ptr4+1                                                        ; aacf: a5 09       ..
+    lda current_line_ptr+1                                            ; aacf: a5 09       ..
     sta tmp7                                                          ; aad1: 85 8c       ..
     ldy #0                                                            ; aad3: a0 00       ..
 ; &aad5 referenced 2 times by &aae6, &aaef
@@ -7856,7 +7856,7 @@ la8a5 = ca8a4+1
     bne caad5                                                         ; aae6: d0 ed       ..
 ; &aae8 referenced 1 time by &aad8
 .caae8
-    lda (ptr4),y                                                      ; aae8: b1 08       ..
+    lda (current_line_ptr),y                                          ; aae8: b1 08       ..
     cmp #&0d                                                          ; aaea: c9 0d       ..
     beq return_68                                                     ; aaec: f0 dc       ..
     iny                                                               ; aaee: c8          .
@@ -8058,8 +8058,8 @@ la8a5 = ca8a4+1
 .move_cursor_to_address
     sta tmp8                                                          ; abcb: 85 8d       ..
     sty tmp9                                                          ; abcd: 84 8e       ..
-    lda ptr4                                                          ; abcf: a5 08       ..
-    ldy ptr4+1                                                        ; abd1: a4 09       ..
+    lda current_line_ptr                                              ; abcf: a5 08       ..
+    ldy current_line_ptr+1                                            ; abd1: a4 09       ..
     cpy tmp9                                                          ; abd3: c4 8e       ..
     bcc cabf9                                                         ; abd5: 90 22       ."
     bne cabdf                                                         ; abd7: d0 06       ..
@@ -8113,14 +8113,14 @@ la8a5 = ca8a4+1
     jsr sub_cac41                                                     ; ac1d: 20 41 ac     A.
 ; &ac20 referenced 6 times by &abdd, &abe6, &abea, &abf0, &abf4, &ac1b
 .cac20
-    sta ptr4                                                          ; ac20: 85 08       ..
-    sty ptr4+1                                                        ; ac22: 84 09       ..
+    sta current_line_ptr                                              ; ac20: 85 08       ..
+    sty current_line_ptr+1                                            ; ac22: 84 09       ..
     lda tmp8                                                          ; ac24: a5 8d       ..
     sec                                                               ; ac26: 38          8
-    sbc ptr4                                                          ; ac27: e5 08       ..
+    sbc current_line_ptr                                              ; ac27: e5 08       ..
     tax                                                               ; ac29: aa          .
     ldy #0                                                            ; ac2a: a0 00       ..
-    lda (ptr4),y                                                      ; ac2c: b1 08       ..
+    lda (current_line_ptr),y                                          ; ac2c: b1 08       ..
     jsr check_for_command_prefix                                      ; ac2e: 20 71 af     q.
     bne cac3e                                                         ; ac31: d0 0b       ..
     txa                                                               ; ac33: 8a          .
@@ -8362,9 +8362,9 @@ la8a5 = ca8a4+1
 ; &ad5d referenced 1 time by &ad4c
 .cad5d
     clc                                                               ; ad5d: 18          .
-    adc ptr4                                                          ; ad5e: 65 08       e.
+    adc current_line_ptr                                              ; ad5e: 65 08       e.
     sta 0,x                                                           ; ad60: 95 00       ..
-    lda ptr4+1                                                        ; ad62: a5 09       ..
+    lda current_line_ptr+1                                            ; ad62: a5 09       ..
     adc #0                                                            ; ad64: 69 00       i.
     sta 1,x                                                           ; ad66: 95 01       ..
     rts                                                               ; ad68: 60          `
@@ -8942,7 +8942,7 @@ la8a5 = ca8a4+1
     dey                                                               ; b04f: 88          .              ; Y=&fe
     lda #>(current_line_buffer+135)                                   ; b050: a9 05       ..
     sta (oshwm),y                                                     ; b052: 91 1f       ..
-    jsr cb07a                                                         ; b054: 20 7a b0     z.
+    jsr move_cursor_to_top_of_document                                ; b054: 20 7a b0     z.
     jsr clear_cmd                                                     ; b057: 20 91 b0     ..
 ; &b05a referenced 5 times by &84e8, &84fc, &9e69, &a18e, &a1aa
 .cb05a
@@ -8957,8 +8957,8 @@ la8a5 = ca8a4+1
     inc top+1                                                         ; b06a: e6 0e       ..
 ; &b06c referenced 1 time by &b068
 .cb06c
-    sta ptr4                                                          ; b06c: 85 08       ..
-    sty ptr4+1                                                        ; b06e: 84 09       ..
+    sta current_line_ptr                                              ; b06c: 85 08       ..
+    sty current_line_ptr+1                                            ; b06e: 84 09       ..
     ldy #0                                                            ; b070: a0 00       ..
     lda #&0d                                                          ; b072: a9 0d       ..
     sta (page),y                                                      ; b074: 91 0b       ..
@@ -8968,12 +8968,13 @@ la8a5 = ca8a4+1
 .return_85
     rts                                                               ; b079: 60          `
 
+; ***************************************************************************************
 ; &b07a referenced 4 times by &84d5, &84f9, &88e3, &b054
-.cb07a
+.move_cursor_to_top_of_document
     lda page                                                          ; b07a: a5 0b       ..
-    sta ptr4                                                          ; b07c: 85 08       ..
+    sta current_line_ptr                                              ; b07c: 85 08       ..
     lda page+1                                                        ; b07e: a5 0c       ..
-    sta ptr4+1                                                        ; b080: 85 09       ..
+    sta current_line_ptr+1                                            ; b080: 85 09       ..
     lda #0                                                            ; b082: a9 00       ..
     sta xpos                                                          ; b084: 85 40       .@
     ldy #&fe                                                          ; b086: a0 fe       ..
@@ -9685,8 +9686,8 @@ save pydis_start, pydis_end
 ;     tmp6:                                  61
 ;     xpos:                                  61
 ;     l0082:                                 54
-;     ptr4:                                  52
-;     ptr4+0:                                52
+;     current_line_ptr:                      52
+;     current_line_ptr+0:                    52
 ;     l0081:                                 50
 ;     tmp1:                                  47
 ;     l0039:                                 46
@@ -9694,7 +9695,7 @@ save pydis_start, pydis_end
 ;     current_edit_line_ptr:                 43
 ;     current_edit_line_ptr+0:               43
 ;     tmp7:                                  43
-;     ptr4+1:                                41
+;     current_line_ptr+1:                    41
 ;     current_format_line_ptr:               38
 ;     current_format_line_ptr+0:             38
 ;     oswrch:                                36
@@ -9893,7 +9894,6 @@ save pydis_start, pydis_end
 ;     ca941:                                  4
 ;     call_printer_driver:                    4
 ;     call_through_jumptable:                 4
-;     cb07a:                                  4
 ;     compute_bytes_free:                     4
 ;     edit_command_loop:                      4
 ;     folding_flag:                           4
@@ -9903,6 +9903,7 @@ save pydis_start, pydis_end
 ;     l050b:                                  4
 ;     line_spacing:                           4
 ;     lookup_marker:                          4
+;     move_cursor_to_top_of_document:         4
 ;     page_length:                            4
 ;     parse_boolean_from_fmt_cmd:             4
 ;     printing_from_file_flag:                4

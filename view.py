@@ -88,7 +88,7 @@ labelword(0x00, "ptr1")
 labelword(0x02, "current_edit_line_ptr")
 labelword(0x04, "current_format_line_ptr")
 labelword(0x06, "current_ruler_ptr")
-labelword(0x08, "ptr4")
+labelword(0x08, "current_line_ptr")
 label(0x0A, "zp_initialisation_canary")
 labelword(0x0B, "page")
 labelword(0x0D, "top")
@@ -358,6 +358,7 @@ subroutine(0xACD7, "prompt_for_marker")
 subroutine(
     0xAD47, "set_marker_to_here", on_entry={"x": "ZP address of marker pointer"}
 )
+subroutine(0xB07A, "move_cursor_to_top_of_document")
 
 subroutine(0x823B, "esc_key")
 subroutine(0x9D7B, "return_key")
