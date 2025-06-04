@@ -1148,7 +1148,7 @@ parse_integer_from_command:
 file_not_found_error:
     jsr stop_printing
     jsr print_inline_string
-    .ascii "File not found"
+    .ascii "File not found\r"
     .byte 0
     jmp cli_loop
 
@@ -1265,6 +1265,7 @@ zproc convert_filename_to_fcb
 zproc convert_filename_to_fcb_xa
     ldy #BDOS_SET_DMA_ADDRESS
     jsr BDOS
+    jsr reset_fcb
     ldy #BDOS_PARSEFILENAME
     lda #<filename_buffer
     ldx #>filename_buffer
