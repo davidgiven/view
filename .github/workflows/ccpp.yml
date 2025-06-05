@@ -8,9 +8,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: apt
+    - name: packages
       run: |
-        sudo apt install beebasm
+        sudo snap install beebasm
 
     - name: install llvm-mos
       run: |
