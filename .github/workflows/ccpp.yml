@@ -1,0 +1,25 @@
+name: C/C++ CI
+
+on: [push, pull_request]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: install llvm-mos
+      run: |
+        wget -q -O - https://github.com/llvm-mos/llvm-mos-sdk/releases/latest/download/llvm-mos-linux.tar.xz | tar xJf - -C $HOME
+
+    - name: make
+      run: make LLVM=$HOME/llvm-mos/bin -j
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ github.event.repository.name }}.${{ github.sha }}
+        path: |
+          view-b3.0.asm
+          view-cpm.com
+
