@@ -10,7 +10,7 @@ jobs:
 
     - name: apt
       run: |
-        apt install beebasm
+        sudo apt install beebasm
 
     - name: install llvm-mos
       run: |
