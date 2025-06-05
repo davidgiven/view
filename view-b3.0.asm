@@ -1632,9 +1632,9 @@ l80f2 = brk_handler_ptr+1
 ; ***************************************************************************************
 ; &894c referenced 3 times by &881d, &884b, &8946
 .do_osfile_with_filename
-    ldx #<document_filename                                           ; 894c: a2 5c       .\
+    ldx #<(filename_buffer)                                           ; 894c: a2 5c       .\
     stx input_buffer                                                  ; 894e: 8e 00 05    ...
-    ldy #>document_filename                                           ; 8951: a0 07       ..
+    ldy #>(filename_buffer)                                           ; 8951: a0 07       ..
     sty l0501                                                         ; 8953: 8c 01 05    ...
 ; ***************************************************************************************
 ; &8956 referenced 1 time by &88cb

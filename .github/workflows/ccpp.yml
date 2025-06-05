@@ -31,4 +31,6 @@ jobs:
         path: |
           view-b3.0.asm
           view-cpm.com
+          view-rebuilt.rom
+
 
