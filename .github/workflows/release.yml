@@ -1,0 +1,63 @@
+name: Autorelease
+
+on:
+  push:
+    branches:
+      - "master"
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: actions/checkout@v3
+      with:
+        repository: ZornsLemma/py8dis
+        path: py8dis
+
+    - name: packages
+      run: |
+        sudo snap install beebasm
+
+    - name: install llvm-mos
+      run: |
+        wget -q -O - https://github.com/llvm-mos/llvm-mos-sdk/releases/latest/download/llvm-mos-linux.tar.xz | tar xJf - -C $HOME
+
+    - name: make
+      run: make LLVM=$HOME/llvm-mos/bin -j
+
+    - name: date
+      run: |
+        echo "RELEASE_DATE=$(date --rfc-3339=date)" >> ${GITHUB_ENV}
+
+    - name: tag
+      run: |
+        git config user.name "davidgiven"
+        git config user.email "dg@cowlark.com"
+        git tag -f dev
+        git push -f origin dev
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: delete-old-assets
+      uses: mknejp/delete-release-assets@v1
+      with:
+        token: ${{ github.token }}
+        tag: dev
+        assets: |
+          view-b3.0.asm
+          view-rebuild.rom
+          view.com
+
+    - name: release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Development build ${{ env.RELEASE_DATE }}
+        files: |
+          view-b3.0.asm
+          view-rebuild.rom
+          view.com
+        tag_name: dev
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
