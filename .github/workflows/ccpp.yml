@@ -8,6 +8,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - uses: actions/checkout@v3
+      with:
+        repository: ZornsLemma/py8dis
+        path: py8dis
+
     - name: packages
       run: |
         sudo snap install beebasm
