@@ -8,6 +8,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: apt
+      run: |
+        apt install beebasm
+
     - name: install llvm-mos
       run: |
         wget -q -O - https://github.com/llvm-mos/llvm-mos-sdk/releases/latest/download/llvm-mos-linux.tar.xz | tar xJf - -C $HOME
