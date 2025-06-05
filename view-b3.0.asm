@@ -73,7 +73,7 @@ l003d                           = &003d
 ruler_right_stop                = &003e
 ruler_left_stop                 = &003f
 xpos                            = &0040
-l0041                           = &0041
+input_file_empty_flag           = &0041
 l0042                           = &0042
 l0043                           = &0043
 l0044                           = &0044
@@ -403,7 +403,7 @@ l80f2 = brk_handler_ptr+1
     equs "Input file is "                                             ; 8148: 49 6e 70... Inp
     equb 0                                                            ; 8156: 00          .
 
-    lda l0041                                                         ; 8157: a5 41       .A
+    lda input_file_empty_flag                                         ; 8157: a5 41       .A
     bne c8163                                                         ; 8159: d0 08       ..
     jsr print_inline_string                                           ; 815b: 20 fa a7     ..
     equs "not "                                                       ; 815e: 6e 6f 74... not
@@ -913,7 +913,7 @@ l80f2 = brk_handler_ptr+1
     jsr open_file                                                     ; 8487: 20 58 88     X.
     sta edit_output_file_handle                                       ; 848a: 85 6b       .k
     ldx #0                                                            ; 848c: a2 00       ..
-    stx l0041                                                         ; 848e: 86 41       .A
+    stx input_file_empty_flag                                         ; 848e: 86 41       .A
 ; &8490 referenced 1 time by &8499
 .loop_c8490
     lda filename_buffer,x                                             ; 8490: bd 5c 07    .\.
@@ -922,7 +922,7 @@ l80f2 = brk_handler_ptr+1
     cmp #&0d                                                          ; 8497: c9 0d       ..
     bne loop_c8490                                                    ; 8499: d0 f5       ..
     jsr initialise_document                                           ; 849b: 20 cf af     ..
-    jsr sub_c8d24                                                     ; 849e: 20 24 8d     $.
+    jsr read_first_chunk_from_input_fh                                ; 849e: 20 24 8d     $.
     beq c84a8                                                         ; 84a1: f0 05       ..
     lda #1                                                            ; 84a3: a9 01       ..
     sta file_edit_flags                                               ; 84a5: 85 3c       .<
@@ -930,14 +930,14 @@ l80f2 = brk_handler_ptr+1
 
 ; &84a8 referenced 1 time by &84a1
 .c84a8
-    jsr c850d                                                         ; 84a8: 20 0d 85     ..
+    jsr close_input_output_files                                      ; 84a8: 20 0d 85     ..
 ; &84ab referenced 4 times by &84be, &84e6, &84f4, &8506
 .c84ab
     jmp cli_loop                                                      ; 84ab: 4c f6 81    L..
 
 ; ***************************************************************************************
 .more_cmd
-    jsr sub_c8e54                                                     ; 84ae: 20 54 8e     T.
+    jsr check_continuous_editing                                      ; 84ae: 20 54 8e     T.
     jsr parse_marks_from_command                                      ; 84b1: 20 89 89     ..
     lda area_start_ptr                                                ; 84b4: a5 5f       ._
     ldy area_start_ptr+1                                              ; 84b6: a4 60       .`
@@ -958,11 +958,11 @@ l80f2 = brk_handler_ptr+1
     jsr sub_c89d3                                                     ; 84d2: 20 d3 89     ..
     jsr move_cursor_to_top_of_document                                ; 84d5: 20 7a b0     z.
     jsr check_for_at_least_150_bytes_free                             ; 84d8: 20 35 85     5.
-    lda l0041                                                         ; 84db: a5 41       .A
+    lda input_file_empty_flag                                         ; 84db: a5 41       .A
     bne c84e8                                                         ; 84dd: d0 09       ..
     lda top                                                           ; 84df: a5 0d       ..
     ldy top+1                                                         ; 84e1: a4 0e       ..
-    jsr sub_c8d28                                                     ; 84e3: 20 28 8d     (.
+    jsr read_next_chunk_from_input_fh                                 ; 84e3: 20 28 8d     (.
     beq c84ab                                                         ; 84e6: f0 c3       ..
 ; &84e8 referenced 1 time by &84dd
 .c84e8
@@ -970,7 +970,7 @@ l80f2 = brk_handler_ptr+1
 
 ; ***************************************************************************************
 .finish_cmd
-    jsr sub_c8e54                                                     ; 84eb: 20 54 8e     T.
+    jsr check_continuous_editing                                      ; 84eb: 20 54 8e     T.
 ; &84ee referenced 1 time by &8508
 .loop_c84ee
     jsr reset_area_to_entire_document                                 ; 84ee: 20 fd ac     ..
@@ -979,19 +979,20 @@ l80f2 = brk_handler_ptr+1
     jsr sub_c89d3                                                     ; 84f6: 20 d3 89     ..
     jsr move_cursor_to_top_of_document                                ; 84f9: 20 7a b0     z.
     jsr cb05a                                                         ; 84fc: 20 5a b0     Z.
-    lda l0041                                                         ; 84ff: a5 41       .A
-    bne c850d                                                         ; 8501: d0 0a       ..
-    jsr sub_c8d24                                                     ; 8503: 20 24 8d     $.
+    lda input_file_empty_flag                                         ; 84ff: a5 41       .A
+    bne close_input_output_files                                      ; 8501: d0 0a       ..
+    jsr read_first_chunk_from_input_fh                                ; 8503: 20 24 8d     $.
     beq c84ab                                                         ; 8506: f0 a3       ..
     bne loop_c84ee                                                    ; 8508: d0 e4       ..             ; ALWAYS branch
 
 ; ***************************************************************************************
 .quit_cmd
-    jsr sub_c8e54                                                     ; 850a: 20 54 8e     T.
+    jsr check_continuous_editing                                      ; 850a: 20 54 8e     T.
+; ***************************************************************************************
 ; &850d referenced 2 times by &84a8, &8501
-.c850d
+.close_input_output_files
     lda #0                                                            ; 850d: a9 00       ..
-    sta l0041                                                         ; 850f: 85 41       .A
+    sta input_file_empty_flag                                         ; 850f: 85 41       .A
     sta file_edit_flags                                               ; 8511: 85 3c       .<
     ldx #edit_input_file_handle                                       ; 8513: a2 6a       .j             ; X=address of ZP var containing handle
     jsr close_file_indirect                                           ; 8515: 20 85 8d     ..
@@ -2320,12 +2321,14 @@ l80f2 = brk_handler_ptr+1
     sec                                                               ; 8d22: 38          8
     rts                                                               ; 8d23: 60          `
 
+; ***************************************************************************************
 ; &8d24 referenced 2 times by &849e, &8503
-.sub_c8d24
+.read_first_chunk_from_input_fh
     lda page                                                          ; 8d24: a5 0b       ..
     ldy page+1                                                        ; 8d26: a4 0c       ..
+; ***************************************************************************************
 ; &8d28 referenced 1 time by &84e3
-.sub_c8d28
+.read_next_chunk_from_input_fh
     jsr sub_c8da2                                                     ; 8d28: 20 a2 8d     ..
     lda edit_input_file_handle                                        ; 8d2b: a5 6a       .j
     sta rw_file_handle                                                ; 8d2d: 85 4d       .M
@@ -2333,7 +2336,7 @@ l80f2 = brk_handler_ptr+1
     php                                                               ; 8d32: 08          .
     beq c8d39                                                         ; 8d33: f0 04       ..
     bcc c8d39                                                         ; 8d35: 90 02       ..
-    inc l0041                                                         ; 8d37: e6 41       .A
+    inc input_file_empty_flag                                         ; 8d37: e6 41       .A
 ; &8d39 referenced 2 times by &8d33, &8d35
 .c8d39
     lda #0                                                            ; 8d39: a9 00       ..
@@ -2552,8 +2555,9 @@ l80f2 = brk_handler_ptr+1
     bcc return_20                                                     ; 8e50: 90 da       ..
     bcs c8e5d                                                         ; 8e52: b0 09       ..             ; ALWAYS branch
 
+; ***************************************************************************************
 ; &8e54 referenced 3 times by &84ae, &84eb, &850a
-.sub_c8e54
+.check_continuous_editing
     bit file_edit_flags                                               ; 8e54: 24 3c       $<
     bvs c8e5d                                                         ; 8e56: 70 05       p.
     lda file_edit_flags                                               ; 8e58: a5 3c       .<
@@ -9828,11 +9832,11 @@ save pydis_start, pydis_end
 ;     filename_buffer:                        6
 ;     get_current_fmt_cmd_byte:               6
 ;     hscroll_pos:                            6
+;     input_file_empty_flag:                  6
 ;     insert_mode_flag:                       6
 ;     is_tube_flag:                           6
 ;     l003a:                                  6
 ;     l003b:                                  6
-;     l0041:                                  6
 ;     macro_executing_flag:                   6
 ;     print_vertical_space:                   6
 ;     printer_driver_name:                    6
@@ -9956,6 +9960,7 @@ save pydis_start, pydis_end
 ;     caed4:                                  3
 ;     caf55:                                  3
 ;     caf5c:                                  3
+;     check_continuous_editing:               3
 ;     check_for_at_least_150_bytes_free:      3
 ;     clear_cmd:                              3
 ;     current_ruler_buffer:                   3
@@ -10002,7 +10007,6 @@ save pydis_start, pydis_end
 ;     run_cli:                                3
 ;     set_text_colour:                        3
 ;     start_printing:                         3
-;     sub_c8e54:                              3
 ;     sub_c902c:                              3
 ;     sub_c93b6:                              3
 ;     sub_c93c8:                              3
@@ -10018,7 +10022,6 @@ save pydis_start, pydis_end
 ;     c837d:                                  2
 ;     c83ca:                                  2
 ;     c83da:                                  2
-;     c850d:                                  2
 ;     c85ec:                                  2
 ;     c867d:                                  2
 ;     c86b8:                                  2
@@ -10154,6 +10157,7 @@ save pydis_start, pydis_end
 ;     clear_screen:                           2
 ;     close_file:                             2
 ;     close_file_indirect:                    2
+;     close_input_output_files:               2
 ;     commands_table:                         2
 ;     complete_CRTC_10_write:                 2
 ;     create_default_ruler:                   2
@@ -10204,6 +10208,7 @@ save pydis_start, pydis_end
 ;     print_x_words_of_help:                  2
 ;     printer_driver_ptr+1:                   2
 ;     prompt_for_marker:                      2
+;     read_first_chunk_from_input_fh:         2
 ;     register_value_l+1:                     2
 ;     register_value_p+1:                     2
 ;     render_date_time_to_output_buffer:      2
@@ -10237,7 +10242,6 @@ save pydis_start, pydis_end
 ;     sub_c8a4f:                              2
 ;     sub_c8c5f:                              2
 ;     sub_c8c7c:                              2
-;     sub_c8d24:                              2
 ;     sub_c9173:                              2
 ;     sub_c9228:                              2
 ;     sub_c9241:                              2
@@ -10813,6 +10817,7 @@ save pydis_start, pydis_end
 ;     print_char_just_to_printer:             1
 ;     print_to_screen:                        1
 ;     put_byte_to_file:                       1
+;     read_next_chunk_from_input_fh:          1
 ;     register_value_array:                   1
 ;     render_number_to_callback:              1
 ;     render_number_to_output_buffer:         1
@@ -10883,7 +10888,6 @@ save pydis_start, pydis_end
 ;     sub_c8371:                              1
 ;     sub_c8c51:                              1
 ;     sub_c8c53:                              1
-;     sub_c8d28:                              1
 ;     sub_c8da2:                              1
 ;     sub_c8e2d:                              1
 ;     sub_c916a:                              1
