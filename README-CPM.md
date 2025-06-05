@@ -1,9 +1,6 @@
 Acornsoft VIEW
 ==============
 
-(C) Acornsoft 1984
-
-
 # What?
 
 This is a port of VIEW to the
@@ -14,7 +11,7 @@ This is a port of VIEW to the
 
 Copy the `VIEW.COM` from [the release page](https://github.com/davidgiven/view/releases/tag/dev) onto the CP/M-65 disk of your choice and run it!
 
-Then, [read the manual](ViewGuide.pdf).
+Then, [read the manual](ViewGuide.pdf). You're unlikely to get anywhere without it.
 
 
 # What's different from the BBC Micro version

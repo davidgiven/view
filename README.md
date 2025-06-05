@@ -1,16 +1,13 @@
 Acornsoft VIEW
 ==============
 
-(C) Acornsoft 1984
-
-
 # What?
 
 VIEW is a word processor developed by Acorn for their BBC Micro series of
 6502-based computers. It was most commonly found on the BBC Master, where it was
 bundled on ROM alongside its companion spreadsheet, ViewSheet.
 
-It's a basic but functionality quasi-WYSIWYG word processor supporting
+It's a basic but functional semi-WYSIWYG word processor supporting
 justification, tabination, page formatting with headers and footers, multiple
 rulers, editing of files bigger than will fit in memory (crudely),
 search-and-replace, word count, text styles, and so on. It also features
@@ -22,7 +19,8 @@ mostly-symbolified disassembly of it using ZornsLemma's
 [CP/M-65](https://github.com/davidgiven/cpm65) operating system (which does also
 run on the BBC Micro, for maximum recursion).
 
-You might want to [read the manual](ViewGuide.pdf).
+You might want to [read the manual](ViewGuide.pdf). You're unlikely to get
+anywhere without it.
 
 # How?
 
