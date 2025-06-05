@@ -1104,6 +1104,9 @@ c87d1:
 
 ; ***************************************************************************************
 printer_cmd:
+    jmp print_cmd
+#if 0
+    // TODO: implement loading printer drivers.
     jsr parse_optional_filename_from_command
     beq c882f
     ;jsr sub_c8849
@@ -1145,6 +1148,7 @@ c882f:
 c8834:
     lda #0
     sta microspacing_flag
+#endif
 return_8:
     rts
 
@@ -2938,18 +2942,27 @@ default_printer_driver:
     rts
 
 c94c0:
+    brk
+#if 0
     cmp #0x80
     bcs return_35
     jmp bdos_print_char                                                        ; Write character
+#endif
 
 c94c7:
+    brk
+#if 0
     lda #2
     bne c94cd                                                         ; ALWAYS branch
+#endif
 
 c94cb:
+    brk
+#if 0
     lda #3
 c94cd:
     jmp oswrch                                                        ; Write character 3
+#endif
 
 ; ***************************************************************************************
 lj_fmt_cmd:
@@ -6024,10 +6037,6 @@ ca753:
 
 ; ***************************************************************************************
 flush_and_read_char:
-    lda #osbyte_flush_buffer
-    ldx #buffer_keyboard
-    jsr osbyte                                                        ; Flush the keyboard buffer (X=0)
-; ***************************************************************************************
 read_char:
     lda #0xff
     tax
@@ -6366,7 +6375,7 @@ sub_ca94a:
     beq ca965                                                         ; ALWAYS branch
 
 loop_ca962:
-    jsr oswrch                                                        ; Write character
+    jsr screen_putchar
 ca965:
     lda la995,x
     beq ca96e
@@ -6379,7 +6388,7 @@ ca96e:
     beq ca97c
     lda #0x20 ; ' '
 loop_ca976:
-    jsr oswrch                                                        ; Write character 32
+    jsr screen_putchar
     dey
     bne loop_ca976
 ca97c:
@@ -7395,19 +7404,6 @@ SCREEN:
     jmp 0x1234
 
 ; ***************************************************************************************
-detect_tube:
-    lda #osbyte_read_high_order_address
-    jsr osbyte                                                        ; Read the filing system 'machine high order address'
-    sec
-    iny
-    bne return_83
-    inx
-    bne return_83
-    clc
-return_83:
-    rts
-
-; ***************************************************************************************
 compute_bytes_free:
     lda himem
     sec
@@ -7924,20 +7920,6 @@ jumptable2_format:
     .word pl_fmt_cmd, ts_fmt_cmd, fo_fmt_cmd, he_fmt_cmd, ht_fmt_cmd
     .word hm_fmt_cmd, fm_fmt_cmd, lm_fmt_cmd, ls_fmt_cmd, op_fmt_cmd
     .word ep_fmt_cmd, lj_fmt_cmd, pb_fmt_cmd
-
-osbyte:
-    jsr print_inline_string
-    .ascii "osbyte\n"
-    .byte 0
-    brk
-
-oswrch:
-    pha
-    jsr print_inline_string
-    .ascii "oswrch\n"
-    .byte 0
-    pla
-    brk
 
 osword:
     jsr print_inline_string

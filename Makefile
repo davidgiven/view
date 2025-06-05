@@ -1,3 +1,5 @@
+LLVM = /opt/pkg/llvm-mos/bin
+
 all: view.com view-b3.0.asm
 
 view.com: view-cpm.S
