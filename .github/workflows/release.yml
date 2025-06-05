@@ -49,6 +49,7 @@ jobs:
           view-b3.0.asm
           view-rebuild.rom
           view.com
+        fail-if-no-assets: false
 
     - name: release
       uses: softprops/action-gh-release@v1
