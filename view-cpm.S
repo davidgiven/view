@@ -6,23 +6,6 @@
 buffer_keyboard                             = 0
 MAX_COMMAND_LENGTH                          = 68
 MAX_LINE_LENGTH                             = 132
-osbyte_enter_language                       = 142
-osbyte_flush_buffer                         = 21
-osbyte_read_char_at_cursor                  = 135
-osbyte_read_high_order_address              = 130
-osbyte_read_himem                           = 132
-osbyte_read_himem_for_mode                  = 133
-osbyte_read_oshwm                           = 131
-osbyte_read_text_cursor_pos                 = 134
-osbyte_read_vdu_variable                    = 160
-osbyte_read_write_ctrl_function_key_status  = 227
-osbyte_read_write_function_key_status       = 225
-osbyte_read_write_shift_function_key_status = 226
-osbyte_reserved_for_application_software    = 163
-osbyte_set_cursor_editing                   = 4
-osfind_close                                = 0
-osword_read_cmos_clock                      = 14
-osword_read_line                            = 0
 
 ; File structure
 
@@ -1216,17 +1199,6 @@ zproc zero_terminate_filename_buffer
     sta filename_buffer, x
     rts
 zendproc
-
-; ***************************************************************************************
-do_osfile_with_buffer:
-    ldx #<filename_buffer
-    stx input_buffer
-    ldy #>filename_buffer
-    sty l0501
-do_osfile_with_block:
-    ldx #<(input_buffer)
-    ldy #>(input_buffer)
-    jmp osfile
 
 ; ***************************************************************************************
 sanitise_area:
@@ -7920,18 +7892,6 @@ jumptable2_format:
     .word pl_fmt_cmd, ts_fmt_cmd, fo_fmt_cmd, he_fmt_cmd, ht_fmt_cmd
     .word hm_fmt_cmd, fm_fmt_cmd, lm_fmt_cmd, ls_fmt_cmd, op_fmt_cmd
     .word ep_fmt_cmd, lj_fmt_cmd, pb_fmt_cmd
-
-osword:
-    jsr print_inline_string
-    .ascii "osword\n"
-    .byte 0
-    brk
-
-osfile:
-    jsr print_inline_string
-    .ascii "osfile\n"
-    .byte 0
-    brk
 
 bdos_print_char:
     pha
