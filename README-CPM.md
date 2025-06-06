@@ -13,6 +13,8 @@ Copy the `VIEW.COM` from [the release page](https://github.com/davidgiven/view/r
 
 Then, [read the manual](ViewGuide.pdf). You're unlikely to get anywhere without it.
 
+There are a couple of example files in the `examples` directory.
+
 
 # What's different from the BBC Micro version
 
