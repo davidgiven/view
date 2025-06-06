@@ -65,7 +65,7 @@ print_flags: .fill 1
 l006d: .fill 1
 l006e: .fill 1
 l006f: .fill 1
-l0070: .fill 1
+ruler_stack_ptr: .fill 1
 hscroll_pos: .fill 1
 l0072: .fill 1
 l0073: .fill 1
@@ -131,36 +131,24 @@ doc_ptr2: .fill 2
 doc_ptr3: .fill 2
 __end_pointer_array:
 
-printer_driver_block            = DATA-0x400+0x0400
-input_buffer                    = DATA-0x400+0x0500
-l0501                           = DATA-0x400+0x0501
-l0502                           = DATA-0x400+0x0502
-l0503                           = DATA-0x400+0x0503
-l0504                           = DATA-0x400+0x0504
-l0505                           = DATA-0x400+0x0505
-l0506                           = DATA-0x400+0x0506
-l050a                           = DATA-0x400+0x050a
-l050b                           = DATA-0x400+0x050b
-l050c                           = DATA-0x400+0x050c
-l050d                           = DATA-0x400+0x050d
-l050e                           = DATA-0x400+0x050e
-l050f                           = DATA-0x400+0x050f
-l0510                           = DATA-0x400+0x0510
-l0511                           = DATA-0x400+0x0511
-current_line_buffer             = DATA-0x400+0x0545
-l05cc                           = DATA-0x400+0x05cc
-current_ruler_buffer            = DATA-0x400+0x05cf
-output_buffer                   = DATA-0x400+0x0654
-header_text_maybe               = DATA-0x400+0x06d8
-footer_text_maybe               = DATA-0x400+0x071a
-filename_buffer                 = DATA-0x400+0x075c
-output_filename                 = DATA-0x400+0x0770
-printer_driver_name             = DATA-0x400+0x0784
-register_value_array            = DATA-0x400+0x0798
-register_value_l                = DATA-0x400+0x07ae
-register_value_p                = DATA-0x400+0x07b6
+printer_driver_block:           .fill 0x100
+input_buffer:                   .fill 0x45
 
-DATA:   .fill 0x400-20-32
+current_line_buffer:            .fill 135
+just_before_current_ruler_buffer: .fill 3 ; ??? something to do with rulers?
+current_ruler_buffer:           .fill 133
+output_buffer:                  .fill 132
+
+header_text_maybe:              .fill 0x42
+footer_text_maybe:              .fill 0x42
+
+filename_buffer:                .fill 0x14
+output_filename:                .fill 0x14
+printer_driver_name:            .fill 0x14
+
+register_value_array:           .fill 26*2
+register_value_l                = register_value_array + ('L'-'A')*2
+register_value_p                = register_value_array + ('P'-'A')*2
 
 line_lengths:                   .fill 32
 input_filename:                 .fill 20
@@ -5217,7 +5205,7 @@ ca273:
 
 sub_ca276:
     jsr cursor_off
-    lda l0070
+    lda ruler_stack_ptr
     sta l0034
     lda l0076
     sta input_buffer_ptr+1
@@ -5240,7 +5228,7 @@ ca29c:
     lda l006f
     bne ca30d
     lda l0033
-    sta l0070
+    sta ruler_stack_ptr
     ldy l0012
     lda l0011
     cpy top+1
@@ -5274,7 +5262,7 @@ loop_ca2c7:
 
 ca2dc:
     lda l0033
-    sta l0070
+    sta ruler_stack_ptr
 ca2e0:
     ldx #0
     lda l0011
@@ -5326,7 +5314,7 @@ loop_ca31f:
     lda screen_width
     sta line_lengths,x
     lda l0033
-    sta l0070
+    sta ruler_stack_ptr
     ldy l0012
     lda l0011
     jsr sub_cab1a
@@ -5343,7 +5331,7 @@ ca348:
     ldy screen_height
     jsr set_cursor_position
 ca351:
-    lda l0070
+    lda ruler_stack_ptr
     sta l0033
     inc input_buffer_ptr+1
     inc l0074
@@ -5485,7 +5473,7 @@ loop_ca431:
 
 sub_ca44e:
     lda l0034
-    sta l0070
+    sta ruler_stack_ptr
     lda screen_height
     sta l0073
     lsr
@@ -5512,10 +5500,10 @@ loop_ca465:
 ca479:
     sta l0011
     sty l0012
-    lda l0070
+    lda ruler_stack_ptr
     sta l0033
     lda l0034
-    sta l0070
+    sta ruler_stack_ptr
     rts
 
 sub_ca486:
@@ -6628,7 +6616,7 @@ sub_cab1a:
     jsr sub_cab6e
     bne cab29
     jsr cab29
-    bne cab75
+    bne push_onto_ruler_stack
     rts
 
 cab29:
@@ -6675,7 +6663,7 @@ cab58:
 cab64:
     jsr sub_cab6e
     bne cab6c
-    jsr sub_cab8b
+    jsr pop_from_ruler_stack
 cab6c:
     sec
 return_71:
@@ -6687,11 +6675,11 @@ sub_cab6e:
     cmp #0x81
     rts
 
-cab75:
+push_onto_ruler_stack:
     tya
     pha
     inc l0076
-    ldy l0070
+    ldy ruler_stack_ptr
     dey
     lda tmp0
     sta (oshwm),y
@@ -6703,13 +6691,13 @@ cab75:
     tay
     rts
 
-sub_cab8b:
+pop_from_ruler_stack:
     inc l0076
-    ldy l0070
+    ldy ruler_stack_ptr
     iny
     iny
 cab91:
-    sty l0070
+    sty ruler_stack_ptr
     iny
     lda (oshwm),y
     clc
@@ -6827,7 +6815,7 @@ sub_cac41:
     pha
     jsr sub_cab6e
     bne cac4c
-    jsr cab75
+    jsr push_onto_ruler_stack
 cac4c:
     pla
     tay
@@ -7446,10 +7434,10 @@ caffe:
     lda #0x0d
     sta (tmp0),y
     ldy #0xff
-    lda #<(l05cc)
+    lda #<(just_before_current_ruler_buffer)
     sta (oshwm),y
     dey                                                               ; Y=0xfe
-    lda #>(l05cc)
+    lda #>(just_before_current_ruler_buffer)
     sta (oshwm),y
     jsr move_cursor_to_top_of_document
     jsr clear_cmd
@@ -7483,7 +7471,7 @@ move_cursor_to_top_of_document:
     sta xpos
     ldy #0xfe
     sty l0012
-    sty l0070
+    sty ruler_stack_ptr
     sty l0033
     jmp cab91
 

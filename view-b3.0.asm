@@ -105,7 +105,7 @@ microspacing_flag               = &006c
 l006d                           = &006d
 line_buffer_needs_unpacking_flag = &006e
 l006f                           = &006f
-l0070                           = &0070
+ruler_stack_ptr                 = &0070
 hscroll_pos                     = &0071
 l0072                           = &0072
 l0073                           = &0073
@@ -162,6 +162,7 @@ l050f                           = &050f
 l0510                           = &0510
 l0511                           = &0511
 current_line_buffer             = &0545
+just_before_current_ruler_buffer = &05cc
 document_initialisation_canary  = &05ce
 current_ruler_buffer            = &05cf
 output_buffer                   = &0654
@@ -6259,7 +6260,7 @@ l94b2 = default_printer_driver_ptr+1
 ; &a276 referenced 5 times by &8365, &9b93, &9eeb, &a0de, &a0f5
 .sub_ca276
     jsr cursor_off                                                    ; a276: 20 86 a7     ..
-    lda l0070                                                         ; a279: a5 70       .p
+    lda ruler_stack_ptr                                               ; a279: a5 70       .p
     sta l0034                                                         ; a27b: 85 34       .4
     lda l0076                                                         ; a27d: a5 76       .v
     sta input_buffer_ptr+1                                            ; a27f: 85 80       ..
@@ -6284,7 +6285,7 @@ l94b2 = default_printer_driver_ptr+1
     lda l006f                                                         ; a29c: a5 6f       .o
     bne ca30d                                                         ; a29e: d0 6d       .m
     lda l0033                                                         ; a2a0: a5 33       .3
-    sta l0070                                                         ; a2a2: 85 70       .p
+    sta ruler_stack_ptr                                               ; a2a2: 85 70       .p
     ldy l0012                                                         ; a2a4: a4 12       ..
     lda l0011                                                         ; a2a6: a5 11       ..
     cpy top+1                                                         ; a2a8: c4 0e       ..
@@ -6320,7 +6321,7 @@ l94b2 = default_printer_driver_ptr+1
 ; &a2dc referenced 2 times by &a294, &a29a
 .ca2dc
     lda l0033                                                         ; a2dc: a5 33       .3
-    sta l0070                                                         ; a2de: 85 70       .p
+    sta ruler_stack_ptr                                               ; a2de: 85 70       .p
 ; &a2e0 referenced 1 time by &a310
 .ca2e0
     ldx #0                                                            ; a2e0: a2 00       ..
@@ -6380,7 +6381,7 @@ l94b2 = default_printer_driver_ptr+1
     lda screen_width                                                  ; a32e: a5 36       .6
     sta line_lengths,x                                                ; a330: 9d cc 07    ...
     lda l0033                                                         ; a333: a5 33       .3
-    sta l0070                                                         ; a335: 85 70       .p
+    sta ruler_stack_ptr                                               ; a335: 85 70       .p
     ldy l0012                                                         ; a337: a4 12       ..
     lda l0011                                                         ; a339: a5 11       ..
     jsr sub_cab1a                                                     ; a33b: 20 1a ab     ..
@@ -6399,7 +6400,7 @@ l94b2 = default_printer_driver_ptr+1
 ; &a351 referenced 1 time by &a2d9
 .ca351
     jsr oswrch                                                        ; a351: 20 ee ff     ..            ; Write character
-    lda l0070                                                         ; a354: a5 70       .p
+    lda ruler_stack_ptr                                               ; a354: a5 70       .p
     sta l0033                                                         ; a356: 85 33       .3
     inc input_buffer_ptr+1                                            ; a358: e6 80       ..
     inc l0074                                                         ; a35a: e6 74       .t
@@ -6557,7 +6558,7 @@ l94b2 = default_printer_driver_ptr+1
 ; &a44e referenced 1 time by &a30d
 .sub_ca44e
     lda l0034                                                         ; a44e: a5 34       .4
-    sta l0070                                                         ; a450: 85 70       .p
+    sta ruler_stack_ptr                                               ; a450: 85 70       .p
     lda screen_height                                                 ; a452: a5 35       .5
     sta l0073                                                         ; a454: 85 73       .s
     lsr a                                                             ; a456: 4a          J
@@ -6587,10 +6588,10 @@ l94b2 = default_printer_driver_ptr+1
 .ca479
     sta l0011                                                         ; a479: 85 11       ..
     sty l0012                                                         ; a47b: 84 12       ..
-    lda l0070                                                         ; a47d: a5 70       .p
+    lda ruler_stack_ptr                                               ; a47d: a5 70       .p
     sta l0033                                                         ; a47f: 85 33       .3
     lda l0034                                                         ; a481: a5 34       .4
-    sta l0070                                                         ; a483: 85 70       .p
+    sta ruler_stack_ptr                                               ; a483: 85 70       .p
     rts                                                               ; a485: 60          `
 
 ; &a486 referenced 3 times by &a3c3, &a3fc, &a64e
@@ -7914,7 +7915,7 @@ la8a5 = ca8a4+1
     jsr sub_cab6e                                                     ; ab1e: 20 6e ab     n.
     bne cab29                                                         ; ab21: d0 06       ..
     jsr cab29                                                         ; ab23: 20 29 ab     ).
-    bne cab75                                                         ; ab26: d0 4d       .M
+    bne push_onto_ruler_stack                                         ; ab26: d0 4d       .M
     rts                                                               ; ab28: 60          `
 
 ; &ab29 referenced 5 times by &9d8a, &9eac, &ab21, &ab23, &abfd
@@ -7970,7 +7971,7 @@ la8a5 = ca8a4+1
 .cab64
     jsr sub_cab6e                                                     ; ab64: 20 6e ab     n.
     bne cab6c                                                         ; ab67: d0 03       ..
-    jsr sub_cab8b                                                     ; ab69: 20 8b ab     ..
+    jsr pop_from_ruler_stack                                          ; ab69: 20 8b ab     ..
 ; &ab6c referenced 1 time by &ab67
 .cab6c
     sec                                                               ; ab6c: 38          8
@@ -7985,12 +7986,13 @@ la8a5 = ca8a4+1
     cmp #&81                                                          ; ab72: c9 81       ..
     rts                                                               ; ab74: 60          `
 
+; ***************************************************************************************
 ; &ab75 referenced 2 times by &ab26, &ac49
-.cab75
+.push_onto_ruler_stack
     tya                                                               ; ab75: 98          .
     pha                                                               ; ab76: 48          H
     inc l0076                                                         ; ab77: e6 76       .v
-    ldy l0070                                                         ; ab79: a4 70       .p
+    ldy ruler_stack_ptr                                               ; ab79: a4 70       .p
     dey                                                               ; ab7b: 88          .
     lda tmp0                                                          ; ab7c: a5 85       ..
     sta (oshwm),y                                                     ; ab7e: 91 1f       ..
@@ -8002,15 +8004,16 @@ la8a5 = ca8a4+1
     tay                                                               ; ab89: a8          .
     rts                                                               ; ab8a: 60          `
 
+; ***************************************************************************************
 ; &ab8b referenced 1 time by &ab69
-.sub_cab8b
+.pop_from_ruler_stack
     inc l0076                                                         ; ab8b: e6 76       .v
-    ldy l0070                                                         ; ab8d: a4 70       .p
+    ldy ruler_stack_ptr                                               ; ab8d: a4 70       .p
     iny                                                               ; ab8f: c8          .
     iny                                                               ; ab90: c8          .
 ; &ab91 referenced 5 times by &a362, &a3b4, &a3e4, &ab85, &b08e
 .cab91
-    sty l0070                                                         ; ab91: 84 70       .p
+    sty ruler_stack_ptr                                               ; ab91: 84 70       .p
     iny                                                               ; ab93: c8          .
     lda (oshwm),y                                                     ; ab94: b1 1f       ..
     clc                                                               ; ab96: 18          .
@@ -8146,7 +8149,7 @@ la8a5 = ca8a4+1
     pha                                                               ; ac43: 48          H
     jsr sub_cab6e                                                     ; ac44: 20 6e ab     n.
     bne cac4c                                                         ; ac47: d0 03       ..
-    jsr cab75                                                         ; ac49: 20 75 ab     u.
+    jsr push_onto_ruler_stack                                         ; ac49: 20 75 ab     u.
 ; &ac4c referenced 1 time by &ac47
 .cac4c
     pla                                                               ; ac4c: 68          h
@@ -8941,10 +8944,10 @@ la8a5 = ca8a4+1
     lda #&0d                                                          ; b045: a9 0d       ..
     sta (tmp0),y                                                      ; b047: 91 85       ..
     ldy #&ff                                                          ; b049: a0 ff       ..
-    lda #<(current_line_buffer+135)                                   ; b04b: a9 cc       ..
+    lda #<(just_before_current_ruler_buffer)                          ; b04b: a9 cc       ..
     sta (oshwm),y                                                     ; b04d: 91 1f       ..
     dey                                                               ; b04f: 88          .              ; Y=&fe
-    lda #>(current_line_buffer+135)                                   ; b050: a9 05       ..
+    lda #>(just_before_current_ruler_buffer)                          ; b050: a9 05       ..
     sta (oshwm),y                                                     ; b052: 91 1f       ..
     jsr move_cursor_to_top_of_document                                ; b054: 20 7a b0     z.
     jsr clear_cmd                                                     ; b057: 20 91 b0     ..
@@ -8983,7 +8986,7 @@ la8a5 = ca8a4+1
     sta xpos                                                          ; b084: 85 40       .@
     ldy #&fe                                                          ; b086: a0 fe       ..
     sty l0012                                                         ; b088: 84 12       ..
-    sty l0070                                                         ; b08a: 84 70       .p
+    sty ruler_stack_ptr                                               ; b08a: 84 70       .p
     sty l0033                                                         ; b08c: 84 33       .3
     jmp cab91                                                         ; b08e: 4c 91 ab    L..
 
@@ -9759,10 +9762,10 @@ save pydis_start, pydis_end
 ;     get_line_length:                       12
 ;     l0038:                                 12
 ;     l0047:                                 12
-;     l0070:                                 12
 ;     l0072:                                 12
 ;     l0073:                                 12
 ;     page+1:                                12
+;     ruler_stack_ptr:                       12
 ;     screen_height:                         12
 ;     draw_char:                             11
 ;     input_buffer:                          11
@@ -10135,7 +10138,6 @@ save pydis_start, pydis_end
 ;     caa51:                                  2
 ;     caa82:                                  2
 ;     caad5:                                  2
-;     cab75:                                  2
 ;     cabf6:                                  2
 ;     cabf9:                                  2
 ;     cac17:                                  2
@@ -10208,6 +10210,7 @@ save pydis_start, pydis_end
 ;     print_x_words_of_help:                  2
 ;     printer_driver_ptr+1:                   2
 ;     prompt_for_marker:                      2
+;     push_onto_ruler_stack:                  2
 ;     read_first_chunk_from_input_fh:         2
 ;     register_value_l+1:                     2
 ;     register_value_p+1:                     2
@@ -10814,6 +10817,7 @@ save pydis_start, pydis_end
 ;     osfile:                                 1
 ;     osrdch:                                 1
 ;     parse_command:                          1
+;     pop_from_ruler_stack:                   1
 ;     print_char_just_to_printer:             1
 ;     print_to_screen:                        1
 ;     put_byte_to_file:                       1
@@ -10904,7 +10908,6 @@ save pydis_start, pydis_end
 ;     sub_ca651:                              1
 ;     sub_ca6f9:                              1
 ;     sub_caacb:                              1
-;     sub_cab8b:                              1
 ;     sub_cabc4:                              1
 ;     sub_cac50:                              1
 ;     sub_caedd:                              1
