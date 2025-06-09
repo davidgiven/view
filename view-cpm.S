@@ -7767,8 +7767,10 @@ jumptable4_cli_end:
 
     .ascii "Mark Colton"
     .byte 0
-; 'QUIT' -> 0, flag=1
+; If a char contains 0x20, it means that a match failure here still counts as a
+; positive match --- allowing B to be the abbreviation for BYE, for example.
 parser_table:
+; 'QUIT' -> 0, flag=1
     .byte 0x0a, 0x0e, 0x12, 0x0f
     .byte 0x81
 ; 'NEW' -> 1, flag=0
@@ -7844,8 +7846,8 @@ parser_table:
     .byte 0x17, 0x34, 0x3a, 0x3f
     .byte 0x80
 ; 'BYE' -> 25, flag=1
-    .byte 0x39, 0x22, 0x3e
-    .byte 0x81
+    .byte 0x19, 0x22, 0x3e
+    .byte 0x80
     .byte 0
 commands_table:
 lb2a1 = commands_table+1
