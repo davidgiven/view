@@ -124,6 +124,15 @@ void q_command_key(void);
 void k_command_key(void);
 void beep(void);
 void enter_printable_character(void);
+void sub_c9de1(void);
+void sub_c9e22(void);
+void ca741(void);
+void ca941(void);
+void sub_cae06(void);
+void SCREEN(void);
+
+// ; SCREEN driver function codes
+#define SCREEN_GETCHAR 7
 
 //X ram:                              .fill 65536
 uint8_t ram[65536];
@@ -5134,28 +5143,39 @@ void enter_printable_character(void) {
     //     bpl c9cf5
     //     bmi c9d15                                                         ; ALWAYS branch
 }
+// MULTIPLE ENTRY POINTS: sf1_swap_case_key, f13_right_key
 void sf1_swap_case_key(void) {
-    // Pseudocode: Swaps case of character under cursor, then falls to f13_right_key
-
-    // ; ***************************************************************************************
     // sf1_swap_case_key:
     //     ldy xpos
+    y = xpos;
     //     lda (current_edit_line_ptr),y
+    a = ram[current_edit_line_ptr + y];
     //     jsr is_uppercase
+    is_uppercase();
     //     bcs f13_right_key
+    if (flags & FLAG_C) { f13_right_key(); return; }
     //     inc l0074
+    l0074++;
     //     eor #0x20 ; ' '
+    a ^= 0x20;
     //     sta (current_edit_line_ptr),y
-    // ; ***************************************************************************************
+    ram[current_edit_line_ptr + y] = a;
+    //     falls through to f13_right_key
+    f13_right_key(); return;
+}
+void f13_right_key(void) {
     // f13_right_key:
     //     ldy xpos
+    y = xpos;
     //     cpy #0x84
+    { uint16_t tmp_ = y - 0x84; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= 0x84 ? FLAG_C : 0); }
     //     bcs return_51
+    if (flags & FLAG_C) return;
     //     inc xpos
+    xpos++;
     // return_51:
     //     rts
-
-    // MULTIPLE ENTRY POINTS: sf1_swap_case_key, f13_right_key
+    return;
 }
 void f12_left_key(void) {
     // Pseudocode: Moves cursor left by one position
@@ -5269,71 +5289,124 @@ void cf6_split_line_key(void) {
     //     iny
     //     bne c9de3
     // ; ***************************************************************************************
-    // f6_insert_line_key:
-    //     jsr ca93c
-    //     lda current_line_ptr
-    //     ldy current_line_ptr+1
-    //     inc l0079
-    // sub_c9de1:
-    //     inc cursor_moved_flag
-    // c9de3:
-    //     sta tmp4
-    //     sty tmp5
-    //     lda #1
-    //     sta tmp6
-    //     lda #0
-    //     sta tmp7
-    //     jsr make_space_for_insertion
-    //     bcs c9dfd
-    //     lda #0x0d
-    //     ldy #0
-    //     sta (tmp4),y
-    //     jmp ca741
-
-    // c9dfd:
-    //     jmp ca941
-
-    // ; ***************************************************************************************
 
     // MULTIPLE ENTRY POINTS: cf6_split_line_key, f6_insert_line_key, sub_c9de1
 }
-void delete_key(void) {
-    // Pseudocode: Deletes character to left of cursor (backspace)
 
+// MULTIPLE ENTRY POINTS: cf6_split_line_key, f6_insert_line_key, sub_c9de1
+void f6_insert_line_key(void) {
+    // f6_insert_line_key:
+    //     jsr ca93c
+    // PROBLEM: jsr ca93c
+    //     lda current_line_ptr
+    a = current_line_ptr;
+    //     ldy current_line_ptr+1
+    y = current_line_ptr >> 8;
+    //     inc l0079
+    l0079++;
+    //     falls through to sub_c9de1
+    sub_c9de1(); return;
+}
+
+void sub_c9de1(void) {
+    // sub_c9de1:
+    //     inc cursor_moved_flag
+    cursor_moved_flag++;
+    // c9de3:
+c9de3:
+    //     sta tmp4
+    tmp4 = a;
+    //     sty tmp5
+    tmp5 = y;
+    //     lda #1
+    a = 1;
+    //     sta tmp6
+    tmp6 = a;
+    //     lda #0
+    a = 0;
+    //     sta tmp7
+    tmp7 = a;
+    //     jsr make_space_for_insertion
+    // PROBLEM: jsr make_space_for_insertion
+    //     bcs c9dfd
+    if (flags & FLAG_C) goto c9dfd;
+    //     lda #0x0d
+    a = 0x0d;
+    //     ldy #0
+    y = 0;
+    //     sta (tmp4),y
+    ram[tmp4 + y] = a;
+    //     jmp ca741
+    ca741(); return;
+
+c9dfd:
+    //     jmp ca941
+    ca941(); return;
+}
+// MULTIPLE ENTRY POINTS: delete_key, f8_insert_char_key
+void delete_key(void) {
     // delete_key:
     //     lda l0072
+    a = l0072;
     //     beq return_55
+    if (flags & FLAG_Z) return;
     //     dec xpos
+    xpos--;
     //     ldy xpos
+    y = xpos;
     //     lda (current_edit_line_ptr),y
+    a = ram[current_edit_line_ptr + y];
     //     pha
+    // PROBLEM: pha
     //     jsr f9_delete_char_key
+    f9_delete_char_key();
     //     pla
+    // PROBLEM: pla
     //     cmp #0x0c
+    { uint16_t tmp_ = a - 0x0c; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x0c ? FLAG_C : 0); }
     //     bcc return_55
+    if (!(flags & FLAG_C)) return;
     //     ldx insert_mode_flag
+    x = insert_mode_flag;
     //     bne return_55
+    if (!(flags & FLAG_Z)) return;
     //     jsr get_line_length
+    // PROBLEM: jsr get_line_length
     //     cpy xpos
+    { uint16_t tmp_ = y - xpos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= xpos ? FLAG_C : 0); }
     //     bcc return_55
+    if (!(flags & FLAG_C)) return;
     //     beq return_55
-    // ; ***************************************************************************************
+    if (flags & FLAG_Z) return;
+    //     rts
+    return;
+}
+void f8_insert_char_key(void) {
     // f8_insert_char_key:
     //     lda #0x20 ; ' '
+    a = 0x20;
+    //     falls through to sub_c9e22
+    sub_c9e22(); return;
+}
+void sub_c9e22(void) {
     // sub_c9e22:
     //     pha
+    // PROBLEM: pha
     //     ldx #1
+    x = 1;
     //     jsr sub_cae06
+    sub_cae06();
     //     pla
+    // PROBLEM: pla
     //     bcs return_55
+    if (flags & FLAG_C) return;
     //     sta (current_edit_line_ptr),y
+    ram[current_edit_line_ptr + y] = a;
     //     inc l0074
+    l0074++;
     // return_55:
     //     rts
-
-    // ; ***************************************************************************************
-
-    // MULTIPLE ENTRY POINTS: delete_key, f8_insert_char_key
+    return;
 }
 // MULTIPLE ENTRY POINTS: tab_key, sf4_highlight1_key, sf5_highlight2_key
 void tab_key(void) {
@@ -7108,21 +7181,34 @@ void ca741(void) {
 }
 void flush_and_read_char(void) {
     // Pseudocode: Reads a character from keyboard via SCREEN, returning escape flag in carry
-
-    // ; ***************************************************************************************
-    // flush_and_read_char:
+flush_and_read_char:
     // read_char:
+read_char:
     //     lda #0xff
+    a = 0xff;
     //     tax
+    x = a;
     //     ldy #SCREEN_GETCHAR
+    y = SCREEN_GETCHAR;
     //     jsr SCREEN
+    SCREEN();
     //     bcs read_char
+    if (flags & FLAG_C) goto read_char;
     //     cmp #0x1b                                                         ; A=character read
+    { uint16_t tmp_ = a - 0x1b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x1b ? FLAG_C : 0); }
     //     clc
+    flags &= ~FLAG_C;
     //     bne return_65
+    if (!(flags & FLAG_Z)) goto return_65;
     //     sec
+    flags |= FLAG_C;
     // return_65:
+return_65:
     //     rts
+    return;
+}
+void read_char(void) {
+    flush_and_read_char(); // alias - same entry
 }
 void clear_screen(void) {
     // Pseudocode: Clears the screen via SCREEN call
