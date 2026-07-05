@@ -1,4 +1,4 @@
-/* Note to AI agents:
+/* # Note to AI agents
  *
  * This is an in-progress translation from 6502 machine code to C.
  * The original 6502 assembly code is included as comments for reference.
@@ -171,6 +171,10 @@
 //     stx error_handling_mode
 //     jsr system_init
 //     jsr initialise_document
+
+void main_(void) {
+    // Pseudocode: Program entry point, initializes stack pointer and error handling mode
+}
 // run_cli:
 //     jsr clear_screen
 //     ldx #1
@@ -263,6 +267,10 @@
 // c81f3:
 //     jsr bdos_print_newline
 // ; ***************************************************************************************
+
+void run_cli(void) {
+    // Pseudocode: Clears screen, prints welcome with bytes free and document state, then drops into CLI
+}
 // cli_loop:
 //     jsr stop_printing
 //     ldx #0xff
@@ -284,9 +292,17 @@
 //     jmp run_editor
 
 // ; ***************************************************************************************
+
+void cli_loop(void) {
+    // Pseudocode: Main CLI loop: prints => prompt, reads command, dispatches via jump table
+}
 // esc_key:
 //     jsr ca93c
 //     jmp run_cli
+
+void esc_key(void) {
+    // Pseudocode: Saves edit buffer via ca93c and returns to CLI prompt
+}
 
 // input_line_not_escaped:
 //     jsr parse_command
@@ -305,11 +321,19 @@
 //     jsr call_through_jumptable
 //     jmp run_cli
 
+
+void input_line_not_escaped(void) {
+    // Pseudocode: Parses command input and dispatches through CLI jump table
+}
 // ; ***************************************************************************************
 // zproc bye_cmd
 //     ldy #BDOS_EXIT_PROGRAM
 //     jmp BDOS
 // zendproc
+
+void bye_cmd(void) {
+    // Pseudocode: Exits the program via BDOS exit system call
+}
 
 // ; ***************************************************************************************
 // search_cmd:
@@ -325,6 +349,10 @@
 //     jmp run_editor
 
 // ; ***************************************************************************************
+
+void search_cmd(void) {
+    // Pseudocode: Parses search string and marks area, searches for first match, enters editor
+}
 // change_cmd:
 //     jsr sub_c83f0
 //     bcs c82fa
@@ -366,6 +394,10 @@
 // c830d:
 //     jmp display_not_enough_memory
 
+void change_cmd(void) {
+    // Pseudocode: Replaces all occurrences of search string in document area, reports change count
+}
+
 // sub_c8310:
 //     iny
 //     lda input_buffer,y
@@ -375,6 +407,10 @@
 //     cmp #0x0d
 // return_2:
 //     rts
+
+void sub_c8310(void) {
+    // Pseudocode: Helper that reads next input buffer char and compares against delimiter l007e
+}
 
 // ; ***************************************************************************************
 // replace_cmd:
@@ -410,6 +446,10 @@
 //     jsr move_cursor_to_address
 //     jmp c832d
 
+void replace_cmd(void) {
+    // Pseudocode: Interactive search and replace prompting for each match (Y)es/(O)K/(N)o
+}
+
 // sub_c8361:
 //     lda #0
 //     sta l006e
@@ -419,6 +459,10 @@
 // c836b:
 //     jsr sub_ca94a
 //     jmp esc_key
+
+void sub_c8361(void) {
+    // Pseudocode: Saves edit state by clearing l006e, updating screen, and saving edit buffer
+}
 
 // sub_c8371:
 //     lda ptr2
@@ -449,6 +493,10 @@
 //     txa
 //     beq return_3
 //     jmp ca741
+
+void sub_c8371(void) {
+    // Pseudocode: Counts carriage returns between ptr2 and doc_ptr2 for line tracking during replace
+}
 
 // ; ***************************************************************************************
 // expand_escaped_string:
@@ -489,6 +537,10 @@
 //     sty input_buffer_ptr
 // return_3:
 //     rts
+
+void expand_escaped_string(void) {
+    // Pseudocode: Expands ^X escape sequences (^T=tab, ^C=CR, ^S=stop, etc.) in strings
+}
 
 // escaped_char_table:
 //     .ascii "?"
@@ -531,6 +583,10 @@
 // return_4:
 //     rts
 
+void sub_c83f0(void) {
+    // Pseudocode: Parses search and replace arguments: expands strings and parses marker range
+}
+
 // sub_c8412:
 //     ldx #0
 //     stx l007a
@@ -544,9 +600,17 @@
 // return_5:
 //     rts
 
+void sub_c8412(void) {
+    // Pseudocode: Parses initial search string from command input with escape expansion
+}
+
 // ; ***************************************************************************************
 // screen_cmd:
 //     jmp print_to_screen
+
+void screen_cmd(void) {
+    // Pseudocode: Jumps to print_to_screen for on-screen document preview
+}
 
 // ; ***************************************************************************************
 // sheets_cmd:
@@ -557,14 +621,28 @@
 //     jsr bdos_print_newline
 //     jmp cli_loop
 
+void sheets_cmd(void) {
+    // Pseudocode: Prints document to printer then displays newline and returns to CLI
+}
+
 // ; ***************************************************************************************
 // print_cmd:
 //     lda #0x80
 //     jsr start_printing
 // ; ***************************************************************************************
+
+// MULTIPLE ENTRY POINTS: print_cmd, print_to_screen
+void print_cmd(void) {
+    // Pseudocode: Sets print flags and falls through to print_to_screen
+}
 // print_to_screen:
 //     jsr print_document
 //     jmp cli_loop
+
+// MULTIPLE ENTRY POINTS: print_cmd, print_to_screen
+void print_to_screen(void) {
+    // Pseudocode: Prints document for screen preview, returns to CLI when done
+}
 
 // ; ***************************************************************************************
 // stop_printing:
@@ -578,6 +656,10 @@
 // c8459:
 //     rts
 
+void stop_printing(void) {
+    // Pseudocode: Stops active printing by clearing print flags and calling printer driver cleanup
+}
+
 // start_printing:
 //     jsr print_inline_string
 //     .ascii "Sorry, can't print yet\r"
@@ -589,6 +671,11 @@
 //     lda #3
 //     jmp call_printer_driver
 
+
+// MULTIPLE ENTRY POINTS: start_printing has stub and real code paths
+void start_printing(void) {
+    // Pseudocode: Initializes printer driver and starts printing with given flags
+}
 // ; ***************************************************************************************
 // edit_cmd:
 //     jsr check_not_continuous_editing
@@ -629,6 +716,10 @@
 // c84ab:
 //     jmp cli_loop
 
+void edit_cmd(void) {
+    // Pseudocode: Opens input and output files, initializes document, reads first input chunk
+}
+
 // ; ***************************************************************************************
 // more_cmd:
 //     jsr check_continuous_editing
@@ -665,6 +756,10 @@
 // c84e8:
 //     jmp cb05a
 
+
+void more_cmd(void) {
+    // Pseudocode: Appends more text from input file into document at current cursor position
+}
 // ; ***************************************************************************************
 // finish_cmd:
 //     jsr check_continuous_editing
@@ -689,9 +784,18 @@
 //     beq c84ab
 //     bne loop_c84ee                                                    ; ALWAYS branch
 
+void finish_cmd(void) {
+    // Pseudocode: Writes remaining document content to output file in chunks
+}
+
 // ; ***************************************************************************************
 // quit_cmd:
 //     jsr check_continuous_editing
+
+// MULTIPLE ENTRY POINTS: quit_cmd, close_input_output_files
+void quit_cmd(void) {
+    // Pseudocode: Checks continuous editing then falls through to close files
+}
 // close_input_output_files:
 //     lda #0
 //     sta input_file_empty_flag
@@ -702,6 +806,11 @@
 //     jsr select_file
 //     jsr close_file
 //     jmp cli_loop
+
+// MULTIPLE ENTRY POINTS: quit_cmd, close_input_output_files
+void close_input_output_files(void) {
+    // Pseudocode: Closes output file, resets editing flags, returns to CLI
+}
 
 // ; ***************************************************************************************
 // save_cmd:
@@ -737,12 +846,22 @@
 //     jsr close_file
 //     jmp cli_loop
 
+// MULTIPLE ENTRY POINTS: save_cmd, write_cmd
+void save_cmd_write_cmd(void) {
+    // Pseudocode: Saves document area to output file with optional filename
+}
+
 // check_for_at_least_150_bytes_free:
 //     jsr compute_bytes_free
 //     tya
 //     bne return_6
 //     cpx #0x96
 //     bcs return_6
+
+// MULTIPLE ENTRY POINTS: check_for_at_least_150_bytes_free, display_not_enough_memory
+void check_for_at_least_150_bytes_free(void) {
+    // Pseudocode: Checks if at least 150 bytes of memory are available
+}
 // display_not_enough_memory:
 //     jsr stop_printing
 //     jsr print_inline_string
@@ -751,6 +870,11 @@
 
 // return_6:
 //     rts
+
+// MULTIPLE ENTRY POINTS: check_for_at_least_150_bytes_free, display_not_enough_memory
+void display_not_enough_memory(void) {
+    // Pseudocode: Displays Not enough memory error and stops printing
+}
 
 // ; ***************************************************************************************
 // load_cmd:
@@ -762,6 +886,11 @@
 //     jsr reset_document_name_after_load
 //     jsr clear_cmd
 //     jmp move_cursor_to_top_of_document
+
+// MULTIPLE ENTRY POINTS: load_cmd jumps into read_cmd at label 1:
+void load_cmd(void) {
+    // Pseudocode: Loads a file, initializes document, clears markers, moves cursor to top
+}
 
 // read_cmd:
 //     jsr parse_filename_from_command
@@ -808,11 +937,20 @@
 //     jsr adjust_pointers
 //     jmp cli_loop
 
+// MULTIPLE ENTRY POINTS: load_cmd jumps to label 1: within read_cmd
+void read_cmd(void) {
+    // Pseudocode: Reads file contents into document at current area_start position
+}
+
 // ; ***************************************************************************************
 // mode_cmd:
 //     jsr print_inline_string
 //     .ascii "Bad mode"
 //     .byte 0xff
+
+void mode_cmd(void) {
+    // Pseudocode: Displays Bad mode error message and returns to CLI
+}
 
 // ; ***************************************************************************************
 // microspace_cmd:
@@ -839,6 +977,10 @@
 //     jsr print_inline_string
 //     .ascii "Driver does not support microspacing"
 //     .byte 0xff
+
+void microspace_cmd(void) {
+    // Pseudocode: Configures microspacing by querying printer driver
+}
 
 // ; ***************************************************************************************
 // setup_cmd:
@@ -885,6 +1027,10 @@
 
 //     .byte 0, 0xff
 
+void setup_cmd(void) {
+    // Pseudocode: Parses flag letters and sets format_mode_flag, justifying_flag, insert_mode_flag
+}
+
 // ; ***************************************************************************************
 // field_cmd:
 //     jsr parse_integer_from_command
@@ -901,6 +1047,10 @@
 // c869b:
 //     jmp cli_loop
 
+
+void field_cmd(void) {
+    // Pseudocode: Sets the tab key field width from parsed integer argument
+}
 // ; ***************************************************************************************
 // count_cmd:
 //     jsr parse_marks_from_command
@@ -1001,6 +1151,10 @@
 //     .ascii "CELJ"
 //     .byte 0
 
+
+void count_cmd(void) {
+    // Pseudocode: Counts words in document area handling command prefixes and punctuation
+}
 // ; ***************************************************************************************
 // format_cmd:
 //     jsr parse_marks_from_command
@@ -1040,10 +1194,18 @@
 //     jsr bdos_print_newline
 //     jmp display_not_enough_memory
 
+void format_cmd(void) {
+    // Pseudocode: Formats document area by running line-by-line through formatting pipeline
+}
+
 // ; ***************************************************************************************
 // new_cmd:
 //     jsr check_not_continuous_editing
 //     jmp initialise_document
+
+void new_cmd(void) {
+    // Pseudocode: Creates a new empty document after checking continuous editing state
+}
 
 // ; ***************************************************************************************
 // fold_cmd:
@@ -1079,6 +1241,10 @@
 //     jsr print_inline_string
 //     .ascii "Bad file"
 //     .byte 0xff
+
+void fold_cmd(void) {
+    // Pseudocode: Toggles folding on/off and displays current folding status
+}
 
 // ; ***************************************************************************************
 // printer_cmd:
@@ -1130,6 +1296,10 @@
 // return_8:
 //     rts
 
+void printer_cmd(void) {
+    // Pseudocode: Redirects to print_cmd (printer driver loading code is disabled with #if 0)
+}
+
 // ; ***************************************************************************************
 // parse_integer_from_command:
 //     lda #<(input_buffer)
@@ -1140,6 +1310,10 @@
 //     beq return_8
 //     jmp ca6fe
 
+void parse_integer_from_command(void) {
+    // Pseudocode: Parses a decimal integer from the command input buffer
+}
+
 // ; ***************************************************************************************
 // file_not_found_error:
 //     jsr stop_printing
@@ -1147,6 +1321,10 @@
 //     .ascii "File not found\r"
 //     .byte 0
 //     jmp cli_loop
+
+void file_not_found_error(void) {
+    // Pseudocode: Displays File not found error and returns to CLI
+}
 
 // ; ***************************************************************************************
 // name_cmd:
@@ -1157,9 +1335,19 @@
 //     sta file_edit_flags
 //     plp
 //     beq return_9
+
+// MULTIPLE ENTRY POINTS: name_cmd, reset_document_name_after_load
+void name_cmd(void) {
+    // Pseudocode: Sets document name from optional filename argument
+}
 // reset_document_name_after_load:
 //     lda #0x40 ; '@'
 //     sta file_edit_flags
+
+// MULTIPLE ENTRY POINTS: name_cmd, reset_document_name_after_load
+void reset_document_name_after_load(void) {
+    // Pseudocode: Sets file_edit_flags to indicate a document is loaded
+}
 // set_document_name_to_filename_buffer:
 //     ldx #0
 // loop_c88fa:
@@ -1173,6 +1361,11 @@
 //     sta input_filename-1, x
 //     rts
 
+// MULTIPLE ENTRY POINTS: also called directly from edit_cmd
+void set_document_name_to_filename_buffer(void) {
+    // Pseudocode: Copies filename buffer to input filename buffer
+}
+
 // ; ***************************************************************************************
 // zproc file_error
 //     jsr print_inline_string
@@ -1180,6 +1373,10 @@
 //     .byte 0
 //     jmp cli_loop
 // zendproc
+
+void file_error(void) {
+    // Pseudocode: Displays File error and returns to CLI
+}
 
 // zproc zero_terminate_filename_buffer
 //     ldx #0
@@ -1194,6 +1391,10 @@
 //     sta filename_buffer, x
 //     rts
 // zendproc
+
+void zero_terminate_filename_buffer(void) {
+    // Pseudocode: Replaces CR at end of filename with null (0) byte
+}
 
 // ; ***************************************************************************************
 // sanitise_area:
@@ -1224,6 +1425,10 @@
 // return_10:
 //     rts
 
+void sanitise_area(void) {
+    // Pseudocode: Ensures area_start <= area_end by swapping if needed, returns area size
+}
+
 // ; ***************************************************************************************
 // parse_marks_from_command:
 //     jsr reset_area_to_entire_document
@@ -1237,6 +1442,10 @@
 //     sty area_end_ptr+1
 // return_11:
 //     rts
+
+void parse_marks_from_command(void) {
+    // Pseudocode: Parses up to two markers from command to set area_start and area_end
+}
 
 // ; ***************************************************************************************
 // parse_mark_from_command:
@@ -1262,6 +1471,10 @@
 //     .ascii "Marker not set"
 //     .byte 0xff
 
+void parse_mark_from_command(void) {
+    // Pseudocode: Parses a single marker number and looks up its stored address
+}
+
 // sub_c89d3:
 //     lda area_start_ptr
 //     sta tmp4
@@ -1271,6 +1484,10 @@
 //     lda tmp4
 //     ldy tmp5
 //     jmp cac78
+
+void sub_c89d3(void) {
+    // Pseudocode: Adjusts document pointers using area_start and calls cac78
+}
 
 // display_document_file_state:
 //     jsr stop_printing
@@ -1311,6 +1528,10 @@
 //     .byte 0
 
 //     rts
+
+void display_document_file_state(void) {
+    // Pseudocode: Displays editing state showing filenames or No File
+}
 
 // sub_c8a4f:
 //     lda #0
@@ -1490,9 +1711,17 @@
 //     clc
 //     rts
 
+void sub_c8a4f(void) {
+    // Pseudocode: Performs case-aware string replacement in document at current position
+}
+
 // c8b78:
 //     lda #0xff
 //     rts
+
+void c8b78(void) {
+    // Pseudocode: Returns 0xff as a failure indicator
+}
 
 // c8b7b:
 //     lda l007a
@@ -1620,6 +1849,10 @@
 //     ldx #0
 //     rts
 
+void c8b7b(void) {
+    // Pseudocode: Searches for next pattern match in document, skipping command prefixes
+}
+
 // sub_c8c51:
 //     lda #0
 // sub_c8c53:
@@ -1631,6 +1864,11 @@
 // return_13:
 //     rts
 
+// MULTIPLE ENTRY POINTS: sub_c8c51, sub_c8c53
+void sub_c8c51_sub_c8c53(void) {
+    // Pseudocode: Writes a byte (or zero) to output_buffer at current position
+}
+
 // sub_c8c5f:
 //     bit folding_flag
 //     bmi return_14
@@ -1640,6 +1878,11 @@
 //     and #0xdf
 // return_14:
 //     rts
+
+// MULTIPLE ENTRY POINTS: sub_c8c5f, to_uppercase
+void sub_c8c5f_to_uppercase(void) {
+    // Pseudocode: Converts char to uppercase unless folding flag is set
+}
 
 // ; ***************************************************************************************
 // is_uppercase:
@@ -1657,6 +1900,10 @@
 //     sec
 //     rts
 
+void is_uppercase(void) {
+    // Pseudocode: Checks if character is uppercase A-Z, returns carry if not
+}
+
 // sub_c8c7c:
 //     lda area_start_ptr
 //     sta doc_ptr2+0
@@ -1667,6 +1914,10 @@
 //     lda area_end_ptr+1
 //     sta doc_ptr3+1
 //     rts
+
+void sub_c8c7c(void) {
+    // Pseudocode: Copies area_start to doc_ptr2 and area_end to doc_ptr3
+}
 
 // read_block_from_file:
 //     lda #0
@@ -1733,6 +1984,10 @@
 //     lda l0082
 //     rts
 
+void read_block_from_file(void) {
+    // Pseudocode: Reads bytes from input file into memory filtering out invalid control codes
+}
+
 // write_cr_to_memory:
 //     lda #0x0d
 // write_byte_to_memory:
@@ -1749,6 +2004,11 @@
 //     sty l0083
 // return_16:
 //     rts
+
+// MULTIPLE ENTRY POINTS: write_cr_to_memory, write_byte_to_memory
+void write_cr_to_memory_write_byte_to_memory(void) {
+    // Pseudocode: Writes a byte to memory at tmp0, increments pointer, tracks CR state
+}
 
 // ; ***************************************************************************************
 // read_first_chunk_from_input_file:
@@ -1776,6 +2036,11 @@
 //     sta top+1
 //     plp
 //     rts
+
+// MULTIPLE ENTRY POINTS: read_first_chunk_from_input_file, read_next_chunk_from_input_file
+void read_first_chunk_from_input_file(void) {
+    // Pseudocode: Reads first chunk of data from input file into memory top
+}
 
 // ; Does not include trailing zero!
 // write_area_to_file:
@@ -1805,6 +2070,10 @@
 //     zuntil eq
 // return_17:
 //     rts
+
+void write_area_to_file(void) {
+    // Pseudocode: Writes document area range to output file byte by byte
+}
 
 // compute_required_space_for_insertion:
 //     ldx #0
@@ -1862,6 +2131,11 @@
 // return_18:
 //     rts
 
+// MULTIPLE ENTRY POINTS: compute_required_space_for_insertion, sub_c8da2
+void compute_required_space_for_insertion(void) {
+    // Pseudocode: Computes available memory space for insertion, capping at 4 pages
+}
+
 // parse_optional_filename_from_command:
 //     jsr sub_c8e33
 //     beq return_19
@@ -1877,11 +2151,19 @@
 //     inx
 //     cpx #0x14
 //     bne loop_c8dfb
+
+void parse_optional_filename_from_command(void) {
+    // Pseudocode: Parses optional filename from input buffer into filename_buffer
+}
 // bad_filename_error:
 //     jsr print_inline_string
 //     .ascii "Bad filename\r"
 //     .byte 0
 //     jmp cli_loop
+
+void bad_filename_error(void) {
+    // Pseudocode: Displays Bad filename error and jumps to CLI
+}
 
 // parse_filename_from_command:
 //     jsr parse_optional_filename_from_command
@@ -1895,6 +2177,10 @@
 //     sty input_buffer_ptr
 // return_20:
 //     rts
+
+void parse_filename_from_command(void) {
+    // Pseudocode: Parses mandatory filename, calls bad_filename_error if missing
+}
 
 // sub_c8e2d:
 //     lda #0x20 ; ' '
@@ -1913,6 +2199,11 @@
 //     bne return_20
 //     iny
 //     bne loop_c8e3b
+
+// MULTIPLE ENTRY POINTS: sub_c8e2d, sub_c8e33
+void sub_c8e2d_sub_c8e33(void) {
+    // Pseudocode: Skips delimiter/space characters in input buffer
+}
 // check_not_continuous_editing:
 //     bit file_edit_flags
 //     bvs return_20
@@ -1920,6 +2211,11 @@
 //     ror
 //     bcc return_20
 //     bcs c8e5d                                                         ; ALWAYS branch
+
+// MULTIPLE ENTRY POINTS: check_not_continuous_editing, check_continuous_editing
+void check_not_continuous_editing(void) {
+    // Pseudocode: Verifies not in continuous editing mode, shows file state if editing
+}
 
 // check_continuous_editing:
 //     bit file_edit_flags
@@ -1931,6 +2227,11 @@
 //     jsr display_document_file_state
 //     jmp cli_loop
 
+// MULTIPLE ENTRY POINTS: check_not_continuous_editing, check_continuous_editing
+void check_continuous_editing(void) {
+    // Pseudocode: Verifies continuous editing is active, shows file state if not
+}
+
 // display_nl_then_no_text:
 //     jsr bdos_print_newline
 // display_no_text:
@@ -1939,6 +2240,11 @@
 //     .byte 0
 
 //     rts
+
+// MULTIPLE ENTRY POINTS: display_nl_then_no_text, display_no_text
+void display_nl_then_no_text(void) {
+    // Pseudocode: Displays newline then No text message
+}
 
 // print_document:
 //     jsr check_not_continuous_editing
@@ -2129,6 +2435,10 @@
 // c900e:
 //     jmp c8f30
 
+void print_document(void) {
+    // Pseudocode: Main print/preview loop: formats document with headers, footers, macros, page breaks
+}
+
 // ; ***************************************************************************************
 // nested_macro_error:
 //     jsr stop_printing
@@ -2137,6 +2447,10 @@
 //     .byte 0
 
 //     jmp c8f1a
+
+void nested_macro_error(void) {
+    // Pseudocode: Displays Nested macro call error and stops printing
+}
 
 // return_24:
 //     rts
@@ -2333,12 +2647,20 @@
 //     bne c912b
 //     jmp c8ffb
 
+void microspace_word_processor(void) {
+    // Pseudocode: Processes words for microspaced justification during printing
+}
+
 // sub_c916a:
 //     ldx print_flags
 //     bpl return_25
 //     ldx microspacing_flag
 //     bne c9177
 //     rts
+
+void sub_c916a(void) {
+    // Pseudocode: Checks if printer is active and starts microspacing if supported
+}
 
 // sub_c9173:
 //     cpx l0043
@@ -2356,6 +2678,10 @@
 // c9184:
 //     lda #0
 //     sta macro_executing_flag
+void sub_c9173(void) {
+    // Pseudocode: Emits spaces for microspacing by calling printer driver with spacing count
+}
+
 // sub_c9188:
 //     lda macro_executing_flag
 //     bne c91a3
@@ -2458,6 +2784,10 @@
 // c9225:
 //     jmp c91a7
 
+void sub_c9188(void) {
+    // Pseudocode: Gets next line of text for printing, handling macro execution
+}
+
 // sub_c9228:
 //     cmp #0x3e ; '>'
 //     bne c9231
@@ -2477,6 +2807,10 @@
 //     bit l0082
 //     ora #0
 //     rts
+
+void sub_c9228(void) {
+    // Pseudocode: Parses register reference markers (<, >, =) in format line
+}
 
 // sub_c9241:
 //     lda printing_from_file_flag
@@ -2503,6 +2837,10 @@
 
 // c9260:
 //     jmp read_block_from_file
+
+void sub_c9241(void) {
+    // Pseudocode: Reads next line from file buffer or calls read_block_from_file for printing
+}
 
 // c9263:
 //     lda l0038
@@ -2531,6 +2869,10 @@
 //     sta register_value_l+1
 //     sta l0031
 //     rts
+
+void c9263(void) {
+    // Pseudocode: Handles page footer processing: prints footer, increments page number
+}
 
 // ; ***************************************************************************************
 // render_new_page:
@@ -2597,6 +2939,10 @@
 // c930d:
 //     stx l0021
 //     rts
+
+void render_new_page(void) {
+    // Pseudocode: Renders a new page with headers, margins, page number prompt
+}
 
 // ; ***************************************************************************************
 // render_header_or_footer:
@@ -2671,6 +3017,10 @@
 // return_28:
 //     rts
 
+void render_header_or_footer(void) {
+    // Pseudocode: Renders header or footer text with centering and justification
+}
+
 // sub_c9393:
 //     jsr sub_c93b6
 //     lda #0
@@ -2696,6 +3046,11 @@
 //     sta tmp3
 //     rts
 
+// MULTIPLE ENTRY POINTS: sub_c9393, sub_c939b, sub_c93a1
+void sub_c9393_sub_c939b_sub_c93a1(void) {
+    // Pseudocode: Advances through header/footer text finding string delimiters
+}
+
 // sub_c93b6:
 //     ldy #0xff
 // c93b8:
@@ -2704,6 +3059,10 @@
 //     bpl c93b8
 //     rts
 
+void sub_c93b6(void) {
+    // Pseudocode: Finds length of header/footer string by scanning for high-bit-set terminator
+}
+
 // sub_c93be:
 //     lda ruler_right_stop
 //     bne return_29
@@ -2711,6 +3070,10 @@
 //     sec
 //     sbc #1
 // return_29:
+
+void sub_c93be(void) {
+    // Pseudocode: Returns ruler_right_stop or l003a-1 as the line width
+}
 //     rts
 
 // sub_c93c8:
@@ -2749,6 +3112,10 @@
 //     jsr render_register
 //     jmp c93ce
 
+void sub_c93c8(void) {
+    // Pseudocode: Copies header/footer text to output_buffer, expanding register references
+}
+
 // sub_c93fd:
 //     sec
 //     lda two_sided_flag
@@ -2756,6 +3123,10 @@
 //     lda register_value_p
 //     lsr
 // return_31:
+
+void sub_c93fd(void) {
+    // Pseudocode: Checks two_sided_flag and returns page parity for alternate layout
+}
 //     rts
 
 // sub_c9407:
@@ -2771,6 +3142,10 @@
 //     lda #0x20 ; ' '
 //     bne c9426                                                         ; ALWAYS branch
 
+void sub_c9407(void) {
+    // Pseudocode: Outputs left margin spaces, adjusting for two-sided printing
+}
+
 // sub_c941a:
 //     txa
 //     clc
@@ -2778,6 +3153,10 @@
 //     sta l0039
 //     lda #0x20 ; ' '
 //     bne c9426                                                         ; ALWAYS branch
+
+void sub_c941a(void) {
+    // Pseudocode: Adds extra spaces to x position for centering/justification
+}
 
 // ; ***************************************************************************************
 // ; On Entry:
@@ -2796,6 +3175,10 @@
 // return_32:
 //     rts
 
+void print_vertical_space(void) {
+    // Pseudocode: Prints X number of blank lines (newlines)
+}
+
 // sub_c9431:
 //     jsr sub_ca5ae
 //     bit print_flags
@@ -2813,6 +3196,10 @@
 // return_33:
 //     rts
 
+void sub_c9431(void) {
+    // Pseudocode: Converts character for printing, updates x position counter
+}
+
 // sub_c9445:
 //     pha
 //     lda print_xpos
@@ -2825,6 +3212,10 @@
 // c9453:
 //     pla
 //     rts
+
+void sub_c9445(void) {
+    // Pseudocode: Outputs print_xpos number of spaces to align printer
+}
 
 // ; ***************************************************************************************
 // print_newline:
@@ -2866,6 +3257,11 @@
 // c9488:
 //     jmp bdos_print_char                                                        ; Write character
 
+// MULTIPLE ENTRY POINTS: print_newline, print_char, print_char_just_to_printer
+void print_newline_print_char(void) {
+    // Pseudocode: Prints character to screen or printer with control code handling
+}
+
 // ; ***************************************************************************************
 // prepare_printer_driver:
 //     ldx #<printer_driver_block
@@ -2882,6 +3278,10 @@
 // return_35:
 //     rts
 
+void prepare_printer_driver(void) {
+    // Pseudocode: Sets up printer driver pointer from name or default driver
+}
+
 // ; ***************************************************************************************
 // call_printer_driver:
 //     clc
@@ -2891,6 +3291,10 @@
 //     adc #0
 //     sta tmp9
 //     jmp (tmp8)
+
+void call_printer_driver(void) {
+    // Pseudocode: Calls a numbered entry point in the printer driver via jump table
+}
 
 // default_printer_driver_ptr:
 // l94b2 = default_printer_driver_ptr+1
@@ -2931,12 +3335,20 @@
 //     jmp oswrch                                                        ; Write character 3
 // #endif
 
+void default_printer_driver(void) {
+    // Pseudocode: Default printer driver stubs (all currently replaced with BRK)
+}
+
 // ; ***************************************************************************************
 // lj_fmt_cmd:
 //     jsr expand_line
 //     bcc return_36
 //     lda #0
 //     beq c950f                                                         ; ALWAYS branch
+
+void lj_fmt_cmd(void) {
+    // Pseudocode: Left-justifies the current format line
+}
 
 // ; ***************************************************************************************
 // ce_fmt_cmd:
@@ -2958,6 +3370,10 @@
 //     bcs c950f
 //     lda #0
 //     beq c950f                                                         ; ALWAYS branch
+
+void ce_fmt_cmd(void) {
+    // Pseudocode: Centers the current format line
+}
 
 // ; ***************************************************************************************
 // rj_fmt_cmd:
@@ -2996,6 +3412,10 @@
 //     sec
 // return_36:
 //     rts
+
+void rj_fmt_cmd(void) {
+    // Pseudocode: Right-justifies the current format line
+}
 
 // ; ***************************************************************************************
 // expand_line:
@@ -3041,11 +3461,20 @@
 //     jsr render_register
 //     jmp c9537
 
+void expand_line(void) {
+    // Pseudocode: Expands a format line into output_buffer, handling register references via |
+}
+
 // ; ***************************************************************************************
 // dh_fmt_cmd:
 //     ldx #<(header_text_maybe)
 //     ldy #>(header_text_maybe)
 //     bne c9575                                                         ; ALWAYS branch
+
+// MULTIPLE ENTRY POINTS: dh_fmt_cmd, df_fmt_cmd
+void dh_fmt_cmd(void) {
+    // Pseudocode: Stores header text (shared code with df_fmt_cmd)
+}
 
 // ; ***************************************************************************************
 // df_fmt_cmd:
@@ -3094,6 +3523,11 @@
 //     sty l0081
 //     rts
 
+// MULTIPLE ENTRY POINTS: dh_fmt_cmd, df_fmt_cmd
+void df_fmt_cmd(void) {
+    // Pseudocode: Stores footer text (shared code with dh_fmt_cmd)
+}
+
 // ; ***************************************************************************************
 // em_fmt_cmd:
 //     ldy #3
@@ -3115,12 +3549,20 @@
 // return_38:
 //     rts
 
+void em_fmt_cmd(void) {
+    // Pseudocode: Evaluates expression and stores result in a register
+}
+
 // ; ***************************************************************************************
 // pl_fmt_cmd:
 //     ldy #3
 //     jsr evaluate_expression_from_fmt_cmd
 //     sta page_length
 //     rts
+
+void pl_fmt_cmd(void) {
+    // Pseudocode: Sets page_length from format command expression
+}
 
 // ; ***************************************************************************************
 // ts_fmt_cmd:
@@ -3133,12 +3575,20 @@
 // return_39:
 //     rts
 
+void ts_fmt_cmd(void) {
+    // Pseudocode: Sets two_sided_flag and rhs_extra_margin from format command
+}
+
 // ; ***************************************************************************************
 // tm_fmt_cmd:
 //     ldy #3
 //     jsr evaluate_expression_from_fmt_cmd
 //     sta top_margin
 //     rts
+
+void tm_fmt_cmd(void) {
+    // Pseudocode: Sets top_margin from format command expression
+}
 
 // ; ***************************************************************************************
 // bm_fmt_cmd:
@@ -3147,12 +3597,20 @@
 //     sta bottom_margin
 //     rts
 
+void bm_fmt_cmd(void) {
+    // Pseudocode: Sets bottom_margin from format command expression
+}
+
 // ; ***************************************************************************************
 // hm_fmt_cmd:
 //     ldy #3
 //     jsr evaluate_expression_from_fmt_cmd
 //     sta header_margin
 //     rts
+
+void hm_fmt_cmd(void) {
+    // Pseudocode: Sets header_margin from format command expression
+}
 
 // ; ***************************************************************************************
 // fm_fmt_cmd:
@@ -3161,6 +3619,10 @@
 //     sta footer_margin
 //     rts
 
+void fm_fmt_cmd(void) {
+    // Pseudocode: Sets footer_margin from format command expression
+}
+
 // ; ***************************************************************************************
 // lm_fmt_cmd:
 //     ldy #3
@@ -3168,12 +3630,20 @@
 //     sta left_margin
 //     rts
 
+void lm_fmt_cmd(void) {
+    // Pseudocode: Sets left_margin from format command expression
+}
+
 // ; ***************************************************************************************
 // ls_fmt_cmd:
 //     ldy #3
 //     jsr evaluate_expression_from_fmt_cmd
 //     sta line_spacing
 //     rts
+
+void ls_fmt_cmd(void) {
+    // Pseudocode: Sets line_spacing from format command expression
+}
 
 // ; ***************************************************************************************
 // pe_fmt_cmd:
@@ -3188,6 +3658,10 @@
 // return_40:
 //     rts
 
+void pe_fmt_cmd(void) {
+    // Pseudocode: Forces page eject if remaining lines are less than value
+}
+
 // ; ***************************************************************************************
 // op_fmt_cmd:
 //     lda register_value_p
@@ -3195,12 +3669,20 @@
 //     bcc page_eject_fmt
 //     bcs c9642                                                         ; ALWAYS branch
 
+void op_fmt_cmd(void) {
+    // Pseudocode: Odd page: forces page eject if current page is even
+}
+
 // ; ***************************************************************************************
 // ep_fmt_cmd:
 //     lda register_value_p
 //     lsr
 //     bcs page_eject_fmt
 // c9642:
+
+void ep_fmt_cmd(void) {
+    // Pseudocode: Even page: forces page eject if current page is odd
+}
 //     jsr page_eject_fmt
 // ; ***************************************************************************************
 // page_eject_fmt:
@@ -3209,6 +3691,10 @@
 //     jsr render_new_page
 // c964c:
 //     jmp c9263
+
+void page_eject_fmt(void) {
+    // Pseudocode: Performs page eject by rendering new page and moving to sheet bottom
+}
 
 // ; ***************************************************************************************
 // fo_fmt_cmd:
@@ -3219,6 +3705,10 @@
 // return_41:
 //     rts
 
+void fo_fmt_cmd(void) {
+    // Pseudocode: Sets footers_enabled_flag from boolean format argument
+}
+
 // ; ***************************************************************************************
 // he_fmt_cmd:
 //     ldy #3
@@ -3228,6 +3718,10 @@
 // return_42:
 //     rts
 
+void he_fmt_cmd(void) {
+    // Pseudocode: Sets headers_enabled_flag from boolean format argument
+}
+
 // ; ***************************************************************************************
 // pb_fmt_cmd:
 //     ldy #3
@@ -3236,6 +3730,10 @@
 //     sta l0038
 // return_43:
 //     rts
+
+void pb_fmt_cmd(void) {
+    // Pseudocode: Sets page break flag l0038 from boolean format argument
+}
 
 // ; ***************************************************************************************
 // dm_fmt_cmd:
@@ -3319,11 +3817,19 @@
 //     sta (tmp6),y
 //     rts
 
+void add_macro_to_linked_list(void) {
+    // Pseudocode: Links a new macro entry at the end of the macro linked list
+}
+
 // c96f8:
 //     lda tmp0
 //     sta last_macro_ptr
 //     lda tmp1
 //     sta last_macro_ptr+1
+
+void dm_fmt_cmd(void) {
+    // Pseudocode: Defines a macro: stores macro name and position in linked list
+}
 //     bne c96a2
 // ; ***************************************************************************************
 // ht_fmt_cmd:
@@ -3357,6 +3863,10 @@
 // return_44:
 //     rts
 
+void ht_fmt_cmd(void) {
+    // Pseudocode: Sets highlight codes (highlight1_code, highlight2_code) from format command
+}
+
 // ; ***************************************************************************************
 // lookup_formatting_command:
 //     ldy #2
@@ -3383,6 +3893,10 @@
 // return_45:
 //     rts
 
+void lookup_formatting_command(void) {
+    // Pseudocode: Looks up two-letter formatting command in commands_table
+}
+
 // ; ***************************************************************************************
 // execute_formatting_command:
 //     txa
@@ -3393,6 +3907,10 @@
 //     ldx l0030
 //     rts
 
+void execute_formatting_command(void) {
+    // Pseudocode: Executes a formatting command by index through the format jump table
+}
+
 // ; ***************************************************************************************
 // parse_boolean_from_fmt_cmd:
 //     jsr get_current_fmt_cmd_byte
@@ -3400,6 +3918,11 @@
 //     beq return_46
 //     lda current_format_line_ptr
 //     ldx current_format_line_ptr+1
+
+// MULTIPLE ENTRY POINTS: parse_boolean_from_fmt_cmd, sub_c976c
+void parse_boolean_from_fmt_cmd(void) {
+    // Pseudocode: Parses a boolean (ON/OFF/1/0) from format command argument
+}
 // sub_c976c:
 //     sta tmp8
 //     stx tmp9
@@ -3443,6 +3966,11 @@
 //     sec
 // return_46:
 //     rts
+
+// MULTIPLE ENTRY POINTS: parse_boolean_from_fmt_cmd, sub_c976c
+void sub_c976c(void) {
+    // Pseudocode: Parses word-based flag (ON/OFF/YES/NO) from format command
+}
 
 // l97b0:
 //     .byte 0x4f
@@ -3517,6 +4045,10 @@
 //     lda tmp8
 //     rts
 
+void evaluate_expression_from_fmt_cmd(void) {
+    // Pseudocode: Evaluates arithmetic expression with +, - and register references
+}
+
 // ; ***************************************************************************************
 // get_next_fmt_cmd_byte:
 //     iny
@@ -3529,6 +4061,11 @@
 //     beq get_next_fmt_cmd_byte
 // return_47:
 //     rts
+
+// MULTIPLE ENTRY POINTS: get_next_fmt_cmd_byte, get_current_fmt_cmd_byte
+void get_next_fmt_cmd_byte(void) {
+    // Pseudocode: Gets next non-space byte from format command line
+}
 
 // sub_c9830:
 //     lda justifying_flag
@@ -3695,6 +4232,10 @@
 // return_48:
 //     rts
 
+void sub_c9830(void) {
+    // Pseudocode: Word-spacing justification: distributes extra spaces between words
+}
+
 // sub_c9936:
 //     ror l0083
 //     lda (current_edit_line_ptr),y
@@ -3735,6 +4276,10 @@
 //     inc l0039
 // return_49:
 //     rts
+
+void sub_c9936(void) {
+    // Pseudocode: Processes a character from the edit line for output, handling tabs and margins
+}
 
 // c9974:
 //     jmp c9a8d
@@ -3922,6 +4467,10 @@
 //     lda l007e
 //     rts
 
+
+void sub_c9977(void) {
+    // Pseudocode: Main line formatting routine: reads source line, handles margins, tabs, wrapping
+}
 // sub_c9aa9:
 //     sec
 //     rol l007e
@@ -3938,6 +4487,10 @@
 //     bit l0084
 // return_50:
 //     rts
+
+void sub_c9aa9(void) {
+    // Pseudocode: Completes line formatting: adjusts pointers updates ruler stack
+}
 
 // sub_c9ac1:
 //     tya
@@ -4014,8 +4567,16 @@
 //     clc
 //     rts
 
+void sub_c9ac1(void) {
+    // Pseudocode: Finds next word boundary for line wrapping, returns carry if found
+}
+
 // run_editor:
 //     jsr enter_editor_mode
+
+void run_editor(void) {
+    // Pseudocode: Enters editor mode and falls through to editor_loop
+}
 // ; ***************************************************************************************
 // editor_loop:
 //     lda format_mode_flag
@@ -4094,9 +4655,17 @@
 //     bcs c9b96
 //     jsr jsr_tmp6
 //     jmp editor_loop
+
+void editor_loop(void) {
+    // Pseudocode: Main editor loop: handles cursor positioning, redrawing, key dispatch
+}
     
 // jsr_tmp6:
 //     jmp (tmp6)
+
+void jsr_tmp6(void) {
+    // Pseudocode: Indirect jump through tmp6 for dispatching key handlers
+}
 
 // c9bca:
 //     jsr beep
@@ -4317,6 +4886,10 @@
 //     bpl c9cf5
 //     bmi c9d15                                                         ; ALWAYS branch
 
+void enter_printable_character(void) {
+    // Pseudocode: Inserts a printable character at cursor, handling insert mode
+}
+
 // ; ***************************************************************************************
 // sf1_swap_case_key:
 //     ldy xpos
@@ -4335,12 +4908,21 @@
 // return_51:
 //     rts
 
+// MULTIPLE ENTRY POINTS: sf1_swap_case_key, f13_right_key
+void sf1_swap_case_key(void) {
+    // Pseudocode: Swaps case of character under cursor, then falls to f13_right_key
+}
+
 // ; ***************************************************************************************
 // f12_left_key:
 //     ldy l0072
 //     beq return_52
 //     dec xpos
 // return_52:
+
+void f12_left_key(void) {
+    // Pseudocode: Moves cursor left by one position
+}
 //     rts
 
 // ; ***************************************************************************************
@@ -4359,11 +4941,20 @@
 // return_53:
 //     rts
 
+void f15_up_key(void) {
+    // Pseudocode: Moves cursor to previous line, handling ruler stack
+}
+
 // ; ***************************************************************************************
 // f14_down_key:
 //     jsr ca93c
 //     inc l0079
 //     bne c9d9b
+
+// MULTIPLE ENTRY POINTS: f14_down_key, return_key
+void f14_down_key(void) {
+    // Pseudocode: Moves cursor to next line
+}
 // ; ***************************************************************************************
 // return_key:
 //     jsr ca93c
@@ -4397,6 +4988,11 @@
 //     inc current_line_ptr+1
 // return_54:
 //     rts
+
+// MULTIPLE ENTRY POINTS: f14_down_key, return_key
+void return_key(void) {
+    // Pseudocode: Carriage return: moves to next line at column 0
+}
 
 // ; ***************************************************************************************
 // cf6_split_line_key:
@@ -4450,6 +5046,11 @@
 //     jmp ca941
 
 // ; ***************************************************************************************
+
+// MULTIPLE ENTRY POINTS: cf6_split_line_key, f6_insert_line_key, sub_c9de1
+void cf6_split_line_key(void) {
+    // Pseudocode: Splits line at cursor position
+}
 // delete_key:
 //     lda l0072
 //     beq return_55
@@ -4482,6 +5083,11 @@
 //     rts
 
 // ; ***************************************************************************************
+
+// MULTIPLE ENTRY POINTS: delete_key, f8_insert_char_key
+void delete_key(void) {
+    // Pseudocode: Deletes character to left of cursor (backspace)
+}
 // tab_key:
 //     lda #9
 //     bne c9e3a                                                         ; ALWAYS branch
@@ -4504,11 +5110,20 @@
 //     jmp f13_right_key
 
 // ; ***************************************************************************************
+
+// MULTIPLE ENTRY POINTS: tab_key, sf4_highlight1_key, sf5_highlight2_key
+void tab_key(void) {
+    // Pseudocode: Inserts tab at cursor position or sets highlight codes
+}
 // f9_delete_char_key:
 //     ldx #1
 //     inc l0074
 //     jmp cae64
 
+
+void f9_delete_char_key(void) {
+    // Pseudocode: Deletes character under cursor
+}
 // ; ***************************************************************************************
 // f7_delete_line_key:
 //     jsr ca93c
@@ -4539,6 +5154,10 @@
 //     jmp ca741
 
 // ; ***************************************************************************************
+
+void f7_delete_line_key(void) {
+    // Pseudocode: Deletes current line and moves cursor to previous line
+}
 // sf2_release_margins_key:
 //     bit format_mode_flag
 //     bvc c9e94
@@ -4556,6 +5175,11 @@
 //     rts
 
 // ; ***************************************************************************************
+
+// MULTIPLE ENTRY POINTS: sf2_release_margins_key, f4_beginning_of_line_key
+void sf2_release_margins_key(void) {
+    // Pseudocode: Releases margins or moves cursor to beginning of line
+}
 // f5_end_of_line_key:
 //     inc cursor_moved_flag
 // c9e9b:
@@ -4563,6 +5187,10 @@
 //     sty xpos
 //     rts
 
+
+void f5_end_of_line_key(void) {
+    // Pseudocode: Moves cursor to end of current line
+}
 // ; ***************************************************************************************
 // cf7_join_lines_key:
 //     jsr ca93c
@@ -4597,6 +5225,10 @@
 //     jmp beep
 
 // ; ***************************************************************************************
+
+void cf7_join_lines_key(void) {
+    // Pseudocode: Joins current line with next line
+}
 // f3_delete_to_eol_key:
 //     lda #0x84
 //     sec
@@ -4605,6 +5237,10 @@
 //     inc l0074
 //     jmp cae64
 
+
+void f3_delete_to_eol_key(void) {
+    // Pseudocode: Deletes from cursor to end of line
+}
 // ; ***************************************************************************************
 // sf8_edit_command_key:
 //     jsr c9e94
@@ -4650,6 +5286,10 @@
 //     sta (current_format_line_ptr),y
 //     jmp caf5c
 
+
+void sf8_edit_command_key(void) {
+    // Pseudocode: Allows editing formatting command on current line interactively
+}
 // ; ***************************************************************************************
 // cf8_mark_as_ruler_key:
 //     lda ptr1
@@ -4674,6 +5314,10 @@
 // c9f5f:
 //     jmp caf5c
 
+
+void cf8_mark_as_ruler_key(void) {
+    // Pseudocode: Marks current line as a ruler line with . as default characters
+}
 // ; ***************************************************************************************
 // sf9_delete_command_key:
 //     ldy #0
@@ -4692,6 +5336,10 @@
 //     inc cursor_moved_flag
 // return_56:
 //     rts
+
+void sf9_delete_command_key(void) {
+    // Pseudocode: Deletes any formatting command prefix from current line
+}
 
 // c9f80:
 //     jsr ca93c
@@ -4775,6 +5423,16 @@
 // ca00f:
 //     sty xpos
 // return_58:
+
+// MULTIPLE ENTRY POINTS: sf12_left_key, sf13_right_key
+void sf12_left_key(void) {
+    // Pseudocode: Moves cursor left by one word
+}
+
+// MULTIPLE ENTRY POINTS: sf12_left_key, sf13_right_key
+void sf13_right_key(void) {
+    // Pseudocode: Moves cursor right by one word
+}
 //     rts
 
 // ; ***************************************************************************************
@@ -4808,6 +5466,11 @@
 //     pla
 //     jsr lookup_marker
 //     jmp set_marker
+
+// MULTIPLE ENTRY POINTS: sf7_set_marker_key, set_marker, set_marker_1..6
+void sf7_set_marker_key(void) {
+    // Pseudocode: Prompts for marker number and sets marker at current position
+}
 
 // ; ***************************************************************************************
 // sf6_go_to_marker_key:
@@ -4847,6 +5510,11 @@
 //     jsr lookup_marker
 //     jmp go_to_marker
 
+// MULTIPLE ENTRY POINTS: sf6_go_to_marker_key, go_to_marker, go_to_marker_1..6
+void sf6_go_to_marker_key(void) {
+    // Pseudocode: Prompts for marker number and moves cursor to that marker
+}
+
 // ; ***************************************************************************************
 // f0_format_block_key:
 //     jsr ca93c
@@ -4873,6 +5541,10 @@
 // ca05b:
 //     jmp ca941
 
+
+void f0_format_block_key(void) {
+    // Pseudocode: Formats the text block from current line to end of area
+}
 // ; ***************************************************************************************
 // f1_top_of_text_key:
 //     ldx #0xff
@@ -4880,6 +5552,10 @@
 //     jsr sub_ca071
 //     jsr sub_caa97
 //     jmp c9e94
+
+void f1_top_of_text_key(void) {
+    // Pseudocode: Moves cursor to top of document (page area)
+}
 
 // ; ***************************************************************************************
 // sf15_up_key:
@@ -4913,6 +5589,11 @@
 //     sty current_line_ptr+1
 //     rts
 
+// MULTIPLE ENTRY POINTS: sf15_up_key, sub_ca071
+void sf15_up_key(void) {
+    // Pseudocode: Scrolls up one screenful or to top of document
+}
+
 // ; ***************************************************************************************
 // f2_bottom_of_text_key:
 //     ldx #0xff
@@ -4920,6 +5601,10 @@
 //     jsr sub_ca0af
 //     jsr sub_caa97
 //     jmp c9e9b
+
+void f2_bottom_of_text_key(void) {
+    // Pseudocode: Moves cursor to bottom of document
+}
 
 // ; ***************************************************************************************
 // sf14_down_key:
@@ -4956,6 +5641,11 @@
 //     sty current_line_ptr+1
 //     rts
 
+// MULTIPLE ENTRY POINTS: sf14_down_key, sub_ca0af
+void sf14_down_key(void) {
+    // Pseudocode: Scrolls down one screenful or to bottom of document
+}
+
 // ; ***************************************************************************************
 // sf11_copy_key:
 //     jsr f6_insert_line_key
@@ -4972,6 +5662,10 @@
 // ca0ef:
 //     jmp cf8_mark_as_ruler_key
 
+void sf11_copy_key(void) {
+    // Pseudocode: Copies ruler from previous line to current line
+}
+
 // ; ***************************************************************************************
 // cf5_default_ruler_key:
 //     jsr f6_insert_line_key
@@ -4980,6 +5674,10 @@
 //     lda current_edit_line_ptr
 //     ldy current_edit_line_ptr+1
 //     jmp create_default_ruler
+
+void cf5_default_ruler_key(void) {
+    // Pseudocode: Creates a default ruler on current line
+}
 
 // ; ***************************************************************************************
 // sf3_delete_to_char_key:
@@ -5036,6 +5734,10 @@
 //     jmp beep
 
 // ; ***************************************************************************************
+
+void sf3_delete_to_char_key(void) {
+    // Pseudocode: Deletes text from cursor to specified character
+}
 // cf2_format_mode_key:
 //     lda format_mode_flag
 //     and #0xbf
@@ -5049,6 +5751,10 @@
 //     rts
 
 // ; ***************************************************************************************
+
+void cf2_format_mode_key(void) {
+    // Pseudocode: Toggles format mode on/off
+}
 // cf3_justify_mode_key:
 //     lda justifying_flag
 //     eor #0xff
@@ -5057,6 +5763,10 @@
 //     rts
 
 // ; ***************************************************************************************
+
+void cf3_justify_mode_key(void) {
+    // Pseudocode: Toggles justify mode on/off
+}
 // cf4_insert_mode_key:
 //     lda insert_mode_flag
 //     eor #0xff
@@ -5065,6 +5775,10 @@
 // return_60:
 //     rts
 
+
+void cf4_insert_mode_key(void) {
+    // Pseudocode: Toggles insert mode on/off
+}
 // ; ***************************************************************************************
 // cf0_delete_block_key:
 //     jsr ca93c
@@ -5079,6 +5793,10 @@
 //     jsr cb05a
 //     jmp clear_marks_1_2
 
+
+void cf0_delete_block_key(void) {
+    // Pseudocode: Deletes marked block from document
+}
 // ; ***************************************************************************************
 // sf0_move_block_key:
 //     jsr ca93c
@@ -5096,6 +5814,10 @@
 //     jsr move_cursor_to_address
 //     jmp clear_marks_1_2
 
+
+void sf0_move_block_key(void) {
+    // Pseudocode: Moves marked block to current cursor position
+}
 // ; ***************************************************************************************
 // f11_copy_key:
 //     jsr ca93c
@@ -5108,6 +5830,10 @@
 
 // ca1c9:
 //     jmp beep
+
+void f11_copy_key(void) {
+    // Pseudocode: Copies marked block to current cursor position
+}
 
 // sub_ca1cc:
 //     lda doc_ptr1+0
@@ -5200,6 +5926,10 @@
 // ca265:
 //     jmp ca941
 
+
+void sub_ca1cc(void) {
+    // Pseudocode: Block copy/move: inserts block content at cursor, optionally deleting source
+}
 // ; ***************************************************************************************
 // cf1_next_match_key:
 //     jsr ca93c
@@ -5209,6 +5939,10 @@
 
 // ca273:
 //     jmp esc_key
+
+void cf1_next_match_key(void) {
+    // Pseudocode: Finds and jumps to next occurrence of search pattern
+}
 
 // sub_ca276:
 //     jsr cursor_off
@@ -5455,6 +6189,10 @@
 //     jsr set_cursor_position
 //     jmp cursor_on
 
+void sub_ca276(void) {
+    // Pseudocode: Main screen update routine: scrolls, redraws lines, updates status and cursor
+}
+
 // ca422:
 //     dec l0081
 //     beq ca3de
@@ -5513,6 +6251,10 @@
 //     sta ruler_stack_ptr
 //     rts
 
+void sub_ca44e(void) {
+    // Pseudocode: Computes starting line for display based on screen position
+}
+
 // sub_ca486:
 //     sta tmp0
 //     sta tmp6
@@ -5556,9 +6298,17 @@
 //     sta line_lengths,x
 //     rts
 
+void sub_ca486(void) {
+    // Pseudocode: Renders a single document line to the screen at given y position
+}
+
 // sub_ca4d7:
 //     jsr draw_char
 //     jmp ca4e9
+
+void sub_ca4d7(void) {
+    // Pseudocode: Draws a character and advances x position
+}
 
 // render_xchar:
 //     inc l0039
@@ -5619,6 +6369,10 @@
 //     ldx l0084
 //     rts
 
+void render_xchar(void) {
+    // Pseudocode: Renders a character to screen with style/attribute handling
+}
+
 // sub_ca536:
 //     tya
 //     clc
@@ -5647,6 +6401,10 @@
 //     lda #0
 // return_61:
 //     rts
+
+void sub_ca536(void) {
+    // Pseudocode: Checks if a position in the edit line corresponds to a marker
+}
 
 // ; ***************************************************************************************
 // set_normal_text_if_not_mode_7:
@@ -5678,6 +6436,14 @@
 //     pla
 //     rts
 
+void set_normal_text_if_not_mode_7(void) {
+    // Pseudocode: Sets normal text style via SCREEN call (no-op if mode 7)
+}
+
+void set_inverted_text_if_not_mode_7(void) {
+    // Pseudocode: Sets inverted/reverse text style via SCREEN call
+}
+
 // sub_ca597:
 //     ldx l0082
 //     sta l0084
@@ -5690,6 +6456,10 @@
 //     bne loop_ca5a2
 // return_62:
 //     rts
+
+void sub_ca597(void) {
+    // Pseudocode: Fills remaining space on line with spaces to clear to end
+}
 
 // draw_char:
 //     lda (tmp0),y
@@ -5753,6 +6523,11 @@
 //     sec
 //     rts
 
+// MULTIPLE ENTRY POINTS: draw_char, sub_ca5ae
+void draw_char(void) {
+    // Pseudocode: Fetches and processes character: handles tabs, control codes, highlights
+}
+
 // check_for_control_code:
 //     cmp #0x1c
 //     beq return_63
@@ -5760,6 +6535,10 @@
 //     clc
 // return_63:
 //     rts
+
+void check_for_control_code(void) {
+    // Pseudocode: Checks if character is a control code (0x1c or 0x1d)
+}
 
 // sub_ca608:
 //     lda current_edit_line_ptr
@@ -5800,6 +6579,10 @@
 // return_64:
 //     rts
 
+void sub_ca608(void) {
+    // Pseudocode: Recalculates cursor xpos from visual position accounting for tabs and margins
+}
+
 // ; ***************************************************************************************
 // display_status_word:
 //     lda l0076
@@ -5810,6 +6593,10 @@
 //     lda current_ruler_ptr
 //     ldy current_ruler_ptr+1
 //     jsr sub_ca486
+
+void display_status_word(void) {
+    // Pseudocode: Displays ruler status word at top of screen if l0076 is set
+}
 // sub_ca651:
 //     lda #0
 //     sta flags_need_redrawing_flag
@@ -5841,7 +6628,15 @@
 //     ldx #0
 //     ldy #0
 //     jmp set_cursor_position
+
+void home_cursor(void) {
+    // Pseudocode: Moves cursor to home position (0,0)
+}
 // ca681:
+
+void sub_ca651(void) {
+    // Pseudocode: Redraws status line showing format mode, justify, and insert indicators
+}
 //     jmp screen_putchar
 
 // ca684:
@@ -5849,6 +6644,10 @@
 //     lda screen_width
 //     sta line_lengths,x
 //     rts
+
+void ca684(void) {
+    // Pseudocode: Sets line_lengths[ypos] = screen_width after cursor movement
+}
 
 // ; ***************************************************************************************
 // ; On Entry:
@@ -5861,6 +6660,10 @@
 //     jsr render_number_to_callback
 //     ldx l0082
 //     rts
+
+void render_number_to_output_buffer(void) {
+    // Pseudocode: Renders a 16-bit number to the output buffer using callback
+}
 
 // la69a:
 // la69b = la69a+1
@@ -5883,6 +6686,10 @@
 //     pla
 //     rts
 
+void emit_to_output_buffer_callback(void) {
+    // Pseudocode: Callback that writes a digit character to the output buffer
+}
+
 // ; ***************************************************************************************
 // ; On Entry:
 // ;     YX: 16-bit number
@@ -5892,6 +6699,10 @@
 //     sty tmp9
 //     lda #<(bdos_print_char)
 //     ldy #>(bdos_print_char)
+
+void render_number_to_screen(void) {
+    // Pseudocode: Renders a 16-bit number to screen via bdos_print_char
+}
 // ; ***************************************************************************************
 // ; On Entry:
 // ;     TMP8/TMP9: 16-bit number
@@ -5939,6 +6750,14 @@
 //     ora #0x30 ; '0'
 //     jmp (tmp6)
 
+void render_number_to_callback(void) {
+    // Pseudocode: Generic 16-bit number renderer using configurable callback
+}
+
+void sub_ca6f9(void) {
+    // Pseudocode: Outputs a single digit character via callback
+}
+
 // ca6fe:
 //     lda #0
 //     tax                                                               ; X=0x00
@@ -5985,6 +6804,10 @@
 //     plp
 //     rts
 
+void ca6fe(void) {
+    // Pseudocode: Parses a decimal number from the format command line into tmp8/tmp9
+}
+
 // ca741:
 //     ldx current_line_ptr
 //     ldy current_line_ptr+1
@@ -6002,6 +6825,10 @@
 //     stx l003d
 //     rts
 
+void ca741(void) {
+    // Pseudocode: Updates ptr6 to current_line_ptr and sets refresh flags
+}
+
 // ; ***************************************************************************************
 // flush_and_read_char:
 // read_char:
@@ -6017,10 +6844,18 @@
 // return_65:
 //     rts
 
+void flush_and_read_char(void) {
+    // Pseudocode: Reads a character from keyboard via SCREEN, returning escape flag in carry
+}
+
 // ; ***************************************************************************************
 // clear_screen:
 //     ldy #SCREEN_CLEAR
 //     jmp SCREEN
+
+void clear_screen(void) {
+    // Pseudocode: Clears the screen via SCREEN call
+}
 
 // ; ***************************************************************************************
 // draw_prompt_characters:
@@ -6042,6 +6877,18 @@
 // cursor_off:
 //     rts
 
+void draw_prompt_characters(void) {
+    // Pseudocode: Draws two inverted prompt characters at top-left of screen
+}
+
+void cursor_on(void) {
+    // Pseudocode: Placeholder for cursor on (currently does nothing)
+}
+
+void cursor_off(void) {
+    // Pseudocode: Placeholder for cursor off (currently does nothing)
+}
+
 // ; ***************************************************************************************
 // save_cursor_position:
 //     ldy #SCREEN_GETCURSOR
@@ -6049,6 +6896,10 @@
 //     sta tmp4
 //     stx tmp5
 //     rts
+
+void save_cursor_position(void) {
+    // Pseudocode: Saves current cursor position via SCREEN call
+}
 
 // ; ***************************************************************************************
 // restore_cursor_position:
@@ -6081,6 +6932,11 @@
 //     pla
 // return_34:
 //     rts
+
+// MULTIPLE ENTRY POINTS: restore_cursor_position, set_cursor_position
+void restore_cursor_position(void) {
+    // Pseudocode: Restores cursor position and sets cursor coordinates
+}
 
 // ; ***************************************************************************************
 // print_inline_string:
@@ -6116,6 +6972,10 @@
 //     jsr bdos_print_newline
 //     jmp cli_loop
 
+void print_inline_string(void) {
+    // Pseudocode: Prints an inline string (embedded after JSR) with optional newline return to CLI
+}
+
 // ; ***************************************************************************************
 // print_x_words_of_help:
 //     ldy #0
@@ -6131,6 +6991,10 @@
 //     dex
 //     bpl ca82e
 //     rts
+
+void print_x_words_of_help(void) {
+    // Pseudocode: Prints X words of the help string showing VIEW and version
+}
 
 // la83d:
 //     .ascii "VIEW"
@@ -6189,6 +7053,10 @@
 //     sec
 //     rts
 
+void parse_command(void) {
+    // Pseudocode: Parses command input against parser_table to identify command number
+}
+
 // ; ***************************************************************************************
 // call_through_jumptable:
 //     asl
@@ -6205,6 +7073,10 @@
 //     lda (tmp8),y
 //     sta tmp7
 //     jmp (tmp6)
+
+void call_through_jumptable(void) {
+    // Pseudocode: Calls a routine through a jump table by index
+}
 
 // ; On entry: YX is the address of the table, A is the value
 // ; On exit, tmp6 is the routine; C if error, !C if success
@@ -6234,6 +7106,10 @@
 //     sec
 //     rts
 // zendproc
+
+void look_up_address_in_table(void) {
+    // Pseudocode: Looks up a key in an address table and returns the associated handler address
+}
 
 // sub_ca8b9:
 //     lda l006e
@@ -6319,6 +7195,10 @@
 // return_66:
 //     rts
 
+void sub_ca8b9(void) {
+    // Pseudocode: Saves edit line changes back to document memory, updating markers
+}
+
 // ca93c:
 //     jsr sub_ca8b9
 //     bcc return_66
@@ -6327,6 +7207,10 @@
 //     txs
 //     jsr sub_ca94a
 //     jmp editor_loop
+
+void ca93c(void) {
+    // Pseudocode: Saves edit line to document and handles memory full error
+}
 
 // sub_ca94a:
 //     jsr cursor_off
@@ -6371,6 +7255,10 @@
 //     sta l0076
 //     sta l0073
 //     rts
+
+void sub_ca94a(void) {
+    // Pseudocode: Memory full error handler: displays message, waits for ESCAPE, clears state
+}
 
 // la995:
 //     .ascii "Memory full - Press ESCAPE"
@@ -6440,6 +7328,10 @@
 //     adc #0
 //     sta top+1
 //     rts
+
+void adjust_pointers(void) {
+    // Pseudocode: Adjusts all pointer array entries by delta (tmp6/tmp7) and moves memory block
+}
 
 // make_space_for_insertion:
 //     lda top
@@ -6522,6 +7414,10 @@
 // return_67:
 //     rts
 
+void make_space_for_insertion(void) {
+    // Pseudocode: Makes space in document memory by shifting content up
+}
+
 // unpack_line_into_buffer:
 //     lda l006e
 //     bne return_68
@@ -6559,6 +7455,11 @@
 // return_68:
 //     rts
 
+// MULTIPLE ENTRY POINTS: unpack_line_into_buffer, sub_caa97
+void unpack_line_into_buffer(void) {
+    // Pseudocode: Unpacks current line into edit buffer for editing
+}
+
 // sub_caacb:
 //     lda current_line_ptr
 //     sta tmp6
@@ -6582,6 +7483,10 @@
 //     beq return_68
 //     iny
 //     bne caad5
+
+void sub_caacb(void) {
+    // Pseudocode: Updates marker positions to point into format buffer instead of document buffer
+}
 // ; ***************************************************************************************
 // get_line_length:
 //     ldy #0
@@ -6607,6 +7512,10 @@
 // return_69:
 //     rts
 
+void get_line_length(void) {
+    // Pseudocode: Returns the length of the current edit line
+}
+
 // wipe_buffer:
 //     ldy #0
 //     ldx #0x89
@@ -6617,6 +7526,10 @@
 //     bne loop_cab13
 //     rts
 
+void wipe_buffer(void) {
+    // Pseudocode: Fills ptr1 buffer with a given byte value for 0x89 bytes
+}
+
 // sub_cab1a:
 //     sta tmp0
 //     sty tmp1
@@ -6626,6 +7539,10 @@
 //     bne push_onto_ruler_stack
 //     rts
 
+
+void sub_cab1a(void) {
+    // Pseudocode: Finds next line in document, handling command prefix and ruler stack
+}
 // cab29:
 //     ldy #0
 // loop_cab2b:
@@ -6637,6 +7554,10 @@
 //     lda (tmp0),y
 // return_70:
 //     rts
+
+void cab29(void) {
+    // Pseudocode: Skips to next CR or zero terminator in memory
+}
 
 // sub_cab37:
 //     sec
@@ -6676,11 +7597,19 @@
 // return_71:
 //     rts
 
+void sub_cab37(void) {
+    // Pseudocode: Finds previous line in document, handling ruler stack
+}
+
 // sub_cab6e:
 //     ldy #0
 //     lda (tmp0),y
 //     cmp #0x81
 //     rts
+
+void sub_cab6e(void) {
+    // Pseudocode: Checks if byte at tmp0 is a command prefix (0x81)
+}
 
 // push_onto_ruler_stack:
 //     tya
@@ -6698,11 +7627,20 @@
 //     tay
 //     rts
 
+void push_onto_ruler_stack(void) {
+    // Pseudocode: Pushes current ruler position onto the ruler stack
+}
+
 // pop_from_ruler_stack:
 //     inc l0076
 //     ldy ruler_stack_ptr
 //     iny
 //     iny
+
+// MULTIPLE ENTRY POINTS: pop_from_ruler_stack, cab91
+void pop_from_ruler_stack(void) {
+    // Pseudocode: Pops ruler position from the ruler stack
+}
 // cab91:
 //     sty ruler_stack_ptr
 //     iny
@@ -6714,6 +7652,11 @@
 //     lda (oshwm),y
 //     adc #0
 //     sta current_ruler_ptr+1
+
+// MULTIPLE ENTRY POINTS: pop_from_ruler_stack, cab91
+void cab91(void) {
+    // Pseudocode: Sets current_ruler_ptr from stack at ruler_stack_ptr offset
+}
 // ; ***************************************************************************************
 // find_margins_of_current_ruler_buffer:
 //     jsr sub_cabc4
@@ -6737,12 +7680,20 @@
 //     lda ruler_left_stop
 //     cmp ruler_right_stop
 //     bcc return_72
+
+void find_margins_of_current_ruler_buffer(void) {
+    // Pseudocode: Finds left (>) and right (<) margin stops in the current ruler buffer
+}
 // sub_cabc4:
 //     ldy #0
 //     sty ruler_right_stop
 //     sty ruler_left_stop
 // return_72:
 //     rts
+
+void sub_cabc4(void) {
+    // Pseudocode: Resets ruler_left_stop and ruler_right_stop to zero
+}
 
 // move_cursor_to_address:
 //     sta tmp8
@@ -6816,6 +7767,10 @@
 //     stx xpos
 //     rts
 
+void move_cursor_to_address(void) {
+    // Pseudocode: Moves cursor to a given memory address, handling ruler stack and setting xpos
+}
+
 // sub_cac41:
 //     pha
 //     tya
@@ -6828,6 +7783,10 @@
 //     tay
 //     pla
 //     rts
+
+void sub_cac41(void) {
+    // Pseudocode: Pushes ruler stack before entering a new ruler region
+}
 
 // sub_cac50:
 //     sec
@@ -6856,6 +7815,10 @@
 //     sta tmp7
 // return_73:
 //     rts
+
+void sub_cac50(void) {
+    // Pseudocode: Finds the start of current line by scanning backward for CR
+}
 
 // cac78:
 //     jsr sub_cac50
@@ -6913,6 +7876,10 @@
 //     lda tmp5
 //     sta tmp9
 //     bne cac7b
+
+void cac78(void) {
+    // Pseudocode: Splits a line at the word wrap position, inserting CR for new line
+}
 // prompt_for_marker:
 //     ldx #0x4d ; 'M'
 //     ldy #0x4b ; 'K'
@@ -6928,6 +7895,14 @@
 // return_74:
 //     rts
 
+void prompt_for_marker(void) {
+    // Pseudocode: Prompts for a marker character and looks it up
+}
+
+void beep(void) {
+    // Pseudocode: Emits a beep (returns with carry set as flag)
+}
+
 // ; ***************************************************************************************
 // lookup_marker:
 //     sec
@@ -6941,6 +7916,10 @@
 // return_75:
 //     rts
 
+void lookup_marker(void) {
+    // Pseudocode: Converts marker character '1'-'6' to index and returns pointer
+}
+
 // ; ***************************************************************************************
 // reset_area_to_entire_document:
 //     lda top
@@ -6953,6 +7932,10 @@
 //     sta area_end_ptr+1
 //     rts
 
+void reset_area_to_entire_document(void) {
+    // Pseudocode: Resets area to entire document (top to page)
+}
+
 // ; ***************************************************************************************
 // clear_marks_1_2:
 //     lda #0
@@ -6962,6 +7945,10 @@
 //     dex
 //     bpl loop_cad12
 //     rts
+
+void clear_marks_1_2(void) {
+    // Pseudocode: Clears markers 1 and 2 (resets to zero)
+}
 
 // ; ***************************************************************************************
 // reset_area_to_marks_1_2:
@@ -6991,6 +7978,10 @@
 // return_76:
 //     rts
 
+void reset_area_to_marks_1_2(void) {
+    // Pseudocode: Sets area to markers 1 and 2, then adjusts doc_ptr1
+}
+
 // set_marker_to_here:
 //     jsr get_line_length
 //     cpy xpos
@@ -7014,6 +8005,10 @@
 //     sta markers_array+1,x
 //     rts
 
+void set_marker_to_here(void) {
+    // Pseudocode: Sets marker at current cursor position
+}
+
 // ; ***************************************************************************************
 // ; On Entry:
 // ;     A: register name
@@ -7034,6 +8029,10 @@
 //     clc
 // return_77:
 //     rts
+
+void get_register_address(void) {
+    // Pseudocode: Gets address of a register value by letter name
+}
 
 // ; ***************************************************************************************
 // ; On Entry:
@@ -7062,6 +8061,10 @@
 // lada6:
 //     .byte 0x40
 
+void render_register(void) {
+    // Pseudocode: Renders the value of a named register to output buffer
+}
+
 // sub_cadf0:
 //     ldx #8
 //     lda tmp9
@@ -7076,6 +8079,10 @@
 //     dex
 //     bne loop_cadf4
 //     rts
+
+void sub_cadf0(void) {
+    // Pseudocode: Performs 8-bit by 8-bit division for microspacing
+}
 
 // cae03:
 //     jmp beep
@@ -7140,6 +8147,10 @@
 //     clc
 //     rts
 
+void sub_cae06(void) {
+    // Pseudocode: Inserts bytes at cursor position, shifting existing content right
+}
+
 // cae64:
 //     stx input_buffer_ptr+1
 //     inc l006d
@@ -7202,6 +8213,10 @@
 // return_78:
 //     rts
 
+void cae64(void) {
+    // Pseudocode: Deletes N bytes at cursor position, shifting existing content left
+}
+
 // sub_caec2:
 //     lda ruler_left_stop
 //     beq caed4
@@ -7218,6 +8233,10 @@
 // caed4:
 //     clc
 //     rts
+
+void sub_caec2(void) {
+    // Pseudocode: Finds left margin stop (0x0b) in edit line
+}
 
 // sub_caed6:
 //     jsr sub_caec2
@@ -7238,6 +8257,11 @@
 //     pla
 //     sta xpos
 //     rts
+
+// MULTIPLE ENTRY POINTS: sub_caed6, sub_caedd
+void sub_caed6_sub_caedd(void) {
+    // Pseudocode: Inserts a left margin stop (0x0b) in edit line
+}
 
 // sub_caef4:
 //     lda format_mode_flag
@@ -7278,6 +8302,10 @@
 // return_79:
 //     rts
 
+void sub_caef4(void) {
+    // Pseudocode: Handles margin/folding adjustments when typing at left margin
+}
+
 // draw_previous_word:
 //     lda current_edit_line_ptr
 //     sta tmp0
@@ -7305,6 +8333,10 @@
 //     dey
 //     rts
 
+void draw_previous_word(void) {
+    // Pseudocode: Moves cursor back to start of previous word
+}
+
 // caf5c:
 //     sec
 //     bcs caf60                                                         ; ALWAYS branch
@@ -7323,6 +8355,11 @@
 // return_80:
 //     rts
 
+// MULTIPLE ENTRY POINTS: caf5c, sub_caf5f
+void caf5c_sub_caf5f(void) {
+    // Pseudocode: Sets or clears the format_mode_flag bit 7 and updates redraw flag
+}
+
 // deref_and_check_for_command_prefix:
 //     lda (tmp0),y
 // check_for_command_prefix:
@@ -7332,6 +8369,11 @@
 //     clc
 // return_81:
 //     rts
+
+// MULTIPLE ENTRY POINTS: deref_and_check_for_command_prefix, check_for_command_prefix
+void deref_and_check_for_command_prefix(void) {
+    // Pseudocode: Dereferences pointer and checks for command prefix byte (0x80/0x81)
+}
 
 // system_init:
 //     ldy #BIOS_GETTPA
@@ -7360,6 +8402,10 @@
 //     stx screen_height
 //     rts
 
+void system_init(void) {
+    // Pseudocode: Initializes system: gets TPA, finds screen driver, gets screen size
+}
+
 // noscreen:
 //     jsr print_inline_string
 //     .ascii "No SCREEN\n"
@@ -7367,8 +8413,16 @@
 //     ldy #BDOS_EXIT_PROGRAM
 //     jmp BDOS
 
+void noscreen(void) {
+    // Pseudocode: Screen driver not found: displays error and exits
+}
+
 // SCREEN:
 //     jmp 0x1234
+
+void SCREEN(void) {
+    // Pseudocode: Trampoline to screen driver (patched at runtime)
+}
 
 // ; ***************************************************************************************
 // compute_bytes_free:
@@ -7381,6 +8435,10 @@
 //     tay
 // return_84:
 //     rts
+
+void compute_bytes_free(void) {
+    // Pseudocode: Computes number of free bytes between top and himem
+}
 
 // ; ***************************************************************************************
 // initialise_document:
@@ -7448,6 +8506,10 @@
 //     sta (oshwm),y
 //     jsr move_cursor_to_top_of_document
 //     jsr clear_cmd
+
+void initialise_document(void) {
+    // Pseudocode: Initializes document state: sets up page, top, rulers, clears markers
+}
 // cb05a:
 //     ldy page+1
 //     cpy top+1
@@ -7469,6 +8531,10 @@
 // return_85:
 //     rts
 
+void cb05a(void) {
+    // Pseudocode: Ensures at least one CR at top of document
+}
+
 // move_cursor_to_top_of_document:
 //     lda page
 //     sta current_line_ptr
@@ -7482,6 +8548,10 @@
 //     sty l0033
 //     jmp cab91
 
+void move_cursor_to_top_of_document(void) {
+    // Pseudocode: Moves cursor to the top (page) of the document
+}
+
 // ; ***************************************************************************************
 // clear_cmd:
 //     ldx #0x0b
@@ -7491,6 +8561,10 @@
 //     dex
 //     bpl loop_cb095
 //     rts
+
+void clear_cmd(void) {
+    // Pseudocode: Clears all markers (sets to zero)
+}
 
 // ; ***************************************************************************************
 // enter_editor_mode:
@@ -7508,6 +8582,10 @@
 //     stx l0073
 //     stx l0076
 //     rts
+
+void enter_editor_mode(void) {
+    // Pseudocode: Enters editor mode: clears screen, resets state variables
+}
 
 // ; ***************************************************************************************
 // create_default_ruler:
@@ -7537,6 +8615,10 @@
 //     lda #0x3c ; '<'
 //     sta (tmp0),y
 //     rts
+
+void create_default_ruler(void) {
+    // Pseudocode: Creates a default ruler with tab stops every 6 columns
+}
 
 // sub_cb104:
 //     lda #0
@@ -7571,6 +8653,10 @@
 //     sta footer_margin
 //     jmp c92f0
 
+void sub_cb104(void) {
+    // Pseudocode: Resets formatting registers and default print settings
+}
+
 // zproc control_key_to_ascii
 //     cmp #0x20
 //     zif lt
@@ -7578,6 +8664,10 @@
 //     zendif
 //     jmp to_uppercase
 // zendproc
+
+void control_key_to_ascii(void) {
+    // Pseudocode: Converts control key code to ASCII letter by ORing with 0x40
+}
 
 // zproc q_command_key
 //     ldx #'^'
@@ -7596,6 +8686,10 @@
 //     rts
 // zendproc
 
+void q_command_key(void) {
+    // Pseudocode: Q-command handler: prompts for Q-key, looks up in q_key_table
+}
+
 // zproc o_command_key
 //     ldx #'^'
 //     ldy #'O'
@@ -7608,6 +8702,10 @@
 //     jmp 1b
 // zendproc
 
+void o_command_key(void) {
+    // Pseudocode: O-command handler: prompts for O-key, looks up in o_key_table
+}
+
 // zproc k_command_key
 //     ldx #'^'
 //     ldy #'K'
@@ -7619,6 +8717,10 @@
 //     ldy #>k_key_table
 //     jmp 1b
 // zendproc
+
+void k_command_key(void) {
+    // Pseudocode: K-command handler: prompts for K-key, looks up in k_key_table
+}
 
 // decimal_table:
 //     .word 10000, 1000, 100, 10
@@ -7914,12 +9016,20 @@
 // 1:
 //     rts
 
+void bdos_print_char(void) {
+    // Pseudocode: Prints a character to BDOS console output, expanding CR to CR+LF
+}
+
 // bdos_print_newline:
 //     pha
 //     lda #13
 //     jsr bdos_print_char
 //     pla
 //     rts
+
+void bdos_print_newline(void) {
+    // Pseudocode: Prints a newline (CR) to BDOS console output
+}
 
 // zproc screen_putchar
 //     pha
@@ -7940,6 +9050,10 @@
 //     pla
 //     rts
 // zendproc
+
+void screen_putchar(void) {
+    // Pseudocode: Outputs a character to the screen via SCREEN putchar call
+}
 
 // ; Read a line from the keyboard input input_buffer.
 // ; This is a hacked and customised copy of the BDOS routine.
@@ -8026,11 +9140,19 @@
 //     rts
 // zendproc
 
+void readline(void) {
+    // Pseudocode: Reads a line from keyboard with editing support (backspace, delete line)
+}
+
 // zproc select_file
 //     stx file_ptr+0
 //     sty file_ptr+1
 //     rts
 // zendproc
+
+void select_file(void) {
+    // Pseudocode: Sets the file pointer for subsequent file operations
+}
 
 // zproc prepare_to_open_file
 //     jsr zero_terminate_filename_buffer
@@ -8061,6 +9183,10 @@
 //     rts
 // zendproc
 
+void prepare_to_open_file(void) {
+    // Pseudocode: Prepares file structure: zeros FCB, parses filename via BDOS
+}
+
 // ; YX = pointer to file structure
 // ; Input filename is in filename_buffer
 // ; Uses file_ptr+0/file_ptr+1.
@@ -8082,6 +9208,10 @@
 //     sta (file_ptr+0), y
 //     rts
 // zendproc
+
+void open_input_file(void) {
+    // Pseudocode: Opens a file for reading via BDOS open file call
+}
 
 // ; YX = pointer to file structure
 // ; Input filename is in filename_buffer
@@ -8117,6 +9247,10 @@
 //     rts
 // zendproc
 
+void open_output_file(void) {
+    // Pseudocode: Creates and opens a file for writing via BDOS calls
+}
+
 // zproc bdos_and_file_error
 //     jsr BDOS
 //     zif cs
@@ -8124,6 +9258,10 @@
 //     zendif
 //     rts
 // zendproc
+
+void bdos_and_file_error(void) {
+    // Pseudocode: Calls BDOS and jumps to file_error if carry is set
+}
 
 // zproc set_dma_to_buffer_address_of_file
 //     clc
@@ -8137,6 +9275,10 @@
 //     ldy #BDOS_SET_DMA_ADDRESS
 //     jmp BDOS
 // zendproc
+
+void set_dma_to_buffer_address_of_file(void) {
+    // Pseudocode: Sets BDOS DMA address to file buffer
+}
 
 // ; FS pointer in file_ptr+0/file_ptr+1.
 // zproc flush_file
@@ -8157,6 +9299,10 @@
 //     rts
 // zendproc
 
+void flush_file(void) {
+    // Pseudocode: Flushes file buffer to disk by writing sequential block
+}
+
 // zproc close_file
 //     ldy #FS_BUFFERPTR
 //     lda (file_ptr+0), y
@@ -8170,6 +9316,10 @@
 //     ldx file_ptr+1
 //     jmp bdos_and_file_error
 // zendproc
+
+void close_file(void) {
+    // Pseudocode: Flushes if needed and closes file via BDOS
+}
 
 // zproc put_byte_to_file
 //     pha
@@ -8190,6 +9340,10 @@
 //     sta (file_ptr+0), y
 //     rts
 // zendproc
+
+void put_byte_to_file(void) {
+    // Pseudocode: Writes a byte to file buffer, flushing when buffer is full
+}
 
 // ; If the value is 0, returns with C set to signal end of file.
 // zproc get_byte_from_file
@@ -8221,6 +9375,10 @@
 //     zendif
 //     rts
 // zendproc
+
+void get_byte_from_file(void) {
+    // Pseudocode: Reads a byte from file, refilling buffer when empty, sets carry on EOF
+}
 
 int main(int argc, char* argv[]) {
     // Placeholder
