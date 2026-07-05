@@ -11,10 +11,28 @@
 // #include "driver.inc"
 // #include "zif.inc"
 
+// ; 6502 CPU register globals
+uint8_t a, x, y, sp, flags;
+
+// ; Flag bit masks
+#define FLAG_C 0x01
+#define FLAG_Z 0x02
+#define FLAG_I 0x04
+#define FLAG_D 0x08
+#define FLAG_B 0x10
+#define FLAG_V 0x40
+#define FLAG_N 0x80
+
 // ; Constants
 // buffer_keyboard                             = 0
 #define MAX_COMMAND_LENGTH 68
 #define MAX_LINE_LENGTH    132
+
+// ; SCREEN driver key codes
+#define SCREEN_KEY_UP		0x8b
+#define SCREEN_KEY_DOWN		0x8a
+#define SCREEN_KEY_LEFT		0x88
+#define SCREEN_KEY_RIGHT	0x89
 
 // ; File structure
 
@@ -24,7 +42,20 @@
 // FS__SIZE = FS_BUFFER + 128
 #define FS__SIZE 165
 
-// Forward declarations for multi-entry-point functions
+// Forward declarations
+void sub_c8c5f(void);
+void to_uppercase(void);
+void is_uppercase(void);
+void control_key_to_ascii(void);
+void draw_prompt_characters(void);
+void read_char(void);
+void tab_highlight_common(void);
+void go_to_marker_n(void);
+void set_marker_common(void);
+void set_marker(void);
+void go_to_marker(void);
+void sub_caec2(void);
+void sub_caef4(void);
 void cab91(void);
 void check_continuous_editing(void);
 void close_input_output_files(void);
@@ -35,6 +66,64 @@ void reset_document_name_after_load(void);
 void return_key(void);
 void sf13_right_key(void);
 void sub_c976c(void);
+void f1_top_of_text_key(void);
+void f2_bottom_of_text_key(void);
+void f4_beginning_of_line_key(void);
+void f5_end_of_line_key(void);
+void f3_delete_to_eol_key(void);
+void cf6_split_line_key(void);
+void sf6_go_to_marker_key(void);
+void go_to_marker_1(void);
+void go_to_marker_2(void);
+void go_to_marker_3(void);
+void go_to_marker_4(void);
+void go_to_marker_5(void);
+void go_to_marker_6(void);
+void cf3_justify_mode_key(void);
+void sf2_release_margins_key(void);
+void sf8_edit_command_key(void);
+void sf9_delete_command_key(void);
+void cf2_format_mode_key(void);
+void cf8_mark_as_ruler_key(void);
+void sf11_copy_key(void);
+void cf5_default_ruler_key(void);
+void sf4_highlight1_key(void);
+void sf5_highlight2_key(void);
+void sf7_set_marker_key(void);
+void f11_copy_key(void);
+void sf0_move_block_key(void);
+void cf0_delete_block_key(void);
+void set_marker_1(void);
+void set_marker_2(void);
+void set_marker_3(void);
+void set_marker_4(void);
+void set_marker_5(void);
+void set_marker_6(void);
+void tab_key(void);
+void delete_key(void);
+void f8_insert_char_key(void);
+void esc_key(void);
+void f15_up_key(void);
+void f12_left_key(void);
+void f13_right_key(void);
+void f14_down_key(void);
+void sf12_left_key(void);
+void sf14_down_key(void);
+void sf15_up_key(void);
+void f9_delete_char_key(void);
+void f7_delete_line_key(void);
+void cf4_insert_mode_key(void);
+void f6_insert_line_key(void);
+void f0_format_block_key(void);
+void sf3_delete_to_char_key(void);
+void cf1_next_match_key(void);
+void cf7_join_lines_key(void);
+void sf1_swap_case_key(void);
+void o_command_key(void);
+void q_command_key(void);
+void k_command_key(void);
+void beep(void);
+void enter_printable_character(void);
 
 //X ram:                              .fill 65536
 uint8_t ram[65536];
@@ -1981,20 +2070,24 @@ void sub_c8c51_sub_c8c53(void) {
 
     // MULTIPLE ENTRY POINTS: sub_c8c51, sub_c8c53
 }
-void sub_c8c5f_to_uppercase(void) {
-    // Pseudocode: Converts char to uppercase unless folding flag is set
-
-    // sub_c8c5f:
+void sub_c8c5f(void) {
+    // sub_c8c5f: converts to uppercase only if folding flag is clear
     //     bit folding_flag
-    //     bmi return_14
+    if (folding_flag & FLAG_N) return;
+    //     falls through to to_uppercase
+    to_uppercase(); return;
+}
+void to_uppercase(void) {
     // to_uppercase:
     //     jsr is_uppercase
+    is_uppercase();
     //     bcs return_14
+    if (flags & FLAG_C) return;
     //     and #0xdf
+    a &= 0xdf;
     // return_14:
     //     rts
-
-    // MULTIPLE ENTRY POINTS: sub_c8c5f, to_uppercase
+    return;
 }
 void is_uppercase(void) {
     // Pseudocode: Checks if character is uppercase A-Z, returns carry if not
@@ -4641,85 +4734,177 @@ void run_editor(void) {
 }
 void editor_loop(void) {
     // Pseudocode: Main editor loop: handles cursor positioning, redrawing, key dispatch
-
-    // ; ***************************************************************************************
-    // editor_loop:
+editor_loop:
     //     lda format_mode_flag
+    //X a = format_mode_flag;
     //     pha
+    // PROBLEM: pha
     //     lda l006e
+    //X a = l006e;
     //     bne c9b44
+    if (flags & FLAG_Z) {}
     //     pha
+    // PROBLEM: pha
     //     jsr sub_caa97
+    // PROBLEM: jsr sub_caa97
     //     pla
+    // PROBLEM: pla
     //     sta l006e
+    //X l006e = a;
     // c9b44:
+c9b44:
     //     jsr sub_ca608
+    // PROBLEM: jsr sub_ca608
     //     lda ruler_left_stop
+    a = ruler_left_stop;
     //     beq c9b73
+    if (flags & FLAG_Z) goto c9b73;
     //     ldx format_mode_flag
+    x = format_mode_flag;
     //     bmi c9b73
+    if (flags & FLAG_N) goto c9b73;
     //     cmp l0072
+    { uint16_t tmp_ = a - l0072; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= l0072 ? FLAG_C : 0); }
     //     bcc c9b73
+    if (!(flags & FLAG_C)) goto c9b73;
     //     beq c9b73
+    if (flags & FLAG_Z) goto c9b73;
     //     ldx cursor_moved_flag
+    x = cursor_moved_flag;
     //     bne c9b6a
+    if (!(flags & FLAG_Z)) goto c9b6a;
     //     jsr get_line_length
+    // PROBLEM: jsr get_line_length
     //     lda format_mode_flag
+    a = format_mode_flag;
     //     cpy xpos
+    { uint16_t tmp_ = y - xpos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= xpos ? FLAG_C : 0); }
     //     bcs c9b84
+    if (flags & FLAG_C) goto c9b84;
     //     bit format_mode_flag
+    { uint8_t tmp_ = a & format_mode_flag; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (format_mode_flag & (FLAG_N|FLAG_V)); }
     //     bvs c9b6a
+    if (flags & FLAG_V) goto c9b6a;
     //     sty xpos
+    xpos = y;
     //     bvc c9b84                                                         ; ALWAYS branch
+    goto c9b84;
 
-    // c9b6a:
+c9b6a:
     //     lda ruler_left_stop
+    a = ruler_left_stop;
     //     sta l0072
+    l0072 = a;
     //     inc l0079
+    l0079++;
     //     jsr sub_ca608
-    // c9b73:
+    // PROBLEM: jsr sub_ca608
+c9b73:
     //     lda format_mode_flag
+    a = format_mode_flag;
     //     and #0xbf
+    a &= 0xbf;
     //     pha
+    // PROBLEM: pha
     //     jsr sub_caec2
+    sub_caec2();
     //     pla
+    // PROBLEM: pla
     //     bcs c9b86
+    if (flags & FLAG_C) goto c9b86;
     //     cpy xpos
+    { uint16_t tmp_ = y - xpos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= xpos ? FLAG_C : 0); }
     //     bcc c9b86
+    if (!(flags & FLAG_C)) goto c9b86;
     //     beq c9b86
-    // c9b84:
+    if (flags & FLAG_Z) goto c9b86;
+c9b84:
     //     ora #0x40 ; '@'
-    // c9b86:
+    a |= 0x40;
+c9b86:
     //     sta format_mode_flag
+    format_mode_flag = a;
     //     pla
+    // PROBLEM: pla
     //     cmp format_mode_flag
+    { uint16_t tmp_ = a - format_mode_flag; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= format_mode_flag ? FLAG_C : 0); }
     //     beq c9b8f
+    if (flags & FLAG_Z) goto c9b8f;
     //     inc flags_need_redrawing_flag
-    // c9b8f:
+    flags_need_redrawing_flag++;
+c9b8f:
     //     lda #0
+    a = 0;
     //     sta cursor_moved_flag
+    cursor_moved_flag = a;
     //     jsr sub_ca276
-    // c9b96:
+    // PROBLEM: jsr sub_ca276
+c9b96:
     //     jsr read_char
+    read_char();
     //     cmp current_tab_key
+    { uint16_t tmp_ = a - current_tab_key; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= current_tab_key ? FLAG_C : 0); }
     //     bne c9b9f
+    if (!(flags & FLAG_Z)) goto c9b9f;
     //     lda #9
-    // c9b9f:
+    a = 9;
+c9b9f:
     //     sta l0038
+    l0038 = a;
     //     tay
+    y = a;
     //     bmi c9bbb
+    if (a & 0x80) goto editor_loop;
     //     cmp #0x20 ; ' '
+    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
     //     bcc enter_nonprintable_character
+    if (!(flags & FLAG_C)) goto enter_nonprintable_character;
     //     cmp #0x7f
+    { uint16_t tmp_ = a - 0x7f; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x7f ? FLAG_C : 0); }
     //     bcc enter_printable_character
-    // enter_nonprintable_character:
+    if (!(flags & FLAG_C)) { enter_printable_character(); goto editor_loop; }
+enter_nonprintable_character:
     //     tya
+    a = y;
+    //     ; dispatch via non_function_key_table
     //     ldx #<non_function_key_table
     //     ldy #>non_function_key_table
     //     jsr look_up_address_in_table
     //     bcs c9b96
     //     jsr jsr_tmp6
     //     jmp editor_loop
+    switch (a) {
+        case '['-'@': esc_key(); goto editor_loop;
+        case 'M'-'@': return_key(); goto editor_loop;
+        case 0x7f: delete_key(); goto editor_loop;
+        case 'I'-'@': tab_key(); goto editor_loop;
+        case 'E'-'@': f15_up_key(); goto editor_loop;
+        case SCREEN_KEY_UP: f15_up_key(); goto editor_loop;
+        case 'S'-'@': f12_left_key(); goto editor_loop;
+        case SCREEN_KEY_LEFT: f12_left_key(); goto editor_loop;
+        case 'D'-'@': f13_right_key(); goto editor_loop;
+        case SCREEN_KEY_RIGHT: f13_right_key(); goto editor_loop;
+        case 'X'-'@': f14_down_key(); goto editor_loop;
+        case SCREEN_KEY_DOWN: f14_down_key(); goto editor_loop;
+        case 'A'-'@': sf12_left_key(); goto editor_loop;
+        case 'F'-'@': sf13_right_key(); goto editor_loop;
+        case 'C'-'@': sf14_down_key(); goto editor_loop;
+        case 'R'-'@': sf15_up_key(); goto editor_loop;
+        case 'G'-'@': f9_delete_char_key(); goto editor_loop;
+        case 'H'-'@': f8_insert_char_key(); goto editor_loop;
+        case 'Y'-'@': f7_delete_line_key(); goto editor_loop;
+        case 'V'-'@': cf4_insert_mode_key(); goto editor_loop;
+        case 'N'-'@': f6_insert_line_key(); goto editor_loop;
+        case 'B'-'@': f0_format_block_key(); goto editor_loop;
+        case 'T'-'@': sf3_delete_to_char_key(); goto editor_loop;
+        case 'L'-'@': cf1_next_match_key(); goto editor_loop;
+        case 'J'-'@': cf7_join_lines_key(); goto editor_loop;
+        case 'P'-'@': sf1_swap_case_key(); goto editor_loop;
+        case 'O'-'@': o_command_key(); goto editor_loop;
+        case 'Q'-'@': q_command_key(); goto editor_loop;
+        case 'K'-'@': k_command_key(); goto editor_loop;
+        default: goto c9b96;
+    }
 }
 void jsr_tmp6(void) {
     // Pseudocode: Indirect jump through tmp6 for dispatching key handlers
@@ -5150,33 +5335,41 @@ void delete_key(void) {
 
     // MULTIPLE ENTRY POINTS: delete_key, f8_insert_char_key
 }
+// MULTIPLE ENTRY POINTS: tab_key, sf4_highlight1_key, sf5_highlight2_key
 void tab_key(void) {
-    // Pseudocode: Inserts tab at cursor position or sets highlight codes
-
     // tab_key:
     //     lda #9
-    //     bne c9e3a                                                         ; ALWAYS branch
-
-    // ; ***************************************************************************************
+    a = 9;
+    //     jmp c9e3a
+    tab_highlight_common(); return;
+}
+void sf4_highlight1_key(void) {
     // sf4_highlight1_key:
     //     lda #0x1c
-    //     bne c9e3a                                                         ; ALWAYS branch
-
-    // ; ***************************************************************************************
+    a = 0x1c;
+    //     jmp c9e3a
+    tab_highlight_common(); return;
+}
+void sf5_highlight2_key(void) {
     // sf5_highlight2_key:
     //     lda #0x1d
+    a = 0x1d;
+    //     jmp c9e3a
+    tab_highlight_common(); return;
+}
+void tab_highlight_common(void) {
     // c9e3a:
     //     pha
     //     jsr sub_caef4
+    sub_caef4();
     //     pla
     //     bcs return_55
+    if (flags & FLAG_C) return;
     //     jsr sub_c9e22
+    // PROBLEM: jsr sub_c9e22
     //     bcs return_55
     //     jmp f13_right_key
-
-    // ; ***************************************************************************************
-
-    // MULTIPLE ENTRY POINTS: tab_key, sf4_highlight1_key, sf5_highlight2_key
+    // PROBLEM: jmp f13_right_key
 }
 void f9_delete_char_key(void) {
     // Pseudocode: Deletes character under cursor
@@ -5220,28 +5413,35 @@ void f7_delete_line_key(void) {
 
     // ; ***************************************************************************************
 }
+// MULTIPLE ENTRY POINTS: sf2_release_margins_key, f4_beginning_of_line_key
 void sf2_release_margins_key(void) {
-    // Pseudocode: Releases margins or moves cursor to beginning of line
-
     // sf2_release_margins_key:
     //     bit format_mode_flag
-    //     bvc c9e94
+    if (!(format_mode_flag & FLAG_V)) goto c9e94;
     //     jsr sub_caec2
+    sub_caec2();
     //     bcs f4_beginning_of_line_key
+    if (flags & FLAG_C) { f4_beginning_of_line_key(); return; }
     //     sty xpos
+    xpos = y;
     //     rts
-
-    // ; ***************************************************************************************
+    return;
+c9e94:
+    //     lda #0
+    a = 0;
+    //     sta xpos
+    xpos = a;
+    //     rts
+    return;
+}
+void f4_beginning_of_line_key(void) {
     // f4_beginning_of_line_key:
     //     inc cursor_moved_flag
-    // c9e94:
-    //     lda #0
-    //     sta xpos
-    //     rts
-
-    // ; ***************************************************************************************
-
-    // MULTIPLE ENTRY POINTS: sf2_release_margins_key, f4_beginning_of_line_key
+    cursor_moved_flag++;
+    //     jmp c9e94
+    a = 0;
+    xpos = a;
+    return;
 }
 void f5_end_of_line_key(void) {
     // Pseudocode: Moves cursor to end of current line
@@ -5493,87 +5693,133 @@ void sf13_right_key(void) {
 
     // MULTIPLE ENTRY POINTS: sf12_left_key, sf13_right_key
 }
+void set_marker(void);
+void set_marker_common(void);
+// MULTIPLE ENTRY POINTS: sf7_set_marker_key, set_marker, set_marker_1..6
 void sf7_set_marker_key(void) {
-    // Pseudocode: Prompts for marker number and sets marker at current position
-
-    //     rts
-
-    // ; ***************************************************************************************
     // sf7_set_marker_key:
     //     jsr ca93c
+    // PROBLEM: jsr ca93c
     //     jsr prompt_for_marker
+    // PROBLEM: jsr prompt_for_marker
     //     bcs return_58
+    if (flags & FLAG_C) return;
+    // set_marker:
+    set_marker(); return;
+}
+void set_marker_1(void) {
+    // set_marker_1:
+    a = '1';
+    set_marker_common(); return;
+}
+void set_marker_2(void) {
+    // set_marker_2:
+    a = '2';
+    set_marker_common(); return;
+}
+void set_marker_3(void) {
+    // set_marker_3:
+    a = '3';
+    set_marker_common(); return;
+}
+void set_marker_4(void) {
+    // set_marker_4:
+    a = '4';
+    set_marker_common(); return;
+}
+void set_marker_5(void) {
+    // set_marker_5:
+    a = '5';
+    set_marker_common(); return;
+}
+void set_marker_6(void) {
+    // set_marker_6:
+    a = '6';
+    set_marker_common(); return;
+}
+void set_marker_common(void) {
+    //     pha
+    //     jsr ca93c
+    // PROBLEM: jsr ca93c
+    //     pla
+    //     jsr lookup_marker
+    // PROBLEM: jsr lookup_marker
+    //     jmp set_marker
+    set_marker(); return;
+}
+void set_marker(void) {
     // set_marker:
     //     jsr set_marker_to_here
+    // PROBLEM: jsr set_marker_to_here
     //     jmp ca035
-
-    // set_marker_1:
-    //     lda #'1'
-    //     .byte 0x2c          ; skip next two bytes
-    // set_marker_2:
-    //     lda #'2'
-    //     .byte 0x2c          ; skip next two bytes
-    // set_marker_3:
-    //     lda #'3'
-    //     .byte 0x2c          ; skip next two bytes
-    // set_marker_4:
-    //     lda #'4'
-    //     .byte 0x2c          ; skip next two bytes
-    // set_marker_5:
-    //     lda #'5'
-    //     .byte 0x2c          ; skip next two bytes
-    // set_marker_6:
-    //     lda #'6'
-    //     pha
-    //     jsr ca93c
-    //     pla
-    //     jsr lookup_marker
-    //     jmp set_marker
-
-    // MULTIPLE ENTRY POINTS: sf7_set_marker_key, set_marker, set_marker_1..6
+    // PROBLEM: jmp ca035
 }
+void go_to_marker(void);
+// MULTIPLE ENTRY POINTS: sf6_go_to_marker_key, go_to_marker, go_to_marker_1..6
 void sf6_go_to_marker_key(void) {
-    // Pseudocode: Prompts for marker number and moves cursor to that marker
-
-    // ; ***************************************************************************************
     // sf6_go_to_marker_key:
     //     jsr ca93c
+    // PROBLEM: jsr ca93c
     //     jsr prompt_for_marker
+    // PROBLEM: jsr prompt_for_marker
     //     bcs return_58
+    if (flags & FLAG_C) return;
     //     beq return_58
+    if (flags & FLAG_Z) return;
+    // go_to_marker:
+    go_to_marker(); return;
+}
+void go_to_marker_1(void) {
+    // go_to_marker_1:
+    a = '1';
+    go_to_marker_n(); return;
+}
+void go_to_marker_2(void) {
+    // go_to_marker_2:
+    a = '2';
+    go_to_marker_n(); return;
+}
+void go_to_marker_3(void) {
+    // go_to_marker_3:
+    a = '3';
+    go_to_marker_n(); return;
+}
+void go_to_marker_4(void) {
+    // go_to_marker_4:
+    a = '4';
+    go_to_marker_n(); return;
+}
+void go_to_marker_5(void) {
+    // go_to_marker_5:
+    a = '5';
+    go_to_marker_n(); return;
+}
+void go_to_marker_6(void) {
+    // go_to_marker_6:
+    a = '6';
+    go_to_marker_n(); return;
+}
+void go_to_marker_n(void) {
+    //     jsr lookup_marker
+    // PROBLEM: jsr lookup_marker
+    //     jmp go_to_marker
+    go_to_marker(); return;
+}
+void go_to_marker(void) {
     // go_to_marker:
     //     lda markers_array,x
+    a = markers_array[x];
     //     ldy markers_array+1,x
+    y = markers_array[x+1];
     //     jsr move_cursor_to_address
+    // PROBLEM: jsr move_cursor_to_address
     // ca035:
     //     lda #1
+    a = 1;
     //     sta l0073
+    l0073 = a;
     //     jmp ca684
-
-    // go_to_marker_1:
-    //     lda #'1'
-    //     .byte 0x2c          ; skip next two bytes
-    // go_to_marker_2:
-    //     lda #'2'
-    //     .byte 0x2c          ; skip next two bytes
-    // go_to_marker_3:
-    //     lda #'3'
-    //     .byte 0x2c          ; skip next two bytes
-    // go_to_marker_4:
-    //     lda #'4'
-    //     .byte 0x2c          ; skip next two bytes
-    // go_to_marker_5:
-    //     lda #'5'
-    //     .byte 0x2c          ; skip next two bytes
-    // go_to_marker_6:
-    //     lda #'6'
-    //     pha
-    //     jsr ca93c
-    //     pla
-    //     jsr lookup_marker
-    //     jmp go_to_marker
-
-    // MULTIPLE ENTRY POINTS: sf6_go_to_marker_key, go_to_marker, go_to_marker_1..6
+    // PROBLEM: jmp ca684
 }
 void f0_format_block_key(void) {
     // Pseudocode: Formats the text block from current line to end of area
@@ -8641,7 +8887,6 @@ void sub_cb104(void) {
 }
 void control_key_to_ascii(void) {
     // Pseudocode: Converts control key code to ASCII letter by ORing with 0x40
-
     // zproc control_key_to_ascii
     //     cmp #0x20
     //     zif lt
@@ -8649,19 +8894,8 @@ void control_key_to_ascii(void) {
     //     zendif
     //     jmp to_uppercase
     // zendproc
-}
-void look_up_address_in_table_and_call(void) {
-    // Pseudocode: Shared dispatch: looks up A in address table at YX, jumps to handler
-
-    // ; Shared entry point for command key dispatch
-    // ; On entry, YX = table address, A = key code (already converted)
-    // ; On match, indirect jumps through tmp6; on miss, returns
-    // 1:
-    //     jsr look_up_address_in_table
-    //     zif cc
-    //         jmp (tmp6)
-    //     zendif
-    //     rts
+    if (a < 0x20) a |= 0x40;
+    to_uppercase(); return;
 }
 void q_command_key(void) {
     // Pseudocode: Q-command handler: prompts for Q-key, looks up in q_key_table
@@ -8675,8 +8909,32 @@ void q_command_key(void) {
     //     jsr control_key_to_ascii
     //     ldx #<q_key_table
     //     ldy #>q_key_table
+    //     ; lookup dispatch via q_key_table:
+    //     ;   { 'R': f1_top_of_text_key, 'C': f2_bottom_of_text_key, ... }
     //     jmp look_up_address_in_table_and_call
     // zendproc
+    x = '^';
+    y = 'Q';
+    draw_prompt_characters();
+    flags_need_redrawing_flag++;
+    read_char();
+    control_key_to_ascii();
+    switch (a) {
+        case 'R': f1_top_of_text_key(); return;
+        case 'C': f2_bottom_of_text_key(); return;
+        case 'S': f4_beginning_of_line_key(); return;
+        case 'D': f5_end_of_line_key(); return;
+        case 'Y': f3_delete_to_eol_key(); return;
+        case 'J': cf6_split_line_key(); return;
+        case 'M': sf6_go_to_marker_key(); return;
+        case '1': go_to_marker_1(); return;
+        case '2': go_to_marker_2(); return;
+        case '3': go_to_marker_3(); return;
+        case '4': go_to_marker_4(); return;
+        case '5': go_to_marker_5(); return;
+        case '6': go_to_marker_6(); return;
+    }
+    return;
 }
 void o_command_key(void) {
     // Pseudocode: O-command handler: prompts for O-key, looks up in o_key_table
@@ -8690,8 +8948,29 @@ void o_command_key(void) {
     //     jsr control_key_to_ascii
     //     ldx #<o_key_table
     //     ldy #>o_key_table
+    //     ; lookup dispatch via o_key_table:
+    //     ;   { 'J': cf3_justify_mode_key, 'X': sf2_release_margins_key, ... }
     //     jmp look_up_address_in_table_and_call
     // zendproc
+    x = '^';
+    y = 'O';
+    draw_prompt_characters();
+    flags_need_redrawing_flag++;
+    read_char();
+    control_key_to_ascii();
+    switch (a) {
+        case 'J': cf3_justify_mode_key(); return;
+        case 'X': sf2_release_margins_key(); return;
+        case 'C': sf8_edit_command_key(); return;
+        case 'D': sf9_delete_command_key(); return;
+        case 'F': cf2_format_mode_key(); return;
+        case 'M': cf8_mark_as_ruler_key(); return;
+        case 'R': sf11_copy_key(); return;
+        case 'S': cf5_default_ruler_key(); return;
+        case 'U': sf4_highlight1_key(); return;
+        case 'B': sf5_highlight2_key(); return;
+    }
+    return;
 }
 void k_command_key(void) {
     // Pseudocode: K-command handler: prompts for K-key, looks up in k_key_table
@@ -8705,8 +8984,29 @@ void k_command_key(void) {
     //     jsr control_key_to_ascii
     //     ldx #<k_key_table
     //     ldy #>k_key_table
+    //     ; lookup dispatch via k_key_table:
+    //     ;   { 'M': sf7_set_marker_key, 'C': f11_copy_key, ... }
     //     jmp look_up_address_in_table_and_call
     // zendproc
+    x = '^';
+    y = 'K';
+    draw_prompt_characters();
+    flags_need_redrawing_flag++;
+    read_char();
+    control_key_to_ascii();
+    switch (a) {
+        case 'M': sf7_set_marker_key(); return;
+        case 'C': f11_copy_key(); return;
+        case 'V': sf0_move_block_key(); return;
+        case 'Y': cf0_delete_block_key(); return;
+        case '1': set_marker_1(); return;
+        case '2': set_marker_2(); return;
+        case '3': set_marker_3(); return;
+        case '4': set_marker_4(); return;
+        case '5': set_marker_5(); return;
+        case '6': set_marker_6(); return;
+    }
+    return;
 }
 void bdos_print_char(void) {
     // Pseudocode: Prints a character to BDOS console output, expanding CR to CR+LF
