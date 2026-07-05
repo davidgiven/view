@@ -5,163 +5,290 @@
  * Instructions which have been translated will be prefixed with //X.
  */
 
+#include <stdint.h>
+
 // #include "cpm65.inc"
 // #include "driver.inc"
 // #include "zif.inc"
 
 // ; Constants
 // buffer_keyboard                             = 0
-// MAX_COMMAND_LENGTH                          = 68
-// MAX_LINE_LENGTH                             = 132
+#define MAX_COMMAND_LENGTH 68
+#define MAX_LINE_LENGTH    132
 
 // ; File structure
 
 // FS_FCB = 0
-// FS_BUFFERPTR = FS_FCB + FCB__SIZE
+// FS_BUFFERPTR = FS_FCB + FCB__SIZE   // FCB__SIZE = 0x24
 // FS_BUFFER = FS_BUFFERPTR + 1
 // FS__SIZE = FS_BUFFER + 128
+#define FS__SIZE 165
 
 // ; Memory locations
 
-// .section .zp, "zax", @nobits
+//X .section .zp, "zax", @nobits
 
-// ptr1: .fill 2
-// current_edit_line_ptr: .fill 2
-// current_format_line_ptr: .fill 2
-// current_ruler_ptr: .fill 2
-// current_line_ptr: .fill 2
-// page: .fill 2
-// top: .fill 2
-// himem: .fill 2
-// l0011: .fill 1
-// l0012: .fill 1
-// ptr6: .fill 2
-// ptr5: .fill 2
-// printer_driver_ptr: .fill 2
-// first_macro_ptr: .fill 2
-// last_macro_ptr: .fill 2
-// ptr3: .fill 2
-// oshwm: .fill 2
-// l0021: .fill 1
-// l0030: .fill 1
-// l0031: .fill 1
-// printing_from_file_flag: .fill 1
-// l0033: .fill 1
-// l0034: .fill 1
-// l0038: .fill 1
-// l0039: .fill 1
-// l003a: .fill 1
-// l003b: .fill 1
-// file_edit_flags: .fill 1
-// l003d: .fill 1
-// xpos: .fill 1
-// input_file_empty_flag: .fill 1
-// l0042: .fill 1
-// l0043: .fill 1
-// l0044: .fill 1
-// l0045: .fill 1
-// l0046: .fill 1
-// l0047: .fill 1
-// l0048: .fill 1
-// l0049: .fill 1
-// l004a: .fill 1
-// ptr2: .fill 2
-// rw_file_handle: .fill 1
-// error_handling_mode: .fill 1
-// print_flags: .fill 1
-// l006d: .fill 1
-// l006e: .fill 1
-// l006f: .fill 1
-// ruler_stack_ptr: .fill 1
-// hscroll_pos: .fill 1
-// l0072: .fill 1
-// l0073: .fill 1
-// l0074: .fill 1
-// flags_need_redrawing_flag: .fill 1
-// l0076: .fill 1
-// ypos: .fill 1
-// print_xpos: .fill 1
-// l0079: .fill 1
-// l007a: .fill 1
-// cursor_moved_flag: .fill 1
-// l007e: .fill 1
-// input_buffer_ptr: .fill 2
-// l0081: .fill 1
-// l0082: .fill 1
-// l0083: .fill 1
-// l0084: .fill 1
-// tmp0: .fill 1
-// tmp1: .fill 1
-// tmp2: .fill 1
-// tmp3: .fill 1
-// tmp4: .fill 1
-// tmp5: .fill 1
-// tmp6: .fill 1
-// tmp7: .fill 1
-// tmp8: .fill 1
-// tmp9: .fill 1
-// file_ptr: .fill 2
+//X ptr1: .fill 2
+uint16_t ptr1;
+//X current_edit_line_ptr: .fill 2
+uint16_t current_edit_line_ptr;
+//X current_format_line_ptr: .fill 2
+uint16_t current_format_line_ptr;
+//X current_ruler_ptr: .fill 2
+uint16_t current_ruler_ptr;
+//X current_line_ptr: .fill 2
+uint16_t current_line_ptr;
+//X page: .fill 2
+uint16_t page;
+//X top: .fill 2
+uint16_t top;
+//X himem: .fill 2
+uint16_t himem;
+//X l0011: .fill 1
+uint8_t l0011;
+//X l0012: .fill 1
+uint8_t l0012;
+//X ptr6: .fill 2
+uint16_t ptr6;
+//X ptr5: .fill 2
+uint16_t ptr5;
+//X printer_driver_ptr: .fill 2
+uint16_t printer_driver_ptr;
+//X first_macro_ptr: .fill 2
+uint16_t first_macro_ptr;
+//X last_macro_ptr: .fill 2
+uint16_t last_macro_ptr;
+//X ptr3: .fill 2
+uint16_t ptr3;
+//X oshwm: .fill 2
+uint16_t oshwm;
+//X l0021: .fill 1
+uint8_t l0021;
+//X l0030: .fill 1
+uint8_t l0030;
+//X l0031: .fill 1
+uint8_t l0031;
+//X printing_from_file_flag: .fill 1
+uint8_t printing_from_file_flag;
+//X l0033: .fill 1
+uint8_t l0033;
+//X l0034: .fill 1
+uint8_t l0034;
+//X l0038: .fill 1
+uint8_t l0038;
+//X l0039: .fill 1
+uint8_t l0039;
+//X l003a: .fill 1
+uint8_t l003a;
+//X l003b: .fill 1
+uint8_t l003b;
+//X file_edit_flags: .fill 1
+uint8_t file_edit_flags;
+//X l003d: .fill 1
+uint8_t l003d;
+//X xpos: .fill 1
+uint8_t xpos;
+//X input_file_empty_flag: .fill 1
+uint8_t input_file_empty_flag;
+//X l0042: .fill 1
+uint8_t l0042;
+//X l0043: .fill 1
+uint8_t l0043;
+//X l0044: .fill 1
+uint8_t l0044;
+//X l0045: .fill 1
+uint8_t l0045;
+//X l0046: .fill 1
+uint8_t l0046;
+//X l0047: .fill 1
+uint8_t l0047;
+//X l0048: .fill 1
+uint8_t l0048;
+//X l0049: .fill 1
+uint8_t l0049;
+//X l004a: .fill 1
+uint8_t l004a;
+//X ptr2: .fill 2
+uint16_t ptr2;
+//X rw_file_handle: .fill 1
+uint8_t rw_file_handle;
+//X error_handling_mode: .fill 1
+uint8_t error_handling_mode;
+//X print_flags: .fill 1
+uint8_t print_flags;
+//X l006d: .fill 1
+uint8_t l006d;
+//X l006e: .fill 1
+uint8_t l006e;
+//X l006f: .fill 1
+uint8_t l006f;
+//X ruler_stack_ptr: .fill 1
+uint8_t ruler_stack_ptr;
+//X hscroll_pos: .fill 1
+uint8_t hscroll_pos;
+//X l0072: .fill 1
+uint8_t l0072;
+//X l0073: .fill 1
+uint8_t l0073;
+//X l0074: .fill 1
+uint8_t l0074;
+//X flags_need_redrawing_flag: .fill 1
+uint8_t flags_need_redrawing_flag;
+//X l0076: .fill 1
+uint8_t l0076;
+//X ypos: .fill 1
+uint8_t ypos;
+//X print_xpos: .fill 1
+uint8_t print_xpos;
+//X l0079: .fill 1
+uint8_t l0079;
+//X l007a: .fill 1
+uint8_t l007a;
+//X cursor_moved_flag: .fill 1
+uint8_t cursor_moved_flag;
+//X l007e: .fill 1
+uint8_t l007e;
+//X input_buffer_ptr: .fill 2
+uint16_t input_buffer_ptr;
+//X l0081: .fill 1
+uint8_t l0081;
+//X l0082: .fill 1
+uint8_t l0082;
+//X l0083: .fill 1
+uint8_t l0083;
+//X l0084: .fill 1
+uint8_t l0084;
+//X tmp0: .fill 1
+uint8_t tmp0;
+//X tmp1: .fill 1
+uint8_t tmp1;
+//X tmp2: .fill 1
+uint8_t tmp2;
+//X tmp3: .fill 1
+uint8_t tmp3;
+//X tmp4: .fill 1
+uint8_t tmp4;
+//X tmp5: .fill 1
+uint8_t tmp5;
+//X tmp6: .fill 1
+uint8_t tmp6;
+//X tmp7: .fill 1
+uint8_t tmp7;
+//X tmp8: .fill 1
+uint8_t tmp8;
+//X tmp9: .fill 1
+uint8_t tmp9;
+//X file_ptr: .fill 2
+uint16_t file_ptr;
 
-// .bss
+//X .bss
 
-// top_margin: .fill 1
-// bottom_margin: .fill 1
-// header_margin: .fill 1
-// footer_margin: .fill 1
-// page_length: .fill 1
-// line_spacing: .fill 1
-// footers_enabled_flag: .fill 1
-// headers_enabled_flag: .fill 1
-// rhs_extra_margin: .fill 1
-// macro_executing_flag: .fill 1
-// two_sided_flag: .fill 1
-// left_margin: .fill 1
-// highlight1_code: .fill 1
-// highlight2_code: .fill 1
-// format_mode_flag: .fill 1
-// justifying_flag: .fill 1
-// insert_mode_flag: .fill 1
-// screen_height: .fill 1
-// screen_width: .fill 1
-// microspacing_flag: .fill 1
-// current_tab_key: .fill 1
-// folding_flag: .fill 1
-// ruler_right_stop: .fill 1
-// ruler_left_stop: .fill 1
+//X top_margin: .fill 1
+uint8_t top_margin;
+//X bottom_margin: .fill 1
+uint8_t bottom_margin;
+//X header_margin: .fill 1
+uint8_t header_margin;
+//X footer_margin: .fill 1
+uint8_t footer_margin;
+//X page_length: .fill 1
+uint8_t page_length;
+//X line_spacing: .fill 1
+uint8_t line_spacing;
+//X footers_enabled_flag: .fill 1
+uint8_t footers_enabled_flag;
+//X headers_enabled_flag: .fill 1
+uint8_t headers_enabled_flag;
+//X rhs_extra_margin: .fill 1
+uint8_t rhs_extra_margin;
+//X macro_executing_flag: .fill 1
+uint8_t macro_executing_flag;
+//X two_sided_flag: .fill 1
+uint8_t two_sided_flag;
+//X left_margin: .fill 1
+uint8_t left_margin;
+//X highlight1_code: .fill 1
+uint8_t highlight1_code;
+//X highlight2_code: .fill 1
+uint8_t highlight2_code;
+//X format_mode_flag: .fill 1
+uint8_t format_mode_flag;
+//X justifying_flag: .fill 1
+uint8_t justifying_flag;
+//X insert_mode_flag: .fill 1
+uint8_t insert_mode_flag;
+//X screen_height: .fill 1
+uint8_t screen_height;
+//X screen_width: .fill 1
+uint8_t screen_width;
+//X microspacing_flag: .fill 1
+uint8_t microspacing_flag;
+//X current_tab_key: .fill 1
+uint8_t current_tab_key;
+//X folding_flag: .fill 1
+uint8_t folding_flag;
+//X ruler_right_stop: .fill 1
+uint8_t ruler_right_stop;
+//X ruler_left_stop: .fill 1
+uint8_t ruler_left_stop;
 
-// __begin_pointer_array:
-// markers_array: .fill 12
-// area_start_ptr: .fill 2
-// area_end_ptr: .fill 2
-// doc_ptr1: .fill 2
-// doc_ptr2: .fill 2
-// doc_ptr3: .fill 2
-// __end_pointer_array:
+//X __begin_pointer_array:
+//X markers_array: .fill 12
+uint8_t markers_array[12];
+//X area_start_ptr: .fill 2
+uint16_t area_start_ptr;
+//X area_end_ptr: .fill 2
+uint16_t area_end_ptr;
+//X doc_ptr1: .fill 2
+uint16_t doc_ptr1;
+//X doc_ptr2: .fill 2
+uint16_t doc_ptr2;
+//X doc_ptr3: .fill 2
+uint16_t doc_ptr3;
+//X __end_pointer_array:
 
-// printer_driver_block:           .fill 0x100
-// input_buffer:                   .fill 0x45
+//X printer_driver_block:           .fill 0x100
+uint8_t printer_driver_block[0x100];
+//X input_buffer:                   .fill 0x45
+uint8_t input_buffer[0x45];
 
-// current_line_buffer:            .fill 135
-// just_before_current_ruler_buffer: .fill 3 ; ??? something to do with rulers?
-// current_ruler_buffer:           .fill 133
-// output_buffer:                  .fill 132
+//X current_line_buffer:            .fill 135
+uint8_t current_line_buffer[135];
+//X just_before_current_ruler_buffer: .fill 3 ; ??? something to do with rulers?
+uint8_t just_before_current_ruler_buffer[3];
+//X current_ruler_buffer:           .fill 133
+uint8_t current_ruler_buffer[133];
+//X output_buffer:                  .fill 132
+uint8_t output_buffer[132];
 
-// header_text_maybe:              .fill 0x42
-// footer_text_maybe:              .fill 0x42
+//X header_text_maybe:              .fill 0x42
+uint8_t header_text_maybe[0x42];
+//X footer_text_maybe:              .fill 0x42
+uint8_t footer_text_maybe[0x42];
 
-// filename_buffer:                .fill 0x14
-// output_filename:                .fill 0x14
-// printer_driver_name:            .fill 0x14
+//X filename_buffer:                .fill 0x14
+uint8_t filename_buffer[0x14];
+//X output_filename:                .fill 0x14
+uint8_t output_filename[0x14];
+//X printer_driver_name:            .fill 0x14
+uint8_t printer_driver_name[0x14];
 
-// register_value_array:           .fill 26*2
-// register_value_l                = register_value_array + ('L'-'A')*2
-// register_value_p                = register_value_array + ('P'-'A')*2
+//X register_value_array:           .fill 26*2
+uint8_t register_value_array[26*2];
+//X register_value_l                = register_value_array + ('L'-'A')*2
+#define register_value_l (register_value_array + ('L'-'A')*2)
+//X register_value_p                = register_value_array + ('P'-'A')*2
+#define register_value_p (register_value_array + ('P'-'A')*2)
 
-// line_lengths:                   .fill 32
-// input_filename:                 .fill 20
+//X line_lengths:                   .fill 32
+uint8_t line_lengths[32];
+//X input_filename:                 .fill 20
+uint8_t input_filename[20];
 
-// input_file:                     .fill FS__SIZE
-// output_file:                    .fill FS__SIZE
+//X input_file:                     .fill FS__SIZE
+uint8_t input_file[FS__SIZE];
+//X output_file:                    .fill FS__SIZE
+uint8_t output_file[FS__SIZE];
 
 // .text
 // .global main
