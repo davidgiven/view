@@ -130,6 +130,14 @@ static void sub_ca94a(void);
 static void editor_loop(void);
 static void ca741(void);
 static void ca941(void);
+static void ca93c(void);
+static void ca684(void);
+static void make_space_for_insertion(void);
+static void get_line_length(void);
+static void prompt_for_marker(void);
+static void lookup_marker(void);
+static void set_marker_to_here(void);
+static void move_cursor_to_address(void);
 static void sub_cae06(void);
 static void SCREEN(void);
 
@@ -5236,7 +5244,7 @@ static void cf6_split_line_key(void) {
 static void f6_insert_line_key(void) {
     // f6_insert_line_key:
     //     jsr ca93c
-    // PROBLEM: jsr ca93c
+    ca93c();
     //     lda current_line_ptr
     a = current_line_ptr;
     //     ldy current_line_ptr+1
@@ -5266,7 +5274,7 @@ c9de3:
     //     sta tmp7
     tmp7 = a;
     //     jsr make_space_for_insertion
-    // PROBLEM: jsr make_space_for_insertion
+    make_space_for_insertion();
     //     bcs c9dfd
     if (flags & FLAG_C) goto c9dfd;
     //     lda #0x0d
@@ -5310,7 +5318,7 @@ static void delete_key(void) {
     //     bne return_55
     if (!(flags & FLAG_Z)) return;
     //     jsr get_line_length
-    // PROBLEM: jsr get_line_length
+    get_line_length();
     //     cpy xpos
     { uint16_t tmp_ = y - xpos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= xpos ? FLAG_C : 0); }
     //     bcc return_55
@@ -5378,10 +5386,11 @@ static void tab_highlight_common(void) {
     //     bcs return_55
     if (flags & FLAG_C) return;
     //     jsr sub_c9e22
-    // PROBLEM: jsr sub_c9e22
+    sub_c9e22();
     //     bcs return_55
+    if (flags & FLAG_C) return;
     //     jmp f13_right_key
-    // PROBLEM: jmp f13_right_key
+    f13_right_key(); return;
 }
 static void f9_delete_char_key(void) {
     // Pseudocode: Deletes character under cursor
@@ -5711,9 +5720,9 @@ static void set_marker_common(void);
 static void sf7_set_marker_key(void) {
     // sf7_set_marker_key:
     //     jsr ca93c
-    // PROBLEM: jsr ca93c
+    ca93c();
     //     jsr prompt_for_marker
-    // PROBLEM: jsr prompt_for_marker
+    prompt_for_marker();
     //     bcs return_58
     if (flags & FLAG_C) return;
     // set_marker:
@@ -5751,29 +5760,33 @@ static void set_marker_6(void) {
 }
 static void set_marker_common(void) {
     //     pha
+    uint8_t saved_a = a;
     //     jsr ca93c
-    // PROBLEM: jsr ca93c
+    ca93c();
     //     pla
+    a = saved_a;
     //     jsr lookup_marker
-    // PROBLEM: jsr lookup_marker
+    lookup_marker();
     //     jmp set_marker
     set_marker(); return;
 }
 static void set_marker(void) {
     // set_marker:
     //     jsr set_marker_to_here
-    // PROBLEM: jsr set_marker_to_here
+    set_marker_to_here();
     //     jmp ca035
-    // PROBLEM: jmp ca035
+    a = 1;
+    l0073 = a;
+    ca684(); return;
 }
 static void go_to_marker(void);
 // MULTIPLE ENTRY POINTS: sf6_go_to_marker_key, go_to_marker, go_to_marker_1..6
 static void sf6_go_to_marker_key(void) {
     // sf6_go_to_marker_key:
     //     jsr ca93c
-    // PROBLEM: jsr ca93c
+    ca93c();
     //     jsr prompt_for_marker
-    // PROBLEM: jsr prompt_for_marker
+    prompt_for_marker();
     //     bcs return_58
     if (flags & FLAG_C) return;
     //     beq return_58
@@ -5813,7 +5826,7 @@ static void go_to_marker_6(void) {
 }
 static void go_to_marker_n(void) {
     //     jsr lookup_marker
-    // PROBLEM: jsr lookup_marker
+    lookup_marker();
     //     jmp go_to_marker
     go_to_marker(); return;
 }
@@ -5824,14 +5837,14 @@ static void go_to_marker(void) {
     //     ldy markers_array+1,x
     y = markers_array[x+1];
     //     jsr move_cursor_to_address
-    // PROBLEM: jsr move_cursor_to_address
+    move_cursor_to_address();
     // ca035:
     //     lda #1
     a = 1;
     //     sta l0073
     l0073 = a;
     //     jmp ca684
-    // PROBLEM: jmp ca684
+    ca684(); return;
 }
 static void f0_format_block_key(void) {
     // Pseudocode: Formats the text block from current line to end of area
