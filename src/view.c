@@ -8650,6 +8650,19 @@ void control_key_to_ascii(void) {
     //     jmp to_uppercase
     // zendproc
 }
+void look_up_address_in_table_and_call(void) {
+    // Pseudocode: Shared dispatch: looks up A in address table at YX, jumps to handler
+
+    // ; Shared entry point for command key dispatch
+    // ; On entry, YX = table address, A = key code (already converted)
+    // ; On match, indirect jumps through tmp6; on miss, returns
+    // 1:
+    //     jsr look_up_address_in_table
+    //     zif cc
+    //         jmp (tmp6)
+    //     zendif
+    //     rts
+}
 void q_command_key(void) {
     // Pseudocode: Q-command handler: prompts for Q-key, looks up in q_key_table
 
@@ -8662,12 +8675,7 @@ void q_command_key(void) {
     //     jsr control_key_to_ascii
     //     ldx #<q_key_table
     //     ldy #>q_key_table
-    // 1:
-    //     jsr look_up_address_in_table
-    //     zif cc
-    //         jmp (tmp6)
-    //     zendif
-    //     rts
+    //     jmp look_up_address_in_table_and_call
     // zendproc
 }
 void o_command_key(void) {
@@ -8682,7 +8690,7 @@ void o_command_key(void) {
     //     jsr control_key_to_ascii
     //     ldx #<o_key_table
     //     ldy #>o_key_table
-    //     jmp 1b
+    //     jmp look_up_address_in_table_and_call
     // zendproc
 }
 void k_command_key(void) {
@@ -8697,7 +8705,7 @@ void k_command_key(void) {
     //     jsr control_key_to_ascii
     //     ldx #<k_key_table
     //     ldy #>k_key_table
-    //     jmp 1b
+    //     jmp look_up_address_in_table_and_call
     // zendproc
 }
 void bdos_print_char(void) {
