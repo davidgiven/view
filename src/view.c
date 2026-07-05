@@ -36,6 +36,9 @@ void return_key(void);
 void sf13_right_key(void);
 void sub_c976c(void);
 
+//X ram:                              .fill 65536
+uint8_t ram[65536];
+
 // ; Memory locations
 
 //X .section .zp, "zax", @nobits
