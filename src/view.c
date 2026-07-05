@@ -4747,109 +4747,55 @@ static void editor_loop(void) {
     // Pseudocode: Main editor loop: handles cursor positioning, redrawing, key dispatch
 editor_loop:
     //     lda format_mode_flag
-    //X a = format_mode_flag;
     //     pha
-    // PROBLEM: pha
     //     lda l006e
-    //X a = l006e;
     //     bne c9b44
-    if (flags & FLAG_Z) {}
     //     pha
-    // PROBLEM: pha
     //     jsr sub_caa97
-    // PROBLEM: jsr sub_caa97
     //     pla
-    // PROBLEM: pla
     //     sta l006e
-    //X l006e = a;
     // c9b44:
-c9b44:
     //     jsr sub_ca608
-    // PROBLEM: jsr sub_ca608
     //     lda ruler_left_stop
-    a = ruler_left_stop;
     //     beq c9b73
-    if (flags & FLAG_Z) goto c9b73;
     //     ldx format_mode_flag
-    x = format_mode_flag;
     //     bmi c9b73
-    if (flags & FLAG_N) goto c9b73;
     //     cmp l0072
-    { uint16_t tmp_ = a - l0072; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= l0072 ? FLAG_C : 0); }
     //     bcc c9b73
-    if (!(flags & FLAG_C)) goto c9b73;
     //     beq c9b73
-    if (flags & FLAG_Z) goto c9b73;
     //     ldx cursor_moved_flag
-    x = cursor_moved_flag;
     //     bne c9b6a
-    if (!(flags & FLAG_Z)) goto c9b6a;
     //     jsr get_line_length
-    // PROBLEM: jsr get_line_length
     //     lda format_mode_flag
-    a = format_mode_flag;
     //     cpy xpos
-    { uint16_t tmp_ = y - xpos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= xpos ? FLAG_C : 0); }
     //     bcs c9b84
-    if (flags & FLAG_C) goto c9b84;
     //     bit format_mode_flag
-    { uint8_t tmp_ = a & format_mode_flag; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (format_mode_flag & (FLAG_N|FLAG_V)); }
     //     bvs c9b6a
-    if (flags & FLAG_V) goto c9b6a;
     //     sty xpos
-    xpos = y;
     //     bvc c9b84                                                         ; ALWAYS branch
-    goto c9b84;
 
-c9b6a:
     //     lda ruler_left_stop
-    a = ruler_left_stop;
     //     sta l0072
-    l0072 = a;
     //     inc l0079
-    l0079++;
     //     jsr sub_ca608
-    // PROBLEM: jsr sub_ca608
-c9b73:
     //     lda format_mode_flag
-    a = format_mode_flag;
     //     and #0xbf
-    a &= 0xbf;
     //     pha
-    // PROBLEM: pha
     //     jsr sub_caec2
-    sub_caec2();
     //     pla
-    // PROBLEM: pla
     //     bcs c9b86
-    if (flags & FLAG_C) goto c9b86;
     //     cpy xpos
-    { uint16_t tmp_ = y - xpos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= xpos ? FLAG_C : 0); }
     //     bcc c9b86
-    if (!(flags & FLAG_C)) goto c9b86;
     //     beq c9b86
-    if (flags & FLAG_Z) goto c9b86;
-c9b84:
     //     ora #0x40 ; '@'
-    a |= 0x40;
-c9b86:
     //     sta format_mode_flag
-    format_mode_flag = a;
     //     pla
-    // PROBLEM: pla
     //     cmp format_mode_flag
-    { uint16_t tmp_ = a - format_mode_flag; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= format_mode_flag ? FLAG_C : 0); }
     //     beq c9b8f
-    if (flags & FLAG_Z) goto c9b8f;
     //     inc flags_need_redrawing_flag
-    flags_need_redrawing_flag++;
-c9b8f:
     //     lda #0
-    a = 0;
     //     sta cursor_moved_flag
-    cursor_moved_flag = a;
     //     jsr sub_ca276
-    // PROBLEM: jsr sub_ca276
 c9b96:
     //     jsr read_char
     read_char();
@@ -4875,15 +4821,6 @@ c9b9f:
     //     bcc enter_printable_character
     if (!(flags & FLAG_C)) { enter_printable_character(); goto editor_loop; }
 enter_nonprintable_character:
-    //     tya
-    a = y;
-    //     ; dispatch via non_function_key_table
-    //     ldx #<non_function_key_table
-    //     ldy #>non_function_key_table
-    //     jsr look_up_address_in_table
-    //     bcs c9b96
-    //     jsr jsr_tmp6
-    //     jmp editor_loop
     switch (a) {
         case '['-'@': esc_key(); goto editor_loop;
         case 'M'-'@': return_key(); goto editor_loop;
@@ -5359,11 +5296,11 @@ static void delete_key(void) {
     //     lda (current_edit_line_ptr),y
     a = ram[current_edit_line_ptr + y];
     //     pha
-    // PROBLEM: pha
+    { uint8_t saved_a = a;
     //     jsr f9_delete_char_key
     f9_delete_char_key();
     //     pla
-    // PROBLEM: pla
+    a = saved_a; }
     //     cmp #0x0c
     { uint16_t tmp_ = a - 0x0c; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x0c ? FLAG_C : 0); }
     //     bcc return_55
@@ -5393,13 +5330,13 @@ static void f8_insert_char_key(void) {
 static void sub_c9e22(void) {
     // sub_c9e22:
     //     pha
-    // PROBLEM: pha
+    { uint8_t saved_a = a;
     //     ldx #1
     x = 1;
     //     jsr sub_cae06
     sub_cae06();
     //     pla
-    // PROBLEM: pla
+    a = saved_a; }
     //     bcs return_55
     if (flags & FLAG_C) return;
     //     sta (current_edit_line_ptr),y
