@@ -2,7 +2,6 @@
  *
  * This is an in-progress translation from 6502 machine code to C.
  * The original 6502 assembly code is included as comments for reference.
- * Instructions which have been translated will be prefixed with //X.
  */
 
 #include <stdint.h>
@@ -139,6 +138,20 @@ static void lookup_marker(void);
 static void set_marker_to_here(void);
 static void move_cursor_to_address(void);
 static void sub_cae06(void);
+static void start_printing(void);
+static void compute_bytes_free(void);
+static void parse_optional_filename_from_command(void);
+static void check_not_continuous_editing(void);
+static void get_current_fmt_cmd_byte(void);
+static void get_next_fmt_cmd_byte(void);
+static void sub_c9e9b(void);
+static void sub_caa97(void);
+static void sub_c9e94(void);
+static void sub_cab37(void);
+static void sub_ca0af(void);
+static void draw_previous_word(void);
+static void draw_char(void);
+static void sub_cab1a(void);
 static void SCREEN(void);
 
 // ; SCREEN driver function codes
@@ -869,7 +882,8 @@ static void print_cmd(void) {
     //     lda #0x80
     //     jsr start_printing
     // ; ***************************************************************************************
-
+    a = 0x80;
+    start_printing();
     // MULTIPLE ENTRY POINTS: print_cmd, print_to_screen
     print_to_screen();
 }
@@ -1028,7 +1042,7 @@ static void quit_cmd(void) {
     // ; ***************************************************************************************
     // quit_cmd:
     //     jsr check_continuous_editing
-
+    check_continuous_editing();
     // MULTIPLE ENTRY POINTS: quit_cmd, close_input_output_files
     close_input_output_files();
 }
@@ -1092,10 +1106,13 @@ static void check_for_at_least_150_bytes_free(void) {
 
     // check_for_at_least_150_bytes_free:
     //     jsr compute_bytes_free
+    compute_bytes_free();
     //     tya
     //     bne return_6
+    if (y != 0) return;
     //     cpx #0x96
     //     bcs return_6
+    if (x >= 0x96) return;
 
     // MULTIPLE ENTRY POINTS: check_for_at_least_150_bytes_free, display_not_enough_memory
     display_not_enough_memory();
@@ -1559,12 +1576,19 @@ static void name_cmd(void) {
     // ; ***************************************************************************************
     // name_cmd:
     //     jsr check_not_continuous_editing
+    check_not_continuous_editing();
     //     jsr parse_optional_filename_from_command
+    parse_optional_filename_from_command();
     //     php
+    uint8_t saved_flags = flags;
     //     lda #0
+    a = 0;
     //     sta file_edit_flags
+    file_edit_flags = a;
     //     plp
+    flags = saved_flags;
     //     beq return_9
+    if (flags & FLAG_Z) return;
 
     // MULTIPLE ENTRY POINTS: name_cmd, reset_document_name_after_load
     reset_document_name_after_load();
@@ -2428,29 +2452,36 @@ static void check_not_continuous_editing(void) {
 
     // check_not_continuous_editing:
     //     bit file_edit_flags
+    { uint8_t tmp_ = file_edit_flags; flags = (flags & ~(FLAG_N|FLAG_V)) | (tmp_ & FLAG_N) | ((tmp_ << 1) & FLAG_V); }
     //     bvs return_20
+    if (flags & FLAG_V) return;
     //     lda file_edit_flags
+    a = file_edit_flags;
     //     ror
+    { uint8_t old_c = flags & FLAG_C; flags = (flags & ~FLAG_C) | (a & 1); a = (a >> 1) | (old_c << 7); }
     //     bcc return_20
+    if (!(flags & FLAG_C)) return;
     //     bcs c8e5d                                                         ; ALWAYS branch
-
-    // MULTIPLE ENTRY POINTS: check_not_continuous_editing, check_continuous_editing
-    check_continuous_editing();
+c8e5d:
+    display_document_file_state();
 }
 static void check_continuous_editing(void) {
     // Pseudocode: Verifies continuous editing is active, shows file state if not
 
     // check_continuous_editing:
     //     bit file_edit_flags
+    { uint8_t tmp_ = file_edit_flags; flags = (flags & ~(FLAG_N|FLAG_V)) | (tmp_ & FLAG_N) | ((tmp_ << 1) & FLAG_V); }
     //     bvs c8e5d
+    if (flags & FLAG_V) goto c8e5d;
     //     lda file_edit_flags
+    a = file_edit_flags;
     //     ror
+    { uint8_t old_c = flags & FLAG_C; flags = (flags & ~FLAG_C) | (a & 1); a = (a >> 1) | (old_c << 7); }
     //     bcs return_20
-    // c8e5d:
+    if (flags & FLAG_C) return;
+c8e5d:
     //     jsr display_document_file_state
-    //     jmp cli_loop
-
-    // MULTIPLE ENTRY POINTS: check_not_continuous_editing, check_continuous_editing
+    display_document_file_state();
 }
 static void display_nl_then_no_text(void) {
     // Pseudocode: Displays newline then No text message
@@ -3661,17 +3692,85 @@ static void expand_line(void) {
     //     jsr render_register
     //     jmp c9537
 }
-static void dh_fmt_cmd(void) {
-    // Pseudocode: Stores header text (shared code with df_fmt_cmd)
-
-    // ; ***************************************************************************************
-    // dh_fmt_cmd:
-    //     ldx #<(header_text_maybe)
-    //     ldy #>(header_text_maybe)
-    //     bne c9575                                                         ; ALWAYS branch
+static void sub_c95b2(void) {
+    // sub_c95b2:
+    //     ldy l0081
+    y = l0081;
+    //     sta (tmp2),y
+    ram[((uint16_t)tmp3 << 8) | (uint16_t)(tmp2 + y)] = a;
+    //     iny
+    y++;
+    //     sty l0081
+    l0081 = y;
+}
+static void c9575(void) {
+    //     stx tmp2
+    tmp2 = x;
+    //     sty tmp3
+    tmp3 = y;
+    //     lda #0
+    a = 0;
+    //     sta l0081
+    l0081 = a;
+    //     sta l007a
+    l007a = a;
+    //     ldy #3
+    y = 3;
+    //     sty input_buffer_ptr+1
+    input_buffer_ptr = (input_buffer_ptr & 0x00ff) | ((uint16_t)y << 8);
+    //     lda (current_format_line_ptr),y
+    a = ram[current_format_line_ptr + y];
+    //     sta l0083
+    l0083 = a;
+    //     ldx #0x3f ; '?'
+    x = 0x3f;
+loop_c9589:
+    //     iny
+    y++;
+    //     sty l0082
+    l0082 = y;
+    //     lda (current_format_line_ptr),y
+    a = ram[current_format_line_ptr + y];
+    //     cmp #0x0d
+    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    //     beq c959c
+    if (flags & FLAG_Z) goto c959c;
+    //     cmp #0x1b
+    { uint16_t tmp_ = a - 0x1b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x1b ? FLAG_C : 0); }
+    //     bcs c9598
+    if (flags & FLAG_C) goto c9598;
+    //     lda #0x20 ; ' '
+    a = 0x20;
+c9598:
+    //     cmp l0083
+    { uint16_t tmp_ = a - l0083; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= l0083 ? FLAG_C : 0); }
+    //     bne c959e
+    if (!(flags & FLAG_Z)) goto c959e;
+c959c:
+    //     ora #0x80
+    a |= 0x80;
+c959e:
+    //     jsr sub_c95b2
+    sub_c95b2();
+    //     cmp #0x8d
+    { uint16_t tmp_ = a - 0x8d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x8d ? FLAG_C : 0); }
+    //     beq c95aa
+    if (flags & FLAG_Z) goto c95aa;
+    //     ldy l0082
+    y = l0082;
+    //     dex
+    x--;
+    //     bne loop_c9589
+    if (x != 0) goto loop_c9589;
+c95aa:
+    //     lda #0x80
+    a = 0x80;
+    //     jsr sub_c95b2
+    sub_c95b2();
+    //     jsr sub_c95b2
+    sub_c95b2();
 
     // MULTIPLE ENTRY POINTS: dh_fmt_cmd, df_fmt_cmd
-    df_fmt_cmd();
 }
 static void df_fmt_cmd(void) {
     // Pseudocode: Stores footer text (shared code with dh_fmt_cmd)
@@ -3680,50 +3779,21 @@ static void df_fmt_cmd(void) {
     // df_fmt_cmd:
     //     ldx #<(footer_text_maybe)
     //     ldy #>(footer_text_maybe)
-    // c9575:
-    //     stx tmp2
-    //     sty tmp3
-    //     lda #0
-    //     sta l0081
-    //     sta l007a
-    //     ldy #3
-    //     sty input_buffer_ptr+1
-    //     lda (current_format_line_ptr),y
-    //     sta l0083
-    //     ldx #0x3f ; '?'
-    // loop_c9589:
-    //     iny
-    //     sty l0082
-    //     lda (current_format_line_ptr),y
-    //     cmp #0x0d
-    //     beq c959c
-    //     cmp #0x1b
-    //     bcs c9598
-    //     lda #0x20 ; ' '
-    // c9598:
-    //     cmp l0083
-    //     bne c959e
-    // c959c:
-    //     ora #0x80
-    // c959e:
-    //     jsr sub_c95b2
-    //     cmp #0x8d
-    //     beq c95aa
-    //     ldy l0082
-    //     dex
-    //     bne loop_c9589
-    // c95aa:
-    //     lda #0x80
-    //     jsr sub_c95b2
-    //     jsr sub_c95b2
-    // sub_c95b2:
-    //     ldy l0081
-    //     sta (tmp2),y
-    //     iny
-    //     sty l0081
-    //     rts
+    x = (uintptr_t)footer_text_maybe & 0xff;
+    y = (uintptr_t)footer_text_maybe >> 8;
+    c9575();
+}
+static void dh_fmt_cmd(void) {
+    // Pseudocode: Stores header text (shared code with df_fmt_cmd)
 
-    // MULTIPLE ENTRY POINTS: dh_fmt_cmd, df_fmt_cmd
+    // ; ***************************************************************************************
+    // dh_fmt_cmd:
+    //     ldx #<(header_text_maybe)
+    //     ldy #>(header_text_maybe)
+    //     bne c9575                                                         ; ALWAYS branch
+    x = (uintptr_t)header_text_maybe & 0xff;
+    y = (uintptr_t)header_text_maybe >> 8;
+    c9575();
 }
 static void em_fmt_cmd(void) {
     // Pseudocode: Evaluates expression and stores result in a register
@@ -4095,10 +4165,15 @@ static void parse_boolean_from_fmt_cmd(void) {
     // ; ***************************************************************************************
     // parse_boolean_from_fmt_cmd:
     //     jsr get_current_fmt_cmd_byte
+    get_current_fmt_cmd_byte();
     //     sec
+    flags |= FLAG_C;
     //     beq return_46
+    if (flags & FLAG_Z) return;
     //     lda current_format_line_ptr
+    a = current_format_line_ptr;
     //     ldx current_format_line_ptr+1
+    x = current_format_line_ptr >> 8;
 
     // MULTIPLE ENTRY POINTS: parse_boolean_from_fmt_cmd, sub_c976c
     sub_c976c();
@@ -5161,10 +5236,14 @@ static void f14_down_key(void) {
     // ; ***************************************************************************************
     // f14_down_key:
     //     jsr ca93c
+    ca93c();
     //     inc l0079
+    l0079++;
     //     bne c9d9b
+    if (l0079 != 0) goto c9d9b;
 
     // MULTIPLE ENTRY POINTS: f14_down_key, return_key
+c9d9b:
     return_key();
 }
 static void return_key(void) {
@@ -5464,15 +5543,23 @@ static void f4_beginning_of_line_key(void) {
     xpos = a;
     return;
 }
+static void sub_c9e9b(void) {
+    // Shared code: gets line length and sets xpos
+    // c9e9b:
+    //     jsr get_line_length
+    get_line_length();
+    //     sty xpos
+    xpos = y;
+    //     rts
+}
 static void f5_end_of_line_key(void) {
     // Pseudocode: Moves cursor to end of current line
 
     // f5_end_of_line_key:
     //     inc cursor_moved_flag
+    cursor_moved_flag++;
     // c9e9b:
-    //     jsr get_line_length
-    //     sty xpos
-    //     rts
+    sub_c9e9b();
 }
 static void cf7_join_lines_key(void) {
     // Pseudocode: Joins current line with next line
@@ -5620,99 +5707,58 @@ static void sf9_delete_command_key(void) {
     // return_56:
     //     rts
 }
-static void sf12_left_key(void) {
-    // Pseudocode: Moves cursor left by one word
-
+static void sub_c9f80(void) {
     // c9f80:
     //     jsr ca93c
+    ca93c();
     //     lda current_line_ptr
+    a = current_line_ptr;
     //     ldy current_line_ptr+1
+    y = current_line_ptr >> 8;
     //     jsr sub_cab37
+    sub_cab37();
     //     bcc return_56
+    if (!(flags & FLAG_C)) return;
     //     lda tmp0
+    a = tmp0;
     //     sta current_line_ptr
+    current_line_ptr = (current_line_ptr & 0xff00) | a;
     //     lda tmp1
+    a = tmp1;
     //     sta current_line_ptr+1
+    current_line_ptr = (current_line_ptr & 0x00ff) | ((uint16_t)a << 8);
     //     jsr sub_caa97
+    sub_caa97();
     //     jsr c9e9b
+    sub_c9e9b();
     //     dec l006f
-    //     rts
+    l006f--;
+}
+static void sf12_left_key(void) {
+    // Pseudocode: Moves cursor left by one word
 
     // ; ***************************************************************************************
     // sf12_left_key:
     //     ldy xpos
+    y = xpos;
     //     beq c9f80
+    if (y == 0) { sub_c9f80(); return; }
     //     jsr draw_previous_word
+    draw_previous_word();
     //     bne return_57
+    if (!(flags & FLAG_Z)) return;
     //     cmp #0x20 ; ' '
+    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
     //     beq c9f80
-    // return_57:
-    //     rts
-
-    // c9fab:
-    //     sty xpos
-    //     jsr ca93c
-    //     lda current_line_ptr
-    //     ldy current_line_ptr+1
-    //     jsr sub_cab1a
-    //     beq return_58
-    //     tya
-    //     clc
-    //     adc current_line_ptr
-    //     sta current_line_ptr
-    //     bcc c9fc3
-    //     inc current_line_ptr+1
-    // c9fc3:
-    //     jsr sub_caa97
-    //     dec l006f
-    //     jsr c9e94
-    //     jsr get_line_length
-    //     cpy xpos
-    //     beq return_58
-    //     lda current_edit_line_ptr
-    //     sta tmp0
-    //     lda current_edit_line_ptr+1
-    //     sta tmp1
-    //     ldy xpos
-    //     jsr draw_char
-    //     cmp #0x20 ; ' '
-    //     bne return_58
-    // ; ***************************************************************************************
-    // sf13_right_key:
-    //     lda current_edit_line_ptr
-    //     sta tmp0
-    //     lda current_edit_line_ptr+1
-    //     sta tmp1
-    //     jsr get_line_length
-    //     sty input_buffer_ptr+1
-    //     cpy xpos
-    //     bcc c9fab
-    //     beq c9fab
-    //     ldy xpos
-    // loop_c9ff8:
-    //     cpy input_buffer_ptr+1
-    //     bcs ca00f
-    //     jsr draw_char
-    //     cmp #0x20 ; ' '
-    //     bne loop_c9ff8
-    // loop_ca003:
-    //     cpy input_buffer_ptr+1
-    //     bcs ca00f
-    //     jsr draw_char
-    //     cmp #0x20 ; ' '
-    //     beq loop_ca003
-    //     dey
-    // ca00f:
-    //     sty xpos
-    // return_58:
-
-    // MULTIPLE ENTRY POINTS: sf12_left_key, sf13_right_key
-    sf13_right_key();
+    if (flags & FLAG_Z) { sub_c9f80(); return; }
+// return_57:
+//     rts
 }
 static void sf13_right_key(void) {
     // Pseudocode: Moves cursor right by one word
 
     // MULTIPLE ENTRY POINTS: sf12_left_key, sf13_right_key
+    sub_c9f80();
 }
 static void set_marker(void);
 static void set_marker_common(void);
@@ -5884,7 +5930,7 @@ static void f1_top_of_text_key(void) {
     //     stx l006f
     //     jsr sub_ca071
     //     jsr sub_caa97
-    //     jmp c9e94
+    //     jmp c8e94
 }
 static void sf15_up_key(void) {
     // Pseudocode: Scrolls up one screenful or to top of document
@@ -5929,10 +5975,15 @@ static void f2_bottom_of_text_key(void) {
     // ; ***************************************************************************************
     // f2_bottom_of_text_key:
     //     ldx #0xff
+    x = 0xff;
     //     stx l006f
+    l006f = x;
     //     jsr sub_ca0af
+    sub_ca0af();
     //     jsr sub_caa97
+    sub_caa97();
     //     jmp c9e9b
+    sub_c9e9b();
 }
 static void sf14_down_key(void) {
     // Pseudocode: Scrolls down one screenful or to bottom of document
@@ -7937,9 +7988,13 @@ static void pop_from_ruler_stack(void) {
 
     // pop_from_ruler_stack:
     //     inc l0076
+    l0076++;
     //     ldy ruler_stack_ptr
+    y = ruler_stack_ptr;
     //     iny
+    y++;
     //     iny
+    y++;
 
     // MULTIPLE ENTRY POINTS: pop_from_ruler_stack, cab91
     cab91();
