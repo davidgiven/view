@@ -24,6 +24,18 @@
 // FS__SIZE = FS_BUFFER + 128
 #define FS__SIZE 165
 
+// Forward declarations for multi-entry-point functions
+void cab91(void);
+void check_continuous_editing(void);
+void close_input_output_files(void);
+void df_fmt_cmd(void);
+void display_not_enough_memory(void);
+void print_to_screen(void);
+void reset_document_name_after_load(void);
+void return_key(void);
+void sf13_right_key(void);
+void sub_c976c(void);
+
 // ; Memory locations
 
 //X .section .zp, "zax", @nobits
@@ -761,6 +773,7 @@ void sheets_cmd(void) {
 // MULTIPLE ENTRY POINTS: print_cmd, print_to_screen
 void print_cmd(void) {
     // Pseudocode: Sets print flags and falls through to print_to_screen
+    print_to_screen();
 }
 // print_to_screen:
 //     jsr print_document
@@ -922,6 +935,7 @@ void finish_cmd(void) {
 // MULTIPLE ENTRY POINTS: quit_cmd, close_input_output_files
 void quit_cmd(void) {
     // Pseudocode: Checks continuous editing then falls through to close files
+    close_input_output_files();
 }
 // close_input_output_files:
 //     lda #0
@@ -988,6 +1002,7 @@ void save_cmd_write_cmd(void) {
 // MULTIPLE ENTRY POINTS: check_for_at_least_150_bytes_free, display_not_enough_memory
 void check_for_at_least_150_bytes_free(void) {
     // Pseudocode: Checks if at least 150 bytes of memory are available
+    display_not_enough_memory();
 }
 // display_not_enough_memory:
 //     jsr stop_printing
@@ -1466,6 +1481,7 @@ void file_not_found_error(void) {
 // MULTIPLE ENTRY POINTS: name_cmd, reset_document_name_after_load
 void name_cmd(void) {
     // Pseudocode: Sets document name from optional filename argument
+    reset_document_name_after_load();
 }
 // reset_document_name_after_load:
 //     lda #0x40 ; '@'
@@ -2342,6 +2358,7 @@ void sub_c8e2d_sub_c8e33(void) {
 // MULTIPLE ENTRY POINTS: check_not_continuous_editing, check_continuous_editing
 void check_not_continuous_editing(void) {
     // Pseudocode: Verifies not in continuous editing mode, shows file state if editing
+    check_continuous_editing();
 }
 
 // check_continuous_editing:
@@ -3601,6 +3618,7 @@ void expand_line(void) {
 // MULTIPLE ENTRY POINTS: dh_fmt_cmd, df_fmt_cmd
 void dh_fmt_cmd(void) {
     // Pseudocode: Stores header text (shared code with df_fmt_cmd)
+    df_fmt_cmd();
 }
 
 // ; ***************************************************************************************
@@ -4049,6 +4067,7 @@ void execute_formatting_command(void) {
 // MULTIPLE ENTRY POINTS: parse_boolean_from_fmt_cmd, sub_c976c
 void parse_boolean_from_fmt_cmd(void) {
     // Pseudocode: Parses a boolean (ON/OFF/1/0) from format command argument
+    sub_c976c();
 }
 // sub_c976c:
 //     sta tmp8
@@ -5081,6 +5100,7 @@ void f15_up_key(void) {
 // MULTIPLE ENTRY POINTS: f14_down_key, return_key
 void f14_down_key(void) {
     // Pseudocode: Moves cursor to next line
+    return_key();
 }
 // ; ***************************************************************************************
 // return_key:
@@ -5554,6 +5574,7 @@ void sf9_delete_command_key(void) {
 // MULTIPLE ENTRY POINTS: sf12_left_key, sf13_right_key
 void sf12_left_key(void) {
     // Pseudocode: Moves cursor left by one word
+    sf13_right_key();
 }
 
 // MULTIPLE ENTRY POINTS: sf12_left_key, sf13_right_key
@@ -7767,6 +7788,7 @@ void push_onto_ruler_stack(void) {
 // MULTIPLE ENTRY POINTS: pop_from_ruler_stack, cab91
 void pop_from_ruler_stack(void) {
     // Pseudocode: Pops ruler position from the ruler stack
+    cab91();
 }
 // cab91:
 //     sty ruler_stack_ptr
