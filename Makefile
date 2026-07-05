@@ -10,3 +10,6 @@ view-b3.0.asm: view.py view-b3.0.rom
 
 view-rebuild.rom: view-b3.0.asm
 	beebasm -i $< -o $@
+
+view: src/view.c
+	$(CC) -g -o view $<
