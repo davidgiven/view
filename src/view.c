@@ -43,18 +43,18 @@ uint8_t a, x, y, sp, flags;
 #define FCB__SIZE  0x24
 #define FS_BUFFERPTR (0 + FCB__SIZE)
 #define FS_BUFFER (FS_BUFFERPTR + 1)
-#define BDOS_EXIT_PROGRAM 0
-#define BDOS_CONSOLE_OUTPUT 2
-#define BDOS_DIRECT_IO 6
-#define BDOS_OPEN_FILE 15
-#define BDOS_CLOSE_FILE 16
-#define BDOS_DELETE_FILE 19
-#define BDOS_READ_SEQUENTIAL 20
-#define BDOS_WRITE_SEQUENTIAL 21
-#define BDOS_CREATE_FILE 22
-#define BDOS_SET_DMA_ADDRESS 26
-#define BDOS_PARSEFILENAME 43
-#define BDOS_GETTPA 42
+extern void bdos_exit_program(void);
+extern void bdos_console_output(void);
+extern void bdos_direct_io(void);
+extern void bdos_open_file(void);
+extern void bdos_close_file(void);
+extern void bdos_delete_file(void);
+extern void bdos_read_sequential(void);
+extern void bdos_write_sequential(void);
+extern void bdos_create_file(void);
+extern void bdos_set_dma_address(void);
+extern void bdos_parsefilename(void);
+extern void bdos_gettpa(void);
 
 // Forward declarations
 static void sub_c8c5f(void);
@@ -173,7 +173,7 @@ static void caf5c(void);
 static void sub_caf5f(void);
 static void deref_and_check_for_command_prefix(void);
 static void check_for_command_prefix(void);
-static void SCREEN(void);
+
 static void print_inline_string(void);
 static void sub_c93b6(void);
 static void sub_c8412(void);
@@ -218,7 +218,6 @@ static void clear_screen(void);
 static void print_x_words_of_help(void);
 static void render_number_to_screen(void);
 static void display_document_file_state(void);
-static void screen_putchar(void);
 static void compute_bytes_free(void);
 static void bdos_print_newline(void);
 static void cli_loop(void);
@@ -227,9 +226,15 @@ static void call_printer_driver(void);
 static void prepare_printer_driver(void);
 
 // ; SCREEN driver function codes
-#define SCREEN_GETCHAR 7
-#define SCREEN_SETCURSOR 3
-#define SCREEN_SETSTYLE 4
+extern void screen_putchar(void);
+extern void screen_getchar(void);
+extern void screen_setcursor(void);
+extern void screen_getcursor(void);
+extern void screen_setstyle(void);
+extern void screen_getsize(void);
+extern void screen_clear(void);
+extern void screen_scrollup(void);
+extern void screen_scrolldown(void);
 
 //X ram:                              .fill 65536
 uint8_t ram[65536];
@@ -732,9 +737,8 @@ static void bye_cmd(void) {
     // ; ***************************************************************************************
     // zproc bye_cmd
     //     ldy #BDOS_EXIT_PROGRAM
-    y = BDOS_EXIT_PROGRAM;
     //     jmp BDOS
-    // PROBLEM: jmp BDOS
+    bdos_exit_program(); return;
     // zendproc
 }
 static void cmd_err_no_target(void) {
@@ -6836,6 +6840,7 @@ static void sub_ca276(void) {
     //     bne loop_ca2c7
     //     ldy #SCREEN_SCROLLDOWN
     //     jsr SCREEN
+    screen_scrolldown();
     //     jsr home_cursor
     //     ldy #1
     //     jmp ca351
@@ -6907,6 +6912,7 @@ static void sub_ca276(void) {
     // ca348:
     //     ldy #SCREEN_SCROLLUP
     //     jsr SCREEN
+    screen_scrollup();
     //     ldx #0
     //     ldy screen_height
     //     jsr set_cursor_position
@@ -7249,6 +7255,7 @@ static void set_normal_text_if_not_mode_7(void) {
     //     ldy #SCREEN_SETSTYLE
     //     lda #0
     //     jsr SCREEN
+    screen_setstyle();
     //     jmp 1f
 
     // ; ***************************************************************************************
@@ -7261,6 +7268,7 @@ static void set_normal_text_if_not_mode_7(void) {
     //     ldy #SCREEN_SETSTYLE
     //     lda #STYLE_REVERSE
     //     jsr SCREEN
+    screen_setstyle();
     // 1:
     //     pla
     //     tay
@@ -7696,9 +7704,8 @@ read_char:
     //     tax
     x = a;
     //     ldy #SCREEN_GETCHAR
-    y = SCREEN_GETCHAR;
     //     jsr SCREEN
-    SCREEN();
+    screen_getchar();
     //     bcs read_char
     if (flags & FLAG_C) goto read_char;
     //     cmp #0x1b                                                         ; A=character read
@@ -7724,6 +7731,7 @@ static void clear_screen(void) {
     // clear_screen:
     //     ldy #SCREEN_CLEAR
     //     jmp SCREEN
+    screen_clear(); return;
 }
 static void draw_prompt_characters(void) {
     // Pseudocode: Draws two inverted prompt characters at top-left of screen
@@ -7761,6 +7769,7 @@ static void save_cursor_position(void) {
     // save_cursor_position:
     //     ldy #SCREEN_GETCURSOR
     //     jsr SCREEN
+    screen_getcursor();
     //     sta tmp4
     //     stx tmp5
     //     rts
@@ -7783,9 +7792,8 @@ static void set_cursor_position(void) {
     //     pla
     a = saved_x;
     //     ldy #SCREEN_SETCURSOR
-    y = SCREEN_SETCURSOR;
     //     jsr SCREEN
-    SCREEN();
+    screen_setcursor();
 
     //     pla
     //     tay
@@ -9387,6 +9395,7 @@ static void system_init(void) {
 
     //     ldy #SCREEN_GETSIZE
     //     jsr SCREEN
+    screen_getsize();
     //     sta screen_width
     //     stx screen_height
     //     rts
@@ -9400,13 +9409,9 @@ static void noscreen(void) {
     //     .byte 0
     //     ldy #BDOS_EXIT_PROGRAM
     //     jmp BDOS
+    bdos_exit_program(); return;
 }
-static void SCREEN(void) {
-    // Pseudocode: Trampoline to screen driver (patched at runtime)
 
-    // SCREEN:
-    //     jmp 0x1234
-}
 static void compute_bytes_free(void) {
     // Pseudocode: Computes number of free bytes between top and himem
 
@@ -10039,6 +10044,14 @@ static void bdos_print_char(void) {
     //     lda 0x0103,x
     //     ldy #BDOS_CONSOLE_OUTPUT
     //     jsr BDOS
+    { uint8_t saved_a = a, saved_x = x, saved_y = y;
+    bdos_console_output();
+    y = saved_y; x = saved_x; a = saved_a;
+    if (a == 13) {
+        a = 10;
+        bdos_print_char();
+        a = saved_a;
+    } }
     //     pla
     //     tay
     //     pla
@@ -10063,29 +10076,7 @@ static void bdos_print_newline(void) {
     //     pla
     //     rts
 }
-static void screen_putchar(void) {
-    // Pseudocode: Outputs a character to the screen via SCREEN putchar call
 
-    // zproc screen_putchar
-    //     pha
-    //     txa
-    //     pha
-    //     tya
-    //     pha
-
-    //     tsx
-    //     lda 0x103, x
-    //     ldy #SCREEN_PUTCHAR
-    //     jsr SCREEN
-
-    //     pla
-    //     tay
-    //     pla
-    //     tax
-    //     pla
-    //     rts
-    // zendproc
-}
 static void readline(void) {
     // Pseudocode: Reads a line from keyboard with editing support (backspace, delete line)
 
@@ -10101,6 +10092,7 @@ static void readline(void) {
     //         ldy #BDOS_DIRECT_IO
     //         ldx #0xfd
     //         jsr BDOS
+    bdos_direct_io();
     //         tax
 
     //         ; Delete?
@@ -10179,7 +10171,9 @@ static void select_file(void) {
 
     // zproc select_file
     //     stx file_ptr+0
+    file_ptr = (file_ptr & 0xff00) | x;
     //     sty file_ptr+1
+    file_ptr = (file_ptr & 0x00ff) | ((uint16_t)y << 8);
     //     rts
     // zendproc
 }
@@ -10204,11 +10198,13 @@ static void prepare_to_open_file(void) {
     //     lda file_ptr+0
     //     ldx file_ptr+1
     //     jsr BDOS
+    bdos_set_dma_address();
 
     //     ldy #BDOS_PARSEFILENAME
     //     lda #<filename_buffer
     //     ldx #>filename_buffer
     //     jsr BDOS
+    bdos_parsefilename();
     //     zif cs
     //         jmp bad_filename_error
     //     zendif
@@ -10230,6 +10226,7 @@ static void open_input_file(void) {
     //     lda file_ptr+0
     //     ldx file_ptr+1
     //     jsr BDOS
+    bdos_open_file();
     //     zif cs
     //         jmp file_not_found_error
     //     zendif
@@ -10255,6 +10252,7 @@ static void open_output_file(void) {
     //     lda file_ptr+0
     //     ldx file_ptr+1
     //     jsr BDOS
+    bdos_delete_file();
 
     //     ; Create a new file.
 
@@ -10270,6 +10268,7 @@ static void open_output_file(void) {
     //     lda file_ptr+0
     //     ldx file_ptr+1
     //     jsr bdos_and_file_error
+    bdos_create_file();
 
     //     ldy #FS_BUFFERPTR
     //     lda #FS_BUFFER
@@ -10277,17 +10276,7 @@ static void open_output_file(void) {
     //     rts
     // zendproc
 }
-static void bdos_and_file_error(void) {
-    // Pseudocode: Calls BDOS and jumps to file_error if carry is set
 
-    // zproc bdos_and_file_error
-    //     jsr BDOS
-    //     zif cs
-    //         jmp file_not_found_error
-    //     zendif
-    //     rts
-    // zendproc
-}
 static void set_dma_to_buffer_address_of_file(void) {
     // Pseudocode: Sets BDOS DMA address to file buffer
 
@@ -10306,6 +10295,7 @@ static void set_dma_to_buffer_address_of_file(void) {
     //     pla
     //     ldy #BDOS_SET_DMA_ADDRESS
     //     jmp BDOS
+    bdos_set_dma_address(); return;
     // zendproc
 }
 static void flush_file(void) {
@@ -10317,13 +10307,10 @@ static void flush_file(void) {
     set_dma_to_buffer_address_of_file();
 
     //     ldy #BDOS_WRITE_SEQUENTIAL
-    y = BDOS_WRITE_SEQUENTIAL;
     //     lda file_ptr+0
-    a = file_ptr;
     //     ldx file_ptr+1
-    x = file_ptr >> 8;
     //     jsr bdos_and_file_error
-    bdos_and_file_error();
+    bdos_write_sequential();
 
     //     ldy #FS_BUFFER
     y = FS_BUFFER;
@@ -10361,13 +10348,10 @@ static void close_file(void) {
     }
 
     //     ldy #BDOS_CLOSE_FILE
-    y = BDOS_CLOSE_FILE;
     //     lda file_ptr+0
-    a = file_ptr;
     //     ldx file_ptr+1
-    x = file_ptr >> 8;
     //     jmp bdos_and_file_error
-    bdos_and_file_error(); return;
+    bdos_close_file(); return;
     // zendproc
 }
 static void put_byte_to_file(void) {
@@ -10425,13 +10409,10 @@ static void get_byte_from_file(void) {
     //         jsr set_dma_to_buffer_address_of_file
         set_dma_to_buffer_address_of_file();
     //         ldy #BDOS_READ_SEQUENTIAL
-        y = BDOS_READ_SEQUENTIAL;
     //         lda file_ptr+0
-        a = file_ptr;
     //         ldx file_ptr+1
-        x = file_ptr >> 8;
     //         jsr bdos_and_file_error
-        bdos_and_file_error();
+        bdos_read_sequential();
 
     //         lda #FS_BUFFER
         a = FS_BUFFER;
@@ -10468,6 +10449,41 @@ static void get_byte_from_file(void) {
     return;
     // zendproc
 }
+
+// BDOS trampoline (platform-specific - currently a stub)
+void bdos_call(void) {
+    // In a real CP/M environment this would invoke BDOS with y=opcode
+}
+
+// BDOS wrapper implementations
+void bdos_exit_program(void) { y = 0; bdos_call(); }
+void bdos_console_output(void) { y = 2; bdos_call(); }
+void bdos_direct_io(void) { y = 6; bdos_call(); }
+void bdos_open_file(void) { y = 15; bdos_call(); }
+void bdos_close_file(void) { y = 16; bdos_call(); }
+void bdos_delete_file(void) { y = 19; bdos_call(); }
+void bdos_read_sequential(void) { y = 20; bdos_call(); }
+void bdos_write_sequential(void) { y = 21; bdos_call(); }
+void bdos_create_file(void) { y = 22; bdos_call(); }
+void bdos_set_dma_address(void) { y = 26; bdos_call(); }
+void bdos_parsefilename(void) { y = 43; bdos_call(); }
+void bdos_gettpa(void) { y = 42; bdos_call(); }
+
+// SCREEN trampoline (platform-specific - currently a stub)
+void screen_call(void) {
+    // In a real CP/M environment this would invoke the SCREEN driver with y=opcode
+}
+
+// SCREEN wrapper implementations
+void screen_putchar(void) { y = 5; screen_call(); }
+void screen_getchar(void) { y = 7; screen_call(); }
+void screen_setcursor(void) { y = 3; screen_call(); }
+void screen_getcursor(void) { y = 4; screen_call(); }
+void screen_setstyle(void) { y = 12; screen_call(); }
+void screen_getsize(void) { y = 1; screen_call(); }
+void screen_clear(void) { y = 2; screen_call(); }
+void screen_scrollup(void) { y = 9; screen_call(); }
+void screen_scrolldown(void) { y = 10; screen_call(); }
 
 int main(int argc, char* argv[]) {
     main_();
