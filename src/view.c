@@ -7719,75 +7719,103 @@ static void sub_ca94a(void) {
     //     rts
 }
 static void adjust_pointers(void) {
-    // Pseudocode: Adjusts all pointer array entries by delta (tmp6/tmp7) and moves memory block
-
-    // la995:
-    //     .ascii "Memory full - Press ESCAPE"
-    //     .byte 0
-
     // adjust_pointers:
     //     lda tmp4
+    a = tmp4;
     //     sta tmp2
+    tmp2 = a;
     //     clc
+    flags &= ~FLAG_C;
     //     adc tmp6
+    {   uint16_t sum = (uint16_t)a + tmp6;
+        a = (uint8_t)sum;
+        if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
     //     sta tmp8
+    tmp8 = a;
     //     lda tmp5
+    a = tmp5;
     //     sta tmp3
+    tmp3 = a;
     //     adc tmp7
+    {   uint16_t sum = (uint16_t)a + tmp7 + (flags & FLAG_C);
+        a = (uint8_t)sum; }
     //     sta tmp9
-    //     ldx #0
-    // ca9c3:
-    //     ldy __begin_pointer_array+1,x
-    //     lda __begin_pointer_array+0,x
-    //     cpy tmp5
-    //     bcc ca9f1
-    //     bne ca9d1
-    //     cmp tmp4
-    //     bcc ca9f1
-    // ca9d1:
-    //     cpy tmp9
-    //     bcc ca9db
-    //     bne ca9e7
-    //     cmp tmp8
-    //     bcs ca9e7
-    // ca9db:
-    //     cpx #12
-    //     bcs ca9e7
-    //     lda #0
-    //     sta __begin_pointer_array+0,x
-    //     sta __begin_pointer_array+1,x
-    //     beq ca9f1                                                         ; ALWAYS branch
+    tmp9 = a;
 
-    // ca9e7:
-    //     sbc tmp6
-    //     sta __begin_pointer_array+0,x
-    //     lda __begin_pointer_array+1,x
-    //     sbc tmp7
-    //     sta __begin_pointer_array+1,x
-    // ca9f1:
-    //     inx
-    //     inx
-    //     cpx #22
-    //     bne ca9c3
+    //     ldx #0
+    x = 0;
+    // ca9c3:
+    while (x < 22) {
+        //     ldy __begin_pointer_array+1,x
+        //     lda __begin_pointer_array+0,x
+        uint16_t ptr = ((uint8_t*)&pointer_array)[x] | ((uint16_t)((uint8_t*)&pointer_array)[x + 1] << 8);
+        uint16_t src = ((uint16_t)tmp5 << 8) | tmp4;
+        uint16_t dst = ((uint16_t)tmp9 << 8) | tmp8;
+
+        if (ptr >= src) {
+            if (ptr >= dst) {
+                goto ca9e7;
+            }
+            // ptr in [src, dst)
+            if (x < 12) {
+                // Zero marker pointing into moved block
+                ((uint8_t*)&pointer_array)[x] = 0;
+                ((uint8_t*)&pointer_array)[x + 1] = 0;
+                goto ca9f1;
+            }
+ca9e7:
+            ptr -= ((uint16_t)tmp7 << 8) | tmp6;
+            ((uint8_t*)&pointer_array)[x] = ptr & 0xff;
+            ((uint8_t*)&pointer_array)[x + 1] = (ptr >> 8) & 0xff;
+        }
+ca9f1:
+        x += 2;
+    }
+
     // loop_ca9f7:
-    //     ldy #0
-    // loop_ca9f9:
-    //     lda (tmp8),y
-    //     sta (tmp2),y
-    //     beq caa08
-    //     iny
-    //     bne loop_ca9f9
-    //     inc tmp3
-    //     inc tmp9
-    //     bne loop_ca9f7
-    // caa08:
+    {
+        uint16_t src_addr = ((uint16_t)tmp9 << 8) | tmp8;
+        uint16_t dst_addr = ((uint16_t)tmp3 << 8) | tmp2;
+        while (1) {
+            //     ldy #0
+            y = 0;
+            // loop_ca9f9:
+            while (1) {
+                //     lda (tmp8),y
+                a = ram[src_addr + y];
+                //     sta (tmp2),y
+                ram[dst_addr + y] = a;
+                //     beq caa08
+                if (a == 0) goto caa08;
+                //     iny
+                y++;
+                //     bne loop_ca9f9
+                if (y == 0) break;
+            }
+            //     inc tmp3
+            //     inc tmp9
+            dst_addr += 0x100;
+            src_addr += 0x100;
+        }
+    }
+
+caa08:
     //     tya
+    a = y;
     //     clc
     //     adc tmp2
+    {   uint16_t w = (uint16_t)a + tmp2;
+        a = (uint8_t)w;
+        if (w > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
     //     sta top
+    top = (top & 0xff00) | a;
     //     lda tmp3
+    a = tmp3;
     //     adc #0
+    {   uint16_t w = (uint16_t)a + (flags & FLAG_C);
+        a = (uint8_t)w; }
     //     sta top+1
+    top = (top & 0x00ff) | ((uint16_t)a << 8);
     //     rts
 }
 static void make_space_for_insertion(void) {
