@@ -152,6 +152,7 @@ static void sub_ca0af(void);
 static void draw_previous_word(void);
 static void draw_char(void);
 static void sub_cab1a(void);
+static void clear_cmd(void);
 static void SCREEN(void);
 
 // ; SCREEN driver function codes
@@ -7415,9 +7416,6 @@ static void parse_command(void) {
     //     rts
 }
 static void call_through_jumptable(void) {
-    // Pseudocode: Calls a routine through a jump table by index
-
-    // ; ***************************************************************************************
     // call_through_jumptable:
     //     asl
     //     clc
@@ -7429,10 +7427,67 @@ static void call_through_jumptable(void) {
     //     ldy #0
     //     lda (tmp8),y
     //     sta tmp6
-    //     iny                                                               ; Y=0x01
+    //     iny
     //     lda (tmp8),y
     //     sta tmp7
     //     jmp (tmp6)
+
+    if (y == 0) {
+        switch (a) {
+            case 0: ce_fmt_cmd(); break;
+            case 1: rj_fmt_cmd(); break;
+            case 2: df_fmt_cmd(); break;
+            case 3: dh_fmt_cmd(); break;
+            case 4: dm_fmt_cmd(); break;
+            case 5: return;  // return_34
+            case 6: em_fmt_cmd(); break;
+            case 7: pe_fmt_cmd(); break;
+            case 8: tm_fmt_cmd(); break;
+            case 9: bm_fmt_cmd(); break;
+            case 10: pl_fmt_cmd(); break;
+            case 11: ts_fmt_cmd(); break;
+            case 12: fo_fmt_cmd(); break;
+            case 13: he_fmt_cmd(); break;
+            case 14: ht_fmt_cmd(); break;
+            case 15: hm_fmt_cmd(); break;
+            case 16: fm_fmt_cmd(); break;
+            case 17: lm_fmt_cmd(); break;
+            case 18: ls_fmt_cmd(); break;
+            case 19: op_fmt_cmd(); break;
+            case 20: ep_fmt_cmd(); break;
+            case 21: lj_fmt_cmd(); break;
+            case 22: pb_fmt_cmd(); break;
+        }
+    } else {
+        switch (a) {
+            case 0: quit_cmd(); break;
+            case 1: new_cmd(); break;
+            case 2: format_cmd(); break;
+            case 3: setup_cmd(); break;
+            case 4: read_cmd(); break;
+            case 5: more_cmd(); break;
+            case 6: screen_cmd(); break;
+            case 7: sheets_cmd(); break;
+            case 8: save_cmd_write_cmd(); break;
+            case 9: count_cmd(); break;
+            case 10: field_cmd(); break;
+            case 11: printer_cmd(); break;
+            case 12: search_cmd(); break;
+            case 13: clear_cmd(); break;
+            case 14: microspace_cmd(); break;
+            case 15: fold_cmd(); break;
+            case 16: name_cmd(); break;
+            case 17: mode_cmd(); break;
+            case 18: finish_cmd(); break;
+            case 19: print_cmd(); break;
+            case 20: change_cmd(); break;
+            case 21: save_cmd_write_cmd(); break;
+            case 22: edit_cmd(); break;
+            case 23: replace_cmd(); break;
+            case 24: load_cmd(); break;
+            case 25: bye_cmd(); break;
+        }
+    }
 }
 static void look_up_address_in_table(void) {
     // Pseudocode: Looks up a key in an address table and returns the associated handler address
