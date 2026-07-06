@@ -153,6 +153,11 @@ static void draw_previous_word(void);
 static void draw_char(void);
 static void sub_cab1a(void);
 static void clear_cmd(void);
+static void wipe_buffer(void);
+static void caf5c(void);
+static void sub_caf5f(void);
+static void deref_and_check_for_command_prefix(void);
+static void check_for_command_prefix(void);
 static void SCREEN(void);
 
 // ; SCREEN driver function codes
@@ -4304,23 +4309,27 @@ static void evaluate_expression_from_fmt_cmd(void) {
     //     lda tmp8
     //     rts
 }
-static void get_next_fmt_cmd_byte(void) {
-    // Pseudocode: Gets next non-space byte from format command line
-
-    // ; ***************************************************************************************
-    // get_next_fmt_cmd_byte:
-    //     iny
-    // ; ***************************************************************************************
+static void get_current_fmt_cmd_byte(void) {
     // get_current_fmt_cmd_byte:
-    //     lda (current_format_line_ptr),y
-    //     cmp #0x0d
-    //     beq return_47
-    //     cmp #0x20 ; ' '
-    //     beq get_next_fmt_cmd_byte
+    while (1) {
+        //     lda (current_format_line_ptr),y
+        a = ram[current_format_line_ptr + y];
+        //     cmp #0x0d
+        //     beq return_47
+        if (a == 0x0d) return;
+        //     cmp #0x20 ; ' '
+        //     beq get_next_fmt_cmd_byte
+        if (a != 0x20) return;
+        y++;
+    }
     // return_47:
     //     rts
-
-    // MULTIPLE ENTRY POINTS: get_next_fmt_cmd_byte, get_current_fmt_cmd_byte
+}
+static void get_next_fmt_cmd_byte(void) {
+    // get_next_fmt_cmd_byte:
+    //     iny
+    y++;
+    get_current_fmt_cmd_byte();
 }
 static void sub_c9830(void) {
     // Pseudocode: Word-spacing justification: distributes extra spaces between words
@@ -5986,45 +5995,70 @@ static void f2_bottom_of_text_key(void) {
     //     jmp c9e9b
     sub_c9e9b();
 }
+static void sub_ca0af(void) {
+    // sub_ca0af:
+    //     inc cursor_moved_flag
+    cursor_moved_flag++;
+    //     stx input_buffer_ptr+1
+    input_buffer_ptr = (input_buffer_ptr & 0x00ff) | ((uint16_t)x << 8);
+    //     jsr ca93c
+    ca93c();
+    //     lda current_line_ptr
+    a = (uint8_t)(current_line_ptr & 0xff);
+    //     ldy current_line_ptr+1
+    y = (uint8_t)((current_line_ptr >> 8) & 0xff);
+    // ca0ba:
+    while (1) {
+        //     jsr sub_cab1a
+        sub_cab1a();
+        //     beq ca0d2
+        if (flags & FLAG_Z) {
+            // ca0d2:
+            //     lda tmp0
+            a = tmp0;
+            //     ldy tmp1
+            y = tmp1;
+            break;
+        }
+        //     tya
+        //     ldy tmp1
+        //     clc
+        //     adc tmp0
+        {
+            uint16_t sum = (uint16_t)y + tmp0;
+            y = tmp1;
+            a = (uint8_t)(sum & 0xff);
+            if (sum > 0xff) y++;
+        }
+        // ca0c8:
+        //     ldx input_buffer_ptr+1
+        x = (uint8_t)(input_buffer_ptr >> 8);
+        //     bmi ca0ba
+        if ((int8_t)x < 0) continue;
+        //     dec input_buffer_ptr+1
+        x--;
+        input_buffer_ptr = (input_buffer_ptr & 0x00ff) | ((uint16_t)x << 8);
+        //     bne ca0ba
+        if (x != 0) continue;
+        //     beq ca0d6
+        break;
+    }
+    // ca0d6:
+    //     sta current_line_ptr
+    current_line_ptr = (current_line_ptr & 0xff00) | a;
+    //     sty current_line_ptr+1
+    current_line_ptr = (current_line_ptr & 0x00ff) | ((uint16_t)y << 8);
+    //     rts
+}
 static void sf14_down_key(void) {
-    // Pseudocode: Scrolls down one screenful or to bottom of document
-
-    // ; ***************************************************************************************
     // sf14_down_key:
     //     ldx screen_height
     //     inc l0079
     //     inc l006f
-    // sub_ca0af:
-    //     inc cursor_moved_flag
-    //     stx input_buffer_ptr+1
-    //     jsr ca93c
-    //     lda current_line_ptr
-    //     ldy current_line_ptr+1
-    // ca0ba:
-    //     jsr sub_cab1a
-    //     beq ca0d2
-    //     tya
-    //     ldy tmp1
-    //     clc
-    //     adc tmp0
-    //     bcc ca0c8
-    //     iny
-    // ca0c8:
-    //     ldx input_buffer_ptr+1
-    //     bmi ca0ba
-    //     dec input_buffer_ptr+1
-    //     bne ca0ba
-    //     beq ca0d6                                                         ; ALWAYS branch
-
-    // ca0d2:
-    //     lda tmp0
-    //     ldy tmp1
-    // ca0d6:
-    //     sta current_line_ptr
-    //     sty current_line_ptr+1
-    //     rts
-
-    // MULTIPLE ENTRY POINTS: sf14_down_key, sub_ca0af
+    x = screen_height;
+    l0079++;
+    l006f++;
+    sub_ca0af();
 }
 static void sf11_copy_key(void) {
     // Pseudocode: Copies ruler from previous line to current line
@@ -7832,47 +7866,77 @@ static void make_space_for_insertion(void) {
     // return_67:
     //     rts
 }
+static void sub_caa97(void) {
+    // sub_caa97:
+    //     lda #0x10
+    a = 0x10;
+    //     jsr wipe_buffer
+    wipe_buffer();
+    //     jsr sub_caf5f
+    sub_caf5f();
+    //     ldy #0
+    y = 0;
+    //     lda (current_line_ptr),y
+    a = ram[current_line_ptr + y];
+    //     ldx current_edit_line_ptr
+    x = (uint8_t)(current_edit_line_ptr & 0xff);
+    //     ldy current_edit_line_ptr+1
+    y = (uint8_t)((current_edit_line_ptr >> 8) & 0xff);
+    //     jsr check_for_command_prefix
+    check_for_command_prefix();
+    //     bne caab7
+    if (flags & FLAG_Z) {
+        // Z=1 (0x80 or 0x81)
+        //     bcs caab0
+        if (flags & FLAG_C) {
+            // 0x80 case: goto caab0
+        }
+        //     sta l006e (0x81 case or bcc)
+        if (!(flags & FLAG_C)) l006e = a;
+        // caab0:
+        //     jsr caf5c
+        caf5c();
+        //     ldx ptr1
+        x = (uint8_t)(ptr1 & 0xff);
+        //     ldy ptr1+1
+        y = (uint8_t)((ptr1 >> 8) & 0xff);
+    }
+    // caab7:
+    //     stx current_format_line_ptr
+    current_format_line_ptr = (current_format_line_ptr & 0xff00) | x;
+    //     sty current_format_line_ptr+1
+    current_format_line_ptr = (current_format_line_ptr & 0x00ff) | ((uint16_t)y << 8);
+    //     ldy #0
+    y = 0;
+    // loop_caabd:
+    while (1) {
+        //     lda (current_line_ptr),y
+        a = ram[current_line_ptr + y];
+        //     cmp #0x0d
+        //     beq caac8
+        if (a == 0x0d) break;
+        //     sta (current_format_line_ptr),y
+        ram[current_format_line_ptr + y] = a;
+        //     iny
+        y++;
+        //     bne loop_caabd
+        if (y == 0) break;
+    }
+    // caac8:
+    //     sty l003b
+    l003b = y;
+    // return_68:
+    //     rts
+}
 static void unpack_line_into_buffer(void) {
-    // Pseudocode: Unpacks current line into edit buffer for editing
-
     // unpack_line_into_buffer:
     //     lda l006e
     //     bne return_68
+    if (l006e != 0) return;
     //     lda #1
     //     sta l006e
-    // sub_caa97:
-    //     lda #0x10
-    //     jsr wipe_buffer
-    //     jsr sub_caf5f
-    //     ldy #0
-    //     lda (current_line_ptr),y
-    //     ldx current_edit_line_ptr
-    //     ldy current_edit_line_ptr+1
-    //     jsr check_for_command_prefix
-    //     bne caab7
-    //     bcs caab0
-    //     sta l006e
-    // caab0:
-    //     jsr caf5c
-    //     ldx ptr1
-    //     ldy ptr1+1
-    // caab7:
-    //     stx current_format_line_ptr
-    //     sty current_format_line_ptr+1
-    //     ldy #0
-    // loop_caabd:
-    //     lda (current_line_ptr),y
-    //     cmp #0x0d
-    //     beq caac8
-    //     sta (current_format_line_ptr),y
-    //     iny
-    //     bne loop_caabd
-    // caac8:
-    //     sty l003b
-    // return_68:
-    //     rts
-
-    // MULTIPLE ENTRY POINTS: unpack_line_into_buffer, sub_caa97
+    l006e = 1;
+    sub_caa97();
 }
 static void sub_caacb(void) {
     // Pseudocode: Updates marker positions to point into format buffer instead of document buffer
@@ -7930,16 +7994,21 @@ static void get_line_length(void) {
     //     rts
 }
 static void wipe_buffer(void) {
-    // Pseudocode: Fills ptr1 buffer with a given byte value for 0x89 bytes
-
     // wipe_buffer:
     //     ldy #0
+    y = 0;
     //     ldx #0x89
+    x = 0x89;
     // loop_cab13:
     //     sta (ptr1),y
     //     iny
     //     dex
     //     bne loop_cab13
+    do {
+        ram[ptr1 + y] = a;
+        y++;
+        x--;
+    } while (x != 0);
     //     rts
 }
 static void sub_cab1a(void) {
@@ -8732,43 +8801,46 @@ static void draw_previous_word(void) {
     //     dey
     //     rts
 }
-static void caf5c_sub_caf5f(void) {
-    // Pseudocode: Sets or clears the format_mode_flag bit 7 and updates redraw flag
-
+static void caf5c(void) {
     // caf5c:
-    //     sec
-    //     bcs caf60                                                         ; ALWAYS branch
-
+    uint8_t old = format_mode_flag;
+    format_mode_flag |= 0x80;
+    if (old != format_mode_flag) {
+        flags_need_redrawing_flag++;
+    }
+}
+static void sub_caf5f(void) {
     // sub_caf5f:
-    //     clc
-    // caf60:
-    //     php
-    //     lda format_mode_flag
-    //     rol format_mode_flag
-    //     plp
-    //     ror format_mode_flag
-    //     cmp format_mode_flag
-    //     beq return_80
-    //     inc flags_need_redrawing_flag
-    // return_80:
-    //     rts
-
-    // MULTIPLE ENTRY POINTS: caf5c, sub_caf5f
+    uint8_t old = format_mode_flag;
+    format_mode_flag &= ~0x80;
+    if (old != format_mode_flag) {
+        flags_need_redrawing_flag++;
+    }
 }
 static void deref_and_check_for_command_prefix(void) {
-    // Pseudocode: Dereferences pointer and checks for command prefix byte (0x80/0x81)
-
     // deref_and_check_for_command_prefix:
     //     lda (tmp0),y
+    a = ram[tmp0 + y];
+    check_for_command_prefix();
+}
+static void check_for_command_prefix(void) {
     // check_for_command_prefix:
     //     cmp #0x80
     //     beq return_81
+    if (a == 0x80) {
+        flags |= FLAG_Z | FLAG_C;
+        return;
+    }
     //     cmp #0x81
     //     clc
+    if (a == 0x81) {
+        flags |= FLAG_Z;
+        flags &= ~FLAG_C;
+        return;
+    }
+    flags &= ~(FLAG_Z | FLAG_C);
     // return_81:
     //     rts
-
-    // MULTIPLE ENTRY POINTS: deref_and_check_for_command_prefix, check_for_command_prefix
 }
 static void system_init(void) {
     // Pseudocode: Initializes system: gets TPA, finds screen driver, gets screen size
