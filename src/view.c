@@ -56,6 +56,14 @@ extern void bdos_set_dma_address(void);
 extern void bdos_parsefilename(void);
 extern void bdos_gettpa(void);
 
+// Printer driver struct (replaces 6502 jump table with 4 entries at offsets 0,3,6,9)
+struct printer_driver {
+    void (*print_char)(void);
+    void (*printer_on)(void);
+    void (*printer_off)(void);
+    void (*entry3)(void);
+};
+
 // Forward declarations
 static void sub_c8c5f(void);
 static void to_uppercase(void);
@@ -224,6 +232,11 @@ static void cli_loop(void);
 static void stop_printing(void);
 static void call_printer_driver(void);
 static void prepare_printer_driver(void);
+static void default_print_char(void);
+static void default_printer_on(void);
+static void default_printer_off(void);
+static void default_printer_entry3(void);
+static const struct printer_driver default_printer_driver;
 
 // ; SCREEN driver function codes
 extern void screen_putchar(void);
@@ -267,8 +280,8 @@ uint8_t l0012;
 uint16_t ptr6;
 //X ptr5: .fill 2
 uint16_t ptr5;
-//X printer_driver_ptr: .fill 2
-uint16_t printer_driver_ptr;
+//X printer_driver_ptr: .fill 2 (replaced by struct pointer)
+const struct printer_driver *printer_driver_ptr;
 //X first_macro_ptr: .fill 2
 uint16_t first_macro_ptr;
 //X last_macro_ptr: .fill 2
@@ -3883,7 +3896,7 @@ static void print_char_just_to_printer(void) {
     //     bpl c9472
     if (!(print_flags & 0x80)) goto c9472;
     //     jmp (printer_driver_ptr)
-    ((void (*)(void))printer_driver_ptr)();
+    printer_driver_ptr->print_char();
     return;
 
 c9472:
@@ -3925,6 +3938,9 @@ static void prepare_printer_driver(void) {
     //     ldy l94b2
     //     lda #0
     //     sta microspacing_flag
+    a = 0;
+    microspacing_flag = a;
+    printer_driver_ptr = &default_printer_driver;
     // c949e:
     //     stx printer_driver_ptr
     //     sty printer_driver_ptr+1
@@ -3932,60 +3948,66 @@ static void prepare_printer_driver(void) {
     //     rts
 }
 static void call_printer_driver(void) {
-    // Pseudocode: Calls a numbered entry point in the printer driver via jump table
+    // Pseudocode: Calls a numbered entry point in the printer driver via struct function pointer
 
     // ; ***************************************************************************************
     // call_printer_driver:
     //     clc
-    //     adc printer_driver_ptr
+    //     adc printer_driver_ptr          ; A = byte offset into jump table (0,3,6,9)
     //     sta tmp8
     //     lda printer_driver_ptr+1
     //     adc #0
     //     sta tmp9
     //     jmp (tmp8)
+    // Replaced with struct dispatch: convert byte offset to entry index
+    switch (a) {
+        case 0:  printer_driver_ptr->print_char(); break;
+        case 3:  printer_driver_ptr->printer_on(); break;
+        case 6:  printer_driver_ptr->printer_off(); break;
+        case 9:  printer_driver_ptr->entry3(); break;
+    }
 }
-static void default_printer_driver(void) {
-    // Pseudocode: Default printer driver stubs (all currently replaced with BRK)
-
-    // default_printer_driver_ptr:
-    // l94b2 = default_printer_driver_ptr+1
-    //     .word default_printer_driver
-
-    // ; ***************************************************************************************
-    // default_printer_driver:
-    //     jmp c94c0
-
-    //     jmp c94c7
-
-    //     jmp c94cb
-
-    //     jmp return_34
-
-    //     rts
-
+// Default print_char: write character (chars >= 0x80 are filtered)
+static void default_print_char(void) {
     // c94c0:
-    //     brk
-    // #if 0
     //     cmp #0x80
     //     bcs return_35
-    //     jmp bdos_print_char                                                        ; Write character
-    // #endif
-
-    // c94c7:
-    //     brk
-    // #if 0
-    //     lda #2
-    //     bne c94cd                                                         ; ALWAYS branch
-    // #endif
-
-    // c94cb:
-    //     brk
-    // #if 0
-    //     lda #3
-    // c94cd:
-    //     jmp oswrch                                                        ; Write character 3
-    // #endif
+    if (a >= 0x80) return;
+    //     jmp bdos_print_char
+    bdos_print_char();
 }
+
+// Default printer_on: init / set mode
+static void default_printer_on(void) {
+    // c94c7:
+    //     lda #2
+    a = 2;
+    //     jmp default_printer_off
+    default_printer_off();
+}
+
+// Default printer_off: write char with mode byte
+static void default_printer_off(void) {
+    // c94cb:
+    //     lda #3
+    a = 3;
+    // c94cd:
+    //     jmp oswrch
+    // PROBLEM: jmp oswrch (BBC Micro OS call - not available)
+}
+
+// Default printer driver entry 3: no-op
+static void default_printer_entry3(void) {
+    // return_34:
+    //     rts
+}
+
+static const struct printer_driver default_printer_driver = {
+    .print_char   = default_print_char,
+    .printer_on   = default_printer_on,
+    .printer_off  = default_printer_off,
+    .entry3       = default_printer_entry3,
+};
 static void lj_fmt_cmd(void) {
     // Pseudocode: Left-justifies the current format line
 
