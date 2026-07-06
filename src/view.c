@@ -40,6 +40,21 @@ uint8_t a, x, y, sp, flags;
 // FS_BUFFER = FS_BUFFERPTR + 1
 // FS__SIZE = FS_BUFFER + 128
 #define FS__SIZE 165
+#define FCB__SIZE  0x24
+#define FS_BUFFERPTR (0 + FCB__SIZE)
+#define FS_BUFFER (FS_BUFFERPTR + 1)
+#define BDOS_EXIT_PROGRAM 0
+#define BDOS_CONSOLE_OUTPUT 2
+#define BDOS_DIRECT_IO 6
+#define BDOS_OPEN_FILE 15
+#define BDOS_CLOSE_FILE 16
+#define BDOS_DELETE_FILE 19
+#define BDOS_READ_SEQUENTIAL 20
+#define BDOS_WRITE_SEQUENTIAL 21
+#define BDOS_CREATE_FILE 22
+#define BDOS_SET_DMA_ADDRESS 26
+#define BDOS_PARSEFILENAME 43
+#define BDOS_GETTPA 42
 
 // Forward declarations
 static void sub_c8c5f(void);
@@ -161,6 +176,26 @@ static void check_for_command_prefix(void);
 static void SCREEN(void);
 static void print_inline_string(void);
 static void sub_c93b6(void);
+static void sub_c8412(void);
+static void sub_c8c7c(void);
+static void c8b7b(void);
+static void sub_c83f0(void);
+static void sub_c8a4f(void);
+static void sanitise_area(void);
+static void parse_marks_from_command(void);
+static void sub_c89d3(void);
+static void sub_c8361(void);
+static void sub_c8371(void);
+static void flush_and_read_char(void);
+static void write_area_to_file(void);
+static void run_editor(void);
+static void enter_editor_mode(void);
+static void move_cursor_to_top_of_document(void);
+static void check_for_at_least_150_bytes_free(void);
+static void cb05a(void);
+static void reset_area_to_entire_document(void);
+static void read_first_chunk_from_input_file(void);
+static void put_byte_to_file(void);
 static void c93b8(void);
 static void bdos_print_newline(void);
 static void bdos_print_char(void);
@@ -179,10 +214,22 @@ static void select_file(void);
 static void check_for_control_code(void);
 static void set_inverted_text_if_not_mode_7(void);
 static void set_normal_text_if_not_mode_7(void);
+static void clear_screen(void);
+static void print_x_words_of_help(void);
+static void render_number_to_screen(void);
+static void display_document_file_state(void);
+static void screen_putchar(void);
+static void compute_bytes_free(void);
+static void bdos_print_newline(void);
+static void cli_loop(void);
+static void stop_printing(void);
+static void call_printer_driver(void);
+static void prepare_printer_driver(void);
 
 // ; SCREEN driver function codes
 #define SCREEN_GETCHAR 7
 #define SCREEN_SETCURSOR 3
+#define SCREEN_SETSTYLE 4
 
 //X ram:                              .fill 65536
 uint8_t ram[65536];
@@ -473,100 +520,159 @@ static void main_(void) {
     //     jsr initialise_document
 }
 static void run_cli(void) {
-    // Pseudocode: Clears screen, prints welcome with bytes free and document state, then drops into CLI
-
     // run_cli:
     //     jsr clear_screen
+    clear_screen();
     //     ldx #1
+    x = 1;
     //     jsr print_x_words_of_help
+    print_x_words_of_help();
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "\r\rBytes free "
     //     .byte 0
 
     //     jsr compute_bytes_free
+    compute_bytes_free();
     //     jsr render_number_to_screen
+    render_number_to_screen();
     //     jsr bdos_print_newline
+    bdos_print_newline();
     //     jsr display_document_file_state
+    display_document_file_state();
     //     bit file_edit_flags
+    { uint8_t tmp_ = a & file_edit_flags; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (file_edit_flags & (FLAG_N|FLAG_V)); }
     //     bvs c816d
+    if (flags & FLAG_V) goto c816d;
     //     lda file_edit_flags
     //     ror
+    // PROBLEM: lda file_edit_flags; ror A (checking bit 0)
     //     bcc c816d
+    if (!(file_edit_flags & 1)) goto c816d;
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "Input file is "
     //     .byte 0
 
     //     lda input_file_empty_flag
+    a = input_file_empty_flag;
     //     bne c8163
+    if (a != 0) goto c8163;
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "not "
     //     .byte 0
 
     // c8163:
+c8163:
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "empty\r"
     //     .byte 0
 
     // c816d:
+c816d:
     //     lda printer_driver_name
+    a = printer_driver_name[0];
     //     beq c81b6
+    if (flags & FLAG_Z) goto c81b6;
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "Printer "
     //     .byte 0
 
     //     ldx #0
+    x = 0;
     // loop_c819a:
     //     lda printer_driver_name,x
     //     cmp #0x0d
     //     beq c81a7
-    //     jsr bdos_print_char                                                        ; Write character
+    //     jsr bdos_print_char
     //     inx
     //     bne loop_c819a
+    do {
+        a = printer_driver_name[x];
+        if (a == 0x0d) break;
+        bdos_print_char();
+        x++;
+    } while (x != 0);
     // c81a7:
     //     lda microspacing_flag
+    a = microspacing_flag;
     //     beq c81b3
+    if (flags & FLAG_Z) goto c81b3;
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii " (m)"
     //     .byte 0
 
     // c81b3:
+c81b3:
     //     jsr bdos_print_newline
+    bdos_print_newline();
     // c81b6:
+c81b6:
     //     ldx #0
+    x = 0;
     //     ldy #0
+    y = 0;
     // c81ba:
+c81ba:
     //     lda markers_array+1,x
+    a = ((uint8_t*)markers_array)[x + 1];
     //     beq c81e7
+    if (flags & FLAG_Z) goto c81e7;
     //     tya
     //     bne c81db
+    if (y != 0) goto c81db;
     //     stx l0083
+    l0083 = x;
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "Marker(s) set "
     //     .byte 0
 
     //     ldx l0083
+    x = l0083;
     //     ldy #1
+    y = 1;
     //     bne c81e0                                                         ; ALWAYS branch
+    goto c81e0;
 
     // c81db:
+c81db:
     //     lda #0x2c ; ','
+    a = 0x2c;
     //     jsr screen_putchar
+    screen_putchar();
     // c81e0:
+c81e0:
     //     txa
+    a = x;
     //     lsr
+    a >>= 1;
     //     adc #0x31 ; '1'
+    a += 0x31;
     //     jsr screen_putchar
+    screen_putchar();
     // c81e7:
+c81e7:
     //     inx
+    x++;
     //     inx
+    x++;
     //     cpx #0x0c
     //     bne c81ba
+    if (x != 0x0c) goto c81ba;
     //     tya
     //     beq c81f3
+    if (y == 0) goto c81f3;
     //     jsr bdos_print_newline
+    bdos_print_newline();
     // c81f3:
+c81f3:
     //     jsr bdos_print_newline
-    // ; ***************************************************************************************
+    bdos_print_newline();
 }
 static void cli_loop(void) {
     // Pseudocode: Main CLI loop: prints => prompt, reads command, dispatches via jump table
@@ -626,24 +732,55 @@ static void bye_cmd(void) {
     // ; ***************************************************************************************
     // zproc bye_cmd
     //     ldy #BDOS_EXIT_PROGRAM
+    y = BDOS_EXIT_PROGRAM;
     //     jmp BDOS
+    // PROBLEM: jmp BDOS
     // zendproc
 }
+static void cmd_err_no_target(void) {
+    // c82e7 - shared error handler for CLI commands
+    // c82e7:
+    //     jsr print_inline_string
+    print_inline_string();
+    //     .ascii "No target given"
+    //     .byte 0xff
+    //     rts
+}
+static void cmd_err_no_string(void) {
+    // c82fa - shared error handler for CLI commands
+    // c82fa:
+    //     jsr print_inline_string
+    print_inline_string();
+    //     .ascii "No string found"
+    //     .byte 0xff
+    //     rts
+}
 static void search_cmd(void) {
-    // Pseudocode: Parses search string and marks area, searches for first match, enters editor
+    // Pseudocode: Searches for target string, reports position if found
 
     // ; ***************************************************************************************
     // search_cmd:
     //     jsr sub_c8412
+    sub_c8412();
     //     beq c82e7
+    if (flags & FLAG_Z) { cmd_err_no_target(); return; }
     //     jsr parse_marks_from_command
+    parse_marks_from_command();
     //     jsr sanitise_area
+    sanitise_area();
     //     beq c82fa
+    if (flags & FLAG_Z) { cmd_err_no_string(); return; }
     //     jsr sub_c8c7c
+    sub_c8c7c();
     //     jsr c8b7b
+    c8b7b();
     //     bne c82fa
+    if (!(flags & FLAG_Z)) { cmd_err_no_string(); return; }
     //     jsr move_cursor_to_address
+    move_cursor_to_address();
     //     jmp run_editor
+    run_editor();
+    return;
 
     // ; ***************************************************************************************
 }
@@ -652,44 +789,58 @@ static void change_cmd(void) {
 
     // change_cmd:
     //     jsr sub_c83f0
+    sub_c83f0();
     //     bcs c82fa
+    if (flags & FLAG_C) { cmd_err_no_string(); return; }
     //     beq c82e7
+    if (flags & FLAG_Z) { cmd_err_no_target(); return; }
     //     jsr c8b7b
+    c8b7b();
     //     bne c82fa
+    if (!(flags & FLAG_Z)) { cmd_err_no_string(); return; }
     //     ldx #0
+    x = 0;
     //     stx ptr3
+    ptr3 = (ptr3 & 0xff00) | x;
     //     stx ptr3+1
+    ptr3 = (ptr3 & 0x00ff) | ((uint16_t)x << 8);
     // loop_c82b3:
+loop_c82b3:
     //     inc ptr3
     //     bne c82b9
     //     inc ptr3+1
     // c82b9:
+    ptr3++;
     //     jsr move_cursor_to_address
+    move_cursor_to_address();
     //     lda #0
+    a = 0;
     //     sta print_xpos
+    print_xpos = a;
     //     jsr sub_c8a4f
+    sub_c8a4f();
     //     bcs c830d
+    if (flags & FLAG_C) goto c830d;
     //     jsr c8b7b
+    c8b7b();
     //     beq loop_c82b3
+    if (flags & FLAG_Z) goto loop_c82b3;
     //     ldx ptr3
+    x = (uint8_t)(ptr3 & 0xff);
     //     ldy ptr3+1
+    y = (uint8_t)((ptr3 >> 8) & 0xff);
     //     jsr render_number_to_screen
+    render_number_to_screen();
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii " string(s) changed"
     //     .byte 0xff
-
-    // c82e7:
-    //     jsr print_inline_string
-    //     .ascii "No target given"
-    //     .byte 0xff
-
-    // c82fa:
-    //     jsr print_inline_string
-    //     .ascii "No string found"
-    //     .byte 0xff
+    return;
 
     // c830d:
+c830d:
     //     jmp display_not_enough_memory
+    display_not_enough_memory();
 }
 static void sub_c8310(void) {
     // Pseudocode: Helper that reads next input buffer char and compares against delimiter l007e
@@ -710,36 +861,68 @@ static void replace_cmd(void) {
     // ; ***************************************************************************************
     // replace_cmd:
     //     jsr sub_c83f0
+    sub_c83f0();
     //     beq c82e7
+    if (flags & FLAG_Z) { cmd_err_no_target(); return; }
     //     jsr c8b7b
+    c8b7b();
     //     bne c82fa
+    if (!(flags & FLAG_Z)) { cmd_err_no_string(); return; }
     //     jsr move_cursor_to_address
+    move_cursor_to_address();
     //     jsr enter_editor_mode
+    enter_editor_mode();
     // c832d:
+c832d:
     //     jsr sub_c8361
+    sub_c8361();
     //     ldx #0x52 ; 'R'
+    x = 0x52;
     //     ldy #0x50 ; 'P'
+    y = 0x50;
     //     jsr draw_prompt_characters
+    draw_prompt_characters();
     //     jsr flush_and_read_char
+    flush_and_read_char();
     //     bcs return_2
+    if (flags & FLAG_C) return;
     //     and #0xdf
+    a &= 0xdf;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     ldx #0
+    x = 0;
     //     cmp #0x59 ; 'Y'
+    { uint8_t tmp_ = a - 0x59; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x59 ? FLAG_C : 0); }
     //     beq c8349
+    if (flags & FLAG_Z) goto c8349;
     //     dex                                                               ; X=0xff
+    x--;
     //     cmp #0x4f ; 'O'
+    { uint8_t tmp_ = a - 0x4f; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x4f ? FLAG_C : 0); }
     //     bne c8356
+    if (!(flags & FLAG_Z)) goto c8356;
     // c8349:
+c8349:
     //     stx print_xpos
+    print_xpos = x;
     //     jsr sub_c8371
+    sub_c8371();
     //     jsr sub_c8a4f
+    sub_c8a4f();
     //     bcs c836b
+    if (flags & FLAG_C) { sub_ca94a(); esc_key(); return; }
     //     jsr sub_c8361
+    sub_c8361();
     // c8356:
+c8356:
     //     jsr c8b7b
+    c8b7b();
     //     bne return_2
+    if (!(flags & FLAG_Z)) return;
     //     jsr move_cursor_to_address
+    move_cursor_to_address();
     //     jmp c832d
+    goto c832d;
 }
 static void sub_c8361(void) {
     // Pseudocode: Saves edit state by clearing l006e, updating screen, and saving edit buffer
@@ -1011,38 +1194,69 @@ static void more_cmd(void) {
     // ; ***************************************************************************************
     // more_cmd:
     //     jsr check_continuous_editing
+    check_continuous_editing();
     //     jsr parse_marks_from_command
+    parse_marks_from_command();
     //     lda area_start_ptr
+    a = (uint8_t)(area_start_ptr & 0xff);
     //     ldy area_start_ptr+1
+    y = (uint8_t)((area_start_ptr >> 8) & 0xff);
     //     jsr move_cursor_to_address
+    move_cursor_to_address();
 
     //     ldx #<output_file
+    x = (uint8_t)((uintptr_t)output_file & 0xff);
     //     ldy #>output_file
+    y = (uint8_t)(((uintptr_t)output_file >> 8) & 0xff);
     //     jsr select_file
+    select_file();
     //     jsr write_area_to_file
+    write_area_to_file();
     //     bne c84ab
+    if (!(flags & FLAG_Z)) { cli_loop(); return; }
 
     //     ldy #0
+    y = 0;
     //     ldx l003a
+    x = l003a;
     // loop_c84c4:
+loop_c84c4:
     //     lda (current_ruler_ptr),y
+    a = ram[current_ruler_ptr + y];
     //     sta current_ruler_buffer,y
+    current_ruler_buffer[y] = a;
     //     iny
+    y++;
     //     dex
+    x--;
     //     bne loop_c84c4
+    if (x != 0) goto loop_c84c4;
     //     lda #0x0d
+    a = 0x0d;
     //     sta current_ruler_buffer,y
+    current_ruler_buffer[y] = a;
     //     jsr sub_c89d3
+    sub_c89d3();
     //     jsr move_cursor_to_top_of_document
+    move_cursor_to_top_of_document();
     //     jsr check_for_at_least_150_bytes_free
+    check_for_at_least_150_bytes_free();
     //     lda input_file_empty_flag
+    a = input_file_empty_flag;
     //     bne c84e8
+    if (a != 0) goto c84e8;
     //     lda top
+    a = (uint8_t)(top & 0xff);
     //     ldy top+1
+    y = (uint8_t)((top >> 8) & 0xff);
     //     jsr read_next_chunk_from_input_file
+    read_next_chunk_from_input_file();
     //     beq c84ab
+    if (flags & FLAG_Z) { cli_loop(); return; }
     // c84e8:
+c84e8:
     //     jmp cb05a
+    cb05a();
 }
 static void finish_cmd(void) {
     // Pseudocode: Writes remaining document content to output file in chunks
@@ -1050,26 +1264,45 @@ static void finish_cmd(void) {
     // ; ***************************************************************************************
     // finish_cmd:
     //     jsr check_continuous_editing
+    check_continuous_editing();
     // loop_c84ee:
+loop_c84ee:
     //     jsr reset_area_to_entire_document
+    reset_area_to_entire_document();
     //     jsr sanitise_area
+    sanitise_area();
 
     //     ldx #<output_file
+    x = (uint8_t)((uintptr_t)output_file & 0xff);
     //     ldy #>output_file
+    y = (uint8_t)(((uintptr_t)output_file >> 8) & 0xff);
     //     jsr select_file
+    select_file();
 
     //     jsr write_area_to_file
+    write_area_to_file();
     //     bne c84ab
+    if (!(flags & FLAG_Z)) { cli_loop(); return; }
     //     lda #0
+    a = 0;
     //     jsr put_byte_to_file                ; write terminator
+    put_byte_to_file();
     //     jsr sub_c89d3
+    sub_c89d3();
     //     jsr move_cursor_to_top_of_document
+    move_cursor_to_top_of_document();
     //     jsr cb05a
+    cb05a();
     //     lda input_file_empty_flag
+    a = input_file_empty_flag;
     //     bne close_input_output_files
+    if (a != 0) { close_input_output_files(); return; }
     //     jsr read_first_chunk_from_input_file
+    read_first_chunk_from_input_file();
     //     beq c84ab
+    if (flags & FLAG_Z) { cli_loop(); return; }
     //     bne loop_c84ee                                                    ; ALWAYS branch
+    goto loop_c84ee;
 }
 static void quit_cmd(void) {
     // Pseudocode: Checks continuous editing then falls through to close files
@@ -7082,7 +7315,7 @@ static void sub_ca5ae(void) {
     //     tax
     x = a;
     //     lda highlight1_code,x
-    a = highlight1_code[x];
+    a = highlight_code[x];
 ca5cf:
     //     ldy l0084
     y = l0084;
@@ -10058,6 +10291,10 @@ static void bdos_and_file_error(void) {
 static void set_dma_to_buffer_address_of_file(void) {
     // Pseudocode: Sets BDOS DMA address to file buffer
 
+    // ; NB: 'adc #FS_BUFFER' and 'adc #0' cannot be trivially translated
+    // ; because the carry state from the preceding 'clc' is 0, but the
+    // ; arithmetic chaining -- pha..pla -- involves the carry after the
+    // ; first adc.  For now we leave these as comments.
     // zproc set_dma_to_buffer_address_of_file
     //     clc
     //     lda file_ptr+0
@@ -10077,20 +10314,33 @@ static void flush_file(void) {
     // ; FS pointer in file_ptr+0/file_ptr+1.
     // zproc flush_file
     //     jsr set_dma_to_buffer_address_of_file
+    set_dma_to_buffer_address_of_file();
 
     //     ldy #BDOS_WRITE_SEQUENTIAL
+    y = BDOS_WRITE_SEQUENTIAL;
     //     lda file_ptr+0
+    a = file_ptr;
     //     ldx file_ptr+1
+    x = file_ptr >> 8;
     //     jsr bdos_and_file_error
+    bdos_and_file_error();
 
     //     ldy #FS_BUFFER
+    y = FS_BUFFER;
     //     lda #0
+    a = 0;
     //     zrepeat
+    do {
     //         sta (file_ptr+0), y
+        ram[file_ptr + y] = a;
     //         iny
+        y++;
     //         cpy #FS_BUFFER+128
+        { uint16_t tmp_ = y - (FS_BUFFER + 128); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= (FS_BUFFER + 128) ? FLAG_C : 0); }
     //     zuntil eq
+    } while (!(flags & FLAG_Z));
     //     rts
+    return;
     // zendproc
 }
 static void close_file(void) {
@@ -10098,16 +10348,26 @@ static void close_file(void) {
 
     // zproc close_file
     //     ldy #FS_BUFFERPTR
+    y = FS_BUFFERPTR;
     //     lda (file_ptr+0), y
+    a = ram[file_ptr + y];
     //     cmp #FS_BUFFER
+    { uint16_t tmp_ = a - FS_BUFFER; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= FS_BUFFER ? FLAG_C : 0); }
     //     zif ne
+    if (!(flags & FLAG_Z)) {
     //         jsr flush_file
+        flush_file();
     //     zendif
+    }
 
     //     ldy #BDOS_CLOSE_FILE
+    y = BDOS_CLOSE_FILE;
     //     lda file_ptr+0
+    a = file_ptr;
     //     ldx file_ptr+1
+    x = file_ptr >> 8;
     //     jmp bdos_and_file_error
+    bdos_and_file_error(); return;
     // zendproc
 }
 static void put_byte_to_file(void) {
@@ -10115,22 +10375,38 @@ static void put_byte_to_file(void) {
 
     // zproc put_byte_to_file
     //     pha
+    { uint8_t saved_a = a;
     //     ldy #FS_BUFFERPTR
+    y = FS_BUFFERPTR;
     //     lda (file_ptr+0), y
+    a = ram[file_ptr + y];
     //     tay
+    y = a;
     //     pla
+    a = saved_a; }
     //     sta (file_ptr+0), y
+    ram[file_ptr + y] = a;
 
     //     iny
+    y++;
     //     cpy #FS_BUFFER + 128
+    { uint16_t tmp_ = y - (FS_BUFFER + 128); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= (FS_BUFFER + 128) ? FLAG_C : 0); }
     //     zif eq
+    if (flags & FLAG_Z) {
     //         jsr flush_file
+        flush_file();
     //         ldy #FS_BUFFER
+        y = FS_BUFFER;
     //     zendif
+    }
     //     tya
+    a = y;
     //     ldy #FS_BUFFERPTR
+    y = FS_BUFFERPTR;
     //     sta (file_ptr+0), y
+    ram[file_ptr + y] = a;
     //     rts
+    return;
     // zendproc
 }
 static void get_byte_from_file(void) {
@@ -10139,37 +10415,62 @@ static void get_byte_from_file(void) {
     // ; If the value is 0, returns with C set to signal end of file.
     // zproc get_byte_from_file
     //     ldy #FS_BUFFERPTR
+    y = FS_BUFFERPTR;
     //     lda (file_ptr+0), y
+    a = ram[file_ptr + y];
     //     cmp #FS_BUFFER+128
+    { uint16_t tmp_ = a - (FS_BUFFER + 128); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= (FS_BUFFER + 128) ? FLAG_C : 0); }
     //     zif eq
+    if (flags & FLAG_Z) {
     //         jsr set_dma_to_buffer_address_of_file
+        set_dma_to_buffer_address_of_file();
     //         ldy #BDOS_READ_SEQUENTIAL
+        y = BDOS_READ_SEQUENTIAL;
     //         lda file_ptr+0
+        a = file_ptr;
     //         ldx file_ptr+1
+        x = file_ptr >> 8;
     //         jsr bdos_and_file_error
+        bdos_and_file_error();
 
     //         lda #FS_BUFFER
+        a = FS_BUFFER;
     //     zendif
-
+    }
     //     tay
+    y = a;
     //     lda (file_ptr+0), y
+    a = ram[file_ptr + y];
     //     pha
+    { uint8_t saved_a = a;
     //     iny
+    y++;
     //     tya
+    a = y;
     //     ldy #FS_BUFFERPTR
+    y = FS_BUFFERPTR;
     //     sta (file_ptr+0), y
+    ram[file_ptr + y] = a;
     //     pla
+    a = saved_a; }
     //     clc
+    flags &= ~FLAG_C;
     //     tay                     ; set flags
+    y = a;
+    flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     zif eq
+    if (flags & FLAG_Z) {
     //         sec
+        flags |= FLAG_C;
+    }
     //     zendif
     //     rts
+    return;
     // zendproc
 }
 
 int main(int argc, char* argv[]) {
-    // Placeholder
+    main_();
     return 0;
 }
 
