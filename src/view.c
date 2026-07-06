@@ -159,9 +159,30 @@ static void sub_caf5f(void);
 static void deref_and_check_for_command_prefix(void);
 static void check_for_command_prefix(void);
 static void SCREEN(void);
+static void print_inline_string(void);
+static void sub_c93b6(void);
+static void c93b8(void);
+static void bdos_print_newline(void);
+static void bdos_print_char(void);
+static void sub_ca071(void);
+static void sub_ca5ae(void);
+static void read_next_chunk_from_input_file(void);
+static void sub_c8da2(void);
+static void print_newline(void);
+static void print_char(void);
+static void print_char_just_to_printer(void);
+static void set_cursor_position(void);
+static void sub_caed6(void);
+static void sub_caedd(void);
+static void compute_space_common(void);
+static void select_file(void);
+static void check_for_control_code(void);
+static void set_inverted_text_if_not_mode_7(void);
+static void set_normal_text_if_not_mode_7(void);
 
 // ; SCREEN driver function codes
 #define SCREEN_GETCHAR 7
+#define SCREEN_SETCURSOR 3
 
 //X ram:                              .fill 65536
 uint8_t ram[65536];
@@ -349,10 +370,10 @@ uint8_t macro_executing_flag;
 uint8_t two_sided_flag;
 //X left_margin: .fill 1
 uint8_t left_margin;
-//X highlight1_code: .fill 1
-uint8_t highlight1_code;
-//X highlight2_code: .fill 1
-uint8_t highlight2_code;
+//X highlight1_code: .fill 2
+uint8_t highlight_code[2];
+#define highlight1_code highlight_code[0]
+#define highlight2_code highlight_code[1]
 //X format_mode_flag: .fill 1
 uint8_t format_mode_flag;
 //X justifying_flag: .fill 1
@@ -2111,21 +2132,25 @@ static void c8b7b(void) {
     //     ldx #0
     //     rts
 }
-static void sub_c8c51_sub_c8c53(void) {
-    // Pseudocode: Writes a byte (or zero) to output_buffer at current position
-
-    // sub_c8c51:
-    //     lda #0
+static void sub_c8c53(void) {
     // sub_c8c53:
     //     ldx l0048
+    x = l0048;
     //     cpx #0x84
     //     bcs return_13
+    if (x >= 0x84) return;
     //     sta output_buffer,x
+    output_buffer[x] = a;
     //     inc l0048
+    l0048++;
     // return_13:
     //     rts
-
-    // MULTIPLE ENTRY POINTS: sub_c8c51, sub_c8c53
+}
+static void sub_c8c51(void) {
+    // sub_c8c51:
+    //     lda #0
+    a = 0;
+    sub_c8c53();
 }
 static void sub_c8c5f(void) {
     // sub_c8c5f: converts to uppercase only if folding flag is clear
@@ -2247,59 +2272,81 @@ static void read_block_from_file(void) {
     //     lda l0082
     //     rts
 }
-static void write_cr_to_memory_write_byte_to_memory(void) {
-    // Pseudocode: Writes a byte to memory at tmp0, increments pointer, tracks CR state
-
-    // write_cr_to_memory:
-    //     lda #0x0d
+static void write_byte_to_memory(void) {
     // write_byte_to_memory:
     //     ldy #0
+    y = 0;
     //     sta (tmp0),y
+    ram[tmp0] = a;
     //     inc tmp0
+    tmp0++;
     //     bne c8d0a
     //     inc tmp1
+    if (tmp0 == 0) tmp1++;
     // c8d0a:
     //     sta l0084
+    l0084 = a;
     //     cmp #0x0d
     //     bne return_16
+    if (a != 0x0d) return;
     //     sty l0084
+    l0084 = y;
     //     sty l0083
+    l0083 = y;
     // return_16:
     //     rts
-
-    // MULTIPLE ENTRY POINTS: write_cr_to_memory, write_byte_to_memory
 }
-static void read_first_chunk_from_input_file(void) {
-    // Pseudocode: Reads first chunk of data from input file into memory top
-
-    // ; ***************************************************************************************
-    // read_first_chunk_from_input_file:
-    //     lda page
-    //     ldy page+1
+static void write_cr_to_memory(void) {
+    // write_cr_to_memory:
+    //     lda #0x0d
+    a = 0x0d;
+    write_byte_to_memory();
+}
+static void read_next_chunk_from_input_file(void) {
     // read_next_chunk_from_input_file:
     //     jsr sub_c8da2
-
+    sub_c8da2();
     //     ldx #<input_file
+    x = (uint8_t)((uintptr_t)&input_file & 0xff);
     //     ldy #>input_file
+    y = (uint8_t)(((uintptr_t)&input_file >> 8) & 0xff);
     //     jsr select_file
+    select_file();
     //     jsr read_block_from_file
-
+    read_block_from_file();
     //     php
     //     beq c8d39
     //     bcc c8d39
-    //     inc input_file_empty_flag
+    if (!(flags & FLAG_Z) && (flags & FLAG_C)) {
+        //     inc input_file_empty_flag
+        input_file_empty_flag++;
+    }
     // c8d39:
     //     lda #0
+    a = 0;
     //     tay                                                               ; Y=0x00
+    y = 0;
     //     sta (tmp0),y
+    ram[tmp0 + y] = a;
     //     lda tmp0
+    a = tmp0;
     //     sta top
+    top = (top & 0xff00) | a;
     //     lda tmp1
+    a = tmp1;
     //     sta top+1
+    top = (top & 0x00ff) | ((uint16_t)a << 8);
     //     plp
     //     rts
-
-    // MULTIPLE ENTRY POINTS: read_first_chunk_from_input_file, read_next_chunk_from_input_file
+}
+static void read_first_chunk_from_input_file(void) {
+    // read_first_chunk_from_input_file:
+    //     lda page
+    a = (uint8_t)(page & 0xff);
+    //     ldy page+1
+    y = (uint8_t)((page >> 8) & 0xff);
+    //     jmp read_next_chunk_from_input_file
+    read_next_chunk_from_input_file();
 }
 static void write_area_to_file(void) {
     // Pseudocode: Writes document area range to output file byte by byte
@@ -2333,66 +2380,113 @@ static void write_area_to_file(void) {
     // return_17:
     //     rts
 }
-static void compute_required_space_for_insertion(void) {
-    // Pseudocode: Computes available memory space for insertion, capping at 4 pages
-
-    // compute_required_space_for_insertion:
-    //     ldx #0
-    //     stx tmp8
-    //     stx tmp9
-    //     beq c8daf                                                         ; ALWAYS branch
-
+static void compute_space_common(void) {
+    // c8daf:
+    //     sta tmp0
+    tmp0 = a;
+    //     sty tmp1
+    tmp1 = y;
+    //     jsr compute_bytes_free
+    compute_bytes_free();
+    //     stx tmp6
+    tmp6 = x;
+    //     sty tmp7
+    tmp7 = y;
+    //     lsr tmp9; ror tmp8; lsr tmp9; ror tmp8
+    {
+        uint16_t t = ((uint16_t)tmp9 << 8) | tmp8;
+        t >>= 2;
+        tmp9 = (uint8_t)(t >> 8);
+        tmp8 = (uint8_t)(t & 0xff);
+    }
+    //     lda tmp9; cmp #4
+    if (tmp9 >= 4) {
+        //     lda #4; sta tmp9; sta tmp8
+        tmp9 = 4; tmp8 = 4;
+        flags |= FLAG_C;
+    } else {
+        flags &= ~FLAG_C;
+    }
+    // c8dce:
+    //     lda tmp6; sbc tmp8; sta tmp6
+    {
+        uint16_t r = (uint16_t)tmp6 - (uint16_t)tmp8 - (1 - (flags & FLAG_C));
+        tmp6 = (uint8_t)(r & 0xff);
+        if (r < 0x100) flags |= FLAG_C; else flags &= ~FLAG_C;
+    }
+    //     lda tmp7; sbc tmp9; sta tmp7
+    {
+        uint16_t r = (uint16_t)tmp7 - (uint16_t)tmp9 - (1 - (flags & FLAG_C));
+        tmp7 = (uint8_t)(r & 0xff);
+        if (r < 0x100) flags |= FLAG_C; else flags &= ~FLAG_C;
+    }
+    //     lda tmp0; clc; adc tmp6
+    flags &= ~FLAG_C;
+    {
+        uint16_t sum = (uint16_t)tmp0 + (uint16_t)tmp6;
+        a = (uint8_t)(sum & 0xff);
+        if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C;
+    }
+    //     sta ptr5
+    ptr5 = (ptr5 & 0xff00) | a;
+    //     pha
+    //     lda tmp1; adc tmp7
+    {
+        uint16_t sum = (uint16_t)tmp1 + (uint16_t)tmp7 + (flags & FLAG_C ? 1U : 0U);
+        a = (uint8_t)(sum & 0xff);
+        if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C;
+    }
+    //     sta ptr5+1
+    ptr5 = (ptr5 & 0x00ff) | ((uint16_t)a << 8);
+    //     sta l0081
+    l0081 = a;
+    //     pla
+    a = (uint8_t)(ptr5 & 0xff);
+    //     sbc #0x8b
+    {
+        uint16_t r = (uint16_t)a - 0x8bU - (1 - (flags & FLAG_C));
+        a = (uint8_t)(r & 0xff);
+        if (r < 0x100) flags |= FLAG_C; else flags &= ~FLAG_C;
+    }
+    //     sta input_buffer_ptr+1
+    input_buffer_ptr = (input_buffer_ptr & 0x00ff) | ((uint16_t)a << 8);
+    //     bcs return_18
+    if (!(flags & FLAG_C)) {
+        //     dec l0081
+        l0081--;
+    }
+    // return_18:
+    //     rts
+}
+static void sub_c8da2(void) {
     // sub_c8da2:
     //     pha
     //     tya
     //     pha
+    { uint8_t saved_a = a; uint8_t saved_y = y;
     //     jsr compute_bytes_free
+    compute_bytes_free();
     //     stx tmp8
+    tmp8 = x;
     //     sty tmp9
+    tmp9 = y;
     //     pla
     //     tay
+    y = saved_y;
     //     pla
-    // c8daf:
-    //     sta tmp0
-    //     sty tmp1
-    //     jsr compute_bytes_free
-    //     stx tmp6
-    //     sty tmp7
-    //     lsr tmp9
-    //     ror tmp8
-    //     lsr tmp9
-    //     ror tmp8
-    //     lda tmp9
-    //     cmp #4
-    //     bcc c8dce
-    //     lda #4
-    //     sta tmp9
-    //     sta tmp8
-    // c8dce:
-    //     lda tmp6
-    //     sbc tmp8
-    //     sta tmp6
-    //     lda tmp7
-    //     sbc tmp9
-    //     sta tmp7
-    //     lda tmp0
-    //     clc
-    //     adc tmp6
-    //     sta ptr5
-    //     pha
-    //     lda tmp1
-    //     adc tmp7
-    //     sta ptr5+1
-    //     sta l0081
-    //     pla
-    //     sbc #0x8b
-    //     sta input_buffer_ptr+1
-    //     bcs return_18
-    //     dec l0081
-    // return_18:
-    //     rts
-
-    // MULTIPLE ENTRY POINTS: compute_required_space_for_insertion, sub_c8da2
+    a = saved_a; }
+    compute_space_common();
+}
+static void compute_required_space_for_insertion(void) {
+    // compute_required_space_for_insertion:
+    //     ldx #0
+    x = 0;
+    //     stx tmp8
+    tmp8 = 0;
+    //     stx tmp9
+    tmp9 = 0;
+    //     beq c8daf                                                         ; ALWAYS branch
+    compute_space_common();
 }
 static void parse_optional_filename_from_command(void) {
     // Pseudocode: Parses optional filename from input buffer into filename_buffer
@@ -2438,28 +2532,42 @@ static void parse_filename_from_command(void) {
     // return_20:
     //     rts
 }
-static void sub_c8e2d_sub_c8e33(void) {
-    // Pseudocode: Skips delimiter/space characters in input buffer
-
-    // sub_c8e2d:
-    //     lda #0x20 ; ' '
-    //     sta l007e
-    //     sty input_buffer_ptr
+static void sub_c8e33(void) {
     // sub_c8e33:
     //     lda l007e
+    a = l007e;
     //     cmp #0x0d
     //     beq return_20
+    if (a == 0x0d) return;
     //     ldy input_buffer_ptr
+    y = (uint8_t)(input_buffer_ptr & 0xff);
     // loop_c8e3b:
-    //     lda input_buffer,y
-    //     cmp #0x0d
-    //     beq return_20
-    //     cmp l007e
-    //     bne return_20
-    //     iny
-    //     bne loop_c8e3b
-
-    // MULTIPLE ENTRY POINTS: sub_c8e2d, sub_c8e33
+    while (1) {
+        //     lda input_buffer,y
+        a = input_buffer[y];
+        //     cmp #0x0d
+        //     beq return_20
+        if (a == 0x0d) return;
+        //     cmp l007e
+        //     bne return_20
+        if (a != l007e) return;
+        //     iny
+        y++;
+        //     bne loop_c8e3b
+        if (y == 0) break;
+    }
+    // return_20:
+    //     rts
+}
+static void sub_c8e2d(void) {
+    // sub_c8e2d:
+    //     lda #0x20 ; ' '
+    a = 0x20;
+    //     sta l007e
+    l007e = a;
+    //     sty input_buffer_ptr
+    input_buffer_ptr = (input_buffer_ptr & 0xff00) | y;
+    sub_c8e33();
 }
 static void check_not_continuous_editing(void) {
     // Pseudocode: Verifies not in continuous editing mode, shows file state if editing
@@ -2497,19 +2605,19 @@ c8e5d:
     //     jsr display_document_file_state
     display_document_file_state();
 }
-static void display_nl_then_no_text(void) {
-    // Pseudocode: Displays newline then No text message
-
-    // display_nl_then_no_text:
-    //     jsr bdos_print_newline
+static void display_no_text(void) {
     // display_no_text:
     //     jsr print_inline_string
     //     .ascii "No text\r"
     //     .byte 0
-
+    print_inline_string();
     //     rts
-
-    // MULTIPLE ENTRY POINTS: display_nl_then_no_text, display_no_text
+}
+static void display_nl_then_no_text(void) {
+    // display_nl_then_no_text:
+    //     jsr bdos_print_newline
+    bdos_print_newline();
+    display_no_text();
 }
 static void print_document(void) {
     // Pseudocode: Main print/preview loop: formats document with headers, footers, macros, page breaks
@@ -3276,45 +3384,81 @@ static void render_header_or_footer(void) {
     // return_28:
     //     rts
 }
-static void sub_c9393_sub_c939b_sub_c93a1(void) {
-    // Pseudocode: Advances through header/footer text finding string delimiters
-
+static void sub_c9393(void) {
     // sub_c9393:
     //     jsr sub_c93b6
+    sub_c93b6();
     //     lda #0
+    a = 0;
     //     jmp c93aa
-
+    {
+        // c93aa:
+        //     clc
+        //     adc tmp4
+        uint16_t sum = (uint16_t)a + tmp4;
+        tmp2 = (uint8_t)sum;
+        //     lda tmp5
+        a = tmp5;
+        //     adc #0
+        a += (uint8_t)(sum >> 8);
+        tmp3 = a;
+    }
+}
+static void sub_c939b(void) {
     // sub_c939b:
     //     jsr sub_c93b6
+    sub_c93b6();
     //     jmp c93a7
-
-    // sub_c93a1:
-    //     jsr sub_c93b6
-    //     jsr c93b8
     // c93a7:
     //     iny
+    y++;
     //     tya
+    a = y;
     //     dey
+    y--;
+    {
+        // c93aa:
+        uint16_t sum = (uint16_t)a + tmp4;
+        tmp2 = (uint8_t)sum;
+        a = tmp5;
+        a += (uint8_t)(sum >> 8);
+        tmp3 = a;
+    }
+}
+static void sub_c93a1(void) {
+    // sub_c93a1:
+    //     jsr sub_c93b6
+    sub_c93b6();
+    //     jsr c93b8
+    c93b8();
+    // c93a7:
+    y++;
+    a = y;
+    y--;
     // c93aa:
-    //     clc
-    //     adc tmp4
-    //     sta tmp2
-    //     lda tmp5
-    //     adc #0
-    //     sta tmp3
-    //     rts
-
-    // MULTIPLE ENTRY POINTS: sub_c9393, sub_c939b, sub_c93a1
+    {
+        uint16_t sum = (uint16_t)a + tmp4;
+        tmp2 = (uint8_t)sum;
+        a = tmp5;
+        a += (uint8_t)(sum >> 8);
+        tmp3 = a;
+    }
 }
 static void sub_c93b6(void) {
-    // Pseudocode: Finds length of header/footer string by scanning for high-bit-set terminator
-
     // sub_c93b6:
     //     ldy #0xff
+    y = 0xff;
+    c93b8();
+}
+static void c93b8(void) {
     // c93b8:
     //     iny
     //     lda (tmp4),y
     //     bpl c93b8
+    do {
+        y++;
+        a = ram[((uint16_t)tmp5 << 8) | tmp4 + y];
+    } while ((int8_t)a >= 0);
     //     rts
 }
 static void sub_c93be(void) {
@@ -3465,50 +3609,71 @@ static void sub_c9445(void) {
     //     pla
     //     rts
 }
-static void print_newline_print_char(void) {
-    // Pseudocode: Prints character to screen or printer with control code handling
-
-    // ; ***************************************************************************************
+static void print_newline(void) {
     // print_newline:
     //     lda #0x0d
-    // ; ***************************************************************************************
+    a = 0x0d;
+    print_char();
+}
+static void print_char(void) {
     // print_char:
     //     cmp #0x0d
     //     beq c9462
+    if (a == 0x0d) goto c9462;
     //     cmp #0x20 ; ' '
     //     bne c9468
+    if (a != 0x20) goto c9468;
     //     inc print_xpos
+    print_xpos++;
     //     rts
+    return;
 
-    // c9462:
+c9462:
     //     lda #0
+    a = 0;
     //     sta print_xpos
+    print_xpos = 0;
     //     lda #0x0d
-    // c9468:
+    a = 0x0d;
+c9468:
     //     jsr sub_c9445
-    // ; ***************************************************************************************
+    sub_c9445();
+    print_char_just_to_printer();
+}
+static void print_char_just_to_printer(void) {
     // print_char_just_to_printer:
     //     bit print_flags
     //     bpl c9472
+    if (!(print_flags & 0x80)) goto c9472;
     //     jmp (printer_driver_ptr)
+    ((void (*)(void))printer_driver_ptr)();
+    return;
 
-    // c9472:
+c9472:
     //     jsr check_for_control_code
+    check_for_control_code();
     //     bne c9488
+    if (!(flags & FLAG_Z)) goto c9488;
     //     pha
+    { uint8_t saved_a = a;
     //     lda #0x2d ; '-'
+    a = 0x2d; // '-'
     //     bcs c947e
-    //     lda #0x2a ; '*'
+    if (!(flags & FLAG_C)) a = 0x2a; // '*'
     // c947e:
     //     jsr set_inverted_text_if_not_mode_7
-    //     jsr bdos_print_char                                                        ; Write character
+    set_inverted_text_if_not_mode_7();
+    //     jsr bdos_print_char
+    bdos_print_char();
     //     pla
+    a = saved_a; }
     //     jmp set_normal_text_if_not_mode_7
+    set_normal_text_if_not_mode_7();
+    return;
 
-    // c9488:
-    //     jmp bdos_print_char                                                        ; Write character
-
-    // MULTIPLE ENTRY POINTS: print_newline, print_char, print_char_just_to_printer
+c9488:
+    //     jmp bdos_print_char
+    bdos_print_char();
 }
 static void prepare_printer_driver(void) {
     // Pseudocode: Sets up printer driver pointer from name or default driver
@@ -5950,42 +6115,66 @@ static void f1_top_of_text_key(void) {
     //     jsr sub_caa97
     //     jmp c8e94
 }
-static void sf15_up_key(void) {
-    // Pseudocode: Scrolls up one screenful or to top of document
-
-    // ; ***************************************************************************************
-    // sf15_up_key:
-    //     ldx screen_height
-    //     inc l0079
-    //     inc l006f
+static void sub_ca071(void) {
     // sub_ca071:
     //     inc cursor_moved_flag
+    cursor_moved_flag++;
     //     stx input_buffer_ptr+1
+    input_buffer_ptr = (input_buffer_ptr & 0x00ff) | ((uint16_t)x << 8);
     //     jsr ca93c
+    ca93c();
     //     lda current_line_ptr
+    a = (uint8_t)(current_line_ptr & 0xff);
     //     ldy current_line_ptr+1
+    y = (uint8_t)((current_line_ptr >> 8) & 0xff);
     // ca07c:
-    //     sta tmp2
-    //     sty tmp3
-    //     jsr sub_cab37
-    //     lda tmp0
-    //     ldy tmp1
-    //     bcc ca093
-    //     ldx input_buffer_ptr+1
-    //     bmi ca07c
-    //     dec input_buffer_ptr+1
-    //     bne ca07c
-    //     beq ca097                                                         ; ALWAYS branch
-
-    // ca093:
-    //     lda tmp2
-    //     ldy tmp3
+    while (1) {
+        //     sta tmp2
+        tmp2 = a;
+        //     sty tmp3
+        tmp3 = y;
+        //     jsr sub_cab37
+        sub_cab37();
+        //     lda tmp0
+        a = tmp0;
+        //     ldy tmp1
+        y = tmp1;
+        //     bcc ca093
+        if (!(flags & FLAG_C)) {
+            // ca093:
+            //     lda tmp2
+            a = tmp2;
+            //     ldy tmp3
+            y = tmp3;
+            break;
+        }
+        //     ldx input_buffer_ptr+1
+        x = (uint8_t)(input_buffer_ptr >> 8);
+        //     bmi ca07c
+        if ((int8_t)x < 0) continue;
+        //     dec input_buffer_ptr+1
+        x--;
+        input_buffer_ptr = (input_buffer_ptr & 0x00ff) | ((uint16_t)x << 8);
+        //     bne ca07c
+        if (x != 0) continue;
+        break;
+    }
     // ca097:
     //     sta current_line_ptr
+    current_line_ptr = (current_line_ptr & 0xff00) | a;
     //     sty current_line_ptr+1
+    current_line_ptr = (current_line_ptr & 0x00ff) | ((uint16_t)y << 8);
     //     rts
-
-    // MULTIPLE ENTRY POINTS: sf15_up_key, sub_ca071
+}
+static void sf15_up_key(void) {
+    // sf15_up_key:
+    //     ldx screen_height
+    x = screen_height;
+    //     inc l0079
+    l0079++;
+    //     inc l006f
+    l006f++;
+    sub_ca071();
 }
 static void f2_bottom_of_text_key(void) {
     // Pseudocode: Moves cursor to bottom of document
@@ -6866,72 +7055,111 @@ static void sub_ca597(void) {
     // return_62:
     //     rts
 }
-static void draw_char(void) {
-    // Pseudocode: Fetches and processes character: handles tabs, control codes, highlights
-
-    // draw_char:
-    //     lda (tmp0),y
-    //     iny
+static void sub_ca5ae(void) {
     // sub_ca5ae:
     //     cmp #9
-    //     beq ca5e1
+    if (a == 9) goto ca5e1;
     //     cmp #0x10
-    //     beq ca5d5
+    if (a == 0x10) goto ca5d5;
     //     cmp #0x0b
-    //     beq ca5d9
+    if (a == 0x0b) goto ca5d9;
     //     cmp #0x1a
-    //     beq ca5d5
+    if (a == 0x1a) goto ca5d5;
     //     bcc ca5d1
+    if (a < 0x1a) goto ca5d1;
     //     cmp #0x20 ; ' '
     //     bcs ca5d1
+    if (a >= 0x20) goto ca5d1;
     //     sty l0084
+    l0084 = y;
     //     ldy print_flags
+    y = print_flags;
     //     bpl ca5cf
+    if (!(y & 0x80)) goto ca5cf;
     //     sbc #0x1b
+    a = a - 0x1b - (1 - (flags & FLAG_C));
+    if ((uint8_t)(a + 0x1b + (1 - (flags & FLAG_C))) >= a) flags |= FLAG_C; else flags &= ~FLAG_C;
     //     tax
+    x = a;
     //     lda highlight1_code,x
-    // ca5cf:
+    a = highlight1_code[x];
+ca5cf:
     //     ldy l0084
-    // ca5d1:
+    y = l0084;
+ca5d1:
     //     ldx #1
+    x = 1;
     //     clc
+    flags &= ~FLAG_C;
     //     rts
+    return;
 
-    // ca5d5:
+ca5d5:
     //     lda #0x20 ; ' '
-    //     bne ca5d1                                                         ; ALWAYS branch
+    a = 0x20;
+    //     bne ca5d1
+    goto ca5d1;
 
-    // ca5d9:
+ca5d9:
     //     lda ruler_left_stop
+    a = ruler_left_stop;
     //     beq ca5d5
+    if (a == 0) goto ca5d5;
     //     sty l0084
-    //     bne ca5f1                                                         ; ALWAYS branch
+    l0084 = y;
+    //     bne ca5f1
+    goto ca5f1;
 
-    // ca5e1:
+ca5e1:
     //     sty l0084
+    l0084 = y;
     //     ldy l0039
-    // loop_ca5e5:
+    y = l0039;
+loop_ca5e5:
     //     iny
+    y++;
     //     cpy l003a
     //     bcs ca5f8
+    if (y >= l003a) goto ca5f8;
     //     lda (current_ruler_ptr),y
+    a = ram[current_ruler_ptr + y];
     //     cmp #0x2a ; '*'
     //     bne loop_ca5e5
+    if (a != 0x2a) goto loop_ca5e5;
     //     tya
-    // ca5f1:
+    a = y;
+ca5f1:
     //     sbc l0039
+    {
+        uint16_t r = (uint16_t)a - (uint16_t)l0039 - (1 - (flags & FLAG_C));
+        a = (uint8_t)r;
+        if (r < 0x100) flags |= FLAG_C; else flags &= ~FLAG_C;
+    }
     //     tax
+    x = a;
     //     beq ca5f8
+    if (x == 0) goto ca5f8;
     //     bcs ca5fa
-    // ca5f8:
+    if (flags & FLAG_C) goto ca5fa;
+ca5f8:
     //     ldx #1
-    // ca5fa:
+    x = 1;
+ca5fa:
     //     lda #0x20 ; ' '
+    a = 0x20;
     //     ldy l0084
+    y = l0084;
     //     sec
+    flags |= FLAG_C;
     //     rts
-
-    // MULTIPLE ENTRY POINTS: draw_char, sub_ca5ae
+}
+static void draw_char(void) {
+    // draw_char:
+    //     lda (tmp0),y
+    a = ram[tmp0 + y];
+    //     iny
+    y++;
+    sub_ca5ae();
 }
 static void check_for_control_code(void) {
     // Pseudocode: Checks if character is a control code (0x1c or 0x1d)
@@ -7304,42 +7532,46 @@ static void save_cursor_position(void) {
     //     stx tmp5
     //     rts
 }
-static void restore_cursor_position(void) {
-    // Pseudocode: Restores cursor position and sets cursor coordinates
-
-    // ; ***************************************************************************************
-    // restore_cursor_position:
-    //     ldx tmp4
-    //     ldy tmp5
-    // ; ***************************************************************************************
-    // ; On Entry:
-    // ;     X: X position
-    // ;     Y: Y position
-    // ; ***************************************************************************************
+static void set_cursor_position(void) {
     // set_cursor_position:
     //     pha
     //     txa
     //     pha
     //     tya
     //     pha
+    { uint8_t saved_a = a; uint8_t saved_x = x; uint8_t saved_y = y;
 
     //     txa
+    a = saved_x;
     //     pha
     //     tya
     //     tax
+    x = saved_y;
     //     pla
+    a = saved_x;
     //     ldy #SCREEN_SETCURSOR
+    y = SCREEN_SETCURSOR;
     //     jsr SCREEN
+    SCREEN();
 
     //     pla
     //     tay
+    y = saved_y;
     //     pla
     //     tax
+    x = saved_x;
     //     pla
+    a = saved_a; }
     // return_34:
     //     rts
-
-    // MULTIPLE ENTRY POINTS: restore_cursor_position, set_cursor_position
+}
+static void restore_cursor_position(void) {
+    // restore_cursor_position:
+    //     ldx tmp4
+    x = tmp4;
+    //     ldy tmp5
+    y = tmp5;
+    set_cursor_position();
 }
 static void print_inline_string(void) {
     // Pseudocode: Prints an inline string (embedded after JSR) with optional newline return to CLI
@@ -8740,30 +8972,48 @@ static void sub_caec2(void) {
     //     clc
     //     rts
 }
-static void sub_caed6_sub_caedd(void) {
-    // Pseudocode: Inserts a left margin stop (0x0b) in edit line
-
-    // sub_caed6:
-    //     jsr sub_caec2
-    //     bcc caed4
-    //     ldy #0
+static void sub_caedd(void) {
     // sub_caedd:
     //     lda xpos
+    a = xpos;
     //     pha
+    { uint8_t saved_a = a;
     //     sty xpos
+    xpos = y;
     //     ldx #1
+    x = 1;
     //     jsr sub_cae06
+    sub_cae06();
     //     bcs caef0
-    //     ldy xpos
-    //     lda #0x0b
-    //     sta (current_edit_line_ptr),y
-    //     iny
+    if (!(flags & FLAG_C)) {
+        //     ldy xpos
+        y = xpos;
+        //     lda #0x0b
+        a = 0x0b;
+        //     sta (current_edit_line_ptr),y
+        ram[current_edit_line_ptr + y] = a;
+        //     iny
+        y++;
+    }
     // caef0:
     //     pla
+    a = saved_a; }
     //     sta xpos
+    xpos = a;
     //     rts
-
-    // MULTIPLE ENTRY POINTS: sub_caed6, sub_caedd
+}
+static void sub_caed6(void) {
+    // sub_caed6:
+    //     jsr sub_caec2
+    sub_caec2();
+    //     bcc caed4
+    if (flags & FLAG_C) {
+        //     ldy #0
+        y = 0;
+        sub_caedd();
+    }
+    // caed4:
+    //     rts
 }
 static void sub_caef4(void) {
     // Pseudocode: Handles margin/folding adjustments when typing at left margin
