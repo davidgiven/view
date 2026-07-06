@@ -376,18 +376,26 @@ uint8_t ruler_left_stop;
 
 //X __begin_pointer_array:
 //X markers_array: .fill 12
-uint8_t markers_array[12];
 //X area_start_ptr: .fill 2
-uint16_t area_start_ptr;
 //X area_end_ptr: .fill 2
-uint16_t area_end_ptr;
 //X doc_ptr1: .fill 2
-uint16_t doc_ptr1;
 //X doc_ptr2: .fill 2
-uint16_t doc_ptr2;
 //X doc_ptr3: .fill 2
-uint16_t doc_ptr3;
 //X __end_pointer_array:
+struct {
+    uint16_t markers_array[6];
+    uint16_t area_start_ptr;
+    uint16_t area_end_ptr;
+    uint16_t doc_ptr1;
+    uint16_t doc_ptr2;
+    uint16_t doc_ptr3;
+} pointer_array;
+#define markers_array pointer_array.markers_array
+#define area_start_ptr pointer_array.area_start_ptr
+#define area_end_ptr pointer_array.area_end_ptr
+#define doc_ptr1 pointer_array.doc_ptr1
+#define doc_ptr2 pointer_array.doc_ptr2
+#define doc_ptr3 pointer_array.doc_ptr3
 
 //X printer_driver_block:           .fill 0x100
 uint8_t printer_driver_block[0x100];
@@ -5889,9 +5897,9 @@ static void go_to_marker_n(void) {
 static void go_to_marker(void) {
     // go_to_marker:
     //     lda markers_array,x
-    a = markers_array[x];
+    a = ((uint8_t*)markers_array)[x];
     //     ldy markers_array+1,x
-    y = markers_array[x+1];
+    y = ((uint8_t*)markers_array)[x+1];
     //     jsr move_cursor_to_address
     move_cursor_to_address();
     // ca035:
