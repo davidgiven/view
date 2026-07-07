@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <setjmp.h>
+#include <stdbool.h>
 
 // #include "cpm65.inc"
 // #include "driver.inc"
@@ -329,6 +330,7 @@ extern void screen_getsize(void);
 extern void screen_clear(void);
 extern void screen_scrollup(void);
 extern void screen_scrolldown(void);
+extern void screen_enablecursor(bool on);
 
 //X ram:                              .fill 65536
 uint8_t ram[65536];
@@ -10794,10 +10796,20 @@ static void draw_prompt_characters(void) {
     //     rts
 }
 static void cursor_on(void) {
-    // Pseudocode: Placeholder for cursor on (currently does nothing)
+    // Pseudocode: Enables cursor display via SCREEN driver
+
+    // cursor_on:
+    //     lda #1
+    //     jmp SCREEN_SHOWCURSOR
+    screen_enablecursor(1);
 }
 static void cursor_off(void) {
-    // Pseudocode: Placeholder for cursor off (currently does nothing)
+    // Pseudocode: Disables cursor display via SCREEN driver
+
+    // cursor_off:
+    //     lda #0
+    //     jmp SCREEN_SHOWCURSOR
+    screen_enablecursor(0);
 }
 static void save_cursor_position(void) {
     // Pseudocode: Saves current cursor position via SCREEN call
@@ -13998,6 +14010,7 @@ void screen_getsize(void) { y = 1; screen_call(); }
 void screen_clear(void) { y = 2; screen_call(); }
 void screen_scrollup(void) { y = 9; screen_call(); }
 void screen_scrolldown(void) { y = 10; screen_call(); }
+void screen_enablecursor(bool on) { a = on ? 0xff : 0; y = 8; screen_call(); }
 
 int main(int argc, char* argv[]) {
     main_();
