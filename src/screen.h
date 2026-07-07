@@ -1,20 +1,23 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
+#include <stdint.h>
 #include <stdbool.h>
 
 #define STYLE_NORMAL  0
 #define STYLE_REVERSE 1
 
-void screen_putchar(uint8_t a);
-uint8_t screen_getchar(void);
-void screen_setcursor(uint16_t xa);
-uint16_t screen_getcursor(void);
-void screen_setstyle(uint8_t a);
-uint16_t screen_getsize(void);
-void screen_clear(void);
-void screen_scrollup(void);
-void screen_scrolldown(void);
-void screen_enablecursor(bool on);
+extern void screen_putchar(uint8_t a);
+extern uint8_t screen_getchar(void);
+extern void screen_setcursor(uint16_t xa);
+extern uint16_t screen_getcursor(void);
+extern void screen_setstyle(uint8_t a);
+extern uint16_t screen_getsize(void);
+extern void screen_enter(void);
+extern void screen_leave(void);
+extern void screen_clear(void);
+extern void screen_scrollup(void);
+extern void screen_scrolldown(void);
+extern void screen_enablecursor(bool on);
 
 #endif

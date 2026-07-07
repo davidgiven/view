@@ -626,6 +626,7 @@ static void main_(void) {
     run_cli();
 }
 static void run_cli(void) {
+    screen_leave();
     // run_cli:
     //     jsr clear_screen
     clear_screen();
@@ -7969,6 +7970,7 @@ c9b31:
     return;
 }
 static void editor_loop_impl(void) {
+    screen_enter();
     // Pseudocode: Main editor loop: handles cursor positioning, redrawing, key dispatch
 editor_loop:
     //     lda format_mode_flag
@@ -13367,6 +13369,7 @@ loop_cb095:
     return;
 }
 static void enter_editor_mode(void) {
+    screen_enter();
     // enter_editor_mode: Enters editor mode: clears screen, resets state variables
 
     //     jsr clear_screen
