@@ -9,7 +9,7 @@ import signal
 import re
 import unittest
 
-VIEW_BIN = os.path.join(os.path.dirname(__file__), "..", "view")
+VIEW_BIN = os.path.join(os.path.dirname(__file__), "..", "bin", "view")
 
 
 def strip_escapes(text: str) -> str:

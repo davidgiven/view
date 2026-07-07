@@ -262,7 +262,6 @@ static void initialise_document(void);
 static const struct printer_driver default_printer_driver;
 static void render_register(void);
 static void render_number_to_callback(void);
-static void sub_ca6f9(void);
 static void emit_to_output_buffer_callback(void);
 static void sub_ca536(void);
 static void readline(void);
@@ -1329,6 +1328,7 @@ static void stop_printing(void) {
     // stop_printing:
     //     lda print_flags
     a = print_flags;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bpl c8459
     if (!(flags & FLAG_N)) goto c8459;
     //     rol print_flags
@@ -10526,104 +10526,19 @@ static void render_number_to_screen(void) {
     // Fall through to render_number_to_callback in original 6502
     render_number_to_callback();
 }
-static uint16_t decimal_table[4] = { 10000, 1000, 100, 10 };
-
 static void render_number_to_callback(void) {
-    // Pseudocode: Generic 16-bit number renderer using configurable callback
+    // Pseudocode: Render 16-bit number (TMP9:TMP8) as decimal via callback
 
-    // ; ***************************************************************************************
-    // ; On Entry:
-    // ;     TMP8/TMP9: 16-bit number
-    // ;     YA: callback
-    // ; ***************************************************************************************
-    // render_number_to_callback:
-    //     sta tmp6
     tmp6 = a;
-    //     sty tmp7
     tmp7 = y;
-    //     ldy #0
-    y = 0;
-    //     sty l0083
-    l0083 = y;
-    // ca6c2:
-ca6c2:
-    //     ldx #0
-    x = 0;
-    // loop_ca6c4:
-loop_ca6c4:
-    //     lda tmp9
-    a = tmp9;
-    //     cmp decimal_table+1,y
-    { uint16_t tmp_ = a - (uint8_t)(decimal_table[y >> 1] >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(decimal_table[y >> 1] >> 8) ? FLAG_C : 0); }
-    //     bcc ca6e5
-    if (!(flags & FLAG_C)) goto ca6e5;
-    //     bne ca6d4
-    if (!(flags & FLAG_Z)) goto ca6d4;
-    //     lda tmp8
-    a = tmp8;
-    //     cmp decimal_table,y
-    { uint16_t tmp_ = a - (uint8_t)(decimal_table[y >> 1] & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(decimal_table[y >> 1] & 0xff) ? FLAG_C : 0); }
-    //     bcc ca6e5
-    if (!(flags & FLAG_C)) goto ca6e5;
-    // ca6d4:
-ca6d4:
-    //     lda tmp8
-    a = tmp8;
-    //     sbc decimal_table,y
-    // PROBLEM: sbc without full flag update
-    a -= (uint8_t)(decimal_table[y >> 1] & 0xff) + (1 - (flags & FLAG_C));
-    //     sta tmp8
-    tmp8 = a;
-    //     lda tmp9
-    a = tmp9;
-    //     sbc decimal_table+1,y
-    // PROBLEM: sbc without full flag update
-    a -= (uint8_t)(decimal_table[y >> 1] >> 8) + (1 - (flags & FLAG_C));
-    //     sta tmp9
-    tmp9 = a;
-    //     inx
-    x++;
-    //     bne loop_ca6c4
-    if (!(flags & FLAG_Z)) goto loop_ca6c4;
-    // ca6e5:
-ca6e5:
-    //     txa
-    a = x;
-    //     bne ca6ec
-    if (!(flags & FLAG_Z)) goto ca6ec;
-    //     ldx l0083
-    x = l0083;
-    //     beq ca6f1
-    if (flags & FLAG_Z) goto ca6f1;
-    // ca6ec:
-ca6ec:
-    //     jsr sub_ca6f9
-    sub_ca6f9();
-    //     inc l0083
-    l0083++;
-    // ca6f1:
-ca6f1:
-    //     iny
-    y++;
-    //     iny
-    y++;
-    //     cpy #8
-    { uint16_t tmp_ = y - 8; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= 8 ? FLAG_C : 0); }
-    //     bcc ca6c2
-    if (!(flags & FLAG_C)) goto ca6c2;
-    //     lda tmp8
-    a = tmp8;
-    // sub_ca6f9:
-    //     ora #0x30 ; '0'
-    //     jmp (tmp6)
-    // PROBLEM: jmp (tmp6) indirect call to callback
-    a |= 0x30;
-    number_callback();
-}
-static void sub_ca6f9(void) {
-    // Pseudocode: Outputs a single digit character via callback
-    a |= 0x30;
-    number_callback();
+    uint16_t value = (uint16_t)tmp8 | ((uint16_t)tmp9 << 8);
+    char buf[6];
+    snprintf(buf, sizeof(buf), "%u", (unsigned int)value);
+    for (char *p = buf; *p; p++) {
+        a = *p - '0';
+        a |= 0x30;
+        number_callback();
+    }
 }
 static void parse_decimal_number(void) {
     // ca6fe - Parse decimal number from format command line
