@@ -4,6 +4,7 @@
  * The original 6502 assembly code is included as comments for reference.
  */
 
+#include <stdio.h>
 #include <stdint.h>
 
 // #include "cpm65.inc"
@@ -192,7 +193,6 @@ static void sub_cac50(void);
 static void lookup_marker(void);
 static void draw_prompt_characters(void);
 
-static void print_inline_string(void);
 static void sub_c93b6(void);
 static void sub_c8412(void);
 static void sub_c8c7c(void);
@@ -626,9 +626,9 @@ static void run_cli(void) {
     //     jsr print_x_words_of_help
     print_x_words_of_help();
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "\r\rBytes free "
     //     .byte 0
+    printf("\n\nBytes free ");
 
     //     jsr compute_bytes_free
     compute_bytes_free();
@@ -648,25 +648,25 @@ static void run_cli(void) {
     //     bcc c816d
     if (!(file_edit_flags & 1)) goto c816d;
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "Input file is "
     //     .byte 0
+    printf("Input file is ");
 
     //     lda input_file_empty_flag
     a = input_file_empty_flag;
     //     bne c8163
     if (a != 0) goto c8163;
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "not "
     //     .byte 0
+    printf("not ");
 
     // c8163:
 c8163:
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "empty\r"
     //     .byte 0
+    printf("empty\n");
 
     // c816d:
 c816d:
@@ -675,9 +675,9 @@ c816d:
     //     beq c81b6
     if (flags & FLAG_Z) goto c81b6;
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "Printer "
     //     .byte 0
+    printf("Printer ");
 
     //     ldx #0
     x = 0;
@@ -700,9 +700,9 @@ c816d:
     //     beq c81b3
     if (flags & FLAG_Z) goto c81b3;
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii " (m)"
     //     .byte 0
+    printf(" (m)");
 
     // c81b3:
 c81b3:
@@ -726,9 +726,9 @@ c81ba:
     //     stx l0083
     l0083 = x;
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "Marker(s) set "
     //     .byte 0
+    printf("Marker(s) set ");
 
     //     ldx l0083
     x = l0083;
@@ -838,19 +838,21 @@ static void cmd_err_no_target(void) {
     // c82e7 - shared error handler for CLI commands
     // c82e7:
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "No target given"
     //     .byte 0xff
     //     rts
+    printf("No target given\n");
+    cli_loop(); return;
 }
 static void cmd_err_no_string(void) {
     // c82fa - shared error handler for CLI commands
     // c82fa:
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "No string found"
     //     .byte 0xff
     //     rts
+    printf("No string found\n");
+    cli_loop(); return;
 }
 static void search_cmd(void) {
     // Pseudocode: Searches for target string, reports position if found
@@ -929,10 +931,9 @@ loop_c82b3:
     //     jsr render_number_to_screen
     render_number_to_screen();
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii " string(s) changed"
     //     .byte 0xff
-    return;
+    printf(" string(s) changed\n"); cli_loop(); return;
 
     // c830d:
 c830d:
@@ -1322,9 +1323,9 @@ static void start_printing(void) {
 
     // start_printing:
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "Sorry, can't print yet\r"
     //     .byte 0
+    printf("Sorry, can't print yet\n");
     //     jmp cli_loop
     cli_loop(); return;
 
@@ -1616,9 +1617,9 @@ static void display_not_enough_memory(void) {
     //     jsr stop_printing
     stop_printing();
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "Not enough memory"
     //     .byte 0xff
+    printf("Not enough memory\n"); cli_loop(); return;
 // return_6:
 return_6:
     //     rts
@@ -1697,9 +1698,9 @@ static void read_cmd(void) {
     // c8584:
 c8584:
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "Not all read in\r"
     //     .byte 0
+    printf("Not all read in\n");
 
     // c8598:
 c8598:
@@ -1733,15 +1734,12 @@ c8598:
     // MULTIPLE ENTRY POINTS: load_cmd jumps to label 1: within read_cmd
 }
 static void mode_cmd(void) {
-    // Pseudocode: Displays Bad mode error message and returns to CLI
-
     // ; ***************************************************************************************
     // mode_cmd:
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "Bad mode"
     //     .byte 0xff
-    return;
+    printf("Bad mode\n"); cli_loop(); return;
 }
 static void microspace_cmd(void) {
     // Pseudocode: Configures microspacing by querying printer driver
@@ -1788,9 +1786,9 @@ return_7:
     // c8617:
 c8617:
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "Driver does not support microspacing"
     //     .byte 0xff
+    printf("Driver does not support microspacing\n"); cli_loop(); return;
 }
 static void setup_cmd(void) {
     // Pseudocode: Parses flag letters and sets format_mode_flag, justifying_flag, insert_mode_flag
@@ -1832,9 +1830,9 @@ loop_c8652:
     //     bne loop_c8652
     if (y != 0) goto loop_c8652;
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "Bad flag"
     //     .byte 0xff
+    printf("Bad flag\n"); cli_loop(); return;
 
     // c8669:
 c8669:
@@ -1887,9 +1885,9 @@ static void field_cmd(void) {
     //     bne c8699
     if (!(flags & FLAG_Z)) goto c8699;
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "Frump!"
     //     .byte 0xff
+    printf("Frump!\n"); cli_loop(); return;
 
     // c8699:
 c8699:
@@ -2089,9 +2087,9 @@ c871f:
     //     jsr render_number_to_screen
     render_number_to_screen();
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii " word(s) counted."
     //     .byte 0xff
+    printf(" word(s) counted.\n"); cli_loop(); return;
 
     // l8747:
     //     .byte 0x52
@@ -2221,9 +2219,9 @@ c87b2:
     // c87b4:
 c87b4:
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "Folding "
     //     .byte 0
+    printf("Folding ");
 
     //     lda folding_flag
     a = folding_flag;
@@ -2231,23 +2229,23 @@ c87b4:
     //     bpl c87cb
     if (!(flags & FLAG_N)) goto c87cb;
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "off"
     //     .byte 0xff
+    printf("off\n"); cli_loop(); return;
 
     // c87cb:
 c87cb:
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "on"
     //     .byte 0xff
+    printf("on\n"); cli_loop(); return;
 
     // c87d1:
 c87d1:
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "Bad file"
     //     .byte 0xff
+    printf("Bad file\n"); cli_loop(); return;
 }
 static void printer_cmd(void) {
     // Pseudocode: Redirects to print_cmd (printer driver loading code is disabled with #if 0)
@@ -2331,9 +2329,9 @@ static void file_not_found_error(void) {
     //     jsr stop_printing
     stop_printing();
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "File not found\r"
     //     .byte 0
+    printf("File not found\n");
     //     jmp cli_loop
     cli_loop(); return;
 }
@@ -2406,9 +2404,9 @@ static void file_error(void) {
     // ; ***************************************************************************************
     // zproc file_error
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "File error"
     //     .byte 0
+    printf("File error");
     //     jmp cli_loop
     cli_loop(); return;
     // zendproc
@@ -2525,10 +2523,10 @@ static void parse_mark_from_command(void) {
     input_buffer_ptr = (input_buffer_ptr & 0xff00) | y;
     //     jsr lookup_marker
     lookup_marker();
-    //     bcs c89b3
-    if (flags & FLAG_C) { print_inline_string(); /* .ascii "Bad marker" .byte 0xff */ return; }
-    //     beq c89c1
-    if (flags & FLAG_Z) { print_inline_string(); /* .ascii "Marker not set" .byte 0xff */ return; }
+    //     bcs c89b3 / c89b3: jsr print_inline_string ; .ascii "Bad marker" ; .byte 0xff
+    if (flags & FLAG_C) { printf("Bad marker\n"); cli_loop(); return; }
+    //     beq c89c1 / c89c1: jsr print_inline_string ; .ascii "Marker not set" ; .byte 0xff
+    if (flags & FLAG_Z) { printf("Marker not set\n"); cli_loop(); return; }
     //     lda markers_array,x
     a = (uint8_t)(markers_array[x] & 0xff);
     //     ldy markers_array+1,x
@@ -2560,9 +2558,9 @@ static void display_document_file_state(void) {
     //     jsr stop_printing
     stop_printing();
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "Editing "
     //     .byte 0
+    printf("Editing ");
 
     //     lda file_edit_flags
     a = file_edit_flags;
@@ -2591,9 +2589,9 @@ c8a07:
     //     bvs c8a19
     if (flags & FLAG_V) goto c8a19;
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii " to "
     //     .byte 0
+    printf(" to ");
 
     //     ldy #0
     y = 0;
@@ -2617,9 +2615,9 @@ c8a19:
 c8a21:
     // c8a21:
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "No File\r"
     //     .byte 0
+    printf("No File\n");
     //     rts
 }
 static void sub_c8a4f(void) {
@@ -3748,9 +3746,9 @@ c8e25:
 static void bad_filename_error(void) {
     // bad_filename_error:
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "Bad filename\r"
     //     .byte 0
+    printf("Bad filename\n");
     //     jmp cli_loop
     cli_loop(); return;
 }
@@ -3843,7 +3841,7 @@ static void display_no_text(void) {
     //     jsr print_inline_string
     //     .ascii "No text\r"
     //     .byte 0
-    print_inline_string();
+    printf("No text\n");
     //     rts
 }
 static void display_nl_then_no_text(void) {
@@ -4219,11 +4217,11 @@ static void nested_macro_error(void) {
     //     jsr stop_printing
     stop_printing();
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "Nested macro call"
     //     .byte 0
+    printf("Nested macro call");
     //     jmp c8f1a
-    stop_printing();
+    // c8f1a:
     //     jsr bdos_print_newline
     bdos_print_newline();
     //     jmp cli_loop
@@ -5058,9 +5056,9 @@ static void render_new_page(void) {
     //     jsr stop_printing
     stop_printing();
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii "\rPage "
     //     .byte 0
+    printf("\nPage ");
 
     //     ldx register_value_p
     x = register_value_p[0];
@@ -5069,9 +5067,9 @@ static void render_new_page(void) {
     //     jsr render_number_to_screen
     render_number_to_screen();
     //     jsr print_inline_string
-    print_inline_string();
     //     .ascii ".."
     //     .byte 0
+    printf("..");
 
     //     jsr flush_and_read_char
     flush_and_read_char();
@@ -10846,69 +10844,6 @@ static void restore_cursor_position(void) {
     y = tmp5;
     set_cursor_position();
 }
-static void print_inline_string(void) {
-    // Pseudocode: Prints an inline string (embedded after JSR) with optional newline return to CLI
-
-    // ; ***************************************************************************************
-    // print_inline_string:
-    //     sty l0084
-    l0084 = y;
-    //     pla
-    // PROBLEM: pla (stack manipulation)
-    //     clc
-    flags &= ~FLAG_C;
-    //     adc #1
-    // PROBLEM: adc #1 without full flag update
-    //     sta tmp2
-    //     pla
-    // PROBLEM: pla (stack manipulation)
-    //     adc #0
-    // PROBLEM: adc #0 without full flag update
-    //     sta tmp3
-    //     ldy #0
-    y = 0;
-    //     beq ca80f                                                         ; ALWAYS branch
-    goto ca80f;
-
-    // loop_ca80b:
-loop_ca80b:
-    //     jsr bdos_print_char                                                        ; Write character
-    bdos_print_char();
-    //     iny
-    y++;
-    // ca80f:
-ca80f:
-    //     lda (tmp2),y
-    a = ram[(uint16_t)tmp2 + y];
-    //     bmi ca824
-    if (flags & FLAG_N) goto ca824;
-    //     bne loop_ca80b
-    if (!(flags & FLAG_Z)) goto loop_ca80b;
-    //     tya
-    a = y;
-    //     sec
-    flags |= FLAG_C;
-    //     adc tmp2
-    // PROBLEM: adc tmp2 without full flag update
-    //     sta tmp2
-    //     bcc ca81f
-    if (!(flags & FLAG_C)) goto ca81f;
-    //     inc tmp3
-    tmp3++;
-    // ca81f:
-ca81f:
-    //     ldy l0084
-    y = l0084;
-    //     jmp (tmp2)
-    // PROBLEM: jmp (tmp2) indirect jump
-
-    // ca824:
-ca824:
-    //     jsr bdos_print_newline
-    bdos_print_newline();
-    //     jmp cli_loop
-    cli_loop(); return;
-}
 static void print_x_words_of_help(void) {
     // Pseudocode: Prints X words of the help string showing VIEW and version
 
@@ -12898,8 +12833,7 @@ static void noscreen(void) {
     //     jsr print_inline_string
     //     .ascii "No SCREEN\n"
     //     .byte 0
-    //     ldy #BDOS_EXIT_PROGRAM
-    //     jmp BDOS
+    printf("No SCREEN\n");
     bdos_exit_program(); return;
 }
 
