@@ -278,7 +278,7 @@ static void sub_ca536(void);
 // Forward declarations for recently translated functions
 static void bad_filename_error(void);
 static void c9263(void);
-static void ca6fe(void);
+static void parse_decimal_number(void);
 static void call_through_jumptable(void);
 static void close_file(void);
 static void compute_required_space_for_insertion(void);
@@ -2341,7 +2341,7 @@ static void parse_integer_from_command(void) {
     //     beq return_8
     if (flags & FLAG_Z) return;
     //     jmp ca6fe
-    ca6fe(); return;
+    parse_decimal_number(); return;
 }
 static void file_not_found_error(void) {
     // Pseudocode: Displays File not found error and returns to CLI
@@ -6910,7 +6910,7 @@ c97c0:
     // c97d5:
 c97d5:
     //     jsr ca6fe
-    ca6fe();
+    parse_decimal_number();
     //     sta tmp8
     tmp8 = a;
     //     stx tmp9
@@ -10674,54 +10674,32 @@ static void sub_ca6f9(void) {
     a |= 0x30;
     number_callback();
 }
-static void ca6fe(void) {
-    // Pseudocode: Parses a decimal number from the format command line into tmp8/tmp9
+static void parse_decimal_number(void) {
+    // ca6fe - Parse decimal number from format command line
+    // On entry: y = index into current_format_line_ptr
+    // On exit:  tmp8:tmp9 = parsed value, a/x = value, y = advanced past digits
+    //           flags.Z = 1 if no digits parsed
 
-    // ca6fe:
-    //     lda #0
-    //     tax                                                               ; X=0x00
-    //     sta tmp8
-    //     sta tmp9
-    // ca705:
-    //     lda (current_format_line_ptr),y
-    //     sec
-    //     sbc #0x30 ; '0'
-    //     bcc ca739
-    //     cmp #0x0a
-    //     bcs ca739
-    //     iny
-    //     sta l0084
-    //     asl tmp8
-    //     rol tmp9
-    //     ldx tmp9
-    //     lda tmp8
-    //     pha
-    //     asl tmp8
-    //     rol tmp9
-    //     asl tmp8
-    //     rol tmp9
-    //     pla
-    //     clc
-    //     adc tmp8
-    //     bcc ca72b
-    //     inx
-    // ca72b:
-    //     clc
-    //     adc l0084
-    //     sta tmp8
-    //     txa
-    //     adc tmp9
-    //     sta tmp9
-    //     ldx #0xff
-    //     bne ca705                                                         ; ALWAYS branch
+    uint8_t had_digits = 0;
+    tmp8 = 0;
+    tmp9 = 0;
 
-    // ca739:
-    //     txa
-    //     php
-    //     lda tmp8
-    //     ldx tmp9
-    //     plp
-    //     rts
+    for (;;) {
+        a = ram[(uint16_t)current_format_line_ptr + y];
+        if (a < '0' || a > '9') break;
+        a -= '0';
+        y++;
+        had_digits = 0xff;
+
+        uint16_t val = ((uint16_t)tmp9 << 8) | tmp8;
+        val = val * 10 + a;
+        tmp8 = (uint8_t)val;
+        tmp9 = (uint8_t)(val >> 8);
+    }
+
+    a = tmp8;
+    x = tmp9;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (had_digits == 0 ? FLAG_Z : 0) | (had_digits & FLAG_N);
 }
 static void ca741(void) {
     // Pseudocode: Updates ptr6 to current_line_ptr and sets refresh flags
