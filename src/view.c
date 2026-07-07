@@ -10819,6 +10819,7 @@ loop_ca851:
     l0084 = a;
     //     lda parser_table,x
     a = parser_table[x];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq ca890
     if (flags & FLAG_Z) goto ca890;
     //     bmi ca87e
@@ -10839,6 +10840,7 @@ loop_ca86a:
     x++;
     //     lda parser_table,x
     a = parser_table[x];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq ca890
     if (flags & FLAG_Z) goto ca890;
     //     bpl loop_ca86a
@@ -10847,6 +10849,7 @@ loop_ca86a:
     a = l0083;
     //     and #0x20 ; ' '
     a &= 0x20;
+    flags = (flags & ~FLAG_Z) | (a == 0 ? FLAG_Z : 0);
     //     beq ca84c
     if (flags & FLAG_Z) goto ca84c;
     //     lda (tmp0),y

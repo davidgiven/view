@@ -51,7 +51,10 @@ class PtyProcess:
             os.kill(self.pid, signal.SIGKILL)
         except OSError:
             pass
-        os.waitpid(self.pid, 0)
+        try:
+            os.waitpid(self.pid, 0)
+        except ChildProcessError:
+            pass
 
     def read(self, timeout=5.0):
         """Read available data, waiting up to *timeout* seconds."""
@@ -91,6 +94,32 @@ class PtyProcess:
     def writeline(self, line):
         self.write((line + "\n").encode("ascii"))
 
+    def wait(self, timeout=5.0):
+        """Wait for the child to exit and return (exit_status, output)."""
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            try:
+                data = os.read(self.master_fd, 4096)
+                if data:
+                    self._buf += data
+                else:
+                    break
+            except OSError:
+                break
+            remaining = deadline - time.time()
+            if remaining <= 0:
+                break
+            r, _, _ = select.select([self.master_fd], [], [], min(remaining, 0.1))
+        pid, status = os.waitpid(self.pid, os.WNOHANG)
+        if pid == 0:
+            try:
+                pid, status = os.waitpid(self.pid, 0)
+            except ChildProcessError:
+                status = 0
+        output = self._buf
+        self._buf = b""
+        return status, output
+
     def drain(self, timeout=0.3):
         """Read any remaining buffered output."""
         time.sleep(0.1)
@@ -121,6 +150,15 @@ class TestBanner(unittest.TestCase):
             output.endswith(b"=>\n") or output.endswith(b"=>\r\n"),
             f"Expected prompt '=>\\n' at end of output, got: {repr(output[-40:])}"
         )
+
+    def test_quit_command(self):
+        self.proc.read_until(b"=>\n", timeout=3.0)
+        self.proc.writeline("BYE")
+        status, output = self.proc.wait(timeout=3.0)
+        self.assertTrue(os.WIFEXITED(status),
+                        f"Process did not exit cleanly (status={status})")
+        self.assertEqual(os.WEXITSTATUS(status), 0,
+                         f"Expected exit code 0, got {os.WEXITSTATUS(status)}")
 
 
 if __name__ == "__main__":
