@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <setjmp.h>
 #include <stdbool.h>
@@ -41,27 +42,8 @@ static jmp_buf env;
 #define SCREEN_KEY_LEFT		0x88
 #define SCREEN_KEY_RIGHT	0x89
 
-// ; File structure
+// ; File structure (removed - migrated to stdio)
 
-// FS_FCB = 0
-// FS_BUFFERPTR = FS_FCB + FCB__SIZE   // FCB__SIZE = 0x24
-// FS_BUFFER = FS_BUFFERPTR + 1
-// FS__SIZE = FS_BUFFER + 128
-#define FS__SIZE 165
-#define FCB__SIZE  0x24
-#define FS_BUFFERPTR (0 + FCB__SIZE)
-#define FS_BUFFER (FS_BUFFERPTR + 1)
-extern void bdos_exit_program(void);
-extern void bdos_console_output(void);
-extern void bdos_direct_io(void);
-extern void bdos_open_file(void);
-extern void bdos_close_file(void);
-extern void bdos_delete_file(void);
-extern void bdos_read_sequential(void);
-extern void bdos_write_sequential(void);
-extern void bdos_create_file(void);
-extern void bdos_set_dma_address(void);
-extern void bdos_parsefilename(void);
 
 // Printer driver struct (replaces 6502 jump table with 4 entries at offsets 0,3,6,9)
 struct printer_driver {
@@ -499,7 +481,7 @@ uint8_t tmp8;
 //X tmp9: .fill 1
 uint8_t tmp9;
 //X file_ptr: .fill 2
-uint16_t file_ptr;
+FILE *file_ptr;
 
 //X .bss
 
@@ -614,9 +596,9 @@ uint8_t line_lengths[32];
 uint8_t input_filename[20];
 
 //X input_file:                     .fill FS__SIZE
-uint8_t input_file[FS__SIZE];
+FILE *input_fp;
 //X output_file:                    .fill FS__SIZE
-uint8_t output_file[FS__SIZE];
+FILE *output_fp;
 static void main_(void) {
     // Pseudocode: Program entry point with longjmp buffer for stack reset (txs equivalent)
 
@@ -877,8 +859,7 @@ static void bye_cmd(void) {
     // zproc bye_cmd
     //     ldy #BDOS_EXIT_PROGRAM
     //     jmp BDOS
-    bdos_exit_program(); return;
-    // zendproc
+    exit(0);
 }
 static void cmd_err_no_target(void) {
     // c82e7 - shared error handler for CLI commands
@@ -1386,14 +1367,8 @@ static void edit_cmd(void) {
     check_not_continuous_editing();
     parse_filename_from_command();
     set_document_name_to_filename_buffer();
-    x = (uint8_t)(uintptr_t)&input_file;
-    y = (uint8_t)((uintptr_t)&input_file >> 8);
-    select_file();
     open_input_file();
     parse_filename_from_command();
-    x = (uint8_t)(uintptr_t)&output_file;
-    y = (uint8_t)((uintptr_t)&output_file >> 8);
-    select_file();
     open_output_file();
     x = 0;
     input_file_empty_flag = x;
@@ -1428,11 +1403,8 @@ static void more_cmd(void) {
     //     jsr move_cursor_to_address
     move_cursor_to_address();
 
-    //     ldx #<output_file
-    x = (uint8_t)((uintptr_t)output_file & 0xff);
-    //     ldy #>output_file
-    y = (uint8_t)(((uintptr_t)output_file >> 8) & 0xff);
     //     jsr select_file
+    x = 1;
     select_file();
     //     jsr write_area_to_file
     write_area_to_file();
@@ -1496,11 +1468,8 @@ loop_c84ee:
     //     jsr sanitise_area
     sanitise_area();
 
-    //     ldx #<output_file
-    x = (uint8_t)((uintptr_t)output_file & 0xff);
-    //     ldy #>output_file
-    y = (uint8_t)(((uintptr_t)output_file >> 8) & 0xff);
     //     jsr select_file
+    x = 1;
     select_file();
 
     //     jsr write_area_to_file
@@ -1549,11 +1518,8 @@ static void close_input_output_files(void) {
     //     sta file_edit_flags
     file_edit_flags = a;
 
-    //     ldx #<output_file
-    x = (uint8_t)((uintptr_t)output_file & 0xff);
-    //     ldy #>output_file
-    y = (uint8_t)(((uintptr_t)output_file >> 8) & 0xff);
     //     jsr select_file
+    x = 1;
     select_file();
     //     jsr close_file
     close_file();
@@ -1603,13 +1569,6 @@ static void save_cmd_write_cmd(void) {
     sanitise_area();
     //     beq return_6
     if (flags & FLAG_Z) return;
-
-    //     ldx #<input_buffer
-    x = (uint8_t)((uintptr_t)input_buffer & 0xff);
-    //     ldy #>input_buffer
-    y = (uint8_t)(((uintptr_t)input_buffer >> 8) & 0xff);
-    //     jsr select_file
-    select_file();
 
     //     jsr open_output_file
     open_output_file();
@@ -1692,13 +1651,6 @@ static void read_cmd(void) {
     // 1:
     //     jsr check_for_at_least_150_bytes_free
     check_for_at_least_150_bytes_free();
-
-    //     ldx #<input_buffer
-    x = (uint8_t)((uintptr_t)input_buffer & 0xff);
-    //     ldy #>input_buffer
-    y = (uint8_t)(((uintptr_t)input_buffer >> 8) & 0xff);
-    //     jsr select_file
-    select_file();
 
     //     jsr open_input_file
     open_input_file();
@@ -3536,11 +3488,7 @@ static void read_next_chunk_from_input_file(void) {
     // read_next_chunk_from_input_file:
     //     jsr sub_c8da2
     sub_c8da2();
-    //     ldx #<input_file
-    x = (uint8_t)((uintptr_t)&input_file & 0xff);
-    //     ldy #>input_file
-    y = (uint8_t)(((uintptr_t)&input_file >> 8) & 0xff);
-    //     jsr select_file
+    x = 0;
     select_file();
     //     jsr read_block_from_file
     read_block_from_file();
@@ -13272,9 +13220,8 @@ static void noscreen(void) {
     //     .ascii "No SCREEN\n"
     //     .byte 0
     printf("No SCREEN\n");
-    bdos_exit_program(); return;
+    exit(0);
 }
-
 static void compute_bytes_free(void) {
     // Pseudocode: Computes number of free bytes between top and himem
 
@@ -14035,11 +13982,7 @@ static void readline(void) {
     //     zloop
     //         ; Read a key without echo.
 
-    //         ldy #BDOS_DIRECT_IO
-    //         ldx #0xfd
-    //         jsr BDOS
-    bdos_direct_io();
-    //         tax
+    a = (uint8_t)getchar();
 
     //         ; Delete?
 
@@ -14113,306 +14056,48 @@ static void readline(void) {
     // zendproc
 }
 static void select_file(void) {
-    // Pseudocode: Sets the file pointer for subsequent file operations
-
-    // zproc select_file
-    //     stx file_ptr+0
-    file_ptr = (file_ptr & 0xff00) | x;
-    //     sty file_ptr+1
-    file_ptr = (file_ptr & 0x00ff) | ((uint16_t)y << 8);
-    //     rts
-    // zendproc
-}
-static void prepare_to_open_file(void) {
-    // Pseudocode: Prepares file structure: zeros FCB, parses filename via BDOS
-
-    // zproc prepare_to_open_file
-    //     jsr zero_terminate_filename_buffer
-
-    //     ; Wipe the FCB.
-
-    //     ldy #FCB__SIZE-1
-    //     lda #0
-    //     zrepeat
-    //         sta (file_ptr+0), y
-    //         dey
-    //     zuntil mi
-
-    //     ; Parse the filename.
-
-    //     ldy #BDOS_SET_DMA_ADDRESS
-    //     lda file_ptr+0
-    //     ldx file_ptr+1
-    //     jsr BDOS
-    bdos_set_dma_address();
-
-    //     ldy #BDOS_PARSEFILENAME
-    //     lda #<filename_buffer
-    //     ldx #>filename_buffer
-    //     jsr BDOS
-    bdos_parsefilename();
-    //     zif cs
-    //         jmp bad_filename_error
-    //     zendif
-    //     rts
-    // zendproc
+    file_ptr = x ? output_fp : input_fp;
 }
 static void open_input_file(void) {
-    // Pseudocode: Opens a file for reading via BDOS open file call
-
-    // ; YX = pointer to file structure
-    // ; Input filename is in filename_buffer
-    // ; Uses file_ptr+0/file_ptr+1.
-    // zproc open_input_file
-    //     jsr prepare_to_open_file
-
-    //     ; Delete any existing file.
-
-    //     ldy #BDOS_OPEN_FILE
-    //     lda file_ptr+0
-    //     ldx file_ptr+1
-    //     jsr BDOS
-    bdos_open_file();
-    //     zif cs
-    //         jmp file_not_found_error
-    //     zendif
-
-    //     ldy #FS_BUFFERPTR
-    //     lda #FS_BUFFER+128
-    //     sta (file_ptr+0), y
-    //     rts
-    // zendproc
+    zero_terminate_filename_buffer();
+    input_fp = fopen((char *)filename_buffer, "rb");
+    if (!input_fp) { file_not_found_error(); return; }
+    file_ptr = input_fp;
 }
 static void open_output_file(void) {
-    // Pseudocode: Creates and opens a file for writing via BDOS calls
-
-    // ; YX = pointer to file structure
-    // ; Input filename is in filename_buffer
-    // ; Uses file_ptr+0/file_ptr+1.
-    // zproc open_output_file
-    //     jsr prepare_to_open_file
-
-    //     ; Delete any existing file.
-
-    //     ldy #BDOS_DELETE_FILE
-    //     lda file_ptr+0
-    //     ldx file_ptr+1
-    //     jsr BDOS
-    bdos_delete_file();
-
-    //     ; Create a new file.
-
-    //     ldy #FCB_T3+1
-    //     lda #0
-    //     zrepeat
-    //         sta (file_ptr+0), y
-    //         iny
-    //         cpy #FCB__SIZE
-    //     zuntil eq
-
-    //     ldy #BDOS_CREATE_FILE
-    //     lda file_ptr+0
-    //     ldx file_ptr+1
-    //     jsr bdos_and_file_error
-    bdos_create_file();
-
-    //     ldy #FS_BUFFERPTR
-    //     lda #FS_BUFFER
-    //     sta (file_ptr+0), y
-    //     rts
-    // zendproc
+    zero_terminate_filename_buffer();
+    output_fp = fopen((char *)filename_buffer, "wb");
+    if (!output_fp) { file_error(); return; }
+    file_ptr = output_fp;
 }
 
-static void set_dma_to_buffer_address_of_file(void) {
-    // Pseudocode: Sets BDOS DMA address to file buffer
-
-    // ; NB: 'adc #FS_BUFFER' and 'adc #0' cannot be trivially translated
-    // ; because the carry state from the preceding 'clc' is 0, but the
-    // ; arithmetic chaining -- pha..pla -- involves the carry after the
-    // ; first adc.  For now we leave these as comments.
-    // zproc set_dma_to_buffer_address_of_file
-    //     clc
-    //     lda file_ptr+0
-    //     adc #FS_BUFFER
-    //     pha
-    //     lda file_ptr+1
-    //     adc #0
-    //     tax
-    //     pla
-    //     ldy #BDOS_SET_DMA_ADDRESS
-    //     jmp BDOS
-    bdos_set_dma_address(); return;
-    // zendproc
-}
 static void flush_file(void) {
-    // Pseudocode: Flushes file buffer to disk by writing sequential block
-
-    // ; FS pointer in file_ptr+0/file_ptr+1.
-    // zproc flush_file
-    //     jsr set_dma_to_buffer_address_of_file
-    set_dma_to_buffer_address_of_file();
-
-    //     ldy #BDOS_WRITE_SEQUENTIAL
-    //     lda file_ptr+0
-    //     ldx file_ptr+1
-    //     jsr bdos_and_file_error
-    bdos_write_sequential();
-
-    //     ldy #FS_BUFFER
-    y = FS_BUFFER;
-    //     lda #0
-    a = 0;
-    //     zrepeat
-    do {
-    //         sta (file_ptr+0), y
-        ram[file_ptr + y] = a;
-    //         iny
-        y++;
-    //         cpy #FS_BUFFER+128
-        { uint16_t tmp_ = y - (FS_BUFFER + 128); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= (FS_BUFFER + 128) ? FLAG_C : 0); }
-    //     zuntil eq
-    } while (!(flags & FLAG_Z));
-    //     rts
-    return;
-    // zendproc
+    if (file_ptr) {
+        fflush(file_ptr);
+    }
 }
 static void close_file(void) {
-    // Pseudocode: Flushes if needed and closes file via BDOS
-
-    // zproc close_file
-    //     ldy #FS_BUFFERPTR
-    y = FS_BUFFERPTR;
-    //     lda (file_ptr+0), y
-    a = ram[file_ptr + y];
-    //     cmp #FS_BUFFER
-    { uint16_t tmp_ = a - FS_BUFFER; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= FS_BUFFER ? FLAG_C : 0); }
-    //     zif ne
-    if (!(flags & FLAG_Z)) {
-    //         jsr flush_file
-        flush_file();
-    //     zendif
+    if (file_ptr) {
+        fclose(file_ptr);
+        file_ptr = NULL;
     }
-
-    //     ldy #BDOS_CLOSE_FILE
-    //     lda file_ptr+0
-    //     ldx file_ptr+1
-    //     jmp bdos_and_file_error
-    bdos_close_file(); return;
-    // zendproc
 }
 static void put_byte_to_file(void) {
-    // Pseudocode: Writes a byte to file buffer, flushing when buffer is full
-
-    // zproc put_byte_to_file
-    //     pha
-    { uint8_t saved_a = a;
-    //     ldy #FS_BUFFERPTR
-    y = FS_BUFFERPTR;
-    //     lda (file_ptr+0), y
-    a = ram[file_ptr + y];
-    //     tay
-    y = a;
-    //     pla
-    a = saved_a; }
-    //     sta (file_ptr+0), y
-    ram[file_ptr + y] = a;
-
-    //     iny
-    y++;
-    //     cpy #FS_BUFFER + 128
-    { uint16_t tmp_ = y - (FS_BUFFER + 128); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= (FS_BUFFER + 128) ? FLAG_C : 0); }
-    //     zif eq
-    if (flags & FLAG_Z) {
-    //         jsr flush_file
-        flush_file();
-    //         ldy #FS_BUFFER
-        y = FS_BUFFER;
-    //     zendif
-    }
-    //     tya
-    a = y;
-    //     ldy #FS_BUFFERPTR
-    y = FS_BUFFERPTR;
-    //     sta (file_ptr+0), y
-    ram[file_ptr + y] = a;
-    //     rts
-    return;
-    // zendproc
+    fputc(a, file_ptr);
 }
 static void get_byte_from_file(void) {
-    // Pseudocode: Reads a byte from file, refilling buffer when empty, sets carry on EOF
-
-    // ; If the value is 0, returns with C set to signal end of file.
-    // zproc get_byte_from_file
-    //     ldy #FS_BUFFERPTR
-    y = FS_BUFFERPTR;
-    //     lda (file_ptr+0), y
-    a = ram[file_ptr + y];
-    //     cmp #FS_BUFFER+128
-    { uint16_t tmp_ = a - (FS_BUFFER + 128); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= (FS_BUFFER + 128) ? FLAG_C : 0); }
-    //     zif eq
-    if (flags & FLAG_Z) {
-    //         jsr set_dma_to_buffer_address_of_file
-        set_dma_to_buffer_address_of_file();
-    //         ldy #BDOS_READ_SEQUENTIAL
-    //         lda file_ptr+0
-    //         ldx file_ptr+1
-    //         jsr bdos_and_file_error
-        bdos_read_sequential();
-
-    //         lda #FS_BUFFER
-        a = FS_BUFFER;
-    //     zendif
-    }
-    //     tay
-    y = a;
-    //     lda (file_ptr+0), y
-    a = ram[file_ptr + y];
-    //     pha
-    { uint8_t saved_a = a;
-    //     iny
-    y++;
-    //     tya
-    a = y;
-    //     ldy #FS_BUFFERPTR
-    y = FS_BUFFERPTR;
-    //     sta (file_ptr+0), y
-    ram[file_ptr + y] = a;
-    //     pla
-    a = saved_a; }
-    //     clc
-    flags &= ~FLAG_C;
-    //     tay                     ; set flags
-    y = a;
-    flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
-    //     zif eq
-    if (flags & FLAG_Z) {
-    //         sec
+    int c = fgetc(file_ptr);
+    if (c == EOF) {
+        a = 0;
         flags |= FLAG_C;
+        flags = (flags & ~(FLAG_Z | FLAG_N)) | FLAG_Z;
+    } else {
+        a = (uint8_t)c;
+        flags &= ~FLAG_C;
+        flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     }
-    //     zendif
-    //     rts
-    return;
-    // zendproc
+    y = a;
 }
-
-// BDOS trampoline (platform-specific - currently a stub)
-void bdos_call(void) {
-    // In a real CP/M environment this would invoke BDOS with y=opcode
-}
-
-// BDOS wrapper implementations
-void bdos_exit_program(void) { y = 0; bdos_call(); }
-void bdos_console_output(void) { y = 2; bdos_call(); }
-void bdos_direct_io(void) { y = 6; bdos_call(); }
-void bdos_open_file(void) { y = 15; bdos_call(); }
-void bdos_close_file(void) { y = 16; bdos_call(); }
-void bdos_delete_file(void) { y = 19; bdos_call(); }
-void bdos_read_sequential(void) { y = 20; bdos_call(); }
-void bdos_write_sequential(void) { y = 21; bdos_call(); }
-void bdos_create_file(void) { y = 22; bdos_call(); }
-void bdos_set_dma_address(void) { y = 26; bdos_call(); }
-void bdos_parsefilename(void) { y = 43; bdos_call(); }
 
 int main(int argc, char* argv[]) {
     main_();
