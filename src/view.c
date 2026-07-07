@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdint.h>
 #include <setjmp.h>
 #include <stdbool.h>
@@ -13974,89 +13975,21 @@ uint8_t parser_table[] = {
     //     .word ep_fmt_cmd, lj_fmt_cmd, pb_fmt_cmd
 
 static void readline(void) {
-    // Pseudocode: Reads a line from keyboard with editing support (backspace, delete line)
-
-    // ; Read a line from the keyboard input input_buffer.
-    // ; This is a hacked and customised copy of the BDOS routine.
-    // zproc readline
-    //     lda #0
-    //     sta input_buffer_ptr
-
-    //     zloop
-    //         ; Read a key without echo.
-
-    a = (uint8_t)getchar();
-
-    //         ; Delete?
-
-    //         cmp #8
-    //         zif eq
-    //             lda #127
-    //         zendif
-    //         cmp #127
-    //         zif eq
-    //             ldy input_buffer_ptr
-    //             zif ne
-    //                 dec input_buffer_ptr
-    //                 jsr bdos_print_char
-    //             zendif
-    //             zcontinue
-    //         zendif
-
-    //         ; Delete line?
-
-    //         cmp #21
-    //         zif eq
-    //             ldy input_buffer_ptr
-    //             zif ne
-    //                 zrepeat
-    //                     lda #127
-    //                     jsr bdos_print_char
-    //                     dey
-    //                 zuntil eq
-    //                 sty input_buffer_ptr
-    //             zendif
-    //             zcontinue
-    //         zendif
-
-    //         ; Finished?
-
-    //         cmp #13
-    //         zbreakif eq
-    //         cmp #10
-    //         zbreakif eq
-    //         cmp #27
-    //         zif eq
-    //             lda #0
-    //             sta input_buffer_ptr
-    //             sec
-    //             rts
-    //         zendif
-
-    //         ; Graphic character?
-
-    //         cmp #32
-    //         zif ge
-    //             ldy #MAX_COMMAND_LENGTH
-    //             cpy input_buffer_ptr
-    //             zif cs
-    //                 ldy input_buffer_ptr
-    //                 sta input_buffer, y
-    //                 jsr bdos_print_char
-    //                 inc input_buffer_ptr
-    //             zendif
-    //         zendif
-    //     zendloop
-
-    //     jsr bdos_print_newline
-    //     ldx input_buffer_ptr
-    //     lda #0x0d
-    //     sta input_buffer, x
-    //     ldx #0
-    //     stx input_buffer_ptr
-    //     clc
-    //     rts
-    // zendproc
+    input_buffer_ptr = 0;
+    if (!fgets((char *)input_buffer, MAX_COMMAND_LENGTH, stdin)) {
+        flags |= FLAG_C;
+        return;
+    }
+    size_t len = strlen((char *)input_buffer);
+    if (len > 0 && input_buffer[len - 1] == '\n')
+        len--;
+    if (len == 0) {
+        input_buffer[0] = 0x0d;
+        flags |= FLAG_C;
+        return;
+    }
+    input_buffer[len] = 0x0d;
+    flags &= ~FLAG_C;
 }
 static void select_file(void) {
     file_ptr = x ? output_fp : input_fp;
