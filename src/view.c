@@ -220,7 +220,6 @@ static void reset_area_to_entire_document(void);
 static void read_first_chunk_from_input_file(void);
 static void put_byte_to_file(void);
 static void c93b8(void);
-static void bdos_print_char(void);
 static void sub_ca071(void);
 static void sub_ca5ae(void);
 static void read_next_chunk_from_input_file(void);
@@ -238,6 +237,7 @@ static void set_inverted_text_if_not_mode_7(void);
 static void set_normal_text_if_not_mode_7(void);
 static void clear_screen(void);
 static void print_x_words_of_help(void);
+static void print_char_via_putchar(void);
 static void render_number_to_screen(void);
 static void display_document_file_state(void);
 static void compute_bytes_free(void);
@@ -706,7 +706,7 @@ c816d:
     do {
         a = printer_driver_name[x];
         if (a == 0x0d) break;
-        bdos_print_char();
+        putchar(a);
         x++;
     } while (x != 0);
     // c81a7:
@@ -2163,7 +2163,7 @@ c876d:
     //     lda #0x2e ; '.'
     a = 0x2e;
     //     jsr bdos_print_char
-    bdos_print_char();
+    putchar(a);
     //     lda current_line_ptr
     a = (uint8_t)(current_line_ptr & 0xff);
     //     ldy current_line_ptr+1
@@ -2599,7 +2599,7 @@ loop_c89fa:
     //     beq c8a07
     if (flags & FLAG_Z) goto c8a07;
     //     jsr bdos_print_char
-    bdos_print_char();
+    putchar(a);
     //     iny
     y++;
     //     bne loop_c89fa
@@ -2626,7 +2626,7 @@ loop_c8a15:
 c8a19:
     // c8a19:
     //     jsr bdos_print_char
-    bdos_print_char();
+    putchar(a);
     //     cmp #0x0d
     { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
     //     bne loop_c8a15
@@ -5720,7 +5720,7 @@ c9472:
     //     jsr set_inverted_text_if_not_mode_7
     set_inverted_text_if_not_mode_7();
     //     jsr bdos_print_char
-    bdos_print_char();
+    putchar(a);
     //     pla
     a = saved_a; }
     //     jmp set_normal_text_if_not_mode_7
@@ -5729,7 +5729,7 @@ c9472:
 
 c9488:
     //     jmp bdos_print_char
-    bdos_print_char();
+    putchar(a);
 }
 static void prepare_printer_driver(void) {
     // Pseudocode: Sets up printer driver pointer from name or default driver
@@ -5780,7 +5780,7 @@ static void default_print_char(void) {
     //     bcs return_35
     if (a >= 0x80) return;
     //     jmp bdos_print_char
-    bdos_print_char();
+    putchar(a);
 }
 
 // Default printer_on: init / set mode
@@ -10552,6 +10552,9 @@ ca6ae:
     //     rts
     return;
 }
+static void print_char_via_putchar(void) {
+    putchar(a);
+}
 static void render_number_to_screen(void) {
     // Pseudocode: Renders a 16-bit number to screen via bdos_print_char
 
@@ -10565,10 +10568,10 @@ static void render_number_to_screen(void) {
     //     sty tmp9
     tmp9 = y;
     //     lda #<(bdos_print_char)
-    a = (uint8_t)((uintptr_t)&bdos_print_char & 0xff);
+    a = (uint8_t)((uintptr_t)&print_char_via_putchar & 0xff);
     //     ldy #>(bdos_print_char)
-    y = (uint8_t)((uintptr_t)&bdos_print_char >> 8);
-    number_callback = bdos_print_char;
+    y = (uint8_t)((uintptr_t)&print_char_via_putchar >> 8);
+    number_callback = print_char_via_putchar;
     // Fall through to render_number_to_callback in original 6502
     render_number_to_callback();
 }
@@ -10873,7 +10876,7 @@ static void print_x_words_of_help(void) {
     // ca82e:
 ca82e:
     //     jsr bdos_print_char
-    bdos_print_char();
+    putchar(a);
     //     iny
     y++;
     // ca832:
@@ -13600,39 +13603,6 @@ uint8_t parser_table[] = {
     //     .word hm_fmt_cmd, fm_fmt_cmd, lm_fmt_cmd, ls_fmt_cmd, op_fmt_cmd
     //     .word ep_fmt_cmd, lj_fmt_cmd, pb_fmt_cmd
 
-static void bdos_print_char(void) {
-    // bdos_print_char:
-    //     pha
-    //     txa
-    //     pha
-    //     tya
-    //     pha
-    //     tsx
-    //     lda 0x0103,x
-    //     ldy #BDOS_CONSOLE_OUTPUT
-    //     jsr BDOS
-    { uint8_t saved_a = a, saved_x = x, saved_y = y;
-    bdos_console_output();
-    y = saved_y; x = saved_x; a = saved_a;
-    if (a == 13) {
-        a = 10;
-        bdos_print_char();
-        a = saved_a;
-    } }
-    //     pla
-    //     tay
-    //     pla
-    //     tax
-    //     pla
-    //     cmp #13
-    //     bne 1f
-    //     pha
-    //     lda #10
-    //     jsr bdos_print_char
-    //     pla
-    // 1:
-    //     rts
-}
 static void readline(void) {
     // Pseudocode: Reads a line from keyboard with editing support (backspace, delete line)
 
