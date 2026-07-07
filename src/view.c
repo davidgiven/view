@@ -768,7 +768,7 @@ c81db:
     //     lda #0x2c ; ','
     a = 0x2c;
     //     jsr screen_putchar
-    screen_putchar();
+    screen_putchar(a);
     // c81e0:
 c81e0:
     //     txa
@@ -778,7 +778,7 @@ c81e0:
     //     adc #0x31 ; '1'
     a += 0x31;
     //     jsr screen_putchar
-    screen_putchar();
+    screen_putchar(a);
     // c81e7:
 c81e7:
     //     inx
@@ -8177,7 +8177,7 @@ static void enter_printable_character(void) {
     a = l0038;
     ram[current_edit_line_ptr + y] = a;
     y = l0074;
-    if (y == 0) screen_putchar();
+    if (y == 0) screen_putchar(a);
     xpos++;
     ca684();
     y = 0;
@@ -8889,7 +8889,7 @@ edit_command_loop:
     //     sta l0081
     l0081 = a;
     //     jsr screen_putchar
-    screen_putchar();
+    screen_putchar(a);
     //     ldy input_buffer_ptr+1
     y = (uint8_t)(input_buffer_ptr & 0xff);
     //     iny
@@ -10022,7 +10022,7 @@ ca523:
     }
     // ca529:
     //     jsr screen_putchar
-    screen_putchar();
+    screen_putchar(a);
     //     txa
     a = marker_idx;
     //     bne ca532
@@ -10123,7 +10123,8 @@ static void set_normal_text_if_not_mode_7(void) {
     //     ldy #SCREEN_SETSTYLE
     //     lda #0
     //     jsr SCREEN
-    screen_setstyle();
+    a = 0;
+    screen_setstyle(a);
     //     jmp 1f
 
     // ; ***************************************************************************************
@@ -10136,7 +10137,8 @@ static void set_normal_text_if_not_mode_7(void) {
     //     ldy #SCREEN_SETSTYLE
     //     lda #STYLE_REVERSE
     //     jsr SCREEN
-    screen_setstyle();
+    a = STYLE_REVERSE;
+    screen_setstyle(a);
     // 1:
     //     pla
     //     tay
@@ -10162,7 +10164,8 @@ static void set_inverted_text_if_not_mode_7(void) {
     //     ldy #SCREEN_SETSTYLE
     //     lda #STYLE_REVERSE
     //     jsr SCREEN
-    screen_setstyle();
+    a = STYLE_REVERSE;
+    screen_setstyle(a);
     // 1:
     //     pla
     // PROBLEM: pla
@@ -10192,7 +10195,7 @@ static void sub_ca597(void) {
     // loop_ca5a2:
 loop_ca5a2:
     //     jsr screen_putchar
-    screen_putchar();
+    screen_putchar(a);
     //     dec line_lengths,x
     line_lengths[x]--;
     //     bne loop_ca5a2
@@ -10467,7 +10470,7 @@ ca666:
     //     txa
     a = x;
     //     jsr screen_putchar
-    screen_putchar();
+    screen_putchar(a);
     //     lda #0x4a ; 'J'
     a = 0x4a;
     //     ldx justifying_flag
@@ -10479,7 +10482,7 @@ ca666:
     // ca672:
 ca672:
     //     jsr screen_putchar
-    screen_putchar();
+    screen_putchar(a);
     //     lda #0x49 ; 'I'
     a = 0x49;
     //     ldx insert_mode_flag
@@ -10757,7 +10760,7 @@ read_char:
     x = a;
     //     ldy #SCREEN_GETCHAR
     //     jsr SCREEN
-    screen_getchar();
+    a = screen_getchar();
     //     bcs read_char
     if (flags & FLAG_C) goto read_char;
     //     cmp #0x1b                                                         ; A=character read
@@ -10806,17 +10809,17 @@ static void draw_prompt_characters(void) {
     //     lda tmp2
     a = (uint8_t)tmp2;
     //     jsr screen_putchar
-    screen_putchar();
+    screen_putchar(a);
     //     lda tmp3
     a = (uint8_t)tmp3;
     //     jsr screen_putchar
-    screen_putchar();
+    screen_putchar(a);
     //     jsr set_normal_text_if_not_mode_7
     set_normal_text_if_not_mode_7();
     //     lda #0x20 ; ' '
     a = 0x20;
     //     jsr screen_putchar
-    screen_putchar();
+    screen_putchar(a);
     //     jsr restore_cursor_position
     restore_cursor_position();
     // cursor_on:
@@ -10846,9 +10849,13 @@ static void save_cursor_position(void) {
     // save_cursor_position:
     //     ldy #SCREEN_GETCURSOR
     //     jsr SCREEN
-    screen_getcursor();
+    uint16_t cursor_ = screen_getcursor();
+    a = (uint8_t)(cursor_ & 0xff);
+    x = (uint8_t)(cursor_ >> 8);
     //     sta tmp4
+    tmp4 = a;
     //     stx tmp5
+    tmp5 = x;
     //     rts
 }
 static void set_cursor_position(void) {
@@ -10870,7 +10877,7 @@ static void set_cursor_position(void) {
     a = saved_x;
     //     ldy #SCREEN_SETCURSOR
     //     jsr SCREEN
-    screen_setcursor();
+    screen_setcursor((uint16_t)x << 8 | a);
 
     //     pla
     //     tay
@@ -11373,7 +11380,7 @@ static void memory_full(void) {
     // loop_ca962:
 loop_ca962:
     //     jsr screen_putchar
-    screen_putchar();
+    screen_putchar(a);
     // ca965:
 ca965:;
     //     lda la995,x
@@ -11399,7 +11406,7 @@ ca96e:
     // loop_ca976:
 loop_ca976:
     //     jsr screen_putchar
-    screen_putchar();
+    screen_putchar(a);
     //     dey
     y--;
     //     bne loop_ca976
@@ -13253,9 +13260,9 @@ static void check_for_command_prefix(void) {
 static void system_init(void) {
     himem = 0xffff;
     oshwm = 0;
-    screen_getsize();
-    screen_width = a;
-    screen_height = x;
+    uint16_t size_ = screen_getsize();
+    screen_width = (uint8_t)(size_ & 0xff);
+    screen_height = (uint8_t)(size_ >> 8);
 }
 static void noscreen(void) {
     // Pseudocode: Screen driver not found: displays error and exits
@@ -14406,23 +14413,6 @@ void bdos_write_sequential(void) { y = 21; bdos_call(); }
 void bdos_create_file(void) { y = 22; bdos_call(); }
 void bdos_set_dma_address(void) { y = 26; bdos_call(); }
 void bdos_parsefilename(void) { y = 43; bdos_call(); }
-
-// SCREEN trampoline (platform-specific - currently a stub)
-void screen_call(void) {
-    // In a real CP/M environment this would invoke the SCREEN driver with y=opcode
-}
-
-// SCREEN wrapper implementations
-void screen_putchar(void) { y = 5; screen_call(); }
-void screen_getchar(void) { y = 7; screen_call(); }
-void screen_setcursor(void) { y = 3; screen_call(); }
-void screen_getcursor(void) { y = 4; screen_call(); }
-void screen_setstyle(void) { y = 12; screen_call(); }
-void screen_getsize(void) { y = 1; screen_call(); }
-void screen_clear(void) { y = 2; screen_call(); }
-void screen_scrollup(void) { y = 9; screen_call(); }
-void screen_scrolldown(void) { y = 10; screen_call(); }
-void screen_enablecursor(bool on) { a = on ? 0xff : 0; y = 8; screen_call(); }
 
 int main(int argc, char* argv[]) {
     main_();
