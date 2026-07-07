@@ -240,6 +240,11 @@ static void clear_screen(void);
 static void print_x_words_of_help(void);
 static void print_char_via_putchar(void);
 static void render_number_to_screen(void);
+static void home_cursor(void);
+static void cursor_on(void);
+static void cursor_off(void);
+static void save_cursor_position(void);
+static void restore_cursor_position(void);
 static void display_document_file_state(void);
 static void compute_bytes_free(void);
 static void cli_loop_impl(void);
@@ -10773,24 +10778,39 @@ static void clear_screen(void) {
     screen_clear(); return;
 }
 static void draw_prompt_characters(void) {
-    // Pseudocode: Draws two inverted prompt characters at top-left of screen
+    // draw_prompt_characters: Draws two inverted prompt characters at top-left
+    // On entry: x, y = prompt characters
+    // Uses: tmp2, tmp3
+    // On exit: cursor position restored
 
-    // ; ***************************************************************************************
-    // draw_prompt_characters:
     //     stx tmp2
+    tmp2 = x;
     //     sty tmp3
+    tmp3 = y;
     //     jsr save_cursor_position
+    save_cursor_position();
     //     jsr cursor_off
+    cursor_off();
     //     jsr home_cursor
+    home_cursor();
     //     jsr set_inverted_text_if_not_mode_7
+    set_inverted_text_if_not_mode_7();
     //     lda tmp2
+    a = (uint8_t)tmp2;
     //     jsr screen_putchar
+    screen_putchar();
     //     lda tmp3
+    a = (uint8_t)tmp3;
     //     jsr screen_putchar
+    screen_putchar();
     //     jsr set_normal_text_if_not_mode_7
+    set_normal_text_if_not_mode_7();
     //     lda #0x20 ; ' '
+    a = 0x20;
     //     jsr screen_putchar
+    screen_putchar();
     //     jsr restore_cursor_position
+    restore_cursor_position();
     // cursor_on:
     // cursor_off:
     //     rts
