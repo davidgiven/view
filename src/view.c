@@ -62,7 +62,6 @@ extern void bdos_write_sequential(void);
 extern void bdos_create_file(void);
 extern void bdos_set_dma_address(void);
 extern void bdos_parsefilename(void);
-extern void bdos_gettpa(void);
 
 // Printer driver struct (replaces 6502 jump table with 4 entries at offsets 0,3,6,9)
 struct printer_driver {
@@ -13251,39 +13250,11 @@ static void check_for_command_prefix(void) {
     //     rts
 }
 static void system_init(void) {
-    // Pseudocode: Initializes system: gets TPA, finds screen driver, gets screen size
-
-    // system_init:
-    //     ldy #BIOS_GETTPA
-    //     lda #BANK_MAIN
-    //     jsr BIOS
-    // PROBLEM: BIOS calls not translated
-    //     stx himem+1
-    //     lda #0
-    //     sta himem+0
-
-    //     lda #<cpm_ram
-    //     sta oshwm+0
-    //     lda #>cpm_ram
-    //     sta oshwm+1
-
-    //     ldy #BIOS_FINDDRV
-    //     lda #DRVID_SCREEN
-    //     ldx #0
-    //     jsr BIOS
-    //     bcs noscreen
-    // PROBLEM: BIOS_FINDDRV not translated
-    //     sta SCREEN+1
-    //     stx SCREEN+2
-
-    //     ldy #SCREEN_GETSIZE
-    //     jsr SCREEN
+    himem = 0xffff;
+    oshwm = 0;
     screen_getsize();
-    //     sta screen_width
     screen_width = a;
-    //     stx screen_height
     screen_height = x;
-    //     rts
 }
 static void noscreen(void) {
     // Pseudocode: Screen driver not found: displays error and exits
@@ -14434,7 +14405,6 @@ void bdos_write_sequential(void) { y = 21; bdos_call(); }
 void bdos_create_file(void) { y = 22; bdos_call(); }
 void bdos_set_dma_address(void) { y = 26; bdos_call(); }
 void bdos_parsefilename(void) { y = 43; bdos_call(); }
-void bdos_gettpa(void) { y = 42; bdos_call(); }
 
 // SCREEN trampoline (platform-specific - currently a stub)
 void screen_call(void) {
