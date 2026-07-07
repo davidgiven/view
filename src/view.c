@@ -156,7 +156,7 @@ static void beep(void);
 static void enter_printable_character(void);
 static void sub_c9de1(void);
 static void sub_c9e22(void);
-static void sub_ca94a(void);
+static void memory_full(void);
 static void editor_loop_impl(void);
 static void ca741(void);
 static void ca93c(void);
@@ -1041,7 +1041,7 @@ c8349:
     //     jsr sub_c8a4f
     sub_c8a4f();
     //     bcs c836b
-    if (flags & FLAG_C) { sub_ca94a(); esc_key(); return; }
+    if (flags & FLAG_C) { memory_full(); esc_key(); return; }
     //     jsr sub_c8361
     sub_c8361();
     // c8356:
@@ -11326,55 +11326,100 @@ static void run_editor(void) {
     //     txs
     // PROBLEM: txs
     //     jsr sub_ca94a
-    sub_ca94a();
+    memory_full();
     //     jmp editor_loop
     longjmp(env, JMP_EDITOR);
 }
-static void sub_ca94a(void) {
-    // Pseudocode: Memory full error handler: displays message, waits for ESCAPE, clears state
+// la995: "Memory full - Press ESCAPE"
+static const uint8_t la995_data[] = "Memory full - Press ESCAPE";
 
-    // sub_ca94a:
+static void memory_full(void) {
+    // memory_full (sub_ca94a): Memory full error handler
+    // On entry: (none)
+    // On exit:  l006e=0, l0076=1, l0073=1, cursor on
+    // Uses: a, x, y, line_lengths
+
     //     jsr cursor_off
+    cursor_off();
     //     ldx #3
+    x = 3;
     //     ldy #0
+    y = 0;
     //     jsr set_cursor_position
+    set_cursor_position();
     //     jsr set_inverted_text_if_not_mode_7
+    set_inverted_text_if_not_mode_7();
     //     ldy screen_width
+    y = screen_width;
     //     sty line_lengths
+    line_lengths[0] = y;
     //     dey
+    y--;
     //     dey
+    y--;
     //     ldx #0
-    //     beq ca965                                                         ; ALWAYS branch
+    x = 0;
+    //     beq ca965
+    goto ca965;
 
     // loop_ca962:
+loop_ca962:
     //     jsr screen_putchar
+    screen_putchar();
     // ca965:
+ca965:;
     //     lda la995,x
+    a = la995_data[x];
     //     beq ca96e
+    if (a == 0) goto ca96e;
     //     inx
+    x++;
     //     dey
+    y--;
     //     bne loop_ca962
+    if (y != 0) goto loop_ca962;
     // ca96e:
+ca96e:
     //     jsr set_normal_text_if_not_mode_7
+    set_normal_text_if_not_mode_7();
     //     tya
+    a = y;
     //     beq ca97c
+    if (a == 0) goto ca97c;
     //     lda #0x20 ; ' '
+    a = 0x20;
     // loop_ca976:
+loop_ca976:
     //     jsr screen_putchar
+    screen_putchar();
     //     dey
+    y--;
     //     bne loop_ca976
+    if (y != 0) goto loop_ca976;
     // ca97c:
+ca97c:
     //     lda #0
+    a = 0;
     //     sta l006e
+    l006e = a;
     //     jsr clear_cmd
+    clear_cmd();
     // loop_ca983:
+loop_ca983:
     //     jsr beep
+    beep();
     //     jsr flush_and_read_char
+    flush_and_read_char();
     //     bcc loop_ca983
+    if (!(flags & FLAG_C)) goto loop_ca983;
     //     jsr cursor_on
+    cursor_on();
     //     lda #1
+    a = 1;
     //     sta l0076
+    l0076 = a;
     //     sta l0073
+    l0073 = a;
     //     rts
 }
 static void adjust_pointers(void) {
