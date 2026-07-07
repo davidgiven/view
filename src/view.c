@@ -10831,6 +10831,8 @@ static void restore_cursor_position(void) {
     y = tmp5;
     set_cursor_position();
 }
+static const uint8_t la83d[] = "VIEW\0B3.0 for CP/M-65";
+
 static void print_x_words_of_help(void) {
     // Pseudocode: Prints X words of the help string showing VIEW and version
 
@@ -10850,15 +10852,15 @@ ca82e:
     // ca832:
 ca832:
     //     lda la83d,y
-    // PROBLEM: la83d data table not defined as C array
+    a = la83d[y];
     //     bne ca82e
-    if (!(flags & FLAG_Z)) goto ca82e;
+    if (a != 0) goto ca82e;
     //     lda #0x20 ; ' '
     a = 0x20;
     //     dex
     x--;
     //     bpl ca82e
-    if (!(flags & FLAG_N)) goto ca82e;
+    if ((int8_t)x >= 0) goto ca82e;
     //     rts
     return;
 }

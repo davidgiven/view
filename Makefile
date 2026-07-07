@@ -12,4 +12,8 @@ view-rebuild.rom: view-b3.0.asm
 	beebasm -i $< -o $@
 
 view: src/view.c src/cli.h src/cli_stdio.c src/screen.h src/screen_ncurses.c
-	$(CC) -g -o view src/view.c src/cli_stdio.c src/screen_ncurses.c -lncurses
+	$(CC) -g -O2 -Wall -Wextra -o $@ src/view.c src/cli_stdio.c src/screen_ncurses.c -lncurses
+
+.PHONY: test
+test: view
+	TERM=vt100 python3 tests/interact.py
