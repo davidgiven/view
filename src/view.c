@@ -164,6 +164,7 @@ static void sub_cae06(void);
 static void start_printing(void);
 static void compute_bytes_free(void);
 static void parse_optional_filename_from_command(void);
+static void parse_filename_from_command(void);
 static void check_not_continuous_editing(void);
 static void get_current_fmt_cmd_byte(void);
 static void get_next_fmt_cmd_byte(void);
@@ -256,6 +257,7 @@ static void adjust_pointers(void);
 static void cac78(void);
 static void parse_mark_from_command(void);
 static void sub_c9445(void);
+static void c937b(void);
 static void print_vertical_space(void);
 static void render_header_or_footer(void);
 static void sub_ca8b9(void);
@@ -268,6 +270,49 @@ static void render_number_to_callback(void);
 static void sub_ca6f9(void);
 static void emit_to_output_buffer_callback(void);
 static void sub_ca536(void);
+// Forward declarations for recently translated functions
+static void bad_filename_error(void);
+static void c9263(void);
+static void ca6fe(void);
+static void call_through_jumptable(void);
+static void close_file(void);
+static void compute_required_space_for_insertion(void);
+static void evaluate_expression_from_fmt_cmd(void);
+static void execute_formatting_command(void);
+static void expand_line(void);
+static void find_margins_of_current_ruler_buffer(void);
+static void get_register_address(void);
+static void lookup_formatting_command(void);
+static void microspace_word_processor(void);
+static void nested_macro_error(void);
+static void open_input_file(void);
+static void open_output_file(void);
+static void page_eject_fmt(void);
+static void parse_boolean_from_fmt_cmd(void);
+static void parse_integer_from_command(void);
+static void print_document(void);
+static void read_block_from_file(void);
+static void render_new_page(void);
+static void sub_c916a(void);
+static void sub_c9173(void);
+static void sub_c9188(void);
+static void sub_c9228(void);
+static void sub_c9241(void);
+static void sub_c9393(void);
+static void sub_c939b(void);
+static void sub_c93a1(void);
+static void sub_c93be(void);
+static void sub_c93c8(void);
+static void sub_c93fd(void);
+static void sub_c9407(void);
+static void sub_c941a(void);
+static void sub_c9431(void);
+static void sub_c9936(void);
+static void sub_c9977(void);
+static void sub_c9aa9(void);
+static void sub_c9ac1(void);
+static void sub_cadf0(void);
+static void sub_cb104(void);
  
 // ; SCREEN driver function codes
 extern void screen_putchar(void);
@@ -1206,6 +1251,7 @@ static void screen_cmd(void) {
     // ; ***************************************************************************************
     // screen_cmd:
     //     jmp print_to_screen
+    print_to_screen(); return;
 }
 static void sheets_cmd(void) {
     // Pseudocode: Prints document to printer then displays newline and returns to CLI
@@ -1213,11 +1259,17 @@ static void sheets_cmd(void) {
     // ; ***************************************************************************************
     // sheets_cmd:
     //     lda #0xc0
+    a = 0xc0;
     //     jsr start_printing
+    start_printing();
     //     jsr print_document
+    print_document();
     //     jsr stop_printing
+    stop_printing();
     //     jsr bdos_print_newline
+    bdos_print_newline();
     //     jmp cli_loop
+    cli_loop(); return;
 }
 static void print_cmd(void) {
     // Pseudocode: Sets print flags and falls through to print_to_screen
@@ -1247,23 +1299,34 @@ static void stop_printing(void) {
     // ; ***************************************************************************************
     // stop_printing:
     //     lda print_flags
+    a = print_flags;
     //     bpl c8459
+    if (!(flags & FLAG_N)) goto c8459;
     //     rol print_flags
+    // PROBLEM: rol print_flags (rotate on memory)
     //     clc
+    flags &= ~FLAG_C;
     //     ror print_flags
+    // PROBLEM: ror print_flags (rotate on memory)
     //     lda #6
+    a = 6;
     //     jsr call_printer_driver
+    call_printer_driver();
     // c8459:
+c8459:
     //     rts
+    return;
 }
 static void start_printing(void) {
     // Pseudocode: Initializes printer driver and starts printing with given flags
 
     // start_printing:
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "Sorry, can't print yet\r"
     //     .byte 0
     //     jmp cli_loop
+    cli_loop(); return;
 
     //     sta print_flags
     //     jsr prepare_printer_driver
@@ -1446,14 +1509,22 @@ static void close_input_output_files(void) {
 
     // close_input_output_files:
     //     lda #0
+    a = 0;
     //     sta input_file_empty_flag
+    input_file_empty_flag = a;
     //     sta file_edit_flags
+    file_edit_flags = a;
 
     //     ldx #<output_file
+    x = (uint8_t)((uintptr_t)output_file & 0xff);
     //     ldy #>output_file
+    y = (uint8_t)(((uintptr_t)output_file >> 8) & 0xff);
     //     jsr select_file
+    select_file();
     //     jsr close_file
+    close_file();
     //     jmp cli_loop
+    cli_loop(); return;
 
     // MULTIPLE ENTRY POINTS: quit_cmd, close_input_output_files
 }
@@ -1464,35 +1535,61 @@ static void save_cmd_write_cmd(void) {
     // save_cmd:
     // write_cmd:
     //     jsr parse_optional_filename_from_command
+    parse_optional_filename_from_command();
     //     zif eq
+    if (flags & FLAG_Z) {
     //         bit file_edit_flags
+        { flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | ((a & file_edit_flags) == 0 ? FLAG_Z : 0) | (file_edit_flags & (FLAG_N|FLAG_V)); }
     //         zif vc
+        if (!(flags & FLAG_V)) {
     //             jmp bad_filename_error
+            bad_filename_error(); return;
     //         zendif
+        }
 
     //         ldx #0
+        x = 0;
     //         zrepeat
+        do {
     //             lda input_filename,x
+            a = input_filename[x];
     //             sta filename_buffer,x
+            filename_buffer[x] = a;
     //             inx
+            x++;
     //             cmp #0x0d
+            { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
     //         zuntil eq
+        } while (!(flags & FLAG_Z));
     //     zendif
+    }
     //     jsr parse_marks_from_command
+    parse_marks_from_command();
     //     jsr sanitise_area
+    sanitise_area();
     //     beq return_6
+    if (flags & FLAG_Z) return;
 
     //     ldx #<input_buffer
+    x = (uint8_t)((uintptr_t)input_buffer & 0xff);
     //     ldy #>input_buffer
+    y = (uint8_t)(((uintptr_t)input_buffer >> 8) & 0xff);
     //     jsr select_file
+    select_file();
 
     //     jsr open_output_file
+    open_output_file();
     //     jsr write_area_to_file
+    write_area_to_file();
     //     lda #0
+    a = 0;
     //     jsr put_byte_to_file
+    put_byte_to_file();
 
     //     jsr close_file
+    close_file();
     //     jmp cli_loop
+    cli_loop(); return;
 
     // MULTIPLE ENTRY POINTS: save_cmd, write_cmd
 }
@@ -1517,12 +1614,15 @@ static void display_not_enough_memory(void) {
 
     // display_not_enough_memory:
     //     jsr stop_printing
+    stop_printing();
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "Not enough memory"
     //     .byte 0xff
-
-    // return_6:
+// return_6:
+return_6:
     //     rts
+    return;
 
     // MULTIPLE ENTRY POINTS: check_for_at_least_150_bytes_free, display_not_enough_memory
 }
@@ -1532,10 +1632,15 @@ static void load_cmd(void) {
     // ; ***************************************************************************************
     // load_cmd:
     //     jsr check_not_continuous_editing
+    check_not_continuous_editing();
     //     jsr parse_filename_from_command
+    parse_filename_from_command();
     //     jsr initialise_document
+    initialise_document();
     //     jsr reset_area_to_entire_document
-    //     jsr 1f
+    reset_area_to_entire_document();
+    //     jsr 1f            ; local forward jump - jumps to "1:" in read_cmd
+    // PROBLEM: load_cmd jumps to label 1 in read_cmd - shared entry point
     //     jsr reset_document_name_after_load
     //     jsr clear_cmd
     //     jmp move_cursor_to_top_of_document
@@ -1547,48 +1652,83 @@ static void read_cmd(void) {
 
     // read_cmd:
     //     jsr parse_filename_from_command
+    parse_filename_from_command();
     //     jsr parse_marks_from_command
+    parse_marks_from_command();
     // 1:
     //     jsr check_for_at_least_150_bytes_free
+    check_for_at_least_150_bytes_free();
 
     //     ldx #<input_buffer
+    x = (uint8_t)((uintptr_t)input_buffer & 0xff);
     //     ldy #>input_buffer
+    y = (uint8_t)(((uintptr_t)input_buffer >> 8) & 0xff);
     //     jsr select_file
+    select_file();
 
     //     jsr open_input_file
+    open_input_file();
 
     //     lda area_start_ptr
+    a = (uint8_t)(area_start_ptr & 0xff);
     //     ldy area_start_ptr+1
+    y = (uint8_t)((area_start_ptr >> 8) & 0xff);
     //     sta tmp4
+    tmp4 = a;
     //     sty tmp5
+    tmp5 = y;
     //     jsr move_cursor_to_address
+    move_cursor_to_address();
     //     lda tmp4
+    a = tmp4;
     //     ldy tmp5
+    y = tmp5;
     //     jsr compute_required_space_for_insertion
+    compute_required_space_for_insertion();
     //     jsr make_space_for_insertion
+    make_space_for_insertion();
 
     //     jsr read_block_from_file
+    read_block_from_file();
     //     beq c8584
     //     bcs c8598
+    if (flags & FLAG_Z) goto c8584;
+    if (flags & FLAG_C) goto c8598;
     // c8584:
+c8584:
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "Not all read in\r"
     //     .byte 0
 
     // c8598:
+c8598:
     //     lda tmp0
+    a = tmp0;
     //     sta tmp4
+    tmp4 = a;
     //     lda tmp1
+    a = tmp1;
     //     sta tmp5
+    tmp5 = a;
     //     lda ptr5
+    a = (uint8_t)(ptr5 & 0xff);
     //     sec
+    flags |= FLAG_C;
     //     sbc tmp0
+    { uint16_t tmp_ = (uint16_t)a - (uint8_t)(tmp0 & 0xff) - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     sta tmp6
+    tmp6 = a;
     //     lda ptr5+1
+    a = (uint8_t)((ptr5 >> 8) & 0xff);
     //     sbc tmp1
+    { uint16_t tmp_ = (uint16_t)a - (uint8_t)(tmp1 & 0xff) - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     sta tmp7
+    tmp7 = a;
     //     jsr adjust_pointers
+    adjust_pointers();
     //     jmp cli_loop
+    cli_loop(); return;
 
     // MULTIPLE ENTRY POINTS: load_cmd jumps to label 1: within read_cmd
 }
@@ -1598,8 +1738,10 @@ static void mode_cmd(void) {
     // ; ***************************************************************************************
     // mode_cmd:
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "Bad mode"
     //     .byte 0xff
+    return;
 }
 static void microspace_cmd(void) {
     // Pseudocode: Configures microspacing by querying printer driver
@@ -1607,26 +1749,46 @@ static void microspace_cmd(void) {
     // ; ***************************************************************************************
     // microspace_cmd:
     //     jsr prepare_printer_driver
+    prepare_printer_driver();
     //     jsr parse_integer_from_command
+    parse_integer_from_command();
     //     php
+    // PROBLEM: php (push flags)
     //     ldx #0x0a
+    x = 0x0a;
     //     plp
+    // PROBLEM: plp (pull flags)
     //     beq c8608
+    if (flags & FLAG_Z) goto c8608;
     //     ldx tmp8
+    x = tmp8;
     //     beq return_7
+    if (x == 0) return;
     // c8608:
+c8608:
     //     ldy #0
+    y = 0;
     //     lda #0x0c
+    a = 0x0c;
     //     jsr call_printer_driver
+    call_printer_driver();
     //     tya
+    a = y;
     //     and #1
+    a &= 1; flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq c8617
+    if (flags & FLAG_Z) goto c8617;
     //     stx microspacing_flag
+    microspacing_flag = x;
     // return_7:
+return_7:
     //     rts
+    return;
 
     // c8617:
+c8617:
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "Driver does not support microspacing"
     //     .byte 0xff
 }
@@ -1636,39 +1798,70 @@ static void setup_cmd(void) {
     // ; ***************************************************************************************
     // setup_cmd:
     //     ldx #1
+    x = 1;
     //     stx tmp6
+    tmp6 = x;
     //     dex                                                               ; X=0x00
+    x--;
     //     stx tmp8
+    tmp8 = x;
     //     dex                                                               ; X=0xff
+    x--;
     //     stx tmp7
+    tmp7 = x;
     // c8649:
+c8649:
     //     jsr sub_c8e33
+    // PROBLEM: jsr sub_c8e33
     //     beq c8672
+    if (flags & FLAG_Z) goto c8672;
     //     and #0xdf
+    a &= 0xdf; flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     ldx #0
+    x = 0;
     // loop_c8652:
+loop_c8652:
     //     cmp c867d,x
+    { uint16_t tmp_ = a - ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x]; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x] ? FLAG_C : 0); }
     //     beq c8669
+    if (flags & FLAG_Z) goto c8669;
     //     inx
+    x++;
     //     ldy c867d,x
+    y = ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x];
     //     bne loop_c8652
+    if (y != 0) goto loop_c8652;
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "Bad flag"
     //     .byte 0xff
 
     // c8669:
+c8669:
     //     lda c8681,x
+    a = ((const uint8_t[]){0x00, 0x00, 0xff})[x];
     //     sta tmp6,x
+    if (x == 0) tmp6 = a; else if (x == 1) tmp7 = a; else tmp8 = a;
     //     inc input_buffer_ptr
+    input_buffer_ptr++;
     //     bne c8649
+    if (!(flags & FLAG_Z)) goto c8649;
     // c8672:
+c8672:
     //     ldx #2
+    x = 2;
     // loop_c8674:
+loop_c8674:
     //     lda tmp6,x
+    if (x == 0) a = tmp6; else if (x == 1) a = tmp7; else a = tmp8;
     //     sta format_mode_flag,x
+    if (x == 0) format_mode_flag = a; else if (x == 1) justifying_flag = a; else insert_mode_flag = a;
     //     dex
+    x--;
     //     bpl loop_c8674
+    if (!(flags & FLAG_N)) goto loop_c8674;
     //     bmi c869b                                                         ; ALWAYS branch
+    cli_loop(); return;
 
     // c867d:
     //     lsr l004a
@@ -1684,114 +1877,222 @@ static void field_cmd(void) {
     // ; ***************************************************************************************
     // field_cmd:
     //     jsr parse_integer_from_command
+    parse_integer_from_command();
     //     beq c869b
+    if (flags & FLAG_Z) { cli_loop(); return; }
     //     lda tmp8
+    a = tmp8;
     //     cmp #0x1b
+    { uint16_t tmp_ = a - 0x1b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x1b ? FLAG_C : 0); }
     //     bne c8699
+    if (!(flags & FLAG_Z)) goto c8699;
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "Frump!"
     //     .byte 0xff
 
     // c8699:
+c8699:
     //     sta current_tab_key
+    current_tab_key = a;
     // c869b:
+c869b:
     //     jmp cli_loop
+    cli_loop(); return;
 }
 static void count_cmd(void) {
     // Pseudocode: Counts words in document area handling command prefixes and punctuation
+    static const uint8_t l8747_data[] = { 0x52, 0x4a, 'C', 'E', 'L', 'J', 0 };
 
     // ; ***************************************************************************************
     // count_cmd:
     //     jsr parse_marks_from_command
+    parse_marks_from_command();
     //     jsr sanitise_area
+    sanitise_area();
     //     beq c869b
+    if (flags & FLAG_Z) { cli_loop(); return; }
     //     lda area_start_ptr
+    a = (uint8_t)(area_start_ptr & 0xff);
     //     sta tmp0
+    tmp0 = a;
     //     lda area_start_ptr+1
+    a = (uint8_t)((area_start_ptr >> 8) & 0xff);
     //     sta tmp1
+    tmp1 = a;
     //     lda #0
+    a = 0;
     //     sta tmp8
+    tmp8 = a;
     //     sta tmp9
+    tmp9 = a;
     //     sta l0083
+    l0083 = a;
     //     sta l0082
+    l0082 = a;
     // c86b8:
+c86b8:
     //     ldy #0
+    y = 0;
     //     jsr deref_and_check_for_command_prefix
+    deref_and_check_for_command_prefix();
     //     bne c86ea
+    if (!(flags & FLAG_Z)) goto c86ea;
     //     ldx #0
+    x = 0;
     //     iny
+    y++;
     // loop_c86c2:
+loop_c86c2:
     //     lda (tmp0),y
+    a = ram[tmp0 + y];
     //     iny
+    y++;
     //     cmp l8747,x
+    { uint16_t tmp_ = a - l8747_data[x]; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l8747_data[x] ? FLAG_C : 0); }
     //     bne c86d1
+    if (!(flags & FLAG_Z)) goto c86d1;
     //     lda (tmp0),y
+    a = ram[tmp0 + y];
     //     cmp l8748,x
+    { uint16_t tmp_ = a - l8747_data[x+1]; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l8747_data[x+1] ? FLAG_C : 0); }
     //     beq c86df
+    if (flags & FLAG_Z) goto c86df;
     // c86d1:
+c86d1:
     //     lda l8749,x
+    a = l8747_data[x+2];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq c86db
+    if (flags & FLAG_Z) goto c86db;
     //     dey
+    y--;
     //     inx
+    x++;
     //     inx
+    x++;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
     //     bne loop_c86c2
+    if (!(flags & FLAG_Z)) goto loop_c86c2;
     // c86db:
+c86db:
     //     lda #0x80
+    a = 0x80;
     //     bne c86ff                                                         ; ALWAYS branch
+    goto c86ff;
 
     // c86df:
+c86df:
     //     lda tmp0
+    a = tmp0;
     //     clc
+    flags &= ~FLAG_C;
     //     adc #3
+    { uint16_t tmp_ = (uint16_t)a + 3 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | ((((a ^ 3) & 0x80) && ((a ^ (uint8_t)tmp_) & 0x80)) ? FLAG_V : 0); }
     //     sta tmp0
+    tmp0 = a;
     //     bcs c871d
+    if (flags & FLAG_C) goto c871d;
     //     bcc c871f                                                         ; ALWAYS branch
+    goto c871f;
 
     // c86ea:
+c86ea:
     //     ldy #0
+    y = 0;
     //     jsr draw_char
+    draw_char();
     //     and #0x7f
+    a &= 0x7f;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     ldx #0
+    x = 0;
     //     ldy l0082
+    y = l0082;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (y == 0 ? FLAG_Z : 0) | (y & FLAG_N);
     //     bmi c870d
+    if (flags & FLAG_N) goto c870d;
     //     cmp #0x0d
+    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
     //     beq c8703
+    if (flags & FLAG_Z) goto c8703;
     //     cmp #0x20 ; ' '
+    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
     //     beq c8703
+    if (flags & FLAG_Z) goto c8703;
     // c86ff:
+c86ff:
     //     inc l0083
+    l0083++;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (l0083 == 0 ? FLAG_Z : 0) | (l0083 & FLAG_N);
     //     bne c8715
+    if (!(flags & FLAG_Z)) goto c8715;
     // c8703:
+c8703:
     //     ldy l0083
+    y = l0083;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (y == 0 ? FLAG_Z : 0) | (y & FLAG_N);
     //     beq c870d
+    if (flags & FLAG_Z) goto c870d;
     //     inc tmp8
+    tmp8++;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (tmp8 == 0 ? FLAG_Z : 0) | (tmp8 & FLAG_N);
     //     bne c870d
+    if (!(flags & FLAG_Z)) goto c870d;
     //     inc tmp9
+    tmp9++;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (tmp9 == 0 ? FLAG_Z : 0) | (tmp9 & FLAG_N);
     // c870d:
+c870d:
     //     stx l0083
+    l0083 = x;
     //     cmp #0x0d
+    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
     //     bne c8715
+    if (!(flags & FLAG_Z)) goto c8715;
     //     stx l0082
+    l0082 = x;
     // c8715:
+c8715:
     //     ora l0082
+    a |= l0082;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     sta l0082
+    l0082 = a;
     //     inc tmp0
+    tmp0++;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (tmp0 == 0 ? FLAG_Z : 0) | (tmp0 & FLAG_N);
     //     bne c871f
+    if (!(flags & FLAG_Z)) goto c871f;
     // c871d:
+c871d:
     //     inc tmp1
+    tmp1++;
     // c871f:
+c871f:
     //     ldy tmp1
+    y = tmp1;
     //     cpy area_end_ptr+1
+    { uint16_t tmp_ = y - (uint8_t)(area_end_ptr >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= (uint8_t)(area_end_ptr >> 8) ? FLAG_C : 0); }
     //     bne c86b8
+    if (!(flags & FLAG_Z)) goto c86b8;
     //     ldy tmp0
+    y = tmp0;
     //     cpy area_end_ptr
+    { uint16_t tmp_ = y - (uint8_t)(area_end_ptr & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= (uint8_t)(area_end_ptr & 0xff) ? FLAG_C : 0); }
     //     bne c86b8
+    if (!(flags & FLAG_Z)) goto c86b8;
     //     ldx tmp8
+    x = tmp8;
     //     ldy tmp9
+    y = tmp9;
     //     jsr render_number_to_screen
+    render_number_to_screen();
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii " word(s) counted."
     //     .byte 0xff
+
     // l8747:
     //     .byte 0x52
     // l8748:
@@ -1806,41 +2107,76 @@ static void format_cmd(void) {
     // ; ***************************************************************************************
     // format_cmd:
     //     jsr parse_marks_from_command
+    parse_marks_from_command();
     //     jsr sanitise_area
+    sanitise_area();
     //     beq c878b
+    if (flags & FLAG_Z) goto c878b;
     //     lda area_start_ptr
+    a = (uint8_t)(area_start_ptr & 0xff);
     //     ldy area_start_ptr+1
+    y = (uint8_t)((area_start_ptr >> 8) & 0xff);
     //     jsr move_cursor_to_address
+    move_cursor_to_address();
     //     jsr sub_caf5f
+    sub_caf5f();
     //     lda #0x10
+    a = 0x10;
     //     jsr wipe_buffer
+    wipe_buffer();
     //     lda current_edit_line_ptr
+    a = (uint8_t)(current_edit_line_ptr & 0xff);
     //     sta current_format_line_ptr
+    current_format_line_ptr = (current_format_line_ptr & 0xff00) | a;
     //     lda current_edit_line_ptr+1
+    a = (uint8_t)((current_edit_line_ptr >> 8) & 0xff);
     //     sta current_format_line_ptr+1
+    current_format_line_ptr = (current_format_line_ptr & 0x00ff) | ((uint16_t)a << 8);
     // c876d:
+c876d:
     //     jsr sub_c9977
+    sub_c9977();
     //     bvs c8791
+    if (flags & FLAG_V) goto c8791;
     //     bcs c8787
+    if (flags & FLAG_C) goto c8787;
     //     lda #0x2e ; '.'
+    a = 0x2e;
     //     jsr bdos_print_char
+    bdos_print_char();
     //     lda current_line_ptr
+    a = (uint8_t)(current_line_ptr & 0xff);
     //     ldy current_line_ptr+1
+    y = (uint8_t)((current_line_ptr >> 8) & 0xff);
     //     cpy area_end_ptr+1
+    { uint16_t tmp_ = y - (uint8_t)(area_end_ptr >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= (uint8_t)(area_end_ptr >> 8) ? FLAG_C : 0); }
     //     bcc c876d
+    if (!(flags & FLAG_C)) goto c876d;
     //     bne c8787
+    if (!(flags & FLAG_Z)) goto c8787;
     //     cmp area_end_ptr
+    { uint16_t tmp_ = a - (uint8_t)(area_end_ptr & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(area_end_ptr & 0xff) ? FLAG_C : 0); }
     //     bcc c876d
+    if (!(flags & FLAG_C)) goto c876d;
     // c8787:
+c8787:
     //     lda #0xff
+    a = 0xff;
     //     sta l0012
+    l0012 = a;
     // c878b:
+c878b:
     //     jsr bdos_print_newline
+    bdos_print_newline();
     //     jmp cli_loop
+    cli_loop(); return;
 
     // c8791:
+c8791:
     //     jsr bdos_print_newline
+    bdos_print_newline();
     //     jmp display_not_enough_memory
+    display_not_enough_memory(); return;
 }
 static void new_cmd(void) {
     // Pseudocode: Creates a new empty document after checking continuous editing state
@@ -1848,7 +2184,9 @@ static void new_cmd(void) {
     // ; ***************************************************************************************
     // new_cmd:
     //     jsr check_not_continuous_editing
+    check_not_continuous_editing();
     //     jmp initialise_document
+    initialise_document(); return;
 }
 static void fold_cmd(void) {
     // Pseudocode: Toggles folding on/off and displays current folding status
@@ -1856,35 +2194,58 @@ static void fold_cmd(void) {
     // ; ***************************************************************************************
     // fold_cmd:
     //     jsr sub_c8e33
+    sub_c8e33();
     //     beq c87b4
+    if (flags & FLAG_Z) goto c87b4;
     //     lda #0
+    a = 0;
     //     ldx #5
+    x = 5;
     //     jsr sub_c976c
+    sub_c976c();
     //     bcs c87b4
+    if (flags & FLAG_C) goto c87b4;
     //     ldx #0x80
+    x = 0x80;
     //     tay
+    y = a;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (y == 0 ? FLAG_Z : 0) | (y & FLAG_N);
     //     beq c87b2
+    if (flags & FLAG_Z) goto c87b2;
     //     ldx #0
+    x = 0;
     // c87b2:
+c87b2:
     //     stx folding_flag
+    folding_flag = x;
     // c87b4:
+c87b4:
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "Folding "
     //     .byte 0
 
     //     lda folding_flag
+    a = folding_flag;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bpl c87cb
+    if (!(flags & FLAG_N)) goto c87cb;
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "off"
     //     .byte 0xff
 
     // c87cb:
+c87cb:
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "on"
     //     .byte 0xff
 
     // c87d1:
+c87d1:
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "Bad file"
     //     .byte 0xff
 }
@@ -1894,6 +2255,7 @@ static void printer_cmd(void) {
     // ; ***************************************************************************************
     // printer_cmd:
     //     jmp print_cmd
+    print_cmd(); return;
     // #if 0
     //     // TODO: implement loading printer drivers.
     //     jsr parse_optional_filename_from_command
@@ -1947,12 +2309,19 @@ static void parse_integer_from_command(void) {
     // ; ***************************************************************************************
     // parse_integer_from_command:
     //     lda #<(input_buffer)
+    a = (uint8_t)((uintptr_t)input_buffer & 0xff);
     //     sta current_format_line_ptr
+    current_format_line_ptr = (current_format_line_ptr & 0xff00) | a;
     //     lda #>(input_buffer)
+    a = (uint8_t)(((uintptr_t)input_buffer >> 8) & 0xff);
     //     sta current_format_line_ptr+1
+    current_format_line_ptr = (current_format_line_ptr & 0x00ff) | ((uint16_t)a << 8);
     //     jsr sub_c8e33
+    sub_c8e33();
     //     beq return_8
+    if (flags & FLAG_Z) return;
     //     jmp ca6fe
+    ca6fe(); return;
 }
 static void file_not_found_error(void) {
     // Pseudocode: Displays File not found error and returns to CLI
@@ -1960,10 +2329,13 @@ static void file_not_found_error(void) {
     // ; ***************************************************************************************
     // file_not_found_error:
     //     jsr stop_printing
+    stop_printing();
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "File not found\r"
     //     .byte 0
     //     jmp cli_loop
+    cli_loop(); return;
 }
 static void name_cmd(void) {
     // Pseudocode: Sets document name from optional filename argument
@@ -1993,7 +2365,9 @@ static void reset_document_name_after_load(void) {
 
     // reset_document_name_after_load:
     //     lda #0x40 ; '@'
+    a = 0x40;
     //     sta file_edit_flags
+    file_edit_flags = a;
 
     // MULTIPLE ENTRY POINTS: name_cmd, reset_document_name_after_load
 }
@@ -2002,16 +2376,27 @@ static void set_document_name_to_filename_buffer(void) {
 
     // set_document_name_to_filename_buffer:
     //     ldx #0
+    x = 0;
     // loop_c88fa:
+loop_c88fa:
     //     lda filename_buffer,x
+    a = filename_buffer[x];
     //     sta input_filename,x
+    input_filename[x] = a;
     //     inx
+    x++;
     //     cmp #0x21
+    { uint16_t tmp_ = a - 0x21; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x21 ? FLAG_C : 0); }
     //     bge loop_c88fa
+    if (flags & FLAG_C) goto loop_c88fa;
     // return_9:
+return_9:
     //     lda #0x0d
+    a = 0x0d;
     //     sta input_filename-1, x
+    input_filename[x-1] = a;
     //     rts
+    return;
 
     // MULTIPLE ENTRY POINTS: also called directly from edit_cmd
 }
@@ -2021,9 +2406,11 @@ static void file_error(void) {
     // ; ***************************************************************************************
     // zproc file_error
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "File error"
     //     .byte 0
     //     jmp cli_loop
+    cli_loop(); return;
     // zendproc
 }
 static void zero_terminate_filename_buffer(void) {
@@ -3166,29 +3553,50 @@ static void write_area_to_file(void) {
     // ; Does not include trailing zero!
     // write_area_to_file:
     //     jsr sanitise_area
+    sanitise_area();
     //     beq return_17
+    if (flags & FLAG_Z) return;
 
     //     lda area_start_ptr
+    a = (uint8_t)(area_start_ptr & 0xff);
     //     sta tmp8
+    tmp8 = a;
     //     lda area_start_ptr+1
+    a = (uint8_t)(area_start_ptr >> 8);
     //     sta tmp9
+    tmp9 = a;
 
     //     zrepeat
+    do {
     //         ldy #0
+    y = 0;
     //         lda (tmp8),y
+    a = ram[((uint16_t)tmp9 << 8) | tmp8];
     //         jsr put_byte_to_file
+    put_byte_to_file();
     //         inc tmp8
+    tmp8++;
     //         zif eq
+    if (tmp8 == 0) {
     //             inc tmp9
+    tmp9++;
     //         zendif
+    }
 
     //         lda tmp9
+    a = tmp9;
     //         cmp area_end_ptr+1
+    { uint16_t tmp_ = a - (uint8_t)(area_end_ptr >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(area_end_ptr >> 8) ? FLAG_C : 0); }
     //         zif eq
+    if (flags & FLAG_Z) {
     //             lda tmp8
+    a = tmp8;
     //             cmp area_end_ptr
+    { uint16_t tmp_ = a - (uint8_t)(area_end_ptr & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(area_end_ptr & 0xff) ? FLAG_C : 0); }
     //         zendif
+    }
     //     zuntil eq
+    } while (!(flags & FLAG_Z));
     // return_17:
     //     rts
 }
@@ -3305,19 +3713,37 @@ static void parse_optional_filename_from_command(void) {
 
     // parse_optional_filename_from_command:
     //     jsr sub_c8e33
+    sub_c8e33();
     //     beq return_19
+    if (flags & FLAG_Z) return;
     //     ldx #0
+    x = 0;
     // loop_c8dfb:
+loop_c8dfb:
     //     lda input_buffer,y
+    a = input_buffer[y];
     //     cmp #0x0d
-    //     beq c8e25
+    if (a == 0x0d) goto c8e25;
     //     iny
+    y++;
     //     cmp l007e
-    //     beq c8e25
+    if (a == l007e) goto c8e25;
     //     sta filename_buffer,x
+    filename_buffer[x] = a;
     //     inx
+    x++;
     //     cpx #0x14
     //     bne loop_c8dfb
+    if (x != 0x14) goto loop_c8dfb;
+c8e25:
+    //     lda #0x0d
+    a = 0x0d;
+    //     sta filename_buffer,x
+    filename_buffer[x] = a;
+    //     sty input_buffer_ptr
+    input_buffer_ptr = (input_buffer_ptr & 0xff00) | y;
+    // return_20:
+    //     rts
 }
 static void bad_filename_error(void) {
     // bad_filename_error:
@@ -3333,15 +3759,10 @@ static void parse_filename_from_command(void) {
 
     // parse_filename_from_command:
     //     jsr parse_optional_filename_from_command
+    parse_optional_filename_from_command();
     //     beq bad_filename_error
+    if (flags & FLAG_Z) { bad_filename_error(); return; }
     // return_19:
-    //     rts
-
-    // c8e25:
-    //     lda #0x0d
-    //     sta filename_buffer,x
-    //     sty input_buffer_ptr
-    // return_20:
     //     rts
 }
 static void sub_c8e33(void) {
@@ -3436,51 +3857,98 @@ static void print_document(void) {
 
     // print_document:
     //     jsr check_not_continuous_editing
+    check_not_continuous_editing();
     //     jsr check_for_at_least_150_bytes_free
+    check_for_at_least_150_bytes_free();
     //     jsr sub_cb104
+    sub_cb104();
     //     lda top
+    a = (uint8_t)(top & 0xff);
     //     adc #3
+    flags &= ~FLAG_C;
+    { uint16_t sum = (uint16_t)a + 3; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     sta ptr5
+    ptr5 = (ptr5 & 0xff00) | a;
     //     tax
+    x = a;
     //     lda top+1
+    a = (uint8_t)(top >> 8);
     //     adc #0
+    { uint16_t sum = (uint16_t)a + 0 + ((flags & FLAG_C) ? 1U : 0U); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     sta ptr5+1
+    ptr5 = (ptr5 & 0x00ff) | ((uint16_t)a << 8);
     //     tay
+    y = a;
     //     txa
+    a = x;
     //     adc #0x8d
+    { uint16_t sum = (uint16_t)a + 0x8d + ((flags & FLAG_C) ? 1U : 0U); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     bcc c8edb
+    if (!(flags & FLAG_C)) goto c8edb;
     //     iny
+    y++;
     // c8edb:
+c8edb:
     //     sta first_macro_ptr
+    first_macro_ptr = (first_macro_ptr & 0xff00) | a;
     //     sta last_macro_ptr
+    last_macro_ptr = (last_macro_ptr & 0xff00) | a;
     //     sty first_macro_ptr+1
+    first_macro_ptr = (first_macro_ptr & 0x00ff) | ((uint16_t)y << 8);
     //     sty last_macro_ptr+1
+    last_macro_ptr = (last_macro_ptr & 0x00ff) | ((uint16_t)y << 8);
     //     lda #0
+    a = 0;
     //     sta l0031
+    l0031 = a;
     //     sta print_xpos
+    print_xpos = a;
     //     sta printing_from_file_flag
+    printing_from_file_flag = a;
     //     tay                                                               ; Y=0x00
+    y = a;
     //     sta (last_macro_ptr),y
+    ram[last_macro_ptr + y] = a;
     //     lda #<(current_ruler_buffer)
+    a = (uint8_t)((uintptr_t)current_ruler_buffer & 0xff);
     //     sta current_ruler_ptr
+    current_ruler_ptr = (current_ruler_ptr & 0xff00) | a;
     //     lda #>(current_ruler_buffer)
+    a = (uint8_t)((uintptr_t)current_ruler_buffer >> 8);
     //     sta current_ruler_ptr+1
+    current_ruler_ptr = (current_ruler_ptr & 0x00ff) | ((uint16_t)a << 8);
     //     jsr find_margins_of_current_ruler_buffer
+    find_margins_of_current_ruler_buffer();
     //     jsr sub_c8e33
+    sub_c8e33();
     //     bne c8f0d
+    if (!(flags & FLAG_Z)) goto c8f0d;
     //     inc printing_from_file_flag
+    printing_from_file_flag++;
     //     lda page
+    a = (uint8_t)(page & 0xff);
     //     sta ptr6
+    ptr6 = (ptr6 & 0xff00) | a;
     //     lda page+1
+    a = (uint8_t)(page >> 8);
     //     sta ptr6+1
+    ptr6 = (ptr6 & 0x00ff) | ((uint16_t)a << 8);
     //     bne c8f30
+    if (a != 0) goto c8f30;
     // c8f0a:
+c8f0a:
     // c8f0d:
+c8f0d:
     //     jsr parse_optional_filename_from_command
+    parse_optional_filename_from_command();
     //     bne c8f29
+    if (!(flags & FLAG_Z)) goto c8f29;
     //     lda l0031
+    a = l0031;
     //     bpl return_23
+    if (!(flags & FLAG_N)) return;
     //     jmp c9263
+    c9263(); return;
 
     // return_23:
     //     rts
@@ -3491,137 +3959,260 @@ static void print_document(void) {
     //     jmp cli_loop
 
     // c8f29:
+c8f29:
     //     #if 0
     //     lda #0x40 ; '@'
     //     jsr open_file
     //     #endif
     //     sta rw_file_handle
+    rw_file_handle = a;
     // c8f30:
+c8f30:
     //     lda l0031
+    a = l0031;
     //     beq c8f3b
+    if (a == 0) goto c8f3b;
     //     lda l0021
+    a = l0021;
     //     bne c8f3b
+    if (a != 0) goto c8f3b;
     //     jsr c9263
+    c9263();
     // c8f3b:
+c8f3b:
     //     jsr sub_c9188
+    sub_c9188();
     //     bcs c8f0a
+    if (flags & FLAG_C) goto c8f0a;
     //     jsr sub_c916a
+    sub_c916a();
     //     ldy #0
+    y = 0;
     //     sty input_buffer_ptr+1
+    input_buffer_ptr = (input_buffer_ptr & 0x00ff) | ((uint16_t)y << 8);
     //     jsr deref_and_check_for_command_prefix
+    deref_and_check_for_command_prefix();
     //     bne c8fce_thunk
+    if (!(flags & FLAG_Z)) goto c8fce_thunk;
     //     ldy #3
+    y = 3;
     //     sty input_buffer_ptr+1
+    input_buffer_ptr = (input_buffer_ptr & 0x00ff) | ((uint16_t)y << 8);
     //     jsr sub_cab6e
+    sub_cab6e();
     //     bne c8f6e
+    if (!(flags & FLAG_Z)) goto c8f6e;
     //     ldy #3
+    y = 3;
     //     ldx #0
+    x = 0;
     // loop_c8f5d:
+loop_c8f5d:
     //     lda (tmp0),y
+    a = ram[((uint16_t)tmp1 << 8) | tmp0 + y];
     //     sta current_ruler_buffer,x
+    current_ruler_buffer[x] = a;
     //     iny
+    y++;
     //     inx
+    x++;
     //     cmp #0x0d
     //     bne loop_c8f5d
+    if (a != 0x0d) goto loop_c8f5d;
     //     jsr find_margins_of_current_ruler_buffer
+    find_margins_of_current_ruler_buffer();
     // c8f6b:
+c8f6b:
     //     jmp c900e
+    goto c900e;
 
     // c8f6e:
+c8f6e:
     //     jsr lookup_formatting_command
+    lookup_formatting_command();
     //     bmi c8f7a
+    if (flags & FLAG_N) goto c8f7a;
     //     jsr execute_formatting_command
+    execute_formatting_command();
     //     beq c8f6b
+    if (flags & FLAG_Z) goto c8f6b;
     // c8fce_thunk:
+c8fce_thunk:
     //     bne c8fce                                                         ; ALWAYS branch
+    goto c8fce;
 
     // c8f7a:
+c8f7a:
     //     lda first_macro_ptr
+    a = (uint8_t)(first_macro_ptr & 0xff);
     //     sta tmp6
+    tmp6 = a;
     //     lda first_macro_ptr+1
+    a = (uint8_t)(first_macro_ptr >> 8);
     //     sta tmp7
+    tmp7 = a;
     //     ldy #1
+    y = 1;
     //     lda (current_format_line_ptr),y
+    a = ram[current_format_line_ptr + y];
     //     sta tmp8
+    tmp8 = a;
     //     iny                                                               ; Y=0x02
+    y++;
     //     lda (current_format_line_ptr),y
+    a = ram[current_format_line_ptr + y];
     //     jsr is_uppercase
+    is_uppercase();
     //     bcc c8f92
+    if (!(flags & FLAG_C)) goto c8f92;
     //     lda #0x20 ; ' '
+    a = 0x20;
     // c8f92:
+c8f92:
     //     sta tmp9
+    tmp9 = a;
     // lookup_macro_name:
+lookup_macro_name:
     //     ldy #0
+    y = 0;
     //     lda (tmp6),y
+    a = ram[((uint16_t)tmp7 << 8) | tmp6 + y];
     //     beq c8f6b
+    if (a == 0) goto c8f6b;
     //     ldy #2
+    y = 2;
     //     lda (tmp6),y
+    a = ram[((uint16_t)tmp7 << 8) | tmp6 + y];
     //     cmp tmp8
+    { uint16_t tmp_ = a - tmp8; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= tmp8 ? FLAG_C : 0); }
     //     bne get_next_macro_in_linked_list
+    if (!(flags & FLAG_Z)) goto get_next_macro_in_linked_list;
     //     iny                                                               ; Y=0x03
+    y++;
     //     lda (tmp6),y
+    a = ram[((uint16_t)tmp7 << 8) | tmp6 + y];
     //     cmp tmp9
+    { uint16_t tmp_ = a - tmp9; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= tmp9 ? FLAG_C : 0); }
     //     beq c8fb9
+    if (flags & FLAG_Z) goto c8fb9;
     // get_next_macro_in_linked_list:
+get_next_macro_in_linked_list:
     //     ldy #0
+    y = 0;
     //     lda (tmp6),y
+    a = ram[((uint16_t)tmp7 << 8) | tmp6 + y];
     //     pha
+{   uint8_t saved_tmp = a;
     //     iny                                                               ; Y=0x01
+    y++;
     //     lda (tmp6),y
+    a = ram[((uint16_t)tmp7 << 8) | tmp6 + y];
     //     sta tmp7
+    tmp7 = a;
     //     pla
+    a = saved_tmp; }
     //     sta tmp6
+    tmp6 = a;
     //     jmp lookup_macro_name
+    goto lookup_macro_name;
 
     // c8fb9:
+c8fb9:
     //     lda macro_executing_flag
+    a = macro_executing_flag;
     //     bne nested_macro_error
+    if (a != 0) { nested_macro_error(); return; }
     //     lda tmp6
+    a = tmp6;
     //     clc
+    flags &= ~FLAG_C;
     //     adc #4
+    { uint16_t sum = (uint16_t)a + 4; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     sta ptr3
+    ptr3 = (ptr3 & 0xff00) | a;
     //     lda tmp7
+    a = tmp7;
     //     adc #0
+    { uint16_t sum = (uint16_t)a + 0 + ((flags & FLAG_C) ? 1U : 0U); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     sta ptr3+1
+    ptr3 = (ptr3 & 0x00ff) | ((uint16_t)a << 8);
     //     sta macro_executing_flag
+    macro_executing_flag = a;
     //     bne c900e
+    if (a != 0) goto c900e;
     // c8fce:
+c8fce:
     //     lda l0031
+    a = l0031;
     //     bne c8fd5
+    if (a != 0) goto c8fd5;
     //     jsr render_new_page
+    render_new_page();
     // c8fd5:
+c8fd5:
     //     jsr sub_c9407
+    sub_c9407();
     //     lda #0
+    a = 0;
     //     sta l0039
+    l0039 = a;
     //     ldy input_buffer_ptr+1
+    y = (uint8_t)((input_buffer_ptr >> 8) & 0xff);
     //     lda print_flags
+    a = print_flags;
     //     bpl c8fe6
+    if (!(flags & FLAG_N)) goto c8fe6;
     //     lda microspacing_flag
+    a = microspacing_flag;
     //     bne c9034
+    if (a != 0) { microspace_word_processor(); goto c8f30; }
     // c8fe6:
+c8fe6:
     //     lda (tmp0),y
+    a = ram[((uint16_t)tmp1 << 8) | tmp0 + y];
     //     iny
+    y++;
     //     jsr sub_c9431
+    sub_c9431();
     //     jsr c9426
+    while (x > 0) { print_char(); x--; }
     //     cmp #0x0d
     //     bne c8fe6
+    if (a != 0x0d) goto c8fe6;
     //     inc register_value_l
+    register_value_l[0]++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (register_value_l[0] == 0 ? FLAG_Z : 0) | (register_value_l[0] & FLAG_N);
     //     bne c8ffb
+    if (!(flags & FLAG_Z)) goto c8ffb;
     //     inc register_value_l+1
+    register_value_l[1]++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (register_value_l[1] == 0 ? FLAG_Z : 0) | (register_value_l[1] & FLAG_N);
     // c8ffb:
+c8ffb:
     //     ldx line_spacing
+    x = line_spacing;
     //     lda l0021
+    a = l0021;
     //     clc
+    flags &= ~FLAG_C;
     //     sbc line_spacing
+    { uint16_t r = (uint16_t)a - (uint16_t)line_spacing - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r < 0x100) flags |= FLAG_C; else flags &= ~FLAG_C; }
     //     bcs c9009
+    if (flags & FLAG_C) goto c9009;
     //     lda #0
+    a = 0;
     //     ldx l0021
+    x = l0021;
     //     dex
+    x--;
     // c9009:
+c9009:
     //     sta l0021
+    l0021 = a;
     //     jsr print_vertical_space
+    print_vertical_space();
     // c900e:
+c900e:
     //     jmp c8f30
+    goto c8f30;
 }
 static void nested_macro_error(void) {
     // nested_macro_error:
@@ -3646,195 +4237,414 @@ static void microspace_word_processor(void) {
 
     // c9034:
     //     ldx #0
+    x = 0;
     //     stx l0044
+    l0044 = x;
     //     stx l0046
+    l0046 = x;
     //     stx l0045
+    l0045 = x;
     //     stx l0047
+    l0047 = x;
     //     stx l0039
+    l0039 = x;
     //     stx l0048
+    l0048 = x;
     //     stx l0042
+    l0042 = x;
     //     stx l0043
+    l0043 = x;
     //     stx l0083
+    l0083 = x;
     // c9048:
+c9048:
     //     txa
+    a = x;
     //     pha
+{   uint8_t saved_a = a;
     //     lda (tmp0),y
+    a = ram[((uint16_t)tmp1 << 8) | tmp0 + y];
     //     jsr sub_c9431
+    sub_c9431();
     //     pla
+    a = saved_a; }
     //     tax
+    x = a;
     //     lda (tmp0),y
+    a = ram[((uint16_t)tmp1 << 8) | tmp0 + y];
     //     iny
+    y++;
     //     cmp #0x1a
     //     bne c906f
+    if (a != 0x1a) goto c906f;
     //     bit l0083
+    flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | ((a & l0083) == 0 ? FLAG_Z : 0) | (l0083 & FLAG_N) | ((l0083 & 0x40) ? FLAG_V : 0);
     //     bpl c9064
+    if (!(flags & FLAG_N)) goto c9064;
     //     lda l0048
+    a = l0048;
     //     beq c906b
+    if (a == 0) goto c906b;
     //     inc l0043
+    l0043++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (l0043 == 0 ? FLAG_Z : 0) | (l0043 & FLAG_N);
     //     bne c9048
+    if (!(flags & FLAG_Z)) goto c9048;
     // c9064:
+c9064:
     //     lda l0039
+    a = l0039;
     //     sta l0047
+    l0047 = a;
     //     jmp c908c
+    goto c908c;
 
     // c906b:
+c906b:
     //     lda #0x20 ; ' '
+    a = 0x20;
     //     dec l0042
+    l0042--; flags = (flags & ~(FLAG_Z|FLAG_N)) | (l0042 == 0 ? FLAG_Z : 0) | (l0042 & FLAG_N);
     // c906f:
+c906f:
     //     cmp #0x20 ; ' '
     //     bcc c9092
+    if (a < 0x20) goto c9092;
     //     bne c9090
+    if (a != 0x20) goto c9090;
     //     bit l0083
+    flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | ((a & l0083) == 0 ? FLAG_Z : 0) | (l0083 & FLAG_N) | ((l0083 & 0x40) ? FLAG_V : 0);
     //     bpl c9064
+    if (!(flags & FLAG_N)) goto c9064;
     //     lda l0042
+    a = l0042;
     //     beq c908a
+    if (a == 0) goto c908a;
     //     bmi c9087
+    if (flags & FLAG_N) goto c9087;
     //     inc l0043
+    l0043++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (l0043 == 0 ? FLAG_Z : 0) | (l0043 & FLAG_N);
     //     lda #0
+    a = 0;
     //     sta l0042
+    l0042 = a;
     //     beq c9048                                                         ; ALWAYS branch
+    goto c9048;
 
     // c9087:
+c9087:
     //     clc
+    flags &= ~FLAG_C;
     //     ror l0042
+    { uint8_t old_c = (flags & FLAG_C) ? 1 : 0; flags = (flags & ~FLAG_C) | (l0042 & 1); l0042 = (l0042 >> 1) | (old_c << 7); flags = (flags & ~(FLAG_Z|FLAG_N)) | (l0042 == 0 ? FLAG_Z : 0) | (l0042 & FLAG_N); }
     // c908a:
+c908a:
     //     inc l0048
+    l0048++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (l0048 == 0 ? FLAG_Z : 0) | (l0048 & FLAG_N);
     // c908c:
+c908c:
     //     lda #0x20 ; ' '
+    a = 0x20;
     //     bne c90b6                                                         ; ALWAYS branch
+    goto c90b6;
 
     // c9090:
+c9090:
     //     inc l0046
+    l0046++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (l0046 == 0 ? FLAG_Z : 0) | (l0046 & FLAG_N);
     // c9092:
+c9092:
     //     cmp #9
     //     beq c90a0
+    if (a == 9) goto c90a0;
     //     cmp #0x0b
     //     beq c90a0
+    if (a == 0x0b) goto c90a0;
     //     sec
+    flags |= FLAG_C;
     //     ror l0083
+    { uint8_t old_c = (flags & FLAG_C) ? 1 : 0; flags = (flags & ~FLAG_C) | (l0083 & 1); l0083 = (l0083 >> 1) | (old_c << 7); flags = (flags & ~(FLAG_Z|FLAG_N)) | (l0083 == 0 ? FLAG_Z : 0) | (l0083 & FLAG_N); }
     //     jmp c90b6
+    goto c90b6;
 
     // c90a0:
+c90a0:
     //     pha
+{   uint8_t saved_a2 = a;
     //     lda l0039
+    a = l0039;
     //     sta l0047
+    l0047 = a;
     //     lda #0
+    a = 0;
     //     sta l0083
+    l0083 = a;
     //     sta l0046
+    l0046 = a;
     //     sta l0048
+    l0048 = a;
     //     sta l0042
+    l0042 = a;
     //     sta l0043
+    l0043 = a;
     //     sta l0044
+    l0044 = a;
     //     sta l0045
+    l0045 = a;
     //     pla
+    a = saved_a2; }
     // c90b6:
+c90b6:
     //     sta output_buffer,x
+    output_buffer[x] = a;
     //     inx
+    x++;
     //     cmp #0x0d
     //     beq c90e2
+    if (a == 0x0d) goto c90e2;
     //     cmp #0x20 ; ' '
     //     beq c9048
+    if (a == 0x20) goto c9048;
     //     lda l0048
+    a = l0048;
     //     beq c9048
+    if (a == 0) goto c9048;
     //     clc
+    flags &= ~FLAG_C;
     //     adc l0044
+    { uint16_t sum = (uint16_t)a + l0044; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     sta l0044
+    l0044 = a;
     //     lda l0046
+    a = l0046;
     //     adc l0048
+    { uint16_t sum = (uint16_t)a + l0048 + ((flags & FLAG_C) ? 1U : 0U); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     sta l0046
+    l0046 = a;
     //     lda l0045
+    a = l0045;
     //     adc l0043
+    { uint16_t sum = (uint16_t)a + l0043 + ((flags & FLAG_C) ? 1U : 0U); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     sta l0045
+    l0045 = a;
     //     lda #0
+    a = 0;
     //     sta l0048
+    l0048 = a;
     //     sta l0042
+    l0042 = a;
     //     sta l0043
+    l0043 = a;
     //     jmp c9048
+    goto c9048;
 
     // c90e2:
+c90e2:
     //     lda l0045
+    a = l0045;
     //     beq c90f8
+    if (a == 0) goto c90f8;
     //     lda ruler_right_stop
+    a = ruler_right_stop;
     //     beq c90f8
+    if (a == 0) goto c90f8;
     //     sec
+    flags |= FLAG_C;
     //     sbc l0047
+    { int16_t r = (int16_t)a - (int16_t)l0047 - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)r; if (r >= 0) flags |= FLAG_C; else flags &= ~FLAG_C; }
     //     bcc c90f8
+    if (!(flags & FLAG_C)) goto c90f8;
     //     sbc l0045
+    { int16_t r = (int16_t)a - (int16_t)l0045 - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)r; if (r >= 0) flags |= FLAG_C; else flags &= ~FLAG_C; }
     //     adc #0
+    { uint16_t sum = (uint16_t)a + 0 + ((flags & FLAG_C) ? 1U : 0U); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     sec
+    flags |= FLAG_C;
     //     sbc l0046
+    { int16_t r = (int16_t)a - (int16_t)l0046 - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)r; if (r >= 0) flags |= FLAG_C; else flags &= ~FLAG_C; }
     //     beq c9101
+    if (flags & FLAG_Z) goto c9101;
     // c90f8:
+c90f8:
     //     lda #0
+    a = 0;
     //     sta l0039
+    l0039 = a;
     //     ldy input_buffer_ptr+1
+    y = (uint8_t)((input_buffer_ptr >> 8) & 0xff);
     //     jmp c8fe6
+    goto c8fe6_inline;
 
     // c9101:
+c9101:
     //     lda #0
+    a = 0;
     //     sta tmp9
+    tmp9 = a;
     //     ldx #8
+    x = 8;
     // loop_c9107:
+loop_c9107:
     //     asl
+    flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | ((a & 0x80) ? FLAG_C : 0); a <<= 1; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     rol tmp9
+    { uint8_t old_c = (flags & FLAG_C) ? 1 : 0; uint8_t new_c = (tmp9 & 0x80) ? FLAG_C : 0; tmp9 = (tmp9 << 1) | old_c; flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | new_c | (tmp9 == 0 ? FLAG_Z : 0) | (tmp9 & FLAG_N); }
     //     asl l0045
+    { uint8_t new_c = (l0045 & 0x80) ? FLAG_C : 0; l0045 <<= 1; flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | new_c | (l0045 == 0 ? FLAG_Z : 0) | (l0045 & FLAG_N); }
     //     bcc c9115
+    if (!(flags & FLAG_C)) goto c9115;
     //     clc
+    flags &= ~FLAG_C;
     //     adc microspacing_flag
+    { uint16_t sum = (uint16_t)a + microspacing_flag; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     bcc c9115
+    if (!(flags & FLAG_C)) goto c9115;
     //     inc tmp9
+    tmp9++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (tmp9 == 0 ? FLAG_Z : 0) | (tmp9 & FLAG_N);
     // c9115:
+c9115:
     //     dex
+    x--;
     //     bne loop_c9107
+    if (x != 0) goto loop_c9107;
     //     sta tmp8
+    tmp8 = a;
     //     lda l0044
+    a = l0044;
     //     sta l0046
+    l0046 = a;
     //     jsr sub_cadf0
+    sub_cadf0();
     //     sta l0045
+    l0045 = a;
     //     lda tmp8
+    a = tmp8;
     //     sta l0044
+    l0044 = a;
     //     ldy #0
+    y = 0;
     //     sty l0039
+    l0039 = y;
     // c912b:
+c912b:
     //     lda output_buffer,y
+    a = output_buffer[y];
     //     iny
+    y++;
     //     jsr sub_c9431
+    sub_c9431();
     //     pha
+{   uint8_t saved_a3 = a;
     //     lda l0039
+    a = l0039;
     //     cmp l0047
+    { uint16_t tmp_ = a - l0047; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0047 ? FLAG_C : 0); }
     //     beq c913b
+    if (flags & FLAG_Z) goto c913b;
     //     bcs c9142
+    if (flags & FLAG_C) goto c9142;
     // c913b:
+c913b:
     //     pla
+    a = saved_a3;
     //     jsr c9426
+    // PROBLEM: jsr c9426 not translated
     //     jmp c9163
+    goto c9163;
 
     // c9142:
+c9142:
     //     pla
+    a = saved_a3;
     //     cmp #0x20 ; ' '
     //     bne c915b
+    if (a != 0x20) goto c915b;
     //     lda microspacing_flag
+    a = microspacing_flag;
     //     clc
+    flags &= ~FLAG_C;
     //     adc l0044
+    { uint16_t sum = (uint16_t)a + l0044; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     tax
+    x = a;
     //     lda l0045
+    a = l0045;
     //     beq c9154
+    if (a == 0) goto c9154;
     //     inx
+    x++;
     //     dec l0045
+    l0045--; flags = (flags & ~(FLAG_Z|FLAG_N)) | (l0045 == 0 ? FLAG_Z : 0) | (l0045 & FLAG_N);
     // c9154:
+c9154:
     //     jsr sub_c9173
+    sub_c9173();
     //     lda #0x20 ; ' '
+    a = 0x20;
     //     bne c9160                                                         ; ALWAYS branch
+    goto c9160;
 
     // c915b:
+c915b:
     //     ldx microspacing_flag
+    x = microspacing_flag;
     //     jsr sub_c9173
+    sub_c9173();
     // c9160:
+c9160:
     //     jsr print_char
+    print_char();
     // c9163:
+c9163:
     //     cmp #0x0d
     //     bne c912b
+    if (a != 0x0d) goto c912b;
     //     jmp c8ffb
+    goto c8ffb_inline;
+}
+
+c8fe6_inline:
+    //     lda (tmp0),y
+    a = ram[((uint16_t)tmp1 << 8) | tmp0 + y];
+    //     iny
+    y++;
+    //     jsr sub_c9431
+    sub_c9431();
+    //     jsr c9426
+    while (x > 0) { print_char(); x--; }
+    //     cmp #0x0d
+    //     bne c8fe6_inline
+    if (a != 0x0d) goto c8fe6_inline;
+    //     inc register_value_l
+    register_value_l[0]++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (register_value_l[0] == 0 ? FLAG_Z : 0) | (register_value_l[0] & FLAG_N);
+    //     bne c8ffb_inline
+    if (!(flags & FLAG_Z)) goto c8ffb_inline;
+    //     inc register_value_l+1
+    register_value_l[1]++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (register_value_l[1] == 0 ? FLAG_Z : 0) | (register_value_l[1] & FLAG_N);
+c8ffb_inline:
+    //     ldx line_spacing
+    x = line_spacing;
+    //     lda l0021
+    a = l0021;
+    //     clc
+    flags &= ~FLAG_C;
+    //     sbc line_spacing
+    { uint16_t r = (uint16_t)a - (uint16_t)line_spacing - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r < 0x100) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    //     bcs c9009_inline
+    if (flags & FLAG_C) goto c9009_inline;
+    //     lda #0
+    a = 0;
+    //     ldx l0021
+    x = l0021;
+    //     dex
+    x--;
+    // c9009_inline:
+c9009_inline:
+    //     sta l0021
+    l0021 = a;
+    //     jsr print_vertical_space
+    print_vertical_space();
+    //     rts
+    return;
 }
 static void sub_c916a(void) {
     // Pseudocode: Checks if printer is active and starts microspacing if supported
@@ -3900,105 +4710,191 @@ static void sub_c9188(void) {
 
     // sub_c9188:
     //     lda macro_executing_flag
+    a = macro_executing_flag;
     //     bne c91a3
+    if (a != 0) goto c91a3;
     //     lda ptr5
+    a = (uint8_t)(ptr5 & 0xff);
     //     sta input_buffer_ptr+1
+    input_buffer_ptr = (input_buffer_ptr & 0x00ff) | ((uint16_t)a << 8);
     //     sta tmp0
+    tmp0 = a;
     //     lda ptr5+1
+    a = (uint8_t)(ptr5 >> 8);
     //     sta l0081
+    l0081 = a;
     //     sta tmp1
+    tmp1 = a;
     //     jsr sub_c9241
+    sub_c9241();
     //     bcs return_26
+    if (flags & FLAG_C) return;
     //     lda ptr5
+    a = (uint8_t)(ptr5 & 0xff);
     //     ldy ptr5+1
+    y = (uint8_t)(ptr5 >> 8);
     //     bne c91d0
+    if (y != 0) goto c91d0;
     // c91a3:
+c91a3:
     //     ldy #0
+    y = 0;
     //     ldx #0
+    x = 0;
     // c91a7:
+c91a7:
     //     lda (ptr3),y
+    a = ram[ptr3 + y];
     //     cmp #4
     //     beq c9184
+    if (a == 4) { macro_executing_flag = 0; return; }
     //     cmp #0x40 ; '@'
     //     beq c91da
+    if (a == 0x40) goto c91da;
     //     iny
+    y++;
     // loop_c91b2:
+loop_c91b2:
     //     sta current_line_buffer,x
+    current_line_buffer[x] = a;
     //     inx
+    x++;
     //     cmp #0x0d
     //     beq c91c2
+    if (a == 0x0d) goto c91c2;
     //     cpx #0x83
     //     bcc c91a7
+    if (x < 0x83) goto c91a7;
     //     lda #0x0d
+    a = 0x0d;
     //     bne loop_c91b2                                                    ; ALWAYS branch
+    goto loop_c91b2;
 
     // c91c2:
+c91c2:
     //     tya
+    a = y;
     //     clc
+    flags &= ~FLAG_C;
     //     adc ptr3
+    { uint16_t sum = (uint16_t)a + (uint8_t)(ptr3 & 0xff); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     sta ptr3
+    ptr3 = (ptr3 & 0xff00) | a;
     //     bcc c91cc
+    if (!(flags & FLAG_C)) goto c91cc;
     //     inc ptr3+1
+    ptr3 = (ptr3 & 0x00ff) | ((uint16_t)((uint8_t)((ptr3 >> 8) & 0xff) + 1) << 8);
     // c91cc:
+c91cc:
     //     lda ptr1
+    a = (uint8_t)(ptr1 & 0xff);
     //     ldy ptr1+1
+    y = (uint8_t)(ptr1 >> 8);
     // c91d0:
+c91d0:
     //     sta tmp0
+    tmp0 = a;
     //     sty tmp1
+    tmp1 = y;
     //     sta current_format_line_ptr
+    current_format_line_ptr = (current_format_line_ptr & 0xff00) | a;
     //     sty current_format_line_ptr+1
+    current_format_line_ptr = (current_format_line_ptr & 0x00ff) | ((uint16_t)y << 8);
     //     clc
+    flags &= ~FLAG_C;
     // return_26:
     //     rts
 
     // c91da:
+c91da:
     //     iny
+    y++;
     //     lda (ptr3),y
+    a = ram[ptr3 + y];
     //     sec
+    flags |= FLAG_C;
     //     sbc #0x30 ; '0'
+    { uint16_t r = (uint16_t)a - 0x30 - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r < 0x100) flags |= FLAG_C; else flags &= ~FLAG_C; }
     //     bcc c9225
+    if (!(flags & FLAG_C)) goto c9225;
     //     cmp #0x0a
+    { uint16_t tmp_ = a - 0x0a; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0a ? FLAG_C : 0); }
     //     bcs c9225
+    if (flags & FLAG_C) goto c9225;
     //     iny
+    y++;
     //     sty l0084
+    l0084 = y;
     //     sta l0083
+    l0083 = a;
     //     lda #0
+    a = 0;
     //     sta l0082
+    l0082 = a;
     //     ldy #2
+    y = 2;
     // loop_c91f1:
+loop_c91f1:
     //     dec l0083
+    l0083--; flags = (flags & ~(FLAG_Z|FLAG_N)) | (l0083 == 0 ? FLAG_Z : 0) | (l0083 & FLAG_N);
     //     bmi c9209
+    if (flags & FLAG_N) goto c9209;
     // c91f5:
+c91f5:
     //     iny
+    y++;
     //     lda (ptr5),y
+    a = ram[ptr5 + y];
     //     cmp #0x0d
     //     beq c9223
+    if (a == 0x0d) goto c9223;
     //     jsr sub_c9228
+    sub_c9228();
     //     beq c91f5
+    if (flags & FLAG_Z) goto c91f5;
     //     bvs c91f5
+    if (flags & FLAG_V) goto c91f5;
     //     cmp #0x2c ; ','
     //     beq loop_c91f1
+    if (a == 0x2c) goto loop_c91f1;
     //     bne c91f5                                                         ; ALWAYS branch
+    goto c91f5;
 
     // c9209:
+c9209:
     //     iny
+    y++;
     //     lda (ptr5),y
+    a = ram[ptr5 + y];
     //     cmp #0x0d
     //     beq c9223
+    if (a == 0x0d) goto c9223;
     //     jsr sub_c9228
+    sub_c9228();
     //     beq c9209
+    if (flags & FLAG_Z) goto c9209;
     //     bvs c921b
+    if (flags & FLAG_V) goto c921b;
     //     cmp #0x2c ; ','
     //     beq c9223
+    if (a == 0x2c) goto c9223;
     // c921b:
+c921b:
     //     sta current_line_buffer,x
+    current_line_buffer[x] = a;
     //     inx
+    x++;
     //     cpx #0x82
     //     bcc c9209
+    if (x < 0x82) goto c9209;
     // c9223:
+c9223:
     //     ldy l0084
+    y = l0084;
     // c9225:
+c9225:
     //     jmp c91a7
+    goto c91a7;
 }
 static void sub_c9228(void) {
     // Pseudocode: Parses register reference markers (<, >, =) in format line
@@ -4152,67 +5048,122 @@ static void render_new_page(void) {
     // ; ***************************************************************************************
     // render_new_page:
     //     lda #0x81
+    a = 0x81;
     //     sta l0031
+    l0031 = a;
     //     bit print_flags
+    flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | ((a & print_flags) == 0 ? FLAG_Z : 0) | (print_flags & (FLAG_N|FLAG_V));
     //     bvc c92d4
+    if (!(flags & FLAG_V)) goto c92d4;
     //     jsr stop_printing
+    stop_printing();
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii "\rPage "
     //     .byte 0
 
     //     ldx register_value_p
+    x = register_value_p[0];
     //     ldy register_value_p+1
+    y = register_value_p[1];
     //     jsr render_number_to_screen
+    render_number_to_screen();
     //     jsr print_inline_string
+    print_inline_string();
     //     .ascii ".."
     //     .byte 0
 
     //     jsr flush_and_read_char
+    flush_and_read_char();
     //     bcs c92cc
+    if (flags & FLAG_C) goto c92cc;
     //     and #0xdf
+    a &= 0xdf;
     //     cmp #0x4d ; 'M'
     //     beq c92d4
+    if (a == 0x4d) goto c92d4;
     //     cmp #0x51 ; 'Q'
     //     bne c92cf
+    if (a != 0x51) goto c92cf;
     // c92cc:
+c92cc:
     //     jmp c8f1a
+    stop_printing();
+    bdos_print_newline();
+    cli_loop(); return;
 
     // c92cf:
+c92cf:
     //     lda #0xc0
+    a = 0xc0;
     //     jsr start_printing
+    start_printing();
     // c92d4:
+c92d4:
     //     lda l0038
+    a = l0038;
     //     beq c92f0
+    if (a == 0) goto c92f0;
     //     ldx top_margin                                                    ; X=number of lines
+    x = top_margin;
     //     jsr print_vertical_space
+    print_vertical_space();
     //     lda headers_enabled_flag
+    a = headers_enabled_flag;
     //     beq c92e8
+    if (a == 0) goto c92e8;
     //     ldx #<(header_text_maybe)
+    x = (uint8_t)((uintptr_t)header_text_maybe & 0xff);
     //     ldy #>(header_text_maybe)
+    y = (uint8_t)((uintptr_t)header_text_maybe >> 8);
     //     jsr render_header_or_footer
+    render_header_or_footer();
     // c92e8:
+c92e8:
     //     jsr print_newline
+    print_newline();
     //     ldx header_margin                                                 ; X=number of lines
+    x = header_margin;
     //     jsr print_vertical_space
+    print_vertical_space();
     // c92f0:
+c92f0:
     //     ldx page_length
+    x = page_length;
     //     lda l0038
+    a = l0038;
     //     beq c930d
+    if (a == 0) goto c930d;
     //     ldx #1
+    x = 1;
     //     lda page_length
+    a = page_length;
     //     clc
+    flags &= ~FLAG_C;
     //     sbc top_margin
+    { int16_t r = (int16_t)a - (int16_t)top_margin - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r >= 0) { flags |= FLAG_C; } else { flags &= ~FLAG_C; } }
     //     bcc c930d
+    if (!(flags & FLAG_C)) goto c930d;
     //     sbc header_margin
+    { int16_t r = (int16_t)a - (int16_t)header_margin - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r >= 0) { flags |= FLAG_C; } else { flags &= ~FLAG_C; } }
     //     bcc c930d
+    if (!(flags & FLAG_C)) goto c930d;
     //     clc
+    flags &= ~FLAG_C;
     //     sbc bottom_margin
+    { int16_t r = (int16_t)a - (int16_t)bottom_margin - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r >= 0) { flags |= FLAG_C; } else { flags &= ~FLAG_C; } }
     //     bcc c930d
+    if (!(flags & FLAG_C)) goto c930d;
     //     sbc footer_margin
+    { int16_t r = (int16_t)a - (int16_t)footer_margin - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r >= 0) { flags |= FLAG_C; } else { flags &= ~FLAG_C; } }
     //     bcc c930d
+    if (!(flags & FLAG_C)) goto c930d;
     //     tax
+    x = a;
     // c930d:
+c930d:
     //     stx l0021
+    l0021 = x;
     //     rts
 }
 static void sub_c92f0(void) {
@@ -4251,81 +5202,151 @@ c930d:
     //     rts
     return;
 }
+static void c937b(void) {
+    // c937b:
+    //     ldy #0
+    y = 0;
+    //     ldx l0084
+    x = l0084;
+    //     beq return_28
+    if (x == 0) return;
+    // loop_c9381:
+loop_c9381:
+    //     txa
+    a = x;
+    //     pha
+{   uint8_t saved_x = a;
+    //     lda output_buffer,y
+    a = output_buffer[y];
+    //     jsr sub_c9431
+    sub_c9431();
+    //     jsr print_char
+    print_char();
+    //     iny
+    y++;
+    //     pla
+    a = saved_x; }
+    //     tax
+    x = a;
+    //     dex
+    x--;
+    //     bne loop_c9381
+    if (x != 0) goto loop_c9381;
+    // return_28:
+    //     rts
+}
 static void render_header_or_footer(void) {
     // Pseudocode: Renders header or footer text with centering and justification
 
     // ; ***************************************************************************************
     // render_header_or_footer:
     //     stx tmp4
+    tmp4 = x;
     //     sty tmp5
+    tmp5 = y;
     //     ldy #0
+    y = 0;
     //     sty l0082
+    l0082 = y;
     //     lda (tmp4),y
+    a = ram[((uint16_t)tmp5 << 8) | tmp4 + y];
     //     beq return_28
+    if (a == 0) return;
     //     jsr sub_c9407
+    sub_c9407();
     //     lda #0
+    a = 0;
     //     sta l0039
+    l0039 = a;
     //     jsr sub_c9393
+    sub_c9393();
     //     jsr sub_c93fd
+    sub_c93fd();
     //     bcs c932e
+    if (flags & FLAG_C) goto c932e;
     //     jsr sub_c93a1
+    sub_c93a1();
     // c932e:
+c932e:
     //     jsr sub_c93c8
+    sub_c93c8();
     //     jsr c937b
+    c937b();
     //     jsr sub_c939b
+    sub_c939b();
     //     jsr sub_c93c8
+    sub_c93c8();
     //     txa
+    a = x;
     //     beq c9355
+    if (a == 0) goto c9355;
     //     dex
+    x--;
     //     txa
+    a = x;
     //     lsr
+    flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | ((a & 1) ? FLAG_C : 0); a >>= 1; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     sta l0081
+    l0081 = a;
     //     jsr sub_c93be
+    sub_c93be();
     //     beq c9355
+    if (flags & FLAG_Z) goto c9355;
     //     lsr
+    flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | ((a & 1) ? FLAG_C : 0); a >>= 1; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     sec
+    flags |= FLAG_C;
     //     sbc l0081
+    { int16_t r = (int16_t)a - (int16_t)l0081 - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r >= 0) { flags |= FLAG_C; } else { flags &= ~FLAG_C; } }
     //     bcc c9355
+    if (!(flags & FLAG_C)) goto c9355;
     //     sbc l0039
+    { int16_t r = (int16_t)a - (int16_t)l0039 - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r >= 0) { flags |= FLAG_C; } else { flags &= ~FLAG_C; } }
     //     bcc c9355
+    if (!(flags & FLAG_C)) goto c9355;
     //     tax
+    x = a;
     //     jsr sub_c941a
+    sub_c941a();
     // c9355:
+c9355:
     //     jsr c937b
+    c937b();
     //     jsr sub_c93a1
+    sub_c93a1();
     //     jsr sub_c93fd
+    sub_c93fd();
     //     bcs c9363
+    if (flags & FLAG_C) goto c9363;
     //     jsr sub_c9393
+    sub_c9393();
     // c9363:
+c9363:
     //     jsr sub_c93c8
+    sub_c93c8();
     //     jsr sub_c93be
+    sub_c93be();
     //     beq c937b
+    if (flags & FLAG_Z) { c937b(); return; }
     //     stx l0081
+    l0081 = x;
     //     sec
+    flags |= FLAG_C;
     //     sbc l0081
+    { int16_t r = (int16_t)a - (int16_t)l0081 - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r >= 0) { flags |= FLAG_C; } else { flags &= ~FLAG_C; } }
     //     bcc c937b
+    if (!(flags & FLAG_C)) { c937b(); return; }
     //     sbc l0039
+    { int16_t r = (int16_t)a - (int16_t)l0039 - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r >= 0) { flags |= FLAG_C; } else { flags &= ~FLAG_C; } }
     //     bcc c937b
+    if (!(flags & FLAG_C)) { c937b(); return; }
     //     tax
+    x = a;
     //     inx
+    x++;
     //     jsr sub_c941a
-    // c937b:
-    //     ldy #0
-    //     ldx l0084
-    //     beq return_28
-    // loop_c9381:
-    //     txa
-    //     pha
-    //     lda output_buffer,y
-    //     jsr sub_c9431
-    //     jsr print_char
-    //     iny
-    //     pla
-    //     tax
-    //     dex
-    //     bne loop_c9381
-    // return_28:
-    //     rts
+    sub_c941a();
+    c937b();
 }
 static void sub_c9393(void) {
     // sub_c9393:
@@ -4640,15 +5661,25 @@ static void sub_c9445(void) {
 
     // sub_c9445:
     //     pha
+{   uint8_t saved_a = a;
     //     lda print_xpos
+    a = print_xpos;
     //     beq c9453
+    if (a == 0) goto c9453;
     //     lda #0x20 ; ' '
+    a = 0x20;
     // loop_c944c:
+loop_c944c:
     //     jsr print_char_just_to_printer
+    print_char_just_to_printer();
     //     dec print_xpos
+    print_xpos--;
     //     bne loop_c944c
+    if (print_xpos != 0) goto loop_c944c;
     // c9453:
+c9453:
     //     pla
+    a = saved_a; }
     //     rts
 }
 static void print_newline(void) {
@@ -4800,15 +5831,63 @@ static const struct printer_driver default_printer_driver = {
     .printer_off  = default_printer_off,
     .entry3       = default_printer_entry3,
 };
+static void c950f_impl(void) {
+    // c950f:
+    //     ldy #3
+    y = 3;
+    //     tax
+    x = a;
+    //     beq c951c
+    if (flags & FLAG_Z) goto c951c;
+    //     lda #0x20 ; ' '
+    a = 0x20;
+    // loop_c9516:
+    //     sta (current_format_line_ptr),y
+    loop_c9516: ram[current_format_line_ptr + y] = a;
+    //     iny
+    y++;
+    //     dex
+    x--;
+    //     bne loop_c9516
+    if (x != 0) goto loop_c9516;
+    // c951c:
+    c951c:
+    //     lda output_buffer,x
+    a = output_buffer[x];
+    //     sta (current_format_line_ptr),y
+    ram[current_format_line_ptr + y] = a;
+    //     iny
+    y++;
+    //     inx
+    x++;
+    //     cmp #0x0d
+    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    //     bne c951c
+    if (!(flags & FLAG_Z)) goto c951c;
+    //     inc l0030
+    l0030++;
+    // c9529:
+c9529:
+    //     sec
+    flags |= FLAG_C;
+// return_36:
+return_36:
+    //     rts
+    return;
+}
 static void lj_fmt_cmd(void) {
     // Pseudocode: Left-justifies the current format line
 
     // ; ***************************************************************************************
     // lj_fmt_cmd:
     //     jsr expand_line
+    expand_line();
     //     bcc return_36
+    if (!(flags & FLAG_C)) return;
     //     lda #0
+    a = 0;
     //     beq c950f                                                         ; ALWAYS branch
+    c950f_impl();
 }
 static void ce_fmt_cmd(void) {
     // Pseudocode: Centers the current format line
@@ -4816,23 +5895,44 @@ static void ce_fmt_cmd(void) {
     // ; ***************************************************************************************
     // ce_fmt_cmd:
     //     jsr expand_line
+    expand_line();
     //     bcc return_36
+    if (!(flags & FLAG_C)) return;
     //     txa
+    a = x;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq return_36
+    if (flags & FLAG_Z) return;
     //     lsr
+    { flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | ((a & 1) ? FLAG_C : 0); a >>= 1; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     sta l0084
+    l0084 = a;
     //     lda ruler_right_stop
+    a = ruler_right_stop;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq c950f
+    if (flags & FLAG_Z) { c950f_impl(); return; }
     //     sec
+    flags |= FLAG_C;
     //     sbc ruler_left_stop
+    { uint16_t tmp_ = (uint16_t)a - ruler_left_stop - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     lsr
+    { flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | ((a & 1) ? FLAG_C : 0); a >>= 1; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     sec
+    flags |= FLAG_C;
     //     adc ruler_left_stop
+    { uint16_t tmp_ = (uint16_t)a + ruler_left_stop + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     sec
+    flags |= FLAG_C;
     //     sbc l0084
+    { uint16_t tmp_ = (uint16_t)a - l0084 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     bcs c950f
+    if (flags & FLAG_C) { c950f_impl(); return; }
     //     lda #0
+    a = 0;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq c950f                                                         ; ALWAYS branch
+    c950f_impl();
 }
 static void rj_fmt_cmd(void) {
     // Pseudocode: Right-justifies the current format line
@@ -4840,40 +5940,80 @@ static void rj_fmt_cmd(void) {
     // ; ***************************************************************************************
     // rj_fmt_cmd:
     //     jsr expand_line
+    expand_line();
     //     bcc c9529
+    if (!(flags & FLAG_C)) { flags |= FLAG_C; return; }
     //     txa
+    a = x;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq c9529
+    if (flags & FLAG_Z) { flags |= FLAG_C; return; }
     //     dex
+    x--;
     //     dex
+    x--;
     //     lda #0
+    a = 0;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     cpx ruler_right_stop
+    { uint16_t tmp_ = x - ruler_right_stop; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= ruler_right_stop ? FLAG_C : 0); }
     //     bcs c950f
+    if (flags & FLAG_C) { c950f_impl(); return; }
     //     stx l0083
+    l0083 = x;
     //     lda ruler_right_stop
+    a = ruler_right_stop;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     sec
+    flags |= FLAG_C;
     //     sbc l0083
+    { uint16_t tmp_ = (uint16_t)a - l0083 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     // c950f:
+c950f:
     //     ldy #3
+    y = 3;
     //     tax
+    x = a;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
     //     beq c951c
+    if (flags & FLAG_Z) goto c951c;
     //     lda #0x20 ; ' '
+    a = 0x20;
     // loop_c9516:
     //     sta (current_format_line_ptr),y
+loop_c9516:
+    ram[current_format_line_ptr + y] = a;
     //     iny
+    y++;
     //     dex
+    x--;
     //     bne loop_c9516
+    if (x != 0) goto loop_c9516;
     // c951c:
+c951c:
     //     lda output_buffer,x
+    a = output_buffer[x];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     sta (current_format_line_ptr),y
+    ram[current_format_line_ptr + y] = a;
     //     iny
+    y++;
     //     inx
+    x++;
     //     cmp #0x0d
+    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
     //     bne c951c
+    if (!(flags & FLAG_Z)) goto c951c;
     //     inc l0030
+    l0030++;
     // c9529:
+c9529:
     //     sec
+    flags |= FLAG_C;
     // return_36:
+return_36:
     //     rts
+    return;
 }
 static void expand_line(void) {
     // Pseudocode: Expands a format line into output_buffer, handling register references via |
@@ -4881,46 +6021,89 @@ static void expand_line(void) {
     // ; ***************************************************************************************
     // expand_line:
     //     ldx #0
+    x = 0;
     //     stx l0083
+    l0083 = x;
     //     ldy #3
+    y = 3;
     //     jsr get_current_fmt_cmd_byte
+    get_current_fmt_cmd_byte();
     //     clc
+    flags &= ~FLAG_C;
     //     beq return_37
+    if (flags & FLAG_Z) return;
     // c9537:
+c9537:
     //     lda (current_format_line_ptr),y
+    a = ram[current_format_line_ptr + y];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     iny
+    y++;
     //     cmp #0x7c ; '|'
+    { uint16_t tmp_ = a - 0x7c; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x7c ? FLAG_C : 0); }
     //     beq c955e
+    if (flags & FLAG_Z) goto c955e;
     // c953e:
+c953e:
     //     sta output_buffer,x
+    output_buffer[x] = a;
     //     jsr check_for_control_code
+    check_for_control_code();
     //     bne c9548
+    if (!(flags & FLAG_Z)) goto c9548;
     //     inc l0083
+    l0083++;
     // c9548:
+c9548:
     //     inx
+    x++;
     //     cmp #0x0d
+    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
     //     beq c9555
+    if (flags & FLAG_Z) goto c9555;
     //     cpx #0x83
+    { uint16_t tmp_ = x - 0x83; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 0x83 ? FLAG_C : 0); }
     //     bcc c9537
+    if (!(flags & FLAG_C)) goto c9537;
     //     lda #0x0d
+    a = 0x0d;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bne c953e                                                         ; ALWAYS branch
+    goto c953e;
 
     // c9555:
+c9555:
     //     lda print_flags
+    a = print_flags;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bpl return_37
+    if (!(flags & FLAG_N)) return;
     //     txa
+    a = x;
     //     sbc l0083
+    { uint16_t tmp_ = (uint16_t)a - l0083 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     tax
+    x = a;
     // return_37:
+return_37:
     //     rts
+    return;
 
     // c955e:
+c955e:
     //     lda (current_format_line_ptr),y
+    a = ram[current_format_line_ptr + y];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     cmp #0x0d
+    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
     //     beq c953e
+    if (flags & FLAG_Z) goto c953e;
     //     iny
+    y++;
     //     jsr render_register
+    render_register();
     //     jmp c9537
+    goto c9537;
 }
 static void sub_c95b2(void) {
     // sub_c95b2:
@@ -5031,23 +6214,40 @@ static void em_fmt_cmd(void) {
     // ; ***************************************************************************************
     // em_fmt_cmd:
     //     ldy #3
+    y = 3;
     //     jsr get_current_fmt_cmd_byte
+    get_current_fmt_cmd_byte();
     //     beq return_38
+    if (flags & FLAG_Z) return;
     //     iny
+    y++;
     //     jsr get_register_address
+    get_register_address();
     //     bcs return_38
+    if (flags & FLAG_C) return;
     //     lda tmp6
+    a = tmp6;
     //     sta tmp0
+    tmp0 = a;
     //     lda tmp7
+    a = tmp7;
     //     sta tmp1
+    tmp1 = a;
     //     jsr evaluate_expression_from_fmt_cmd
+    evaluate_expression_from_fmt_cmd();
     //     ldy #0
+    y = 0;
     //     sta (tmp0),y
+    ram[((uint16_t)tmp1 << 8) | (uint16_t)(tmp0 + y)] = a;
     //     iny                                                               ; Y=0x01
+    y++;
     //     lda tmp9
+    a = tmp9;
     //     sta (tmp0),y
+    ram[((uint16_t)tmp1 << 8) | (uint16_t)(tmp0 + y)] = a;
     // return_38:
     //     rts
+    return;
 }
 static void pl_fmt_cmd(void) {
     // Pseudocode: Sets page_length from format command expression
@@ -5055,9 +6255,13 @@ static void pl_fmt_cmd(void) {
     // ; ***************************************************************************************
     // pl_fmt_cmd:
     //     ldy #3
+    y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
+    evaluate_expression_from_fmt_cmd();
     //     sta page_length
+    page_length = a;
     //     rts
+    return;
 }
 static void ts_fmt_cmd(void) {
     // Pseudocode: Sets two_sided_flag and rhs_extra_margin from format command
@@ -5065,13 +6269,20 @@ static void ts_fmt_cmd(void) {
     // ; ***************************************************************************************
     // ts_fmt_cmd:
     //     ldy #3
+    y = 3;
     //     jsr parse_boolean_from_fmt_cmd
+    parse_boolean_from_fmt_cmd();
     //     bcs return_39
+    if (flags & FLAG_C) return;
     //     sta two_sided_flag
+    two_sided_flag = a;
     //     jsr evaluate_expression_from_fmt_cmd
+    evaluate_expression_from_fmt_cmd();
     //     sta rhs_extra_margin
+    rhs_extra_margin = a;
     // return_39:
     //     rts
+    return;
 }
 static void tm_fmt_cmd(void) {
     // Pseudocode: Sets top_margin from format command expression
@@ -5079,9 +6290,13 @@ static void tm_fmt_cmd(void) {
     // ; ***************************************************************************************
     // tm_fmt_cmd:
     //     ldy #3
+    y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
+    evaluate_expression_from_fmt_cmd();
     //     sta top_margin
+    top_margin = a;
     //     rts
+    return;
 }
 static void bm_fmt_cmd(void) {
     // Pseudocode: Sets bottom_margin from format command expression
@@ -5089,9 +6304,13 @@ static void bm_fmt_cmd(void) {
     // ; ***************************************************************************************
     // bm_fmt_cmd:
     //     ldy #3
+    y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
+    evaluate_expression_from_fmt_cmd();
     //     sta bottom_margin
+    bottom_margin = a;
     //     rts
+    return;
 }
 static void hm_fmt_cmd(void) {
     // Pseudocode: Sets header_margin from format command expression
@@ -5099,9 +6318,13 @@ static void hm_fmt_cmd(void) {
     // ; ***************************************************************************************
     // hm_fmt_cmd:
     //     ldy #3
+    y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
+    evaluate_expression_from_fmt_cmd();
     //     sta header_margin
+    header_margin = a;
     //     rts
+    return;
 }
 static void fm_fmt_cmd(void) {
     // Pseudocode: Sets footer_margin from format command expression
@@ -5109,9 +6332,13 @@ static void fm_fmt_cmd(void) {
     // ; ***************************************************************************************
     // fm_fmt_cmd:
     //     ldy #3
+    y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
+    evaluate_expression_from_fmt_cmd();
     //     sta footer_margin
+    footer_margin = a;
     //     rts
+    return;
 }
 static void lm_fmt_cmd(void) {
     // Pseudocode: Sets left_margin from format command expression
@@ -5119,9 +6346,13 @@ static void lm_fmt_cmd(void) {
     // ; ***************************************************************************************
     // lm_fmt_cmd:
     //     ldy #3
+    y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
+    evaluate_expression_from_fmt_cmd();
     //     sta left_margin
+    left_margin = a;
     //     rts
+    return;
 }
 static void ls_fmt_cmd(void) {
     // Pseudocode: Sets line_spacing from format command expression
@@ -5129,9 +6360,13 @@ static void ls_fmt_cmd(void) {
     // ; ***************************************************************************************
     // ls_fmt_cmd:
     //     ldy #3
+    y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
+    evaluate_expression_from_fmt_cmd();
     //     sta line_spacing
+    line_spacing = a;
     //     rts
+    return;
 }
 static void pe_fmt_cmd(void) {
     // Pseudocode: Forces page eject if remaining lines are less than value
@@ -5139,15 +6374,26 @@ static void pe_fmt_cmd(void) {
     // ; ***************************************************************************************
     // pe_fmt_cmd:
     //     ldy #3
+    y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
+    evaluate_expression_from_fmt_cmd();
     //     tax
+    x = a;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
     //     beq page_eject_fmt
+    if (flags & FLAG_Z) { page_eject_fmt(); return; }
     //     cmp l0021
+    { uint16_t tmp_ = a - l0021; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0021 ? FLAG_C : 0); }
     //     bcc return_40
+    if (!(flags & FLAG_C)) return;
     //     lda l0031
+    a = l0031;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bne page_eject_fmt
+    if (!(flags & FLAG_Z)) { page_eject_fmt(); return; }
     // return_40:
     //     rts
+    return;
 }
 static void op_fmt_cmd(void) {
     // Pseudocode: Odd page: forces page eject if current page is even
@@ -5155,9 +6401,14 @@ static void op_fmt_cmd(void) {
     // ; ***************************************************************************************
     // op_fmt_cmd:
     //     lda register_value_p
+    a = *register_value_p;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     lsr
+    { flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | ((a & 1) ? FLAG_C : 0); a >>= 1; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     bcc page_eject_fmt
+    if (!(flags & FLAG_C)) { page_eject_fmt(); return; }
     //     bcs c9642                                                         ; ALWAYS branch
+    return;
 }
 static void ep_fmt_cmd(void) {
     // Pseudocode: Even page: forces page eject if current page is odd
@@ -5165,9 +6416,15 @@ static void ep_fmt_cmd(void) {
     // ; ***************************************************************************************
     // ep_fmt_cmd:
     //     lda register_value_p
+    a = *register_value_p;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     lsr
+    { flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | ((a & 1) ? FLAG_C : 0); a >>= 1; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     bcs page_eject_fmt
-    // c9642:
+    if (flags & FLAG_C) { page_eject_fmt(); return; }
+// c9642:
+    //     rts
+    return;
 }
 static void page_eject_fmt(void) {
     // Pseudocode: Performs page eject by rendering new page and moving to sheet bottom
@@ -5176,10 +6433,17 @@ static void page_eject_fmt(void) {
     // ; ***************************************************************************************
     // page_eject_fmt:
     //     lda l0031
+    a = l0031;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bne c964c
+    if (!(flags & FLAG_Z)) goto c964c;
     //     jsr render_new_page
+    render_new_page();
     // c964c:
+c964c:
     //     jmp c9263
+    c9263();
+    return;
 }
 static void fo_fmt_cmd(void) {
     // Pseudocode: Sets footers_enabled_flag from boolean format argument
@@ -5187,11 +6451,16 @@ static void fo_fmt_cmd(void) {
     // ; ***************************************************************************************
     // fo_fmt_cmd:
     //     ldy #3
+    y = 3;
     //     jsr parse_boolean_from_fmt_cmd
+    parse_boolean_from_fmt_cmd();
     //     bcs return_41
+    if (flags & FLAG_C) return;
     //     sta footers_enabled_flag
+    footers_enabled_flag = a;
     // return_41:
     //     rts
+    return;
 }
 static void he_fmt_cmd(void) {
     // Pseudocode: Sets headers_enabled_flag from boolean format argument
@@ -5199,11 +6468,16 @@ static void he_fmt_cmd(void) {
     // ; ***************************************************************************************
     // he_fmt_cmd:
     //     ldy #3
+    y = 3;
     //     jsr parse_boolean_from_fmt_cmd
+    parse_boolean_from_fmt_cmd();
     //     bcs return_42
+    if (flags & FLAG_C) return;
     //     sta headers_enabled_flag
+    headers_enabled_flag = a;
     // return_42:
     //     rts
+    return;
 }
 static void pb_fmt_cmd(void) {
     // Pseudocode: Sets page break flag l0038 from boolean format argument
@@ -5211,11 +6485,16 @@ static void pb_fmt_cmd(void) {
     // ; ***************************************************************************************
     // pb_fmt_cmd:
     //     ldy #3
+    y = 3;
     //     jsr parse_boolean_from_fmt_cmd
+    parse_boolean_from_fmt_cmd();
     //     bcs return_43
+    if (flags & FLAG_C) return;
     //     sta l0038
+    l0038 = a;
     // return_43:
     //     rts
+    return;
 }
 static void add_macro_to_linked_list(void) {
     // Pseudocode: Links a new macro entry at the end of the macro linked list
@@ -5223,93 +6502,180 @@ static void add_macro_to_linked_list(void) {
     // ; ***************************************************************************************
     // dm_fmt_cmd:
     //     lda macro_executing_flag
+    a = macro_executing_flag;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bne return_42
+    if (!(flags & FLAG_Z)) return;
     //     lda last_macro_ptr
+    a = (uint8_t)(last_macro_ptr & 0xff);
     //     sta tmp6
+    tmp6 = a;
     //     lda last_macro_ptr+1
+    a = (uint8_t)((last_macro_ptr >> 8) & 0xff);
     //     sta tmp7
+    tmp7 = a;
     //     ldy #3
+    y = 3;
     //     lda (current_format_line_ptr),y
+    a = ram[current_format_line_ptr + y];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     and #0xdf
+    a &= 0xdf;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     sta l0084
+    l0084 = a;
     //     iny                                                               ; Y=0x04
+    y++;
     //     lda (current_format_line_ptr),y
+    a = ram[current_format_line_ptr + y];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     jsr is_uppercase
+    is_uppercase();
     //     bcc c968d
+    if (!(flags & FLAG_C)) goto c968d;
     //     lda #0x20 ; ' '
+    a = 0x20;
     //     bne c968f                                                         ; ALWAYS branch
+    goto c968f;
 
     // c968d:
+c968d:
     //     and #0xdf
+    a &= 0xdf;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     // c968f:
+c968f:
     //     dey
+    y--;
     //     sta (last_macro_ptr),y
+    ram[last_macro_ptr + y] = a;
     //     dey
+    y--;
     //     lda l0084
+    a = l0084;
     //     sta (last_macro_ptr),y
+    ram[last_macro_ptr + y] = a;
     //     lda #4
+    a = 4;
     //     clc
+    flags &= ~FLAG_C;
     //     adc last_macro_ptr
+    { uint16_t tmp_ = (uint16_t)a + (uint8_t)(last_macro_ptr & 0xff) + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     sta last_macro_ptr
+    last_macro_ptr = (last_macro_ptr & 0xff00) | a;
     //     bcc c96a2
+    if (!(flags & FLAG_C)) goto c96a2;
     //     inc last_macro_ptr+1
+    last_macro_ptr = (last_macro_ptr & 0x00ff) | ((uint16_t)((last_macro_ptr >> 8) + 1) << 8);
     // c96a2:
+c96a2:
     //     lda himem
+    a = (uint8_t)(himem & 0xff);
     //     sec
+    flags |= FLAG_C;
     //     sbc last_macro_ptr
+    { uint16_t tmp_ = (uint16_t)a - (uint8_t)(last_macro_ptr & 0xff) - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     tax
+    x = a;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
     //     lda himem+1
+    a = (uint8_t)((himem >> 8) & 0xff);
     //     sbc last_macro_ptr+1
+    { uint16_t tmp_ = (uint16_t)a - (uint8_t)((last_macro_ptr >> 8) & 0xff) - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     bne c96b8
+    if (!(flags & FLAG_Z)) goto c96b8;
     //     cpx #0x97
+    { uint16_t tmp_ = x - 0x97; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 0x97 ? FLAG_C : 0); }
     //     bcs c96b8
+    if (flags & FLAG_C) goto c96b8;
     //     jmp display_not_enough_memory
+    { display_not_enough_memory(); return; }
 
     // c96b8:
+c96b8:
     //     lda last_macro_ptr
+    a = (uint8_t)(last_macro_ptr & 0xff);
     //     sta tmp0
+    tmp0 = a;
     //     sta input_buffer_ptr+1
+    input_buffer_ptr = (input_buffer_ptr & 0x00ff) | ((uint16_t)a << 8);
     //     sta current_format_line_ptr
+    current_format_line_ptr = (current_format_line_ptr & 0xff00) | a;
     //     lda last_macro_ptr+1
+    a = (uint8_t)((last_macro_ptr >> 8) & 0xff);
     //     sta tmp1
+    tmp1 = a;
     //     sta l0081
+    l0081 = a;
     //     sta current_format_line_ptr+1
+    current_format_line_ptr = (current_format_line_ptr & 0x00ff) | ((uint16_t)a << 8);
     //     jsr sub_c9241
+    sub_c9241();
     //     bcc c96ce
+    if (!(flags & FLAG_C)) goto c96ce;
     //     rts
+    return;
 
     // c96ce:
+c96ce:
     //     ldy #0
+    y = 0;
     //     lda (last_macro_ptr),y
+    a = ram[last_macro_ptr + y];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     jsr check_for_command_prefix
+    check_for_command_prefix();
     //     bne c96f8
+    if (!(flags & FLAG_Z)) { last_macro_ptr = (uint16_t)tmp0 | ((uint16_t)tmp1 << 8); return; }
     //     jsr lookup_formatting_command
+    lookup_formatting_command();
     //     cpx #5
+    { uint16_t tmp_ = x - 5; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 5 ? FLAG_C : 0); }
     //     bne c96f8
+    if (!(flags & FLAG_Z)) { last_macro_ptr = (uint16_t)tmp0 | ((uint16_t)tmp1 << 8); return; }
     //     lda #4
+    a = 4;
     //     ldy #0
+    y = 0;
     //     sta (last_macro_ptr),y
+    ram[last_macro_ptr + y] = a;
     //     inc last_macro_ptr
+    last_macro_ptr = (last_macro_ptr & 0xff00) | ((uint8_t)(last_macro_ptr & 0xff) + 1);
     //     bne add_macro_to_linked_list
+    if ((uint8_t)(last_macro_ptr & 0xff) != 0) goto add_macro_to_linked_list;
     //     inc last_macro_ptr+1
+    last_macro_ptr = (last_macro_ptr & 0x00ff) | ((uint16_t)((last_macro_ptr >> 8) + 1) << 8);
     // add_macro_to_linked_list:
+add_macro_to_linked_list:
     //     lda #0
+    a = 0;
     //     sta (last_macro_ptr),y
+    ram[last_macro_ptr + y] = a;
     //     lda last_macro_ptr
+    a = (uint8_t)(last_macro_ptr & 0xff);
     //     sta (tmp6),y
+    ram[((uint16_t)tmp7 << 8) | (uint16_t)(tmp6 + y)] = a;
     //     iny
+    y++;
     //     lda last_macro_ptr+1
+    a = (uint8_t)((last_macro_ptr >> 8) & 0xff);
     //     sta (tmp6),y
+    ram[((uint16_t)tmp7 << 8) | (uint16_t)(tmp6 + y)] = a;
     //     rts
+    return;
 }
 static void dm_fmt_cmd(void) {
     // Pseudocode: Defines a macro: stores macro name and position in linked list
 
     // c96f8:
     //     lda tmp0
+    a = tmp0;
     //     sta last_macro_ptr
+    last_macro_ptr = (last_macro_ptr & 0xff00) | a;
     //     lda tmp1
+    a = tmp1;
     //     sta last_macro_ptr+1
+    last_macro_ptr = (last_macro_ptr & 0x00ff) | ((uint16_t)a << 8);
 }
 static void ht_fmt_cmd(void) {
     // Pseudocode: Sets highlight codes (highlight1_code, highlight2_code) from format command
@@ -5318,63 +6684,123 @@ static void ht_fmt_cmd(void) {
     // ; ***************************************************************************************
     // ht_fmt_cmd:
     //     ldy #3
+    y = 3;
     //     jsr get_current_fmt_cmd_byte
+    get_current_fmt_cmd_byte();
     //     beq return_44
+    if (flags & FLAG_Z) return;
     //     tax
+    x = a;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
     //     lda #0
+    a = 0;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     cpx #0x2d ; '-'
+    { uint16_t tmp_ = x - 0x2d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 0x2d ? FLAG_C : 0); }
     //     beq c9716
+    if (flags & FLAG_Z) goto c9716;
     //     lda #1
+    a = 1;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     cpx #0x2a ; '*'
+    { uint16_t tmp_ = x - 0x2a; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 0x2a ? FLAG_C : 0); }
     //     bne c9719
+    if (!(flags & FLAG_Z)) goto c9719;
     // c9716:
+c9716:
     //     iny
+    y++;
     //     bne c9725
+    goto c9725;
     // c9719:
+c9719:
     //     jsr evaluate_expression_from_fmt_cmd
+    evaluate_expression_from_fmt_cmd();
     //     sec
+    flags |= FLAG_C;
     //     sbc #1
+    { uint16_t tmp_ = (uint16_t)a - 1 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     bcc return_44
+    if (!(flags & FLAG_C)) return;
     //     cmp #2
+    { uint16_t tmp_ = a - 2; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 2 ? FLAG_C : 0); }
     //     bcs return_44
+    if (flags & FLAG_C) return;
     // c9725:
+c9725:
     //     pha
+    { uint8_t saved_a = a;
     //     jsr evaluate_expression_from_fmt_cmd
+    evaluate_expression_from_fmt_cmd();
     //     pla
+    a = saved_a; }
     //     tax
+    x = a;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
     //     lda tmp8
+    a = tmp8;
     //     sta highlight1_code,x
+    highlight_code[x] = a;
     // return_44:
+return_44:
     //     rts
+    return;
 }
+static const uint8_t commands_table[] = { 'C','E', 'R','J', 'D','F', 'D','H', 'D','M', 'E','M', 'S','R', 'P','E', 'T','M', 'B','M', 'P','L', 'T','S', 'F','O', 'H','E', 'H','T', 'H','M', 'F','M', 'L','M', 'L','S', 'O','P', 'E','P', 'L','J', 'P','B', 0xff };
 static void lookup_formatting_command(void) {
     // Pseudocode: Looks up two-letter formatting command in commands_table
 
     // ; ***************************************************************************************
     // lookup_formatting_command:
     //     ldy #2
+    y = 2;
     //     lda (current_format_line_ptr),y
+    a = ram[current_format_line_ptr + y];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     sta tmp3
+    tmp3 = a;
     //     dey                                                               ; Y=0x01
+    y--;
     //     lda (current_format_line_ptr),y
+    a = ram[current_format_line_ptr + y];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     sta tmp2
+    tmp2 = a;
     //     dey                                                               ; Y=0x00
+    y--;
     //     ldx #0
+    x = 0;
     // loop_c973e:
+loop_c973e:
     //     lda tmp2
+    a = tmp2;
     //     cmp commands_table,y
+    { uint16_t tmp_ = a - commands_table[y]; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= commands_table[y] ? FLAG_C : 0); }
     //     bne c974c
+    if (!(flags & FLAG_Z)) goto c974c;
     //     lda tmp3
-    //     cmp lb2a1,y
+    a = tmp3;
+    //     cmp lb2a1,y                                                    ; lb2a1 = commands_table+1
+    { uint16_t tmp_ = a - commands_table[y + 1]; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= commands_table[y + 1] ? FLAG_C : 0); }
     //     beq return_45
+    if (flags & FLAG_Z) return;
     // c974c:
+c974c:
     //     inx
+    x++;
     //     iny
+    y++;
     //     iny
+    y++;
     //     lda commands_table,y
+    a = commands_table[y];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bpl loop_c973e
+    if (!(flags & FLAG_N)) goto loop_c973e;
     // return_45:
+return_45:
     //     rts
+    return;
 }
 static void execute_formatting_command(void) {
     // Pseudocode: Executes a formatting command by index through the format jump table
@@ -5382,12 +6808,19 @@ static void execute_formatting_command(void) {
     // ; ***************************************************************************************
     // execute_formatting_command:
     //     txa
+    a = x;
     //     ldy #0
+    y = 0;
     //     ldx #0
+    x = 0;
     //     stx l0030
+    l0030 = x;
     //     jsr call_through_jumptable
+    call_through_jumptable();
     //     ldx l0030
+    x = l0030;
     //     rts
+    return;
 }
 static void parse_boolean_from_fmt_cmd(void) {
     // Pseudocode: Parses a boolean (ON/OFF/1/0) from format command argument
@@ -5413,47 +6846,97 @@ static void sub_c976c(void) {
 
     // sub_c976c:
     //     sta tmp8
+    tmp8 = a;
     //     stx tmp9
+    tmp9 = x;
     //     lda (tmp8),y
+    a = ram[((uint16_t)tmp9 << 8) | (uint16_t)(tmp8 + y)];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     tax
+    x = a;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
     //     lda #1
+    a = 1;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     cpx #0x31 ; '1'
+    { uint16_t tmp_ = x - 0x31; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 0x31 ? FLAG_C : 0); }
     //     beq c977f
+    if (flags & FLAG_Z) goto c977f;
     //     lda #0
+    a = 0;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     cpx #0x30 ; '0'
+    { uint16_t tmp_ = x - 0x30; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 0x30 ? FLAG_C : 0); }
     //     bne c9783
+    if (!(flags & FLAG_Z)) goto c9783;
     // c977f:
+c977f:
     //     clc
+    flags &= ~FLAG_C;
     //     iny
+    y++;
     //     bne return_46
+    if (y != 0) return;
     // c9783:
+c9783:
     //     dey
+    y--;
     //     sty l0084
+    l0084 = y;
     //     ldx #0xff
+    x = 0xff;
     // c9788:
+c9788:
     //     iny
+    y++;
     //     lda (tmp8),y
+    a = ram[((uint16_t)tmp9 << 8) | (uint16_t)(tmp8 + y)];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     jsr to_uppercase
+    to_uppercase();
     //     inx
+    x++;
     //     cmp l97b0,x
+    { uint16_t tmp_ = a - l97b0_data[x]; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l97b0_data[x] ? FLAG_C : 0); }
     //     beq c9788
+    if (flags & FLAG_Z) goto c9788;
     //     lda l97b0,x
+    a = l97b0_data[x];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bmi c97ae
+    if (flags & FLAG_N) goto c97ae;
     //     cmp #0x20 ; ' '
+    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
     //     bcc return_46
+    if (!(flags & FLAG_C)) return;
     // loop_c979d:
+loop_c979d:
     //     inx
+    x++;
     //     lda l97b0,x
+    a = l97b0_data[x];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bmi c97ae
+    if (flags & FLAG_N) goto c97ae;
     //     cmp #0x20 ; ' '
+    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
     //     bcs loop_c979d
+    if (flags & FLAG_C) goto loop_c979d;
     //     ldy l0084
+    y = l0084;
     //     lda l97b1,x
+    a = l97b0_data[x+1];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bpl c9788
+    if (!(flags & FLAG_N)) goto c9788;
     // c97ae:
+c97ae:
     //     sec
+    flags |= FLAG_C;
     // return_46:
+return_46:
     //     rts
+    return;
 
     // MULTIPLE ENTRY POINTS: parse_boolean_from_fmt_cmd, sub_c976c
 }
@@ -5466,72 +6949,137 @@ static void evaluate_expression_from_fmt_cmd(void) {
     //     .byte 0x4e, 1
     //     .ascii "OFF"
     //     .byte 0, 0xff
+static const uint8_t l97b0_data[] = { 0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff };
 
     // ; ***************************************************************************************
     // evaluate_expression_from_fmt_cmd:
     //     lda #0
+    a = 0;
     //     sta tmp8
+    tmp8 = a;
     //     sta tmp9
+    tmp9 = a;
     //     sta input_buffer_ptr+1
+    input_buffer_ptr = (input_buffer_ptr & 0x00ff) | ((uint16_t)a << 8);
     // c97c0:
+c97c0:
     //     jsr get_current_fmt_cmd_byte
+    get_current_fmt_cmd_byte();
     //     beq c9821
+    if (flags & FLAG_Z) goto c9821;
     //     cmp #0x7c ; '|'
+    { uint16_t tmp_ = a - 0x7c; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x7c ? FLAG_C : 0); }
     //     bne c97d5
+    if (!(flags & FLAG_Z)) goto c97d5;
     //     jsr get_next_fmt_cmd_byte
+    get_next_fmt_cmd_byte();
     //     beq c9821
+    if (flags & FLAG_Z) goto c9821;
     //     iny
+    y++;
     //     jsr render_register
+    render_register();
     //     jmp c97dc
+    goto c97dc;
 
     // c97d5:
+c97d5:
     //     jsr ca6fe
+    ca6fe();
     //     sta tmp8
+    tmp8 = a;
     //     stx tmp9
+    tmp9 = x;
     // c97dc:
+c97dc:
     //     ldx input_buffer_ptr+1
+    x = (uint8_t)((input_buffer_ptr >> 8) & 0xff);
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
     //     beq c9804
+    if (flags & FLAG_Z) goto c9804;
     //     lda #0
+    a = 0;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     sta input_buffer_ptr+1
+    input_buffer_ptr = (input_buffer_ptr & 0x00ff) | ((uint16_t)a << 8);
     //     dex
+    x--;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
     //     beq c97f7
+    if (flags & FLAG_Z) goto c97f7;
     //     lda tmp4
+    a = tmp4;
     //     sec
+    flags |= FLAG_C;
     //     sbc tmp8
+    { uint16_t tmp_ = (uint16_t)a - tmp8 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     sta tmp8
+    tmp8 = a;
     //     lda tmp5
+    a = tmp5;
     //     sbc tmp9
+    { uint16_t tmp_ = (uint16_t)a - tmp9 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     sta tmp9
+    tmp9 = a;
     //     jmp c9804
+    goto c9804;
 
     // c97f7:
+c97f7:
     //     lda tmp4
+    a = tmp4;
     //     clc
+    flags &= ~FLAG_C;
     //     adc tmp8
+    { uint16_t tmp_ = (uint16_t)a + tmp8 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     sta tmp8
+    tmp8 = a;
     //     lda tmp5
+    a = tmp5;
     //     adc tmp9
+    { uint16_t tmp_ = (uint16_t)a + tmp9 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     sta tmp9
+    tmp9 = a;
     // c9804:
+c9804:
     //     lda tmp8
+    a = tmp8;
     //     sta tmp4
+    tmp4 = a;
     //     lda tmp9
+    a = tmp9;
     //     sta tmp5
+    tmp5 = a;
     //     jsr get_current_fmt_cmd_byte
+    get_current_fmt_cmd_byte();
     //     beq c9821
+    if (flags & FLAG_Z) goto c9821;
     //     ldx #1
+    x = 1;
     //     cmp #0x2b ; '+'
+    { uint16_t tmp_ = a - 0x2b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x2b ? FLAG_C : 0); }
     //     beq c981c
+    if (flags & FLAG_Z) goto c981c;
     //     inx                                                               ; X=0x02
+    x++;
     //     cmp #0x2d ; '-'
+    { uint16_t tmp_ = a - 0x2d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x2d ? FLAG_C : 0); }
     //     bne c9821
+    if (!(flags & FLAG_Z)) goto c9821;
     // c981c:
+c981c:
     //     stx input_buffer_ptr+1
+    input_buffer_ptr = (input_buffer_ptr & 0x00ff) | ((uint16_t)x << 8);
     //     iny
+    y++;
     //     bne c97c0
+    goto c97c0;
     // c9821:
+c9821:
     //     lda tmp8
+    a = tmp8;
     //     rts
+    return;
 }
 static void get_current_fmt_cmd_byte(void) {
     // get_current_fmt_cmd_byte:
@@ -5560,212 +7108,424 @@ static void sub_c9830(void) {
 
     // sub_c9830:
     //     lda justifying_flag
+    a = justifying_flag;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bne return_47
+    if (!(flags & FLAG_Z)) return;
     //     sta l0046
+    l0046 = a;
     //     sta l0039
+    l0039 = a;
     //     sta l0042
+    l0042 = a;
     //     lda ruler_right_stop
+    a = ruler_right_stop;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq return_47
+    if (flags & FLAG_Z) return;
     //     jsr get_line_length
+    get_line_length();
     //     sty l0043
+    l0043 = y;
     //     ldy #0
+    y = 0;
     //     beq c9861                                                         ; ALWAYS branch
+    goto c9861;
 
     // c9847:
+c9847:
     //     lda l0039
+    a = l0039;
     //     sta l0084
+    l0084 = a;
     //     iny
+    y++;
     //     cpy l0043
+    { uint16_t tmp_ = y - l0043; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0043 ? FLAG_C : 0); }
     //     beq c9871
+    if (flags & FLAG_Z) goto c9871;
     //     clc
+    flags &= ~FLAG_C;
     //     jsr sub_c9936
+    sub_c9936();
     //     beq c985c
+    if (flags & FLAG_Z) goto c985c;
     //     cmp #0x20 ; ' '
+    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
     //     bne c9847
+    if (!(flags & FLAG_Z)) goto c9847;
     //     inc l0046
+    l0046++;
     // c985c:
+c985c:
     //     iny
+    y++;
     //     cpy l0043
+    { uint16_t tmp_ = y - l0043; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0043 ? FLAG_C : 0); }
     //     beq c986d
+    if (flags & FLAG_Z) goto c986d;
     // c9861:
+c9861:
     //     sec
+    flags |= FLAG_C;
     //     jsr sub_c9936
+    sub_c9936();
     //     beq c985c
+    if (flags & FLAG_Z) goto c985c;
     //     cmp #0x20 ; ' '
+    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
     //     bne c9847
+    if (!(flags & FLAG_Z)) goto c9847;
     //     beq c985c                                                         ; ALWAYS branch
+    goto c985c;
 
     // c986d:
+c986d:
     //     dec l0046
+    l0046--;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (l0046 == 0 ? FLAG_Z : 0) | (l0046 & FLAG_N);
     //     bmi return_47
+    if (flags & FLAG_N) return;
     // c9871:
+c9871:
     //     lda l0046
+    a = l0046;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq return_47
+    if (flags & FLAG_Z) return;
     //     lda ruler_right_stop
+    a = ruler_right_stop;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     sec
+    flags |= FLAG_C;
     //     sbc l0084
+    { uint16_t tmp_ = (uint16_t)a - l0084 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     bcc return_47
+    if (!(flags & FLAG_C)) return;
     //     adc #0
+    { uint16_t tmp_ = (uint16_t)a + 0 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     tax
+    x = a;
     //     adc l0043
+    { uint16_t tmp_ = (uint16_t)a + l0043 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     sec
+    flags |= FLAG_C;
     //     sbc #0x84
+    { uint16_t tmp_ = (uint16_t)a - 0x84 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     bcc c988c
+    if (!(flags & FLAG_C)) goto c988c;
     //     sta l0084
+    l0084 = a;
     //     txa
+    a = x;
     //     sbc l0084
+    { uint16_t tmp_ = (uint16_t)a - l0084 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     tax
+    x = a;
     // c988c:
+c988c:
     //     stx l0082
+    l0082 = x;
     //     stx tmp8
+    tmp8 = x;
     //     lda #0
+    a = 0;
     //     sta tmp9
+    tmp9 = a;
     //     jsr sub_cadf0
+    sub_cadf0();
     //     sta l0045
+    l0045 = a;
     //     lda tmp8
+    a = tmp8;
     //     sta l0044
+    l0044 = a;
     //     ldy #0
+    y = 0;
     //     ldx l0046
+    x = l0046;
     //     tya                                                               ; A=0x00
+    a = y;
     // loop_c98a2:
     //     sta input_buffer,y
+loop_c98a2:
+    input_buffer[y] = a;
     //     iny
+    y++;
     //     dex
+    x--;
     //     bne loop_c98a2
+    if (x != 0) goto loop_c98a2;
     //     ldy print_xpos
+    y = print_xpos;
     //     iny
+    y++;
     //     cpy l0046
+    { uint16_t tmp_ = y - l0046; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0046 ? FLAG_C : 0); }
     //     bcc c98b2
+    if (!(flags & FLAG_C)) goto c98b2;
     //     ldy #1
+    y = 1;
     // c98b2:
+c98b2:
     //     dey
+    y--;
     //     ldx l0046
+    x = l0046;
     // c98b5:
+c98b5:
     //     lda l0045
+    a = l0045;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq c98bd
+    if (flags & FLAG_Z) goto c98bd;
     //     lda #1
+    a = 1;
     //     dec l0045
+    l0045--;
     // c98bd:
+c98bd:
     //     clc
+    flags &= ~FLAG_C;
     //     adc l0044
+    { uint16_t tmp_ = (uint16_t)a + l0044 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     sta input_buffer,y
+    input_buffer[y] = a;
     //     lda l0082
+    a = l0082;
     //     sec
+    flags |= FLAG_C;
     //     sbc input_buffer,y
+    { uint16_t tmp_ = (uint16_t)a - input_buffer[y] - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     php
+    { uint8_t saved_flags = flags;
     //     sta l0082
+    l0082 = a;
     //     iny
+    y++;
     //     cpy l0046
+    { uint16_t tmp_ = y - l0046; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0046 ? FLAG_C : 0); }
     //     bcc c98d3
+    if (!(flags & FLAG_C)) goto c98d3;
     //     ldy #0
+    y = 0;
     // c98d3:
+c98d3:
     //     plp
+    flags = saved_flags; }
     //     beq c98d9
+    if (flags & FLAG_Z) goto c98d9;
     //     dex
+    x--;
     //     bne c98b5
+    if (x != 0) goto c98b5;
     // c98d9:
+c98d9:
     //     sty print_xpos
+    print_xpos = y;
     //     ldy #0
+    y = 0;
     //     sty l0081
+    l0081 = y;
     //     sty l0039
+    l0039 = y;
     //     lda #0x1a
+    a = 0x1a;
     //     jsr wipe_buffer
+    wipe_buffer();
     //     lda l0042
+    a = l0042;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq c98f6
+    if (flags & FLAG_Z) goto c98f6;
     //     ldy #0
+    y = 0;
     // loop_c98ec:
     //     lda output_buffer,y
+loop_c98ec:
+    a = output_buffer[y];
     //     sta (current_edit_line_ptr),y
+    ram[current_edit_line_ptr + y] = a;
     //     iny
+    y++;
     //     cpy l0042
+    { uint16_t tmp_ = y - l0042; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0042 ? FLAG_C : 0); }
     //     bne loop_c98ec
+    if (!(flags & FLAG_Z)) goto loop_c98ec;
     // c98f6:
+c98f6:
     //     ldy l0042
+    y = l0042;
     //     ldx l0042
+    x = l0042;
     // c98fa:
+c98fa:
     //     lda output_buffer,x
+    a = output_buffer[x];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     cmp #0x20 ; ' '
+    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
     //     bne c9920
+    if (!(flags & FLAG_Z)) goto c9920;
     //     lda l0081
+    a = l0081;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq c991c
+    if (flags & FLAG_Z) goto c991c;
     //     sty l0084
+    l0084 = y;
     //     ldy l0039
+    y = l0039;
     //     cpy l0046
+    { uint16_t tmp_ = y - l0046; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0046 ? FLAG_C : 0); }
     //     lda #0
+    a = 0;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bcs c9912
+    if (flags & FLAG_C) goto c9912;
     //     lda input_buffer,y
+    a = input_buffer[y];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     // c9912:
+c9912:
     //     clc
+    flags &= ~FLAG_C;
     //     adc l0084
+    { uint16_t tmp_ = (uint16_t)a + l0084 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     inc l0039
+    l0039++;
     //     tay
+    y = a;
     //     lda #0
+    a = 0;
     //     sta l0081
+    l0081 = a;
     // c991c:
+c991c:
     //     lda #0x20 ; ' '
+    a = 0x20;
     //     bne c9922                                                         ; ALWAYS branch
+    goto c9922;
 
     // c9920:
+c9920:
     //     inc l0081
+    l0081++;
     // c9922:
+c9922:
     //     sta (current_edit_line_ptr),y
+    ram[current_edit_line_ptr + y] = a;
     //     iny
+    y++;
     //     inx
+    x++;
     //     cpx l0043
+    { uint16_t tmp_ = x - l0043; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= l0043 ? FLAG_C : 0); }
     //     bne c98fa
+    if (!(flags & FLAG_Z)) goto c98fa;
     //     lda #0x10
+    a = 0x10;
     // loop_c992c:
     //     cpy #0x84
+loop_c992c:
+    { uint16_t tmp_ = y - 0x84; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= 0x84 ? FLAG_C : 0); }
     //     bcs return_48
+    if (flags & FLAG_C) return;
     //     sta (current_edit_line_ptr),y
+    ram[current_edit_line_ptr + y] = a;
     //     iny
+    y++;
     //     bne loop_c992c
+    goto loop_c992c;
     // return_48:
+return_48:
     //     rts
+    return;
 }
 static void sub_c9936(void) {
     // Pseudocode: Processes a character from the edit line for output, handling tabs and margins
 
     // sub_c9936:
     //     ror l0083
+    { uint8_t tmp_ = (l0083 & 1) ? FLAG_C : 0; l0083 >>= 1; l0083 |= (flags & FLAG_C) ? 0x80 : 0; flags = (flags & ~FLAG_C) | tmp_; }
     //     lda (current_edit_line_ptr),y
+    a = ram[current_edit_line_ptr + y];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     sta output_buffer,y
+    output_buffer[y] = a;
     //     cmp #9
+    { uint16_t tmp_ = a - 9; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 9 ? FLAG_C : 0); }
     //     bne c994a
+    if (!(flags & FLAG_Z)) goto c994a;
     //     jsr sub_ca5ae
+    sub_ca5ae();
     //     txa
+    a = x;
     //     clc
+    flags &= ~FLAG_C;
     //     adc l0039
+    { uint16_t tmp_ = (uint16_t)a + l0039 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     bne c995c
+    if (!(flags & FLAG_Z)) goto c995c;
     // c994a:
+c994a:
     //     cmp #0x0b
+    { uint16_t tmp_ = a - 0x0b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0b ? FLAG_C : 0); }
     //     bne c9969
+    if (!(flags & FLAG_Z)) goto c9969;
     //     lda ruler_left_stop
+    a = ruler_left_stop;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq c9967
+    if (flags & FLAG_Z) goto c9967;
     //     ldx l0039
+    x = l0039;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
     //     beq c995c
+    if (flags & FLAG_Z) goto c995c;
     //     cpx ruler_left_stop
+    { uint16_t tmp_ = x - ruler_left_stop; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= ruler_left_stop ? FLAG_C : 0); }
     //     bcc c995c
+    if (!(flags & FLAG_C)) goto c995c;
     //     inx
+    x++;
     //     txa
+    a = x;
     // c995c:
+c995c:
     //     sta l0039
+    l0039 = a;
     //     sty l0042
+    l0042 = y;
     //     inc l0042
+    l0042++;
     //     lda #0
+    a = 0;
     //     sta l0046
+    l0046 = a;
     //     rts
+    return;
 
     // c9967:
+c9967:
     //     lda #0x20 ; ' '
+    a = 0x20;
     // c9969:
+c9969:
     //     cmp #0x1b
+    { uint16_t tmp_ = a - 0x1b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x1b ? FLAG_C : 0); }
     //     bcc c9967
+    if (!(flags & FLAG_C)) goto c9967;
     //     cmp #0x20 ; ' '
+    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
     //     bcc return_49
+    if (!(flags & FLAG_C)) return;
     //     inc l0039
+    l0039++;
     // return_49:
+return_49:
     //     rts
+    return;
 }
 static void sub_c9977(void) {
     // Pseudocode: Main line formatting routine: reads source line, handles margins, tabs, wrapping
@@ -5775,186 +7535,374 @@ static void sub_c9977(void) {
 
     // sub_c9977:
     //     inc cursor_moved_flag
+    cursor_moved_flag++;
     //     ldy #4
+    y = 4;
     //     sty print_xpos
+    print_xpos = y;
     //     ldy #0
+    y = 0;
     //     sty input_buffer_ptr
+    input_buffer_ptr = (input_buffer_ptr & 0xff00) | y;
     //     sty l007e
+    l007e = y;
     //     lda (current_line_ptr),y
+    a = ram[current_line_ptr + y];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     jsr check_for_command_prefix
+    check_for_command_prefix();
     //     beq c9974
+    if (flags & FLAG_Z) goto c9a8d;
     // c998a:
+c998a:
     //     lda format_mode_flag
+    a = format_mode_flag;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     and #0x81
+    a &= 0x81;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bne c9974
+    if (!(flags & FLAG_Z)) goto c9a8d;
     //     lda ruler_right_stop
+    a = ruler_right_stop;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq c9974
+    if (flags & FLAG_Z) goto c9a8d;
     //     sec
+    flags |= FLAG_C;
     //     sbc ruler_left_stop
+    { uint16_t tmp_ = (uint16_t)a - ruler_left_stop - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     bcc c9974
+    if (!(flags & FLAG_C)) goto c9a8d;
     //     adc #1
+    { uint16_t tmp_ = (uint16_t)a + 1 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     sta input_buffer_ptr+1
+    input_buffer_ptr = (input_buffer_ptr & 0x00ff) | ((uint16_t)a << 8);
     //     lda #0x10
+    a = 0x10;
     //     jsr wipe_buffer
+    wipe_buffer();
     //     lda current_line_ptr
+    a = (uint8_t)(current_line_ptr & 0xff);
     //     sta tmp6
+    tmp6 = a;
     //     lda current_line_ptr+1
+    a = (uint8_t)((current_line_ptr >> 8) & 0xff);
     //     sta tmp7
+    tmp7 = a;
     //     ldy #0
+    y = 0;
     //     sty l0047
+    l0047 = y;
     //     sty l0039
+    l0039 = y;
     //     sty l0038
+    l0038 = y;
     //     sty l0046
+    l0046 = y;
     //     sty bottom_margin
+    bottom_margin = y;
     // c99b6:
+c99b6:
     //     sty l0048
+    l0048 = y;
     //     ldy l0047
+    y = l0047;
     // loop_c99ba:
+loop_c99ba:
     //     jsr sub_ca536
+    sub_ca536();
     //     bne c99c7
+    if (!(flags & FLAG_Z)) goto c99c7;
     //     lda #0
+    a = 0;
     //     sta markers_array+1,x
+    markers_array[1 + x] = a;
     //     inc l007e
+    l007e++;
     //     bne loop_c99ba
+    if (l007e != 0) goto loop_c99ba;
     // c99c7:
+c99c7:
     //     ldy l0047
+    y = l0047;
     // c99c9:
+c99c9:
     //     lda (current_line_ptr),y
+    a = ram[current_line_ptr + y];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     iny
+    y++;
     //     sty l0047
+    l0047 = y;
     //     cmp #9
+    { uint16_t tmp_ = a - 9; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 9 ? FLAG_C : 0); }
     //     bne c99e0
+    if (!(flags & FLAG_Z)) goto c99e0;
     //     jsr sub_ca5ae
+    sub_ca5ae();
     //     dex
+    x--;
     //     txa
+    a = x;
     //     clc
+    flags &= ~FLAG_C;
     //     adc l0039
+    { uint16_t tmp_ = (uint16_t)a + l0039 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     sta l0039
+    l0039 = a;
     //     lda #9
+    a = 9;
     //     bne c9a21                                                         ; ALWAYS branch
+    goto c9a21;
 
     // c99e0:
+c99e0:
     //     cmp #0x1a
+    { uint16_t tmp_ = a - 0x1a; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x1a ? FLAG_C : 0); }
     //     bne c99ee
+    if (!(flags & FLAG_Z)) goto c99ee;
     // c99e4:
+c99e4:
     //     lda l0046
+    a = l0046;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bne c99c9
+    if (!(flags & FLAG_Z)) goto c99c9;
     //     ldx #0xff
+    x = 0xff;
     //     lda #0x20 ; ' '
+    a = 0x20;
     //     bne c9a2e                                                         ; ALWAYS branch
+    goto c9a2e;
 
     // c99ee:
+c99ee:
     //     cmp #0x0b
+    { uint16_t tmp_ = a - 0x0b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0b ? FLAG_C : 0); }
     //     bne c9a11
+    if (!(flags & FLAG_Z)) goto c9a11;
     //     ldx input_buffer_ptr
+    x = (uint8_t)(input_buffer_ptr & 0xff);
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
     //     bne c99e4
+    if (!(flags & FLAG_Z)) goto c99e4;
     //     lda l0038
+    a = l0038;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bne c99e4
+    if (!(flags & FLAG_Z)) goto c99e4;
     //     inc l0038
+    l0038++;
     //     lda ruler_left_stop
+    a = ruler_left_stop;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq c99c9
+    if (flags & FLAG_Z) goto c99c9;
     //     ldx l0039
+    x = l0039;
     //     cpx ruler_left_stop
+    { uint16_t tmp_ = x - ruler_left_stop; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= ruler_left_stop ? FLAG_C : 0); }
     //     bcs c9a0a
+    if (flags & FLAG_C) goto c9a0a;
     //     sta l0039
+    l0039 = a;
     //     dec l0039
+    l0039--;
     // c9a0a:
+c9a0a:
     //     clc
+    flags &= ~FLAG_C;
     //     adc input_buffer_ptr+1
+    { uint16_t tmp_ = (uint16_t)a + ((input_buffer_ptr >> 8) & 0xff) + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     sta input_buffer_ptr+1
+    input_buffer_ptr = (input_buffer_ptr & 0x00ff) | ((uint16_t)a << 8);
     //     lda #0x0b
+    a = 0x0b;
     // c9a11:
+c9a11:
     //     cmp #0x0d
+    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
     //     bne c9a21
+    if (!(flags & FLAG_Z)) goto c9a21;
     //     dey
+    y--;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (y == 0 ? FLAG_Z : 0) | (y & FLAG_N);
     //     beq c9a8d
+    if (flags & FLAG_Z) goto c9a8d;
     //     jsr sub_c9ac1
+    sub_c9ac1();
     //     bcs c9a87
+    if (flags & FLAG_C) goto c9a87;
     //     lda #0x20 ; ' '
+    a = 0x20;
     //     sta input_buffer_ptr
+    input_buffer_ptr = (input_buffer_ptr & 0xff00) | a;
     // c9a21:
+c9a21:
     //     ldy l0048
+    y = l0048;
     //     ldx #0
+    x = 0;
     //     cmp #0x20 ; ' '
+    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
     //     bne c9a2e
+    if (!(flags & FLAG_Z)) goto c9a2e;
     //     inx                                                               ; X=0x01
+    x++;
     //     bit l0046
+    { flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | ((a & l0046) == 0 ? FLAG_Z : 0) | (l0046 & (FLAG_N|FLAG_V)); }
     //     bmi c9a40
+    if (flags & FLAG_N) goto c9a40;
     // c9a2e:
+c9a2e:
     //     ldy l0048
+    y = l0048;
     //     sta (current_edit_line_ptr),y
+    ram[current_edit_line_ptr + y] = a;
     //     cmp #0x20 ; ' '
+    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
     //     bne c9a38
+    if (!(flags & FLAG_Z)) goto c9a38;
     //     ror bottom_margin
+    { uint8_t tmp_ = (bottom_margin & 1) ? FLAG_C : 0; bottom_margin >>= 1; bottom_margin |= (flags & FLAG_C) ? 0x80 : 0; flags = (flags & ~FLAG_C) | tmp_; }
     // c9a38:
+c9a38:
     //     iny
+    y++;
     //     jsr check_for_control_code
+    check_for_control_code();
     //     beq c9a40
+    if (flags & FLAG_Z) goto c9a40;
     //     inc l0039
+    l0039++;
     // c9a40:
+c9a40:
     //     bit l0046
+    { flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | ((a & l0046) == 0 ? FLAG_Z : 0) | (l0046 & (FLAG_N|FLAG_V)); }
     //     stx l0046
+    l0046 = x;
     //     bmi c9a58
+    if (flags & FLAG_N) goto c9a58;
     //     cmp #0x20 ; ' '
+    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
     //     beq c9a58
+    if (flags & FLAG_Z) goto c9a58;
     //     cpy #0x85
+    { uint16_t tmp_ = y - 0x85; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= 0x85 ? FLAG_C : 0); }
     //     bcs c9a60
+    if (flags & FLAG_C) goto c9a60;
     //     lda bottom_margin
+    a = bottom_margin;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq c9a58
+    if (flags & FLAG_Z) goto c9a58;
     //     lda l0039
+    a = l0039;
     //     cmp input_buffer_ptr+1
+    { uint16_t tmp_ = a - ((input_buffer_ptr >> 8) & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= ((input_buffer_ptr >> 8) & 0xff) ? FLAG_C : 0); }
     //     bcs c9a60
+    if (flags & FLAG_C) goto c9a60;
     // c9a58:
+c9a58:
     //     cpy #0x86
+    { uint16_t tmp_ = y - 0x86; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= 0x86 ? FLAG_C : 0); }
     //     bcc c9a5d
+    if (!(flags & FLAG_C)) goto c9a5d;
     //     dey
+    y--;
     // c9a5d:
+c9a5d:
     //     jmp c99b6
+    goto c99b6;
 
     // c9a60:
+c9a60:
     //     inc l0047
+    l0047++;
     // loop_c9a62:
+loop_c9a62:
     //     dec l0047
+    l0047--;
     //     dey
+    y--;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (y == 0 ? FLAG_Z : 0) | (y & FLAG_N);
     //     beq c9a8d
+    if (flags & FLAG_Z) goto c9a8d;
     //     lda (current_edit_line_ptr),y
+    a = ram[current_edit_line_ptr + y];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     pha
+    { uint8_t saved_a = a;
     //     lda #0x10
+    a = 0x10;
     //     sta (current_edit_line_ptr),y
+    ram[current_edit_line_ptr + y] = a;
     //     pla
+    a = saved_a; }
     //     cmp #0x20 ; ' '
+    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
     //     bne loop_c9a62
+    if (!(flags & FLAG_Z)) goto loop_c9a62;
     //     sec
+    flags |= FLAG_C;
     //     ror input_buffer_ptr
+    { uint8_t tmp_ = (input_buffer_ptr & 0x0001) ? FLAG_C : 0; input_buffer_ptr = (input_buffer_ptr >> 1) | ((flags & FLAG_C) ? 0x8000 : 0); flags = (flags & ~FLAG_C) | tmp_; }
     //     jsr sub_caed6
+    sub_caed6();
     //     jsr sub_c9830
+    sub_c9830();
     //     jsr sub_c9aa9
+    sub_c9aa9();
     //     jsr c9a8d
+    goto c9a8d;
     //     beq c9aa5
     //     jmp c998a
 
     // c9a87:
+c9a87:
     //     jsr sub_caed6
+    sub_caed6();
     //     jsr sub_c9aa9
+    sub_c9aa9();
     // c9a8d:
+c9a8d:
     //     jsr c9e94
+    sub_c9e94();
     //     lda current_line_ptr
+    a = (uint8_t)(current_line_ptr & 0xff);
     //     ldy current_line_ptr+1
+    y = (uint8_t)((current_line_ptr >> 8) & 0xff);
     //     jsr sub_cab1a
+    sub_cab1a();
     //     sec
+    flags |= FLAG_C;
     //     beq c9aa5
+    if (flags & FLAG_Z) goto c9aa5;
     //     tya
+    a = y;
     //     clc
+    flags &= ~FLAG_C;
     //     adc tmp0
+    { uint16_t tmp_ = (uint16_t)a + tmp0 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     sta current_line_ptr
+    current_line_ptr = (current_line_ptr & 0xff00) | a;
     //     bcc c9aa4
+    if (!(flags & FLAG_C)) goto c9aa4;
     //     inc current_line_ptr+1
+    current_line_ptr = (current_line_ptr & 0x00ff) | ((uint16_t)((current_line_ptr >> 8) + 1) << 8);
     // c9aa4:
+c9aa4:
     //     clc
+    flags &= ~FLAG_C;
     // c9aa5:
+c9aa5:
     //     clv
+    flags &= ~FLAG_V;
     //     lda l007e
+    a = l007e;
     //     rts
+    return;
 }
 static void sub_c9aa9(void) {
     // Pseudocode: Completes line formatting: adjusts pointers updates ruler stack
