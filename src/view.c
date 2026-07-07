@@ -339,18 +339,8 @@ static void sub_c9aa9(void);
 static void sub_c9ac1(void);
 static void sub_cadf0(void);
 static void sub_cb104(void);
- 
-// ; SCREEN driver function codes
-extern void screen_putchar(void);
-extern void screen_getchar(void);
-extern void screen_setcursor(void);
-extern void screen_getcursor(void);
-extern void screen_setstyle(void);
-extern void screen_getsize(void);
-extern void screen_clear(void);
-extern void screen_scrollup(void);
-extern void screen_scrolldown(void);
-extern void screen_enablecursor(bool on);
+
+#include "screen.h"
 
 //X ram:                              .fill 65536
 uint8_t ram[65536];
