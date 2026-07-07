@@ -11523,86 +11523,156 @@ caa08:
     //     rts
 }
 static void make_space_for_insertion(void) {
-    // Pseudocode: Makes space in document memory by shifting content up
+    // make_space_for_insertion: Shifts content up to make space for insertion
+    // On entry: tmp4:tmp5 = block base, tmp6:tmp7 = size, top = current top
+    // On exit:  top += size, pointer_array entries >= base adjusted, block shifted
+    // Uses: tmp2, tmp3, tmp8, tmp9
 
-    // make_space_for_insertion:
     //     lda top
+    a = (uint8_t)(top & 0xff);
     //     sta tmp2
+    tmp2 = a;
     //     clc
+    flags &= ~FLAG_C;
     //     adc tmp6
+    { uint16_t sum = (uint16_t)a + tmp6; a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
     //     sta tmp8
+    tmp8 = a;
     //     tax
+    x = a;
     //     lda top+1
+    a = (uint8_t)(top >> 8);
     //     sta tmp3
+    tmp3 = a;
     //     adc tmp7
+    { uint16_t sum = (uint16_t)a + tmp7 + (flags & FLAG_C ? 1 : 0); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
     //     sta tmp9
+    tmp9 = a;
     //     tay
+    y = a;
     //     cpy himem+1
     //     bcc caa32
     //     bne return_67
     //     cpx himem
     //     bcs return_67
+    if (y > (uint8_t)(himem >> 8) || (y == (uint8_t)(himem >> 8) && x >= (uint8_t)(himem & 0xff))) {
+        return;
+    }
     // caa32:
     //     stx top
     //     sty top+1
+    top = (uint16_t)y << 8 | x;
     //     ldx #0
+    x = 0;
     // loop_caa38:
+loop_caa38:;
     //     ldy __begin_pointer_array+1,x
+    y = ((uint8_t *)&pointer_array)[x + 1];
     //     lda __begin_pointer_array+0,x
+    a = ((uint8_t *)&pointer_array)[x];
     //     cpy tmp5
     //     bcc caa51
     //     bne caa46
     //     cmp tmp4
     //     bcc caa51
-    // caa46:
-    //     clc
-    //     adc tmp6
-    //     sta __begin_pointer_array+0,x
-    //     lda __begin_pointer_array+1,x
-    //     adc tmp7
-    //     sta __begin_pointer_array+1,x
+    if (y >= tmp5 && (y > tmp5 || a >= tmp4)) {
+        // caa46:
+        //     clc
+        flags &= ~FLAG_C;
+        //     adc tmp6
+        { uint16_t sum = (uint16_t)a + tmp6; a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+        //     sta __begin_pointer_array+0,x
+        ((uint8_t *)&pointer_array)[x] = a;
+        //     lda __begin_pointer_array+1,x
+        a = ((uint8_t *)&pointer_array)[x + 1];
+        //     adc tmp7
+        { uint16_t sum = (uint16_t)a + tmp7 + (flags & FLAG_C ? 1 : 0); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+        //     sta __begin_pointer_array+1,x
+        ((uint8_t *)&pointer_array)[x + 1] = a;
+    }
     // caa51:
     //     inx
+    x++;
     //     inx
+    x++;
     //     cpx #22
     //     bne loop_caa38
+    if (x != 22) goto loop_caa38;
+
     // caa57:
+caa57:
     //     lda tmp2
+    a = tmp2;
     //     sec
+    flags |= FLAG_C;
     //     sbc tmp4
+    { uint16_t tmp_ = (uint16_t)a - tmp4; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= tmp4 ? FLAG_C : 0); a = (uint8_t)tmp_; }
     //     tax
+    x = a;
     //     lda tmp3
+    a = tmp3;
     //     sbc tmp5
+    { uint16_t tmp_ = (uint16_t)a - tmp5 - (flags & FLAG_C ? 0 : 1); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (tmp5 + (flags & FLAG_C ? 0 : 1)) ? FLAG_C : 0); a = (uint8_t)tmp_; }
     //     beq caa65
+    if (flags & FLAG_Z) goto caa65;
     //     ldx #0xff
+    x = 0xff;
     // caa65:
+caa65:
     //     txa
+    a = x;
     //     tay
+    y = a;
     //     iny
+    y++;
     //     lda tmp2
+    a = tmp2;
     //     stx tmp2
+    tmp2 = x;
     //     sec
+    flags |= FLAG_C;
     //     sbc tmp2
+    { uint16_t tmp_ = (uint16_t)a - tmp2; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= tmp2 ? FLAG_C : 0); a = (uint8_t)tmp_; }
     //     sta tmp2
+    tmp2 = a;
     //     bcs caa75
+    if (flags & FLAG_C) goto caa75;
     //     dec tmp3
+    tmp3--;
     // caa75:
+caa75:
     //     lda tmp8
+    a = tmp8;
     //     stx tmp8
+    tmp8 = x;
     //     sec
+    flags |= FLAG_C;
     //     sbc tmp8
+    { uint16_t tmp_ = (uint16_t)a - tmp8; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= tmp8 ? FLAG_C : 0); a = (uint8_t)tmp_; }
     //     sta tmp8
+    tmp8 = a;
     //     bcs caa82
+    if (flags & FLAG_C) goto caa82;
     //     dec tmp9
+    tmp9--;
     // caa82:
+caa82:
     //     dey
+    y--;
     //     lda (tmp2),y
+    a = ram[(uint16_t)tmp3 << 8 | tmp2 + y];
     //     sta (tmp8),y
+    ram[(uint16_t)tmp9 << 8 | tmp8 + y] = a;
     //     tya
+    a = y;
     //     bne caa82
+    if (a != 0) goto caa82;
     //     inx
+    x++;
     //     beq caa57
+    if (x == 0) goto caa57;
     //     clc
+    flags &= ~FLAG_C;
     // return_67:
     //     rts
 }
@@ -11679,31 +11749,54 @@ static void unpack_line_into_buffer(void) {
     sub_caa97();
 }
 static void sub_caacb(void) {
-    // Pseudocode: Updates marker positions to point into format buffer instead of document buffer
+    // sub_caacb: Updates marker positions to point into format buffer instead of document buffer
 
-    // sub_caacb:
     //     lda current_line_ptr
+    a = (uint8_t)(current_line_ptr & 0xff);
     //     sta tmp6
+    tmp6 = a;
     //     lda current_line_ptr+1
+    a = (uint8_t)(current_line_ptr >> 8);
     //     sta tmp7
+    tmp7 = a;
     //     ldy #0
+    y = 0;
     // caad5:
+caad5:
     //     jsr sub_ca536
+    sub_ca536();
     //     bne caae8
+    if (!(flags & FLAG_Z)) goto caae8;
     //     tya
+    a = y;
     //     clc
+    flags &= ~FLAG_C;
     //     adc current_format_line_ptr
-    //     sta markers_array,x
+    { uint16_t sum = (uint16_t)a + (uint8_t)(current_format_line_ptr & 0xff); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    //     sta __begin_pointer_array,x
+    ((uint8_t*)markers_array)[x] = a;
     //     lda current_format_line_ptr+1
+    a = (uint8_t)(current_format_line_ptr >> 8);
     //     adc #0
+    { uint16_t sum = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
     //     sta markers_array+1,x
+    ((uint8_t*)markers_array)[x + 1] = a;
     //     bne caad5
+    if (!(flags & FLAG_Z)) goto caad5;
     // caae8:
+caae8:
     //     lda (current_line_ptr),y
+    a = ram[current_line_ptr + y];
     //     cmp #0x0d
+    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
     //     beq return_68
+    if (flags & FLAG_Z) return;
     //     iny
+    y++;
     //     bne caad5
+    if (y != 0) goto caad5;
+    // return_68:
+    //     rts
 }
 static void get_line_length(void) {
     // Pseudocode: Returns the length of the current edit line
