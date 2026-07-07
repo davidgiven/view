@@ -11,5 +11,5 @@ view-b3.0.asm: view.py view-b3.0.rom
 view-rebuild.rom: view-b3.0.asm
 	beebasm -i $< -o $@
 
-view: src/view.c src/screen.h src/screen_ncurses.c
-	$(CC) -g -o view src/view.c src/screen_ncurses.c -lncurses
+view: src/view.c src/cli.h src/cli_stdio.c src/screen.h src/screen_ncurses.c
+	$(CC) -g -o view src/view.c src/cli_stdio.c src/screen_ncurses.c -lncurses
