@@ -176,7 +176,7 @@ static void get_current_fmt_cmd_byte(void);
 static void get_next_fmt_cmd_byte(void);
 static void sub_c9e9b(void);
 static void sub_caa97(void);
-static void sub_c9e94(void);
+
 static void sub_cab37(void);
 static void sub_ca0af(void);
 static void draw_previous_word(void);
@@ -6775,6 +6775,8 @@ static void parse_boolean_from_fmt_cmd(void) {
     // MULTIPLE ENTRY POINTS: parse_boolean_from_fmt_cmd, sub_c976c
     sub_c976c();
 }
+static const uint8_t l97b0_data[] = { 0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff };
+
 static void sub_c976c(void) {
     // Pseudocode: Parses word-based flag (ON/OFF/YES/NO) from format command
 
@@ -6883,7 +6885,6 @@ static void evaluate_expression_from_fmt_cmd(void) {
     //     .byte 0x4e, 1
     //     .ascii "OFF"
     //     .byte 0, 0xff
-static const uint8_t l97b0_data[] = { 0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff };
 
     // ; ***************************************************************************************
     // evaluate_expression_from_fmt_cmd:
@@ -7803,7 +7804,7 @@ c9a87:
     // c9a8d:
 c9a8d:
     //     jsr c9e94
-    sub_c9e94();
+    c9e94();
     //     lda current_line_ptr
     a = (uint8_t)(current_line_ptr & 0xff);
     //     ldy current_line_ptr+1
