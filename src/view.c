@@ -5103,7 +5103,7 @@ c92d4:
     //     lda l0038
     a = l0038;
     //     beq c92f0
-    if (a == 0) goto c92f0;
+    if (a == 0) { sub_c92f0(); return; }
     //     ldx top_margin                                                    ; X=number of lines
     x = top_margin;
     //     jsr print_vertical_space
@@ -5126,45 +5126,8 @@ c92e8:
     x = header_margin;
     //     jsr print_vertical_space
     print_vertical_space();
-    // c92f0:
-c92f0:
-    //     ldx page_length
-    x = page_length;
-    //     lda l0038
-    a = l0038;
-    //     beq c930d
-    if (a == 0) goto c930d;
-    //     ldx #1
-    x = 1;
-    //     lda page_length
-    a = page_length;
-    //     clc
-    flags &= ~FLAG_C;
-    //     sbc top_margin
-    { int16_t r = (int16_t)a - (int16_t)top_margin - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r >= 0) { flags |= FLAG_C; } else { flags &= ~FLAG_C; } }
-    //     bcc c930d
-    if (!(flags & FLAG_C)) goto c930d;
-    //     sbc header_margin
-    { int16_t r = (int16_t)a - (int16_t)header_margin - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r >= 0) { flags |= FLAG_C; } else { flags &= ~FLAG_C; } }
-    //     bcc c930d
-    if (!(flags & FLAG_C)) goto c930d;
-    //     clc
-    flags &= ~FLAG_C;
-    //     sbc bottom_margin
-    { int16_t r = (int16_t)a - (int16_t)bottom_margin - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r >= 0) { flags |= FLAG_C; } else { flags &= ~FLAG_C; } }
-    //     bcc c930d
-    if (!(flags & FLAG_C)) goto c930d;
-    //     sbc footer_margin
-    { int16_t r = (int16_t)a - (int16_t)footer_margin - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r >= 0) { flags |= FLAG_C; } else { flags &= ~FLAG_C; } }
-    //     bcc c930d
-    if (!(flags & FLAG_C)) goto c930d;
-    //     tax
-    x = a;
-    // c930d:
-c930d:
-    //     stx l0021
-    l0021 = x;
-    //     rts
+    // c92f0: fall-through to shared routine
+    sub_c92f0(); return;
 }
 static void sub_c92f0(void) {
     // Shared code: computes remaining lines on page (c92f0)
@@ -5968,52 +5931,8 @@ static void rj_fmt_cmd(void) {
     flags |= FLAG_C;
     //     sbc l0083
     { uint16_t tmp_ = (uint16_t)a - l0083 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
-    // c950f:
-c950f:
-    //     ldy #3
-    y = 3;
-    //     tax
-    x = a;
-    flags = (flags & ~(FLAG_Z|FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
-    //     beq c951c
-    if (flags & FLAG_Z) goto c951c;
-    //     lda #0x20 ; ' '
-    a = 0x20;
-    // loop_c9516:
-    //     sta (current_format_line_ptr),y
-loop_c9516:
-    ram[current_format_line_ptr + y] = a;
-    //     iny
-    y++;
-    //     dex
-    x--;
-    //     bne loop_c9516
-    if (x != 0) goto loop_c9516;
-    // c951c:
-c951c:
-    //     lda output_buffer,x
-    a = output_buffer[x];
-    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
-    //     sta (current_format_line_ptr),y
-    ram[current_format_line_ptr + y] = a;
-    //     iny
-    y++;
-    //     inx
-    x++;
-    //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
-    //     bne c951c
-    if (!(flags & FLAG_Z)) goto c951c;
-    //     inc l0030
-    l0030++;
-    // c9529:
-c9529:
-    //     sec
-    flags |= FLAG_C;
-    // return_36:
-return_36:
-    //     rts
-    return;
+    // c950f: fall-through to shared routine
+    c950f_impl(); return;
 }
 static void expand_line(void) {
     // Pseudocode: Expands a format line into output_buffer, handling register references via |
@@ -6496,10 +6415,9 @@ static void pb_fmt_cmd(void) {
     //     rts
     return;
 }
-static void add_macro_to_linked_list(void) {
-    // Pseudocode: Links a new macro entry at the end of the macro linked list
+static void dm_fmt_cmd(void) {
+    // Pseudocode: Defines a macro: stores macro name and position in linked list
 
-    // ; ***************************************************************************************
     // dm_fmt_cmd:
     //     lda macro_executing_flag
     a = macro_executing_flag;
@@ -6663,19 +6581,6 @@ add_macro_to_linked_list:
     ram[((uint16_t)tmp7 << 8) | (uint16_t)(tmp6 + y)] = a;
     //     rts
     return;
-}
-static void dm_fmt_cmd(void) {
-    // Pseudocode: Defines a macro: stores macro name and position in linked list
-
-    // c96f8:
-    //     lda tmp0
-    a = tmp0;
-    //     sta last_macro_ptr
-    last_macro_ptr = (last_macro_ptr & 0xff00) | a;
-    //     lda tmp1
-    a = tmp1;
-    //     sta last_macro_ptr+1
-    last_macro_ptr = (last_macro_ptr & 0x00ff) | ((uint16_t)a << 8);
 }
 static void ht_fmt_cmd(void) {
     // Pseudocode: Sets highlight codes (highlight1_code, highlight2_code) from format command
@@ -7527,11 +7432,12 @@ return_49:
     //     rts
     return;
 }
-static void sub_c9977(void) {
-    // Pseudocode: Main line formatting routine: reads source line, handles margins, tabs, wrapping
-
+static void sub_c9974(void) {
     // c9974:
     //     jmp c9a8d
+}
+static void sub_c9977(void) {
+    // Pseudocode: Main line formatting routine: reads source line, handles margins, tabs, wrapping
 
     // sub_c9977:
     //     inc cursor_moved_flag
@@ -8207,13 +8113,21 @@ static void jsr_tmp6(void) {
     // jsr_tmp6:
     //     jmp (tmp6)
 }
-static void enter_printable_character(void) {
-    // Pseudocode: Inserts a printable character at cursor, handling insert mode
-
+static void sub_c9bbb(void) {
+    // c9bbb:
+    //     jmp editor_loop
+    editor_loop();
+}
+static void sub_c9bca(void) {
     // c9bca:
     //     jsr beep
     // c9bbb:
     //     jmp editor_loop
+    beep();
+    editor_loop();
+}
+static void enter_printable_character(void) {
+    // Pseudocode: Inserts a printable character at cursor, handling insert mode
 
     // enter_printable_character:
     //     ldy xpos
@@ -9878,9 +9792,7 @@ static void sub_ca276(void) {
     //     jsr set_cursor_position
     //     jmp cursor_on
 }
-static void sub_ca44e(void) {
-    // Pseudocode: Computes starting line for display based on screen position
-
+static void sub_ca422(void) {
     // ca422:
     //     dec l0081
     //     beq ca3de
@@ -9903,6 +9815,9 @@ static void sub_ca44e(void) {
     //     dec l0081
     //     bne loop_ca431
     //     beq ca3de                                                         ; ALWAYS branch
+}
+static void sub_ca44e(void) {
+    // Pseudocode: Computes starting line for display based on screen position
 
     // sub_ca44e:
     //     lda l0034
@@ -10485,7 +10400,17 @@ static void display_status_word(void) {
     return;
 }
 static void home_cursor(void) {
-    // Pseudocode: Moves cursor to home position (0,0)
+    // home_cursor:
+    // ca681:
+    //     ldx #0
+    x = 0;
+    //     ldy #0
+    y = 0;
+    //     jmp set_cursor_position
+    set_cursor_position(); return;
+}
+static void sub_ca651(void) {
+    // Pseudocode: Redraws status line showing format mode, justify, and insert indicators
 
     // sub_ca651:
     //     lda #0
@@ -10493,7 +10418,7 @@ static void home_cursor(void) {
     //     sta flags_need_redrawing_flag
     flags_need_redrawing_flag = a;
     //     jsr home_cursor
-    x = 0; y = 0; set_cursor_position();
+    home_cursor();
     //     ldx #0x46 ; 'F'
     x = 0x46;
     //     lda format_mode_flag
@@ -10531,28 +10456,11 @@ ca672:
     //     ldx insert_mode_flag
     x = insert_mode_flag;
     //     bne ca681
-    if (!(flags & FLAG_Z)) goto ca681;
+    if (!(flags & FLAG_Z)) { home_cursor(); return; }
     //     lda #0x20 ; ' '
     a = 0x20;
     //     bne ca681                                                         ; ALWAYS branch
-    if (!(flags & FLAG_Z)) goto ca681;
-
-    // ; ***************************************************************************************
-    // home_cursor:
-    // ca681:
-ca681:
-    //     ldx #0
-    x = 0;
-    //     ldy #0
-    y = 0;
-    //     jmp set_cursor_position
-    set_cursor_position(); return;
-}
-static void sub_ca651(void) {
-    // Pseudocode: Redraws status line showing format mode, justify, and insert indicators
-
-    // ca681:
-    home_cursor();
+    home_cursor(); return;
 }
 static void ca684(void) {
     // Pseudocode: Sets line_lengths[ypos] = screen_width after cursor movement
@@ -12639,11 +12547,13 @@ static void sub_cadf0(void) {
     //     bne loop_cadf4
     //     rts
 }
-static void sub_cae06(void) {
-    // Pseudocode: Inserts bytes at cursor position, shifting existing content right
-
+static void sub_cae03(void) {
     // cae03:
     //     jmp beep
+    beep();
+}
+static void sub_cae06(void) {
+    // Pseudocode: Inserts bytes at cursor position, shifting existing content right
 
     // sub_cae06:
     //     lda xpos
