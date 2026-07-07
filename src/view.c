@@ -220,7 +220,6 @@ static void reset_area_to_entire_document(void);
 static void read_first_chunk_from_input_file(void);
 static void put_byte_to_file(void);
 static void c93b8(void);
-static void bdos_print_newline(void);
 static void bdos_print_char(void);
 static void sub_ca071(void);
 static void sub_ca5ae(void);
@@ -242,7 +241,6 @@ static void print_x_words_of_help(void);
 static void render_number_to_screen(void);
 static void display_document_file_state(void);
 static void compute_bytes_free(void);
-static void bdos_print_newline(void);
 static void cli_loop_impl(void);
 static void cli_loop(void);
 static void run_cli(void);
@@ -652,7 +650,7 @@ static void run_cli(void) {
     //     jsr render_number_to_screen
     render_number_to_screen();
     //     jsr bdos_print_newline
-    bdos_print_newline();
+    putchar('\n');
     //     jsr display_document_file_state
     display_document_file_state();
     //     bit file_edit_flags
@@ -724,7 +722,7 @@ c816d:
     // c81b3:
 c81b3:
     //     jsr bdos_print_newline
-    bdos_print_newline();
+    putchar('\n');
     // c81b6:
 c81b6:
     //     ldx #0
@@ -783,11 +781,11 @@ c81e7:
     //     beq c81f3
     if (y == 0) goto c81f3;
     //     jsr bdos_print_newline
-    bdos_print_newline();
+    putchar('\n');
     // c81f3:
 c81f3:
     //     jsr bdos_print_newline
-    bdos_print_newline();
+    putchar('\n');
     cli_loop_impl();
 }
 static void cli_loop_impl(void) {
@@ -1292,7 +1290,7 @@ static void sheets_cmd(void) {
     //     jsr stop_printing
     stop_printing();
     //     jsr bdos_print_newline
-    bdos_print_newline();
+    putchar('\n');
     //     jmp cli_loop
     cli_loop(); return;
 }
@@ -2189,14 +2187,14 @@ c8787:
     // c878b:
 c878b:
     //     jsr bdos_print_newline
-    bdos_print_newline();
+    putchar('\n');
     //     jmp cli_loop
     cli_loop(); return;
 
     // c8791:
 c8791:
     //     jsr bdos_print_newline
-    bdos_print_newline();
+    putchar('\n');
     //     jmp display_not_enough_memory
     display_not_enough_memory(); return;
 }
@@ -3871,7 +3869,7 @@ static void display_no_text(void) {
 static void display_nl_then_no_text(void) {
     // display_nl_then_no_text:
     //     jsr bdos_print_newline
-    bdos_print_newline();
+    putchar('\n');
     display_no_text();
 }
 static void print_document(void) {
@@ -4247,7 +4245,7 @@ static void nested_macro_error(void) {
     //     jmp c8f1a
     // c8f1a:
     //     jsr bdos_print_newline
-    bdos_print_newline();
+    putchar('\n');
     //     jmp cli_loop
     cli_loop(); return;
 }
@@ -5111,7 +5109,7 @@ static void render_new_page(void) {
 c92cc:
     //     jmp c8f1a
     stop_printing();
-    bdos_print_newline();
+    putchar('\n');
     cli_loop(); return;
 
     // c92cf:
@@ -13635,17 +13633,6 @@ static void bdos_print_char(void) {
     // 1:
     //     rts
 }
-static void bdos_print_newline(void) {
-    // Pseudocode: Prints a newline (CR) to BDOS console output
-
-    // bdos_print_newline:
-    //     pha
-    //     lda #13
-    //     jsr bdos_print_char
-    //     pla
-    //     rts
-}
-
 static void readline(void) {
     // Pseudocode: Reads a line from keyboard with editing support (backspace, delete line)
 
