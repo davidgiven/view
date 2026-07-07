@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <setjmp.h>
 
 // #include "cpm65.inc"
 // #include "driver.inc"
@@ -13,6 +14,11 @@
 
 // ; 6502 CPU register globals
 uint8_t a, x, y, sp, flags;
+
+// ; Longjmp buffer for stack unwinding (txs equivalent)
+static jmp_buf env;
+#define JMP_CLI     1
+#define JMP_EDITOR  2
 
 // ; Flag bit masks
 #define FLAG_C 0x01
@@ -150,9 +156,8 @@ static void enter_printable_character(void);
 static void sub_c9de1(void);
 static void sub_c9e22(void);
 static void sub_ca94a(void);
-static void editor_loop(void);
+static void editor_loop_impl(void);
 static void ca741(void);
-static void ca941(void);
 static void ca93c(void);
 static void ca684(void);
 static void make_space_for_insertion(void);
@@ -238,7 +243,9 @@ static void render_number_to_screen(void);
 static void display_document_file_state(void);
 static void compute_bytes_free(void);
 static void bdos_print_newline(void);
+static void cli_loop_impl(void);
 static void cli_loop(void);
+static void run_cli(void);
 static void stop_printing(void);
 static void call_printer_driver(void);
 static void prepare_printer_driver(void);
@@ -602,13 +609,22 @@ uint8_t input_file[FS__SIZE];
 //X output_file:                    .fill FS__SIZE
 uint8_t output_file[FS__SIZE];
 static void main_(void) {
-    // Pseudocode: Program entry point, initializes stack pointer and error handling mode
+    // Pseudocode: Program entry point with longjmp buffer for stack reset (txs equivalent)
 
     // .text
     // .global main
     // main:
     //     ldx #0xff
     //     txs
+    int val = setjmp(env);
+    if (val == JMP_CLI) {
+        cli_loop_impl();
+        return;
+    } else if (val == JMP_EDITOR) {
+        editor_loop_impl();
+        return;
+    }
+    // Initial entry (val == 0)
     x = 0xff;
     //     stx error_handling_mode
     error_handling_mode = x;
@@ -616,6 +632,7 @@ static void main_(void) {
     system_init();
     //     jsr initialise_document
     initialise_document();
+    run_cli();
 }
 static void run_cli(void) {
     // run_cli:
@@ -771,8 +788,9 @@ c81e7:
 c81f3:
     //     jsr bdos_print_newline
     bdos_print_newline();
+    cli_loop_impl();
 }
-static void cli_loop(void) {
+static void cli_loop_impl(void) {
     // Pseudocode: Main CLI loop: prints => prompt, reads command, dispatches via jump table
 
     // cli_loop:
@@ -797,12 +815,17 @@ static void cli_loop(void) {
 
     // ; ***************************************************************************************
 }
+static void cli_loop(void) {
+    longjmp(env, JMP_CLI);
+}
 static void esc_key(void) {
     // Pseudocode: Saves edit buffer via ca93c and returns to CLI prompt
 
     // esc_key:
     //     jsr ca93c
     //     jmp run_cli
+    ca93c();
+    run_cli();
 }
 static void input_line_not_escaped(void) {
     // Pseudocode: Parses command input and dispatches through CLI jump table
@@ -878,6 +901,7 @@ static void search_cmd(void) {
     //     jsr move_cursor_to_address
     move_cursor_to_address();
     //     jmp run_editor
+    enter_editor_mode();
     run_editor();
     return;
 
@@ -7988,13 +8012,7 @@ c9b31:
     //     rts
     return;
 }
-static void run_editor(void) {
-    // Pseudocode: Enters editor mode and falls through to editor_loop
-
-    // run_editor:
-    //     jsr enter_editor_mode
-}
-static void editor_loop(void) {
+static void editor_loop_impl(void) {
     // Pseudocode: Main editor loop: handles cursor positioning, redrawing, key dispatch
 editor_loop:
     //     lda format_mode_flag
@@ -8114,7 +8132,7 @@ static void jsr_tmp6(void) {
 static void sub_c9bbb(void) {
     // c9bbb:
     //     jmp editor_loop
-    editor_loop();
+    editor_loop_impl();
 }
 static void sub_c9bca(void) {
     // c9bca:
@@ -8122,7 +8140,7 @@ static void sub_c9bca(void) {
     // c9bbb:
     //     jmp editor_loop
     beep();
-    editor_loop();
+    editor_loop_impl();
 }
 static void enter_printable_character(void) {
     // Pseudocode: Inserts a printable character at cursor, handling insert mode
@@ -8543,7 +8561,7 @@ c9de3:
 
 c9dfd:
     //     jmp ca941
-    ca941(); return;
+    run_editor(); return;
 }
 // MULTIPLE ENTRY POINTS: delete_key, f8_insert_char_key
 static void delete_key(void) {
@@ -11269,7 +11287,7 @@ ca93a:
     //     rts
     return;
 }
-// MULTIPLE ENTRY POINTS: ca93c, ca941
+// MULTIPLE ENTRY POINTS: ca93c (via run_editor)
 static void ca93c(void) {
     // ca93c:
     //     jsr sub_ca8b9
@@ -11277,18 +11295,19 @@ static void ca93c(void) {
     //     bcc return_66
     if (!(flags & FLAG_C)) return;
     //     falls through to ca941
-    ca941(); return;
+    run_editor(); return;
 }
-static void ca941(void) {
+static void run_editor(void) {
+    // run_editor:
+    //     jsr enter_editor_mode
     // ca941:
     //     ldx #0xff
-    x = 0xff;
     //     txs
     // PROBLEM: txs
     //     jsr sub_ca94a
     sub_ca94a();
     //     jmp editor_loop
-    editor_loop(); return;
+    longjmp(env, JMP_EDITOR);
 }
 static void sub_ca94a(void) {
     // Pseudocode: Memory full error handler: displays message, waits for ESCAPE, clears state
