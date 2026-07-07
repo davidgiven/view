@@ -10702,23 +10702,33 @@ static void parse_decimal_number(void) {
     flags = (flags & ~(FLAG_Z|FLAG_N)) | (had_digits == 0 ? FLAG_Z : 0) | (had_digits & FLAG_N);
 }
 static void ca741(void) {
-    // Pseudocode: Updates ptr6 to current_line_ptr and sets refresh flags
+    // ca741: Updates ptr6 to current_line_ptr if ptr6 is ahead, sets refresh flags
+    // On entry: current_line_ptr, ptr6
+    // On exit:  ptr6 = min(ptr6, current_line_ptr), l0073 = l003d = 0xff
+    // Uses: x, y
 
-    // ca741:
     //     ldx current_line_ptr
+    x = (uint8_t)(current_line_ptr & 0xff);
     //     ldy current_line_ptr+1
+    y = (uint8_t)(current_line_ptr >> 8);
     //     cpy ptr6+1
     //     bcc ca74f
     //     bne ca753
     //     cpx ptr6
     //     bcs ca753
-    // ca74f:
-    //     stx ptr6
-    //     sty ptr6+1
+    if (y < (uint8_t)(ptr6 >> 8) || (y == (uint8_t)(ptr6 >> 8) && x < (uint8_t)(ptr6 & 0xff))) {
+        // ca74f:
+        //     stx ptr6
+        //     sty ptr6+1
+        ptr6 = current_line_ptr;
+    }
     // ca753:
     //     ldx #0xff
+    x = 0xff;
     //     stx l0073
+    l0073 = x;
     //     stx l003d
+    l003d = x;
     //     rts
 }
 static void flush_and_read_char(void) {
