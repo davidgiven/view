@@ -563,16 +563,16 @@ struct {
 //X printer_driver_block:           .fill 0x100
 uint8_t printer_driver_block[0x100];
 //X input_buffer:                   .fill 0x45
-uint8_t input_buffer[0x45];
+uint8_t input_buffer[MAX_COMMAND_LENGTH];
 
 //X current_line_buffer:            .fill 135
-uint8_t current_line_buffer[135];
+uint8_t current_line_buffer[MAX_LINE_LENGTH];
 //X just_before_current_ruler_buffer: .fill 3 ; ??? something to do with rulers?
 uint8_t just_before_current_ruler_buffer[3];
 //X current_ruler_buffer:           .fill 133
-uint8_t current_ruler_buffer[133];
+uint8_t current_ruler_buffer[MAX_LINE_LENGTH];
 //X output_buffer:                  .fill 132
-uint8_t output_buffer[132];
+uint8_t output_buffer[MAX_LINE_LENGTH];
 
 //X header_text_maybe:              .fill 0x42
 uint8_t header_text_maybe[0x42];
@@ -580,9 +580,9 @@ uint8_t header_text_maybe[0x42];
 uint8_t footer_text_maybe[0x42];
 
 //X filename_buffer:                .fill 0x14
-uint8_t filename_buffer[0x14];
+uint8_t filename_buffer[MAX_COMMAND_LENGTH];
 //X output_filename:                .fill 0x14
-uint8_t output_filename[0x14];
+uint8_t output_filename[MAX_COMMAND_LENGTH];
 //X printer_driver_name:            .fill 0x14
 uint8_t printer_driver_name[0x14];
 
@@ -596,7 +596,7 @@ uint8_t register_value_array[26*2];
 //X line_lengths:                   .fill 32
 uint8_t line_lengths[32];
 //X input_filename:                 .fill 20
-uint8_t input_filename[20];
+uint8_t input_filename[MAX_COMMAND_LENGTH];
 
 //X input_file:                     .fill FS__SIZE
 FILE *input_fp;
@@ -3249,9 +3249,9 @@ static void sub_c8c53(void) {
     // sub_c8c53:
     //     ldx l0048
     x = l0048;
-    //     cpx #0x84
+    //     cpx #MAX_LINE_LENGTH
     //     bcs return_13
-    if (x >= 0x84) return;
+    if (x >= MAX_LINE_LENGTH) return;
     //     sta output_buffer,x
     output_buffer[x] = a;
     //     inc l0048
@@ -3714,9 +3714,9 @@ loop_c8dfb:
     filename_buffer[x] = a;
     //     inx
     x++;
-    //     cpx #0x14
+    //     cpx #MAX_COMMAND_LENGTH-1
     //     bne loop_c8dfb
-    if (x != 0x14) goto loop_c8dfb;
+    if (x != MAX_COMMAND_LENGTH - 1) goto loop_c8dfb;
 c8e25:
     //     lda #0x0d
     a = 0x0d;
@@ -4741,9 +4741,9 @@ loop_c91b2:
     //     cmp #0x0d
     //     beq c91c2
     if (a == 0x0d) goto c91c2;
-    //     cpx #0x83
+    //     cpx #MAX_LINE_LENGTH-1
     //     bcc c91a7
-    if (x < 0x83) goto c91a7;
+    if (x < MAX_LINE_LENGTH - 1) goto c91a7;
     //     lda #0x0d
     a = 0x0d;
     //     bne loop_c91b2                                                    ; ALWAYS branch
@@ -4863,9 +4863,9 @@ c921b:
     current_line_buffer[x] = a;
     //     inx
     x++;
-    //     cpx #0x82
+    //     cpx #MAX_LINE_LENGTH-2
     //     bcc c9209
-    if (x < 0x82) goto c9209;
+    if (x < MAX_LINE_LENGTH - 2) goto c9209;
     // c9223:
 c9223:
     //     ldy l0084
@@ -5423,8 +5423,8 @@ c93d9:
     output_buffer[x] = a;
     //     inx
     x++;
-    //     cpx #0x84
-    { uint16_t tmp_ = x - 0x84; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 0x84 ? FLAG_C : 0); }
+    //     cpx #MAX_LINE_LENGTH
+    { uint16_t tmp_ = x - MAX_LINE_LENGTH; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= MAX_LINE_LENGTH ? FLAG_C : 0); }
     //     bcc c93ce
     if (!(flags & FLAG_C)) goto c93ce;
     // c93e6:
@@ -5957,8 +5957,8 @@ c9548:
     { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
     //     beq c9555
     if (flags & FLAG_Z) goto c9555;
-    //     cpx #0x83
-    { uint16_t tmp_ = x - 0x83; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 0x83 ? FLAG_C : 0); }
+    //     cpx #MAX_LINE_LENGTH-1
+    { uint16_t tmp_ = x - (MAX_LINE_LENGTH - 1); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= MAX_LINE_LENGTH - 1 ? FLAG_C : 0); }
     //     bcc c9537
     if (!(flags & FLAG_C)) goto c9537;
     //     lda #0x0d
@@ -8090,7 +8090,7 @@ static void sub_c9bca(void) {
 }
 static void enter_printable_character(void) {
     y = xpos;
-    if (y >= 0x84) return;
+    if (y >= MAX_LINE_LENGTH) return;
     l006d++;
     sub_caef4();
     if (flags & FLAG_C) return;
@@ -8263,8 +8263,8 @@ static void f13_right_key(void) {
     // f13_right_key:
     //     ldy xpos
     y = xpos;
-    //     cpy #0x84
-    { uint16_t tmp_ = y - 0x84; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= 0x84 ? FLAG_C : 0); }
+    //     cpy #MAX_LINE_LENGTH
+    { uint16_t tmp_ = y - MAX_LINE_LENGTH; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= MAX_LINE_LENGTH ? FLAG_C : 0); }
     //     bcs return_51
     if (flags & FLAG_C) return;
     //     inc xpos
@@ -8775,8 +8775,8 @@ static void cf7_join_lines_key(void) {
 static void f3_delete_to_eol_key(void) {
     // f3_delete_to_eol_key: Deletes from cursor to end of line
 
-    //     lda #0x84
-    a = 0x84;
+    //     lda #MAX_LINE_LENGTH
+    a = MAX_LINE_LENGTH;
     //     sec
     flags |= FLAG_C;
     //     sbc xpos
@@ -10491,8 +10491,8 @@ static void emit_to_output_buffer_callback(void) {
     x = l0082;
     //     sta output_buffer,x
     output_buffer[x] = a;
-    //     cpx #0x82
-    { uint16_t tmp_ = x - 0x82; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 0x82 ? FLAG_C : 0); }
+    //     cpx #MAX_LINE_LENGTH-2
+    { uint16_t tmp_ = x - (MAX_LINE_LENGTH - 2); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= MAX_LINE_LENGTH - 2 ? FLAG_C : 0); }
     //     bcs ca6ae
     if (flags & FLAG_C) goto ca6ae;
     //     inc l0082
@@ -12637,8 +12637,8 @@ static void sub_cae06(void) {
 
     //     lda xpos
     a = xpos;
-    //     cmp #0x84
-    { uint16_t tmp_ = a - 0x84; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x84 ? FLAG_C : 0); }
+    //     cmp #MAX_LINE_LENGTH
+    { uint16_t tmp_ = a - MAX_LINE_LENGTH; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= MAX_LINE_LENGTH ? FLAG_C : 0); }
     //     bcs cae03
     if (flags & FLAG_C) { sub_cae03(); return; }
     //     stx input_buffer_offset+1
@@ -13172,7 +13172,7 @@ static void initialise_document(void) {
     { uint16_t tmp = page - 1; tmp8 = (uint8_t)(tmp & 0xff); tmp9 = (uint8_t)(tmp >> 8); }
     a = 0x0d;
     ram[((uint16_t)tmp9 << 8) | tmp8] = a;
-    current_line_buffer[0x89] = a;
+    current_line_buffer[MAX_LINE_LENGTH - 1] = a;
     top = page;
     ptr1 = (uint16_t)(uintptr_t)current_line_buffer;
     current_edit_line_ptr = ptr1 + 3;
