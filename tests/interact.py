@@ -145,40 +145,40 @@ class InteractionTests(unittest.TestCase):
         self.proc.close()
 
     def test_prompt_is_seen(self):
-        output = self.proc.read_until(b"=>\n", timeout=3.0)
+        output = self.proc.read_until(b"=>\r\n", timeout=0.5)
         self.assertTrue(
-            output.endswith(b"=>\n") or output.endswith(b"=>\r\n"),
-            f"Expected prompt '=>\\n' at end of output, got: {repr(output[-40:])}"
+            output.endswith(b"=>\r\n"),
+            f"Expected prompt '=>\\r\\n' at end of output, got: {repr(output[-40:])}"
         )
 
     def test_quit_command(self):
-        self.proc.read_until(b"=>\n", timeout=3.0)
+        self.proc.read_until(b"=>\r\n", timeout=0.5)
         self.proc.writeline("BYE")
-        status, output = self.proc.wait(timeout=3.0)
+        status, output = self.proc.wait(timeout=1.0)
         self.assertTrue(os.WIFEXITED(status),
                         f"Process did not exit cleanly (status={status})")
         self.assertEqual(os.WEXITSTATUS(status), 0,
                          f"Expected exit code 0, got {os.WEXITSTATUS(status)}")
 
     def test_load_missing_file(self):
-        self.proc.read_until(b"=>\n", timeout=3.0)
+        self.proc.read_until(b"=>\r\n", timeout=0.5)
         self.proc.writeline("load missing.v")
-        output = self.proc.read_until(b"=>\n", timeout=3.0)
+        output = self.proc.read_until(b"=>\r\n", timeout=0.5)
         self.assertIn(b"File not found", output,
                       f"Expected 'File not found' in output, got: {repr(output)}")
         self.assertTrue(
-            output.endswith(b"=>\n") or output.endswith(b"=>\r\n"),
+            output.endswith(b"=>\r\n"),
             f"Expected output to end with prompt, got: {repr(output[-40:])}"
         )
 
     def test_load_existing_file(self):
-        self.proc.read_until(b"=>\n", timeout=3.0)
+        self.proc.read_until(b"=>\r\n", timeout=0.5)
         self.proc.writeline("load examples/horse.v")
-        output = self.proc.read_until(b"=>\n", timeout=3.0)
+        output = self.proc.read_until(b"=>\r\n", timeout=0.5)
         self.assertIn(b"examples/horse.v", output,
                       f"Expected filename in output, got: {repr(output)}")
         self.assertTrue(
-            output.endswith(b"=>\n") or output.endswith(b"=>\r\n"),
+            output.endswith(b"=>\r\n"),
             f"Expected output to end with prompt, got: {repr(output[-40:])}"
         )
 
@@ -188,16 +188,16 @@ class InteractionTests(unittest.TestCase):
         here = os.path.dirname(__file__)
         original = os.path.join(here, "..", "examples", "horse.v")
 
-        self.proc.read_until(b"=>\n", timeout=3.0)
+        self.proc.read_until(b"=>\r\n", timeout=0.5)
         self.proc.writeline("LOAD examples/horse.v")
-        output = self.proc.read_until(b"=>\n", timeout=5.0)
+        output = self.proc.read_until(b"=>\r\n", timeout=1.0)
         self.assertIn(b"examples/horse.v", output)
 
         self.proc.writeline("SAVE output.v")
-        self.proc.read_until(b"=>\n", timeout=5.0)
+        self.proc.read_until(b"=>\r\n", timeout=1.0)
 
         self.proc.writeline("BYE")
-        status, _ = self.proc.wait(timeout=3.0)
+        status, _ = self.proc.wait(timeout=1.0)
         self.assertTrue(os.WIFEXITED(status))
         self.assertEqual(os.WEXITSTATUS(status), 0)
 
