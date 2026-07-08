@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify that view outputs its expected program banner on startup."""
+"""Integration tests for the VIEW text editor via PTY."""
 
 import pty
 import os
@@ -136,7 +136,7 @@ class PtyProcess:
                 break
 
 
-class TestBanner(unittest.TestCase):
+class InteractionTests(unittest.TestCase):
 
     def setUp(self):
         self.proc = PtyProcess([VIEW_BIN])
@@ -181,6 +181,31 @@ class TestBanner(unittest.TestCase):
             output.endswith(b"=>\n") or output.endswith(b"=>\r\n"),
             f"Expected output to end with prompt, got: {repr(output[-40:])}"
         )
+
+    def test_save_simple(self):
+        """Load a file and save it, then verify the saved file is byte-identical."""
+        import filecmp
+        here = os.path.dirname(__file__)
+        original = os.path.join(here, "..", "examples", "horse.v")
+
+        self.proc.read_until(b"=>\n", timeout=3.0)
+        self.proc.writeline("LOAD examples/horse.v")
+        output = self.proc.read_until(b"=>\n", timeout=5.0)
+        self.assertIn(b"examples/horse.v", output)
+
+        self.proc.writeline("SAVE output.v")
+        self.proc.read_until(b"=>\n", timeout=5.0)
+
+        self.proc.writeline("BYE")
+        status, _ = self.proc.wait(timeout=3.0)
+        self.assertTrue(os.WIFEXITED(status))
+        self.assertEqual(os.WEXITSTATUS(status), 0)
+
+        self.assertTrue(os.path.exists("output.v"),
+                        "Saved file output.v does not exist")
+        self.assertTrue(filecmp.cmp(original, "output.v", shallow=False),
+                        "Saved file content differs from original")
+        os.unlink("output.v")
 
 
 if __name__ == "__main__":

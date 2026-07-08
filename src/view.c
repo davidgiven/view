@@ -455,6 +455,7 @@ uint8_t cursor_moved_flag;
 uint8_t l007e;
 //X input_buffer_offset: .fill 2
 uint8_t input_buffer_offset;
+uint8_t l0080;
 //X l0081: .fill 1
 uint8_t l0081;
 //X l0082: .fill 1
@@ -831,7 +832,7 @@ static void input_line_not_escaped(void) {
     //     jsr parse_command
     parse_command();
     //     sty input_buffer_offset+1
-    l0081 = y;
+    l0080 = y;
     //     bcs c8263
     if (flags & FLAG_C) goto c8263;
     //     cpy #(jumptable4_cli_end-jumptable4_cli)/2
@@ -845,7 +846,7 @@ c8263:
     // c826e:
 c826e:
     //     lda input_buffer_offset+1
-    a = l0081;
+    a = l0080;
     //     ldy #2
     y = 2;
     //     jsr call_through_jumptable
@@ -3465,7 +3466,7 @@ static void write_byte_to_memory(void) {
     //     ldy #0
     y = 0;
     //     sta (tmp0),y
-    ram[tmp0] = a;
+    ram[((uint16_t)tmp1 << 8) | tmp0] = a;
     //     inc tmp0
     tmp0++;
     //     bne c8d0a
@@ -3754,8 +3755,9 @@ static void sub_c8e33(void) {
     //     lda l007e
     a = l007e;
     //     cmp #0x0d
+    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
     //     beq return_20
-    if (a == 0x0d) return;
+    if (flags & FLAG_Z) return;
     //     ldy input_buffer_offset
     y = input_buffer_offset;
     // loop_c8e3b:
@@ -3763,11 +3765,13 @@ static void sub_c8e33(void) {
         //     lda input_buffer,y
         a = input_buffer[y];
         //     cmp #0x0d
+        { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
         //     beq return_20
-        if (a == 0x0d) return;
+        if (flags & FLAG_Z) return;
         //     cmp l007e
+        { uint16_t tmp_ = a - l007e; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l007e ? FLAG_C : 0); }
         //     bne return_20
-        if (a != l007e) return;
+        if (!(flags & FLAG_Z)) return;
         //     iny
         y++;
         //     bne loop_c8e3b
