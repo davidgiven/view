@@ -281,6 +281,7 @@ static void sub_ca1cc(void);
 static void sub_ca608(void);
 // Forward declarations for recently translated functions
 static void bad_filename_error(void);
+static void read_into_document(void);
 static void c9263(void);
 static void parse_decimal_number(void);
 static void call_through_jumptable(void);
@@ -830,7 +831,7 @@ static void input_line_not_escaped(void) {
     //     jsr parse_command
     parse_command();
     //     sty input_buffer_offset+1
-    input_buffer_offset = y;
+    l0081 = y;
     //     bcs c8263
     if (flags & FLAG_C) goto c8263;
     //     cpy #(jumptable4_cli_end-jumptable4_cli)/2
@@ -844,7 +845,7 @@ c8263:
     // c826e:
 c826e:
     //     lda input_buffer_offset+1
-    a = input_buffer_offset;
+    a = l0081;
     //     ldy #2
     y = 2;
     //     jsr call_through_jumptable
@@ -1620,36 +1621,9 @@ return_6:
 
     // MULTIPLE ENTRY POINTS: check_for_at_least_150_bytes_free, display_not_enough_memory
 }
-static void load_cmd(void) {
-    // Pseudocode: Loads a file, initializes document, clears markers, moves cursor to top
+static void read_into_document(void) {
+    // 1: - shared entry point used by both load_cmd and read_cmd
 
-    // ; ***************************************************************************************
-    // load_cmd:
-    //     jsr check_not_continuous_editing
-    check_not_continuous_editing();
-    //     jsr parse_filename_from_command
-    parse_filename_from_command();
-    //     jsr initialise_document
-    initialise_document();
-    //     jsr reset_area_to_entire_document
-    reset_area_to_entire_document();
-    //     jsr 1f            ; local forward jump - jumps to "1:" in read_cmd
-    // PROBLEM: load_cmd jumps to label 1 in read_cmd - shared entry point
-    //     jsr reset_document_name_after_load
-    //     jsr clear_cmd
-    //     jmp move_cursor_to_top_of_document
-
-    // MULTIPLE ENTRY POINTS: load_cmd jumps into read_cmd at label 1:
-}
-static void read_cmd(void) {
-    // Pseudocode: Reads file contents into document at current area_start position
-
-    // read_cmd:
-    //     jsr parse_filename_from_command
-    parse_filename_from_command();
-    //     jsr parse_marks_from_command
-    parse_marks_from_command();
-    // 1:
     //     jsr check_for_at_least_150_bytes_free
     check_for_at_least_150_bytes_free();
 
@@ -1714,10 +1688,41 @@ c8598:
     tmp7 = a;
     //     jsr adjust_pointers
     adjust_pointers();
+}
+static void load_cmd(void) {
+    // Pseudocode: Loads a file, initializes document, clears markers, moves cursor to top
+
+    // ; ***************************************************************************************
+    // load_cmd:
+    //     jsr check_not_continuous_editing
+    check_not_continuous_editing();
+    //     jsr parse_filename_from_command
+    parse_filename_from_command();
+    //     jsr initialise_document
+    initialise_document();
+    //     jsr reset_area_to_entire_document
+    reset_area_to_entire_document();
+    //     jsr 1f            ; local forward jump - jumps to "1:" in read_cmd
+    read_into_document();
+    //     jsr reset_document_name_after_load
+    reset_document_name_after_load();
+    //     jsr clear_cmd
+    clear_cmd();
+    //     jmp move_cursor_to_top_of_document
+    move_cursor_to_top_of_document();
+}
+static void read_cmd(void) {
+    // Pseudocode: Reads file contents into document at current area_start position
+
+    // read_cmd:
+    //     jsr parse_filename_from_command
+    parse_filename_from_command();
+    //     jsr parse_marks_from_command
+    parse_marks_from_command();
+    // 1:
+    read_into_document();
     //     jmp cli_loop
     cli_loop(); return;
-
-    // MULTIPLE ENTRY POINTS: load_cmd jumps to label 1: within read_cmd
 }
 static void mode_cmd(void) {
     // ; ***************************************************************************************

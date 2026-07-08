@@ -160,6 +160,17 @@ class TestBanner(unittest.TestCase):
         self.assertEqual(os.WEXITSTATUS(status), 0,
                          f"Expected exit code 0, got {os.WEXITSTATUS(status)}")
 
+    def test_load_missing_file(self):
+        self.proc.read_until(b"=>\n", timeout=3.0)
+        self.proc.writeline("load missing.v")
+        output = self.proc.read_until(b"=>\n", timeout=3.0)
+        self.assertIn(b"File not found", output,
+                      f"Expected 'File not found' in output, got: {repr(output)}")
+        self.assertTrue(
+            output.endswith(b"=>\n") or output.endswith(b"=>\r\n"),
+            f"Expected output to end with prompt, got: {repr(output[-40:])}"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
