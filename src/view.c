@@ -2357,6 +2357,8 @@ static void reset_document_name_after_load(void) {
     a = 0x40;
     //     sta file_edit_flags
     file_edit_flags = a;
+    // fall through to set_document_name_to_filename_buffer
+    set_document_name_to_filename_buffer();
 
     // MULTIPLE ENTRY POINTS: name_cmd, reset_document_name_after_load
 }

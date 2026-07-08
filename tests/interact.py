@@ -171,6 +171,17 @@ class TestBanner(unittest.TestCase):
             f"Expected output to end with prompt, got: {repr(output[-40:])}"
         )
 
+    def test_load_existing_file(self):
+        self.proc.read_until(b"=>\n", timeout=3.0)
+        self.proc.writeline("load examples/horse.v")
+        output = self.proc.read_until(b"=>\n", timeout=3.0)
+        self.assertIn(b"examples/horse.v", output,
+                      f"Expected filename in output, got: {repr(output)}")
+        self.assertTrue(
+            output.endswith(b"=>\n") or output.endswith(b"=>\r\n"),
+            f"Expected output to end with prompt, got: {repr(output[-40:])}"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
