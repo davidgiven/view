@@ -455,7 +455,6 @@ uint8_t cursor_moved_flag;
 uint8_t l007e;
 //X input_buffer_offset: .fill 2
 uint8_t input_buffer_offset;
-uint8_t l0080;
 //X l0081: .fill 1
 uint8_t l0081;
 //X l0082: .fill 1
@@ -828,6 +827,7 @@ static void esc_key(void) {
 }
 static void input_line_not_escaped(void) {
     // input_line_not_escaped: Parses command input and dispatches through CLI jump table
+    uint8_t l0080;
 
     //     jsr parse_command
     parse_command();
@@ -2429,6 +2429,7 @@ zbreak:
     //     rts
 }
 static void sanitise_area(void) {
+    uint8_t tmp6, tmp7;
     // sanitise_area:
     //     lda area_start_ptr
     a = (uint8_t)(area_start_ptr & 0xff);
@@ -3536,6 +3537,7 @@ static void read_first_chunk_from_input_file(void) {
 }
 static void write_area_to_file(void) {
     // Pseudocode: Writes document area range to output file byte by byte
+    uint8_t tmp8, tmp9;
 
     // ; Does not include trailing zero!
     // write_area_to_file:
@@ -11304,6 +11306,7 @@ loop_ca983:
     //     rts
 }
 static void adjust_pointers(void) {
+    uint8_t tmp2, tmp3, tmp8, tmp9;
     // adjust_pointers:
     //     lda tmp4
     a = tmp4;
@@ -13164,6 +13167,7 @@ static void compute_bytes_free(void) {
     return;
 }
 static void initialise_document(void) {
+    uint8_t tmp8, tmp9;
     a = 0;
     printer_driver_name[0] = a;
     format_mode_flag = a;
