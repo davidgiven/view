@@ -207,6 +207,19 @@ class InteractionTests(unittest.TestCase):
                         "Saved file content differs from original")
         os.unlink("output.v")
 
+    def test_count_words(self):
+        """Load a file and count words, verify the count is correct."""
+        self.proc.read_until(b"=> ", timeout=0.5)
+        self.proc.writeline("LOAD examples/horse.v")
+        self.proc.read_until(b"=> ", timeout=1.0)
+
+        self.proc.writeline("COUNT")
+        output = self.proc.read_until(b"=> ", timeout=1.0)
+        self.assertIn(b"1300", output,
+                      f"Expected word count 1300 in output, got: {repr(output)}")
+        self.assertIn(b"word(s) counted", output,
+                      f"Expected 'word(s) counted' in output, got: {repr(output)}")
+
 
 if __name__ == "__main__":
     unittest.main()
