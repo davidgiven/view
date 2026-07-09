@@ -7,6 +7,9 @@ import time
 import select
 import signal
 import re
+import struct
+import fcntl
+import termios
 import unittest
 
 VIEW_BIN = os.path.join(os.path.dirname(__file__), "..", "bin", "view")
@@ -25,6 +28,10 @@ class PtyProcess:
         full_env = {**os.environ, "TERM": term, **env}
 
         master_fd, slave_fd = pty.openpty()
+        # Set window size so ncurses can initialise properly
+        ws = struct.pack("HHHH", 24, 80, 0, 0)
+        fcntl.ioctl(master_fd, termios.TIOCSWINSZ, ws)
+
         pid = os.fork()
         if pid == 0:
             os.close(master_fd)
@@ -136,7 +143,7 @@ class PtyProcess:
                 break
 
 
-class InteractionTests(unittest.TestCase):
+class CliTests(unittest.TestCase):
 
     def setUp(self):
         self.proc = PtyProcess([VIEW_BIN])
@@ -219,6 +226,28 @@ class InteractionTests(unittest.TestCase):
                       f"Expected word count 1300 in output, got: {repr(output)}")
         self.assertIn(b"word(s) counted", output,
                       f"Expected 'word(s) counted' in output, got: {repr(output)}")
+
+
+class EditorTests(unittest.TestCase):
+
+    def setUp(self):
+        self.proc = PtyProcess([VIEW_BIN])
+
+    def tearDown(self):
+        self.proc.close()
+
+    def test_enter_editor_after_loading_file(self):
+        self.proc.read_until(b"=>\r\n", timeout=0.5)
+        self.proc.writeline("LOAD examples/horse.v")
+        output = self.proc.read_until(b"=>\r\n", timeout=1.0)
+        self.assertIn(b"examples/horse.v", output,
+                      f"Expected filename in LOAD output, got: {repr(output)}")
+        self.assertIn(b"Editing examples/horse.v", output,
+                      f"Expected 'Editing' line showing filename, got: {repr(output)}")
+        self.proc.writeline("")
+        output = self.proc.read_until(b"Memory full", timeout=2.0)
+        self.assertIn(b"Memory full", output,
+                      f"Expected 'Memory full' after entering editor, got: {repr(output)}")
 
 
 if __name__ == "__main__":
