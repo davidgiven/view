@@ -3436,7 +3436,7 @@ c8cdb:
     //     lda tmp0
     a = tmp0;
     //     cmp input_buffer_offset+1
-    { uint16_t tmp_ = a - 0; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0 ? FLAG_C : 0); }
+    { uint16_t tmp_ = a - l0082; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0082 ? FLAG_C : 0); }
     //     bcc c8c95
     if (!(flags & FLAG_C)) goto c8c95;
 c8cf1:
@@ -3459,6 +3459,7 @@ c8cfa:
     flags = saved_flags_; }
     //     lda l0082
     a = l0082;
+    flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     rts
 }
 static void write_byte_to_memory(void) {
@@ -3655,6 +3656,7 @@ static void compute_space_common(void) {
         if (r < 0x100) flags |= FLAG_C; else flags &= ~FLAG_C;
     }
     //     sta input_buffer_offset+1
+    l0082 = a;
     //     bcs return_18
     if (!(flags & FLAG_C)) {
         //     dec l0081
