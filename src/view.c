@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <setjmp.h>
 #include <stdbool.h>
-
+ 
 #include "cli.h"
 
 // #include "cpm65.inc"
@@ -10273,7 +10273,7 @@ ca523:
     //     jsr screen_putchar
     screen_putchar(a);
     //     txa
-    a = marker_idx;
+    a = char_to_render;
     //     bne ca532
     if (a != 0) goto ca532;
     //     jsr set_normal_text_if_not_mode_7
@@ -10664,6 +10664,7 @@ static void display_status_word(void) {
     // display_status_word:
     //     lda l0076
     a = l0076;
+    flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq return_64
     if (flags & FLAG_Z) return;
     //     ldy #0
@@ -12091,6 +12092,7 @@ loop_cab2b:
     if (!(flags & FLAG_Z)) goto loop_cab2b;
     //     lda (tmp0),y
     a = ram[((uint16_t)tmp1 << 8) | tmp0 + y];
+    flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     // return_70:
 return_70:
     //     rts

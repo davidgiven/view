@@ -268,10 +268,10 @@ class EditorTests(unittest.TestCase):
         term = pyte.Screen(80, 24)
         stream = pyte.Stream(term)
         stream.feed(output.decode("latin-1"))
-        # Check that screen line 1 (second line, 0-indexed) contains the document content
-        line1 = term.display[1]
-        self.assertIn("The Water Horse's", line1,
-                      f"Expected 'The Water Horse's' on screen line 1, got: {repr(line1)}")
+        # Check that the document content appears on screen
+        self.assertIn("The Water Horse's Fireplace",
+                      term.display[1],
+                      f"Document line 1 wrong: {repr(term.display[1])}")
 
 
 if __name__ == "__main__":
