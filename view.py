@@ -366,6 +366,8 @@ subroutine(
     0xAD47, "set_marker_to_here", on_entry={"x": "ZP address of marker pointer"}
 )
 subroutine(0xB07A, "move_cursor_to_top_of_document")
+subroutine(0xA8B9, "write_line_back_to_document")
+subroutine(0xA93C, "write_line_back_to_document_or_error")
 
 subroutine(0x823B, "esc_key")
 subroutine(0x9D7B, "return_key")
