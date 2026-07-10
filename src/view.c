@@ -238,8 +238,8 @@ static void save_cursor_position(void);
 static void restore_cursor_position(void);
 static void display_document_file_state(void);
 static void compute_bytes_free(void);
-static void cli_loop_impl(void);
-static void cli_loop(void);
+static void cli_handler_impl(void);
+static void return_to_cli_prompt(void);
 static void run_cli(void);
 static void stop_printing(void);
 static void call_printer_driver(void);
@@ -619,7 +619,7 @@ static void main_(void) {
     //     txs
     int val = setjmp(env);
     if (val == JMP_CLI) {
-        cli_loop_impl();
+        cli_handler_impl();
         return;
     } else if (val == JMP_EDITOR) {
         editor_loop_impl();
@@ -790,10 +790,10 @@ c81e7:
 c81f3:
     //     jsr bdos_print_newline
     cli_putchar('\n');
-    cli_loop_impl();
+    return_to_cli_prompt();
 }
-static void cli_loop_impl(void) {
-    // cli_loop: Main CLI loop (called after setjmp reset)
+static void cli_handler_impl(void) {
+    // cli_handler_impl: Main CLI loop (called after setjmp reset)
 
     //     jsr stop_printing
     stop_printing();
@@ -820,7 +820,7 @@ static void cli_loop_impl(void) {
     //     jmp run_editor
     memory_full();
 }
-static void cli_loop(void) {
+static void return_to_cli_prompt(void) {
     longjmp(env, JMP_CLI);
 }
 static void esc_key(void) {
@@ -878,7 +878,7 @@ static void cmd_err_no_target(void) {
     //     .byte 0xff
     //     rts
     cli_putstring("No target given\n");
-    cli_loop(); return;
+    return_to_cli_prompt(); return;
 }
 static void cmd_err_no_string(void) {
     // c82fa - shared error handler for CLI commands
@@ -888,7 +888,7 @@ static void cmd_err_no_string(void) {
     //     .byte 0xff
     //     rts
     cli_putstring("No string found\n");
-    cli_loop(); return;
+    return_to_cli_prompt(); return;
 }
 static void search_cmd(void) {
     // Pseudocode: Searches for target string, reports position if found
@@ -970,7 +970,7 @@ loop_c82b3:
     //     jsr print_inline_string
     //     .ascii " string(s) changed"
     //     .byte 0xff
-    cli_putstring(" string(s) changed\n"); cli_loop(); return;
+    cli_putstring(" string(s) changed\n"); return_to_cli_prompt(); return;
 
     // c830d:
 c830d:
@@ -1306,8 +1306,8 @@ static void sheets_cmd(void) {
     stop_printing();
     //     jsr bdos_print_newline
     cli_putchar('\n');
-    //     jmp cli_loop
-    cli_loop(); return;
+    //     jmp return_to_cli_prompt
+    return_to_cli_prompt(); return;
 }
 static void print_cmd(void) {
     // Pseudocode: Sets print flags and falls through to print_to_screen
@@ -1327,8 +1327,8 @@ static void print_to_screen(void) {
 
     //     jsr print_document
     print_document();
-    //     jmp cli_loop
-    cli_loop(); return;
+    //     jmp return_to_cli_prompt
+    return_to_cli_prompt(); return;
 }
 static void stop_printing(void) {
     // Pseudocode: Stops active printing by clearing print flags and calling printer driver cleanup
@@ -1363,8 +1363,8 @@ static void start_printing(void) {
     //     .ascii "Sorry, can't print yet\r"
     //     .byte 0
     cli_putstring("Sorry, can't print yet\n");
-    //     jmp cli_loop
-    cli_loop(); return;
+    //     jmp return_to_cli_prompt
+    return_to_cli_prompt(); return;
 
     //     sta print_flags
     //     jsr prepare_printer_driver
@@ -1392,7 +1392,7 @@ static void edit_cmd(void) {
     read_first_chunk_from_input_file();
     if (flags & FLAG_Z) {
         close_input_output_files();
-        cli_loop();
+        return_to_cli_prompt();
         return;
     }
     file_edit_flags = 1;
@@ -1419,7 +1419,7 @@ static void more_cmd(void) {
     //     jsr write_area_to_file
     write_area_to_file();
     //     bne c84ab
-    if (!(flags & FLAG_Z)) { cli_loop(); return; }
+    if (!(flags & FLAG_Z)) { return_to_cli_prompt(); return; }
 
     //     ldy #0
     y = 0;
@@ -1458,7 +1458,7 @@ loop_c84c4:
     //     jsr read_next_chunk_from_input_file
     read_next_chunk_from_input_file();
     //     beq c84ab
-    if (flags & FLAG_Z) { cli_loop(); return; }
+    if (flags & FLAG_Z) { return_to_cli_prompt(); return; }
     // c84e8:
 c84e8:
     //     jmp cb05a
@@ -1485,7 +1485,7 @@ loop_c84ee:
     //     jsr write_area_to_file
     write_area_to_file();
     //     bne c84ab
-    if (!(flags & FLAG_Z)) { cli_loop(); return; }
+    if (!(flags & FLAG_Z)) { return_to_cli_prompt(); return; }
     //     lda #0
     a = 0;
     //     jsr put_byte_to_file                ; write terminator
@@ -1503,7 +1503,7 @@ loop_c84ee:
     //     jsr read_first_chunk_from_input_file
     read_first_chunk_from_input_file();
     //     beq c84ab
-    if (flags & FLAG_Z) { cli_loop(); return; }
+    if (flags & FLAG_Z) { return_to_cli_prompt(); return; }
     //     bne loop_c84ee                                                    ; ALWAYS branch
     goto loop_c84ee;
 }
@@ -1533,8 +1533,8 @@ static void close_input_output_files(void) {
     select_file();
     //     jsr close_file
     close_file();
-    //     jmp cli_loop
-    cli_loop(); return;
+    //     jmp return_to_cli_prompt
+    return_to_cli_prompt(); return;
 
     // MULTIPLE ENTRY POINTS: quit_cmd, close_input_output_files
 }
@@ -1591,8 +1591,8 @@ static void save_cmd_write_cmd(void) {
 
     //     jsr close_file
     close_file();
-    //     jmp cli_loop
-    cli_loop(); return;
+    //     jmp return_to_cli_prompt
+    return_to_cli_prompt(); return;
 
     // MULTIPLE ENTRY POINTS: save_cmd, write_cmd
 }
@@ -1621,7 +1621,7 @@ static void display_not_enough_memory(void) {
     //     jsr print_inline_string
     //     .ascii "Not enough memory"
     //     .byte 0xff
-    cli_putstring("Not enough memory\n"); cli_loop(); return;
+    cli_putstring("Not enough memory\n"); return_to_cli_prompt(); return;
 // return_6:
 return_6:
     //     rts
@@ -1729,8 +1729,8 @@ static void read_cmd(void) {
     parse_marks_from_command();
     // 1:
     read_into_document();
-    //     jmp cli_loop
-    cli_loop(); return;
+    //     jmp return_to_cli_prompt
+    return_to_cli_prompt(); return;
 }
 static void mode_cmd(void) {
     // ; ***************************************************************************************
@@ -1738,7 +1738,7 @@ static void mode_cmd(void) {
     //     jsr print_inline_string
     //     .ascii "Bad mode"
     //     .byte 0xff
-    cli_putstring("Bad mode\n"); cli_loop(); return;
+    cli_putstring("Bad mode\n"); return_to_cli_prompt(); return;
 }
 static void microspace_cmd(void) {
     // Pseudocode: Configures microspacing by querying printer driver
@@ -1787,7 +1787,7 @@ c8617:
     //     jsr print_inline_string
     //     .ascii "Driver does not support microspacing"
     //     .byte 0xff
-    cli_putstring("Driver does not support microspacing\n"); cli_loop(); return;
+    cli_putstring("Driver does not support microspacing\n"); return_to_cli_prompt(); return;
 }
 static void setup_cmd(void) {
     // Pseudocode: Parses flag letters and sets format_mode_flag, justifying_flag, insert_mode_flag
@@ -1831,7 +1831,7 @@ loop_c8652:
     //     jsr print_inline_string
     //     .ascii "Bad flag"
     //     .byte 0xff
-    cli_putstring("Bad flag\n"); cli_loop(); return;
+    cli_putstring("Bad flag\n"); return_to_cli_prompt(); return;
 
     // c8669:
 c8669:
@@ -1858,7 +1858,7 @@ loop_c8674:
     //     bpl loop_c8674
     if (!(flags & FLAG_N)) goto loop_c8674;
     //     bmi c869b                                                         ; ALWAYS branch
-    cli_loop(); return;
+    return_to_cli_prompt(); return;
 
     // c867d:
     //     lsr l004a
@@ -1876,7 +1876,7 @@ static void field_cmd(void) {
     //     jsr parse_integer_from_command
     parse_integer_from_command();
     //     beq c869b
-    if (flags & FLAG_Z) { cli_loop(); return; }
+    if (flags & FLAG_Z) { return_to_cli_prompt(); return; }
     //     lda tmp8
     a = tmp8;
     //     cmp #0x1b
@@ -1886,7 +1886,7 @@ static void field_cmd(void) {
     //     jsr print_inline_string
     //     .ascii "Frump!"
     //     .byte 0xff
-    cli_putstring("Frump!\n"); cli_loop(); return;
+    cli_putstring("Frump!\n"); return_to_cli_prompt(); return;
 
     // c8699:
 c8699:
@@ -1894,8 +1894,8 @@ c8699:
     current_tab_key = a;
     // c869b:
 c869b:
-    //     jmp cli_loop
-    cli_loop(); return;
+    //     jmp return_to_cli_prompt
+    return_to_cli_prompt(); return;
 }
 static void count_cmd(void) {
     // Pseudocode: Counts words in document area handling command prefixes and punctuation
@@ -1908,7 +1908,7 @@ static void count_cmd(void) {
     //     jsr sanitise_area
     sanitise_area();
     //     beq c869b
-    if (flags & FLAG_Z) { cli_loop(); return; }
+    if (flags & FLAG_Z) { return_to_cli_prompt(); return; }
     //     lda area_start_ptr
     a = (uint8_t)(area_start_ptr & 0xff);
     //     sta tmp0
@@ -2088,7 +2088,7 @@ c871f:
     //     jsr print_inline_string
     //     .ascii " word(s) counted."
     //     .byte 0xff
-    cli_putstring(" word(s) counted.\n"); cli_loop(); return;
+    cli_putstring(" word(s) counted.\n"); return_to_cli_prompt(); return;
 
     // l8747:
     //     .byte 0x52
@@ -2165,8 +2165,8 @@ c8787:
 c878b:
     //     jsr bdos_print_newline
     cli_putchar('\n');
-    //     jmp cli_loop
-    cli_loop(); return;
+    //     jmp return_to_cli_prompt
+    return_to_cli_prompt(); return;
 
     // c8791:
 c8791:
@@ -2230,21 +2230,21 @@ c87b4:
     //     jsr print_inline_string
     //     .ascii "off"
     //     .byte 0xff
-    cli_putstring("off\n"); cli_loop(); return;
+    cli_putstring("off\n"); return_to_cli_prompt(); return;
 
     // c87cb:
 c87cb:
     //     jsr print_inline_string
     //     .ascii "on"
     //     .byte 0xff
-    cli_putstring("on\n"); cli_loop(); return;
+    cli_putstring("on\n"); return_to_cli_prompt(); return;
 
     // c87d1:
 c87d1:
     //     jsr print_inline_string
     //     .ascii "Bad file"
     //     .byte 0xff
-    cli_putstring("Bad file\n"); cli_loop(); return;
+    cli_putstring("Bad file\n"); return_to_cli_prompt(); return;
 }
 static void printer_cmd(void) {
     // Pseudocode: Redirects to print_cmd (printer driver loading code is disabled with #if 0)
@@ -2331,8 +2331,8 @@ static void file_not_found_error(void) {
     //     .ascii "File not found\r"
     //     .byte 0
     cli_putstring("File not found\n");
-    //     jmp cli_loop
-    cli_loop(); return;
+    //     jmp return_to_cli_prompt
+    return_to_cli_prompt(); return;
 }
 static void name_cmd(void) {
     // Pseudocode: Sets document name from optional filename argument
@@ -2408,8 +2408,8 @@ static void file_error(void) {
     //     .ascii "File error"
     //     .byte 0
     cli_putstring("File error");
-    //     jmp cli_loop
-    cli_loop(); return;
+    //     jmp return_to_cli_prompt
+    return_to_cli_prompt(); return;
     // zendproc
 }
 static void zero_terminate_filename_buffer(void) {
@@ -2526,9 +2526,9 @@ static void parse_mark_from_command(void) {
     //     jsr lookup_marker
     lookup_marker();
     //     bcs c89b3 / c89b3: jsr print_inline_string ; .ascii "Bad marker" ; .byte 0xff
-    if (flags & FLAG_C) { cli_putstring("Bad marker\n"); cli_loop(); return; }
+    if (flags & FLAG_C) { cli_putstring("Bad marker\n"); return_to_cli_prompt(); return; }
     //     beq c89c1 / c89c1: jsr print_inline_string ; .ascii "Marker not set" ; .byte 0xff
-    if (flags & FLAG_Z) { cli_putstring("Marker not set\n"); cli_loop(); return; }
+    if (flags & FLAG_Z) { cli_putstring("Marker not set\n"); return_to_cli_prompt(); return; }
     //     lda markers_array,x
     a = (uint8_t)(markers_array[x] & 0xff);
     //     ldy markers_array+1,x
@@ -3747,8 +3747,8 @@ static void bad_filename_error(void) {
     //     .ascii "Bad filename\r"
     //     .byte 0
     cli_putstring("Bad filename\n");
-    //     jmp cli_loop
-    cli_loop(); return;
+    //     jmp return_to_cli_prompt
+    return_to_cli_prompt(); return;
 }
 static void parse_filename_from_command(void) {
     // Pseudocode: Parses mandatory filename, calls bad_filename_error if missing
@@ -3955,7 +3955,7 @@ c8f0d:
     // c8f1a:
     //     jsr stop_printing
     //     jsr bdos_print_newline
-    //     jmp cli_loop
+    //     jmp return_to_cli_prompt
 
     // c8f29:
 c8f29:
@@ -4223,8 +4223,8 @@ static void nested_macro_error(void) {
     // c8f1a:
     //     jsr bdos_print_newline
     cli_putchar('\n');
-    //     jmp cli_loop
-    cli_loop(); return;
+    //     jmp return_to_cli_prompt
+    return_to_cli_prompt(); return;
 }
 static void microspace_word_processor(void) {
     // Pseudocode: Processes words for microspaced justification during printing
@@ -5086,7 +5086,7 @@ c92cc:
     //     jmp c8f1a
     stop_printing();
     cli_putchar('\n');
-    cli_loop(); return;
+    return_to_cli_prompt(); return;
 
     // c92cf:
 c92cf:
