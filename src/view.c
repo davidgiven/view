@@ -7990,54 +7990,105 @@ static void editor_loop_impl(void) {
 editor_loop:
     //     lda format_mode_flag
     //     pha
+    {   uint8_t saved_fmt = format_mode_flag;
     //     lda l006e
+    a = l006e;
     //     bne c9b44
+    if (a != 0) goto c9b44_;
     //     pha
+    {   uint8_t saved_a_ = a;
     //     jsr sub_caa97
+    sub_caa97();
     //     pla
+    a = saved_a_; }
     //     sta l006e
-    // c9b44:
+    l006e = a;
+c9b44_:
     //     jsr sub_ca608
+    sub_ca608();
     //     lda ruler_left_stop
+    a = ruler_left_stop;
     //     beq c9b73
+    if (a == 0) goto c9b73_;
     //     ldx format_mode_flag
+    x = format_mode_flag;
     //     bmi c9b73
+    if (x & 0x80) goto c9b73_;
     //     cmp l0072
+    { uint16_t tmp_ = a - l0072; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= l0072 ? FLAG_C : 0); }
     //     bcc c9b73
+    if (!(flags & FLAG_C)) goto c9b73_;
     //     beq c9b73
+    if (flags & FLAG_Z) goto c9b73_;
     //     ldx cursor_moved_flag
+    x = cursor_moved_flag;
     //     bne c9b6a
+    if (x != 0) goto c9b6a_;
     //     jsr get_line_length
+    get_line_length();
     //     lda format_mode_flag
+    a = format_mode_flag;
     //     cpy xpos
+    { uint16_t tmp_ = y - xpos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= xpos ? FLAG_C : 0); }
     //     bcs c9b84
+    if (flags & FLAG_C) goto c9b84_;
     //     bit format_mode_flag
+    { uint8_t tmp_ = a & format_mode_flag; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (format_mode_flag & (FLAG_N|FLAG_V)); }
     //     bvs c9b6a
+    if (flags & FLAG_V) goto c9b6a_;
     //     sty xpos
+    xpos = y;
     //     bvc c9b84                                                         ; ALWAYS branch
+    goto c9b84_;
 
+c9b6a_:
     //     lda ruler_left_stop
+    a = ruler_left_stop;
     //     sta l0072
+    l0072 = a;
     //     inc l0079
+    l0079++;
     //     jsr sub_ca608
+    sub_ca608();
     //     lda format_mode_flag
+    a = format_mode_flag;
     //     and #0xbf
+    a &= 0xbf;
     //     pha
+    {   uint8_t saved_mod = a;
     //     jsr sub_caec2
+    sub_caec2();
     //     pla
+    a = saved_mod; }
     //     bcs c9b86
+    if (flags & FLAG_C) goto c9b86_;
     //     cpy xpos
+    { uint16_t tmp_ = y - xpos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= xpos ? FLAG_C : 0); }
     //     bcc c9b86
+    if (!(flags & FLAG_C)) goto c9b86_;
     //     beq c9b86
+    if (flags & FLAG_Z) goto c9b86_;
     //     ora #0x40 ; '@'
+    a |= 0x40;
     //     sta format_mode_flag
-    //     pla
+    format_mode_flag = a;
+c9b8f_:
+c9b84_:
+c9b73_:
+c9b86_:
+    //     pla (was: pop saved_fmt)
     //     cmp format_mode_flag
     //     beq c9b8f
+    if (saved_fmt != format_mode_flag) {
     //     inc flags_need_redrawing_flag
+        flags_need_redrawing_flag++;
     //     lda #0
     //     sta cursor_moved_flag
+        cursor_moved_flag = 0;
     //     jsr redraw_editor
+        redraw_editor();
+    }
+    }
 c9b96:
     //     jsr read_char
     read_char();
@@ -10155,7 +10206,7 @@ static void ca4e9(void) {
     // ca4e9: Renders character in A to screen with attribute handling
 
     uint8_t char_to_render = a;
-    uint8_t marker_idx;
+    uint8_t marker_idx = 0;
 
     //     ldx l0082
     x = l0082;
@@ -10224,11 +10275,12 @@ ca523:
     //     txa
     a = marker_idx;
     //     bne ca532
-    if (a != 0) return;
+    if (a != 0) goto ca532;
     //     jsr set_normal_text_if_not_mode_7
     set_normal_text_if_not_mode_7();
     // ca532:
     // ca533:
+ca532:
     //     ldx l0084
     x = l0084;
     //     rts

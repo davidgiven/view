@@ -11,6 +11,7 @@ import struct
 import fcntl
 import termios
 import unittest
+import pyte
 
 VIEW_BIN = os.path.join(os.path.dirname(__file__), "..", "bin", "view")
 
@@ -262,9 +263,15 @@ class EditorTests(unittest.TestCase):
         self.assertIn(b"Editing examples/horse.v", output,
                       f"Expected 'Editing' line showing filename, got: {repr(output)}")
         self.proc.writeline("")
-        # run_editor() enters editor mode; "Memory full" no longer shown.
-        # Just consume any output (e.g. ncurses init sequences) and carry on.
-        self.proc.read(timeout=0.3)
+        time.sleep(0.3)
+        output = self.proc.read(timeout=0.5)
+        term = pyte.Screen(80, 24)
+        stream = pyte.Stream(term)
+        stream.feed(output.decode("latin-1"))
+        # Check that screen line 1 (second line, 0-indexed) contains the document content
+        line1 = term.display[1]
+        self.assertIn("The Water Horse's", line1,
+                      f"Expected 'The Water Horse's' on screen line 1, got: {repr(line1)}")
 
 
 if __name__ == "__main__":
