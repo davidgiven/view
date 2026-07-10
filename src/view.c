@@ -437,6 +437,7 @@ uint8_t l006e;
 uint8_t l006f;
 //X ruler_stack_ptr: .fill 1
 uint8_t ruler_stack_ptr;
+uint16_t ruler_stack[128];
 //X hscroll_pos: .fill 1
 uint8_t hscroll_pos;
 //X l0072: .fill 1
@@ -12202,9 +12203,8 @@ static void push_onto_ruler_stack(void) {
     //     sta (oshwm),y
     y = ruler_stack_ptr;
     y--;
-    ram[oshwm + y] = tmp0;
     y--;
-    ram[oshwm + y] = tmp1;
+    ruler_stack[y / 2] = ((uint16_t)tmp1 << 8) | tmp0;
     //     jsr cab91
     cab91();
     //     pla
@@ -12242,17 +12242,16 @@ static void cab91(void) {
     //     adc #3
     //     sta current_ruler_ptr
     flags &= ~FLAG_C;
-    a = ram[oshwm + y];
-    { uint16_t tmp_ = (uint16_t)a + 3; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 3) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
-    current_ruler_ptr = (current_ruler_ptr & 0xff00) | a;
-    //     dey
-    y--;
-    //     lda (oshwm),y
-    //     adc #0
-    //     sta current_ruler_ptr+1
-    a = ram[oshwm + y];
-    { uint16_t tmp_ = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 0) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
-    current_ruler_ptr = (current_ruler_ptr & 0x00ff) | ((uint16_t)a << 8);
+    {   uint16_t val = ruler_stack[y / 2];
+        a = val & 0xff;
+        { uint16_t tmp_ = (uint16_t)a + 3; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 3) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+        current_ruler_ptr = (current_ruler_ptr & 0xff00) | a;
+        //     dey
+        y--;
+        a = (val >> 8) & 0xff;
+        { uint16_t tmp_ = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 0) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+        current_ruler_ptr = (current_ruler_ptr & 0x00ff) | ((uint16_t)a << 8);
+    }
 
     // MULTIPLE ENTRY POINTS: pop_from_ruler_stack, cab91
 }
@@ -13498,12 +13497,11 @@ static void initialise_document(void) {
     y++;
     a = 0x0d;
     ram[((uint16_t)tmp1 << 8) | ((uint16_t)tmp0 + y)] = a;
-    y = 0xff;
     a = (uint8_t)(uintptr_t)just_before_current_ruler_buffer;
-    ram[oshwm + y] = a;
-    y = 0xfe;
-    a = (uint8_t)((uintptr_t)just_before_current_ruler_buffer >> 8);
-    ram[oshwm + y] = a;
+    {   uint8_t low = a;
+        y = (uint8_t)((uintptr_t)just_before_current_ruler_buffer >> 8);
+        ruler_stack[0xfe / 2] = ((uint16_t)y << 8) | low;
+    }
     move_cursor_to_top_of_document();
     clear_cmd();
 }
