@@ -167,6 +167,13 @@ static void sub_ca0af(void);
 static void draw_previous_word(void);
 static void draw_char(void);
 static void sub_cab1a(void);
+static void sub_ca44e(void);
+static void sub_ca422(void);
+static void sub_ca486(void);
+static void sub_caacb(void);
+static void display_status_word(void);
+static void sub_ca651(void);
+static void unpack_line_into_buffer(void);
 static void clear_cmd(void);
 static void wipe_buffer(void);
 static void caf5c(void);
@@ -241,7 +248,7 @@ static void default_print_char(void);
 static void default_printer_on(void);
 static void default_printer_off(void);
 static void default_printer_entry3(void);
-static void sub_ca276(void);
+static void redraw_editor(void);
 static void sub_c8e33(void);
 static void sub_c8c53(void);
 static void sub_c8c51(void);
@@ -1062,8 +1069,8 @@ static void sub_c8361(void) {
     a = 0;
     //     sta l006e
     l006e = a;
-    //     jsr sub_ca276
-    sub_ca276();
+    //     jsr redraw_editor
+    redraw_editor();
     //     jmp ca93c
     ca93c(); return;
     // c836b:
@@ -8024,7 +8031,7 @@ editor_loop:
     //     inc flags_need_redrawing_flag
     //     lda #0
     //     sta cursor_moved_flag
-    //     jsr sub_ca276
+    //     jsr redraw_editor
 c9b96:
     //     jsr read_char
     read_char();
@@ -8802,8 +8809,8 @@ static void sf8_edit_command_key(void) {
 
     //     jsr c9e94
     c9e94();
-    //     jsr sub_ca276
-    sub_ca276();
+    //     jsr redraw_editor
+    redraw_editor();
     //     inc l006d
     l006d++;
     //     lda #0
@@ -9305,7 +9312,7 @@ static void sf14_down_key(void) {
 }
 static void sf11_copy_key(void) {
     f6_insert_line_key();
-    sub_ca276();
+    redraw_editor();
     x = l003a;
     if (x != 0) {
         y = 0;
@@ -9319,7 +9326,7 @@ static void sf11_copy_key(void) {
 }
 static void cf5_default_ruler_key(void) {
     f6_insert_line_key();
-    sub_ca276();
+    redraw_editor();
     cf8_mark_as_ruler_key();
     a = (uint8_t)(current_edit_line_ptr & 0xff);
     y = (uint8_t)(current_edit_line_ptr >> 8);
@@ -9473,255 +9480,492 @@ static void cf1_next_match_key(void) {
     if (!(flags & FLAG_Z)) { esc_key(); return; }
     move_cursor_to_address();
 }
-static void sub_ca276(void) {
+static void redraw_editor(void) {
     // Pseudocode: Main screen update routine: scrolls, redraws lines, updates status and cursor
+    uint8_t saved_l0076;
 
-    // sub_ca276:
+    // redraw_editor:
     //     jsr cursor_off
+    cursor_off();
     //     lda ruler_stack_ptr
+    a = ruler_stack_ptr;
     //     sta l0034
+    l0034 = a;
     //     lda l0076
+    a = l0076;
     //     sta input_buffer_offset+1
+    saved_l0076 = a;
     //     lda l006e
+    a = l006e;
     //     beq ca28e
+    if (a == 0) goto ca28e;
     //     lda l0073
+    a = l0073;
     //     ora l006f
-    //     bne ca28e
+    a |= l006f;
+    //     beq ca28e
+    if (a == 0) goto ca28e;
     //     jmp ca360
+    goto ca360;
 
     // ca28e:
+ca28e:
     //     lda current_line_ptr+1
+    a = (uint8_t)(current_line_ptr >> 8);
     //     cmp l0012
+    { uint16_t tmp_ = a - l0012; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0012 ? FLAG_C : 0); }
     //     bcc ca29c
+    if (!(flags & FLAG_C)) goto ca29c;
     //     bne ca2dc
+    if (!(flags & FLAG_Z)) goto ca2dc;
     //     lda current_line_ptr
+    a = (uint8_t)(current_line_ptr & 0xff);
     //     cmp l0011
+    { uint16_t tmp_ = a - l0011; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0011 ? FLAG_C : 0); }
     //     bcs ca2dc
+    if (flags & FLAG_C) goto ca2dc;
     // ca29c:
+ca29c:
     //     lda l006f
+    a = l006f;
     //     bne ca30d
+    if (a != 0) goto ca30d;
     //     lda l0033
+    a = l0033;
     //     sta ruler_stack_ptr
+    ruler_stack_ptr = a;
     //     ldy l0012
+    y = l0012;
     //     lda l0011
+    a = l0011;
     //     cpy top+1
+    { uint16_t tmp_ = y - (uint8_t)(top >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= (uint8_t)(top >> 8) ? FLAG_C : 0); }
     //     bcc ca2b2
+    if (!(flags & FLAG_C)) goto ca2b2;
     //     bne ca30d
+    if (!(flags & FLAG_Z)) goto ca30d;
     //     cmp top
+    { uint16_t tmp_ = a - (uint8_t)(top & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(top & 0xff) ? FLAG_C : 0); }
     //     bcs ca30d
+    if (flags & FLAG_C) goto ca30d;
     // ca2b2:
+ca2b2:
     //     jsr sub_cab37
+    sub_cab37();
     //     ldy tmp1
+    y = tmp1;
     //     cpy current_line_ptr+1
+    { uint16_t tmp_ = y - (uint8_t)(current_line_ptr >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= (uint8_t)(current_line_ptr >> 8) ? FLAG_C : 0); }
     //     bne ca30d
+    if (!(flags & FLAG_Z)) goto ca30d;
     //     lda tmp0
+    a = tmp0;
     //     cmp current_line_ptr
+    { uint16_t tmp_ = a - (uint8_t)(current_line_ptr & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(current_line_ptr & 0xff) ? FLAG_C : 0); }
     //     bne ca30d
+    if (!(flags & FLAG_Z)) goto ca30d;
     //     sty l0012
+    l0012 = y;
     //     sta l0011
+    l0011 = a;
     //     ldx screen_height
+    x = screen_height;
     // loop_ca2c7:
+loop_ca2c7:
     //     dex
+    x--;
     //     lda line_lengths,x
+    a = line_lengths[x];
     //     inx
+    x++;
     //     sta line_lengths,x
+    line_lengths[x] = a;
     //     dex
+    x--;
     //     bne loop_ca2c7
+    if (x != 0) goto loop_ca2c7;
     //     ldy #SCREEN_SCROLLDOWN
     //     jsr SCREEN
     screen_scrolldown();
     //     jsr home_cursor
+    x = 0; y = 1; set_cursor_position();
     //     ldy #1
+    y = 1;
     //     jmp ca351
+    goto ca351;
 
     // ca2dc:
+ca2dc:
     //     lda l0033
+    a = l0033;
     //     sta ruler_stack_ptr
+    ruler_stack_ptr = a;
     // ca2e0:
+ca2e0:
     //     ldx #0
+    x = 0;
     //     lda l0011
+    a = l0011;
     //     ldy l0012
+    y = l0012;
     // ca2e6:
+ca2e6:
     //     inx
+    x++;
     //     cpy ptr6+1
+    { uint16_t tmp_ = y - (uint8_t)(ptr6 >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= (uint8_t)(ptr6 >> 8) ? FLAG_C : 0); }
     //     bne ca2f1
+    if (!(flags & FLAG_Z)) goto ca2f1;
     //     cmp ptr6
+    { uint16_t tmp_ = a - (uint8_t)(ptr6 & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(ptr6 & 0xff) ? FLAG_C : 0); }
     //     bne ca2f1
+    if (!(flags & FLAG_Z)) goto ca2f1;
     //     stx l003d
+    l003d = x;
     // ca2f1:
+ca2f1:
     //     cpy current_line_ptr+1
+    { uint16_t tmp_ = y - (uint8_t)(current_line_ptr >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= (uint8_t)(current_line_ptr >> 8) ? FLAG_C : 0); }
     //     bne ca2f9
+    if (!(flags & FLAG_Z)) goto ca2f9;
     //     cmp current_line_ptr
+    { uint16_t tmp_ = a - (uint8_t)(current_line_ptr & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(current_line_ptr & 0xff) ? FLAG_C : 0); }
     //     beq ca313
+    if (flags & FLAG_Z) goto ca313;
     // ca2f9:
+ca2f9:
     //     jsr sub_cab1a
+    sub_cab1a();
     //     beq ca313
+    if (flags & FLAG_Z) goto ca313;
     //     tya
+    a = y;
     //     ldy tmp1
+    y = tmp1;
     //     clc
+    flags &= ~FLAG_C;
     //     adc tmp0
+    { uint16_t sum = (uint16_t)a + tmp0; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     bcc ca307
+    if (!(flags & FLAG_C)) goto ca307;
     //     iny
+    y++;
     // ca307:
+ca307:
     //     cpx screen_height
+    { uint16_t tmp_ = x - screen_height; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= screen_height ? FLAG_C : 0); }
     //     beq ca2e6
+    if (flags & FLAG_Z) goto ca2e6;
     //     bcc ca2e6
+    if (!(flags & FLAG_C)) goto ca2e6;
     // ca30d:
+ca30d:
     //     jsr sub_ca44e
+    sub_ca44e();
     //     jmp ca2e0
+    goto ca2e0;
 
     // ca313:
+ca313:
     //     cpx screen_height
+    { uint16_t tmp_ = x - screen_height; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= screen_height ? FLAG_C : 0); }
     //     bcc ca35e
+    if (!(flags & FLAG_C)) goto ca35e;
     //     beq ca35e
+    if (flags & FLAG_Z) goto ca35e;
     //     lda l006f
+    a = l006f;
     //     bne ca30d
+    if (a != 0) goto ca30d;
     //     ldx #0
+    x = 0;
     // loop_ca31f:
+loop_ca31f:
     //     lda line_lengths+1,x
+    a = line_lengths[x + 1];
     //     sta line_lengths,x
+    line_lengths[x] = a;
     //     inx
+    x++;
     //     cpx screen_height
+    { uint16_t tmp_ = x - screen_height; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= screen_height ? FLAG_C : 0); }
     //     bne loop_ca31f
+    if (!(flags & FLAG_Z)) goto loop_ca31f;
     //     dec l003d
+    l003d--;
     //     ldx #0
+    x = 0;
     //     lda screen_width
+    a = screen_width;
     //     sta line_lengths,x
+    line_lengths[x] = a;
     //     lda l0033
+    a = l0033;
     //     sta ruler_stack_ptr
+    ruler_stack_ptr = a;
     //     ldy l0012
+    y = l0012;
     //     lda l0011
+    a = l0011;
     //     jsr sub_cab1a
+    sub_cab1a();
     //     tya
+    a = y;
     //     clc
+    flags &= ~FLAG_C;
     //     adc l0011
+    { uint16_t sum = (uint16_t)a + l0011; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     sta l0011
+    l0011 = a;
     //     bcc ca348
+    if (!(flags & FLAG_C)) goto ca348;
     //     inc l0012
+    l0012++;
     // ca348:
+ca348:
     //     ldy #SCREEN_SCROLLUP
     //     jsr SCREEN
     screen_scrollup();
     //     ldx #0
+    x = 0;
     //     ldy screen_height
+    y = screen_height;
     //     jsr set_cursor_position
+    set_cursor_position();
     // ca351:
+ca351:
     //     lda ruler_stack_ptr
+    a = ruler_stack_ptr;
     //     sta l0033
+    l0033 = a;
     //     inc input_buffer_offset+1
+    saved_l0076++;
     //     inc l0074
+    l0074++;
     //     tya
+    a = y;
     //     tax
+    x = a;
     // ca35e:
+ca35e:
     //     stx ypos
+    ypos = x;
     // ca360:
+ca360:
     //     ldy l0034
+    y = l0034;
     //     jsr cab91
+    cab91();
     //     jsr unpack_line_into_buffer
+    unpack_line_into_buffer();
     //     jsr sub_ca608
+    sub_ca608();
     //     lda screen_width
+    a = screen_width;
     //     lsr
+    a >>= 1;
     //     sta l0083
+    l0083 = a;
     //     lda l0072
+    a = l0072;
     //     cmp hscroll_pos
+    { uint16_t tmp_ = a - hscroll_pos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= hscroll_pos ? FLAG_C : 0); }
     //     bcc ca381
+    if (!(flags & FLAG_C)) goto ca381;
     //     lda hscroll_pos
+    a = hscroll_pos;
     //     clc
+    flags &= ~FLAG_C;
     //     adc screen_width
+    { uint16_t sum = (uint16_t)a + screen_width; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     sbc #3
+    { uint16_t tmp_ = (uint16_t)a - 3 - (1 - (flags & FLAG_C ? 1 : 0)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ < 0x10000 ? FLAG_C : 0); }
     //     cmp l0072
+    { uint16_t tmp_ = a - l0072; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0072 ? FLAG_C : 0); }
     //     bcs ca395
+    if (flags & FLAG_C) goto ca395;
     // ca381:
+ca381:
     //     lda l0072
+    a = l0072;
     //     sec
+    flags |= FLAG_C;
     //     sbc l0083
+    { uint16_t tmp_ = (uint16_t)a - l0083 - (1 - (flags & FLAG_C ? 1 : 0)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ < 0x10000 ? FLAG_C : 0); }
     //     bcs ca38a
+    if (flags & FLAG_C) goto ca38a;
     //     lda #0
+    a = 0;
     // ca38a:
+ca38a:
     //     sta hscroll_pos
+    hscroll_pos = a;
     //     lda #1
+    a = 1;
     //     sta l0073
+    l0073 = a;
     //     sta input_buffer_offset+1
+    saved_l0076 = a;
     //     jsr ca93c
+    ca93c();
     // ca395:
+ca395:
     //     lda input_buffer_offset+1
+    a = saved_l0076;
     //     sta l0076
+    l0076 = a;
     //     lda l0073
+    a = l0073;
     //     beq ca3e7
+    if (a == 0) goto ca3e7;
     //     bpl ca3b2
+    if (!((int8_t)a < 0)) goto ca3b2;
     //     lda l003d
+    a = l003d;
     //     bmi ca3b2
+    if ((int8_t)a < 0) goto ca3b2;
     //     sta l0082
+    l0082 = a;
     //     lda screen_height
+    a = screen_height;
     //     sec
+    flags |= FLAG_C;
     //     sbc l003d
+    { uint16_t tmp_ = (uint16_t)a - l003d - (1 - (flags & FLAG_C ? 1 : 0)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ < 0x10000 ? FLAG_C : 0); }
     //     tax
+    x = a;
     //     inx
+    x++;
     //     lda ptr6
+    a = (uint8_t)(ptr6 & 0xff);
     //     ldy ptr6+1
+    y = (uint8_t)(ptr6 >> 8);
     //     bne ca3c1
+    if (y != 0) goto ca3c1;
     // ca3b2:
+ca3b2:
     //     ldy l0033
+    y = l0033;
     //     jsr cab91
+    cab91();
     //     lda #1
+    a = 1;
     //     sta l0082
+    l0082 = a;
     //     lda l0011
+    a = l0011;
     //     ldy l0012
+    y = l0012;
     //     ldx screen_height
+    x = screen_height;
     // ca3c1:
+ca3c1:
     //     stx l0081
+    l0081 = x;
     // loop_ca3c3:
+loop_ca3c3:
     //     jsr sub_ca486
+    sub_ca486();
     //     lda tmp0
+    a = tmp0;
     //     ldy tmp1
+    y = tmp1;
     //     jsr sub_cab1a
+    sub_cab1a();
     //     beq ca422
+    if (flags & FLAG_Z) { sub_ca422(); return; }
     //     tya
+    a = y;
     //     ldy tmp1
+    y = tmp1;
     //     clc
+    flags &= ~FLAG_C;
     //     adc tmp0
+    { uint16_t sum = (uint16_t)a + tmp0; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     bcc ca3d8
+    if (!(flags & FLAG_C)) goto ca3d8;
     //     iny
+    y++;
     // ca3d8:
+ca3d8:
     //     inc l0082
+    l0082++;
     //     dec l0081
+    l0081--;
     //     bne loop_ca3c3
+    if (l0081 != 0) goto loop_ca3c3;
     // ca3de:
+ca3de:
     //     lda #0
+    a = 0;
     //     sta l0074
+    l0074 = a;
     //     ldy l0034
+    y = l0034;
     //     jsr cab91
+    cab91();
     // ca3e7:
+ca3e7:
     //     jsr unpack_line_into_buffer
+    unpack_line_into_buffer();
     //     jsr sub_caacb
+    sub_caacb();
     //     jsr display_status_word
+    display_status_word();
     //     lda l0074
+    a = l0074;
     //     beq ca3ff
+    if (a == 0) goto ca3ff;
     //     lda ypos
+    a = ypos;
     //     sta l0082
+    l0082 = a;
     //     lda current_format_line_ptr
+    a = (uint8_t)(current_format_line_ptr & 0xff);
     //     ldy current_format_line_ptr+1
+    y = (uint8_t)(current_format_line_ptr >> 8);
     //     jsr sub_ca486
+    sub_ca486();
     // ca3ff:
+ca3ff:
     //     lda flags_need_redrawing_flag
+    a = flags_need_redrawing_flag;
     //     beq ca406
+    if (a == 0) goto ca406;
     //     jsr sub_ca651
+    sub_ca651();
     // ca406:
+ca406:
     //     lda l0072
+    a = l0072;
     //     sec
+    flags |= FLAG_C;
     //     sbc hscroll_pos
+    { uint16_t tmp_ = (uint16_t)a - hscroll_pos - (1 - (flags & FLAG_C ? 1 : 0)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ < 0x10000 ? FLAG_C : 0); }
     //     clc
+    flags &= ~FLAG_C;
     //     adc #3
+    { uint16_t sum = (uint16_t)a + 3; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     tax
+    x = a;
     //     ldy #0
+    y = 0;
     //     sty l0073
+    l0073 = y;
     //     sty l0074
+    l0074 = y;
     //     sty l006f
+    l006f = y;
     //     dey                                                               ; Y=0xff
+    y--;
     //     sty ptr6+1
+    ptr6 = (ptr6 & 0x00ff) | ((uint16_t)y << 8);
     //     ldy ypos
+    y = ypos;
     //     jsr set_cursor_position
+    set_cursor_position();
     //     jmp cursor_on
+    cursor_on(); return;
 }
 static void sub_ca422(void) {
     l0081--;
