@@ -448,8 +448,8 @@ uint8_t l0073;
 uint8_t l0074;
 //X flags_need_redrawing_flag: .fill 1
 uint8_t flags_need_redrawing_flag;
-//X l0076: .fill 1
-uint8_t l0076;
+//X status_line_needs_redrawing_flag: .fill 1
+uint8_t status_line_needs_redrawing_flag;
 //X ypos: .fill 1
 uint8_t ypos;
 //X print_xpos: .fill 1
@@ -602,8 +602,9 @@ uint8_t register_value_array[26*2];
 //X register_value_p                = register_value_array + ('P'-'A')*2
 #define register_value_p (register_value_array + ('P'-'A')*2)
 
+#define MAX_LINES 32
 //X line_lengths:                   .fill 32
-uint8_t line_lengths[32];
+uint8_t line_lengths[MAX_LINES];
 //X input_filename:                 .fill 20
 uint8_t input_filename[MAX_COMMAND_LENGTH];
 
@@ -9540,7 +9541,7 @@ static void cf1_next_match_key(void) {
 }
 static void redraw_editor(void) {
     // Pseudocode: Main screen update routine: scrolls, redraws lines, updates status and cursor
-    uint8_t saved_l0076;
+    uint8_t saved_status_line_needs_redrawing_flag;
 
     // redraw_editor:
     //     jsr cursor_off
@@ -9549,10 +9550,10 @@ static void redraw_editor(void) {
     a = ruler_stack_ptr;
     //     sta l0034
     l0034 = a;
-    //     lda l0076
-    a = l0076;
+    //     lda status_line_needs_redrawing_flag
+    a = status_line_needs_redrawing_flag;
     //     sta input_buffer_offset+1
-    saved_l0076 = a;
+    saved_status_line_needs_redrawing_flag = a;
     //     lda l006e
     a = l006e;
     //     beq ca28e
@@ -9797,7 +9798,7 @@ ca351:
     //     sta l0033
     l0033 = a;
     //     inc input_buffer_offset+1
-    saved_l0076++;
+    saved_status_line_needs_redrawing_flag++;
     //     inc l0074
     l0074++;
     //     tya
@@ -9863,15 +9864,15 @@ ca38a:
     //     sta l0073
     l0073 = a;
     //     sta input_buffer_offset+1
-    saved_l0076 = a;
+    saved_status_line_needs_redrawing_flag = a;
     //     jsr write_line_back_to_document_safely
     write_line_back_to_document_safely();
     // ca395:
 ca395:
     //     lda input_buffer_offset+1
-    a = saved_l0076;
-    //     sta l0076
-    l0076 = a;
+    a = saved_status_line_needs_redrawing_flag;
+    //     sta status_line_needs_redrawing_flag
+    status_line_needs_redrawing_flag = a;
     //     lda l0073
     a = l0073;
     //     beq ca3e7
@@ -10659,19 +10660,19 @@ return_64:
     return;
 }
 static void display_status_word(void) {
-    // Pseudocode: Displays ruler status word at top of screen if l0076 is set
+    // Pseudocode: Displays ruler status word at top of screen if status_line_needs_redrawing_flag is set
 
     // ; ***************************************************************************************
     // display_status_word:
-    //     lda l0076
-    a = l0076;
+    //     lda status_line_needs_redrawing_flag
+    a = status_line_needs_redrawing_flag;
     flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq return_64
     if (flags & FLAG_Z) return;
     //     ldy #0
     y = 0;
-    //     sty l0076
-    l0076 = y;
+    //     sty status_line_needs_redrawing_flag
+    status_line_needs_redrawing_flag = y;
     //     sty l0082
     l0082 = y;
     //     lda current_ruler_ptr
@@ -11522,7 +11523,7 @@ static const uint8_t la995_data[] = "Memory full - Press ESCAPE";
 static void show_memory_full_error(void) {
     // show_memory_full_error (sub_ca94a): Memory full error handler
     // On entry: (none)
-    // On exit:  l006e=0, l0076=1, l0073=1, cursor on
+    // On exit:  l006e=0, status_line_needs_redrawing_flag=1, l0073=1, cursor on
     // Uses: a, x, y, line_lengths
 
     //     jsr cursor_off
@@ -11602,8 +11603,8 @@ loop_ca983:
     cursor_on();
     //     lda #1
     a = 1;
-    //     sta l0076
-    l0076 = a;
+    //     sta status_line_needs_redrawing_flag
+    status_line_needs_redrawing_flag = a;
     //     sta l0073
     l0073 = a;
     //     rts
@@ -12192,8 +12193,8 @@ static void push_onto_ruler_stack(void) {
     //     tya
     //     pha
     { uint8_t saved_y = y;
-    //     inc l0076
-    l0076++;
+    //     inc status_line_needs_redrawing_flag
+    status_line_needs_redrawing_flag++;
     //     ldy ruler_stack_ptr
     //     dey
     //     lda tmp0
@@ -12217,8 +12218,8 @@ static void pop_from_ruler_stack(void) {
     // Pseudocode: Pops ruler position from the ruler stack
 
     // pop_from_ruler_stack:
-    //     inc l0076
-    l0076++;
+    //     inc status_line_needs_redrawing_flag
+    status_line_needs_redrawing_flag++;
     //     ldy ruler_stack_ptr
     y = ruler_stack_ptr;
     //     iny
@@ -13434,6 +13435,8 @@ static void system_init(void) {
     uint16_t size_ = screen_getsize();
     screen_width = (uint8_t)(size_ & 0xff);
     screen_height = (uint8_t)(size_ >> 8);
+    if (screen_height > MAX_LINES)
+        screen_height = MAX_LINES;
 }
 static void noscreen(void) {
     // Pseudocode: Screen driver not found: displays error and exits
@@ -13617,8 +13620,8 @@ loop_cb0a8:
     x = 2;
     //     stx l0073
     l0073 = 2;
-    //     stx l0076
-    l0076 = 2;
+    //     stx status_line_needs_redrawing_flag
+    status_line_needs_redrawing_flag = 2;
     flags_need_redrawing_flag = 1;
     //     rts
 }
