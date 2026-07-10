@@ -204,6 +204,7 @@ static void sub_c8371(void);
 static void flush_and_read_char(void);
 static void write_area_to_file(void);
 static void memory_full(void);
+static void run_editor(void);
 static void enter_editor_mode(void);
 static void move_cursor_to_top_of_document(void);
 static void check_for_at_least_150_bytes_free(void);
@@ -792,6 +793,11 @@ c81f3:
     cli_putchar('\n');
     return_to_cli_prompt();
 }
+static void run_editor(void) {
+    // run_editor: Enter editor mode and jump to editor loop.
+    enter_editor_mode();
+    longjmp(env, JMP_EDITOR);
+}
 static void cli_handler_impl(void) {
     // cli_handler_impl: Main CLI loop (called after setjmp reset)
 
@@ -818,7 +824,7 @@ static void cli_handler_impl(void) {
     //     bcc input_line_not_escaped
     if (!(flags & FLAG_C)) { input_line_not_escaped(); return; }
     //     jmp run_editor
-    memory_full();
+    run_editor();
 }
 static void return_to_cli_prompt(void) {
     longjmp(env, JMP_CLI);

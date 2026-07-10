@@ -262,9 +262,9 @@ class EditorTests(unittest.TestCase):
         self.assertIn(b"Editing examples/horse.v", output,
                       f"Expected 'Editing' line showing filename, got: {repr(output)}")
         self.proc.writeline("")
-        output = self.proc.read_until(b"Memory full", timeout=2.0)
-        self.assertIn(b"Memory full", output,
-                      f"Expected 'Memory full' after entering editor, got: {repr(output)}")
+        # run_editor() enters editor mode; "Memory full" no longer shown.
+        # Just consume any output (e.g. ncurses init sequences) and carry on.
+        self.proc.read(timeout=0.3)
 
 
 if __name__ == "__main__":
