@@ -55,7 +55,6 @@ uint8_t screen_getchar(void) {
 void screen_setcursor(uint16_t xa) {
     if (ncurses_active) {
         move(xa >> 8, xa & 0xff);
-        refresh();
     }
 }
 
@@ -74,7 +73,6 @@ void screen_setstyle(uint8_t a) {
             attron(A_REVERSE);
         else
             attroff(A_REVERSE);
-        refresh();
     }
 }
 
@@ -93,7 +91,6 @@ uint16_t screen_getsize(void) {
 void screen_clear(void) {
     if (ncurses_active) {
         clear();
-        refresh();
     } else {
         static bool term_setup = false;
         if (!term_setup) {
@@ -108,20 +105,17 @@ void screen_clear(void) {
 void screen_scrollup(void) {
     if (ncurses_active) {
         scrl(1);
-        refresh();
     }
 }
 
 void screen_scrolldown(void) {
     if (ncurses_active) {
         scrl(-1);
-        refresh();
     }
 }
 
 void screen_enablecursor(bool on) {
     if (ncurses_active) {
         curs_set(on ? 1 : 0);
-        refresh();
     }
 }
