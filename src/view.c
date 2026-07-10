@@ -140,10 +140,10 @@ static void beep(void);
 static void enter_printable_character(void);
 static void sub_c9de1(void);
 static void sub_c9e22(void);
-static void memory_full(void);
+static void show_memory_full_error(void);
 static void editor_loop_impl(void);
 static void ca741(void);
-static void ca93c(void);
+static void write_line_back_to_document_safely(void);
 static void ca684(void);
 static void make_space_for_insertion(void);
 static void get_line_length(void);
@@ -203,7 +203,7 @@ static void sub_c8361(void);
 static void sub_c8371(void);
 static void flush_and_read_char(void);
 static void write_area_to_file(void);
-static void run_editor(void);
+static void memory_full(void);
 static void enter_editor_mode(void);
 static void move_cursor_to_top_of_document(void);
 static void check_for_at_least_150_bytes_free(void);
@@ -262,7 +262,7 @@ static void sub_c9445(void);
 static void c937b(void);
 static void print_vertical_space(void);
 static void render_header_or_footer(void);
-static void sub_ca8b9(void);
+static void write_line_back_to_document(void);
 static void sub_c92f0(void);
 static void system_init(void);
 static void initialise_document(void);
@@ -806,8 +806,8 @@ static void cli_loop_impl(void) {
     x = 0;
     //     stx print_flags
     print_flags = 0;
-    //     jsr print_inline_string ; .ascii "=>\n"
-    cli_putstring("=>\n");
+    //     jsr print_inline_string ; .ascii "=>"
+    cli_putstring("=>");
     //     jsr readline
     readline();
     //     lda #<input_buffer
@@ -818,18 +818,18 @@ static void cli_loop_impl(void) {
     //     bcc input_line_not_escaped
     if (!(flags & FLAG_C)) { input_line_not_escaped(); return; }
     //     jmp run_editor
-    run_editor();
+    memory_full();
 }
 static void cli_loop(void) {
     longjmp(env, JMP_CLI);
 }
 static void esc_key(void) {
-    // Pseudocode: Saves edit buffer via ca93c and returns to CLI prompt
+    // Pseudocode: Saves edit buffer via write_line_back_to_document_safely and returns to CLI prompt
 
     // esc_key:
-    //     jsr ca93c
+    //     jsr write_line_back_to_document_safely
     //     jmp run_cli
-    ca93c();
+    write_line_back_to_document_safely();
     run_cli();
 }
 static void input_line_not_escaped(void) {
@@ -913,9 +913,9 @@ static void search_cmd(void) {
     if (!(flags & FLAG_Z)) { cmd_err_no_string(); return; }
     //     jsr move_cursor_to_address
     move_cursor_to_address();
-    //     jmp run_editor
+    //     jmp enter_editor_mode
     enter_editor_mode();
-    run_editor();
+    longjmp(env, JMP_EDITOR);
     return;
 
     // ; ***************************************************************************************
@@ -1049,7 +1049,7 @@ c8349:
     //     jsr sub_c8a4f
     sub_c8a4f();
     //     bcs c836b
-    if (flags & FLAG_C) { memory_full(); esc_key(); return; }
+    if (flags & FLAG_C) { show_memory_full_error(); esc_key(); return; }
     //     jsr sub_c8361
     sub_c8361();
     // c8356:
@@ -1071,8 +1071,8 @@ static void sub_c8361(void) {
     l006e = a;
     //     jsr redraw_editor
     redraw_editor();
-    //     jmp ca93c
-    ca93c(); return;
+    //     jmp write_line_back_to_document_safely
+    write_line_back_to_document_safely(); return;
     // c836b:
     //     jsr sub_ca94a
     //     jmp esc_key
@@ -7814,8 +7814,8 @@ static void sub_c9aa9(void) {
     l003b = y;
     //     inc l006e
     l006e++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (l006e == 0 ? FLAG_Z : 0) | (l006e & FLAG_N);
-    //     jsr sub_ca8b9
-    sub_ca8b9();
+    //     jsr write_line_back_to_document
+    write_line_back_to_document();
     //     bcc return_50
     if (!(flags & FLAG_C)) return;
     //     pla
@@ -8204,7 +8204,7 @@ c9c4a:
             tmp5 = (uint8_t)(current_line_ptr >> 8) + (sum >> 8);
         }
         make_space_for_insertion();
-        if (flags & FLAG_C) { memory_full(); longjmp(env, JMP_EDITOR); }
+        if (flags & FLAG_C) { show_memory_full_error(); longjmp(env, JMP_EDITOR); }
     }
     // c9cd0:
     y = 0;
@@ -8250,7 +8250,7 @@ c9d30:
         break;
     }
     sub_c9830();
-    ca93c();
+    write_line_back_to_document_safely();
     ca741();
     return_key();
     xpos = top_margin;
@@ -8304,8 +8304,8 @@ static void f12_left_key(void) {
 static void f15_up_key(void) {
     // f15_up_key: Moves cursor to previous line, handling ruler stack
 
-    //     jsr ca93c
-    ca93c();
+    //     jsr write_line_back_to_document_safely
+    write_line_back_to_document_safely();
     //     lda current_line_ptr
     a = (uint8_t)(current_line_ptr & 0xff);
     //     ldy current_line_ptr+1
@@ -8333,8 +8333,8 @@ static void f14_down_key(void) {
 
     // ; ***************************************************************************************
     // f14_down_key:
-    //     jsr ca93c
-    ca93c();
+    //     jsr write_line_back_to_document_safely
+    write_line_back_to_document_safely();
     //     inc l0079
     l0079++;
     //     bne c9d9b
@@ -8347,8 +8347,8 @@ c9d9b:
 static void return_key(void) {
     // return_key: Carriage return: moves to next line at column 0
 
-    //     jsr ca93c
-    ca93c();
+    //     jsr write_line_back_to_document_safely
+    write_line_back_to_document_safely();
     //     lda #0
     a = 0;
     //     sta xpos
@@ -8411,8 +8411,8 @@ c9d9b:
 static void cf6_split_line_key(void) {
     // cf6_split_line_key: Splits line at cursor position
 
-    //     jsr ca93c
-    ca93c();
+    //     jsr write_line_back_to_document_safely
+    write_line_back_to_document_safely();
     //     jsr get_line_length
     get_line_length();
     //     cpy xpos
@@ -8466,8 +8466,8 @@ c9dcd:
 // MULTIPLE ENTRY POINTS: cf6_split_line_key, f6_insert_line_key, sub_c9de1
 static void f6_insert_line_key(void) {
     // f6_insert_line_key:
-    //     jsr ca93c
-    ca93c();
+    //     jsr write_line_back_to_document_safely
+    write_line_back_to_document_safely();
     //     lda current_line_ptr
     a = current_line_ptr;
     //     ldy current_line_ptr+1
@@ -8511,7 +8511,7 @@ c9de3:
 
 c9dfd:
     //     jmp ca941
-    run_editor(); return;
+    memory_full(); return;
 }
 // MULTIPLE ENTRY POINTS: delete_key, f8_insert_char_key
 static void delete_key(void) {
@@ -8628,8 +8628,8 @@ static void f9_delete_char_key(void) {
 static void f7_delete_line_key(void) {
     // f7_delete_line_key: Deletes current line and moves cursor up
 
-    //     jsr ca93c
-    ca93c();
+    //     jsr write_line_back_to_document_safely
+    write_line_back_to_document_safely();
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     lda current_line_ptr
@@ -8731,8 +8731,8 @@ static void f5_end_of_line_key(void) {
 static void cf7_join_lines_key(void) {
     // cf7_join_lines_key: Joins current line with next line
 
-    //     jsr ca93c
-    ca93c();
+    //     jsr write_line_back_to_document_safely
+    write_line_back_to_document_safely();
     //     lda current_line_ptr
     a = (uint8_t)(current_line_ptr & 0xff);
     //     sta tmp0
@@ -8970,8 +8970,8 @@ static void sf9_delete_command_key(void) {
 }
 static void sub_c9f80(void) {
     // c9f80:
-    //     jsr ca93c
-    ca93c();
+    //     jsr write_line_back_to_document_safely
+    write_line_back_to_document_safely();
     //     lda current_line_ptr
     a = current_line_ptr;
     //     ldy current_line_ptr+1
@@ -9026,8 +9026,8 @@ static void set_marker_common(void);
 // MULTIPLE ENTRY POINTS: sf7_set_marker_key, set_marker, set_marker_1..6
 static void sf7_set_marker_key(void) {
     // sf7_set_marker_key:
-    //     jsr ca93c
-    ca93c();
+    //     jsr write_line_back_to_document_safely
+    write_line_back_to_document_safely();
     //     jsr prompt_for_marker
     prompt_for_marker();
     //     bcs return_58
@@ -9068,8 +9068,8 @@ static void set_marker_6(void) {
 static void set_marker_common(void) {
     //     pha
     uint8_t saved_a = a;
-    //     jsr ca93c
-    ca93c();
+    //     jsr write_line_back_to_document_safely
+    write_line_back_to_document_safely();
     //     pla
     a = saved_a;
     //     jsr lookup_marker
@@ -9090,8 +9090,8 @@ static void go_to_marker(void);
 // MULTIPLE ENTRY POINTS: sf6_go_to_marker_key, go_to_marker, go_to_marker_1..6
 static void sf6_go_to_marker_key(void) {
     // sf6_go_to_marker_key:
-    //     jsr ca93c
-    ca93c();
+    //     jsr write_line_back_to_document_safely
+    write_line_back_to_document_safely();
     //     jsr prompt_for_marker
     prompt_for_marker();
     //     bcs return_58
@@ -9154,12 +9154,12 @@ static void go_to_marker(void) {
     ca684(); return;
 }
 static void f0_format_block_key(void) {
-    ca93c();
+    write_line_back_to_document_safely();
     uint8_t saved_l0073 = l0073;
     uint8_t saved_l003d = l003d;
     ca741();
     sub_c9977();
-    if (flags & FLAG_V) { memory_full(); longjmp(env, JMP_EDITOR); }
+    if (flags & FLAG_V) { show_memory_full_error(); longjmp(env, JMP_EDITOR); }
     if (flags & FLAG_Z) {
         l003d = saved_l003d;
         l0073 = saved_l0073;
@@ -9177,8 +9177,8 @@ static void sub_ca071(void) {
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     stx input_buffer_offset+1
-    //     jsr ca93c
-    ca93c();
+    //     jsr write_line_back_to_document_safely
+    write_line_back_to_document_safely();
     //     lda current_line_ptr
     a = (uint8_t)(current_line_ptr & 0xff);
     //     ldy current_line_ptr+1
@@ -9252,8 +9252,8 @@ static void sub_ca0af(void) {
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     stx input_buffer_offset+1
-    //     jsr ca93c
-    ca93c();
+    //     jsr write_line_back_to_document_safely
+    write_line_back_to_document_safely();
     //     lda current_line_ptr
     a = (uint8_t)(current_line_ptr & 0xff);
     //     ldy current_line_ptr+1
@@ -9391,7 +9391,7 @@ static void cf4_insert_mode_key(void) {
     flags_need_redrawing_flag++;
 }
 static void cf0_delete_block_key(void) {
-    ca93c();
+    write_line_back_to_document_safely();
     cursor_moved_flag++;
     reset_area_to_marks_1_2();
     if (flags & FLAG_C) { beep(); return; }
@@ -9404,7 +9404,7 @@ static void cf0_delete_block_key(void) {
     clear_marks_1_2();
 }
 static void sf0_move_block_key(void) {
-    ca93c();
+    write_line_back_to_document_safely();
     reset_area_to_marks_1_2();
     if (flags & FLAG_C) { beep(); return; }
     sub_ca1cc();
@@ -9419,7 +9419,7 @@ static void sf0_move_block_key(void) {
     clear_marks_1_2();
 }
 static void f11_copy_key(void) {
-    ca93c();
+    write_line_back_to_document_safely();
     reset_area_to_marks_1_2();
     if (flags & FLAG_C) { beep(); return; }
     sub_ca1cc();
@@ -9442,7 +9442,7 @@ static void sub_ca1cc(void) {
     tmp4 = (uint8_t)(doc_ptr1 & 0xff);
     tmp5 = (uint8_t)(doc_ptr1 >> 8);
     make_space_for_insertion();
-    if (flags & FLAG_C) { memory_full(); longjmp(env, JMP_EDITOR); }
+    if (flags & FLAG_C) { show_memory_full_error(); longjmp(env, JMP_EDITOR); }
     tmp8 = (uint8_t)(area_start_ptr & 0xff);
     tmp9 = (uint8_t)(area_start_ptr >> 8);
     tmp2 = tmp4;
@@ -9475,7 +9475,7 @@ static void sub_ca1cc(void) {
     flags &= ~FLAG_C;
 }
 static void cf1_next_match_key(void) {
-    ca93c();
+    write_line_back_to_document_safely();
     c8b7b();
     if (!(flags & FLAG_Z)) { esc_key(); return; }
     move_cursor_to_address();
@@ -9806,8 +9806,8 @@ ca38a:
     l0073 = a;
     //     sta input_buffer_offset+1
     saved_l0076 = a;
-    //     jsr ca93c
-    ca93c();
+    //     jsr write_line_back_to_document_safely
+    write_line_back_to_document_safely();
     // ca395:
 ca395:
     //     lda input_buffer_offset+1
@@ -11279,10 +11279,10 @@ static void look_up_address_in_table(void) {
     return;
     // zendproc
 }
-static void sub_ca8b9(void) {
+static void write_line_back_to_document(void) {
     // Pseudocode: Saves edit line changes back to document memory, updating markers
 
-    // sub_ca8b9:
+    // write_line_back_to_document:
     //     lda l006e
     //     beq ca93a
     if (l006e == 0) goto ca93a;
@@ -11435,33 +11435,32 @@ ca93a:
     //     rts
     return;
 }
-// MULTIPLE ENTRY POINTS: ca93c (via run_editor)
-static void ca93c(void) {
-    // ca93c:
-    //     jsr sub_ca8b9
-    sub_ca8b9();
+// MULTIPLE ENTRY POINTS: write_line_back_to_document_safely (via memory_full)
+static void write_line_back_to_document_safely(void) {
+    // write_line_back_to_document_safely: Write back edit buffer. If out of memory (C=1), fall through to memory_full.
+    //     jsr write_line_back_to_document
+    write_line_back_to_document();
     //     bcc return_66
     if (!(flags & FLAG_C)) return;
-    //     falls through to ca941
-    run_editor(); return;
+    //     falls through to memory_full
+    memory_full();
 }
-static void run_editor(void) {
-    // run_editor:
-    //     jsr enter_editor_mode
+static void memory_full(void) {
+    // run_editor (ca941): Enter editor for memory-full condition.
+    // jsr enter_editor_mode  -- NOT called here; entered via ca93c fall-through
     // ca941:
     //     ldx #0xff
     //     txs
-    // PROBLEM: txs
     //     jsr sub_ca94a
-    memory_full();
+    show_memory_full_error();
     //     jmp editor_loop
     longjmp(env, JMP_EDITOR);
 }
 // la995: "Memory full - Press ESCAPE"
 static const uint8_t la995_data[] = "Memory full - Press ESCAPE";
 
-static void memory_full(void) {
-    // memory_full (sub_ca94a): Memory full error handler
+static void show_memory_full_error(void) {
+    // show_memory_full_error (sub_ca94a): Memory full error handler
     // On entry: (none)
     // On exit:  l006e=0, l0076=1, l0073=1, cursor on
     // Uses: a, x, y, line_lengths

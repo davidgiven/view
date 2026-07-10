@@ -16,8 +16,25 @@ VIEW_BIN = os.path.join(os.path.dirname(__file__), "..", "bin", "view")
 
 
 def strip_escapes(text: str) -> str:
-    """Remove ANSI/VT100 escape sequences."""
-    return re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", text).replace("\x1b", "")
+    """Remove ANSI/VT100 escape sequences and control characters."""
+    text = re.sub(r"\x1b[\[\(\)=][0-9;?]*[a-zA-Z]?", "", text)
+    text = re.sub(r"\x1b.", "", text)
+    text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", text)
+    return text.strip()
+
+
+def screen_lines(output: bytes) -> list[str]:
+    """Decode PTY output, strip escapes, and return a list of screen lines."""
+    text = output.decode("latin-1")
+    parts = re.split(r"\x1b\[\d+;\d+[Hf]|\x1b\[\d*[BADE]", text)
+    lines = []
+    for part in parts:
+        for line in part.split("\r"):
+            for sub in line.split("\n"):
+                cleaned = strip_escapes(sub)
+                if cleaned:
+                    lines.append(cleaned)
+    return lines
 
 
 class PtyProcess:
@@ -152,14 +169,14 @@ class CliTests(unittest.TestCase):
         self.proc.close()
 
     def test_prompt_is_seen(self):
-        output = self.proc.read_until(b"=>\r\n", timeout=0.5)
+        output = self.proc.read_until(b"=>", timeout=0.5)
         self.assertTrue(
-            output.endswith(b"=>\r\n"),
-            f"Expected prompt '=>\\r\\n' at end of output, got: {repr(output[-40:])}"
+            output.endswith(b"=>"),
+            f"Expected prompt '=>' at end of output, got: {repr(output[-40:])}"
         )
 
     def test_quit_command(self):
-        self.proc.read_until(b"=>\r\n", timeout=0.5)
+        self.proc.read_until(b"=>", timeout=0.5)
         self.proc.writeline("BYE")
         status, output = self.proc.wait(timeout=1.0)
         self.assertTrue(os.WIFEXITED(status),
@@ -168,24 +185,24 @@ class CliTests(unittest.TestCase):
                          f"Expected exit code 0, got {os.WEXITSTATUS(status)}")
 
     def test_load_missing_file(self):
-        self.proc.read_until(b"=>\r\n", timeout=0.5)
+        self.proc.read_until(b"=>", timeout=0.5)
         self.proc.writeline("load missing.v")
-        output = self.proc.read_until(b"=>\r\n", timeout=0.5)
+        output = self.proc.read_until(b"=>", timeout=0.5)
         self.assertIn(b"File not found", output,
                       f"Expected 'File not found' in output, got: {repr(output)}")
         self.assertTrue(
-            output.endswith(b"=>\r\n"),
+            output.endswith(b"=>"),
             f"Expected output to end with prompt, got: {repr(output[-40:])}"
         )
 
     def test_load_existing_file(self):
-        self.proc.read_until(b"=>\r\n", timeout=0.5)
+        self.proc.read_until(b"=>", timeout=0.5)
         self.proc.writeline("load examples/horse.v")
-        output = self.proc.read_until(b"=>\r\n", timeout=0.5)
+        output = self.proc.read_until(b"=>", timeout=0.5)
         self.assertIn(b"examples/horse.v", output,
                       f"Expected filename in output, got: {repr(output)}")
         self.assertTrue(
-            output.endswith(b"=>\r\n"),
+            output.endswith(b"=>"),
             f"Expected output to end with prompt, got: {repr(output[-40:])}"
         )
 
@@ -195,13 +212,13 @@ class CliTests(unittest.TestCase):
         here = os.path.dirname(__file__)
         original = os.path.join(here, "..", "examples", "horse.v")
 
-        self.proc.read_until(b"=>\r\n", timeout=0.5)
+        self.proc.read_until(b"=>", timeout=0.5)
         self.proc.writeline("LOAD examples/horse.v")
-        output = self.proc.read_until(b"=>\r\n", timeout=1.0)
+        output = self.proc.read_until(b"=>", timeout=1.0)
         self.assertIn(b"examples/horse.v", output)
 
         self.proc.writeline("SAVE output.v")
-        self.proc.read_until(b"=>\r\n", timeout=1.0)
+        self.proc.read_until(b"=>", timeout=1.0)
 
         self.proc.writeline("BYE")
         status, _ = self.proc.wait(timeout=1.0)
@@ -216,12 +233,12 @@ class CliTests(unittest.TestCase):
 
     def test_count_words(self):
         """Load a file and count words, verify the count is correct."""
-        self.proc.read_until(b"=> ", timeout=0.5)
+        self.proc.read_until(b"=>", timeout=0.5)
         self.proc.writeline("LOAD examples/horse.v")
-        self.proc.read_until(b"=> ", timeout=1.0)
+        self.proc.read_until(b"=>", timeout=1.0)
 
         self.proc.writeline("COUNT")
-        output = self.proc.read_until(b"=> ", timeout=1.0)
+        output = self.proc.read_until(b"=>", timeout=1.0)
         self.assertIn(b"1300", output,
                       f"Expected word count 1300 in output, got: {repr(output)}")
         self.assertIn(b"word(s) counted", output,
@@ -237,9 +254,9 @@ class EditorTests(unittest.TestCase):
         self.proc.close()
 
     def test_enter_editor_after_loading_file(self):
-        self.proc.read_until(b"=>\r\n", timeout=0.5)
+        self.proc.read_until(b"=>", timeout=0.5)
         self.proc.writeline("LOAD examples/horse.v")
-        output = self.proc.read_until(b"=>\r\n", timeout=1.0)
+        output = self.proc.read_until(b"=>", timeout=1.0)
         self.assertIn(b"examples/horse.v", output,
                       f"Expected filename in LOAD output, got: {repr(output)}")
         self.assertIn(b"Editing examples/horse.v", output,
