@@ -8079,7 +8079,7 @@ c9b86_:
     //     pla (was: pop saved_fmt)
     //     cmp format_mode_flag
     //     beq c9b8f
-    if (saved_fmt != format_mode_flag) {
+    if (saved_fmt != format_mode_flag || flags_need_redrawing_flag) {
     //     inc flags_need_redrawing_flag
         flags_need_redrawing_flag++;
     //     lda #0
@@ -13621,6 +13621,7 @@ loop_cb0a8:
     l0073 = 2;
     //     stx l0076
     l0076 = 2;
+    flags_need_redrawing_flag = 1;
     //     rts
 }
 static void create_default_ruler(void) {

@@ -254,24 +254,42 @@ class EditorTests(unittest.TestCase):
     def tearDown(self):
         self.proc.close()
 
-    def test_enter_editor_after_loading_file(self):
+    def _load_and_enter_editor(self, filename):
+        """Load a file and enter editor mode. Returns (load_output, pyte Screen)."""
         self.proc.read_until(b"=>", timeout=0.5)
-        self.proc.writeline("LOAD examples/horse.v")
-        output = self.proc.read_until(b"=>", timeout=1.0)
+        self.proc.writeline(f"LOAD {filename}")
+        load_output = self.proc.read_until(b"=>", timeout=1.0)
+        self.proc.writeline("")
+        time.sleep(0.3)
+        raw = self.proc.read(timeout=0.5)
+        screen = pyte.Screen(80, 24)
+        stream = pyte.Stream(screen)
+        stream.feed(raw.decode("latin-1"))
+        return load_output, screen
+
+    def test_enter_editor_after_loading_file(self):
+        output, screen = self._load_and_enter_editor("examples/horse.v")
         self.assertIn(b"examples/horse.v", output,
                       f"Expected filename in LOAD output, got: {repr(output)}")
         self.assertIn(b"Editing examples/horse.v", output,
                       f"Expected 'Editing' line showing filename, got: {repr(output)}")
-        self.proc.writeline("")
-        time.sleep(0.3)
-        output = self.proc.read(timeout=0.5)
-        term = pyte.Screen(80, 24)
-        stream = pyte.Stream(term)
-        stream.feed(output.decode("latin-1"))
-        # Check that the document content appears on screen
         self.assertIn("The Water Horse's Fireplace",
-                      term.display[1],
-                      f"Document line 1 wrong: {repr(term.display[1])}")
+                      screen.display[1],
+                      f"Document line 1 wrong: {repr(screen.display[1])}")
+
+    def test_enter_editor_after_loading_jabber(self):
+        output, screen = self._load_and_enter_editor("examples/jabber.v")
+        self.assertIn(b"jabber.v", output,
+                      f"Expected filename in LOAD output, got: {repr(output)}")
+        self.assertIn("She", screen.display[1],
+                      f"Line 1 wrong: {repr(screen.display[1])}")
+        self.assertIn("Looking-glass book", screen.display[2],
+                      f"Line 2 wrong: {repr(screen.display[2])}")
+        self.assertIn("go the right way again", screen.display[3],
+                      f"Line 3 wrong: {repr(screen.display[3])}")
+        # Line 4 is blank in the file
+        self.assertEqual("", screen.display[4].strip(),
+                         f"Line 4 should be blank, got: {repr(screen.display[4])}")
 
 
 if __name__ == "__main__":
