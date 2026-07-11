@@ -227,8 +227,7 @@ static void sub_caedd(void);
 static void compute_space_common(void);
 static void select_file(void);
 static void check_for_control_code(void);
-static void set_inverted_text_if_not_mode_7(void);
-static void set_normal_text_if_not_mode_7(void);
+
 static void clear_screen(void);
 static void print_x_words_of_help(void);
 static void print_char_via_putchar(void);
@@ -5705,13 +5704,13 @@ c9472:
     if (!(flags & FLAG_C)) a = 0x2a; // '*'
     // c947e:
     //     jsr set_inverted_text_if_not_mode_7
-    set_inverted_text_if_not_mode_7();
+    a = STYLE_REVERSE; screen_setstyle(a);
     //     jsr bdos_print_char
     cli_putchar(a);
     //     pla
     a = saved_a; }
     //     jmp set_normal_text_if_not_mode_7
-    set_normal_text_if_not_mode_7();
+    a = 0; screen_setstyle(a);
     return;
 
 c9488:
@@ -10262,7 +10261,7 @@ ca514:
     // ca50e:
 ca50e:
     a = char_to_render;
-    set_inverted_text_if_not_mode_7();
+    a = STYLE_REVERSE; screen_setstyle(a);
     x = 0;
     goto ca514;
     // ca522:
@@ -10282,7 +10281,7 @@ ca523:
     //     bne ca532
     if (a != 0) goto ca532;
     //     jsr set_normal_text_if_not_mode_7
-    set_normal_text_if_not_mode_7();
+    a = 0; screen_setstyle(a);
     // ca532:
     // ca533:
 ca532:
@@ -10362,74 +10361,6 @@ ca558:
     //     lda #0
     a = 0;
     // return_61:
-    //     rts
-    return;
-}
-static void set_normal_text_if_not_mode_7(void) {
-    // Pseudocode: Sets normal text style via SCREEN call (no-op if mode 7)
-
-    // ; ***************************************************************************************
-    // set_normal_text_if_not_mode_7:
-    //     pha
-    //     txa
-    //     pha
-    //     tya
-    //     pha
-    //     ldy #SCREEN_SETSTYLE
-    //     lda #0
-    //     jsr SCREEN
-    a = 0;
-    screen_setstyle(a);
-    //     jmp 1f
-
-    // ; ***************************************************************************************
-    // set_inverted_text_if_not_mode_7:
-    //     pha
-    //     txa
-    //     pha
-    //     tya
-    //     pha
-    //     ldy #SCREEN_SETSTYLE
-    //     lda #STYLE_REVERSE
-    //     jsr SCREEN
-    a = STYLE_REVERSE;
-    screen_setstyle(a);
-    // 1:
-    //     pla
-    //     tay
-    //     pla
-    //     tax
-    //     pla
-    //     rts
-}
-static void set_inverted_text_if_not_mode_7(void) {
-    // Pseudocode: Sets inverted/reverse text style via SCREEN call
-
-    // set_inverted_text_if_not_mode_7:
-    //     pha
-    // PROBLEM: pha
-    //     txa
-    // PROBLEM: txa
-    //     pha
-    // PROBLEM: pha
-    //     tya
-    // PROBLEM: tya
-    //     pha
-    // PROBLEM: pha
-    //     ldy #SCREEN_SETSTYLE
-    //     lda #STYLE_REVERSE
-    //     jsr SCREEN
-    a = STYLE_REVERSE;
-    screen_setstyle(a);
-    // 1:
-    //     pla
-    // PROBLEM: pla
-    //     tay
-    //     pla
-    // PROBLEM: pla
-    //     tax
-    //     pla
-    // PROBLEM: pla
     //     rts
     return;
 }
@@ -10980,7 +10911,7 @@ static void draw_prompt_characters(void) {
     //     jsr home_cursor
     home_cursor();
     //     jsr set_inverted_text_if_not_mode_7
-    set_inverted_text_if_not_mode_7();
+    a = STYLE_REVERSE; screen_setstyle(a);
     //     lda tmp2
     a = (uint8_t)tmp2;
     //     jsr screen_putchar
@@ -10990,7 +10921,7 @@ static void draw_prompt_characters(void) {
     //     jsr screen_putchar
     screen_putchar(a);
     //     jsr set_normal_text_if_not_mode_7
-    set_normal_text_if_not_mode_7();
+    a = 0; screen_setstyle(a);
     //     lda #0x20 ; ' '
     a = 0x20;
     //     jsr screen_putchar
@@ -11542,7 +11473,7 @@ static void show_memory_full_error(void) {
     //     jsr set_cursor_position
     set_cursor_position();
     //     jsr set_inverted_text_if_not_mode_7
-    set_inverted_text_if_not_mode_7();
+    a = STYLE_REVERSE; screen_setstyle(a);
     //     ldy screen_width
     y = screen_width;
     //     sty line_lengths
@@ -11575,7 +11506,7 @@ ca965:;
     // ca96e:
 ca96e:
     //     jsr set_normal_text_if_not_mode_7
-    set_normal_text_if_not_mode_7();
+    a = 0; screen_setstyle(a);
     //     tya
     a = y;
     //     beq ca97c
