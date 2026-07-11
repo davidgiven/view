@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <assert.h>
-
 static bool ncurses_active;
 
 void screen_enter(void) {

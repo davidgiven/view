@@ -273,9 +273,21 @@ class EditorTests(unittest.TestCase):
                       f"Expected filename in LOAD output, got: {repr(output)}")
         self.assertIn(b"Editing examples/horse.v", output,
                       f"Expected 'Editing' line showing filename, got: {repr(output)}")
-        self.assertIn("The Water Horse's Fireplace",
-                      screen.display[1],
-                      f"Document line 1 wrong: {repr(screen.display[1])}")
+        expected_lines = [
+            "                                                                                ",
+            "CE The Water Horse's Fireplace                                                  ",
+            "CE a Scottish Halloween folk story, sort of                                     ",
+            "                                                                                ",
+            "CE (c) 2012 David Given                                                         ",
+            "                                                                                ",
+        ]
+        for i, expected in enumerate(expected_lines):
+            self.assertEqual(
+                expected, screen.display[i],
+                f"Document line {i} mismatch:\n"
+                f"  Expected: {repr(expected)}\n"
+                f"  Got:      {repr(screen.display[i])}"
+            )
 
     def _enter_editor_empty(self):
         """Enter editor mode without loading a file. Returns pyte Screen."""
