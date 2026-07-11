@@ -373,6 +373,7 @@ subroutine(0xA4E9, "draw_char")
 subroutine(0xA651, "draw_status_word")
 subroutine(0xA608, "recalculate_cursor_xpos")
 subroutine(0xA597, "clear_to_eol")
+subroutine(0xA5AE, "render_character_from_document")
 
 subroutine(0x823B, "esc_key")
 subroutine(0x9D7B, "return_key")
