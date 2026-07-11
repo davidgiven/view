@@ -6,7 +6,7 @@
 extern uint8_t ram[65536];
 extern uint8_t a, x, y, flags;
 extern uint8_t tmp0, tmp1;
-extern uint8_t screen_width;
+extern uint8_t screen_maxcolumn;
 extern void create_default_ruler(void);
 
 static int test_failures;
@@ -23,14 +23,14 @@ static int test_failures;
 int main(void) {
     test_failures = 0;
     printf("create_default_ruler tests:\n");
-    printf("  screen_width = %d\n", screen_width);
+    printf("  screen_maxcolumn = %d\n", screen_maxcolumn);
 
     uint16_t ruler_addr = 0x8000;
     a = (uint8_t)(ruler_addr & 0xff);
     y = (uint8_t)(ruler_addr >> 8);
     flags = 0;
-    screen_width = 80;
-    printf("  screen_width = %d\n", screen_width);
+    screen_maxcolumn = 79;
+    printf("  screen_maxcolumn = %d\n", screen_maxcolumn);
     printf("  a=0x%02x y=0x%02x ruler_addr=0x%04x\n", a, y, ruler_addr);
     memset(ram, 0, sizeof(ram));
 
@@ -44,7 +44,7 @@ int main(void) {
         printf("    [%2d] = 0x%02x (%c)\n", i, v, ch);
     }
 
-    int ruler_len = screen_width - 6;
+    int ruler_len = screen_maxcolumn - 6;
     for (int i = 0; i < ruler_len; i++) {
         uint8_t expected;
         if ((i & 7) == 7) expected = '*';

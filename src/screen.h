@@ -9,7 +9,7 @@
 
 extern void screen_putchar(uint8_t a);
 extern uint8_t screen_getchar(void);
-extern void screen_setcursor(uint16_t xa);
+extern void screen_setcursor(uint8_t xpos, uint8_t ypos);
 extern uint16_t screen_getcursor(void);
 extern void screen_setstyle(uint8_t a);
 extern uint16_t screen_getsize(void);

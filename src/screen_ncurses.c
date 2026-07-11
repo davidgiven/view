@@ -56,9 +56,9 @@ uint8_t screen_getchar(void) {
     }
 }
 
-void screen_setcursor(uint16_t xa) {
+void screen_setcursor(uint8_t xpos, uint8_t ypos) {
     if (ncurses_active) {
-        move(xa >> 8, xa & 0xff);
+        move(ypos, xpos);
     }
 }
 
@@ -84,12 +84,12 @@ uint16_t screen_getsize(void) {
     if (ncurses_active) {
         int h, w;
         getmaxyx(stdscr, h, w);
-        return (uint16_t)(h << 8) | (uint8_t)w;
+        return (uint16_t)((h - 1) << 8) | (uint8_t)(w - 1);
     }
     struct winsize ws;
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0 && ws.ws_row > 0)
-        return (uint16_t)(ws.ws_row << 8) | (uint8_t)ws.ws_col;
-    return (uint16_t)(24 << 8) | 80;
+        return (uint16_t)((ws.ws_row - 1) << 8) | (uint8_t)(ws.ws_col - 1);
+    return (uint16_t)(23 << 8) | 79;
 }
 
 void screen_clear(void) {

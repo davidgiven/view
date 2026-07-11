@@ -223,7 +223,6 @@ static void sub_c8da2(void);
 static void print_newline(void);
 static void print_char(void);
 static void print_char_just_to_printer(void);
-static void set_cursor_position(void);
 static void sub_caed6(void);
 static void sub_caedd(void);
 static void compute_space_common(void);
@@ -536,9 +535,9 @@ uint8_t justifying_flag;
 //X insert_mode_flag: .fill 1
 uint8_t insert_mode_flag;
 //X screen_height: .fill 1
-uint8_t screen_height;
+uint8_t screen_maxrow;
 //X screen_width: .fill 1
-uint8_t screen_width;
+uint8_t screen_maxcolumn;
 //X microspacing_flag: .fill 1
 uint8_t microspacing_flag;
 //X current_tab_key: .fill 1
@@ -8879,11 +8878,8 @@ static void sf8_edit_command_key(void) {
     // edit_command_loop:
 edit_command_loop:
     //     ldx input_buffer_offset+1
-    x = input_buffer_offset;
     //     ldy ypos
-    y = ypos;
-    //     jsr set_cursor_position
-    set_cursor_position();
+    screen_setcursor(input_buffer_offset, ypos);
     //     jsr read_char
     read_char();
     //     bcs finished_editing_command
@@ -9281,7 +9277,7 @@ static void sub_ca071(void) {
 static void sf15_up_key(void) {
     // sf15_up_key:
     //     ldx screen_height
-    x = screen_height;
+    x = screen_maxrow;
     //     inc l0079
     l0079++;
     //     inc l006f
@@ -9362,7 +9358,7 @@ static void sf14_down_key(void) {
     //     ldx screen_height
     //     inc l0079
     //     inc l006f
-    x = screen_height;
+    x = screen_maxrow;
     l0079++;
     l006f++;
     sub_ca0af();
@@ -9626,7 +9622,7 @@ ca2b2:
     //     sta l0011
     l0011 = a;
     //     ldx screen_height
-    x = screen_height;
+    x = screen_maxrow;
     // loop_ca2c7:
 loop_ca2c7:
     //     dex
@@ -9645,7 +9641,7 @@ loop_ca2c7:
     //     jsr SCREEN
     screen_scrolldown();
     //     jsr home_cursor
-    x = 0; y = 1; set_cursor_position();
+    screen_setcursor(0, 1);
     //     ldy #1
     y = 1;
     //     jmp ca351
@@ -9710,7 +9706,7 @@ ca2f9:
     // ca307:
 ca307:
     //     cpx screen_height
-    { uint16_t tmp_ = x - screen_height; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= screen_height ? FLAG_C : 0); }
+    { uint16_t tmp_ = x - screen_maxrow; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= screen_maxrow ? FLAG_C : 0); }
     //     beq ca2e6
     if (flags & FLAG_Z) goto ca2e6;
     //     bcc ca2e6
@@ -9725,7 +9721,7 @@ ca30d:
     // ca313:
 ca313:
     //     cpx screen_height
-    { uint16_t tmp_ = x - screen_height; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= screen_height ? FLAG_C : 0); }
+    { uint16_t tmp_ = x - screen_maxrow; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= screen_maxrow ? FLAG_C : 0); }
     //     bcc ca35e
     if (!(flags & FLAG_C)) goto ca35e;
     //     beq ca35e
@@ -9745,7 +9741,7 @@ loop_ca31f:
     //     inx
     x++;
     //     cpx screen_height
-    { uint16_t tmp_ = x - screen_height; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= screen_height ? FLAG_C : 0); }
+    { uint16_t tmp_ = x - screen_maxrow; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= screen_maxrow ? FLAG_C : 0); }
     //     bne loop_ca31f
     if (!(flags & FLAG_Z)) goto loop_ca31f;
     //     dec l003d
@@ -9753,7 +9749,7 @@ loop_ca31f:
     //     ldx #0
     x = 0;
     //     lda screen_width
-    a = screen_width;
+    a = screen_maxcolumn;
     //     sta line_lengths,x
     line_lengths[x] = a;
     //     lda l0033
@@ -9784,11 +9780,8 @@ ca348:
     //     jsr SCREEN
     screen_scrollup();
     //     ldx #0
-    x = 0;
     //     ldy screen_height
-    y = screen_height;
-    //     jsr set_cursor_position
-    set_cursor_position();
+    screen_setcursor(0, screen_maxrow);
     // ca351:
 ca351:
     //     lda ruler_stack_ptr
@@ -9818,7 +9811,7 @@ ca360:
     //     jsr sub_ca608
     recalculate_cursor_xpos();
     //     lda screen_width
-    a = screen_width;
+    a = screen_maxcolumn;
     //     lsr
     a >>= 1;
     //     sta l0083
@@ -9834,7 +9827,7 @@ ca360:
     //     clc
     flags &= ~FLAG_C;
     //     adc screen_width
-    { uint16_t sum = (uint16_t)a + screen_width; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    { uint16_t sum = (uint16_t)a + screen_maxcolumn; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     sbc #3
     { uint16_t tmp_ = (uint16_t)a - 3 - (1 - (flags & FLAG_C ? 1 : 0)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ < 0x10000 ? FLAG_C : 0); }
     //     cmp l0072
@@ -9884,7 +9877,7 @@ ca395:
     //     sta l0082
     l0082 = a;
     //     lda screen_height
-    a = screen_height;
+    a = screen_maxrow;
     //     sec
     flags |= FLAG_C;
     //     sbc l003d
@@ -9914,7 +9907,7 @@ ca3b2:
     //     ldy l0012
     y = l0012;
     //     ldx screen_height
-    x = screen_height;
+    x = screen_maxrow;
     // ca3c1:
 ca3c1:
     //     stx l0081
@@ -10013,9 +10006,7 @@ ca406:
     //     sty ptr6+1
     ptr6 = (ptr6 & 0x00ff) | ((uint16_t)y << 8);
     //     ldy ypos
-    y = ypos;
-    //     jsr set_cursor_position
-    set_cursor_position();
+    screen_setcursor(x, ypos);
     //     jmp cursor_on
     cursor_on(); return;
 }
@@ -10023,13 +10014,11 @@ static void sub_ca422(void) {
     l0081--;
     if (l0081 == 0) return;
     x = l0082;
-    line_lengths[x + 1] = screen_width;
-    l0083 = screen_width;
+    line_lengths[x + 1] = screen_maxcolumn;
+    l0083 = screen_maxcolumn;
     do {
         l0082++;
-        x = 0;
-        y = l0082;
-        set_cursor_position();
+        screen_setcursor(0, l0082);
         clear_to_eol();
         line_lengths[x] = l0083;
         l0083 = 0;
@@ -10044,7 +10033,7 @@ static void sub_ca44e(void) {
     //     sta ruler_stack_ptr
     ruler_stack_ptr = a;
     //     lda screen_height
-    a = screen_height;
+    a = screen_maxrow;
     //     sta l0073
     l0073 = a;
     //     lsr
@@ -10117,11 +10106,8 @@ static void draw_line(uint16_t addr) {
     //     sty tmp7
     tmp7 = (uint8_t)(addr >> 8);
     //     ldx #0
-    x = 0;
     //     ldy l0082
-    y = l0082;
-    //     jsr set_cursor_position
-    set_cursor_position();
+    screen_setcursor(0, l0082);
     //     ldy #0
     y = 0;
     //     sty l0083
@@ -10214,7 +10200,7 @@ static void render_char(void) {
     //     ldx l0083
     x = l0083;
     //     cpx screen_width
-    if (x >= screen_width) { a = char_to_render; return; }
+    if (x >= screen_maxcolumn) { a = char_to_render; return; }
     //     inc l0083
     l0083++;
     //     tya
@@ -10611,11 +10597,9 @@ static void home_cursor(void) {
     // home_cursor:
     // ca681:
     //     ldx #0
-    x = 0;
     //     ldy #0
-    y = 0;
     //     jmp set_cursor_position
-    set_cursor_position(); return;
+    screen_setcursor(0, 0); return;
 }
 static void draw_status_word(void) {
     // Pseudocode: Redraws status line showing format mode, justify, and insert indicators
@@ -10681,7 +10665,7 @@ static void ca684(void) {
     //     ldx ypos
     x = ypos;
     //     lda screen_width
-    a = screen_width;
+    a = screen_maxcolumn;
     //     sta line_lengths,x
     line_lengths[x] = a;
     //     rts
@@ -10953,45 +10937,11 @@ static void save_cursor_position(void) {
     tmp5 = x;
     //     rts
 }
-static void set_cursor_position(void) {
-    // set_cursor_position:
-    //     pha
-    //     txa
-    //     pha
-    //     tya
-    //     pha
-    { uint8_t saved_a = a; uint8_t saved_x = x; uint8_t saved_y = y;
-
-    //     txa
-    a = saved_x;
-    //     pha
-    //     tya
-    //     tax
-    x = saved_y;
-    //     pla
-    a = saved_x;
-    //     ldy #SCREEN_SETCURSOR
-    //     jsr SCREEN
-    screen_setcursor((uint16_t)x << 8 | a);
-
-    //     pla
-    //     tay
-    y = saved_y;
-    //     pla
-    //     tax
-    x = saved_x;
-    //     pla
-    a = saved_a; }
-    // return_34:
-    //     rts
-}
 static void restore_cursor_position(void) {
     // restore_cursor_position:
     //     ldx tmp4
-    x = tmp4;
     //     ldy tmp5
-    y = tmp5;
-    set_cursor_position();
+    screen_setcursor(tmp4, tmp5);
 }
 static const uint8_t la83d[] = "VIEW\0B3.0 for CP/M-65";
 
@@ -11456,15 +11406,12 @@ static void show_memory_full_error(void) {
     //     jsr cursor_off
     cursor_off();
     //     ldx #3
-    x = 3;
     //     ldy #0
-    y = 0;
-    //     jsr set_cursor_position
-    set_cursor_position();
+    screen_setcursor(3, 0);
     //     jsr set_inverted_text_if_not_mode_7
     a = STYLE_REVERSE; screen_setstyle(a);
     //     ldy screen_width
-    y = screen_width;
+    y = screen_maxcolumn;
     //     sty line_lengths
     line_lengths[0] = y;
     //     dey
@@ -13361,10 +13308,10 @@ static void system_init(void) {
     himem = 0xffff;
     oshwm = 0;
     uint16_t size_ = screen_getsize();
-    screen_width = (uint8_t)(size_ & 0xff);
-    screen_height = (uint8_t)(size_ >> 8);
-    if (screen_height > MAX_LINES)
-        screen_height = MAX_LINES;
+    screen_maxcolumn = (uint8_t)(size_ & 0xff);
+    screen_maxrow = (uint8_t)(size_ >> 8);
+    if (screen_maxrow > MAX_LINES)
+        screen_maxrow = MAX_LINES;
 }
 static void noscreen(void) {
     // Pseudocode: Screen driver not found: displays error and exits
@@ -13536,7 +13483,7 @@ static void enter_editor_mode(void) {
     //     sta l006e
     l006e = 0;
     //     ldx screen_height
-    x = screen_height;
+    x = screen_maxrow;
     // loop_cb0a8:
 loop_cb0a8:
     //     sta line_lengths,x
@@ -13589,7 +13536,7 @@ loop_cb0e9:
     //     adc #6
     { uint16_t sum = (uint16_t)a + 6; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)sum == 0 ? FLAG_Z : 0) | ((uint8_t)sum & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
     //     cmp screen_width
-    { uint16_t tmp_ = a - screen_width; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= screen_width ? FLAG_C : 0); }
+    { uint16_t tmp_ = a - screen_maxcolumn; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= screen_maxcolumn ? FLAG_C : 0); }
     //     beq cb0ff
     if (flags & FLAG_Z) goto cb0ff;
     //     txa
