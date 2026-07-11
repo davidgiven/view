@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <setjmp.h>
 #include <stdbool.h>
+#include <unistd.h>
  
 #include "cli.h"
 
@@ -21,7 +22,7 @@
 uint8_t a, x, y, sp, flags;
 
 // ; Longjmp buffer for stack unwinding (txs equivalent)
-static jmp_buf env;
+static volatile jmp_buf env;
 #define JMP_CLI     1
 #define JMP_EDITOR  2
 
@@ -169,9 +170,9 @@ static void draw_char(void);
 static void sub_cab1a(void);
 static void sub_ca44e(void);
 static void sub_ca422(void);
-static void sub_ca486(void);
+static void draw_line(void);
 static void sub_caacb(void);
-static void display_status_word(void);
+static void draw_ruler(void);
 static void sub_ca651(void);
 static void unpack_line_into_buffer(void);
 static void clear_cmd(void);
@@ -277,11 +278,13 @@ static void input_line_not_escaped(void);
 static void parse_command(void);
 static void cae64(void);
 static void c9e94(void);
-static void ca4e9(void);
+static void render_char(void);
+
+
 static void sub_ca4d7(void);
 static void render_xchar(void);
 static void sub_ca597(void);
-static void create_default_ruler(void);
+void create_default_ruler(void);
 static void set_document_name_to_filename_buffer(void);
 static void clear_marks_1_2(void);
 static void reset_area_to_marks_1_2(void);
@@ -1116,7 +1119,7 @@ c837d:
 c8389:
     // c8389:
     //     lda (tmp8),y
-    a = ram[((uint16_t)tmp9 << 8) | tmp8 + y];
+    a = ram[((uint16_t)tmp9 << 8 | tmp8) + y];
     //     cmp #0x0d
     { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
     //     bne c8390
@@ -1950,7 +1953,7 @@ c86b8:
     // loop_c86c2:
 loop_c86c2:
     //     lda (tmp0),y
-    a = ram[tmp0 + y];
+    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     //     iny
     y++;
     //     cmp l8747,x
@@ -1958,7 +1961,7 @@ loop_c86c2:
     //     bne c86d1
     if (!(flags & FLAG_Z)) goto c86d1;
     //     lda (tmp0),y
-    a = ram[tmp0 + y];
+    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     //     cmp l8748,x
     { uint16_t tmp_ = a - l8747_data[x+1]; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l8747_data[x+1] ? FLAG_C : 0); }
     //     beq c86df
@@ -3088,7 +3091,7 @@ c8bbc:
     y++;
     flags = (flags & ~(FLAG_Z|FLAG_N)) | (y == 0 ? FLAG_Z : 0) | (y & FLAG_N);
     //     lda (tmp8),y
-    a = ram[((uint16_t)tmp9 << 8) | tmp8 + y];
+    a = ram[((uint16_t)tmp9 << 8 | tmp8) + y];
     //     beq c8bdb
     if (a == 0) goto c8bdb;
     //     jsr check_for_command_prefix
@@ -3529,7 +3532,7 @@ static void read_next_chunk_from_input_file(void) {
     //     tay                                                               ; Y=0x00
     y = 0;
     //     sta (tmp0),y
-    ram[tmp0 + y] = a;
+    ram[((uint16_t)tmp1 << 8 | tmp0) + y] = a;
     //     lda tmp0
     a = tmp0;
     //     sta top
@@ -4014,7 +4017,7 @@ c8f3b:
     // loop_c8f5d:
 loop_c8f5d:
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8) | tmp0 + y];
+    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     //     sta current_ruler_buffer,x
     current_ruler_buffer[x] = a;
     //     iny
@@ -4081,13 +4084,13 @@ lookup_macro_name:
     //     ldy #0
     y = 0;
     //     lda (tmp6),y
-    a = ram[((uint16_t)tmp7 << 8) | tmp6 + y];
+    a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
     //     beq c8f6b
     if (a == 0) goto c8f6b;
     //     ldy #2
     y = 2;
     //     lda (tmp6),y
-    a = ram[((uint16_t)tmp7 << 8) | tmp6 + y];
+    a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
     //     cmp tmp8
     { uint16_t tmp_ = a - tmp8; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= tmp8 ? FLAG_C : 0); }
     //     bne get_next_macro_in_linked_list
@@ -4095,7 +4098,7 @@ lookup_macro_name:
     //     iny                                                               ; Y=0x03
     y++;
     //     lda (tmp6),y
-    a = ram[((uint16_t)tmp7 << 8) | tmp6 + y];
+    a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
     //     cmp tmp9
     { uint16_t tmp_ = a - tmp9; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= tmp9 ? FLAG_C : 0); }
     //     beq c8fb9
@@ -4105,13 +4108,13 @@ get_next_macro_in_linked_list:
     //     ldy #0
     y = 0;
     //     lda (tmp6),y
-    a = ram[((uint16_t)tmp7 << 8) | tmp6 + y];
+    a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
     //     pha
 {   uint8_t saved_tmp = a;
     //     iny                                                               ; Y=0x01
     y++;
     //     lda (tmp6),y
-    a = ram[((uint16_t)tmp7 << 8) | tmp6 + y];
+    a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
     //     sta tmp7
     tmp7 = a;
     //     pla
@@ -4174,7 +4177,7 @@ c8fd5:
     // c8fe6:
 c8fe6:
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8) | tmp0 + y];
+    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     //     iny
     y++;
     //     jsr sub_c9431
@@ -4268,7 +4271,7 @@ c9048:
     //     pha
 {   uint8_t saved_a = a;
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8) | tmp0 + y];
+    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     //     jsr sub_c9431
     sub_c9431();
     //     pla
@@ -4276,7 +4279,7 @@ c9048:
     //     tax
     x = a;
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8) | tmp0 + y];
+    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     //     iny
     y++;
     //     cmp #0x1a
@@ -4609,7 +4612,7 @@ c9163:
 
 c8fe6_inline:
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8) | tmp0 + y];
+    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     //     iny
     y++;
     //     jsr sub_c9431
@@ -4958,7 +4961,7 @@ static void sub_c9241(void) {
     //     beq return_27
     if (a == 0) return;
     //     sta (tmp0),y
-    ram[(uint16_t)tmp0 + y] = a;
+    ram[((uint16_t)tmp1 << 8 | tmp0) + y] = a;
     //     inc ptr6
     ptr6 = (ptr6 & 0xff00) | ((uint8_t)(ptr6 & 0xff) + 1);
     if ((uint8_t)(ptr6 & 0xff) == 0) ptr6 += 0x100;
@@ -5216,7 +5219,7 @@ static void render_header_or_footer(void) {
     //     sty l0082
     l0082 = y;
     //     lda (tmp4),y
-    a = ram[((uint16_t)tmp5 << 8) | tmp4 + y];
+    a = ram[((uint16_t)tmp5 << 8 | tmp4) + y];
     //     beq return_28
     if (a == 0) return;
     //     jsr sub_c9407
@@ -5388,7 +5391,7 @@ static void c93b8(void) {
     //     bpl c93b8
     do {
         y++;
-        a = ram[((uint16_t)tmp5 << 8) | tmp4 + y];
+        a = ram[((uint16_t)tmp5 << 8 | tmp4) + y];
     } while ((int8_t)a >= 0);
     //     rts
 }
@@ -7867,7 +7870,7 @@ static void sub_c9ac1(void) {
     // c9ad5:
 c9ad5:
     //     lda (tmp4),y
-    a = ram[((uint16_t)tmp5 << 8) | tmp4 + y];
+    a = ram[((uint16_t)tmp5 << 8 | tmp4) + y];
     //     beq c9b2f
     if (a == 0) goto c9b2f;
     //     jsr check_for_command_prefix
@@ -7898,7 +7901,7 @@ c9ae9:
     // c9aef:
 c9aef:
     //     lda (tmp8),y
-    a = ram[((uint16_t)tmp9 << 8) | tmp8 + y];
+    a = ram[((uint16_t)tmp9 << 8 | tmp8) + y];
     //     beq c9b06
     if (a == 0) goto c9b06;
     //     cmp #0x0d
@@ -7924,7 +7927,7 @@ c9aef:
     // c9b06:
 c9b06:
     //     lda (tmp4),y
-    a = ram[((uint16_t)tmp5 << 8) | tmp4 + y];
+    a = ram[((uint16_t)tmp5 << 8 | tmp4) + y];
     //     cmp #0x20 ; ' '
     { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
     //     bne c9b1a
@@ -8564,7 +8567,7 @@ c9de3:
     //     ldy #0
     y = 0;
     //     sta (tmp4),y
-    ram[tmp4 + y] = a;
+    ram[((uint16_t)tmp5 << 8 | tmp4) + y] = a;
     //     jmp ca741
     ca741(); return;
 
@@ -9923,8 +9926,8 @@ ca3c1:
     l0081 = x;
     // loop_ca3c3:
 loop_ca3c3:
-    //     jsr sub_ca486
-    sub_ca486();
+    //     jsr draw_line
+    draw_line();
     //     lda tmp0
     a = tmp0;
     //     ldy tmp1
@@ -9932,7 +9935,7 @@ loop_ca3c3:
     //     jsr sub_cab1a
     sub_cab1a();
     //     beq ca422
-    if (flags & FLAG_Z) { sub_ca422(); return; }
+    if (flags & FLAG_Z) { draw_ruler(); sub_ca422(); goto ca3ff; }
     //     tya
     a = y;
     //     ldy tmp1
@@ -9969,8 +9972,8 @@ ca3e7:
     unpack_line_into_buffer();
     //     jsr sub_caacb
     sub_caacb();
-    //     jsr display_status_word
-    display_status_word();
+    //     jsr draw_ruler
+    draw_ruler();
     //     lda l0074
     a = l0074;
     //     beq ca3ff
@@ -9983,8 +9986,8 @@ ca3e7:
     a = (uint8_t)(current_format_line_ptr & 0xff);
     //     ldy current_format_line_ptr+1
     y = (uint8_t)(current_format_line_ptr >> 8);
-    //     jsr sub_ca486
-    sub_ca486();
+    //     jsr draw_line
+    draw_line();
     // ca3ff:
 ca3ff:
     //     lda flags_need_redrawing_flag
@@ -10112,8 +10115,8 @@ ca479:
     ruler_stack_ptr = a;
     //     rts
 }
-static void sub_ca486(void) {
-    // sub_ca486: Renders a single document line to the screen
+static void draw_line(void) {
+    // draw_line: Renders a single document line to the screen
 
     //     sta tmp0
     tmp0 = a;
@@ -10163,15 +10166,15 @@ ca4b4:
     //     lda #0x20 ; ' '
     a = 0x20;
     //     jsr ca4e9
-    ca4e9();
+    render_char();
     //     jsr ca4e9
-    ca4e9();
-    // ca4bc:
+    render_char();
+// ca4bc:
 ca4bc:
     //     jsr ca4e9
-    ca4e9();
+    render_char();
     // loop_ca4bf:
-loop_ca4bf:
+    loop_ca4bf:
     //     jsr draw_char
     draw_char();
     // loop_ca4c2:
@@ -10202,9 +10205,9 @@ static void sub_ca4d7(void) {
     //     jsr draw_char
     draw_char();
     //     jmp ca4e9
-    ca4e9();
+    render_char();
 }
-static void ca4e9(void) {
+static void render_char(void) {
     // ca4e9: Renders character in A to screen with attribute handling
 
     uint8_t char_to_render = a;
@@ -10268,7 +10271,7 @@ ca522:
 ca523:
     a = char_to_render;
     //     cmp #0x0d
-    if (a == 0x0d) {
+    if (a == 0x0d || a == 0x00) {
         a = 0x20;
     }
     // ca529:
@@ -10303,7 +10306,7 @@ static void render_xchar(void) {
     //     bcc ca533
     if (!(flags & FLAG_C)) { x = l0084; return; }
     //     jmp ca4e9
-    ca4e9();
+    render_char();
 }
 static void sub_ca536(void) {
     // Pseudocode: Checks if a position in the edit line corresponds to a marker
@@ -10558,7 +10561,7 @@ ca5fa:
 static void draw_char(void) {
     // draw_char:
     //     lda (tmp0),y
-    a = ram[tmp0 + y];
+    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     //     iny
     y++;
     sub_ca5ae();
@@ -10659,11 +10662,11 @@ return_64:
     //     rts
     return;
 }
-static void display_status_word(void) {
+static void draw_ruler(void) {
     // Pseudocode: Displays ruler status word at top of screen if status_line_needs_redrawing_flag is set
 
     // ; ***************************************************************************************
-    // display_status_word:
+    // draw_ruler:
     //     lda status_line_needs_redrawing_flag
     a = status_line_needs_redrawing_flag;
     flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
@@ -10673,14 +10676,14 @@ static void display_status_word(void) {
     y = 0;
     //     sty status_line_needs_redrawing_flag
     status_line_needs_redrawing_flag = y;
+
     //     sty l0082
     l0082 = y;
     //     lda current_ruler_ptr
     a = (uint8_t)(current_ruler_ptr & 0xff);
     //     ldy current_ruler_ptr+1
     y = (uint8_t)(current_ruler_ptr >> 8);
-    //     jsr sub_ca486
-    sub_ca486();
+    draw_line();
     //     rts
     return;
 }
@@ -10708,12 +10711,14 @@ static void sub_ca651(void) {
     x = 0x46;
     //     lda format_mode_flag
     a = format_mode_flag;
+    flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq ca666
     if (flags & FLAG_Z) goto ca666;
     //     ldx #0x4d ; 'M'
     x = 0x4d;
     //     and #0xc0
     a &= 0xc0;
+    flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bne ca666
     if (!(flags & FLAG_Z)) goto ca666;
     //     ldx #0x20 ; ' '
@@ -10728,6 +10733,7 @@ ca666:
     a = 0x4a;
     //     ldx justifying_flag
     x = justifying_flag;
+    flags = (flags & ~(FLAG_Z | FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
     //     beq ca672
     if (flags & FLAG_Z) goto ca672;
     //     lda #0x20 ; ' '
@@ -10740,6 +10746,7 @@ ca672:
     a = 0x49;
     //     ldx insert_mode_flag
     x = insert_mode_flag;
+    flags = (flags & ~(FLAG_Z | FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
     //     bne ca681
     if (!(flags & FLAG_Z)) { home_cursor(); return; }
     //     lda #0x20 ; ' '
@@ -11848,9 +11855,9 @@ caa82:
     //     dey
     y--;
     //     lda (tmp2),y
-    a = ram[(uint16_t)tmp3 << 8 | tmp2 + y];
+    a = ram[((uint16_t)tmp3 << 8 | tmp2) + y];
     //     sta (tmp8),y
-    ram[(uint16_t)tmp9 << 8 | tmp8 + y] = a;
+    ram[((uint16_t)tmp9 << 8 | tmp8) + y] = a;
     //     tya
     a = y;
     //     bne caa82
@@ -12083,7 +12090,8 @@ static void cab29(void) {
     // loop_cab2b:
 loop_cab2b:
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8) | tmp0 + y];
+    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
+    flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq return_70
     if (flags & FLAG_Z) goto return_70;
     //     iny
@@ -12093,7 +12101,7 @@ loop_cab2b:
     //     bne loop_cab2b
     if (!(flags & FLAG_Z)) goto loop_cab2b;
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8) | tmp0 + y];
+    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     // return_70:
 return_70:
@@ -12145,7 +12153,7 @@ loop_cab4d:
     // cab58:
 cab58:
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8) | tmp0 + y];
+    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     //     cmp #0x0d
     { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
     //     bne loop_cab4d
@@ -12180,7 +12188,7 @@ static void sub_cab6e(void) {
     //     ldy #0
     y = 0;
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8) | tmp0 + y];
+    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     //     cmp #0x81
     { uint16_t tmp_ = a - 0x81; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x81 ? FLAG_C : 0); }
     //     rts
@@ -12504,7 +12512,7 @@ cac58:
     // cac5c:
 cac5c:
     //     lda (tmp8),y
-    a = ram[((uint16_t)tmp9 << 8) | tmp8 + y];
+    a = ram[((uint16_t)tmp9 << 8 | tmp8) + y];
     //     cmp #0x0d
     { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
     //     beq cac6f
@@ -12551,7 +12559,7 @@ cac7b:
     //     ldy #1
     y = 1;
     //     lda (tmp8),y
-    a = ram[((uint16_t)tmp9 << 8) | tmp8 + y];
+    a = ram[((uint16_t)tmp9 << 8 | tmp8) + y];
     //     jsr check_for_command_prefix
     check_for_command_prefix();
     //     bne cac8d
@@ -12569,7 +12577,7 @@ cac8d:
     // cac8f:
 cac8f:
     //     lda (tmp8),y
-    a = ram[((uint16_t)tmp9 << 8) | tmp8 + y];
+    a = ram[((uint16_t)tmp9 << 8 | tmp8) + y];
     //     iny
     y++;
     //     cmp #0x20 ; ' '
@@ -12633,7 +12641,7 @@ cacad:
     //     ldy #0
     y = 0;
     //     sta (tmp4),y
-    ram[((uint16_t)tmp5 << 8) | tmp4 + y] = a;
+    ram[((uint16_t)tmp5 << 8 | tmp4) + y] = a;
     //     lda tmp4
     //     sta tmp8
     //     lda tmp5
@@ -12893,13 +12901,13 @@ static void render_register(void) {
     //     beq cada3
     if (flags & FLAG_Z) goto cada3;
     //     lda (tmp6),y
-    a = ram[(uint16_t)tmp7 << 8 | tmp6 + y];
+    a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
     //     sta tmp8
     tmp8 = a;
     //     iny
     y++;
     //     lda (tmp6),y
-    a = ram[(uint16_t)tmp7 << 8 | tmp6 + y];
+    a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
     //     sta tmp9
     tmp9 = a;
     // cada2:
@@ -13407,7 +13415,7 @@ static void sub_caf5f(void) {
 static void deref_and_check_for_command_prefix(void) {
     // deref_and_check_for_command_prefix:
     //     lda (tmp0),y
-    a = ram[tmp0 + y];
+    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     check_for_command_prefix();
 }
 static void check_for_command_prefix(void) {
@@ -13496,6 +13504,7 @@ static void initialise_document(void) {
     current_format_line_ptr = current_edit_line_ptr;
     a = (uint8_t)(uintptr_t)current_ruler_buffer;
     y = (uint8_t)((uintptr_t)current_ruler_buffer >> 8);
+    current_ruler_ptr = ((uint16_t)y << 8) | a;
     create_default_ruler();
     y++;
     a = 0x0d;
@@ -13625,7 +13634,7 @@ loop_cb0a8:
     flags_need_redrawing_flag = 1;
     //     rts
 }
-static void create_default_ruler(void) {
+void create_default_ruler(void) {
     // Pseudocode: Creates a default ruler with tab stops every 6 columns
 
     // ; ***************************************************************************************
@@ -13634,6 +13643,7 @@ static void create_default_ruler(void) {
     tmp0 = a;
     //     sty tmp1
     tmp1 = y;
+
     //     lda #0
     a = 0;
     //     tay                                                               ; Y=0x00
@@ -13645,7 +13655,7 @@ loop_cb0e7:
     // loop_cb0e9:
 loop_cb0e9:
     //     sta (tmp0),y
-    ram[(uint16_t)tmp0 + y] = a;
+    ram[((uint16_t)tmp1 << 8 | tmp0) + y] = a;
     //     iny
     y++;
     //     tya
@@ -13678,7 +13688,7 @@ cb0ff:
     //     lda #0x3c ; '<'
     a = 0x3c;
     //     sta (tmp0),y
-    ram[(uint16_t)tmp0 + y] = a;
+    ram[((uint16_t)tmp1 << 8 | tmp0) + y] = a;
     //     rts
     return;
 }

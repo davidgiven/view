@@ -240,8 +240,8 @@ class CliTests(unittest.TestCase):
 
         self.proc.writeline("COUNT")
         output = self.proc.read_until(b"=>", timeout=1.0)
-        self.assertIn(b"1300", output,
-                      f"Expected word count 1300 in output, got: {repr(output)}")
+        self.assertIn(b"1731", output,
+                      f"Expected word count 1731 in output, got: {repr(output)}")
         self.assertIn(b"word(s) counted", output,
                       f"Expected 'word(s) counted' in output, got: {repr(output)}")
 
@@ -276,6 +276,27 @@ class EditorTests(unittest.TestCase):
         self.assertIn("The Water Horse's Fireplace",
                       screen.display[1],
                       f"Document line 1 wrong: {repr(screen.display[1])}")
+
+    def _enter_editor_empty(self):
+        """Enter editor mode without loading a file. Returns pyte Screen."""
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("")
+        time.sleep(0.5)
+        raw = self.proc.read(timeout=1.0)
+        with open("/tmp/empty_final.bin", "wb") as f:
+            f.write(raw)
+        screen = pyte.Screen(80, 24)
+        stream = pyte.Stream(screen)
+        stream.feed(raw.decode("latin-1"))
+        return screen
+
+    @unittest.skip("status line rendering not yet implemented")
+    def test_enter_editor_empty(self):
+        screen = self._enter_editor_empty()
+        self.assertTrue(
+            screen.display[0].startswith("FJ"),
+            f"Expected status line to start with 'FJ', got: {repr(screen.display[0])}"
+        )
 
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")

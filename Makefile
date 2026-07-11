@@ -19,7 +19,11 @@ bin/render_number: tests/render_number.c
 	mkdir -p bin
 	$(CC) -g -O2 -Wall -Wextra -o $@ $<
 
+bin/test_ruler: tests/test_ruler.c
+	mkdir -p bin
+	$(CC) -g -O2 -Wall -Wextra -o $@ $<
+
 .PHONY: test test-render
 
-test: bin/render_number bin/view
-	./bin/render_number && TERM=vt100 python3 tests/interact.py
+test: bin/render_number bin/test_ruler bin/view
+	./bin/render_number && ./bin/test_ruler && TERM=vt100 python3 tests/interact.py

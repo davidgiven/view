@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <stdio.h>
+#include <assert.h>
 
 static bool ncurses_active;
 
@@ -26,6 +28,8 @@ void screen_leave(void) {
 }
 
 void screen_putchar(uint8_t a) {
+    assert(a != 0 && "screen_putchar called with NUL");
+    
     if (ncurses_active) {
         addch(a);
         refresh();
@@ -91,6 +95,7 @@ uint16_t screen_getsize(void) {
 void screen_clear(void) {
     if (ncurses_active) {
         clear();
+        refresh();
     } else {
         static bool term_setup = false;
         if (!term_setup) {
