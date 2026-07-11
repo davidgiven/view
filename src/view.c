@@ -3124,15 +3124,14 @@ c8bd7:
 c8bdb:
     // c8bdb:
     //     inc doc_ptr2+0
-    doc_ptr2 = (doc_ptr2 & 0xff00) | ((uint8_t)(doc_ptr2 & 0xff) + 1);
+    doc_ptr2++;
     //     bne c8b7b
     if ((uint8_t)(doc_ptr2 & 0xff) != 0) { c8b7b(); return; }
 c8bdf:
     // c8bdf:
     //     inc doc_ptr2+1
-    doc_ptr2 = (doc_ptr2 & 0x00ff) | ((uint16_t)((uint8_t)(doc_ptr2 >> 8) + 1) << 8);
     //     bne c8b7b
-    if ((uint8_t)(doc_ptr2 >> 8) != 0) { c8b7b(); return; }
+    if (doc_ptr2 != 0) { c8b7b(); return; }
     return;
 c8be3:
     // c8be3:
@@ -4964,12 +4963,9 @@ static void sub_c9241(void) {
     //     sta (tmp0),y
     ram[((uint16_t)tmp1 << 8 | tmp0) + y] = a;
     //     inc ptr6
-    ptr6 = (ptr6 & 0xff00) | ((uint8_t)(ptr6 & 0xff) + 1);
-    if ((uint8_t)(ptr6 & 0xff) == 0) ptr6 += 0x100;
+    ptr6++;
     //     bne c9254
-    if ((uint8_t)(ptr6 & 0xff) != 0) goto c9254;
     //     inc ptr6+1
-    ptr6 += 0x100;
     // c9254:
 c9254:
     //     inc tmp0
@@ -6562,11 +6558,9 @@ c96ce:
     //     sta (last_macro_ptr),y
     ram[last_macro_ptr + y] = a;
     //     inc last_macro_ptr
-    last_macro_ptr = (last_macro_ptr & 0xff00) | ((uint8_t)(last_macro_ptr & 0xff) + 1);
+    last_macro_ptr++;
     //     bne add_macro_to_linked_list
-    if ((uint8_t)(last_macro_ptr & 0xff) != 0) goto add_macro_to_linked_list;
     //     inc last_macro_ptr+1
-    last_macro_ptr = (last_macro_ptr & 0x00ff) | ((uint16_t)((last_macro_ptr >> 8) + 1) << 8);
     // add_macro_to_linked_list:
 add_macro_to_linked_list:
     //     lda #0
