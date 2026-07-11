@@ -179,8 +179,8 @@ static void clear_cmd(void);
 static void wipe_buffer(void);
 static void caf5c(void);
 static void sub_caf5f(void);
-static void deref_and_check_for_command_prefix(void);
-static void check_for_command_prefix(void);
+static uint8_t deref_and_check_for_command_prefix(void);
+static uint8_t check_for_command_prefix(uint8_t ch);
 static void sub_cab6e(void);
 static void cab29(void);
 static void push_onto_ruler_stack(void);
@@ -1943,7 +1943,7 @@ c86b8:
     //     ldy #0
     y = 0;
     //     jsr deref_and_check_for_command_prefix
-    deref_and_check_for_command_prefix();
+    flags = deref_and_check_for_command_prefix();
     //     bne c86ea
     if (!(flags & FLAG_Z)) goto c86ea;
     //     ldx #0
@@ -3059,7 +3059,7 @@ c8b9f:
     //     lda (tmp8),y
     a = ram[((uint16_t)tmp9 << 8) | tmp8];
     //     jsr check_for_command_prefix
-    check_for_command_prefix();
+    flags = check_for_command_prefix(a);
     //     bne c8bb7
     if (!(flags & FLAG_Z)) goto c8bb7;
     //     lda tmp8
@@ -3095,7 +3095,7 @@ c8bbc:
     //     beq c8bdb
     if (a == 0) goto c8bdb;
     //     jsr check_for_command_prefix
-    check_for_command_prefix();
+    flags = check_for_command_prefix(a);
     //     beq c8bdb
     if (flags & FLAG_Z) goto c8bdb;
     //     lda header_text_maybe,x
@@ -3372,7 +3372,7 @@ c8c95:
     //     bne c8c95
     if (x != 0) goto c8c95;
     //     jsr check_for_command_prefix
-    check_for_command_prefix();
+    flags = check_for_command_prefix(a);
     //     bne c8c95
     if (!(flags & FLAG_Z)) goto c8c95;
     //     ldx #0xfd
@@ -3999,7 +3999,7 @@ c8f3b:
     y = 0;
     //     sty input_buffer_offset+1
     //     jsr deref_and_check_for_command_prefix
-    deref_and_check_for_command_prefix();
+    flags = deref_and_check_for_command_prefix();
     //     bne c8fce_thunk
     if (!(flags & FLAG_Z)) goto c8fce_thunk;
     //     ldy #3
@@ -6541,7 +6541,7 @@ c96ce:
     a = ram[last_macro_ptr + y];
     flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     jsr check_for_command_prefix
-    check_for_command_prefix();
+    flags = check_for_command_prefix(a);
     //     bne c96f8
     if (!(flags & FLAG_Z)) { last_macro_ptr = (uint16_t)tmp0 | ((uint16_t)tmp1 << 8); return; }
     //     jsr lookup_formatting_command
@@ -7451,7 +7451,7 @@ static void sub_c9977(void) {
     a = ram[current_line_ptr + y];
     flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     jsr check_for_command_prefix
-    check_for_command_prefix();
+    flags = check_for_command_prefix(a);
     //     beq c9974
     if (flags & FLAG_Z) goto c9a8d;
     // c998a:
@@ -7868,7 +7868,7 @@ c9ad5:
     //     beq c9b2f
     if (a == 0) goto c9b2f;
     //     jsr check_for_command_prefix
-    check_for_command_prefix();
+    flags = check_for_command_prefix(a);
     //     beq c9b2f
     if (flags & FLAG_Z) goto c9b2f;
     //     cmp #0x0d
@@ -8490,7 +8490,7 @@ c9dbd:
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
     //     jsr check_for_command_prefix
-    check_for_command_prefix();
+    flags = check_for_command_prefix(a);
     //     bne c9dcd
     if (!(flags & FLAG_Z)) goto c9dcd;
     //     inx
@@ -8802,7 +8802,7 @@ static void cf7_join_lines_key(void) {
     //     beq c9eda
     if (flags & FLAG_Z) { beep(); return; }
     //     jsr check_for_command_prefix
-    check_for_command_prefix();
+    flags = check_for_command_prefix(a);
     //     beq c9eda
     if (flags & FLAG_Z) { beep(); return; }
     //     dey
@@ -8996,7 +8996,7 @@ static void sf9_delete_command_key(void) {
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
     //     jsr check_for_command_prefix
-    check_for_command_prefix();
+    flags = check_for_command_prefix(a);
     //     bne return_56
     if (!(flags & FLAG_Z)) return;
     //     tya
@@ -10117,7 +10117,7 @@ static void draw_line(uint16_t addr) {
     //     sty l0039
     l0039 = 0;
     //     jsr deref_and_check_for_command_prefix
-    deref_and_check_for_command_prefix();
+    flags = deref_and_check_for_command_prefix();
     //     bne ca4b4
     if (!(flags & FLAG_Z)) goto ca4b4;
     //     ldy #3
@@ -11755,7 +11755,7 @@ static void sub_caa97(void) {
     //     ldy current_edit_line_ptr+1
     y = (uint8_t)((current_edit_line_ptr >> 8) & 0xff);
     //     jsr check_for_command_prefix
-    check_for_command_prefix();
+    flags = check_for_command_prefix(a);
     //     bne caab7
     if (flags & FLAG_Z) {
         // Z=1 (0x80 or 0x81)
@@ -11870,7 +11870,7 @@ static void get_line_length(void) {
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
     //     jsr check_for_command_prefix
-    check_for_command_prefix();
+    flags = check_for_command_prefix(a);
     //     php
     { uint8_t saved_f = flags;
     //     ldy #0x84
@@ -12310,7 +12310,7 @@ cac20:
     //     lda (current_line_ptr),y
     a = ram[current_line_ptr + y];
     //     jsr check_for_command_prefix
-    check_for_command_prefix();
+    flags = check_for_command_prefix(a);
     //     bne cac3e
     if (!(flags & FLAG_Z)) goto cac3e;
     //     txa
@@ -12428,7 +12428,7 @@ cac7b:
     //     lda (tmp8),y
     a = ram[((uint16_t)tmp9 << 8 | tmp8) + y];
     //     jsr check_for_command_prefix
-    check_for_command_prefix();
+    flags = check_for_command_prefix(a);
     //     bne cac8d
     if (!(flags & FLAG_Z)) goto cac8d;
     //     inx
@@ -12681,7 +12681,7 @@ static void set_marker_to_here(void) {
     //     ldy xpos
     y = xpos;
     //     jsr check_for_command_prefix
-    check_for_command_prefix();
+    flags = check_for_command_prefix(a);
     //     bne cad5c
     if (!(flags & FLAG_Z)) goto cad5c;
     //     iny
@@ -13279,30 +13279,25 @@ static void sub_caf5f(void) {
         flags_need_redrawing_flag++;
     }
 }
-static void deref_and_check_for_command_prefix(void) {
+static uint8_t deref_and_check_for_command_prefix(void) {
     // deref_and_check_for_command_prefix:
     //     lda (tmp0),y
     a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
-    check_for_command_prefix();
+    return check_for_command_prefix(a);
 }
-static void check_for_command_prefix(void) {
+// Returns flags value: if ch is 0x80 (format command) → FLAG_Z|FLAG_C;
+// if ch is 0x81 (ruler line) → FLAG_Z; otherwise → 0.
+static uint8_t check_for_command_prefix(uint8_t ch) {
     // check_for_command_prefix:
     //     cmp #0x80
     //     beq return_81
-    if (a == 0x80) {
-        flags |= FLAG_Z | FLAG_C;
-        return;
-    }
     //     cmp #0x81
     //     clc
-    if (a == 0x81) {
-        flags |= FLAG_Z;
-        flags &= ~FLAG_C;
-        return;
-    }
-    flags &= ~(FLAG_Z | FLAG_C);
     // return_81:
     //     rts
+    if (ch == 0x80) return FLAG_Z | FLAG_C;
+    if (ch == 0x81) return FLAG_Z;
+    return 0;
 }
 static void system_init(void) {
     himem = 0xffff;
