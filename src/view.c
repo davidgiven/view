@@ -170,7 +170,7 @@ static void draw_char(void);
 static void sub_cab1a(void);
 static void sub_ca44e(void);
 static void sub_ca422(void);
-static void draw_line(void);
+static void draw_line(uint16_t);
 static void sub_caacb(void);
 static void draw_ruler(void);
 static void draw_status_word(void);
@@ -9922,7 +9922,7 @@ ca3c1:
     // loop_ca3c3:
 loop_ca3c3:
     //     jsr draw_line
-    draw_line();
+    draw_line(((uint16_t)y << 8) | a);
     //     lda tmp0
     a = tmp0;
     //     ldy tmp1
@@ -9977,12 +9977,7 @@ ca3e7:
     a = ypos;
     //     sta l0082
     l0082 = a;
-    //     lda current_format_line_ptr
-    a = (uint8_t)(current_format_line_ptr & 0xff);
-    //     ldy current_format_line_ptr+1
-    y = (uint8_t)(current_format_line_ptr >> 8);
-    //     jsr draw_line
-    draw_line();
+    draw_line(current_format_line_ptr);
     // ca3ff:
 ca3ff:
     //     lda flags_need_redrawing_flag
@@ -10110,17 +10105,17 @@ ca479:
     ruler_stack_ptr = a;
     //     rts
 }
-static void draw_line(void) {
+static void draw_line(uint16_t addr) {
     // draw_line: Renders a single document line to the screen
 
     //     sta tmp0
-    tmp0 = a;
+    tmp0 = (uint8_t)(addr & 0xff);
     //     sta tmp6
-    tmp6 = a;
+    tmp6 = (uint8_t)(addr & 0xff);
     //     sty tmp1
-    tmp1 = y;
+    tmp1 = (uint8_t)(addr >> 8);
     //     sty tmp7
-    tmp7 = y;
+    tmp7 = (uint8_t)(addr >> 8);
     //     ldx #0
     x = 0;
     //     ldy l0082
@@ -10608,11 +10603,7 @@ static void draw_ruler(void) {
 
     //     sty l0082
     l0082 = y;
-    //     lda current_ruler_ptr
-    a = (uint8_t)(current_ruler_ptr & 0xff);
-    //     ldy current_ruler_ptr+1
-    y = (uint8_t)(current_ruler_ptr >> 8);
-    draw_line();
+    draw_line(current_ruler_ptr);
     //     rts
     return;
 }
