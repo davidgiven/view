@@ -173,7 +173,7 @@ static void sub_ca422(void);
 static void draw_line(void);
 static void sub_caacb(void);
 static void draw_ruler(void);
-static void sub_ca651(void);
+static void draw_status_word(void);
 static void unpack_line_into_buffer(void);
 static void clear_cmd(void);
 static void wipe_buffer(void);
@@ -283,13 +283,13 @@ static void render_char(void);
 
 static void sub_ca4d7(void);
 static void render_xchar(void);
-static void sub_ca597(void);
+static void clear_to_eol(void);
 void create_default_ruler(void);
 static void set_document_name_to_filename_buffer(void);
 static void clear_marks_1_2(void);
 static void reset_area_to_marks_1_2(void);
 static void sub_ca1cc(void);
-static void sub_ca608(void);
+static void recalculate_cursor_xpos(void);
 // Forward declarations for recently translated functions
 static void bad_filename_error(void);
 static void read_into_document(void);
@@ -8010,7 +8010,7 @@ editor_loop:
     l006e = a;
 c9b44_:
     //     jsr sub_ca608
-    sub_ca608();
+    recalculate_cursor_xpos();
     //     lda ruler_left_stop
     a = ruler_left_stop;
     //     beq c9b73
@@ -8054,7 +8054,7 @@ c9b6a_:
     //     inc l0079
     l0079++;
     //     jsr sub_ca608
-    sub_ca608();
+    recalculate_cursor_xpos();
     //     lda format_mode_flag
     a = format_mode_flag;
     //     and #0xbf
@@ -8246,7 +8246,7 @@ c9c4a:
     y = xpos;
     input_buffer_offset = y;
     draw_previous_word();
-    sub_ca608();
+    recalculate_cursor_xpos();
     if (l0072 < ruler_left_stop) {
         y = input_buffer_offset;
         y--;
@@ -9821,7 +9821,7 @@ ca360:
     //     jsr unpack_line_into_buffer
     unpack_line_into_buffer();
     //     jsr sub_ca608
-    sub_ca608();
+    recalculate_cursor_xpos();
     //     lda screen_width
     a = screen_width;
     //     lsr
@@ -9995,7 +9995,7 @@ ca3ff:
     //     beq ca406
     if (a == 0) goto ca406;
     //     jsr sub_ca651
-    sub_ca651();
+    draw_status_word();
     // ca406:
 ca406:
     //     lda l0072
@@ -10040,7 +10040,7 @@ static void sub_ca422(void) {
         x = 0;
         y = l0082;
         set_cursor_position();
-        sub_ca597();
+        clear_to_eol();
         line_lengths[x] = l0083;
         l0083 = 0;
         l0081--;
@@ -10192,7 +10192,7 @@ loop_ca4c2:
     //     lda #0x20 ; ' '
     a = 0x20;
     //     jsr sub_ca597
-    sub_ca597();
+    clear_to_eol();
     //     lda l0083
     a = l0083;
     //     sta line_lengths,x
@@ -10433,7 +10433,7 @@ static void set_inverted_text_if_not_mode_7(void) {
     //     rts
     return;
 }
-static void sub_ca597(void) {
+static void clear_to_eol(void) {
     // Pseudocode: Fills remaining space on line with spaces to clear to end
 
     // sub_ca597:
@@ -10583,7 +10583,7 @@ return_63:
     //     rts
     return;
 }
-static void sub_ca608(void) {
+static void recalculate_cursor_xpos(void) {
     // Pseudocode: Recalculates cursor xpos from visual position accounting for tabs and margins
 
     // sub_ca608:
@@ -10697,7 +10697,7 @@ static void home_cursor(void) {
     //     jmp set_cursor_position
     set_cursor_position(); return;
 }
-static void sub_ca651(void) {
+static void draw_status_word(void) {
     // Pseudocode: Redraws status line showing format mode, justify, and insert indicators
 
     // sub_ca651:
@@ -13290,7 +13290,7 @@ static void sub_caef4(void) {
     //     sty xpos
     xpos = y;
     //     jsr sub_ca608
-    sub_ca608();
+    recalculate_cursor_xpos();
     //     lda l0072
     a = l0072;
     //     cmp ruler_left_stop
