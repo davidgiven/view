@@ -215,7 +215,9 @@ static void read_first_chunk_from_input_file(void);
 static void put_byte_to_file(void);
 static void c93b8(void);
 static void sub_ca071(void);
-static void sub_ca5ae(void);
+// Input:  a = document character, y = line offset (for tab stop lookup)
+// Output: a = character to render, x = screen width consumed, y preserved, flags.C=0
+static void process_document_character(void);
 static void read_next_chunk_from_input_file(void);
 static void sub_c8da2(void);
 static void print_newline(void);
@@ -5594,7 +5596,7 @@ static void sub_c9431(void) {
 
     // sub_c9431:
     //     jsr sub_ca5ae
-    sub_ca5ae();
+    process_document_character();
     //     bit print_flags
     { uint8_t tmp_ = a & print_flags; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (print_flags & (FLAG_N|FLAG_V)); }
     //     bpl c943c
@@ -7363,7 +7365,7 @@ static void sub_c9936(void) {
     //     bne c994a
     if (!(flags & FLAG_Z)) goto c994a;
     //     jsr sub_ca5ae
-    sub_ca5ae();
+    process_document_character();
     //     txa
     a = x;
     //     clc
@@ -7545,7 +7547,7 @@ c99c9:
     //     bne c99e0
     if (!(flags & FLAG_Z)) goto c99e0;
     //     jsr sub_ca5ae
-    sub_ca5ae();
+    process_document_character();
     //     dex
     x--;
     //     txa
@@ -8207,7 +8209,7 @@ static void enter_printable_character(void) {
         y++;
         if (y > xpos) break;
         if (a == 9) {
-            sub_ca5ae();
+            process_document_character();
             a = x;
             a += l0039;
             if (a != 0) { l0039 = a; continue; }
@@ -10391,7 +10393,9 @@ return_62:
     //     rts
     return;
 }
-static void sub_ca5ae(void) {
+// Input:  a = document character, y = line offset (for tab stop lookup)
+// Output: a = character to render, x = screen width consumed, y preserved, flags.C=0
+static void process_document_character(void) {
     // sub_ca5ae:
     //     cmp #9
     if (a == 9) goto ca5e1;
@@ -10495,7 +10499,7 @@ static void draw_char(void) {
     a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     //     iny
     y++;
-    sub_ca5ae();
+    process_document_character();
 }
 static void check_for_control_code(void) {
     // Pseudocode: Checks if character is a control code (0x1c or 0x1d)
