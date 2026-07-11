@@ -297,7 +297,7 @@ subroutine(0xA565, "set_normal_text_if_not_mode_7")
 subroutine(0xA577, "set_inverted_text_if_not_mode_7")
 subroutine(0xA58E, "set_text_colour")
 subroutine(0xA600, "check_for_control_code")
-subroutine(0xA640, "display_status_word")
+subroutine(0xA640, "draw_ruler")
 subroutine(0xA67F, "home_cursor")
 subroutine(
     0xA68C,
@@ -368,6 +368,8 @@ subroutine(
 subroutine(0xB07A, "move_cursor_to_top_of_document")
 subroutine(0xA8B9, "write_line_back_to_document")
 subroutine(0xA93C, "write_line_back_to_document_or_error")
+subroutine(0xA486, "draw_line")
+subroutine(0xA4E9, "draw_char")
 
 subroutine(0x823B, "esc_key")
 subroutine(0x9D7B, "return_key")
