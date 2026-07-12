@@ -8041,9 +8041,6 @@ c9b44_:
     //     lda format_mode_flag
     a = format_mode_flag;
     //     cpy xpos
-    //     lda format_mode_flag
-    a = format_mode_flag;
-    //     cpy xpos
     { uint16_t tmp_ = y - xpos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= xpos ? FLAG_C : 0); }
     //     bcs c9b84
     if (flags & FLAG_C) goto c9b84_;
