@@ -18,6 +18,8 @@
 // #include "driver.inc"
 // #include "zif.inc"
 
+typedef uint16_t addr_t;
+
 // ; 6502 CPU register globals
 uint8_t a, x, y, sp, flags;
 
@@ -345,39 +347,39 @@ uint8_t ram[65536];
 //X .section .zp, "zax", @nobits
 
 //X ptr1: .fill 2
-uint16_t ptr1;
+addr_t ptr1;
 //X current_edit_line_ptr: .fill 2
-uint16_t current_edit_line_ptr;
+addr_t current_edit_line_ptr;
 //X current_format_line_ptr: .fill 2
-uint16_t current_format_line_ptr;
+addr_t current_format_line_ptr;
 //X current_ruler_ptr: .fill 2
-uint16_t current_ruler_ptr;
+addr_t current_ruler_ptr;
 //X current_line_ptr: .fill 2
-uint16_t current_line_ptr;
+addr_t current_line_ptr;
 //X page: .fill 2
-uint16_t page;
+addr_t page;
 //X top: .fill 2
-uint16_t top;
+addr_t top;
 //X himem: .fill 2
-uint16_t himem;
+addr_t himem;
 //X l0011: .fill 1
 uint8_t l0011;
 //X l0012: .fill 1
 uint8_t l0012;
 //X ptr6: .fill 2
-uint16_t ptr6;
+addr_t ptr6;
 //X ptr5: .fill 2
-uint16_t ptr5;
+addr_t ptr5;
 //X printer_driver_ptr: .fill 2 (replaced by struct pointer)
 const struct printer_driver *printer_driver_ptr;
 //X first_macro_ptr: .fill 2
-uint16_t first_macro_ptr;
+addr_t first_macro_ptr;
 //X last_macro_ptr: .fill 2
-uint16_t last_macro_ptr;
+addr_t last_macro_ptr;
 //X ptr3: .fill 2
-uint16_t ptr3;
+addr_t ptr3;
 //X oshwm: .fill 2
-uint16_t oshwm;
+addr_t oshwm;
 //X l0021: .fill 1
 uint8_t l0021;
 //X l0030: .fill 1
@@ -425,7 +427,7 @@ uint8_t l0049;
 //X l004a: .fill 1
 uint8_t l004a;
 //X ptr2: .fill 2
-uint16_t ptr2;
+addr_t ptr2;
 //X rw_file_handle: .fill 1
 uint8_t rw_file_handle;
 //X error_handling_mode: .fill 1
@@ -440,7 +442,7 @@ uint8_t l006e;
 uint8_t l006f;
 //X ruler_stack_ptr: .fill 1
 uint8_t ruler_stack_ptr;
-uint16_t ruler_stack[128];
+addr_t ruler_stack[128];
 //X hscroll_pos: .fill 1
 uint8_t hscroll_pos;
 //X l0072: .fill 1
@@ -560,12 +562,12 @@ uint8_t ruler_left_stop;
 //X doc_ptr3: .fill 2
 //X __end_pointer_array:
 struct {
-    uint16_t markers_array[6];
-    uint16_t area_start_ptr;
-    uint16_t area_end_ptr;
-    uint16_t doc_ptr1;
-    uint16_t doc_ptr2;
-    uint16_t doc_ptr3;
+    addr_t markers_array[6];
+    addr_t area_start_ptr;
+    addr_t area_end_ptr;
+    addr_t doc_ptr1;
+    addr_t doc_ptr2;
+    addr_t doc_ptr3;
 } pointer_array;
 #define markers_array pointer_array.markers_array
 #define area_start_ptr pointer_array.area_start_ptr
