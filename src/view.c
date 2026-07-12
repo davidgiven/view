@@ -605,11 +605,12 @@ uint8_t output_filename[MAX_COMMAND_LENGTH];
 uint8_t printer_driver_name[0x14];
 
 //X register_value_array:           .fill 26*2
-uint8_t register_value_array[26*2];
+#define RAM_REGISTER_VALUE_ARRAY 0x0798
+#define register_value_array (&ram[RAM_REGISTER_VALUE_ARRAY])
 //X register_value_l                = register_value_array + ('L'-'A')*2
-#define register_value_l (register_value_array + ('L'-'A')*2)
+#define RAM_REGISTER_VALUE_L (RAM_REGISTER_VALUE_ARRAY + ('L'-'A')*2)
 //X register_value_p                = register_value_array + ('P'-'A')*2
-#define register_value_p (register_value_array + ('P'-'A')*2)
+#define RAM_REGISTER_VALUE_P (RAM_REGISTER_VALUE_ARRAY + ('P'-'A')*2)
 
 #define MAX_LINES 32
 //X line_lengths:                   .fill 32
@@ -4162,11 +4163,11 @@ c8fe6:
     //     bne c8fe6
     if (a != 0x0d) goto c8fe6;
     //     inc register_value_l
-    register_value_l[0]++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (register_value_l[0] == 0 ? FLAG_Z : 0) | (register_value_l[0] & FLAG_N);
+    ram[RAM_REGISTER_VALUE_L]++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (ram[RAM_REGISTER_VALUE_L] == 0 ? FLAG_Z : 0) | (ram[RAM_REGISTER_VALUE_L] & FLAG_N);
     //     bne c8ffb
     if (!(flags & FLAG_Z)) goto c8ffb;
     //     inc register_value_l+1
-    register_value_l[1]++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (register_value_l[1] == 0 ? FLAG_Z : 0) | (register_value_l[1] & FLAG_N);
+    ram[RAM_REGISTER_VALUE_L+1]++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (ram[RAM_REGISTER_VALUE_L+1] == 0 ? FLAG_Z : 0) | (ram[RAM_REGISTER_VALUE_L+1] & FLAG_N);
     // c8ffb:
 c8ffb:
     //     ldx line_spacing
@@ -4597,11 +4598,11 @@ c8fe6_inline:
     //     bne c8fe6_inline
     if (a != 0x0d) goto c8fe6_inline;
     //     inc register_value_l
-    register_value_l[0]++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (register_value_l[0] == 0 ? FLAG_Z : 0) | (register_value_l[0] & FLAG_N);
+    ram[RAM_REGISTER_VALUE_L]++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (ram[RAM_REGISTER_VALUE_L] == 0 ? FLAG_Z : 0) | (ram[RAM_REGISTER_VALUE_L] & FLAG_N);
     //     bne c8ffb_inline
     if (!(flags & FLAG_Z)) goto c8ffb_inline;
     //     inc register_value_l+1
-    register_value_l[1]++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (register_value_l[1] == 0 ? FLAG_Z : 0) | (register_value_l[1] & FLAG_N);
+    ram[RAM_REGISTER_VALUE_L+1]++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (ram[RAM_REGISTER_VALUE_L+1] == 0 ? FLAG_Z : 0) | (ram[RAM_REGISTER_VALUE_L+1] & FLAG_N);
 c8ffb_inline:
     //     ldx line_spacing
     x = line_spacing;
@@ -5001,21 +5002,21 @@ c927c:
     // c9284:
 c9284:
     //     inc register_value_p
-    register_value_p[0]++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (register_value_p[0] == 0 ? FLAG_Z : 0) | (register_value_p[0] & FLAG_N);
+    ram[RAM_REGISTER_VALUE_P]++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (ram[RAM_REGISTER_VALUE_P] == 0 ? FLAG_Z : 0) | (ram[RAM_REGISTER_VALUE_P] & FLAG_N);
     //     bne c928c
     if (!(flags & FLAG_Z)) goto c928c;
     //     inc register_value_p+1
-    register_value_p[1]++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (register_value_p[1] == 0 ? FLAG_Z : 0) | (register_value_p[1] & FLAG_N);
+    ram[RAM_REGISTER_VALUE_P+1]++; flags = (flags & ~(FLAG_Z|FLAG_N)) | (ram[RAM_REGISTER_VALUE_P+1] == 0 ? FLAG_Z : 0) | (ram[RAM_REGISTER_VALUE_P+1] & FLAG_N);
     // c928c:
 c928c:
     //     lda #1
     a = 1;
     //     sta register_value_l
-    register_value_l[0] = a;
+    ram[RAM_REGISTER_VALUE_L] = a;
     //     lda #0
     a = 0;
     //     sta register_value_l+1
-    register_value_l[1] = a;
+    ram[RAM_REGISTER_VALUE_L+1] = a;
     //     sta l0031
     l0031 = a;
     //     rts
@@ -5042,9 +5043,9 @@ static void render_new_page(void) {
     cli_putstring("\nPage ");
 
     //     ldx register_value_p
-    x = register_value_p[0];
+    x = ram[RAM_REGISTER_VALUE_P];
     //     ldy register_value_p+1
-    y = register_value_p[1];
+    y = ram[RAM_REGISTER_VALUE_P+1];
     //     jsr render_number_to_screen
     render_number_to_screen();
     //     jsr print_inline_string
@@ -5473,7 +5474,7 @@ static void sub_c93fd(void) {
     //     beq return_31
     if (flags & FLAG_Z) goto return_31;
     //     lda register_value_p
-    a = register_value_p[0];
+    a = ram[RAM_REGISTER_VALUE_P];
     //     lsr
     flags = (flags & ~FLAG_C) | (a & 1);
     a >>= 1;
@@ -6297,7 +6298,7 @@ static void op_fmt_cmd(void) {
     // ; ***************************************************************************************
     // op_fmt_cmd:
     //     lda register_value_p
-    a = *register_value_p;
+    a = ram[RAM_REGISTER_VALUE_P];
     flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     lsr
     { flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | ((a & 1) ? FLAG_C : 0); a >>= 1; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
@@ -6312,7 +6313,7 @@ static void ep_fmt_cmd(void) {
     // ; ***************************************************************************************
     // ep_fmt_cmd:
     //     lda register_value_p
-    a = *register_value_p;
+    a = ram[RAM_REGISTER_VALUE_P];
     flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     lsr
     { flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | ((a & 1) ? FLAG_C : 0); a >>= 1; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
@@ -12719,11 +12720,11 @@ static void get_register_address(void) {
     //     asl
     a <<= 1;
     //     adc #<register_value_array
-    { uint16_t sum = (uint16_t)a + (uint8_t)((uintptr_t)register_value_array & 0xff); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    { uint16_t sum = (uint16_t)a + (uint8_t)(RAM_REGISTER_VALUE_ARRAY & 0xff); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
     //     sta tmp6
     tmp6 = a;
     //     lda #>register_value_array
-    a = (uint8_t)((uintptr_t)register_value_array >> 8);
+    a = (uint8_t)(RAM_REGISTER_VALUE_ARRAY >> 8);
     //     adc #0
     { uint16_t sum = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
     //     sta tmp7
@@ -13553,15 +13554,9 @@ static void sub_cb104(void) {
     //     lda #0
     a = 0;
     //     ldx #0x33 ; '3'
-    x = 0x33;
     // loop_cb108:
-loop_cb108:
     //     sta register_value_array,x
-    register_value_array[x] = a;
-    //     dex
-    x--;
-    //     bpl loop_cb108
-    if (!(x & 0x80)) goto loop_cb108;
+    memset(register_value_array, 0, 26 * 2);
     //     sta header_text_maybe
     header_text_maybe[0] = a;
     //     sta footer_text_maybe
@@ -13589,9 +13584,9 @@ loop_cb108:
     //     sta l0038
     l0038 = a;
     //     sta register_value_p
-    register_value_p[0] = a;
+    ram[RAM_REGISTER_VALUE_P] = a;
     //     sta register_value_l
-    register_value_l[0] = a;
+    ram[RAM_REGISTER_VALUE_L] = a;
     //     ldy #0x80
     y = 0x80;
     //     sty highlight1_code
