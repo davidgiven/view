@@ -11,6 +11,7 @@
 #include <setjmp.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <ctype.h>
  
 #include "cli.h"
 
@@ -61,8 +62,6 @@ struct printer_driver {
 
 // Forward declarations
 static void sub_c8c5f(void);
-static void to_uppercase(void);
-static void is_uppercase(void);
 static void control_key_to_ascii(void);
 static void draw_prompt_characters(void);
 static void read_char(void);
@@ -1181,7 +1180,7 @@ c83a3:
     //     beq c83da
     if (flags & FLAG_Z) goto c83da;
     //     jsr to_uppercase
-    to_uppercase();
+    a = toupper(a);
     //     sta l0082
     l0082 = a;
     //     ldx #0xfe
@@ -2833,7 +2832,7 @@ loop_c8ae4:
     y++;
     flags = (flags & ~(FLAG_Z|FLAG_N)) | (y == 0 ? FLAG_Z : 0) | (y & FLAG_N);
     //     jsr is_uppercase
-    is_uppercase();
+    if (isupper(a)) { flags &= ~FLAG_C; } else { flags |= FLAG_C; }
     //     bcc c8af3
     if (!(flags & FLAG_C)) goto c8af3;
     //     ror print_xpos
@@ -2872,7 +2871,7 @@ c8af3:
     //     lda (ptr2),y
     a = ram[ptr2 + y];
     //     jsr is_uppercase
-    is_uppercase();
+    if (isupper(a)) { flags &= ~FLAG_C; } else { flags |= FLAG_C; }
     //     bcs c8b11
     if (flags & FLAG_C) goto c8b11;
     //     and #0x20 ; ' '
@@ -2968,7 +2967,7 @@ c8b4d:
     //     bne c8b64
     if (y != 0) goto c8b64;
     //     jsr is_uppercase
-    is_uppercase();
+    if (isupper(a)) { flags &= ~FLAG_C; } else { flags |= FLAG_C; }
     //     bcs c8b64
     if (flags & FLAG_C) goto c8b64;
     //     ora #0x20 ; ' '
@@ -3299,41 +3298,7 @@ static void sub_c8c5f(void) {
     //     bit folding_flag
     if (folding_flag & FLAG_N) return;
     //     falls through to to_uppercase
-    to_uppercase(); return;
-}
-static void to_uppercase(void) {
-    // to_uppercase:
-    //     jsr is_uppercase
-    is_uppercase();
-    //     bcs return_14
-    if (flags & FLAG_C) return;
-    //     and #0xdf
-    a &= 0xdf;
-    // return_14:
-    //     rts
-    return;
-}
-static void is_uppercase(void) {
-    // is_uppercase:
-    //     cmp #0x41 ; 'A'
-    { uint16_t tmp_ = a - 0x41; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x41 ? FLAG_C : 0); }
-    //     bcc c8c7a
-    if (!(flags & FLAG_C)) { flags |= FLAG_C; return; }
-    //     cmp #0x5b ; '['
-    { uint16_t tmp_ = a - 0x5b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x5b ? FLAG_C : 0); }
-    //     bcc return_15
-    if (!(flags & FLAG_C)) return;
-    //     cmp #0x61 ; 'a'
-    { uint16_t tmp_ = a - 0x61; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x61 ? FLAG_C : 0); }
-    //     bcc c8c7a
-    if (!(flags & FLAG_C)) { flags |= FLAG_C; return; }
-    //     cmp #0x7b ; '{'
-    { uint16_t tmp_ = a - 0x7b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x7b ? FLAG_C : 0); }
-    // return_15:
-    //     rts
-    // c8c7a:
-    //     sec
-    //     rts
+    a = toupper(a); return;
 }
 static void sub_c8c7c(void) {
     // sub_c8c7c:
@@ -4079,7 +4044,7 @@ c8f7a:
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
     //     jsr is_uppercase
-    is_uppercase();
+    if (isupper(a)) { flags &= ~FLAG_C; } else { flags |= FLAG_C; }
     //     bcc c8f92
     if (!(flags & FLAG_C)) goto c8f92;
     //     lda #0x20 ; ' '
@@ -6460,7 +6425,7 @@ static void dm_fmt_cmd(void) {
     a = ram[current_format_line_ptr + y];
     flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     jsr is_uppercase
-    is_uppercase();
+    if (isupper(a)) { flags &= ~FLAG_C; } else { flags |= FLAG_C; }
     //     bcc c968d
     if (!(flags & FLAG_C)) goto c968d;
     //     lda #0x20 ; ' '
@@ -6810,7 +6775,7 @@ c9788:
     a = ram[((uint16_t)tmp9 << 8) | (uint16_t)(tmp8 + y)];
     flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     jsr to_uppercase
-    to_uppercase();
+    a = toupper(a);
     //     inx
     x++;
     //     cmp l97b0,x
@@ -8338,7 +8303,7 @@ static void sf1_swap_case_key(void) {
     //     lda (current_edit_line_ptr),y
     a = ram[current_edit_line_ptr + y];
     //     jsr is_uppercase
-    is_uppercase();
+    if (isupper(a)) { flags &= ~FLAG_C; } else { flags |= FLAG_C; }
     //     bcs f13_right_key
     if (flags & FLAG_C) { f13_right_key(); return; }
     //     inc l0074
@@ -12742,7 +12707,7 @@ static void get_register_address(void) {
     // get_register_address: Gets address of a register value by letter name
 
     //     jsr is_uppercase
-    is_uppercase();
+    if (isupper(a)) { flags &= ~FLAG_C; } else { flags |= FLAG_C; }
     //     bcs return_77
     if (flags & FLAG_C) { /* return_77: */ return; }
     //     and #0xdf
@@ -13659,7 +13624,7 @@ static void control_key_to_ascii(void) {
     //     jmp to_uppercase
     // zendproc
     if (a < 0x20) a |= 0x40;
-    to_uppercase(); return;
+    a = toupper(a); return;
 }
 static void q_command_key(void) {
     // Pseudocode: Q-command handler: prompts for Q-key, looks up in q_key_table
