@@ -170,7 +170,6 @@ static void draw_previous_word(void);
 static void draw_char(void);
 static void sub_cab1a(void);
 static void sub_ca44e(void);
-static void sub_ca422(void);
 static void draw_line(uint16_t);
 static void sub_caacb(void);
 static void draw_ruler(void);
@@ -9919,7 +9918,7 @@ loop_ca3c3:
     //     jsr sub_cab1a
     sub_cab1a();
     //     beq ca422
-    if (flags & FLAG_Z) { draw_ruler(); sub_ca422(); goto ca3ff; }
+    if (flags & FLAG_Z) goto ca422;
     //     tya
     a = y;
     //     ldy tmp1
@@ -9940,6 +9939,47 @@ ca3d8:
     l0081--;
     //     bne loop_ca3c3
     if (l0081 != 0) goto loop_ca3c3;
+    goto ca3de;
+ca422: // fall through from ca422 label; also reached from Z=1 goto
+    //     dec l0081
+    l0081--;
+    //     beq ca3de
+    if (l0081 == 0) goto ca3de;
+    //     ldx l0082
+    x = l0082;
+    //     lda screen_width
+    a = screen_maxcolumn;
+    //     sta line_lengths+1,x
+    line_lengths[x + 1] = a;
+    //     sta l0083
+    l0083 = a;
+    //     lda #0x2a ; '*'
+    a = 0x2a;
+    // loop_ca431:
+loop_ca431:
+    //     inc l0082
+    l0082++;
+    //     ldx #0
+    //     ldy l0082
+    //     jsr set_cursor_position
+    screen_setcursor(0, l0082);
+    //     jsr sub_ca597
+    { uint8_t fill = a; for (int i = 0; i <= screen_maxcolumn; i++) screen_putchar(fill); }
+    //     lda l0083
+    a = l0083;
+    //     sta line_lengths,x
+    line_lengths[x] = a;
+    //     lda #0
+    a = 0;
+    //     sta l0083
+    l0083 = a;
+    //     lda #0x20 ; ' '
+    a = 0x20;
+    //     dec l0081
+    l0081--;
+    //     bne loop_ca431
+    if (l0081 != 0) goto loop_ca431;
+    //     beq ca3de                                                         ; ALWAYS branch
     // ca3de:
 ca3de:
     //     lda #0
@@ -10005,21 +10045,6 @@ ca406:
     screen_setcursor(x, ypos);
     //     jmp cursor_on
     cursor_on(); return;
-}
-static void sub_ca422(void) {
-    l0081--;
-    if (l0081 == 0) return;
-    x = l0082;
-    line_lengths[x + 1] = screen_maxcolumn;
-    l0083 = screen_maxcolumn;
-    do {
-        l0082++;
-        screen_setcursor(0, l0082);
-        clear_to_eol();
-        line_lengths[x] = l0083;
-        l0083 = 0;
-        l0081--;
-    } while (l0081 != 0);
 }
 static void sub_ca44e(void) {
     // sub_ca44e: Computes starting line for display based on screen position

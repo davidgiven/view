@@ -322,10 +322,38 @@ class EditorTests(unittest.TestCase):
 
     def test_enter_editor_empty(self):
         screen = self._enter_editor_empty()
-        self.assertTrue(
-            screen.display[0].startswith("FJ"),
-            f"Expected status line to start with 'FJ', got: {repr(screen.display[0])}"
-        )
+        expected = [
+            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+            "********************************************************************************",
+            "                                                                                ",
+        ]
+        for i, exp in enumerate(expected):
+            self.assertEqual(
+                exp, screen.display[i],
+                f"Row {i} mismatch: expected {repr(exp)}, got {repr(screen.display[i])}"
+            )
+
+    @unittest.skip("character insertion not yet triggering screen update")
+    def test_enter_editor_and_type_q(self):
+        """Enter empty editor, type 'q', then force a redraw and check the screen."""
+        self._enter_editor_empty()
+        # 'q' = 0x71 inserts a character; Ctrl-F (0x06) toggles format mode
+        # which increments flags_need_redrawing_flag, causing a redraw.
+        self.proc.write(b"q\x06")
+        time.sleep(0.5)
+        raw = self.proc.read(timeout=2.0)
+        screen = pyte.Screen(80, 24)
+        stream = pyte.Stream(screen)
+        stream.feed(raw.decode("latin-1"))
+        # Row 0: status bar — the format-mode toggle may have changed the
+        # first character, but the ruler pattern follows.
+        self.assertEqual(len(screen.display[0]), 80)
+        # Row 1: the 'q' should appear after the forced redraw
+        self.assertIn("q", screen.display[1],
+                      f"Row 1: expected 'q', got: {repr(screen.display[1])}")
+        # Row 2: should be empty (Return hasn't been pressed)
+        self.assertEqual("", screen.display[2].strip(),
+                         f"Row 2: expected empty, got: {repr(screen.display[2])}")
 
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
