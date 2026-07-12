@@ -274,7 +274,7 @@ class EditorTests(unittest.TestCase):
         self.assertIn(b"Editing examples/horse.v", output,
                       f"Expected 'Editing' line showing filename, got: {repr(output)}")
         expected_lines = [
-            "                            ~@CEThe Water Horse's Fireplace                     ",
+            "MJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
             "CE The Water Horse's Fireplace                                                  ",
             "CE a Scottish Halloween folk story, sort of                                     ",
             "                                                                                ",

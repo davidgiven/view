@@ -580,11 +580,14 @@ uint8_t printer_driver_block[0x100];
 uint8_t input_buffer[MAX_COMMAND_LENGTH];
 
 //X current_line_buffer:            .fill 135
-uint8_t current_line_buffer[MAX_LINE_LENGTH];
+#define RAM_CURRENT_LINE_BUF 0x0545
+#define current_line_buffer (&ram[RAM_CURRENT_LINE_BUF])
 //X just_before_current_ruler_buffer: .fill 3 ; ??? something to do with rulers?
-uint8_t just_before_current_ruler_buffer[3];
+#define RAM_JUST_BEFORE_RULER_BUF 0x05CC
+#define just_before_current_ruler_buffer (&ram[RAM_JUST_BEFORE_RULER_BUF])
 //X current_ruler_buffer:           .fill 133
-uint8_t current_ruler_buffer[MAX_LINE_LENGTH];
+#define RAM_CURRENT_RULER_BUF 0x05CF
+#define current_ruler_buffer (&ram[RAM_CURRENT_RULER_BUF])
 //X output_buffer:                  .fill 132
 uint8_t output_buffer[MAX_LINE_LENGTH];
 
@@ -3922,11 +3925,11 @@ c8edb:
     //     sta (last_macro_ptr),y
     ram[last_macro_ptr + y] = a;
     //     lda #<(current_ruler_buffer)
-    a = (uint8_t)((uintptr_t)current_ruler_buffer & 0xff);
+    a = (uint8_t)(RAM_CURRENT_RULER_BUF & 0xff);
     //     sta current_ruler_ptr
     current_ruler_ptr = (current_ruler_ptr & 0xff00) | a;
     //     lda #>(current_ruler_buffer)
-    a = (uint8_t)((uintptr_t)current_ruler_buffer >> 8);
+    a = (uint8_t)(RAM_CURRENT_RULER_BUF >> 8);
     //     sta current_ruler_ptr+1
     current_ruler_ptr = (current_ruler_ptr & 0x00ff) | ((uint16_t)a << 8);
     //     jsr find_margins_of_current_ruler_buffer
@@ -10601,7 +10604,6 @@ static void draw_ruler(void) {
 
     // ; ***************************************************************************************
     // draw_ruler:
-    //     lda status_line_needs_redrawing_flag
     a = status_line_needs_redrawing_flag;
     flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq return_64
@@ -13324,7 +13326,7 @@ static uint8_t check_for_command_prefix(uint8_t ch) {
 }
 static void system_init(void) {
     himem = 0xffff;
-    oshwm = 0;
+    oshwm = 0x0800;
     uint16_t size_ = screen_getsize();
     screen_maxcolumn = (uint8_t)(size_ & 0xff);
     screen_maxrow = (uint8_t)(size_ >> 8);
@@ -13384,19 +13386,19 @@ static void initialise_document(void) {
     ram[((uint16_t)tmp9 << 8) | tmp8] = a;
     current_line_buffer[MAX_LINE_LENGTH - 1] = a;
     top = page;
-    ptr1 = (uint16_t)(uintptr_t)current_line_buffer;
+    ptr1 = RAM_CURRENT_LINE_BUF;
     current_edit_line_ptr = ptr1 + 3;
     current_format_line_ptr = current_edit_line_ptr;
-    a = (uint8_t)(uintptr_t)current_ruler_buffer;
-    y = (uint8_t)((uintptr_t)current_ruler_buffer >> 8);
-    current_ruler_ptr = ((uint16_t)y << 8) | a;
+    current_ruler_ptr = RAM_CURRENT_RULER_BUF;
+    a = (uint8_t)(RAM_CURRENT_RULER_BUF & 0xff);
+    y = (uint8_t)(RAM_CURRENT_RULER_BUF >> 8);
     create_default_ruler();
     y++;
     a = 0x0d;
-    ram[((uint16_t)tmp1 << 8) | ((uint16_t)tmp0 + y)] = a;
-    a = (uint8_t)(uintptr_t)just_before_current_ruler_buffer;
+    ram[((uint16_t)tmp1 << 8 | tmp0) + y] = a;
+    a = (uint8_t)(RAM_JUST_BEFORE_RULER_BUF & 0xff);
     {   uint8_t low = a;
-        y = (uint8_t)((uintptr_t)just_before_current_ruler_buffer >> 8);
+        y = (uint8_t)(RAM_JUST_BEFORE_RULER_BUF >> 8);
         ruler_stack[0xfe / 2] = ((uint16_t)y << 8) | low;
     }
     move_cursor_to_top_of_document();
