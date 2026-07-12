@@ -33,7 +33,6 @@ void screen_putchar(uint8_t a) {
     if (ncurses_active) {
         addch(a);
         refresh();
-        fflush(stdout);
     } else {
         putchar(a);
         fflush(stdout);
