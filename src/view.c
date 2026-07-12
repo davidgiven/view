@@ -7983,6 +7983,7 @@ c9b31:
 static void editor_loop_impl(void) {
     screen_enter();
     // Pseudocode: Main editor loop: handles cursor positioning, redrawing, key dispatch
+    for (;;) {
 editor_loop:
     //     lda format_mode_flag
     //     pha
@@ -8140,15 +8141,10 @@ enter_nonprintable_character:
         case 'O'-'@': o_command_key(); goto editor_loop;
         case 'Q'-'@': q_command_key(); goto editor_loop;
         case 'K'-'@': k_command_key(); goto editor_loop;
-        default: goto c9b96;
     }
-}
-static void jsr_tmp6(void) {
-}
-static void sub_c9bbb(void) {
-    // c9bbb:
     //     jmp editor_loop
-    return_to_editor_loop();
+    goto editor_loop;
+    }
 }
 static void sub_c9bca(void) {
     // c9bca:
@@ -8208,7 +8204,7 @@ c9c00:
     //     jsr sub_cae06
     sub_cae06();
     //     bcs c9c7f
-    if (flags & FLAG_C) { return_to_editor_loop(); }
+    if (flags & FLAG_C) { return; }
     // c9c09:
 c9c09:
     //     lda l0038
@@ -8311,24 +8307,24 @@ c9c56:
     a = l0038;
     //     cmp #0x20 ; ' '
     //     beq c9c7f
-    if (a == 0x20) { return_to_editor_loop(); }
+    if (a == 0x20) { return; }
     //     lda ruler_right_stop
     //     beq c9c7f
-    if (ruler_right_stop == 0) { return_to_editor_loop(); }
+    if (ruler_right_stop == 0) { l0074 = 0; return_to_editor_loop(); }
     //     lda format_mode_flag
     //     bne c9c7f
-    if (format_mode_flag != 0) { return_to_editor_loop(); }
+    if (format_mode_flag != 0) { return; }
     //     lda #0
     //     sta tmp7
     tmp7 = 0;
     //     tya
     //     beq c9c7f
-    if (y == 0) { return_to_editor_loop(); }
+    if (y == 0) { return; }
     //     dey
     y--;
     //     cpy ruler_right_stop
     //     bcs c9c82
-    if (y < ruler_right_stop) { return_to_editor_loop(); }
+    if (y < ruler_right_stop) { return; }
     // c9c82:
     //     jsr get_line_length
     l0083 = y;
@@ -8474,7 +8470,7 @@ c9d15:
     //     sta xpos
     xpos = top_margin;
     //     jmp editor_loop
-    return_to_editor_loop();
+    return;
 }
 // MULTIPLE ENTRY POINTS: sf1_swap_case_key, f13_right_key
 static void sf1_swap_case_key(void) {
@@ -11039,6 +11035,7 @@ read_char:
     x = a;
     //     ldy #SCREEN_GETCHAR
     //     jsr SCREEN
+    flags &= ~FLAG_C;
     a = screen_getchar();
     //     bcs read_char
     if (flags & FLAG_C) goto read_char;

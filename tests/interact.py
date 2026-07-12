@@ -299,12 +299,14 @@ class EditorTests(unittest.TestCase):
             '   for the locals, water horses do not get hungry very often.                   ',
             "                                                                                ",
         ]
-        for i, expected in enumerate(expected_lines):
+        self._assert_screen_lines(screen, expected_lines)
+
+    def _assert_screen_lines(self, screen, expected):
+        """Assert that screen.display matches *expected* (a list of row strings)."""
+        for i, exp in enumerate(expected):
             self.assertEqual(
-                expected, screen.display[i],
-                f"Document line {i} mismatch:\n"
-                f"  Expected: {repr(expected)}\n"
-                f"  Got:      {repr(screen.display[i])}"
+                exp, screen.display[i],
+                f"Row {i} mismatch: expected {repr(exp)}, got {repr(screen.display[i])}"
             )
 
     def _enter_editor_empty(self):
@@ -327,37 +329,70 @@ class EditorTests(unittest.TestCase):
             "********************************************************************************",
             "                                                                                ",
         ]
-        for i, exp in enumerate(expected):
-            self.assertEqual(
-                exp, screen.display[i],
-                f"Row {i} mismatch: expected {repr(exp)}, got {repr(screen.display[i])}"
-            )
+        self._assert_screen_lines(screen, expected)
 
     def test_enter_editor_and_type_q(self):
-        """Enter empty editor, type 'q', then check the character appears."""
-        self._enter_editor_empty()
+        """Enter empty editor, type 'q', then verify the visible screen lines."""
+        screen = self._enter_editor_empty()
         self.proc.write(b"q")
-        time.sleep(0.5)
+        time.sleep(1.0)
         raw = self.proc.read(timeout=2.0)
-        # 'q' should appear directly in the raw output via screen_putchar
-        self.assertIn(
-            b"q", raw,
-            f"Expected 'q' in raw output, got {len(raw)} bytes: {raw[-40:]}"
-        )
+        pyte.Stream(screen).feed(raw.decode("latin-1"))
+        expected = [
+            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+            "***q****************************************************************************",
+        ]
+        self._assert_screen_lines(screen, expected)
+
+    def test_enter_editor_and_type_qwerty(self):
+        """Enter empty editor, type 'qwerty', then check that characters appear.
+
+        The formatting pipeline (sub_caef4, called for each character when
+        format_mode_flag=0) suppresses screen_putchar for all characters
+        except the first.  Only 'q' appears immediately on screen.
+        """
+        screen = self._enter_editor_empty()
+        self.proc.write(b"qwerty")
+        time.sleep(1.0)
+        raw = self.proc.read(timeout=2.0)
+        pyte.Stream(screen).feed(raw.decode("latin-1"))
+        expected = [
+            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+            "***qwerty***********************************************************************",
+        ]
+        self._assert_screen_lines(screen, expected)
 
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
         self.assertIn(b"jabber.v", output,
                       f"Expected filename in LOAD output, got: {repr(output)}")
-        self.assertIn("She", screen.display[1],
-                      f"Line 1 wrong: {repr(screen.display[1])}")
-        self.assertIn("Looking-glass book", screen.display[2],
-                      f"Line 2 wrong: {repr(screen.display[2])}")
-        self.assertIn("go the right way again", screen.display[3],
-                      f"Line 3 wrong: {repr(screen.display[3])}")
-        # Line 4 is blank in the file
-        self.assertEqual("", screen.display[4].strip(),
-                         f"Line 4 should be blank, got: {repr(screen.display[4])}")
+        expected = [
+            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+            "   She  puzzled  over this for some time, but at last a bright thought struck   ",
+            '   her. "Why, it\'s  a Looking-glass book, of course! And if I hold it up to a   ',
+            '   glass, the words will all go the right way again."                           ',
+            "                                                                                ",
+            '   This was the poem that Alice read.                                           ',
+            "                                                                                ",
+            "    'Twas brillig, and the slithy toves                                         ",
+            '     did gyre and gimble in the wabe;                                           ',
+            '    All mimsy were the borogroves,                                              ',
+            '     and the mome raths outgrabe.                                               ',
+            "                                                                                ",
+            '    "Beware the Jabberwock, my son!                                             ',
+            '     The jaws that bite, the claws that catch!                                  ',
+            '    Beware the Jubjub bird, and shun                                            ',
+            '     the frumious Bandersnatch!                                                 ',
+            "                                                                                ",
+            '    He took his vorpal sword in hand:                                           ',
+            '     long time the maxome foe he sought---                                      ',
+            '    So rested he by the Tumtum tree,                                            ',
+            '     and stood awhile in thought.                                               ',
+            "                                                                                ",
+            '    And as in uffish thought he stood,                                          ',
+            '     the Jabberwock, with eyes of flame,                                        ',
+        ]
+        self._assert_screen_lines(screen, expected)
 
 
 if __name__ == "__main__":
