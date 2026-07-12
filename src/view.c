@@ -1725,10 +1725,11 @@ static void load_cmd(void) {
     parse_filename_from_command();
     //     jsr initialise_document
     initialise_document();
-    //     jsr reset_area_to_entire_document
-    reset_area_to_entire_document();
     //     jsr 1f            ; local forward jump - jumps to "1:" in read_cmd
+    top = page;
+    reset_area_to_entire_document();
     read_into_document();
+    //     jsr reset_document_name_after_load
     //     jsr reset_document_name_after_load
     reset_document_name_after_load();
     //     jsr clear_cmd
@@ -13336,41 +13337,84 @@ static void compute_bytes_free(void) {
 }
 static void initialise_document(void) {
     uint8_t tmp8, tmp9;
+    // initialise_document:
+    //     lda #0
     a = 0;
+    //     sta printer_driver_name
     printer_driver_name[0] = a;
+    //     sta format_mode_flag
     format_mode_flag = a;
+    //     sta justifying_flag
     justifying_flag = a;
+    //     sta insert_mode_flag
     insert_mode_flag = a;
+    //     ldx #(input_buffer_ptr+2 - print_flags)
+    // loop_cafe9:
+    //     sta print_flags,x
+    //     dex
+    //     bpl loop_cafe9
     print_flags = a;
+    // cafee:
+    //     ldx oshwm
     // page = oshwm + 1 (16-bit)
     page = oshwm + 1;
+    //     ldy #0
     y = 0;
+    //     sty file_edit_flags
     file_edit_flags = y;
+    //     sty xpos
     xpos = y;
+    //     lda #0xaa
     a = 0xaa;
+    //     sta (oshwm),y
     ram[oshwm] = a;
+    //     lda page / sec / sbc #1 / sta tmp8
+    //     lda page+1 / sbc #0 / sta tmp9
     { uint16_t tmp = page - 1; tmp8 = (uint8_t)(tmp & 0xff); tmp9 = (uint8_t)(tmp >> 8); }
+    //     lda #0x0d
     a = 0x0d;
+    //     sta (tmp8),y
     ram[((uint16_t)tmp9 << 8) | tmp8] = a;
+    //     sta current_line_buffer + 0x89
     current_line_buffer[MAX_LINE_LENGTH - 1] = a;
+    //     lda page / sta top / lda page+1 / sta top+1
     top = page;
+    //     lda #<(current_line_buffer) / sta ptr1
     ptr1 = RAM_CURRENT_LINE_BUF;
+    //     clc / adc #3 / sta current_edit_line_ptr / sta current_format_line_ptr
     current_edit_line_ptr = ptr1 + 3;
     current_format_line_ptr = current_edit_line_ptr;
+    //     lda #>(current_line_buffer) / sta ptr1+1 / adc #0
+    //     sta current_edit_line_ptr+1 / sta current_format_line_ptr+1
+    //     lda #<(current_ruler_buffer) / ldy #>(current_ruler_buffer)
     current_ruler_ptr = RAM_CURRENT_RULER_BUF;
     a = (uint8_t)(RAM_CURRENT_RULER_BUF & 0xff);
     y = (uint8_t)(RAM_CURRENT_RULER_BUF >> 8);
+    //     jsr create_default_ruler
     create_default_ruler();
+    //     iny
     y++;
+    //     lda #0x0d
     a = 0x0d;
+    //     sta (tmp0),y
     ram[((uint16_t)tmp1 << 8 | tmp0) + y] = a;
+    //     ldy #0xff
+    //     lda #<(just_before_current_ruler_buffer)
     a = (uint8_t)(RAM_JUST_BEFORE_RULER_BUF & 0xff);
+    //     sta (oshwm),y                                                   ; stores low byte of address at ram[oshwm+0xff]
+    //     dey                                                               ; Y=0xfe
+    //     lda #>(just_before_current_ruler_buffer)
     {   uint8_t low = a;
         y = (uint8_t)(RAM_JUST_BEFORE_RULER_BUF >> 8);
+        //     sta (oshwm),y                                               ; stores high byte at ram[oshwm+0xfe]
         ruler_stack[0xfe / 2] = ((uint16_t)y << 8) | low;
     }
+    //     jsr move_cursor_to_top_of_document
     move_cursor_to_top_of_document();
+    //     jsr clear_cmd
     clear_cmd();
+    //     falls through to cb05a
+    cb05a();
 }
 static void cb05a(void) {
     // cb05a: Ensures at least one CR at top of document

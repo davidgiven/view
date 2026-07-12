@@ -320,7 +320,6 @@ class EditorTests(unittest.TestCase):
         stream.feed(raw.decode("latin-1"))
         return screen
 
-    @unittest.skip("status line rendering not yet implemented")
     def test_enter_editor_empty(self):
         screen = self._enter_editor_empty()
         self.assertTrue(
