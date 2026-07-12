@@ -10230,7 +10230,7 @@ static void render_char(void) {
     //     ldx l0083
     x = l0083;
     //     cpx screen_width
-    if (x >= screen_maxcolumn) { a = char_to_render; return; }
+    if (x >= screen_maxcolumn) { a = char_to_render; x = l0084; return; }
     //     inc l0083
     l0083++;
     //     tya

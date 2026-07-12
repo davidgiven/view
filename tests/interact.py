@@ -274,13 +274,30 @@ class EditorTests(unittest.TestCase):
         self.assertIn(b"Editing examples/horse.v", output,
                       f"Expected 'Editing' line showing filename, got: {repr(output)}")
         expected_lines = [
-            "                                                                                ",
+            "                            ~@CEThe Water Horse's Fireplace                     ",
             "CE The Water Horse's Fireplace                                                  ",
             "CE a Scottish Halloween folk story, sort of                                     ",
             "                                                                                ",
             "CE (c) 2012 David Given                                                         ",
             "                                                                                ",
             "   The  *each-uisge* of Scotland, pronounced  *echh-ush-guh*  ,  is  one  of  t ",
+            "   country's traditional monsters. While the relatively harmless kelpie lives   ",
+            "   in running  water, the *each-uisge* ('water horse') lives in lochs. They eat ",
+            '   meat, human for  preference,  and  will  use their shapeshifting powers to   ',
+            "   lure their prey down to the water's  edge where they will be dragged under   ",
+            '   and consumed, leaving only their livers to float  to  the  shore as a sign   ',
+            '   that  the  water  horse has taken another victim. Water horses are vicious   ',
+            '   and  terrifying, far more  dangerous  than  many  of  the  other  Scottish   ',
+            '   supernatural creatures,  and  the locals would always treat the appearance   ',
+            "   of a lone animal  or man near the water's edge with caution, for fear that   ",
+            '   the water horse might be hungry again. And rightly so.                       ',
+            "                                                                                ",
+            "   In a small loch in  north-west Scotland whose name I can't quite remember,   ",
+            '   there once lived a water horse  and  his  wife. They preyed upon the local   ',
+            '   crofters, for of course there were no fishermen ---  with  a pair of water   ',
+            '   horses in the loch venturing into the water was far too dangerous. Luckily   ',
+            '   for the locals, water horses do not get hungry very often.                   ',
+            "                                                                                ",
         ]
         for i, expected in enumerate(expected_lines):
             self.assertEqual(
