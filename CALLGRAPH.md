@@ -1,0 +1,336 @@
+# Call Graph for view.c
+
+Functions defined in `view.c` and their callees (only calls to other functions in `view.c`).
+
+- **adjust_pointers**
+- **bad_filename_error** → return_to_cli_prompt
+- **beep**
+- **bm_fmt_cmd** → evaluate_expression_from_fmt_cmd
+- **bye_cmd**
+- **c8b78**
+- **c8b7b** → c8b78, check_for_command_prefix, sub_c8c51, sub_c8c53, sub_c8c5f
+- **c9263** → print_newline, print_vertical_space, render_header_or_footer
+- **c937b** → print_char, sub_c9431
+- **c93b8**
+- **c950f_impl**
+- **c9575** → sub_c95b2
+- **c9e94**
+- **ca684**
+- **ca741**
+- **cab29**
+- **cab91**
+- **cac78** → check_for_command_prefix, make_space_for_insertion, sub_cac50
+- **cae64** → sub_ca536
+- **caf5c**
+- **call_printer_driver** → print_char
+- **call_through_jumptable** → bm_fmt_cmd, bye_cmd, ce_fmt_cmd, change_cmd, clear_cmd, count_cmd, df_fmt_cmd, dh_fmt_cmd, dm_fmt_cmd, edit_cmd, em_fmt_cmd, ep_fmt_cmd, field_cmd, finish_cmd, fm_fmt_cmd, fo_fmt_cmd, fold_cmd, format_cmd, he_fmt_cmd, hm_fmt_cmd, ht_fmt_cmd, lj_fmt_cmd, lm_fmt_cmd, load_cmd, ls_fmt_cmd, microspace_cmd, mode_cmd, more_cmd, name_cmd, new_cmd, op_fmt_cmd, pb_fmt_cmd, pe_fmt_cmd, pl_fmt_cmd, print_cmd, printer_cmd, quit_cmd, read_cmd, replace_cmd, rj_fmt_cmd, save_cmd_write_cmd, screen_cmd, search_cmd, setup_cmd, sheets_cmd, tm_fmt_cmd, ts_fmt_cmd
+- **cb05a**
+- **ce_fmt_cmd** → c950f_impl, expand_line
+- **cf0_delete_block_key** → beep, ca741, cb05a, clear_marks_1_2, move_cursor_to_address, reset_area_to_marks_1_2, sub_c89d3, write_line_back_to_document_safely
+- **cf1_next_match_key** → c8b7b, esc_key, move_cursor_to_address, write_line_back_to_document_safely
+- **cf2_format_mode_key**
+- **cf3_justify_mode_key**
+- **cf4_insert_mode_key**
+- **cf5_default_ruler_key** → cf8_mark_as_ruler_key, create_default_ruler, f6_insert_line_key, redraw_editor
+- **cf6_split_line_key** → check_for_command_prefix, get_line_length, sub_c9de1, write_line_back_to_document_safely
+- **cf7_join_lines_key** → adjust_pointers, beep, ca741, cab29, cac78, check_for_command_prefix, write_line_back_to_document_safely
+- **cf8_mark_as_ruler_key** → caf5c
+- **change_cmd** → c8b7b, cmd_err_no_string, cmd_err_no_target, display_not_enough_memory, move_cursor_to_address, render_number_to_screen, return_to_cli_prompt, sub_c83f0, sub_c8a4f
+- **check_continuous_editing** → display_document_file_state
+- **check_for_at_least_150_bytes_free** → compute_bytes_free, display_not_enough_memory
+- **check_for_command_prefix**
+- **check_for_control_code**
+- **check_not_continuous_editing** → display_document_file_state
+- **clear_cmd**
+- **clear_marks_1_2**
+- **clear_screen**
+- **clear_to_eol**
+- **cli_handler_impl** → input_line_not_escaped, readline, run_editor, stop_printing
+- **close_file**
+- **close_input_output_files** → close_file, return_to_cli_prompt, select_file
+- **cmd_err_no_string** → return_to_cli_prompt
+- **cmd_err_no_target** → return_to_cli_prompt
+- **compute_bytes_free**
+- **compute_required_space_for_insertion** → compute_space_common
+- **compute_space_common** → compute_bytes_free
+- **control_key_to_ascii**
+- **count_cmd** → deref_and_check_for_command_prefix, draw_char, parse_marks_from_command, render_number_to_screen, return_to_cli_prompt, sanitise_area
+- **create_default_ruler**
+- **cursor_off**
+- **cursor_on**
+- **default_print_char**
+- **default_printer_entry3**
+- **default_printer_off**
+- **default_printer_on** → default_printer_off
+- **delete_key** → f9_delete_char_key, get_line_length
+- **deref_and_check_for_command_prefix** → check_for_command_prefix
+- **df_fmt_cmd** → c9575
+- **dh_fmt_cmd** → c9575
+- **display_document_file_state** → stop_printing
+- **display_nl_then_no_text** → display_no_text
+- **display_no_text**
+- **display_not_enough_memory** → return_to_cli_prompt, stop_printing
+- **dm_fmt_cmd** → check_for_command_prefix, display_not_enough_memory, lookup_formatting_command, sub_c9241
+- **draw_char** → process_document_character
+- **draw_line** → clear_to_eol, deref_and_check_for_command_prefix, draw_char, render_char, render_xchar, sub_ca4d7
+- **draw_previous_word** → draw_char
+- **draw_prompt_characters** → cursor_off, home_cursor, restore_cursor_position, save_cursor_position
+- **draw_ruler** → draw_line
+- **draw_status_word** → home_cursor
+- **edit_cmd** → check_not_continuous_editing, close_input_output_files, initialise_document, open_input_file, open_output_file, parse_filename_from_command, read_first_chunk_from_input_file, return_to_cli_prompt, set_document_name_to_filename_buffer
+- **editor_loop_impl** → cf1_next_match_key, cf4_insert_mode_key, cf7_join_lines_key, delete_key, enter_printable_character, esc_key, f0_format_block_key, f12_left_key, f13_right_key, f14_down_key, f15_up_key, f6_insert_line_key, f7_delete_line_key, f8_insert_char_key, f9_delete_char_key, get_line_length, k_command_key, o_command_key, q_command_key, read_char, recalculate_cursor_xpos, redraw_editor, return_key, sf12_left_key, sf13_right_key, sf14_down_key, sf15_up_key, sf1_swap_case_key, sf3_delete_to_char_key, sub_caa97, sub_caec2, tab_key
+- **em_fmt_cmd** → evaluate_expression_from_fmt_cmd, get_current_fmt_cmd_byte, get_register_address
+- **emit_to_output_buffer_callback**
+- **enter_editor_mode** → clear_screen
+- **enter_printable_character** → beep, ca684, ca741, draw_previous_word, make_space_for_insertion, process_document_character, recalculate_cursor_xpos, return_key, return_to_editor_loop, show_memory_full_error, sub_c9830, sub_ca536, sub_cae06, sub_caef4, write_line_back_to_document_safely
+- **ep_fmt_cmd** → page_eject_fmt
+- **esc_key** → run_cli, write_line_back_to_document_safely
+- **evaluate_expression_from_fmt_cmd** → get_current_fmt_cmd_byte, get_next_fmt_cmd_byte, parse_decimal_number, render_register
+- **execute_formatting_command** → call_through_jumptable
+- **expand_escaped_string** → sub_c8310, sub_c8c5f
+- **expand_line** → check_for_control_code, get_current_fmt_cmd_byte, render_register
+- **f0_format_block_key** → ca741, show_memory_full_error, sub_c9977, write_line_back_to_document_safely
+- **f11_copy_key** → beep, move_cursor_to_address, reset_area_to_marks_1_2, sub_ca1cc, write_line_back_to_document_safely
+- **f12_left_key**
+- **f13_right_key**
+- **f14_down_key** → return_key, write_line_back_to_document_safely
+- **f15_up_key** → sub_cab37, write_line_back_to_document_safely
+- **f1_top_of_text_key** → sub_ca071, sub_caa97
+- **f2_bottom_of_text_key** → sub_c9e9b, sub_ca0af, sub_caa97
+- **f3_delete_to_eol_key** → cae64
+- **f4_beginning_of_line_key** → c9e94
+- **f5_end_of_line_key** → sub_c9e9b
+- **f6_insert_line_key** → sub_c9de1, write_line_back_to_document_safely
+- **f7_delete_line_key** → adjust_pointers, ca741, cb05a, sub_cab37, write_line_back_to_document_safely
+- **f8_insert_char_key** → sub_c9e22
+- **f9_delete_char_key** → cae64
+- **field_cmd** → parse_integer_from_command, return_to_cli_prompt
+- **file_error** → return_to_cli_prompt
+- **file_not_found_error** → return_to_cli_prompt, stop_printing
+- **find_margins_of_current_ruler_buffer** → sub_cabc4
+- **finish_cmd** → cb05a, check_continuous_editing, close_input_output_files, move_cursor_to_top_of_document, put_byte_to_file, read_first_chunk_from_input_file, reset_area_to_entire_document, return_to_cli_prompt, sanitise_area, select_file, sub_c89d3, write_area_to_file
+- **flush_and_read_char**
+- **flush_file**
+- **fm_fmt_cmd** → evaluate_expression_from_fmt_cmd
+- **fo_fmt_cmd** → parse_boolean_from_fmt_cmd
+- **fold_cmd** → return_to_cli_prompt, sub_c8e33, sub_c976c
+- **format_cmd** → display_not_enough_memory, move_cursor_to_address, parse_marks_from_command, return_to_cli_prompt, sanitise_area, sub_c9977, sub_caf5f, wipe_buffer
+- **get_byte_from_file**
+- **get_current_fmt_cmd_byte**
+- **get_line_length** → check_for_command_prefix
+- **get_next_fmt_cmd_byte** → get_current_fmt_cmd_byte
+- **get_register_address**
+- **go_to_marker** → ca684, move_cursor_to_address
+- **go_to_marker_1** → go_to_marker_n
+- **go_to_marker_2** → go_to_marker_n
+- **go_to_marker_3** → go_to_marker_n
+- **go_to_marker_4** → go_to_marker_n
+- **go_to_marker_5** → go_to_marker_n
+- **go_to_marker_6** → go_to_marker_n
+- **go_to_marker_n** → go_to_marker, lookup_marker
+- **he_fmt_cmd** → parse_boolean_from_fmt_cmd
+- **hm_fmt_cmd** → evaluate_expression_from_fmt_cmd
+- **home_cursor**
+- **ht_fmt_cmd** → evaluate_expression_from_fmt_cmd, get_current_fmt_cmd_byte
+- **initialise_document** → cb05a, clear_cmd, create_default_ruler, move_cursor_to_top_of_document
+- **input_line_not_escaped** → call_through_jumptable, parse_command, run_cli
+- **k_command_key** → cf0_delete_block_key, control_key_to_ascii, draw_prompt_characters, f11_copy_key, read_char, set_marker_1, set_marker_2, set_marker_3, set_marker_4, set_marker_5, set_marker_6, sf0_move_block_key, sf7_set_marker_key
+- **lj_fmt_cmd** → c950f_impl, expand_line
+- **lm_fmt_cmd** → evaluate_expression_from_fmt_cmd
+- **load_cmd** → check_not_continuous_editing, clear_cmd, initialise_document, move_cursor_to_top_of_document, parse_filename_from_command, read_into_document, reset_area_to_entire_document, reset_document_name_after_load
+- **look_up_address_in_table**
+- **lookup_formatting_command**
+- **lookup_marker** → beep
+- **ls_fmt_cmd** → evaluate_expression_from_fmt_cmd
+- **main** → main_
+- **main_** → cli_handler_impl, editor_loop_impl, initialise_document, run_cli, system_init
+- **make_space_for_insertion**
+- **memory_full** → show_memory_full_error
+- **microspace_cmd** → call_printer_driver, parse_integer_from_command, prepare_printer_driver, return_to_cli_prompt
+- **microspace_word_processor** → print_char, print_vertical_space, sub_c9173, sub_c9431, sub_cadf0
+- **mode_cmd** → return_to_cli_prompt
+- **more_cmd** → cb05a, check_continuous_editing, check_for_at_least_150_bytes_free, move_cursor_to_address, move_cursor_to_top_of_document, parse_marks_from_command, read_next_chunk_from_input_file, return_to_cli_prompt, select_file, sub_c89d3, write_area_to_file
+- **move_cursor_to_address** → cab29, check_for_command_prefix, sub_cab37, sub_cac41
+- **move_cursor_to_top_of_document** → cab91
+- **name_cmd** → check_not_continuous_editing, parse_optional_filename_from_command, reset_document_name_after_load
+- **nested_macro_error** → return_to_cli_prompt, stop_printing
+- **new_cmd** → check_not_continuous_editing, initialise_document
+- **noscreen**
+- **o_command_key** → cf2_format_mode_key, cf3_justify_mode_key, cf5_default_ruler_key, cf8_mark_as_ruler_key, control_key_to_ascii, draw_prompt_characters, read_char, sf11_copy_key, sf2_release_margins_key, sf4_highlight1_key, sf5_highlight2_key, sf8_edit_command_key, sf9_delete_command_key
+- **op_fmt_cmd** → page_eject_fmt
+- **open_input_file** → file_not_found_error, zero_terminate_filename_buffer
+- **open_output_file** → file_error, zero_terminate_filename_buffer
+- **page_eject_fmt** → c9263, render_new_page
+- **parse_boolean_from_fmt_cmd** → get_current_fmt_cmd_byte, sub_c976c
+- **parse_command**
+- **parse_decimal_number**
+- **parse_filename_from_command** → bad_filename_error, parse_optional_filename_from_command
+- **parse_integer_from_command** → parse_decimal_number, sub_c8e33
+- **parse_mark_from_command** → lookup_marker, return_to_cli_prompt, sub_c8e33
+- **parse_marks_from_command** → parse_mark_from_command, reset_area_to_entire_document
+- **parse_optional_filename_from_command** → sub_c8e33
+- **pb_fmt_cmd** → parse_boolean_from_fmt_cmd
+- **pe_fmt_cmd** → evaluate_expression_from_fmt_cmd, page_eject_fmt
+- **pl_fmt_cmd** → evaluate_expression_from_fmt_cmd
+- **pop_from_ruler_stack** → cab91
+- **prepare_printer_driver**
+- **print_char** → print_char_just_to_printer, sub_c9445
+- **print_char_just_to_printer** → check_for_control_code, print_char
+- **print_char_via_putchar**
+- **print_cmd** → print_to_screen, start_printing
+- **print_document** → c9263, check_for_at_least_150_bytes_free, check_not_continuous_editing, deref_and_check_for_command_prefix, execute_formatting_command, find_margins_of_current_ruler_buffer, lookup_formatting_command, microspace_word_processor, nested_macro_error, parse_optional_filename_from_command, print_char, print_vertical_space, render_new_page, sub_c8e33, sub_c916a, sub_c9188, sub_c9407, sub_c9431, sub_cab6e, sub_cb104
+- **print_newline** → print_char
+- **print_to_screen** → print_document, return_to_cli_prompt
+- **print_vertical_space** → print_char
+- **print_x_words_of_help**
+- **printer_cmd** → print_cmd
+- **process_document_character**
+- **prompt_for_marker** → draw_prompt_characters, lookup_marker, read_char
+- **push_onto_ruler_stack** → cab91
+- **put_byte_to_file**
+- **q_command_key** → cf6_split_line_key, control_key_to_ascii, draw_prompt_characters, f1_top_of_text_key, f2_bottom_of_text_key, f3_delete_to_eol_key, f4_beginning_of_line_key, f5_end_of_line_key, go_to_marker_1, go_to_marker_2, go_to_marker_3, go_to_marker_4, go_to_marker_5, go_to_marker_6, read_char, sf6_go_to_marker_key
+- **quit_cmd** → check_continuous_editing, close_input_output_files
+- **read_block_from_file** → check_for_command_prefix, check_for_control_code, get_byte_from_file, write_byte_to_memory, write_cr_to_memory
+- **read_char** → flush_and_read_char
+- **read_cmd** → parse_filename_from_command, parse_marks_from_command, read_into_document, return_to_cli_prompt
+- **read_first_chunk_from_input_file** → read_next_chunk_from_input_file
+- **read_into_document** → adjust_pointers, check_for_at_least_150_bytes_free, compute_required_space_for_insertion, make_space_for_insertion, move_cursor_to_address, open_input_file, read_block_from_file
+- **read_next_chunk_from_input_file** → read_block_from_file, select_file, sub_c8da2
+- **readline**
+- **recalculate_cursor_xpos** → draw_char
+- **redraw_editor** → cab91, cursor_off, cursor_on, draw_line, draw_ruler, draw_status_word, recalculate_cursor_xpos, sub_ca44e, sub_caacb, sub_cab1a, sub_cab37, unpack_line_into_buffer, write_line_back_to_document_safely
+- **render_char** → check_for_control_code, sub_ca536
+- **render_header_or_footer** → c937b, sub_c9393, sub_c939b, sub_c93a1, sub_c93be, sub_c93c8, sub_c93fd, sub_c9407, sub_c941a
+- **render_new_page** → flush_and_read_char, print_newline, print_vertical_space, render_header_or_footer, render_number_to_screen, return_to_cli_prompt, start_printing, stop_printing, sub_c92f0
+- **render_number_to_callback**
+- **render_number_to_output_buffer** → render_number_to_callback
+- **render_number_to_screen** → render_number_to_callback
+- **render_register** → get_register_address
+- **render_xchar** → render_char
+- **replace_cmd** → c8b7b, cmd_err_no_string, cmd_err_no_target, draw_prompt_characters, enter_editor_mode, esc_key, flush_and_read_char, move_cursor_to_address, show_memory_full_error, sub_c8361, sub_c8371, sub_c83f0, sub_c8a4f
+- **reset_area_to_entire_document**
+- **reset_area_to_marks_1_2** → lookup_marker, sanitise_area, set_marker_to_here
+- **reset_document_name_after_load** → set_document_name_to_filename_buffer
+- **restore_cursor_position**
+- **return_key** → cab29, sub_c9de1, sub_cab1a, write_line_back_to_document_safely
+- **return_to_cli_prompt**
+- **return_to_editor_loop**
+- **rj_fmt_cmd** → c950f_impl, expand_line
+- **run_cli** → clear_screen, compute_bytes_free, display_document_file_state, print_x_words_of_help, render_number_to_screen, return_to_cli_prompt
+- **run_editor** → enter_editor_mode
+- **sanitise_area**
+- **save_cmd_write_cmd** → bad_filename_error, close_file, open_output_file, parse_marks_from_command, parse_optional_filename_from_command, put_byte_to_file, return_to_cli_prompt, sanitise_area, write_area_to_file
+- **save_cursor_position**
+- **screen_cmd** → print_to_screen
+- **search_cmd** → c8b7b, cmd_err_no_string, cmd_err_no_target, enter_editor_mode, move_cursor_to_address, parse_marks_from_command, sanitise_area, sub_c8412, sub_c8c7c
+- **select_file**
+- **set_document_name_to_filename_buffer**
+- **set_marker** → ca684, set_marker_to_here
+- **set_marker_1** → set_marker_common
+- **set_marker_2** → set_marker_common
+- **set_marker_3** → set_marker_common
+- **set_marker_4** → set_marker_common
+- **set_marker_5** → set_marker_common
+- **set_marker_6** → set_marker_common
+- **set_marker_common** → lookup_marker, set_marker, write_line_back_to_document_safely
+- **set_marker_to_here** → check_for_command_prefix, get_line_length
+- **setup_cmd** → return_to_cli_prompt
+- **sf0_move_block_key** → beep, cb05a, clear_marks_1_2, move_cursor_to_address, reset_area_to_marks_1_2, sub_c89d3, sub_ca1cc, write_line_back_to_document_safely
+- **sf11_copy_key** → cf8_mark_as_ruler_key, f6_insert_line_key, redraw_editor
+- **sf12_left_key** → draw_previous_word, sub_c9f80
+- **sf13_right_key** → sub_c9f80
+- **sf14_down_key** → sub_ca0af
+- **sf15_up_key** → sub_ca071
+- **sf1_swap_case_key** → f13_right_key
+- **sf2_release_margins_key** → c9e94, f4_beginning_of_line_key, sub_caec2
+- **sf3_delete_to_char_key** → beep, cae64, draw_prompt_characters, read_char
+- **sf4_highlight1_key** → tab_highlight_common
+- **sf5_highlight2_key** → tab_highlight_common
+- **sf6_go_to_marker_key** → go_to_marker, prompt_for_marker, write_line_back_to_document_safely
+- **sf7_set_marker_key** → prompt_for_marker, set_marker, write_line_back_to_document_safely
+- **sf8_edit_command_key** → c9e94, caf5c, read_char, redraw_editor
+- **sf9_delete_command_key** → check_for_command_prefix, sub_caf5f
+- **sheets_cmd** → print_document, return_to_cli_prompt, start_printing, stop_printing
+- **show_memory_full_error** → beep, clear_cmd, cursor_off, cursor_on, flush_and_read_char
+- **start_printing** → return_to_cli_prompt
+- **stop_printing** → call_printer_driver
+- **sub_c8310**
+- **sub_c8361** → redraw_editor, write_line_back_to_document_safely
+- **sub_c8371** → ca741
+- **sub_c83f0** → expand_escaped_string, parse_marks_from_command, sanitise_area, sub_c8412, sub_c8c7c, sub_c8e33
+- **sub_c8412** → expand_escaped_string, sub_c8e33
+- **sub_c89d3** → adjust_pointers, cac78
+- **sub_c8a4f** → adjust_pointers, cac78, make_space_for_insertion
+- **sub_c8c51** → sub_c8c53
+- **sub_c8c53**
+- **sub_c8c5f**
+- **sub_c8c7c**
+- **sub_c8da2** → compute_bytes_free, compute_space_common
+- **sub_c8e2d** → sub_c8e33
+- **sub_c8e33**
+- **sub_c916a** → call_printer_driver, sub_c9445
+- **sub_c9173** → call_printer_driver, sub_c9445
+- **sub_c9188** → sub_c9228, sub_c9241
+- **sub_c9228**
+- **sub_c9241** → read_block_from_file
+- **sub_c92f0**
+- **sub_c9393** → sub_c93b6
+- **sub_c939b** → sub_c93b6
+- **sub_c93a1** → c93b8, sub_c93b6
+- **sub_c93b6** → c93b8
+- **sub_c93be**
+- **sub_c93c8** → check_for_control_code, render_register
+- **sub_c93fd**
+- **sub_c9407** → sub_c93fd
+- **sub_c941a**
+- **sub_c9431** → process_document_character
+- **sub_c9445** → print_char_just_to_printer
+- **sub_c95b2**
+- **sub_c976c**
+- **sub_c9830** → get_line_length, sub_c9936, sub_cadf0, wipe_buffer
+- **sub_c9936** → process_document_character
+- **sub_c9974**
+- **sub_c9977** → c9e94, check_for_command_prefix, check_for_control_code, process_document_character, sub_c9830, sub_c9aa9, sub_c9ac1, sub_ca536, sub_cab1a, sub_caed6, wipe_buffer
+- **sub_c9aa9** → write_line_back_to_document
+- **sub_c9ac1** → check_for_command_prefix
+- **sub_c9bca** → beep, return_to_editor_loop
+- **sub_c9de1** → ca741, make_space_for_insertion, memory_full
+- **sub_c9e22** → sub_cae06
+- **sub_c9e9b** → get_line_length
+- **sub_c9f80** → sub_c9e9b, sub_caa97, sub_cab37, write_line_back_to_document_safely
+- **sub_ca071** → sub_cab37, write_line_back_to_document_safely
+- **sub_ca0af** → sub_cab1a, write_line_back_to_document_safely
+- **sub_ca1cc** → beep, cac78, make_space_for_insertion, move_cursor_to_address, show_memory_full_error
+- **sub_ca44e** → sub_cab37
+- **sub_ca4d7** → draw_char, render_char
+- **sub_ca536**
+- **sub_caa97** → caf5c, check_for_command_prefix, sub_caf5f, wipe_buffer
+- **sub_caacb** → sub_ca536
+- **sub_cab1a** → cab29, push_onto_ruler_stack, sub_cab6e
+- **sub_cab37** → pop_from_ruler_stack, sub_cab6e
+- **sub_cab6e**
+- **sub_cabc4**
+- **sub_cac41** → push_onto_ruler_stack, sub_cab6e
+- **sub_cac50**
+- **sub_cadf0**
+- **sub_cae03** → beep
+- **sub_cae06** → get_line_length, sub_ca536, sub_cae03
+- **sub_caec2**
+- **sub_caed6** → sub_caec2, sub_caedd
+- **sub_caedd** → sub_cae06
+- **sub_caef4** → get_line_length, recalculate_cursor_xpos, sub_caec2, sub_caedd
+- **sub_caf5f**
+- **sub_cb104** → sub_c92f0
+- **system_init**
+- **tab_highlight_common** → f13_right_key, sub_c9e22, sub_caef4
+- **tab_key** → tab_highlight_common
+- **tm_fmt_cmd** → evaluate_expression_from_fmt_cmd
+- **ts_fmt_cmd** → evaluate_expression_from_fmt_cmd, parse_boolean_from_fmt_cmd
+- **unpack_line_into_buffer** → sub_caa97
+- **wipe_buffer**
+- **write_area_to_file** → put_byte_to_file, sanitise_area
+- **write_byte_to_memory**
+- **write_cr_to_memory** → write_byte_to_memory
+- **write_line_back_to_document** → adjust_pointers, ca741, get_line_length, make_space_for_insertion, sub_ca536
+- **write_line_back_to_document_safely** → memory_full, write_line_back_to_document
+- **zero_terminate_filename_buffer**
