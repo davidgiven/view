@@ -10199,8 +10199,23 @@ static void sub_ca4d7(void) {
     render_char();
 }
 static void render_char(void) {
-    // ca4e9: Renders character in A to screen with attribute handling
-
+    // ca4e9: Renders character to screen with attribute handling.
+    //
+    // Input:
+    //   a     = character to render
+    //   y     = position in edit buffer (for marker check)
+    //   x     = l0083 (screen column), l0082 (line number)
+    //
+    // Output:
+    //   a     = char_to_render (for caller's CR line-terminator detection)
+    //   x     = l0084 (restored by caller), y unchanged
+    //
+    // Marker handling:
+    //   Highlight toggles 0x1c/0x1d are replaced with '-'/'*' and
+    //   displayed inverted.  Markers at index 0 (match via sub_ca536)
+    //   enable REVERSE style for the character.  After output, style
+    //   is reset to NORMAL if the current position matched a marker
+    //   (marker_idx == 0).  CR and NUL are replaced with space.
     uint8_t char_to_render = a;
     uint8_t marker_idx = 0;
 
@@ -10234,11 +10249,13 @@ static void render_char(void) {
     marker_idx = a;
     x = marker_idx;
     //     bmi ca523
-    if (x & 0x80) goto ca523;
+    if (x & 0x80) { a = char_to_render; goto ca523; }
     //     bne ca514
     if (x != 0) goto ca514;
     // Marker match at index < 4: render inverted
-    goto ca50e;
+    // ca50e:
+ca50e:
+    a = STYLE_REVERSE; screen_setstyle(a);
     // ca514:
 ca514:
     a = char_to_render;
@@ -10250,17 +10267,10 @@ ca514:
     } else {
         a = 0x2a;
     }
-    // ca50e:
-ca50e:
-    a = char_to_render;
-    a = STYLE_REVERSE; screen_setstyle(a);
-    x = 0;
-    goto ca514;
     // ca522:
 ca522:
     // ca523:
 ca523:
-    a = char_to_render;
     //     cmp #0x0d
     if (a == 0x0d || a == 0x00) {
         a = 0x20;
@@ -10268,15 +10278,14 @@ ca523:
     // ca529:
     //     jsr screen_putchar
     screen_putchar(a);
-    //     txa
-    a = char_to_render;
+    //     txa  (use x directly for the style-reset decision)
     //     bne ca532
-    if (a != 0) goto ca532;
-    //     jsr set_normal_text_if_not_mode_7
+    if (x != 0) goto ca532;
     a = 0; screen_setstyle(a);
     // ca532:
     // ca533:
 ca532:
+    a = char_to_render;
     //     ldx l0084
     x = l0084;
     //     rts

@@ -280,6 +280,7 @@ class EditorTests(unittest.TestCase):
             "                                                                                ",
             "CE (c) 2012 David Given                                                         ",
             "                                                                                ",
+            "   The  *each-uisge* of Scotland, pronounced  *echh-ush-guh*  ,  is  one  of  t ",
         ]
         for i, expected in enumerate(expected_lines):
             self.assertEqual(
