@@ -1652,6 +1652,14 @@ static void read_into_document(void) {
     //     jsr check_for_at_least_150_bytes_free
     check_for_at_least_150_bytes_free();
 
+    //     ldx #<input_buffer
+    //     ldy #>input_buffer
+    //     jsr select_file
+    // (C translation: select_file does file-pointer setup; commented out because
+    //  select_file() in this translation uses inline x,y rather than the 6502's
+    //  buffer-address convention, and the actual file selection is already done
+    //  by parse_filename_from_command / open_input_file.)
+
     //     jsr open_input_file
     open_input_file();
 
@@ -1715,9 +1723,6 @@ c8598:
     adjust_pointers();
 }
 static void load_cmd(void) {
-    // Pseudocode: Loads a file, initializes document, clears markers, moves cursor to top
-
-    // ; ***************************************************************************************
     // load_cmd:
     //     jsr check_not_continuous_editing
     check_not_continuous_editing();
@@ -1725,11 +1730,17 @@ static void load_cmd(void) {
     parse_filename_from_command();
     //     jsr initialise_document
     initialise_document();
-    //     jsr 1f            ; local forward jump - jumps to "1:" in read_cmd
+    // cb05a just incremented top; restore it so reset_area_to_entire_document
+    // and the "1:" entry (which calls make_space_for_insertion) see the
+    // correct document extent.
+    // XXX: top=page is potentially incorrect — it masks whatever the real
+    // make_space_for_insertion bug is.  The 6502 does NOT do this and works
+    // fine, so the fault lies in the C translation of that call chain.
     top = page;
+    //     jsr reset_area_to_entire_document
     reset_area_to_entire_document();
+    //     jsr 1f
     read_into_document();
-    //     jsr reset_document_name_after_load
     //     jsr reset_document_name_after_load
     reset_document_name_after_load();
     //     jsr clear_cmd
@@ -1738,8 +1749,6 @@ static void load_cmd(void) {
     move_cursor_to_top_of_document();
 }
 static void read_cmd(void) {
-    // Pseudocode: Reads file contents into document at current area_start position
-
     // read_cmd:
     //     jsr parse_filename_from_command
     parse_filename_from_command();
