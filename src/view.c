@@ -439,7 +439,6 @@ uint8_t edit_buffer_unpacked_flag;
 uint8_t l006f;
 //X ruler_stack_ptr: .fill 1
 uint8_t ruler_stack_ptr;
-addr_t ruler_stack[128];
 //X hscroll_pos: .fill 1
 uint8_t hscroll_pos;
 //X l0072: .fill 1
@@ -452,6 +451,8 @@ uint8_t l0074;
 uint8_t flags_need_redrawing_flag;
 //X status_line_needs_redrawing_flag: .fill 1
 uint8_t status_line_needs_redrawing_flag;
+//X l0076: .fill 1
+uint8_t l0076;
 //X ypos: .fill 1
 uint8_t ypos;
 //X print_xpos: .fill 1
@@ -12243,16 +12244,19 @@ static void push_onto_ruler_stack(void) {
     //     inc status_line_needs_redrawing_flag
     status_line_needs_redrawing_flag++;
     //     ldy ruler_stack_ptr
-    //     dey
-    //     lda tmp0
-    //     sta (oshwm),y
-    //     dey
-    //     lda tmp1
-    //     sta (oshwm),y
     y = ruler_stack_ptr;
+    //     dey
     y--;
+    //     lda tmp0
+    a = tmp0;
+    //     sta (oshwm),y
+    ram[oshwm + y] = a;
+    //     dey
     y--;
-    ruler_stack[y / 2] = ((uint16_t)tmp1 << 8) | tmp0;
+    //     lda tmp1
+    a = tmp1;
+    //     sta (oshwm),y
+    ram[oshwm + y] = a;
     //     jsr cab91
     cab91();
     //     pla
@@ -12278,6 +12282,7 @@ static void pop_from_ruler_stack(void) {
     cab91();
 }
 static void cab91(void) {
+
     // Pseudocode: Sets current_ruler_ptr from stack at ruler_stack_ptr offset
 
     // cab91:
@@ -12290,17 +12295,20 @@ static void cab91(void) {
     //     adc #3
     //     sta current_ruler_ptr
     flags &= ~FLAG_C;
-    {   uint16_t val = ruler_stack[y / 2];
-        a = val & 0xff;
-        { uint16_t tmp_ = (uint16_t)a + 3; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 3) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
-        current_ruler_ptr = (current_ruler_ptr & 0xff00) | a;
-        //     dey
-        y--;
-        //     lda (oshwm),y
-        a = (val >> 8) & 0xff;
-        { uint16_t tmp_ = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 0) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
-        current_ruler_ptr = (current_ruler_ptr & 0x00ff) | ((uint16_t)a << 8);
-    }
+    //     lda (oshwm),y
+    a = ram[oshwm + y];
+    //     adc #3
+    { uint16_t tmp_ = (uint16_t)a + 3; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 3) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    //     sta current_ruler_ptr
+    current_ruler_ptr = (current_ruler_ptr & 0xff00) | a;
+    //     dey
+    y--;
+    //     lda (oshwm),y
+    a = ram[oshwm + y];
+    //     adc #0
+    { uint16_t tmp_ = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 0) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    //     sta current_ruler_ptr+1
+    current_ruler_ptr = (current_ruler_ptr & 0x00ff) | ((uint16_t)a << 8);
     // MULTIPLE ENTRY POINTS: pop_from_ruler_stack, cab91
     //     (falls through to find_margins_of_current_ruler_buffer)
     find_margins_of_current_ruler_buffer();
@@ -13515,7 +13523,6 @@ static void compute_bytes_free(void) {
     return;
 }
 static void initialise_document(void) {
-    uint8_t tmp8, tmp9;
     // initialise_document:
     //     lda #0
     a = 0;
@@ -13532,11 +13539,21 @@ static void initialise_document(void) {
     //     sta print_flags,x
     //     dex
     //     bpl loop_cafe9
-    print_flags = a;
+    print_flags = 0; edit_buffer_dirty_flag = 0; edit_buffer_unpacked_flag = 0; l006f = 0;
+    ruler_stack_ptr = 0; hscroll_pos = 0; l0072 = 0; l0073 = 0; l0074 = 0;
+    flags_need_redrawing_flag = 0; l0076 = 0; ypos = 0; print_xpos = 0;
+    l0079 = 0; l007a = 0; cursor_moved_flag = 0; l007e = 0; input_buffer_offset = 0;
     // cafee:
     //     ldx oshwm
-    // page = oshwm + 1 (16-bit)
-    page = oshwm + 1;
+    //     ldy oshwm+1
+    //     iny
+    //     inx
+    //     stx page
+    //     bne caffe
+    //     iny
+    // caffe:
+    //     sty page+1
+    page = oshwm + 0x101;
     //     ldy #0
     y = 0;
     //     sty file_edit_flags
@@ -13546,10 +13563,16 @@ static void initialise_document(void) {
     //     lda #0xaa
     a = 0xaa;
     //     sta (oshwm),y
-    ram[oshwm] = a;
-    //     lda page / sec / sbc #1 / sta tmp8
-    //     lda page+1 / sbc #0 / sta tmp9
-    { uint16_t tmp = page - 1; tmp8 = (uint8_t)(tmp & 0xff); tmp9 = (uint8_t)(tmp >> 8); }
+    ram[oshwm + y] = a;
+    //     lda page
+    //     sec
+    //     sbc #1
+    //     sta tmp8
+    //     lda page+1
+    //     sbc #0
+    //     sta tmp9
+    tmp8 = (uint8_t)((page - 1) & 0xff);
+    tmp9 = (uint8_t)((page - 1) >> 8);
     //     lda #0x0d
     a = 0x0d;
     //     sta (tmp8),y
@@ -13558,16 +13581,31 @@ static void initialise_document(void) {
     current_line_buffer[MAX_LINE_LENGTH - 1] = a;
     //     lda page / sta top / lda page+1 / sta top+1
     top = page;
-    //     lda #<(current_line_buffer) / sta ptr1
-    ptr1 = RAM_CURRENT_LINE_BUF;
-    //     clc / adc #3 / sta current_edit_line_ptr / sta current_format_line_ptr
-    current_edit_line_ptr = ptr1 + 3;
+    //     lda #<(current_line_buffer)
+    a = (uint8_t)(RAM_CURRENT_LINE_BUF & 0xff);
+    //     sta ptr1
+    ptr1 = (ptr1 & 0xff00) | a;
+    //     clc
+    flags &= ~FLAG_C;
+    //     adc #3
+    { uint16_t tmp_ = (uint16_t)a + 3; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 3) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    //     sta current_edit_line_ptr
+    //     sta current_format_line_ptr
+    current_edit_line_ptr = (current_edit_line_ptr & 0xff00) | a;
     current_format_line_ptr = current_edit_line_ptr;
-    //     lda #>(current_line_buffer) / sta ptr1+1 / adc #0
-    //     sta current_edit_line_ptr+1 / sta current_format_line_ptr+1
-    //     lda #<(current_ruler_buffer) / ldy #>(current_ruler_buffer)
-    current_ruler_ptr = RAM_CURRENT_RULER_BUF;
+    //     lda #>(current_line_buffer)
+    a = (uint8_t)(RAM_CURRENT_LINE_BUF >> 8);
+    //     sta ptr1+1
+    ptr1 = (ptr1 & 0x00ff) | ((uint16_t)a << 8);
+    //     adc #0
+    { uint16_t tmp_ = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 0) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    //     sta current_edit_line_ptr+1
+    //     sta current_format_line_ptr+1
+    current_edit_line_ptr = (current_edit_line_ptr & 0x00ff) | ((uint16_t)a << 8);
+    current_format_line_ptr = current_edit_line_ptr;
+    //     lda #<(current_ruler_buffer)
     a = (uint8_t)(RAM_CURRENT_RULER_BUF & 0xff);
+    //     ldy #>(current_ruler_buffer)
     y = (uint8_t)(RAM_CURRENT_RULER_BUF >> 8);
     //     jsr create_default_ruler
     create_default_ruler();
@@ -13578,22 +13616,22 @@ static void initialise_document(void) {
     //     sta (tmp0),y
     ram[((uint16_t)tmp1 << 8 | tmp0) + y] = a;
     //     ldy #0xff
+    y = 0xff;
     //     lda #<(just_before_current_ruler_buffer)
     a = (uint8_t)(RAM_JUST_BEFORE_RULER_BUF & 0xff);
-    //     sta (oshwm),y                                                   ; stores low byte of address at ram[oshwm+0xff]
+    //     sta (oshwm),y
+    ram[oshwm + y] = a;
     //     dey                                                               ; Y=0xfe
+    y--;
     //     lda #>(just_before_current_ruler_buffer)
-    {   uint8_t low = a;
-        y = (uint8_t)(RAM_JUST_BEFORE_RULER_BUF >> 8);
-        //     sta (oshwm),y                                               ; stores high byte at ram[oshwm+0xfe]
-        ruler_stack[0xfe / 2] = ((uint16_t)y << 8) | low;
-        y = 0xfe;
-    }
+    a = (uint8_t)(RAM_JUST_BEFORE_RULER_BUF >> 8);
+    //     sta (oshwm),y
+    ram[oshwm + y] = a;
     //     jsr move_cursor_to_top_of_document
     move_cursor_to_top_of_document();
     //     jsr clear_cmd
     clear_cmd();
-    //     falls through to cb05a
+    //     (falls through to cb05a)
     cb05a();
 }
 static void cb05a(void) {
