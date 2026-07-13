@@ -57,3 +57,4 @@ screen row).
 | `src/screen_ncurses.c` | ncurses backend for putchar/getchar/clear |
 | `tests/interact.py` | Integration tests |
 | `FORMAT.md` | Document file format (.v) |
+| `CALLGRAPH.md` | Auto-generated call graph of `view.c` — update when editing call sites |
