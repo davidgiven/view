@@ -345,211 +345,211 @@ uint8_t ram[65536];
 //X .section .zp, "zax", @nobits
 
 //X ptr1: .fill 2
-addr_t ptr1;
+addr_t ptr1; // PROVISIONAL: working copy of current_format_line_ptr, used for editing/unpacking lines
 //X current_edit_line_ptr: .fill 2
-addr_t current_edit_line_ptr;
+addr_t current_edit_line_ptr; // PROVISIONAL: points to editor's working line buffer (current_line_buffer+3) for editing
 //X current_format_line_ptr: .fill 2
-addr_t current_format_line_ptr;
+addr_t current_format_line_ptr; // PROVISIONAL: points to line being formatted/printed; aliased to current_edit_line_ptr during editing
 //X current_ruler_ptr: .fill 2
-addr_t current_ruler_ptr;
+addr_t current_ruler_ptr; // PROVISIONAL: points to current ruler definition (tab stops, margins) in ruler buffer
 //X current_line_ptr: .fill 2
-addr_t current_line_ptr;
+addr_t current_line_ptr; // PROVISIONAL: cursor/position pointer that walks through document memory
 //X page: .fill 2
-addr_t page;
+addr_t page; // PROVISIONAL: start (lowest address) of document text area in memory
 //X top: .fill 2
-addr_t top;
+addr_t top; // PROVISIONAL: dynamic end-of-document pointer (top of free memory)
 //X himem: .fill 2
-addr_t himem;
+addr_t himem; // PROVISIONAL: absolute upper bound of available RAM
 //X l0011: .fill 1
 //X l0012: .fill 1
-addr_t top_of_screen_line_ptr;
+addr_t top_of_screen_line_ptr; // PROVISIONAL: document address of the first visible line on screen
 //X ptr6: .fill 2
-addr_t ptr6;
+addr_t ptr6; // PROVISIONAL: file/print read pointer — points to next byte to read during printing/formatting
 //X ptr5: .fill 2
-addr_t ptr5;
+addr_t ptr5; // PROVISIONAL: print-engine source pointer — next line/file-byte to print
 //X printer_driver_ptr: .fill 2 (replaced by struct pointer)
-const struct printer_driver *printer_driver_ptr;
+const struct printer_driver *printer_driver_ptr; // PROVISIONAL: function-pointer struct for printer backend dispatch
 //X first_macro_ptr: .fill 2
-addr_t first_macro_ptr;
+addr_t first_macro_ptr; // PROVISIONAL: start of macro-definition linked list in document memory
 //X last_macro_ptr: .fill 2
-addr_t last_macro_ptr;
+addr_t last_macro_ptr; // PROVISIONAL: end of macro-definition area where new macros are appended
 //X ptr3: .fill 2
-addr_t ptr3;
+addr_t ptr3; // PROVISIONAL: macro text pointer — walks through currently-executing macro body
 //X oshwm: .fill 2
-addr_t oshwm;
+addr_t oshwm; // PROVISIONAL: OS high-water mark, base address for ruler stack and document area
 //X l0021: .fill 1
-uint8_t l0021;
+uint8_t l0021; // PROVISIONAL: remaining-lines counter on current page during printing
 //X l0030: .fill 1
-uint8_t l0030;
+uint8_t l0030; // PROVISIONAL: multi-line format-command line counter
 //X l0031: .fill 1
-uint8_t l0031;
+uint8_t l0031; // PROVISIONAL: page-break-requested flag for the print engine
 //X printing_from_file_flag: .fill 1
-uint8_t printing_from_file_flag;
+uint8_t printing_from_file_flag; // PROVISIONAL: selects between file-buffer and in-memory reading during printing
 //X l0033: .fill 1
-uint8_t l0033;
+uint8_t l0033; // PROVISIONAL: saved ruler_stack_ptr during editor scroll-up operations
 //X l0034: .fill 1
-uint8_t l0034;
+uint8_t l0034; // PROVISIONAL: saved ruler_stack_ptr during editor redraw
 //X l0038: .fill 1
-uint8_t l0038;
+uint8_t l0038; // PROVISIONAL: page-break flag in print path; stores current key in editor input
 //X l0039: .fill 1
-uint8_t l0039;
+uint8_t l0039; // PROVISIONAL: column-position counter used in formatting, tab-handling, and cursor recalculation
 //X l003a: .fill 1
-uint8_t l003a;
+uint8_t l003a; // PROVISIONAL: ruler-buffer width / ruler byte count
 //X l003b: .fill 1
-uint8_t l003b;
+uint8_t l003b; // PROVISIONAL: byte count (length) of the current document line
 //X file_edit_flags: .fill 1
-uint8_t file_edit_flags;
+uint8_t file_edit_flags; // PROVISIONAL: bitfield tracking file-editing state (bit0=input open, bit6=continuous, bit7=output open)
 //X l003d: .fill 1
-uint8_t l003d;
+uint8_t l003d; // PROVISIONAL: screen-row counter for partial redraw; 0xff means redraw all rows
 //X xpos: .fill 1
-uint8_t xpos;
+uint8_t xpos; // PROVISIONAL: cursor horizontal column position (0-based) on the current edit line
 //X input_file_empty_flag: .fill 1
-uint8_t input_file_empty_flag;
+uint8_t input_file_empty_flag; // PROVISIONAL: flag indicating whether the input file was found to be empty
 //X l0042: .fill 1
-uint8_t l0042;
+uint8_t l0042; // PROVISIONAL: word-break overflow counter in microspace_word_processor
 //X l0043: .fill 1
-uint8_t l0043;
+uint8_t l0043; // PROVISIONAL: soft-hyphen / break-position counter in microspace_word_processor
 //X l0044: .fill 1
-uint8_t l0044;
+uint8_t l0044; // PROVISIONAL: inter-word extra-space accumulator in microspaced justification
 //X l0045: .fill 1
-uint8_t l0045;
+uint8_t l0045; // PROVISIONAL: running-total accumulator for distributing extra spacing in microspaced justification
 //X l0046: .fill 1
-uint8_t l0046;
+uint8_t l0046; // PROVISIONAL: non-space character counter on current line during microspaced word processing
 //X l0047: .fill 1
-uint8_t l0047;
+uint8_t l0047; // PROVISIONAL: saved word-break position (column) for line-breaking in justification
 //X l0048: .fill 1
-uint8_t l0048;
+uint8_t l0048; // PROVISIONAL: output-buffer write index in header/footer rendering; block-advance flag in justification
 //X l0049: .fill 1
-uint8_t l0049;
+uint8_t l0049; // PROVISIONAL: output-buffer cell/field position counter in header/footer register-substitution rendering
 //X l004a: .fill 1
-uint8_t l004a;
+uint8_t l004a; // PROVISIONAL: upper-bound loop limit in header/footer rendering (total expanded-text length)
 //X ptr2: .fill 2
-addr_t ptr2;
+addr_t ptr2; // PROVISIONAL: working pointer into document body — used as source/dest in search/replace/convert
 //X rw_file_handle: .fill 1
-uint8_t rw_file_handle;
+uint8_t rw_file_handle; // PROVISIONAL: raw OS file handle returned by open_file()
 //X error_handling_mode: .fill 1
-uint8_t error_handling_mode;
+uint8_t error_handling_mode; // PROVISIONAL: 0xff = CLI-style errors; 0 = return to editor on error
 //X print_flags: .fill 1
-uint8_t print_flags;
+uint8_t print_flags; // PROVISIONAL: controls printer output routing and state (bit7 selects printer-driver vs screen output)
 //X l006d: .fill 1
-uint8_t edit_buffer_dirty_flag;
+uint8_t edit_buffer_dirty_flag; // PROVISIONAL: non-zero when edit buffer differs from packed document and must be written back
 //X l006e: .fill 1
-uint8_t edit_buffer_unpacked_flag;
+uint8_t edit_buffer_unpacked_flag; // PROVISIONAL: tracks whether edit line has been unpacked; bit7 set when needs repacking
 //X l006f: .fill 1
-uint8_t l006f;
+uint8_t l006f; // PROVISIONAL: line-counter/index used in document body scanning and vertical-scroll calculations
 //X ruler_stack_ptr: .fill 1
-uint8_t ruler_stack_ptr;
+uint8_t ruler_stack_ptr; // PROVISIONAL: stack pointer into ruler-stack stored in high RAM at oshwm
 //X hscroll_pos: .fill 1
-uint8_t hscroll_pos;
+uint8_t hscroll_pos; // PROVISIONAL: horizontal scroll offset of the editor viewport
 //X l0072: .fill 1
-uint8_t l0072;
+uint8_t l0072; // PROVISIONAL: right margin (right stop) of the current ruler, used as wrap column limit
 //X l0073: .fill 1
-uint8_t l0073;
+uint8_t l0073; // PROVISIONAL: multi-purpose flag/counter tracking rendered display lines or redraw phase
 //X l0074: .fill 1
-uint8_t l0074;
+uint8_t l0074; // PROVISIONAL: character/line counter incremented for each CR-terminated line during document scanning
 //X flags_need_redrawing_flag: .fill 1
-uint8_t flags_need_redrawing_flag;
+uint8_t flags_need_redrawing_flag; // PROVISIONAL: non-zero triggers redrawing of status-area flags/indicators
 //X status_line_needs_redrawing_flag: .fill 1
-uint8_t status_line_needs_redrawing_flag;
+uint8_t status_line_needs_redrawing_flag; // PROVISIONAL: non-zero triggers redrawing of ruler status line
 //X l0076: .fill 1
-uint8_t l0076;
+uint8_t l0076; // PROVISIONAL: unused/reserved variable (zeroed in init, never read)
 //X ypos: .fill 1
-uint8_t ypos;
+uint8_t ypos; // PROVISIONAL: current Y (row) position on screen for cursor addressing
 //X print_xpos: .fill 1
-uint8_t print_xpos;
+uint8_t print_xpos; // PROVISIONAL: printer's current horizontal column position
 //X l0079: .fill 1
-uint8_t l0079;
+uint8_t l0079; // PROVISIONAL: flag controlling early-exit in character-rendering loop (non-zero skips first draw)
 //X l007a: .fill 1
-uint8_t l007a;
+uint8_t l007a; // PROVISIONAL: character-count limit used as loop bound in print-formatter output buffer processing
 //X cursor_moved_flag: .fill 1
-uint8_t cursor_moved_flag;
+uint8_t cursor_moved_flag; // PROVISIONAL: incremented when cursor position changes; triggers row recalculation in display
 //X l007e: .fill 1
-uint8_t l007e;
+uint8_t l007e; // PROVISIONAL: delimiter/separator character (default space) used during CLI command parsing
 //X input_buffer_offset: .fill 2
-uint8_t input_buffer_offset;
+uint8_t input_buffer_offset; // PROVISIONAL: current read index into input_buffer during command/filename parsing
 //X l0080: .fill 1
-uint8_t l0080;
+uint8_t l0080; // PROVISIONAL: low byte paired with input_buffer_offset for 16-bit pointer arithmetic
 //X l0081: .fill 1
-uint8_t l0081;
+uint8_t l0081; // PROVISIONAL: general-purpose counter (output-buffer position index in print formatter)
 //X l0082: .fill 1
-uint8_t l0082;
+uint8_t l0082; // PROVISIONAL: current screen line (row) number during document rendering
 //X l0083: .fill 1
-uint8_t l0083;
+uint8_t l0083; // PROVISIONAL: document line length from get_line_length; also screen column during character rendering
 //X l0084: .fill 1
-uint8_t l0084;
+uint8_t l0084; // PROVISIONAL: temporary column-position save/restore slot used during character rendering
 //X tmp0: .fill 1
-uint8_t tmp0;
+uint8_t tmp0; // PROVISIONAL: temporary register (paired with tmp1 as 16-bit pointer)
 //X tmp1: .fill 1
-uint8_t tmp1;
+uint8_t tmp1; // PROVISIONAL: temporary register (high byte of tmp0:tmp1 pointer pair)
 //X tmp2: .fill 1
-uint8_t tmp2;
+uint8_t tmp2; // PROVISIONAL: temporary register (paired with tmp3 as 16-bit pointer)
 //X tmp3: .fill 1
-uint8_t tmp3;
+uint8_t tmp3; // PROVISIONAL: temporary register (high byte of tmp2:tmp3 pointer pair)
 //X tmp4: .fill 1
-uint8_t tmp4;
+uint8_t tmp4; // PROVISIONAL: temporary register (paired with tmp5 as 16-bit pointer)
 //X tmp5: .fill 1
-uint8_t tmp5;
+uint8_t tmp5; // PROVISIONAL: temporary register (high byte of tmp4:tmp5 pointer pair)
 //X tmp6: .fill 1
-uint8_t tmp6;
+uint8_t tmp6; // PROVISIONAL: temporary register (paired with tmp7 as 16-bit pointer)
 //X tmp7: .fill 1
-uint8_t tmp7;
+uint8_t tmp7; // PROVISIONAL: temporary register (high byte of tmp6:tmp7 pointer pair)
 //X tmp8: .fill 1
-uint8_t tmp8;
+uint8_t tmp8; // PROVISIONAL: temporary register (paired with tmp9 as 16-bit pointer)
 //X tmp9: .fill 1
-uint8_t tmp9;
+uint8_t tmp9; // PROVISIONAL: temporary register (high byte of tmp8:tmp9 pointer pair)
 //X file_ptr: .fill 2
-FILE *file_ptr;
+FILE *file_ptr; // PROVISIONAL: currently selected FILE* for file I/O (set to input_fp or output_fp)
 
 //X .bss
 
 //X top_margin: .fill 1
-uint8_t top_margin;
+uint8_t top_margin; // PROVISIONAL: blank lines at page top before header (TM format command)
 //X bottom_margin: .fill 1
-uint8_t bottom_margin;
+uint8_t bottom_margin; // PROVISIONAL: blank lines at page bottom after footer (BM format command)
 //X header_margin: .fill 1
-uint8_t header_margin;
+uint8_t header_margin; // PROVISIONAL: blank lines between header text and body (HM format command)
 //X footer_margin: .fill 1
-uint8_t footer_margin;
+uint8_t footer_margin; // PROVISIONAL: blank lines between body text and footer (FM format command)
 //X page_length: .fill 1
-uint8_t page_length;
+uint8_t page_length; // PROVISIONAL: total lines per page (PL format command, default 66)
 //X line_spacing: .fill 1
-uint8_t line_spacing;
+uint8_t line_spacing; // PROVISIONAL: line spacing (1 or 2) set by LS format command
 //X footers_enabled_flag: .fill 1
-uint8_t footers_enabled_flag;
+uint8_t footers_enabled_flag; // PROVISIONAL: boolean flag controlling footer printing (FO format command)
 //X headers_enabled_flag: .fill 1
-uint8_t headers_enabled_flag;
+uint8_t headers_enabled_flag; // PROVISIONAL: boolean flag controlling header printing (HE format command)
 //X rhs_extra_margin: .fill 1
-uint8_t rhs_extra_margin;
+uint8_t rhs_extra_margin; // PROVISIONAL: extra right-hand margin for even pages in two-sided printing (TS)
 //X macro_executing_flag: .fill 1
-uint8_t macro_executing_flag;
+uint8_t macro_executing_flag; // PROVISIONAL: non-zero when a macro is currently executing
 //X two_sided_flag: .fill 1
-uint8_t two_sided_flag;
+uint8_t two_sided_flag; // PROVISIONAL: enables two-sided printing (TS format command)
 //X left_margin: .fill 1
-uint8_t left_margin;
+uint8_t left_margin; // PROVISIONAL: left margin width in columns (LM format command)
 //X highlight1_code: .fill 2
-uint8_t highlight_code[2];
+uint8_t highlight_code[2]; // PROVISIONAL: highlight control codes for text attributes (HT format command)
 #define highlight1_code highlight_code[0]
 #define highlight2_code highlight_code[1]
 //X format_mode_flag: .fill 1
-uint8_t format_mode_flag;
+uint8_t format_mode_flag; // PROVISIONAL: bitfield controlling format mode (bit0=on, bit6=margin-release, bit7=command-line)
 //X justifying_flag: .fill 1
-uint8_t justifying_flag;
+uint8_t justifying_flag; // PROVISIONAL: enables/disables word-spacing justification during printing
 //X insert_mode_flag: .fill 1
-uint8_t insert_mode_flag;
+uint8_t insert_mode_flag; // PROVISIONAL: toggle insert vs overwrite mode for typed characters
 //X screen_height: .fill 1
-uint8_t screen_maxrow;
+uint8_t screen_maxrow; // PROVISIONAL: maximum row index (height-1) of terminal/screen
 //X screen_width: .fill 1
-uint8_t screen_maxcolumn;
+uint8_t screen_maxcolumn; // PROVISIONAL: maximum column index (width-1) of terminal/screen
 //X microspacing_flag: .fill 1
-uint8_t microspacing_flag;
+uint8_t microspacing_flag; // PROVISIONAL: non-zero if printer driver supports microspacing
 //X current_tab_key: .fill 1
-uint8_t current_tab_key;
+uint8_t current_tab_key; // PROVISIONAL: user-configured tab key code (remapped to ASCII 9)
 //X folding_flag: .fill 1
-uint8_t folding_flag;
+uint8_t folding_flag; // PROVISIONAL: when set uppercase folded to lowercase during printing
 //X ruler_right_stop: .fill 1
-uint8_t ruler_right_stop;
+uint8_t ruler_right_stop; // PROVISIONAL: right margin column from current ruler (< character)
 //X ruler_left_stop: .fill 1
-uint8_t ruler_left_stop;
+uint8_t ruler_left_stop; // PROVISIONAL: left margin column from current ruler (> character)
 
 //X __begin_pointer_array:
 //X markers_array: .fill 12
@@ -560,12 +560,12 @@ uint8_t ruler_left_stop;
 //X doc_ptr3: .fill 2
 //X __end_pointer_array:
 struct {
-    addr_t markers_array[6];
-    addr_t area_start_ptr;
-    addr_t area_end_ptr;
-    addr_t doc_ptr1;
-    addr_t doc_ptr2;
-    addr_t doc_ptr3;
+    addr_t markers_array[6]; // PROVISIONAL: six 2-byte document marker slots for bookmarks/block operations
+    addr_t area_start_ptr; // PROVISIONAL: start boundary of current working area in document
+    addr_t area_end_ptr; // PROVISIONAL: end boundary of current working area in document
+    addr_t doc_ptr1; // PROVISIONAL: destination mark for block move/copy operations (marker slot 6)
+    addr_t doc_ptr2; // PROVISIONAL: current scan position in document area during search/replace/convert
+    addr_t doc_ptr3; // PROVISIONAL: end bound for document area scanning — loop terminates when doc_ptr2 reaches this
 } pointer_array;
 #define markers_array pointer_array.markers_array
 #define area_start_ptr pointer_array.area_start_ptr
@@ -575,9 +575,9 @@ struct {
 #define doc_ptr3 pointer_array.doc_ptr3
 
 //X printer_driver_block:           .fill 0x100
-uint8_t printer_driver_block[0x100];
+uint8_t printer_driver_block[0x100]; // PROVISIONAL: 256-byte workspace holding loaded printer driver binary
 //X input_buffer:                   .fill 0x45
-uint8_t input_buffer[MAX_COMMAND_LENGTH];
+uint8_t input_buffer[MAX_COMMAND_LENGTH]; // PROVISIONAL: CLI command-line input buffer (69 bytes)
 
 //X current_line_buffer:            .fill 135
 #define RAM_CURRENT_LINE_BUF 0x0545
@@ -589,23 +589,23 @@ uint8_t input_buffer[MAX_COMMAND_LENGTH];
 #define RAM_CURRENT_RULER_BUF 0x05CF
 #define current_ruler_buffer (&ram[RAM_CURRENT_RULER_BUF])
 //X output_buffer:                  .fill 132
-uint8_t output_buffer[MAX_LINE_LENGTH];
+uint8_t output_buffer[MAX_LINE_LENGTH]; // PROVISIONAL: general-purpose output buffer for formatted line construction
 
 //X header_text_maybe:              .fill 0x42
-uint8_t header_text_maybe[0x42];
+uint8_t header_text_maybe[0x42]; // PROVISIONAL: stores user-defined page header text string
 //X footer_text_maybe:              .fill 0x42
-uint8_t footer_text_maybe[0x42];
+uint8_t footer_text_maybe[0x42]; // PROVISIONAL: stores user-defined page footer text string
 
 //X filename_buffer:                .fill 0x14
-uint8_t filename_buffer[MAX_COMMAND_LENGTH];
+uint8_t filename_buffer[MAX_COMMAND_LENGTH]; // PROVISIONAL: primary filename buffer for current file
 //X output_filename:                .fill 0x14
-uint8_t output_filename[MAX_COMMAND_LENGTH];
+uint8_t output_filename[MAX_COMMAND_LENGTH]; // PROVISIONAL: target filename for save/print operations
 //X printer_driver_name:            .fill 0x14
-uint8_t printer_driver_name[0x14];
+uint8_t printer_driver_name[0x14]; // PROVISIONAL: filename of loaded printer driver (e.g. "P.DOTMATRIX")
 
 //X register_value_array:           .fill 26*2
 #define RAM_REGISTER_VALUE_ARRAY 0x0798
-#define register_value_array (&ram[RAM_REGISTER_VALUE_ARRAY])
+#define register_value_array (&ram[RAM_REGISTER_VALUE_ARRAY]) // PROVISIONAL: 52-byte array of 16-bit values for registers A-Z
 //X register_value_l                = register_value_array + ('L'-'A')*2
 #define RAM_REGISTER_VALUE_L (RAM_REGISTER_VALUE_ARRAY + ('L'-'A')*2)
 //X register_value_p                = register_value_array + ('P'-'A')*2
@@ -613,14 +613,14 @@ uint8_t printer_driver_name[0x14];
 
 #define MAX_LINES 32
 //X line_lengths:                   .fill 32
-uint8_t line_lengths[MAX_LINES];
+uint8_t line_lengths[MAX_LINES]; // PROVISIONAL: table of displayed line widths indexed by screen row
 //X input_filename:                 .fill 20
-uint8_t input_filename[MAX_COMMAND_LENGTH];
+uint8_t input_filename[MAX_COMMAND_LENGTH]; // PROVISIONAL: source filename of currently loaded document
 
 //X input_file:                     .fill FS__SIZE
-FILE *input_fp;
+FILE *input_fp; // PROVISIONAL: FILE* handle for currently open input/read file
 //X output_file:                    .fill FS__SIZE
-FILE *output_fp;
+FILE *output_fp; // PROVISIONAL: FILE* handle for currently open output/write file
 static void main_(void) {
     // Pseudocode: Program entry point with longjmp buffer for stack reset (txs equivalent)
 
@@ -11017,7 +11017,8 @@ read_char:
     a = screen_getchar();
     //     bcs read_char
     if (flags & FLAG_C) goto read_char;
-    if (a == 0x0a) a = 0x0d; // LF → CR for terminal compatibility
+    if (a == 0x0a) a = 0x0d;
+
     //     cmp #0x1b                                                         ; A=character read
     { uint16_t tmp_ = a - 0x1b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x1b ? FLAG_C : 0); }
     //     clc
@@ -12048,6 +12049,8 @@ static void get_line_length(void) {
     { uint8_t saved_f = flags;
     //     ldy #0x84
     y = 0x84;
+    //     ldy #0x84
+    y = 0x84;
     // loop_caafb:
 loop_caafb:
     //     dey
@@ -12061,6 +12064,7 @@ loop_caafb:
     if (!(flags & FLAG_Z)) goto cab06;
     //     tya
     a = y;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bne loop_caafb
     if (!(flags & FLAG_Z)) goto loop_caafb;
     //     dey
