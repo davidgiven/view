@@ -202,7 +202,6 @@ static void parse_marks_from_command(void);
 static void sub_c89d3(void);
 static void sub_c8361(void);
 static void sub_c8371(void);
-static void flush_and_read_char(void);
 static void write_area_to_file(void);
 static void memory_full(void);
 static void run_editor(void);
@@ -1042,7 +1041,7 @@ c832d:
     //     jsr draw_prompt_characters
     draw_prompt_characters();
     //     jsr flush_and_read_char
-    flush_and_read_char();
+    read_char();
     //     bcs return_2
     if (flags & FLAG_C) return;
     //     and #0xdf
@@ -5067,7 +5066,7 @@ static void render_new_page(void) {
     cli_putstring("..");
 
     //     jsr flush_and_read_char
-    flush_and_read_char();
+    read_char();
     //     bcs c92cc
     if (flags & FLAG_C) goto c92cc;
     //     and #0xdf
@@ -11026,10 +11025,9 @@ static void ca741(void) {
     l003d = x;
     //     rts
 }
-static void flush_and_read_char(void) {
+static void read_char(void) {
     // Pseudocode: Reads a character from keyboard via SCREEN, returning escape flag in carry
-flush_and_read_char:
-    // read_char:
+    // flush_and_read_char / read_char (same entry point)
 read_char:
     //     lda #0xff
     a = 0xff;
@@ -11053,10 +11051,6 @@ read_char:
 return_65:
     //     rts
     return;
-}
-static void read_char(void) {
-    flush_and_read_char(); // alias - same entry
-    if (a == 0x0a) a = 0x0d; // LF → CR for terminal compatibility
 }
 static void clear_screen(void) {
     // Pseudocode: Clears the screen via SCREEN call
@@ -11670,7 +11664,7 @@ loop_ca983:
     //     jsr beep
     beep();
     //     jsr flush_and_read_char
-    flush_and_read_char();
+    read_char();
     //     bcc loop_ca983
     if (!(flags & FLAG_C)) goto loop_ca983;
     //     jsr cursor_on
