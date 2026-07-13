@@ -345,6 +345,21 @@ class EditorTests(unittest.TestCase):
         ]
         self._assert_screen_lines(screen, expected)
 
+    def test_enter_editor_press_enter(self):
+        """Enter empty editor, press Enter, expect two empty lines."""
+        screen = self._enter_editor_empty()
+        self.proc.write(b"\n")
+        time.sleep(1.0)
+        raw = self.proc.read(timeout=2.0)
+        pyte.Stream(screen).feed(raw.decode("latin-1"))
+        expected = [
+            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+            "                                                                                ",
+            "                                                                                ",
+            "********************************************************************************",
+        ]
+        self._assert_screen_lines(screen, expected)
+
     def test_enter_editor_and_type_qwerty(self):
         """Enter empty editor, type 'qwerty', then check that characters appear.
         """
@@ -388,23 +403,23 @@ class EditorTests(unittest.TestCase):
             "                                                                                ",
             '   This was the poem that Alice read.                                           ',
             "                                                                                ",
-            "    'Twas brillig, and the slithy toves                                         ",
-            '     did gyre and gimble in the wabe;                                           ',
-            '    All mimsy were the borogroves,                                              ',
-            '     and the mome raths outgrabe.                                               ',
+            "         'Twas brillig, and the slithy toves                                    ",
+            '          did gyre and gimble in the wabe;                                      ',
+            '         All mimsy were the borogroves,                                         ',
+            '          and the mome raths outgrabe.                                          ',
             "                                                                                ",
-            '    "Beware the Jabberwock, my son!                                             ',
-            '     The jaws that bite, the claws that catch!                                  ',
-            '    Beware the Jubjub bird, and shun                                            ',
-            '     the frumious Bandersnatch!                                                 ',
+            '         "Beware the Jabberwock, my son!                                        ',
+            '          The jaws that bite, the claws that catch!                             ',
+            '         Beware the Jubjub bird, and shun                                       ',
+            '          the frumious Bandersnatch!                                            ',
             "                                                                                ",
-            '    He took his vorpal sword in hand:                                           ',
-            '     long time the maxome foe he sought---                                      ',
-            '    So rested he by the Tumtum tree,                                            ',
-            '     and stood awhile in thought.                                               ',
+            '         He took his vorpal sword in hand:                                      ',
+            '          long time the maxome foe he sought---                                 ',
+            '         So rested he by the Tumtum tree,                                       ',
+            '          and stood awhile in thought.                                          ',
             "                                                                                ",
-            '    And as in uffish thought he stood,                                          ',
-            '     the Jabberwock, with eyes of flame,                                        ',
+            '         And as in uffish thought he stood,                                     ',
+            '          the Jabberwock, with eyes of flame,                                   ',
         ]
         self._assert_screen_lines(screen, expected)
 
