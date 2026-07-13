@@ -326,8 +326,8 @@ class EditorTests(unittest.TestCase):
         screen = self._enter_editor_empty()
         expected = [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-            "********************************************************************************",
             "                                                                                ",
+            "********************************************************************************",
         ]
         self._assert_screen_lines(screen, expected)
 
@@ -340,16 +340,13 @@ class EditorTests(unittest.TestCase):
         pyte.Stream(screen).feed(raw.decode("latin-1"))
         expected = [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-            "***q****************************************************************************",
+            "   q                                                                            ",
+            "********************************************************************************",
         ]
         self._assert_screen_lines(screen, expected)
 
     def test_enter_editor_and_type_qwerty(self):
         """Enter empty editor, type 'qwerty', then check that characters appear.
-
-        The formatting pipeline (sub_caef4, called for each character when
-        format_mode_flag=0) suppresses screen_putchar for all characters
-        except the first.  Only 'q' appears immediately on screen.
         """
         screen = self._enter_editor_empty()
         self.proc.write(b"qwerty")
@@ -358,7 +355,24 @@ class EditorTests(unittest.TestCase):
         pyte.Stream(screen).feed(raw.decode("latin-1"))
         expected = [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-            "***qwerty***********************************************************************",
+            "   qwerty                                                                       ",
+            "********************************************************************************",
+        ]
+        self._assert_screen_lines(screen, expected)
+
+    def test_enter_editor_and_type_two_lines(self):
+        """Enter empty editor, type two lines with a newline between, then check that characters appear.
+        """
+        screen = self._enter_editor_empty()
+        self.proc.write(b"line1\nline2")
+        time.sleep(1.0)
+        raw = self.proc.read(timeout=2.0)
+        pyte.Stream(screen).feed(raw.decode("latin-1"))
+        expected = [
+            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+            "   line1                                                                        ",
+            "   line2                                                                        ",
+            "********************************************************************************",
         ]
         self._assert_screen_lines(screen, expected)
 

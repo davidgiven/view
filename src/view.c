@@ -10115,7 +10115,7 @@ ca422: // fall through from ca422 label; also reached from Z=1 goto
     //     ldx l0082
     x = l0082;
     //     lda screen_width
-    a = screen_maxcolumn;
+    a = screen_maxcolumn + 1;
     //     sta line_lengths+1,x
     line_lengths[x + 1] = a;
     //     sta l0083
@@ -10131,7 +10131,7 @@ loop_ca431:
     //     jsr set_cursor_position
     screen_setcursor(0, l0082);
     //     jsr sub_ca597
-    { uint8_t fill = a; for (int i = 0; i <= screen_maxcolumn; i++) screen_putchar(fill); }
+    clear_to_eol();
     //     lda l0083
     a = l0083;
     //     sta line_lengths,x
@@ -10548,6 +10548,7 @@ static void clear_to_eol(void) {
     l0084 = a;
     //     lda line_lengths,x
     a = line_lengths[x];
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq return_62
     if (flags & FLAG_Z) goto return_62;
     //     lda l0084
@@ -10558,6 +10559,7 @@ loop_ca5a2:
     screen_putchar(a);
     //     dec line_lengths,x
     line_lengths[x]--;
+    flags = (flags & ~(FLAG_Z|FLAG_N)) | (line_lengths[x] == 0 ? FLAG_Z : 0) | (line_lengths[x] & FLAG_N);
     //     bne loop_ca5a2
     if (!(flags & FLAG_Z)) goto loop_ca5a2;
     // return_62:
@@ -11054,6 +11056,7 @@ return_65:
 }
 static void read_char(void) {
     flush_and_read_char(); // alias - same entry
+    if (a == 0x0a) a = 0x0d; // LF → CR for terminal compatibility
 }
 static void clear_screen(void) {
     // Pseudocode: Clears the screen via SCREEN call
