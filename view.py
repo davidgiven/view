@@ -290,11 +290,6 @@ subroutine(0x9825, "get_current_fmt_cmd_byte")
 subroutine(0x9B33, "run_editor")
 subroutine(0x9B36, "editor_loop")
 subroutine(0xAA15, "make_space_for_insertion")
-subroutine(
-    0xA5AB,
-    "draw_char",
-    on_entry={"tmp0/tmp1": "input buffer", "y": "offset into buffer"},
-)
 subroutine(0xA558, "detect_mode_7")
 subroutine(0xA565, "set_normal_text_if_not_mode_7")
 subroutine(0xA577, "set_inverted_text_if_not_mode_7")
