@@ -1759,13 +1759,6 @@ static void load_cmd(void) {
     parse_filename_from_command();
     //     jsr initialise_document
     initialise_document();
-    // cb05a just incremented top; restore it so reset_area_to_entire_document
-    // and the "1:" entry (which calls make_space_for_insertion) see the
-    // correct document extent.
-    // XXX: top=page is potentially incorrect — it masks whatever the real
-    // make_space_for_insertion bug is.  The 6502 does NOT do this and works
-    // fine, so the fault lies in the C translation of that call chain.
-    top = page;
     //     jsr reset_area_to_entire_document
     reset_area_to_entire_document();
     //     jsr 1f
