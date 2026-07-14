@@ -386,7 +386,7 @@ class EditorTests(unittest.TestCase):
         expected = [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
             "   line1                                                                        ",
-            "   line2                                                                        ",
+            "        line2                                                                   ",
             "********************************************************************************",
         ]
         self._assert_screen_lines(screen, expected)

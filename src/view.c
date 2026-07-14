@@ -8094,24 +8094,26 @@ c9b6a_:
     if (flags & FLAG_Z) goto c9b86_;
     //     ora #0x40 ; '@'
     a |= 0x40;
+c9b84_:
+    // c9b86:
     //     sta format_mode_flag
     format_mode_flag = a;
 c9b8f_:
-c9b84_:
 c9b73_:
 c9b86_:
     //     pla (was: pop saved_fmt)
     //     cmp format_mode_flag
     //     beq c9b8f
-    if (saved_fmt != format_mode_flag || flags_need_redrawing_flag) {
+    if (saved_fmt != format_mode_flag) {
     //     inc flags_need_redrawing_flag
         flags_need_redrawing_flag++;
+    }
+    // c9b8f:
     //     lda #0
     //     sta cursor_moved_flag
-        cursor_moved_flag = 0;
+    cursor_moved_flag = 0;
     //     jsr redraw_editor
-        redraw_editor();
-    }
+    redraw_editor();
     }
 c9b96:
     //     jsr read_char
