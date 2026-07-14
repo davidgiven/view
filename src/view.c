@@ -49,6 +49,12 @@ static inline void sbc(uint8_t value) {
     set_flags(a);
 }
 
+
+static inline void cmp(uint8_t reg, uint8_t value) {
+    uint16_t tmp_ = (uint16_t)reg - value;
+    flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | ((uint16_t)reg >= value ? FLAG_C : 0);
+}
+
 static inline void adc(uint8_t value) {
     uint16_t tmp_ = (uint16_t)a + value + (flags & FLAG_C ? 1 : 0);
     flags = (flags & ~FLAG_C) | (tmp_ > 0xff ? FLAG_C : 0);
@@ -883,7 +889,7 @@ static void input_line_not_escaped(void) {
     //     bcs c8263
     if (flags & FLAG_C) goto c8263;
     //     cpy #(jumptable4_cli_end-jumptable4_cli)/2
-    { uint16_t tmp_ = y - 48; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= 48 ? FLAG_C : 0); }
+    cmp(y, 48);
     //     bcc c826e
     if (!(flags & FLAG_C)) goto c826e;
     // c8263:
@@ -1026,11 +1032,11 @@ static void sub_c8310(void) {
     //     sta l0084
     l0084 = a;
     //     cmp l007e
-    { uint16_t tmp_ = a - l007e; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l007e ? FLAG_C : 0); }
+    cmp(a, l007e);
     //     beq return_2
     if (flags & FLAG_Z) return;
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     // return_2:
     //     rts
 }
@@ -1071,13 +1077,13 @@ c832d:
     //     ldx #0
     x = 0;
     //     cmp #0x59 ; 'Y'
-    { uint8_t tmp_ = a - 0x59; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x59 ? FLAG_C : 0); }
+    cmp(a, 0x59);
     //     beq c8349
     if (flags & FLAG_Z) goto c8349;
     //     dex                                                               ; X=0xff
     x--;
     //     cmp #0x4f ; 'O'
-    { uint8_t tmp_ = a - 0x4f; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x4f ? FLAG_C : 0); }
+    cmp(a, 0x4f);
     //     bne c8356
     if (!(flags & FLAG_Z)) goto c8356;
     // c8349:
@@ -1136,13 +1142,13 @@ c837d:
     //     lda tmp9
     a = tmp9;
     //     cmp doc_ptr2+1
-    { uint16_t tmp_ = a - (uint8_t)(doc_ptr2 >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(doc_ptr2 >> 8) ? FLAG_C : 0); }
+    cmp(a, (uint8_t)(doc_ptr2 >> 8));
     //     bne c8389
     if (!(flags & FLAG_Z)) goto c8389;
     //     lda tmp8
     a = tmp8;
     //     cmp doc_ptr2+0
-    { uint16_t tmp_ = a - (uint8_t)(doc_ptr2 & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(doc_ptr2 & 0xff) ? FLAG_C : 0); }
+    cmp(a, (uint8_t)(doc_ptr2 & 0xff));
     //     beq c8398
     if (flags & FLAG_Z) goto c8398;
 c8389:
@@ -1150,7 +1156,7 @@ c8389:
     //     lda (tmp8),y
     a = ram[((uint16_t)tmp9 << 8 | tmp8) + y];
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     bne c8390
     if (!(flags & FLAG_Z)) goto c8390;
     //     inx
@@ -1196,7 +1202,7 @@ c83a3:
     //     beq c83da
     if (flags & FLAG_Z) goto c83da;
     //     cmp #0x5e ; '^'
-    { uint16_t tmp_ = a - 0x5e; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x5e ? FLAG_C : 0); }
+    cmp(a, 0x5e);
     //     bne c83ca
     if (!(flags & FLAG_Z)) goto c83ca;
     //     jsr sub_c8310
@@ -1221,7 +1227,7 @@ loop_c83b8:
         //     bmi c83c8
         if (a & 0x80) goto c83c8;
         //     cmp l0082
-        { uint16_t tmp_ = a - l0082; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0082 ? FLAG_C : 0); }
+        cmp(a, l0082);
         //     bne loop_c83b8
         if (!(flags & FLAG_Z)) goto loop_c83b8;
         //     lda l83e0,x
@@ -1319,7 +1325,7 @@ static void sub_c8412(void) {
     //     stx l007a
     l007a = x;
     //     cpx #0
-    { uint16_t tmp_ = x - 0; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 0 ? FLAG_C : 0); }
+    cmp(x, 0);
     // return_5:
     //     rts
 }
@@ -1608,7 +1614,7 @@ static void save_cmd_write_cmd(void) {
     //             inx
             x++;
     //             cmp #0x0d
-            { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+            cmp(a, 0x0d);
     //         zuntil eq
         } while (!(flags & FLAG_Z));
     //     zendif
@@ -1869,7 +1875,7 @@ c8649:
     // loop_c8652:
 loop_c8652:
     //     cmp c867d,x
-    { uint16_t tmp_ = a - ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x]; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x] ? FLAG_C : 0); }
+    cmp(a, ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x]);
     //     beq c8669
     if (flags & FLAG_Z) goto c8669;
     //     inx
@@ -1930,7 +1936,7 @@ static void field_cmd(void) {
     //     lda tmp8
     a = tmp8;
     //     cmp #0x1b
-    { uint16_t tmp_ = a - 0x1b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x1b ? FLAG_C : 0); }
+    cmp(a, 0x1b);
     //     bne c8699
     if (!(flags & FLAG_Z)) goto c8699;
     //     jsr print_inline_string
@@ -1996,13 +2002,13 @@ loop_c86c2:
     //     iny
     y++;
     //     cmp l8747,x
-    { uint16_t tmp_ = a - l8747_data[x]; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l8747_data[x] ? FLAG_C : 0); }
+    cmp(a, l8747_data[x]);
     //     bne c86d1
     if (!(flags & FLAG_Z)) goto c86d1;
     //     lda (tmp0),y
     a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     //     cmp l8748,x
-    { uint16_t tmp_ = a - l8747_data[x+1]; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l8747_data[x+1] ? FLAG_C : 0); }
+    cmp(a, l8747_data[x+1]);
     //     beq c86df
     if (flags & FLAG_Z) goto c86df;
     // c86d1:
@@ -2060,11 +2066,11 @@ c86ea:
     //     bmi c870d
     if (flags & FLAG_N) goto c870d;
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     beq c8703
     if (flags & FLAG_Z) goto c8703;
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     beq c8703
     if (flags & FLAG_Z) goto c8703;
     // c86ff:
@@ -2094,7 +2100,7 @@ c870d:
     //     stx l0083
     l0083 = x;
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     bne c8715
     if (!(flags & FLAG_Z)) goto c8715;
     //     stx l0082
@@ -2120,13 +2126,13 @@ c871f:
     //     ldy tmp1
     y = tmp1;
     //     cpy area_end_ptr+1
-    { uint16_t tmp_ = y - (uint8_t)(area_end_ptr >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= (uint8_t)(area_end_ptr >> 8) ? FLAG_C : 0); }
+    cmp(y, (uint8_t)(area_end_ptr >> 8));
     //     bne c86b8
     if (!(flags & FLAG_Z)) goto c86b8;
     //     ldy tmp0
     y = tmp0;
     //     cpy area_end_ptr
-    { uint16_t tmp_ = y - (uint8_t)(area_end_ptr & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= (uint8_t)(area_end_ptr & 0xff) ? FLAG_C : 0); }
+    cmp(y, (uint8_t)(area_end_ptr & 0xff));
     //     bne c86b8
     if (!(flags & FLAG_Z)) goto c86b8;
     //     ldx tmp8
@@ -2196,13 +2202,13 @@ c876d:
     //     ldy current_line_ptr+1
     y = (uint8_t)((current_line_ptr >> 8) & 0xff);
     //     cpy area_end_ptr+1
-    { uint16_t tmp_ = y - (uint8_t)(area_end_ptr >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= (uint8_t)(area_end_ptr >> 8) ? FLAG_C : 0); }
+    cmp(y, (uint8_t)(area_end_ptr >> 8));
     //     bcc c876d
     if (!(flags & FLAG_C)) goto c876d;
     //     bne c8787
     if (!(flags & FLAG_Z)) goto c8787;
     //     cmp area_end_ptr
-    { uint16_t tmp_ = a - (uint8_t)(area_end_ptr & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(area_end_ptr & 0xff) ? FLAG_C : 0); }
+    cmp(a, (uint8_t)(area_end_ptr & 0xff));
     //     bcc c876d
     if (!(flags & FLAG_C)) goto c876d;
     // c8787:
@@ -2435,7 +2441,7 @@ loop_c88fa:
     //     inx
     x++;
     //     cmp #0x21
-    { uint16_t tmp_ = a - 0x21; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x21 ? FLAG_C : 0); }
+    cmp(a, 0x21);
     //     bge loop_c88fa
     if (flags & FLAG_C) goto loop_c88fa;
     // return_9:
@@ -2471,7 +2477,7 @@ static void zero_terminate_filename_buffer(void) {
     // zloop:
 zloop:
     //     cmp filename_buffer, x
-    { uint16_t tmp_ = a - filename_buffer[x]; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= filename_buffer[x] ? FLAG_C : 0); }
+    cmp(a, filename_buffer[x]);
     //     zbreakif eq
     if (flags & FLAG_Z) goto zbreak;
     //     inx
@@ -2493,13 +2499,13 @@ static void sanitise_area(void) {
     //     ldx area_start_ptr+1
     x = (uint8_t)(area_start_ptr >> 8);
     //     cpx area_end_ptr+1
-    { uint16_t tmp_ = x - (uint8_t)(area_end_ptr >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= (uint8_t)(area_end_ptr >> 8) ? FLAG_C : 0); }
+    cmp(x, (uint8_t)(area_end_ptr >> 8));
     //     bcc c8977
     if (!(flags & FLAG_C)) goto c8977;
     //     bne c896b
     if (!(flags & FLAG_Z)) goto c896b;
     //     cmp area_end_ptr
-    { uint16_t tmp_ = a - (uint8_t)(area_end_ptr & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(area_end_ptr & 0xff) ? FLAG_C : 0); }
+    cmp(a, (uint8_t)(area_end_ptr & 0xff));
     //     bcc c8977
     if (!(flags & FLAG_C)) goto c8977;
 c896b:
@@ -2625,7 +2631,7 @@ loop_c89fa:
     //     lda input_filename,y
     a = input_filename[y];
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     beq c8a07
     if (flags & FLAG_Z) goto c8a07;
     //     jsr bdos_print_char
@@ -2658,7 +2664,7 @@ c8a19:
     //     jsr bdos_print_char
     cli_putchar(a);
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     bne loop_c8a15
     if (!(flags & FLAG_Z)) goto loop_c8a15;
     //     rts
@@ -2691,13 +2697,13 @@ c8a5b:
     //     lda header_text_maybe,x
     a = header_text_maybe[x];
     //     cmp #1
-    { uint16_t tmp_ = a - 1; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 1 ? FLAG_C : 0); }
+    cmp(a, 1);
     //     bne c8a6c
     if (!(flags & FLAG_Z)) goto c8a6c;
     //     lda l0081
     a = l0081;
     //     cmp l0049
-    { uint16_t tmp_ = a - l0049; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0049 ? FLAG_C : 0); }
+    cmp(a, l0049);
     //     bcs c8a86
     if (flags & FLAG_C) goto c8a86;
     //     inc l0081
@@ -2708,11 +2714,11 @@ c8a5b:
 c8a6c:
     // c8a6c:
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     bne c8a84
     if (!(flags & FLAG_Z)) goto c8a84;
     //     cpy l0048
-    { uint16_t tmp_ = y - l0048; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0048 ? FLAG_C : 0); }
+    cmp(y, l0048);
     //     bcs c8a84
     if (flags & FLAG_C) goto c8a84;
 loop_c8a74:
@@ -2732,7 +2738,7 @@ loop_c8a74:
     l0082++;
     set_flags(l0082);
     //     cpy l0048
-    { uint16_t tmp_ = y - l0048; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0048 ? FLAG_C : 0); }
+    cmp(y, l0048);
     //     bcc loop_c8a74
     if (!(flags & FLAG_C)) goto loop_c8a74;
     //     dec l0082
@@ -2751,7 +2757,7 @@ c8a86:
 c8a87:
     // c8a87:
     //     cpx l004a
-    { uint16_t tmp_ = x - l004a; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= l004a ? FLAG_C : 0); }
+    cmp(x, l004a);
     //     bcc c8a5b
     if (!(flags & FLAG_C)) goto c8a5b;
     //     lda doc_ptr2+0
@@ -2776,7 +2782,7 @@ c8a87:
     //     bne c8aa3
     if (!(flags & FLAG_Z)) goto c8aa3;
     //     cpx input_buffer_offset+1
-    { uint16_t tmp_ = x - l0080; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= l0080 ? FLAG_C : 0); }
+    cmp(x, l0080);
     //     bcc c8aa3
     if (!(flags & FLAG_C)) goto c8aa3;
     //     ldx input_buffer_offset+1
@@ -2944,13 +2950,13 @@ c8b1f:
     //     stx l0084
     l0084 = x;
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     bne c8b38
     if (!(flags & FLAG_Z)) goto c8b38;
     //     ldy input_buffer_offset+1
     y = l0080;
     //     cpy l0048
-    { uint16_t tmp_ = y - l0048; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0048 ? FLAG_C : 0); }
+    cmp(y, l0048);
     //     bcs c8b47
     if (flags & FLAG_C) goto c8b47;
     //     inc input_buffer_offset+1
@@ -2968,13 +2974,13 @@ c8b1f:
 c8b38:
     // c8b38:
     //     cmp #1
-    { uint16_t tmp_ = a - 1; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 1 ? FLAG_C : 0); }
+    cmp(a, 1);
     //     bne c8b47
     if (!(flags & FLAG_Z)) goto c8b47;
     //     ldy l0082
     y = l0082;
     //     cpy l0049
-    { uint16_t tmp_ = y - l0049; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0049 ? FLAG_C : 0); }
+    cmp(y, l0049);
     //     bcs c8b6a
     if (flags & FLAG_C) goto c8b6a;
     //     lda output_buffer,y
@@ -2985,7 +2991,7 @@ c8b38:
 c8b47:
     // c8b47:
     //     cmp #2
-    { uint16_t tmp_ = a - 2; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 2 ? FLAG_C : 0); }
+    cmp(a, 2);
     //     bne c8b4d
     if (!(flags & FLAG_Z)) goto c8b4d;
     //     lda #0x20 ; ' '
@@ -3034,7 +3040,7 @@ c8b6a:
 c8b6b:
     // c8b6b:
     //     cpx l004a
-    { uint16_t tmp_ = x - l004a; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= l004a ? FLAG_C : 0); }
+    cmp(x, l004a);
     //     bcc c8b1f
     if (!(flags & FLAG_C)) goto c8b1f;
     //     lda ptr2
@@ -3082,7 +3088,7 @@ c8b91:
     //     lda tmp9
     a = tmp9;
     //     cmp doc_ptr3+1
-    { uint16_t tmp_ = a - (uint8_t)(doc_ptr3 >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(doc_ptr3 >> 8) ? FLAG_C : 0); }
+    cmp(a, (uint8_t)(doc_ptr3 >> 8));
     //     bcc c8b9f
     if (!(flags & FLAG_C)) goto c8b9f;
     //     bne c8b78
@@ -3090,7 +3096,7 @@ c8b91:
     //     lda tmp8
     a = tmp8;
     //     cmp doc_ptr3+0
-    { uint16_t tmp_ = a - (uint8_t)(doc_ptr3 & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(doc_ptr3 & 0xff) ? FLAG_C : 0); }
+    cmp(a, (uint8_t)(doc_ptr3 & 0xff));
     //     bcs c8b78
     if (flags & FLAG_C) { c8b78(); return; }
 c8b9f:
@@ -3142,15 +3148,15 @@ c8bbc:
     //     lda header_text_maybe,x
     a = header_text_maybe[x];
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     beq c8bf7
     if (flags & FLAG_Z) goto c8bf7;
     //     cmp #1
-    { uint16_t tmp_ = a - 1; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 1 ? FLAG_C : 0); }
+    cmp(a, 1);
     //     beq c8be3
     if (flags & FLAG_Z) goto c8be3;
     //     cmp #2
-    { uint16_t tmp_ = a - 2; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 2 ? FLAG_C : 0); }
+    cmp(a, 2);
     //     bne c8bd7
     if (!(flags & FLAG_Z)) goto c8bd7;
     //     lda #0x20 ; ' '
@@ -3158,7 +3164,7 @@ c8bbc:
 c8bd7:
     // c8bd7:
     //     cmp l0083
-    { uint16_t tmp_ = a - l0083; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0083 ? FLAG_C : 0); }
+    cmp(a, l0083);
     //     beq c8c33
     if (flags & FLAG_Z) goto c8c33;
 c8bdb:
@@ -3182,7 +3188,7 @@ c8be3:
     //     ldx l0049
     x = l0049;
     //     cpx #0x14
-    { uint16_t tmp_ = x - 0x14; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 0x14 ? FLAG_C : 0); }
+    cmp(x, 0x14);
     //     bcs c8bf2
     if (flags & FLAG_C) goto c8bf2;
     //     sta output_buffer,x
@@ -3204,23 +3210,23 @@ c8bf7:
     //     lda l0083
     a = l0083;
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     beq c8c23
     if (flags & FLAG_Z) goto c8c23;
     //     cmp #9
-    { uint16_t tmp_ = a - 9; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 9 ? FLAG_C : 0); }
+    cmp(a, 9);
     //     beq c8c23
     if (flags & FLAG_Z) goto c8c23;
     //     cmp #0x0b
-    { uint16_t tmp_ = a - 0x0b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0b ? FLAG_C : 0); }
+    cmp(a, 0x0b);
     //     beq c8c23
     if (flags & FLAG_Z) goto c8c23;
     //     cmp #0x1a
-    { uint16_t tmp_ = a - 0x1a; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x1a ? FLAG_C : 0); }
+    cmp(a, 0x1a);
     //     beq c8c23
     if (flags & FLAG_Z) goto c8c23;
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     beq c8c23
     if (flags & FLAG_Z) goto c8c23;
     //     lda l0081
@@ -3239,7 +3245,7 @@ c8bf7:
     x++;
     set_flags(x);
     //     cpx l007a
-    { uint16_t tmp_ = x - l007a; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= l007a ? FLAG_C : 0); }
+    cmp(x, l007a);
     //     bcc c8bbc
     if (!(flags & FLAG_C)) goto c8bbc;
     //     bcs c8c3e
@@ -3274,7 +3280,7 @@ c8c33:
     x++;
     set_flags(x);
     //     cpx l007a
-    { uint16_t tmp_ = x - l007a; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= l007a ? FLAG_C : 0); }
+    cmp(x, l007a);
     //     bcc loop_c8c2a
     if (!(flags & FLAG_C)) goto loop_c8c2a;
     //     inc tmp8
@@ -3371,7 +3377,7 @@ c8c95:
     //     ldy #0
     y = 0;
     //     cmp #0x7f
-    { uint16_t tmp_ = a - 0x7f; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x7f ? FLAG_C : 0); }
+    cmp(a, 0x7f);
     //     bcc c8caf
     if (!(flags & FLAG_C)) goto c8caf;
     //     ldx l0084
@@ -3389,7 +3395,7 @@ c8c95:
 c8caf:
     // c8caf:
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     bcs c8cc8
     if (flags & FLAG_C) goto c8cc8;
     //     jsr check_for_control_code
@@ -3397,19 +3403,19 @@ c8caf:
     //     beq c8cc8
     if (flags & FLAG_Z) goto c8cc8;
     //     cmp #0x1a
-    { uint16_t tmp_ = a - 0x1a; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x1a ? FLAG_C : 0); }
+    cmp(a, 0x1a);
     //     beq c8cc8
     if (flags & FLAG_Z) goto c8cc8;
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     beq c8cc8
     if (flags & FLAG_Z) goto c8cc8;
     //     cmp #0x0b
-    { uint16_t tmp_ = a - 0x0b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0b ? FLAG_C : 0); }
+    cmp(a, 0x0b);
     //     beq c8cc8
     if (flags & FLAG_Z) goto c8cc8;
     //     cmp #9
-    { uint16_t tmp_ = a - 9; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 9 ? FLAG_C : 0); }
+    cmp(a, 9);
     //     bne c8c95
     if (!(flags & FLAG_Z)) goto c8c95;
 c8cc8:
@@ -3417,7 +3423,7 @@ c8cc8:
     //     ldx #1
     x = 1;
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     beq c8cdb
     if (flags & FLAG_Z) goto c8cdb;
     //     dex
@@ -3426,7 +3432,7 @@ c8cc8:
     //     ldy l0083
     y = l0083;
     //     cpy #0x84
-    { uint16_t tmp_ = y - 0x84; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= 0x84 ? FLAG_C : 0); }
+    cmp(y, 0x84);
     //     bne c8cdb
     if (!(flags & FLAG_Z)) goto c8cdb;
     //     pha
@@ -3453,7 +3459,7 @@ c8cdb:
     //     lda tmp1
     a = tmp1;
     //     cmp l0081
-    { uint16_t tmp_ = a - l0081; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0081 ? FLAG_C : 0); }
+    cmp(a, l0081);
     //     bcc c8c95
     if (!(flags & FLAG_C)) goto c8c95;
     //     bne c8cf1
@@ -3461,7 +3467,7 @@ c8cdb:
     //     lda tmp0
     a = tmp0;
     //     cmp input_buffer_offset+1
-    { uint16_t tmp_ = a - l0080; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0080 ? FLAG_C : 0); }
+    cmp(a, l0080);
     //     bcc c8c95
     if (!(flags & FLAG_C)) goto c8c95;
 c8cf1:
@@ -3599,13 +3605,13 @@ static void write_area_to_file(void) {
     //         lda tmp9
     a = tmp9;
     //         cmp area_end_ptr+1
-    { uint16_t tmp_ = a - (uint8_t)(area_end_ptr >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(area_end_ptr >> 8) ? FLAG_C : 0); }
+    cmp(a, (uint8_t)(area_end_ptr >> 8));
     //         zif eq
     if (flags & FLAG_Z) {
     //             lda tmp8
     a = tmp8;
     //             cmp area_end_ptr
-    { uint16_t tmp_ = a - (uint8_t)(area_end_ptr & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(area_end_ptr & 0xff) ? FLAG_C : 0); }
+    cmp(a, (uint8_t)(area_end_ptr & 0xff));
     //         zendif
     }
     //     zuntil eq
@@ -3783,7 +3789,7 @@ static void sub_c8e33(void) {
     //     lda l007e
     a = l007e;
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     beq return_20
     if (flags & FLAG_Z) return;
     //     ldy input_buffer_offset
@@ -3793,11 +3799,11 @@ static void sub_c8e33(void) {
         //     lda input_buffer,y
         a = input_buffer[y];
         //     cmp #0x0d
-        { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+        cmp(a, 0x0d);
         //     beq return_20
         if (flags & FLAG_Z) return;
         //     cmp l007e
-        { uint16_t tmp_ = a - l007e; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l007e ? FLAG_C : 0); }
+        cmp(a, l007e);
         //     bne return_20
         if (!(flags & FLAG_Z)) return;
         //     iny
@@ -4101,7 +4107,7 @@ lookup_macro_name:
     //     lda (tmp6),y
     a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
     //     cmp tmp8
-    { uint16_t tmp_ = a - tmp8; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= tmp8 ? FLAG_C : 0); }
+    cmp(a, tmp8);
     //     bne get_next_macro_in_linked_list
     if (!(flags & FLAG_Z)) goto get_next_macro_in_linked_list;
     //     iny                                                               ; Y=0x03
@@ -4109,7 +4115,7 @@ lookup_macro_name:
     //     lda (tmp6),y
     a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
     //     cmp tmp9
-    { uint16_t tmp_ = a - tmp9; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= tmp9 ? FLAG_C : 0); }
+    cmp(a, tmp9);
     //     beq c8fb9
     if (flags & FLAG_Z) goto c8fb9;
     // get_next_macro_in_linked_list:
@@ -4554,7 +4560,7 @@ c912b:
     //     lda l0039
     a = l0039;
     //     cmp l0047
-    { uint16_t tmp_ = a - l0047; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0047 ? FLAG_C : 0); }
+    cmp(a, l0047);
     //     beq c913b
     if (flags & FLAG_Z) goto c913b;
     //     bcs c9142
@@ -4835,7 +4841,7 @@ c91da:
     //     bcc c9225
     if (!(flags & FLAG_C)) goto c9225;
     //     cmp #0x0a
-    { uint16_t tmp_ = a - 0x0a; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0a ? FLAG_C : 0); }
+    cmp(a, 0x0a);
     //     bcs c9225
     if (flags & FLAG_C) goto c9225;
     //     iny
@@ -4919,7 +4925,7 @@ static void sub_c9228(void) {
     // sub_c9228:
     //     cmp #0x3e ; '>'
     //     bne c9231
-    { uint16_t tmp_ = a - 0x3e; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x3e ? FLAG_C : 0); }
+    cmp(a, 0x3e);
     if (!(flags & FLAG_Z)) goto c9231;
     //     lda #0
     a = 0;
@@ -4932,7 +4938,7 @@ static void sub_c9228(void) {
 c9231:
     //     cmp #0x3c ; '<'
     //     bne c923c
-    { uint16_t tmp_ = a - 0x3c; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x3c ? FLAG_C : 0); }
+    cmp(a, 0x3c);
     if (!(flags & FLAG_Z)) goto c923c;
     //     lda #0x40 ; '@'
     a = 0x40;
@@ -4987,7 +4993,7 @@ c9254:
     // c925a:
 c925a:
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     bne loop_c9247
     if (!(flags & FLAG_Z)) goto loop_c9247;
     //     clc
@@ -5453,7 +5459,7 @@ c93d9:
     //     iny
     y++;
     //     cmp #0x7c ; '|'
-    { uint16_t tmp_ = a - 0x7c; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x7c ? FLAG_C : 0); }
+    cmp(a, 0x7c);
     //     beq c93f2
     if (flags & FLAG_Z) goto c93f2;
     //     sta output_buffer,x
@@ -5461,7 +5467,7 @@ c93d9:
     //     inx
     x++;
     //     cpx #MAX_LINE_LENGTH
-    { uint16_t tmp_ = x - MAX_LINE_LENGTH; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= MAX_LINE_LENGTH ? FLAG_C : 0); }
+    cmp(x, MAX_LINE_LENGTH);
     //     bcc c93ce
     if (!(flags & FLAG_C)) goto c93ce;
     // c93e6:
@@ -5843,7 +5849,7 @@ static void c950f_impl(void) {
     //     inx
     x++;
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     bne c951c
     if (!(flags & FLAG_Z)) goto c951c;
     //     inc l0030
@@ -5938,7 +5944,7 @@ static void rj_fmt_cmd(void) {
     a = 0;
     set_flags(a);
     //     cpx ruler_right_stop
-    { uint16_t tmp_ = x - ruler_right_stop; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= ruler_right_stop ? FLAG_C : 0); }
+    cmp(x, ruler_right_stop);
     //     bcs c950f
     if (flags & FLAG_C) { c950f_impl(); return; }
     //     stx l0083
@@ -5978,7 +5984,7 @@ c9537:
     //     iny
     y++;
     //     cmp #0x7c ; '|'
-    { uint16_t tmp_ = a - 0x7c; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x7c ? FLAG_C : 0); }
+    cmp(a, 0x7c);
     //     beq c955e
     if (flags & FLAG_Z) goto c955e;
     // c953e:
@@ -5996,11 +6002,11 @@ c9548:
     //     inx
     x++;
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     beq c9555
     if (flags & FLAG_Z) goto c9555;
     //     cpx #MAX_LINE_LENGTH-1
-    { uint16_t tmp_ = x - (MAX_LINE_LENGTH - 1); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= MAX_LINE_LENGTH - 1 ? FLAG_C : 0); }
+    cmp(x, MAX_LINE_LENGTH - 1);
     //     bcc c9537
     if (!(flags & FLAG_C)) goto c9537;
     //     lda #0x0d
@@ -6033,7 +6039,7 @@ c955e:
     a = ram[current_format_line_ptr + y];
     set_flags(a);
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     beq c953e
     if (flags & FLAG_Z) goto c953e;
     //     iny
@@ -6083,18 +6089,18 @@ loop_c9589:
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     beq c959c
     if (flags & FLAG_Z) goto c959c;
     //     cmp #0x1b
-    { uint16_t tmp_ = a - 0x1b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x1b ? FLAG_C : 0); }
+    cmp(a, 0x1b);
     //     bcs c9598
     if (flags & FLAG_C) goto c9598;
     //     lda #0x20 ; ' '
     a = 0x20;
 c9598:
     //     cmp l0083
-    { uint16_t tmp_ = a - l0083; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= l0083 ? FLAG_C : 0); }
+    cmp(a, l0083);
     //     bne c959e
     if (!(flags & FLAG_Z)) goto c959e;
 c959c:
@@ -6104,7 +6110,7 @@ c959e:
     //     jsr sub_c95b2
     sub_c95b2();
     //     cmp #0x8d
-    { uint16_t tmp_ = a - 0x8d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x8d ? FLAG_C : 0); }
+    cmp(a, 0x8d);
     //     beq c95aa
     if (flags & FLAG_Z) goto c95aa;
     //     ldy l0082
@@ -6321,7 +6327,7 @@ static void pe_fmt_cmd(void) {
     //     beq page_eject_fmt
     if (flags & FLAG_Z) { page_eject_fmt(); return; }
     //     cmp l0021
-    { uint16_t tmp_ = a - l0021; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0021 ? FLAG_C : 0); }
+    cmp(a, l0021);
     //     bcc return_40
     if (!(flags & FLAG_C)) return;
     //     lda l0031
@@ -6522,7 +6528,7 @@ c96a2:
     //     bne c96b8
     if (!(flags & FLAG_Z)) goto c96b8;
     //     cpx #0x97
-    { uint16_t tmp_ = x - 0x97; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 0x97 ? FLAG_C : 0); }
+    cmp(x, 0x97);
     //     bcs c96b8
     if (flags & FLAG_C) goto c96b8;
     //     jmp display_not_enough_memory
@@ -6567,7 +6573,7 @@ c96ce:
     //     jsr lookup_formatting_command
     lookup_formatting_command();
     //     cpx #5
-    { uint16_t tmp_ = x - 5; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 5 ? FLAG_C : 0); }
+    cmp(x, 5);
     //     bne c96f8
     if (!(flags & FLAG_Z)) { last_macro_ptr = (uint16_t)tmp0 | ((uint16_t)tmp1 << 8); return; }
     //     lda #4
@@ -6618,14 +6624,14 @@ static void ht_fmt_cmd(void) {
     a = 0;
     set_flags(a);
     //     cpx #0x2d ; '-'
-    { uint16_t tmp_ = x - 0x2d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 0x2d ? FLAG_C : 0); }
+    cmp(x, 0x2d);
     //     beq c9716
     if (flags & FLAG_Z) goto c9716;
     //     lda #1
     a = 1;
     set_flags(a);
     //     cpx #0x2a ; '*'
-    { uint16_t tmp_ = x - 0x2a; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 0x2a ? FLAG_C : 0); }
+    cmp(x, 0x2a);
     //     bne c9719
     if (!(flags & FLAG_Z)) goto c9719;
     // c9716:
@@ -6645,7 +6651,7 @@ c9719:
     //     bcc return_44
     if (!(flags & FLAG_C)) return;
     //     cmp #2
-    { uint16_t tmp_ = a - 2; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 2 ? FLAG_C : 0); }
+    cmp(a, 2);
     //     bcs return_44
     if (flags & FLAG_C) return;
     // c9725:
@@ -6697,13 +6703,13 @@ loop_c973e:
     //     lda tmp2
     a = tmp2;
     //     cmp commands_table,y
-    { uint16_t tmp_ = a - commands_table[y]; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= commands_table[y] ? FLAG_C : 0); }
+    cmp(a, commands_table[y]);
     //     bne c974c
     if (!(flags & FLAG_Z)) goto c974c;
     //     lda tmp3
     a = tmp3;
     //     cmp lb2a1,y                                                    ; lb2a1 = commands_table+1
-    { uint16_t tmp_ = a - commands_table[y + 1]; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= commands_table[y + 1] ? FLAG_C : 0); }
+    cmp(a, commands_table[y + 1]);
     //     beq return_45
     if (flags & FLAG_Z) return;
     // c974c:
@@ -6783,14 +6789,14 @@ static void sub_c976c(void) {
     a = 1;
     set_flags(a);
     //     cpx #0x31 ; '1'
-    { uint16_t tmp_ = x - 0x31; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 0x31 ? FLAG_C : 0); }
+    cmp(x, 0x31);
     //     beq c977f
     if (flags & FLAG_Z) goto c977f;
     //     lda #0
     a = 0;
     set_flags(a);
     //     cpx #0x30 ; '0'
-    { uint16_t tmp_ = x - 0x30; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 0x30 ? FLAG_C : 0); }
+    cmp(x, 0x30);
     //     bne c9783
     if (!(flags & FLAG_Z)) goto c9783;
     // c977f:
@@ -6821,7 +6827,7 @@ c9788:
     //     inx
     x++;
     //     cmp l97b0,x
-    { uint16_t tmp_ = a - l97b0_data[x]; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l97b0_data[x] ? FLAG_C : 0); }
+    cmp(a, l97b0_data[x]);
     //     beq c9788
     if (flags & FLAG_Z) goto c9788;
     //     lda l97b0,x
@@ -6830,7 +6836,7 @@ c9788:
     //     bmi c97ae
     if (flags & FLAG_N) goto c97ae;
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     bcc return_46
     if (!(flags & FLAG_C)) return;
     // loop_c979d:
@@ -6843,7 +6849,7 @@ loop_c979d:
     //     bmi c97ae
     if (flags & FLAG_N) goto c97ae;
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     bcs loop_c979d
     if (flags & FLAG_C) goto loop_c979d;
     //     ldy l0084
@@ -6891,7 +6897,7 @@ c97c0:
     //     beq c9821
     if (flags & FLAG_Z) goto c9821;
     //     cmp #0x7c ; '|'
-    { uint16_t tmp_ = a - 0x7c; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x7c ? FLAG_C : 0); }
+    cmp(a, 0x7c);
     //     bne c97d5
     if (!(flags & FLAG_Z)) goto c97d5;
     //     jsr get_next_fmt_cmd_byte
@@ -6980,13 +6986,13 @@ c9804:
     //     ldx #1
     x = 1;
     //     cmp #0x2b ; '+'
-    { uint16_t tmp_ = a - 0x2b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x2b ? FLAG_C : 0); }
+    cmp(a, 0x2b);
     //     beq c981c
     if (flags & FLAG_Z) goto c981c;
     //     inx                                                               ; X=0x02
     x++;
     //     cmp #0x2d ; '-'
-    { uint16_t tmp_ = a - 0x2d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x2d ? FLAG_C : 0); }
+    cmp(a, 0x2d);
     //     bne c9821
     if (!(flags & FLAG_Z)) goto c9821;
     // c981c:
@@ -7064,7 +7070,7 @@ c9847:
     //     iny
     y++;
     //     cpy l0043
-    { uint16_t tmp_ = y - l0043; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0043 ? FLAG_C : 0); }
+    cmp(y, l0043);
     //     beq c9871
     if (flags & FLAG_Z) goto c9871;
     //     clc
@@ -7074,7 +7080,7 @@ c9847:
     //     beq c985c
     if (flags & FLAG_Z) goto c985c;
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     bne c9847
     if (!(flags & FLAG_Z)) goto c9847;
     //     inc l0046
@@ -7084,7 +7090,7 @@ c985c:
     //     iny
     y++;
     //     cpy l0043
-    { uint16_t tmp_ = y - l0043; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0043 ? FLAG_C : 0); }
+    cmp(y, l0043);
     //     beq c986d
     if (flags & FLAG_Z) goto c986d;
     // c9861:
@@ -7096,7 +7102,7 @@ c9861:
     //     beq c985c
     if (flags & FLAG_Z) goto c985c;
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     bne c9847
     if (!(flags & FLAG_Z)) goto c9847;
     //     beq c985c                                                         ; ALWAYS branch
@@ -7184,7 +7190,7 @@ loop_c98a2:
     //     iny
     y++;
     //     cpy l0046
-    { uint16_t tmp_ = y - l0046; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0046 ? FLAG_C : 0); }
+    cmp(y, l0046);
     //     bcc c98b2
     if (!(flags & FLAG_C)) goto c98b2;
     //     ldy #1
@@ -7227,7 +7233,7 @@ c98bd:
     //     iny
     y++;
     //     cpy l0046
-    { uint16_t tmp_ = y - l0046; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0046 ? FLAG_C : 0); }
+    cmp(y, l0046);
     //     bcc c98d3
     if (!(flags & FLAG_C)) goto c98d3;
     //     ldy #0
@@ -7272,7 +7278,7 @@ loop_c98ec:
     //     iny
     y++;
     //     cpy l0042
-    { uint16_t tmp_ = y - l0042; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0042 ? FLAG_C : 0); }
+    cmp(y, l0042);
     //     bne loop_c98ec
     if (!(flags & FLAG_Z)) goto loop_c98ec;
     // c98f6:
@@ -7287,7 +7293,7 @@ c98fa:
     a = output_buffer[x];
     set_flags(a);
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     bne c9920
     if (!(flags & FLAG_Z)) goto c9920;
     //     lda l0081
@@ -7300,7 +7306,7 @@ c98fa:
     //     ldy l0039
     y = l0039;
     //     cpy l0046
-    { uint16_t tmp_ = y - l0046; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0046 ? FLAG_C : 0); }
+    cmp(y, l0046);
     //     lda #0
     a = 0;
     set_flags(a);
@@ -7343,7 +7349,7 @@ c9922:
     //     inx
     x++;
     //     cpx l0043
-    { uint16_t tmp_ = x - l0043; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= l0043 ? FLAG_C : 0); }
+    cmp(x, l0043);
     //     bne c98fa
     if (!(flags & FLAG_Z)) goto c98fa;
     //     lda #0x10
@@ -7351,7 +7357,7 @@ c9922:
     // loop_c992c:
     //     cpy #0x84
 loop_c992c:
-    { uint16_t tmp_ = y - 0x84; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= 0x84 ? FLAG_C : 0); }
+    cmp(y, 0x84);
     //     bcs return_48
     if (flags & FLAG_C) return;
     //     sta (current_edit_line_ptr),y
@@ -7377,7 +7383,7 @@ static void sub_c9936(void) {
     //     sta output_buffer,y
     output_buffer[y] = a;
     //     cmp #9
-    { uint16_t tmp_ = a - 9; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 9 ? FLAG_C : 0); }
+    cmp(a, 9);
     //     bne c994a
     if (!(flags & FLAG_Z)) goto c994a;
     //     jsr sub_ca5ae
@@ -7393,7 +7399,7 @@ static void sub_c9936(void) {
     // c994a:
 c994a:
     //     cmp #0x0b
-    { uint16_t tmp_ = a - 0x0b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0b ? FLAG_C : 0); }
+    cmp(a, 0x0b);
     //     bne c9969
     if (!(flags & FLAG_Z)) goto c9969;
     //     lda ruler_left_stop
@@ -7407,7 +7413,7 @@ c994a:
     //     beq c995c
     if (flags & FLAG_Z) goto c995c;
     //     cpx ruler_left_stop
-    { uint16_t tmp_ = x - ruler_left_stop; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= ruler_left_stop ? FLAG_C : 0); }
+    cmp(x, ruler_left_stop);
     //     bcc c995c
     if (!(flags & FLAG_C)) goto c995c;
     //     inx
@@ -7436,11 +7442,11 @@ c9967:
     // c9969:
 c9969:
     //     cmp #0x1b
-    { uint16_t tmp_ = a - 0x1b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x1b ? FLAG_C : 0); }
+    cmp(a, 0x1b);
     //     bcc c9967
     if (!(flags & FLAG_C)) goto c9967;
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     bcc return_49
     if (!(flags & FLAG_C)) return;
     //     inc l0039
@@ -7560,7 +7566,7 @@ c99c9:
     //     sty l0047
     l0047 = y;
     //     cmp #9
-    { uint16_t tmp_ = a - 9; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 9 ? FLAG_C : 0); }
+    cmp(a, 9);
     //     bne c99e0
     if (!(flags & FLAG_Z)) goto c99e0;
     //     jsr sub_ca5ae
@@ -7583,7 +7589,7 @@ c99c9:
     // c99e0:
 c99e0:
     //     cmp #0x1a
-    { uint16_t tmp_ = a - 0x1a; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x1a ? FLAG_C : 0); }
+    cmp(a, 0x1a);
     //     bne c99ee
     if (!(flags & FLAG_Z)) goto c99ee;
     // c99e4:
@@ -7603,7 +7609,7 @@ c99e4:
     // c99ee:
 c99ee:
     //     cmp #0x0b
-    { uint16_t tmp_ = a - 0x0b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0b ? FLAG_C : 0); }
+    cmp(a, 0x0b);
     //     bne c9a11
     if (!(flags & FLAG_Z)) goto c9a11;
     //     ldx input_buffer_offset
@@ -7626,7 +7632,7 @@ c99ee:
     //     ldx l0039
     x = l0039;
     //     cpx ruler_left_stop
-    { uint16_t tmp_ = x - ruler_left_stop; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= ruler_left_stop ? FLAG_C : 0); }
+    cmp(x, ruler_left_stop);
     //     bcs c9a0a
     if (flags & FLAG_C) goto c9a0a;
     //     sta l0039
@@ -7646,7 +7652,7 @@ c9a0a:
     // c9a11:
 c9a11:
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     bne c9a21
     if (!(flags & FLAG_Z)) goto c9a21;
     //     dey
@@ -7669,7 +7675,7 @@ c9a21:
     //     ldx #0
     x = 0;
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     bne c9a2e
     if (!(flags & FLAG_Z)) goto c9a2e;
     //     inx                                                               ; X=0x01
@@ -7685,7 +7691,7 @@ c9a2e:
     //     sta (current_edit_line_ptr),y
     ram[current_edit_line_ptr + y] = a;
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     bne c9a38
     if (!(flags & FLAG_Z)) goto c9a38;
     //     ror bottom_margin
@@ -7709,11 +7715,11 @@ c9a40:
     //     bmi c9a58
     if (flags & FLAG_N) goto c9a58;
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     beq c9a58
     if (flags & FLAG_Z) goto c9a58;
     //     cpy #0x85
-    { uint16_t tmp_ = y - 0x85; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= 0x85 ? FLAG_C : 0); }
+    cmp(y, 0x85);
     //     bcs c9a60
     if (flags & FLAG_C) goto c9a60;
     //     lda bottom_margin
@@ -7724,13 +7730,13 @@ c9a40:
     //     lda l0039
     a = l0039;
     //     cmp input_buffer_offset+1
-    { uint16_t tmp_ = a - l0080; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0080 ? FLAG_C : 0); }
+    cmp(a, l0080);
     //     bcs c9a60
     if (flags & FLAG_C) goto c9a60;
     // c9a58:
 c9a58:
     //     cpy #0x86
-    { uint16_t tmp_ = y - 0x86; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= 0x86 ? FLAG_C : 0); }
+    cmp(y, 0x86);
     //     bcc c9a5d
     if (!(flags & FLAG_C)) goto c9a5d;
     //     dey
@@ -7765,7 +7771,7 @@ loop_c9a62:
     //     pla
     a = saved_a; }
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     bne loop_c9a62
     if (!(flags & FLAG_Z)) goto loop_c9a62;
     //     sec
@@ -7897,7 +7903,7 @@ c9ad5:
     //     beq c9b2f
     if (flags & FLAG_Z) goto c9b2f;
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     beq c9b2f
     if (flags & FLAG_Z) goto c9b2f;
     //     tya
@@ -7924,15 +7930,15 @@ c9aef:
     //     beq c9b06
     if (a == 0) goto c9b06;
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     beq c9b06
     if (flags & FLAG_Z) goto c9b06;
     //     cmp #9
-    { uint16_t tmp_ = a - 9; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 9 ? FLAG_C : 0); }
+    cmp(a, 9);
     //     beq c9b2f
     if (flags & FLAG_Z) goto c9b2f;
     //     cmp #0x0b
-    { uint16_t tmp_ = a - 0x0b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0b ? FLAG_C : 0); }
+    cmp(a, 0x0b);
     //     bne c9ae9
     if (!(flags & FLAG_Z)) goto c9ae9;
     //     rol l0084
@@ -7948,7 +7954,7 @@ c9b06:
     //     lda (tmp4),y
     a = ram[((uint16_t)tmp5 << 8 | tmp4) + y];
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     bne c9b1a
     if (!(flags & FLAG_Z)) goto c9b1a;
     //     ldx ruler_left_stop
@@ -7969,7 +7975,7 @@ c9b06:
     // c9b1a:
 c9b1a:
     //     cmp #0x0b
-    { uint16_t tmp_ = a - 0x0b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0b ? FLAG_C : 0); }
+    cmp(a, 0x0b);
     //     bne c9b23
     if (!(flags & FLAG_Z)) goto c9b23;
     //     sta l0083
@@ -8040,7 +8046,7 @@ c9b44_:
     //     bmi c9b73
     if (x & 0x80) goto c9b73_;
     //     cmp l0072
-    { uint16_t tmp_ = a - l0072; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= l0072 ? FLAG_C : 0); }
+    cmp(a, l0072);
     //     bcc c9b73
     if (!(flags & FLAG_C)) goto c9b73_;
     //     beq c9b73
@@ -8054,7 +8060,7 @@ c9b44_:
     //     lda format_mode_flag
     a = format_mode_flag;
     //     cpy xpos
-    { uint16_t tmp_ = y - xpos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= xpos ? FLAG_C : 0); }
+    cmp(y, xpos);
     //     bcs c9b84
     if (flags & FLAG_C) goto c9b84_;
     //     bit format_mode_flag
@@ -8088,7 +8094,7 @@ c9b6a_:
     //     bcs c9b86
     if (flags & FLAG_C) goto c9b86_;
     //     cpy xpos
-    { uint16_t tmp_ = y - xpos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= xpos ? FLAG_C : 0); }
+    cmp(y, xpos);
     //     bcc c9b86
     if (!(flags & FLAG_C)) goto c9b86_;
     //     beq c9b86
@@ -8118,7 +8124,7 @@ c9b96:
     //     jsr read_char
     read_char();
     //     cmp current_tab_key
-    { uint16_t tmp_ = a - current_tab_key; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= current_tab_key ? FLAG_C : 0); }
+    cmp(a, current_tab_key);
     //     bne c9b9f
     if (!(flags & FLAG_Z)) goto c9b9f;
     //     lda #9
@@ -8131,11 +8137,11 @@ c9b9f:
     //     bmi c9bbb
     if (a & 0x80) goto editor_loop;
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     bcc enter_nonprintable_character
     if (!(flags & FLAG_C)) goto enter_nonprintable_character;
     //     cmp #0x7f
-    { uint16_t tmp_ = a - 0x7f; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x7f ? FLAG_C : 0); }
+    cmp(a, 0x7f);
     //     bcc enter_printable_character
     if (!(flags & FLAG_C)) { enter_printable_character(); goto editor_loop; }
 enter_nonprintable_character:
@@ -8292,7 +8298,7 @@ c9c31:
     //     beq c9c43
     if (x == 0) { a = l0039; l0039 = a; goto c9c1d; }
     //     cpx ruler_left_stop
-    { uint16_t tmp_ = x - ruler_left_stop; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= ruler_left_stop ? FLAG_C : 0); }
+    cmp(x, ruler_left_stop);
     //     bcc c9c43
     if (!(flags & FLAG_C)) { a = l0039; l0039 = a; goto c9c1d; }
     //     inx
@@ -8526,7 +8532,7 @@ static void f13_right_key(void) {
     //     ldy xpos
     y = xpos;
     //     cpy #MAX_LINE_LENGTH
-    { uint16_t tmp_ = y - MAX_LINE_LENGTH; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= MAX_LINE_LENGTH ? FLAG_C : 0); }
+    cmp(y, MAX_LINE_LENGTH);
     //     bcs return_51
     if (flags & FLAG_C) return;
     //     inc xpos
@@ -8661,7 +8667,7 @@ static void cf6_split_line_key(void) {
     //     jsr get_line_length
     get_line_length();
     //     cpy xpos
-    { uint16_t tmp_ = y - xpos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= xpos ? FLAG_C : 0); }
+    cmp(y, xpos);
     //     bcc c9dbd
     if (!(flags & FLAG_C)) goto c9dbd;
     //     ldy xpos
@@ -8779,7 +8785,7 @@ static void delete_key(void) {
     //     pla
     a = saved_a; }
     //     cmp #0x0c
-    { uint16_t tmp_ = a - 0x0c; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x0c ? FLAG_C : 0); }
+    cmp(a, 0x0c);
     //     bcc return_55
     if (!(flags & FLAG_C)) return;
     //     ldx insert_mode_flag
@@ -8789,7 +8795,7 @@ static void delete_key(void) {
     //     jsr get_line_length
     get_line_length();
     //     cpy xpos
-    { uint16_t tmp_ = y - xpos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (y >= xpos ? FLAG_C : 0); }
+    cmp(y, xpos);
     //     bcc return_55
     if (!(flags & FLAG_C)) return;
     //     beq return_55
@@ -9075,17 +9081,17 @@ edit_command_loop:
     //     bcs finished_editing_command
     if (flags & FLAG_C) goto finished_editing_command;
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     beq finished_editing_command
     if (flags & FLAG_Z) goto finished_editing_command;
     //     and #0xdf
     a &= 0xdf;
     //     cmp #0x41 ; 'A'
-    { uint16_t tmp_ = a - 0x41; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x41 ? FLAG_C : 0); }
+    cmp(a, 0x41);
     //     bcc edit_command_loop
     if (!(flags & FLAG_C)) goto edit_command_loop;
     //     cmp #0x5b ; '['
-    { uint16_t tmp_ = a - 0x5b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x5b ? FLAG_C : 0); }
+    cmp(a, 0x5b);
     //     bcs edit_command_loop
     if (flags & FLAG_C) goto edit_command_loop;
     //     sta l0081
@@ -9101,7 +9107,7 @@ edit_command_loop:
     //     sta (ptr1),y
     ram[(uint16_t)(ptr1 >> 8) << 8 | (ptr1 & 0xff) + y] = a;
     //     cpy #2
-    { uint16_t tmp_ = y - 2; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= 2 ? FLAG_C : 0); }
+    cmp(y, 2);
     //     bcc edit_command_loop
     if (!(flags & FLAG_C)) goto edit_command_loop;
     //     lda #0
@@ -9253,7 +9259,7 @@ static void sf12_left_key(void) {
     //     bne return_57
     if (!(flags & FLAG_Z)) return;
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     beq c9f80
     if (flags & FLAG_Z) { sub_c9f80(); return; }
 // return_57:
@@ -9789,13 +9795,13 @@ ca2b2:
     //     ldy tmp1
     y = tmp1;
     //     cpy current_line_ptr+1
-    { uint16_t tmp_ = y - (uint8_t)(current_line_ptr >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= (uint8_t)(current_line_ptr >> 8) ? FLAG_C : 0); }
+    cmp(y, (uint8_t)(current_line_ptr >> 8));
     //     bne ca30d
     if (!(flags & FLAG_Z)) goto ca30d;
     //     lda tmp0
     a = tmp0;
     //     cmp current_line_ptr
-    { uint16_t tmp_ = a - (uint8_t)(current_line_ptr & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(current_line_ptr & 0xff) ? FLAG_C : 0); }
+    cmp(a, (uint8_t)(current_line_ptr & 0xff));
     //     bne ca30d
     if (!(flags & FLAG_Z)) goto ca30d;
     //     sty l0012
@@ -9846,11 +9852,11 @@ ca2e6:
     //     inx
     x++;
     //     cpy ptr6+1
-    { uint16_t tmp_ = y - (uint8_t)(ptr6 >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= (uint8_t)(ptr6 >> 8) ? FLAG_C : 0); }
+    cmp(y, (uint8_t)(ptr6 >> 8));
     //     bne ca2f1
     if (!(flags & FLAG_Z)) goto ca2f1;
     //     cmp ptr6
-    { uint16_t tmp_ = a - (uint8_t)(ptr6 & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(ptr6 & 0xff) ? FLAG_C : 0); }
+    cmp(a, (uint8_t)(ptr6 & 0xff));
     //     bne ca2f1
     if (!(flags & FLAG_Z)) goto ca2f1;
     //     stx l003d
@@ -9858,11 +9864,11 @@ ca2e6:
     // ca2f1:
 ca2f1:
     //     cpy current_line_ptr+1
-    { uint16_t tmp_ = y - (uint8_t)(current_line_ptr >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= (uint8_t)(current_line_ptr >> 8) ? FLAG_C : 0); }
+    cmp(y, (uint8_t)(current_line_ptr >> 8));
     //     bne ca2f9
     if (!(flags & FLAG_Z)) goto ca2f9;
     //     cmp current_line_ptr
-    { uint16_t tmp_ = a - (uint8_t)(current_line_ptr & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(current_line_ptr & 0xff) ? FLAG_C : 0); }
+    cmp(a, (uint8_t)(current_line_ptr & 0xff));
     //     beq ca313
     if (flags & FLAG_Z) goto ca313;
     // ca2f9:
@@ -9886,7 +9892,7 @@ ca2f9:
     // ca307:
 ca307:
     //     cpx screen_height
-    { uint16_t tmp_ = x - screen_maxrow; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= screen_maxrow ? FLAG_C : 0); }
+    cmp(x, screen_maxrow);
     //     beq ca2e6
     if (flags & FLAG_Z) goto ca2e6;
     //     bcc ca2e6
@@ -9901,7 +9907,7 @@ ca30d:
     // ca313:
 ca313:
     //     cpx screen_height
-    { uint16_t tmp_ = x - screen_maxrow; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= screen_maxrow ? FLAG_C : 0); }
+    cmp(x, screen_maxrow);
     //     bcc ca35e
     if (!(flags & FLAG_C)) goto ca35e;
     //     beq ca35e
@@ -9921,7 +9927,7 @@ loop_ca31f:
     //     inx
     x++;
     //     cpx screen_height
-    { uint16_t tmp_ = x - screen_maxrow; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= screen_maxrow ? FLAG_C : 0); }
+    cmp(x, screen_maxrow);
     //     bne loop_ca31f
     if (!(flags & FLAG_Z)) goto loop_ca31f;
     //     dec l003d
@@ -9991,7 +9997,7 @@ ca360:
     //     lda l0072
     a = l0072;
     //     cmp hscroll_pos
-    { uint16_t tmp_ = a - hscroll_pos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= hscroll_pos ? FLAG_C : 0); }
+    cmp(a, hscroll_pos);
     //     bcc ca381
     if (!(flags & FLAG_C)) goto ca381;
     //     lda hscroll_pos
@@ -10003,7 +10009,7 @@ ca360:
     //     sbc #3
     sbc(3);
     //     cmp l0072
-    { uint16_t tmp_ = a - l0072; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0072 ? FLAG_C : 0); }
+    cmp(a, l0072);
     //     bcs ca395
     if (flags & FLAG_C) goto ca395;
     // ca381:
@@ -10359,7 +10365,7 @@ loop_ca4c2:
     //     bne loop_ca4c2
     if (x != 0) goto loop_ca4c2;
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     bne loop_ca4bf
     if (!(flags & FLAG_Z)) goto loop_ca4bf;
     //     lda #0x20 ; ' '
@@ -10484,7 +10490,7 @@ static void render_xchar(void) {
     //     inc input_buffer_offset+1
     l0080++;
     //     cpx hscroll_pos
-    { uint16_t tmp_ = x - hscroll_pos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= hscroll_pos ? FLAG_C : 0); }
+    cmp(x, hscroll_pos);
     //     bcc ca533
     if (!(flags & FLAG_C)) { x = l0084; return; }
     //     jmp ca4e9
@@ -10515,13 +10521,13 @@ loop_ca544:
     //     lda tmp9
     a = tmp9;
     //     cmp markers_array+1,x
-    { uint16_t tmp_ = a - ((uint8_t*)markers_array)[x+1]; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= ((uint8_t*)markers_array)[x+1] ? FLAG_C : 0); }
+    cmp(a, ((uint8_t*)markers_array)[x+1]);
     //     bne ca550
     if (!(flags & FLAG_Z)) goto ca550;
     //     lda tmp8
     a = tmp8;
     //     cmp markers_array,x
-    { uint16_t tmp_ = a - ((uint8_t*)markers_array)[x]; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= ((uint8_t*)markers_array)[x] ? FLAG_C : 0); }
+    cmp(a, ((uint8_t*)markers_array)[x]);
     //     beq ca558
     if (flags & FLAG_Z) goto ca558;
     // ca550:
@@ -10531,7 +10537,7 @@ ca550:
     //     inx
     x++;
     //     cpx #0x0c
-    { uint16_t tmp_ = x - 0x0c; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 0x0c ? FLAG_C : 0); }
+    cmp(x, 0x0c);
     //     bne loop_ca544
     if (!(flags & FLAG_Z)) goto loop_ca544;
     //     txa
@@ -10689,11 +10695,11 @@ static void check_for_control_code(void) {
 
     // check_for_control_code:
     //     cmp #0x1c
-    { uint16_t tmp_ = a - 0x1c; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x1c ? FLAG_C : 0); }
+    cmp(a, 0x1c);
     //     beq return_63
     if (flags & FLAG_Z) goto return_63;
     //     cmp #0x1d
-    { uint16_t tmp_ = a - 0x1d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x1d ? FLAG_C : 0); }
+    cmp(a, 0x1d);
     //     clc
     flags &= ~FLAG_C;
     // return_63:
@@ -10722,7 +10728,7 @@ static void recalculate_cursor_xpos(void) {
     // loop_ca615:
 loop_ca615:
     //     cpy xpos
-    { uint16_t tmp_ = y - xpos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= xpos ? FLAG_C : 0); }
+    cmp(y, xpos);
     //     beq ca63d
     if (flags & FLAG_Z) goto ca63d;
     //     sta l0039
@@ -10758,7 +10764,7 @@ loop_ca629:
     //     adc l0039
     { uint16_t tmp_ = (uint16_t)a + l0039; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ l0039) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
     //     cmp l0072
-    { uint16_t tmp_ = a - l0072; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0072 ? FLAG_C : 0); }
+    cmp(a, l0072);
     //     bcc loop_ca629
     if (!(flags & FLAG_C)) goto loop_ca629;
     //     beq ca63b
@@ -10925,7 +10931,7 @@ static void emit_to_output_buffer_callback(void) {
     //     sta output_buffer,x
     output_buffer[x] = a;
     //     cpx #MAX_LINE_LENGTH-2
-    { uint16_t tmp_ = x - (MAX_LINE_LENGTH - 2); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= MAX_LINE_LENGTH - 2 ? FLAG_C : 0); }
+    cmp(x, MAX_LINE_LENGTH - 2);
     //     bcs ca6ae
     if (flags & FLAG_C) goto ca6ae;
     //     inc l0082
@@ -11052,7 +11058,7 @@ read_char:
     if (a == 0x0a) a = 0x0d;
 
     //     cmp #0x1b                                                         ; A=character read
-    { uint16_t tmp_ = a - 0x1b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | (tmp_ & FLAG_N) | (a >= 0x1b ? FLAG_C : 0); }
+    cmp(a, 0x1b);
     //     clc
     flags &= ~FLAG_C;
     //     bne return_65
@@ -11234,7 +11240,7 @@ loop_ca851:
     //     and #0xdf
     a &= 0xdf;
     //     cmp l0084
-    { uint16_t tmp_ = a - l0084; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0084 ? FLAG_C : 0); }
+    cmp(a, l0084);
     //     beq loop_ca851
     if (flags & FLAG_Z) goto loop_ca851;
     // loop_ca86a:
@@ -11258,7 +11264,7 @@ loop_ca86a:
     //     lda (tmp0),y
     a = input_buffer[y];
     //     cmp #0x30 ; '0'
-    { uint16_t tmp_ = a - 0x30; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x30 ? FLAG_C : 0); }
+    cmp(a, 0x30);
     //     bcs ca84c
     if (flags & FLAG_C) goto ca84c;
     // ca87e:
@@ -11266,7 +11272,7 @@ ca87e:
     //     lda (tmp0),y
     a = input_buffer[y];
     //     cmp #0x30 ; '0'
-    { uint16_t tmp_ = a - 0x30; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x30 ? FLAG_C : 0); }
+    cmp(a, 0x30);
     //     bcs ca887
     if (flags & FLAG_C) goto ca887;
     //     sta l007e
@@ -11389,7 +11395,7 @@ static void look_up_address_in_table(void) {
         //         zbreakif eq
         if (flags & FLAG_Z) break;
     //         cmp tmp6
-        { uint16_t tmp_ = a - tmp6; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= tmp6 ? FLAG_C : 0); }
+        cmp(a, tmp6);
     //         zif eq
         if (flags & FLAG_Z) {
     //             iny
@@ -11569,7 +11575,7 @@ ca92f:
     //     dex
     x--;
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     bne ca90a
     if (!(flags & FLAG_Z)) goto ca90a;
     // ca93a:
@@ -12057,7 +12063,7 @@ caae8:
     //     lda (current_line_ptr),y
     a = ram[current_line_ptr + y];
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     beq return_68
     if (flags & FLAG_Z) return;
     //     iny
@@ -12092,7 +12098,7 @@ loop_caafb:
     //     lda (current_edit_line_ptr),y
     a = ram[current_edit_line_ptr + y];
     //     cmp #0x10
-    { uint16_t tmp_ = a - 0x10; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x10 ? FLAG_C : 0); }
+    cmp(a, 0x10);
     //     bne cab06
     if (!(flags & FLAG_Z)) goto cab06;
     //     tya
@@ -12174,7 +12180,7 @@ loop_cab2b:
     //     iny
     y++;
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     bne loop_cab2b
     if (!(flags & FLAG_Z)) goto loop_cab2b;
     //     lda (tmp0),y
@@ -12202,13 +12208,13 @@ cab3f:
     //     sty tmp1
     tmp1 = y;
     //     cpy page+1
-    { uint16_t tmp_ = y - (uint8_t)(page >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= (uint8_t)(page >> 8) ? FLAG_C : 0); }
+    cmp(y, (uint8_t)(page >> 8));
     //     bcc return_71
     if (!(flags & FLAG_C)) return;
     //     bne cab4b
     if (!(flags & FLAG_Z)) goto cab4b;
     //     cmp page
-    { uint16_t tmp_ = a - (uint8_t)(page & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(page & 0xff) ? FLAG_C : 0); }
+    cmp(a, (uint8_t)(page & 0xff));
     //     bcc return_71
     if (!(flags & FLAG_C)) return;
     // cab4b:
@@ -12232,7 +12238,7 @@ cab58:
     //     lda (tmp0),y
     a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     bne loop_cab4d
     if (!(flags & FLAG_Z)) goto loop_cab4d;
     //     inc tmp0
@@ -12267,7 +12273,7 @@ static void sub_cab6e(void) {
     //     lda (tmp0),y
     a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     //     cmp #0x81
-    { uint16_t tmp_ = a - 0x81; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x81 ? FLAG_C : 0); }
+    cmp(a, 0x81);
     //     rts
     return;
 }
@@ -12362,7 +12368,7 @@ loop_caba5:
     //     lda (current_ruler_ptr),y
     a = ram[current_ruler_ptr + y];
     //     cmp #0x3e ; '>'
-    { uint16_t tmp_ = a - 0x3e; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x3e ? FLAG_C : 0); }
+    cmp(a, 0x3e);
     //     bne cabad
     if (!(flags & FLAG_Z)) goto cabad;
     //     sty ruler_left_stop
@@ -12370,7 +12376,7 @@ loop_caba5:
     // cabad:
 cabad:
     //     cmp #0x3c ; '<'
-    { uint16_t tmp_ = a - 0x3c; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x3c ? FLAG_C : 0); }
+    cmp(a, 0x3c);
     //     bne cabb3
     if (!(flags & FLAG_Z)) goto cabb3;
     //     sty ruler_right_stop
@@ -12378,13 +12384,13 @@ cabad:
     // cabb3:
 cabb3:
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     beq cabbc
     if (flags & FLAG_Z) goto cabbc;
     //     iny
     y++;
     //     cpy #0x84
-    { uint16_t tmp_ = y - 0x84; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= 0x84 ? FLAG_C : 0); }
+    cmp(y, 0x84);
     //     bne loop_caba5
     if (!(flags & FLAG_Z)) goto loop_caba5;
     // cabbc:
@@ -12431,10 +12437,10 @@ static void move_cursor_to_address(void) {
     //     beq cac20
     a = (uint8_t)(current_line_ptr & 0xff);
     y = (uint8_t)(current_line_ptr >> 8);
-    { uint16_t tmp_ = y - tmp9; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= tmp9 ? FLAG_C : 0); }
+    cmp(y, tmp9);
     if (!(flags & FLAG_C)) goto cabf9;
     if (!(flags & FLAG_Z)) goto cabdf;
-    { uint16_t tmp_ = a - tmp8; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= tmp8 ? FLAG_C : 0); }
+    cmp(a, tmp8);
     if (!(flags & FLAG_C)) goto cabf9;
     if (flags & FLAG_Z) goto cac20;
     // cabdf:
@@ -12489,13 +12495,13 @@ cabf9:
     // cac0b:
 cac0b:
     //     cpy tmp9
-    { uint16_t tmp_ = y - tmp9; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= tmp9 ? FLAG_C : 0); }
+    cmp(y, tmp9);
     //     bcc cabf6
     if (!(flags & FLAG_C)) goto cabf6;
     //     bne cac17
     if (!(flags & FLAG_Z)) goto cac17;
     //     cmp tmp8
-    { uint16_t tmp_ = a - tmp8; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= tmp8 ? FLAG_C : 0); }
+    cmp(a, tmp8);
     //     bcc cabf6
     if (!(flags & FLAG_C)) goto cabf6;
     //     beq cac1d
@@ -12535,7 +12541,7 @@ cac20:
     //     txa
     a = x;
     //     cpx #3
-    { uint16_t tmp_ = x - 3; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (x >= 3 ? FLAG_C : 0); }
+    cmp(x, 3);
     //     ldx #0
     x = 0;
     //     bcc cac3e
@@ -12600,7 +12606,7 @@ cac5c:
     //     lda (tmp8),y
     a = ram[((uint16_t)tmp9 << 8 | tmp8) + y];
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     beq cac6f
     if (flags & FLAG_Z) goto cac6f;
     //     lda tmp8
@@ -12667,11 +12673,11 @@ cac8f:
     //     iny
     y++;
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     beq cac9a
     if (flags & FLAG_Z) goto cac9a;
     //     cmp #0x1a
-    { uint16_t tmp_ = a - 0x1a; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x1a ? FLAG_C : 0); }
+    cmp(a, 0x1a);
     //     bne cac9c
     if (!(flags & FLAG_Z)) goto cac9c;
     // cac9a:
@@ -12681,11 +12687,11 @@ cac9a:
     // cac9c:
 cac9c:
     //     cmp #0x0d
-    { uint16_t tmp_ = a - 0x0d; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0d ? FLAG_C : 0); }
+    cmp(a, 0x0d);
     //     beq return_73
     if (flags & FLAG_Z) return;
     //     cpy l0084
-    { uint16_t tmp_ = y - l0084; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0084 ? FLAG_C : 0); }
+    cmp(y, l0084);
     //     beq cac8f
     if (flags & FLAG_Z) goto cac8f;
     //     bcc cac8f
@@ -12790,7 +12796,7 @@ static void lookup_marker(void) {
     //     asl
     a <<= 1;
     //     cmp #0x0c
-    { uint16_t tmp_ = a - 0x0c; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0c ? FLAG_C : 0); }
+    cmp(a, 0x0c);
     //     bcs return_75
     if (flags & FLAG_C) { /* return_75: */ return; }
     //     tax
@@ -12890,7 +12896,7 @@ static void set_marker_to_here(void) {
     //     jsr get_line_length
     get_line_length();
     //     cpy xpos
-    { uint16_t tmp_ = y - xpos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= xpos ? FLAG_C : 0); }
+    cmp(y, xpos);
     //     bcc cad5d
     if (!(flags & FLAG_C)) goto cad5d;
     //     ldy #0
@@ -12979,11 +12985,11 @@ static void render_register(void) {
     //     bit lada6
     { flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | ((a & 0x40) ? FLAG_V : 0); }
     //     cmp #0x44 ; 'D'
-    { uint16_t tmp_ = a - 0x44; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x44 ? FLAG_C : 0); }
+    cmp(a, 0x44);
     //     beq cada3
     if (flags & FLAG_Z) goto cada3;
     //     cmp #0x54 ; 'T'
-    { uint16_t tmp_ = a - 0x54; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x54 ? FLAG_C : 0); }
+    cmp(a, 0x54);
     //     beq cada3
     if (flags & FLAG_Z) goto cada3;
     //     lda (tmp6),y
@@ -13020,7 +13026,7 @@ loop_cadf4:
     //     rol
     { uint8_t old_c = flags & FLAG_C ? 1 : 0; flags = (flags & ~FLAG_C) | ((a & 0x80) ? FLAG_C : 0); a = (a << 1) | old_c; }
     //     cmp l0046
-    { uint16_t tmp_ = a - l0046; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0046 ? FLAG_C : 0); }
+    cmp(a, l0046);
     //     bcc cadff
     if (!(flags & FLAG_C)) goto cadff;
     //     sbc l0046
@@ -13046,7 +13052,7 @@ static void sub_cae06(void) {
     //     lda xpos
     a = xpos;
     //     cmp #MAX_LINE_LENGTH
-    { uint16_t tmp_ = a - MAX_LINE_LENGTH; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= MAX_LINE_LENGTH ? FLAG_C : 0); }
+    cmp(a, MAX_LINE_LENGTH);
     //     bcs cae03
     if (flags & FLAG_C) { sub_cae03(); return; }
     //     stx input_buffer_offset+1
@@ -13062,7 +13068,7 @@ static void sub_cae06(void) {
     //     bcs cae03
     if (flags & FLAG_C) { sub_cae03(); return; }
     //     cmp #0x85
-    { uint16_t tmp_ = a - 0x85; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x85 ? FLAG_C : 0); }
+    cmp(a, 0x85);
     //     bcs cae03
     if (flags & FLAG_C) { sub_cae03(); return; }
     //     inc l006d
@@ -13092,7 +13098,7 @@ cae27:
     //     bcs cae35
     if (flags & FLAG_C) goto cae35;
     //     cmp #0x84
-    { uint16_t tmp_ = a - 0x84; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x84 ? FLAG_C : 0); }
+    cmp(a, 0x84);
     //     bcs cae35
     if (flags & FLAG_C) goto cae35;
     //     tax
@@ -13152,7 +13158,7 @@ cae5c:
     //     ldy l0084
     y = l0084;
     //     cpy xpos
-    { uint16_t tmp_ = y - xpos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= xpos ? FLAG_C : 0); }
+    cmp(y, xpos);
     //     bne cae27
     if (!(flags & FLAG_Z)) goto cae27;
     //     clc
@@ -13192,7 +13198,7 @@ cae78:
     //     lda #0
     a = 0;
     //     cpy l0084
-    { uint16_t tmp_ = y - l0084; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0084 ? FLAG_C : 0); }
+    cmp(y, l0084);
     //     bcc cae91
     if (!(flags & FLAG_C)) goto cae91;
     //     tya
@@ -13227,13 +13233,13 @@ cae98:
     //     iny
     y++;
     //     cpy #0x85
-    { uint16_t tmp_ = y - 0x85; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= 0x85 ? FLAG_C : 0); }
+    cmp(y, 0x85);
     //     bcc cae78
     if (!(flags & FLAG_C)) goto cae78;
     //     lda xpos
     a = xpos;
     //     cmp #0x84
-    { uint16_t tmp_ = a - 0x84; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x84 ? FLAG_C : 0); }
+    cmp(a, 0x84);
     //     bcs return_78
     if (flags & FLAG_C) { /* return_78: */ return; }
     //     ldy xpos
@@ -13255,7 +13261,7 @@ loop_caea5:
     //     tay
     y = a;
     //     cpy #0x84
-    { uint16_t tmp_ = y - 0x84; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= 0x84 ? FLAG_C : 0); }
+    cmp(y, 0x84);
     //     bcs caeb7
     if (flags & FLAG_C) goto caeb7;
     //     lda (current_edit_line_ptr),y
@@ -13273,7 +13279,7 @@ caeb7:
     //     iny
     y++;
     //     cpy #0x84
-    { uint16_t tmp_ = y - 0x84; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= 0x84 ? FLAG_C : 0); }
+    cmp(y, 0x84);
     //     bcc loop_caea5
     if (!(flags & FLAG_C)) goto loop_caea5;
     // return_78:
@@ -13296,11 +13302,11 @@ loop_caec8:
     //     iny
     y++;
     //     cmp #0x0b
-    { uint16_t tmp_ = a - 0x0b; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x0b ? FLAG_C : 0); }
+    cmp(a, 0x0b);
     //     beq caed4
     if (flags & FLAG_Z) goto caed4;
     //     cpy #0x84
-    { uint16_t tmp_ = y - 0x84; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= 0x84 ? FLAG_C : 0); }
+    cmp(y, 0x84);
     //     bcc loop_caec8
     if (!(flags & FLAG_C)) goto loop_caec8;
     //     rts
@@ -13381,7 +13387,7 @@ static void sub_caef4(void) {
     //     lda l0072
     a = l0072;
     //     cmp ruler_left_stop
-    { uint16_t tmp_ = a - ruler_left_stop; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= ruler_left_stop ? FLAG_C : 0); }
+    cmp(a, ruler_left_stop);
     //     bcc caf19
     if (!(flags & FLAG_C)) goto caf19;
     //     ldy l0083
@@ -13400,7 +13406,7 @@ caf19:
     //     ldy xpos
     y = xpos;
     //     cpy l0083
-    { uint16_t tmp_ = y - l0083; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= l0083 ? FLAG_C : 0); }
+    cmp(y, l0083);
     //     bcs caf28
     if (flags & FLAG_C) goto caf28;
     //     sec
@@ -13456,7 +13462,7 @@ loop_caf3f:
     //     dey
     y--;
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     beq loop_caf3f
     if (flags & FLAG_Z) goto loop_caf3f;
     // loop_caf4a:
@@ -13466,7 +13472,7 @@ loop_caf4a:
     //     jsr draw_char
     draw_char();
     //     cmp #0x20 ; ' '
-    { uint16_t tmp_ = a - 0x20; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= 0x20 ? FLAG_C : 0); }
+    cmp(a, 0x20);
     //     beq caf55
     if (flags & FLAG_Z) goto caf55;
     //     dey
@@ -13679,13 +13685,13 @@ static void cb05a(void) {
     //     ldy page+1
     y = (uint8_t)(page >> 8);
     //     cpy top+1
-    { uint16_t tmp_ = y - (uint8_t)(top >> 8); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (y >= (uint8_t)(top >> 8) ? FLAG_C : 0); }
+    cmp(y, (uint8_t)(top >> 8));
     //     bne return_85
     if (!(flags & FLAG_Z)) return;
     //     lda page
     a = (uint8_t)(page & 0xff);
     //     cmp top
-    { uint16_t tmp_ = a - (uint8_t)(top & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (uint8_t)(top & 0xff) ? FLAG_C : 0); }
+    cmp(a, (uint8_t)(top & 0xff));
     //     bne return_85
     if (!(flags & FLAG_Z)) return;
     //     inc top
@@ -13825,7 +13831,7 @@ loop_cb0e9:
     //     adc #6
     adc(6);
     //     cmp screen_width
-    { uint16_t tmp_ = a - screen_maxcolumn; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= screen_maxcolumn ? FLAG_C : 0); }
+    cmp(a, screen_maxcolumn);
     //     beq cb0ff
     if (flags & FLAG_Z) goto cb0ff;
     //     txa
