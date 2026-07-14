@@ -15,6 +15,10 @@ bin/view: src/view.c src/cli.h src/cli_stdio.c src/screen.h src/screen_ncurses.c
 	mkdir -p bin
 	$(CC) -g -O2 -Wall -Wextra -o $@ src/view.c src/cli_stdio.c src/screen_ncurses.c -lncurses
 
+bin/view_for_testing: src/view.c src/cli.h src/cli_stdio.c src/screen.h src/screen_ncurses.c
+	mkdir -p bin
+	$(CC) -g -O2 -DTEST_HARNESS -Wall -Wextra -o $@ src/view.c src/cli_stdio.c src/screen_ncurses.c -lncurses
+
 bin/render_number: tests/render_number.c
 	mkdir -p bin
 	$(CC) -g -O2 -Wall -Wextra -o $@ $<
@@ -25,5 +29,5 @@ bin/test_ruler: tests/test_ruler.c
 
 .PHONY: test test-render
 
-test: bin/render_number bin/test_ruler bin/view
+test: bin/render_number bin/test_ruler bin/view_for_testing
 	./bin/render_number && ./bin/test_ruler && TERM=vt100 python3 tests/interact.py

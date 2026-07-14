@@ -41,6 +41,9 @@ void screen_putchar(uint8_t a) {
 
 uint8_t screen_getchar(void) {
     if (ncurses_active) {
+#if defined(TEST_HARNESS)
+        write(STDOUT_FILENO, "\x05", 1);
+#endif
         int c = getch();
         switch (c) {
             case KEY_UP:    return 0x8b;

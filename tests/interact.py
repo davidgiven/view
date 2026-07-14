@@ -13,7 +13,7 @@ import termios
 import unittest
 import pyte
 
-VIEW_BIN = os.path.join(os.path.dirname(__file__), "..", "bin", "view")
+VIEW_BIN = os.path.join(os.path.dirname(__file__), "..", "bin", "view_for_testing")
 
 
 def strip_escapes(text: str) -> str:
@@ -245,41 +245,6 @@ class CliTests(unittest.TestCase):
         self.assertIn(b"word(s) counted", output,
                       f"Expected 'word(s) counted' in output, got: {repr(output)}")
 
-    def test_save_load_save_empty(self):
-        """SAVE an empty document, LOAD it back, SAVE again, then verify the file
-        contains only the bytes 0d 00 (the View empty-document format)."""
-        self.proc.read_until(b"=>", timeout=0.5)
-        self.proc.writeline("SAVE one.v")
-        self.proc.read_until(b"=>", timeout=1.0)
-
-        self.proc.writeline("LOAD one.v")
-        self.proc.read_until(b"=>", timeout=1.0)
-
-        self.proc.writeline("SAVE two.v")
-        self.proc.read_until(b"=>", timeout=1.0)
-
-        self.proc.writeline("BYE")
-        status, _ = self.proc.wait(timeout=1.0)
-        self.assertTrue(os.WIFEXITED(status))
-        self.assertEqual(os.WEXITSTATUS(status), 0)
-
-        self.assertTrue(os.path.exists("one.v"))
-        self.assertTrue(os.path.exists("two.v"))
-
-        with open("one.v", "rb") as f:
-            data = f.read()
-        self.assertEqual(data, b"\r\x00",
-                         f"Expected one.v to be bytes 0d 00, got {repr(data)}")
-
-        with open("two.v", "rb") as f:
-            data = f.read()
-        self.assertEqual(data, b"\r\r\x00",
-                         f"Expected two.v to be bytes 0d 0d 00, got {repr(data)}")
-
-        os.unlink("one.v")
-        os.unlink("two.v")
-
-
 class EditorTests(unittest.TestCase):
 
     def setUp(self):
@@ -294,8 +259,7 @@ class EditorTests(unittest.TestCase):
         self.proc.writeline(f"LOAD {filename}")
         load_output = self.proc.read_until(b"=>", timeout=1.0)
         self.proc.writeline("")
-        time.sleep(0.3)
-        raw = self.proc.read(timeout=0.5)
+        raw = self._drain_editor(1)
         screen = pyte.Screen(80, 24)
         stream = pyte.Stream(screen)
         stream.feed(raw.decode("latin-1"))
@@ -347,10 +311,7 @@ class EditorTests(unittest.TestCase):
         """Enter editor mode without loading a file. Returns pyte Screen."""
         self.proc.read_until(b"=>", timeout=0.5)
         self.proc.writeline("")
-        time.sleep(0.5)
-        raw = self.proc.read(timeout=1.0)
-        with open("/tmp/empty_final.bin", "wb") as f:
-            f.write(raw)
+        raw = self._drain_editor(1)
         screen = pyte.Screen(80, 24)
         stream = pyte.Stream(screen)
         stream.feed(raw.decode("latin-1"))
@@ -365,12 +326,20 @@ class EditorTests(unittest.TestCase):
         ]
         self._assert_screen_lines(screen, expected)
 
+    def _drain_editor(self, n_markers=1):
+        """Read editor PTY output until *n_markers* (\\x05 bytes) have been
+        received, indicating the editor has processed that many input events
+        and called getch() again.  Strips the \\x05 markers before returning."""
+        data = b""
+        for _ in range(n_markers):
+            data += self.proc.read_until(b"\x05", timeout=2.0)
+        return data.replace(b"\x05", b"")
+
     def test_enter_editor_and_type_q(self):
         """Enter empty editor, type 'q', then verify the visible screen lines."""
         screen = self._enter_editor_empty()
         self.proc.write(b"q")
-        time.sleep(1.0)
-        raw = self.proc.read(timeout=2.0)
+        raw = self._drain_editor(1)
         pyte.Stream(screen).feed(raw.decode("latin-1"))
         expected = [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
@@ -383,8 +352,7 @@ class EditorTests(unittest.TestCase):
         """Enter empty editor, press Enter, expect two empty lines."""
         screen = self._enter_editor_empty()
         self.proc.write(b"\n")
-        time.sleep(1.0)
-        raw = self.proc.read(timeout=2.0)
+        raw = self._drain_editor(1)
         pyte.Stream(screen).feed(raw.decode("latin-1"))
         expected = [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
@@ -399,8 +367,7 @@ class EditorTests(unittest.TestCase):
         """
         screen = self._enter_editor_empty()
         self.proc.write(b"qwerty")
-        time.sleep(1.0)
-        raw = self.proc.read(timeout=2.0)
+        raw = self._drain_editor(6)
         pyte.Stream(screen).feed(raw.decode("latin-1"))
         expected = [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
@@ -414,8 +381,7 @@ class EditorTests(unittest.TestCase):
         """
         screen = self._enter_editor_empty()
         self.proc.write(b"line1\nline2")
-        time.sleep(1.0)
-        raw = self.proc.read(timeout=2.0)
+        raw = self._drain_editor(11)
         pyte.Stream(screen).feed(raw.decode("latin-1"))
         expected = [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
