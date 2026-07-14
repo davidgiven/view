@@ -245,6 +245,40 @@ class CliTests(unittest.TestCase):
         self.assertIn(b"word(s) counted", output,
                       f"Expected 'word(s) counted' in output, got: {repr(output)}")
 
+    def test_save_load_save_empty(self):
+        """SAVE an empty document, LOAD it back, SAVE again, then verify the file
+        contains only the bytes 0d 00 (the View empty-document format)."""
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("SAVE one.v")
+        self.proc.read_until(b"=>", timeout=1.0)
+
+        self.proc.writeline("LOAD one.v")
+        self.proc.read_until(b"=>", timeout=1.0)
+
+        self.proc.writeline("SAVE two.v")
+        self.proc.read_until(b"=>", timeout=1.0)
+
+        self.proc.writeline("BYE")
+        status, _ = self.proc.wait(timeout=1.0)
+        self.assertTrue(os.WIFEXITED(status))
+        self.assertEqual(os.WEXITSTATUS(status), 0)
+
+        self.assertTrue(os.path.exists("one.v"))
+        self.assertTrue(os.path.exists("two.v"))
+
+        with open("one.v", "rb") as f:
+            data = f.read()
+        self.assertEqual(data, b"\r\x00",
+                         f"Expected one.v to be bytes 0d 00, got {repr(data)}")
+
+        with open("two.v", "rb") as f:
+            data = f.read()
+        self.assertEqual(data, b"\r\r\x00",
+                         f"Expected two.v to be bytes 0d 0d 00, got {repr(data)}")
+
+        os.unlink("one.v")
+        os.unlink("two.v")
+
 
 class EditorTests(unittest.TestCase):
 
