@@ -10322,6 +10322,7 @@ static void draw_line(uint16_t addr) {
     y = 3;
     //     lda hscroll_pos
     a = hscroll_pos;
+    set_flags(a);
     //     bne ca4b4
     if (!(flags & FLAG_Z)) goto ca4b4;
     //     ldy #1
