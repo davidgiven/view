@@ -42,6 +42,20 @@ static inline void set_flags(uint8_t value) {
     flags = (flags & ~(FLAG_Z|FLAG_N)) | (value == 0 ? FLAG_Z : 0) | (value & FLAG_N);
 }
 
+static inline void sbc(uint8_t value) {
+    uint16_t tmp_ = (uint16_t)a - value - (1 - (flags & FLAG_C ? 1 : 0));
+    flags = (flags & ~FLAG_C) | (tmp_ <= 0xff ? FLAG_C : 0);
+    a = (uint8_t)tmp_;
+    set_flags(a);
+}
+
+static inline void adc(uint8_t value) {
+    uint16_t tmp_ = (uint16_t)a + value + (flags & FLAG_C ? 1 : 0);
+    flags = (flags & ~FLAG_C) | (tmp_ > 0xff ? FLAG_C : 0);
+    a = (uint8_t)tmp_;
+    set_flags(a);
+}
+
 // ; Constants
 // buffer_keyboard                             = 0
 #define MAX_COMMAND_LENGTH 68
@@ -1719,13 +1733,13 @@ c8598:
     //     sec
     flags |= FLAG_C;
     //     sbc tmp0
-    { uint16_t tmp_ = (uint16_t)a - (uint8_t)(tmp0 & 0xff) - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    sbc((uint8_t)(tmp0 & 0xff));
     //     sta tmp6
     tmp6 = a;
     //     lda ptr5+1
     a = (uint8_t)((ptr5 >> 8) & 0xff);
     //     sbc tmp1
-    { uint16_t tmp_ = (uint16_t)a - (uint8_t)(tmp1 & 0xff) - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    sbc((uint8_t)(tmp1 & 0xff));
     //     sta tmp7
     tmp7 = a;
     //     jsr adjust_pointers
@@ -2775,7 +2789,7 @@ c8aa3:
     //     clc
     flags &= ~FLAG_C;
     //     adc ptr2
-    { uint16_t sum = (uint16_t)a + (uint8_t)(ptr2 & 0xff); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)sum == 0 ? FLAG_Z : 0) | ((uint8_t)sum & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc((uint8_t)(ptr2 & 0xff));
     //     sta tmp4
     tmp4 = a;
     //     lda ptr2+1
@@ -3868,7 +3882,7 @@ static void print_document(void) {
     a = (uint8_t)(top & 0xff);
     //     adc #3
     flags &= ~FLAG_C;
-    { uint16_t sum = (uint16_t)a + 3; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(3);
     //     sta ptr5
     ptr5 = (ptr5 & 0xff00) | a;
     //     tax
@@ -3876,7 +3890,7 @@ static void print_document(void) {
     //     lda top+1
     a = (uint8_t)(top >> 8);
     //     adc #0
-    { uint16_t sum = (uint16_t)a + 0 + ((flags & FLAG_C) ? 1U : 0U); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(0);
     //     sta ptr5+1
     ptr5 = (ptr5 & 0x00ff) | ((uint16_t)a << 8);
     //     tay
@@ -3884,7 +3898,7 @@ static void print_document(void) {
     //     txa
     a = x;
     //     adc #0x8d
-    { uint16_t sum = (uint16_t)a + 0x8d + ((flags & FLAG_C) ? 1U : 0U); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(0x8d);
     //     bcc c8edb
     if (!(flags & FLAG_C)) goto c8edb;
     //     iny
@@ -4130,13 +4144,13 @@ c8fb9:
     //     clc
     flags &= ~FLAG_C;
     //     adc #4
-    { uint16_t sum = (uint16_t)a + 4; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(4);
     //     sta ptr3
     ptr3 = (ptr3 & 0xff00) | a;
     //     lda tmp7
     a = tmp7;
     //     adc #0
-    { uint16_t sum = (uint16_t)a + 0 + ((flags & FLAG_C) ? 1U : 0U); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(0);
     //     sta ptr3+1
     ptr3 = (ptr3 & 0x00ff) | ((uint16_t)a << 8);
     //     sta macro_executing_flag
@@ -4414,19 +4428,19 @@ c90b6:
     //     clc
     flags &= ~FLAG_C;
     //     adc l0044
-    { uint16_t sum = (uint16_t)a + l0044; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(l0044);
     //     sta l0044
     l0044 = a;
     //     lda l0046
     a = l0046;
     //     adc l0048
-    { uint16_t sum = (uint16_t)a + l0048 + ((flags & FLAG_C) ? 1U : 0U); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(l0048);
     //     sta l0046
     l0046 = a;
     //     lda l0045
     a = l0045;
     //     adc l0043
-    { uint16_t sum = (uint16_t)a + l0043 + ((flags & FLAG_C) ? 1U : 0U); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(l0043);
     //     sta l0045
     l0045 = a;
     //     lda #0
@@ -4459,7 +4473,7 @@ c90e2:
     //     sbc l0045
     { int16_t r = (int16_t)a - (int16_t)l0045 - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)r; if (r >= 0) flags |= FLAG_C; else flags &= ~FLAG_C; }
     //     adc #0
-    { uint16_t sum = (uint16_t)a + 0 + ((flags & FLAG_C) ? 1U : 0U); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(0);
     //     sec
     flags |= FLAG_C;
     //     sbc l0046
@@ -4498,7 +4512,7 @@ loop_c9107:
     //     clc
     flags &= ~FLAG_C;
     //     adc microspacing_flag
-    { uint16_t sum = (uint16_t)a + microspacing_flag; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(microspacing_flag);
     //     bcc c9115
     if (!(flags & FLAG_C)) goto c9115;
     //     inc tmp9
@@ -4566,7 +4580,7 @@ c9142:
     //     clc
     flags &= ~FLAG_C;
     //     adc l0044
-    { uint16_t sum = (uint16_t)a + l0044; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(l0044);
     //     tax
     x = a;
     //     lda l0045
@@ -4780,7 +4794,7 @@ c91c2:
     //     clc
     flags &= ~FLAG_C;
     //     adc ptr3
-    { uint16_t sum = (uint16_t)a + (uint8_t)(ptr3 & 0xff); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc((uint8_t)(ptr3 & 0xff));
     //     sta ptr3
     ptr3 = (ptr3 & 0xff00) | a;
     //     bcc c91cc
@@ -5883,17 +5897,17 @@ static void ce_fmt_cmd(void) {
     //     sec
     flags |= FLAG_C;
     //     sbc ruler_left_stop
-    { uint16_t tmp_ = (uint16_t)a - ruler_left_stop - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    sbc(ruler_left_stop);
     //     lsr
     { flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | ((a & 1) ? FLAG_C : 0); a >>= 1; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
     //     sec
     flags |= FLAG_C;
     //     adc ruler_left_stop
-    { uint16_t tmp_ = (uint16_t)a + ruler_left_stop + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    adc(ruler_left_stop);
     //     sec
     flags |= FLAG_C;
     //     sbc l0084
-    { uint16_t tmp_ = (uint16_t)a - l0084 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    sbc(l0084);
     //     bcs c950f
     if (flags & FLAG_C) { c950f_impl(); return; }
     //     lda #0
@@ -5935,7 +5949,7 @@ static void rj_fmt_cmd(void) {
     //     sec
     flags |= FLAG_C;
     //     sbc l0083
-    { uint16_t tmp_ = (uint16_t)a - l0083 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    sbc(l0083);
     // c950f: fall-through to shared routine
     c950f_impl(); return;
 }
@@ -6005,7 +6019,7 @@ c9555:
     //     txa
     a = x;
     //     sbc l0083
-    { uint16_t tmp_ = (uint16_t)a - l0083 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    sbc(l0083);
     //     tax
     x = a;
     // return_37:
@@ -6483,7 +6497,7 @@ c968f:
     //     clc
     flags &= ~FLAG_C;
     //     adc last_macro_ptr
-    { uint16_t tmp_ = (uint16_t)a + (uint8_t)(last_macro_ptr & 0xff) + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    adc((uint8_t)(last_macro_ptr & 0xff));
     //     sta last_macro_ptr
     last_macro_ptr = (last_macro_ptr & 0xff00) | a;
     //     bcc c96a2
@@ -6497,14 +6511,14 @@ c96a2:
     //     sec
     flags |= FLAG_C;
     //     sbc last_macro_ptr
-    { uint16_t tmp_ = (uint16_t)a - (uint8_t)(last_macro_ptr & 0xff) - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    sbc((uint8_t)(last_macro_ptr & 0xff));
     //     tax
     x = a;
     set_flags(x);
     //     lda himem+1
     a = (uint8_t)((himem >> 8) & 0xff);
     //     sbc last_macro_ptr+1
-    { uint16_t tmp_ = (uint16_t)a - (uint8_t)((last_macro_ptr >> 8) & 0xff) - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    sbc((uint8_t)((last_macro_ptr >> 8) & 0xff));
     //     bne c96b8
     if (!(flags & FLAG_Z)) goto c96b8;
     //     cpx #0x97
@@ -6627,7 +6641,7 @@ c9719:
     //     sec
     flags |= FLAG_C;
     //     sbc #1
-    { uint16_t tmp_ = (uint16_t)a - 1 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    sbc(1);
     //     bcc return_44
     if (!(flags & FLAG_C)) return;
     //     cmp #2
@@ -6921,13 +6935,13 @@ c97dc:
     //     sec
     flags |= FLAG_C;
     //     sbc tmp8
-    { uint16_t tmp_ = (uint16_t)a - tmp8 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    sbc(tmp8);
     //     sta tmp8
     tmp8 = a;
     //     lda tmp5
     a = tmp5;
     //     sbc tmp9
-    { uint16_t tmp_ = (uint16_t)a - tmp9 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    sbc(tmp9);
     //     sta tmp9
     tmp9 = a;
     //     jmp c9804
@@ -6940,13 +6954,13 @@ c97f7:
     //     clc
     flags &= ~FLAG_C;
     //     adc tmp8
-    { uint16_t tmp_ = (uint16_t)a + tmp8 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    adc(tmp8);
     //     sta tmp8
     tmp8 = a;
     //     lda tmp5
     a = tmp5;
     //     adc tmp9
-    { uint16_t tmp_ = (uint16_t)a + tmp9 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    adc(tmp9);
     //     sta tmp9
     tmp9 = a;
     // c9804:
@@ -7108,19 +7122,19 @@ c9871:
     //     sec
     flags |= FLAG_C;
     //     sbc l0084
-    { uint16_t tmp_ = (uint16_t)a - l0084 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    sbc(l0084);
     //     bcc return_47
     if (!(flags & FLAG_C)) return;
     //     adc #0
-    { uint16_t tmp_ = (uint16_t)a + 0 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    adc(0);
     //     tax
     x = a;
     //     adc l0043
-    { uint16_t tmp_ = (uint16_t)a + l0043 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    adc(l0043);
     //     sec
     flags |= FLAG_C;
     //     sbc #0x84
-    { uint16_t tmp_ = (uint16_t)a - 0x84 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    sbc(0x84);
     //     bcc c988c
     if (!(flags & FLAG_C)) goto c988c;
     //     sta l0084
@@ -7128,7 +7142,7 @@ c9871:
     //     txa
     a = x;
     //     sbc l0084
-    { uint16_t tmp_ = (uint16_t)a - l0084 - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    sbc(l0084);
     //     tax
     x = a;
     // c988c:
@@ -7197,7 +7211,7 @@ c98bd:
     //     clc
     flags &= ~FLAG_C;
     //     adc l0044
-    { uint16_t tmp_ = (uint16_t)a + l0044 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    adc(l0044);
     //     sta input_buffer,y
     input_buffer[y] = a;
     //     lda l0082
@@ -7205,7 +7219,7 @@ c98bd:
     //     sec
     flags |= FLAG_C;
     //     sbc input_buffer,y
-    { uint16_t tmp_ = (uint16_t)a - input_buffer[y] - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    sbc(input_buffer[y]);
     //     php
     { uint8_t saved_flags = flags;
     //     sta l0082
@@ -7300,7 +7314,7 @@ c9912:
     //     clc
     flags &= ~FLAG_C;
     //     adc l0084
-    { uint16_t tmp_ = (uint16_t)a + l0084 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    adc(l0084);
     //     inc l0039
     l0039++;
     //     tay
@@ -7373,7 +7387,7 @@ static void sub_c9936(void) {
     //     clc
     flags &= ~FLAG_C;
     //     adc l0039
-    { uint16_t tmp_ = (uint16_t)a + l0039 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    adc(l0039);
     //     bne c995c
     if (!(flags & FLAG_Z)) goto c995c;
     // c994a:
@@ -7481,11 +7495,11 @@ c998a:
     //     sec
     flags |= FLAG_C;
     //     sbc ruler_left_stop
-    { uint16_t tmp_ = (uint16_t)a - ruler_left_stop - (1 - ((flags & FLAG_C) ? 1 : 0)); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ <= 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    sbc(ruler_left_stop);
     //     bcc c9974
     if (!(flags & FLAG_C)) goto c9a8d;
     //     adc #1
-    { uint16_t tmp_ = (uint16_t)a + 1 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    adc(1);
     //     sta input_buffer_offset+1
     l0080 = a;
     //     lda #0x10
@@ -7558,7 +7572,7 @@ c99c9:
     //     clc
     flags &= ~FLAG_C;
     //     adc l0039
-    { uint16_t tmp_ = (uint16_t)a + l0039 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    adc(l0039);
     //     sta l0039
     l0039 = a;
     //     lda #9
@@ -7624,7 +7638,7 @@ c9a0a:
     //     clc
     flags &= ~FLAG_C;
     //     adc input_buffer_offset+1
-    { uint16_t tmp_ = (uint16_t)a + l0080 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    adc(l0080);
     //     sta input_buffer_offset+1
     l0080 = a;
     //     lda #0x0b
@@ -7794,7 +7808,7 @@ c9a8d:
     //     clc
     flags &= ~FLAG_C;
     //     adc tmp0
-    { uint16_t tmp_ = (uint16_t)a + tmp0 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    adc(tmp0);
     //     sta current_line_ptr
     current_line_ptr = (current_line_ptr & 0xff00) | a;
     //     bcc c9aa4
@@ -7855,7 +7869,7 @@ static void sub_c9ac1(void) {
     //     sec
     flags |= FLAG_C;
     //     adc current_line_ptr
-    { uint16_t sum = (uint16_t)a + (uint16_t)(uint8_t)(current_line_ptr & 0xff); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)sum == 0 ? FLAG_Z : 0) | ((uint8_t)sum & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc((uint16_t)(uint8_t)(current_line_ptr & 0xff));
     //     sta tmp8
     tmp8 = a;
     //     sta tmp4
@@ -9029,7 +9043,7 @@ static void f3_delete_to_eol_key(void) {
     //     sec
     flags |= FLAG_C;
     //     sbc xpos
-    { uint16_t tmp_ = (uint16_t)a - xpos - (1 - (flags & FLAG_C ? 1 : 0)); a = (uint8_t)tmp_; x = a; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ < 0x10000 ? FLAG_C : 0); }
+    sbc(xpos); x = a;
     //     tax
     //     inc l0074
     l0074++;
@@ -9864,7 +9878,7 @@ ca2f9:
     //     clc
     flags &= ~FLAG_C;
     //     adc tmp0
-    { uint16_t sum = (uint16_t)a + tmp0; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(tmp0);
     //     bcc ca307
     if (!(flags & FLAG_C)) goto ca307;
     //     iny
@@ -9985,9 +9999,9 @@ ca360:
     //     clc
     flags &= ~FLAG_C;
     //     adc screen_width
-    { uint16_t sum = (uint16_t)a + screen_maxcolumn; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(screen_maxcolumn);
     //     sbc #3
-    { uint16_t tmp_ = (uint16_t)a - 3 - (1 - (flags & FLAG_C ? 1 : 0)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ < 0x10000 ? FLAG_C : 0); }
+    sbc(3);
     //     cmp l0072
     { uint16_t tmp_ = a - l0072; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= l0072 ? FLAG_C : 0); }
     //     bcs ca395
@@ -9999,7 +10013,7 @@ ca381:
     //     sec
     flags |= FLAG_C;
     //     sbc l0083
-    { uint16_t tmp_ = (uint16_t)a - l0083 - (1 - (flags & FLAG_C ? 1 : 0)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ < 0x10000 ? FLAG_C : 0); }
+    sbc(l0083);
     //     bcs ca38a
     if (flags & FLAG_C) goto ca38a;
     //     lda #0
@@ -10039,7 +10053,7 @@ ca395:
     //     sec
     flags |= FLAG_C;
     //     sbc l003d
-    { uint16_t tmp_ = (uint16_t)a - l003d - (1 - (flags & FLAG_C ? 1 : 0)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ < 0x10000 ? FLAG_C : 0); }
+    sbc(l003d);
     //     tax
     x = a;
     //     inx
@@ -10089,7 +10103,7 @@ loop_ca3c3:
     //     clc
     flags &= ~FLAG_C;
     //     adc tmp0
-    { uint16_t sum = (uint16_t)a + tmp0; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(tmp0);
     //     bcc ca3d8
     if (!(flags & FLAG_C)) goto ca3d8;
     //     iny
@@ -10185,11 +10199,11 @@ ca406:
     //     sec
     flags |= FLAG_C;
     //     sbc hscroll_pos
-    { uint16_t tmp_ = (uint16_t)a - hscroll_pos - (1 - (flags & FLAG_C ? 1 : 0)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ < 0x10000 ? FLAG_C : 0); }
+    sbc(hscroll_pos);
     //     clc
     flags &= ~FLAG_C;
     //     adc #3
-    { uint16_t sum = (uint16_t)a + 3; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(3);
     //     tax
     x = a;
     //     ldy #0
@@ -12927,7 +12941,7 @@ static void get_register_address(void) {
     //     pha
     { uint8_t saved_a = a;
     //     sbc #0x40 ; '@'
-    { uint16_t tmp_ = (uint16_t)a - 0x40 - (1 - (flags & FLAG_C ? 1 : 0)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ < 0x10000 ? FLAG_C : 0); }
+    sbc(0x40);
     //     asl
     a <<= 1;
     //     adc #<register_value_array
@@ -13010,7 +13024,7 @@ loop_cadf4:
     //     bcc cadff
     if (!(flags & FLAG_C)) goto cadff;
     //     sbc l0046
-    { uint16_t tmp_ = (uint16_t)a - l0046 - (1 - (flags & FLAG_C ? 1 : 0)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ < 0x10000 ? FLAG_C : 0); }
+    sbc(l0046);
     //     inc tmp8
     tmp8++;
     // cadff:
@@ -13184,7 +13198,7 @@ cae78:
     //     tya
     a = y;
     //     sbc input_buffer_offset+1
-    { uint16_t tmp_ = (uint16_t)a - l0080 - (1 - (flags & FLAG_C ? 1 : 0)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ < 0x10000 ? FLAG_C : 0); }
+    sbc(l0080);
     //     clc
     flags &= ~FLAG_C;
     //     adc current_edit_line_ptr
@@ -13392,7 +13406,7 @@ caf19:
     //     sec
     flags |= FLAG_C;
     //     sbc ruler_left_stop
-    { uint16_t tmp_ = (uint16_t)a - ruler_left_stop - (1 - (flags & FLAG_C ? 1 : 0)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ < 0x10000 ? FLAG_C : 0); }
+    sbc(ruler_left_stop);
     //     bcc caf2a
     if (!(flags & FLAG_C)) goto caf2a;
     //     adc xpos
@@ -13809,7 +13823,7 @@ loop_cb0e9:
     //     clc
     flags &= ~FLAG_C;
     //     adc #6
-    { uint16_t sum = (uint16_t)a + 6; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)sum == 0 ? FLAG_Z : 0) | ((uint8_t)sum & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(6);
     //     cmp screen_width
     { uint16_t tmp_ = a - screen_maxcolumn; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= screen_maxcolumn ? FLAG_C : 0); }
     //     beq cb0ff
