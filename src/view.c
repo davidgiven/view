@@ -9731,497 +9731,503 @@ static void redraw_editor(void) {
     // Pseudocode: Main screen update routine: scrolls, redraws lines, updates status and cursor
     uint8_t saved_status_line_needs_redrawing_flag;
 
-    // redraw_editor:
-    //     jsr cursor_off
+    // redraw_editor:                                                    (5206)
+    //     jsr cursor_off                                                (5207)
     cursor_off();
-    //     lda ruler_stack_ptr
+    //     lda ruler_stack_ptr                                           (5208)
     a = ruler_stack_ptr;
-    //     sta l0034
+    //     sta l0034                                                     (5209)
     l0034 = a;
-    //     lda status_line_needs_redrawing_flag
+    //     lda l0076                                                     (5210)
     a = status_line_needs_redrawing_flag;
-    //     sta input_buffer_offset+1
+    //     sta input_buffer_ptr+1                                        (5211)
     saved_status_line_needs_redrawing_flag = a;
-    //     lda l006e
+    //     lda l006e                                                     (5212)
     a = edit_buffer_unpacked_flag;
-    //     beq ca28e
+    //     beq ca28e                                                     (5213)
     if (a == 0) goto ca28e;
-    //     lda l0073
+    //     lda l0073                                                     (5214)
     a = l0073;
-    //     ora l006f
+    //     ora l006f                                                     (5215)
     a |= l006f;
-    //     beq ca28e
+    //     beq ca28e                                                     (5216)
     if (a == 0) goto ca28e;
-    //     jmp ca360
+    //     jmp ca360                                                     (5217)
     goto ca360;
 
-    // ca28e:
+    // ca28e:                                                              (5219)
 ca28e:
-    //     lda current_line_ptr+1
-    //     cmp l0012
-    //     bcc ca29c
-    //     bne ca2dc
-    //     lda current_line_ptr
-    //     cmp l0011
-    //     bcs ca2dc
+    //     lda current_line_ptr+1                                          (5220)
+    //     cmp l0012                                                       (5221)
+    //     bcc ca29c                                                       (5222)
+    //     bne ca2dc                                                       (5223)
+    //     lda current_line_ptr                                            (5224)
+    //     cmp l0011                                                       (5225)
+    //     bcs ca2dc                                                       (5226)
     if (current_line_ptr < top_of_screen_line_ptr) goto ca29c; else goto ca2dc;
-    // ca29c:
+    // ca29c:                                                              (5227)
 ca29c:
-    //     lda l006f
+    //     lda l006f                                                       (5228)
     a = l006f;
-    //     bne ca30d
+    //     bne ca30d                                                       (5229)
     if (a != 0) goto ca30d;
-    //     lda l0033
+    //     lda l0033                                                       (5230)
     a = l0033;
-    //     sta ruler_stack_ptr
+    //     sta ruler_stack_ptr                                             (5231)
     ruler_stack_ptr = a;
-    //     ldy l0012
-    //     lda l0011
-    //     cpy top+1
-    //     bcc ca2b2
-    //     bne ca30d
-    //     cmp top
-    //     bcs ca30d
+    //     ldy l0012                                                       (5232)
+    //     lda l0011                                                       (5233)
+    //     cpy top+1                                                       (5234)
+    //     bcc ca2b2                                                       (5235)
+    //     bne ca30d                                                       (5236)
+    //     cmp top                                                         (5237)
+    //     bcs ca30d                                                       (5238)
     if (top_of_screen_line_ptr >= top) goto ca30d;
-    // ca2b2:
+    // ca2b2:                                                              (5239)
 ca2b2:
-    //     jsr sub_cab37
+    //     jsr sub_cab37                                                   (5240)
     sub_cab37();
-    //     ldy tmp1
+    //     ldy tmp1                                                        (5241)
     y = tmp1;
-    //     cpy current_line_ptr+1
+    //     cpy current_line_ptr+1                                          (5242)
     cmp(y, (uint8_t)(current_line_ptr >> 8));
-    //     bne ca30d
+    //     bne ca30d                                                       (5243)
     if (!(flags & FLAG_Z)) goto ca30d;
-    //     lda tmp0
+    //     lda tmp0                                                        (5244)
     a = tmp0;
-    //     cmp current_line_ptr
+    //     cmp current_line_ptr                                            (5245)
     cmp(a, (uint8_t)(current_line_ptr & 0xff));
-    //     bne ca30d
+    //     bne ca30d                                                       (5246)
     if (!(flags & FLAG_Z)) goto ca30d;
-    //     sty l0012
-    //     sta l0011
+    //     sty l0012                                                       (5247)
+    //     sta l0011                                                       (5248)
     top_of_screen_line_ptr = ((addr_t)y << 8) | a;
-    //     ldx screen_height
+    //     ldx screen_height                                               (5249)
     x = screen_maxrow;
-    // loop_ca2c7:
+    // loop_ca2c7:                                                         (5250)
 loop_ca2c7:
-    //     dex
+    //     dex                                                             (5251)
     x--;
-    //     lda line_lengths,x
+    //     lda line_lengths,x                                              (5252)
     a = line_lengths[x];
-    //     inx
+    //     inx                                                             (5253)
     x++;
-    //     sta line_lengths,x
+    //     sta line_lengths,x                                              (5254)
     line_lengths[x] = a;
-    //     dex
+    //     dex                                                             (5255)
     x--;
-    //     bne loop_ca2c7
+    //     bne loop_ca2c7                                                  (5256)
     if (x != 0) goto loop_ca2c7;
-    //     ldy #SCREEN_SCROLLDOWN
-    //     jsr SCREEN
+    //     ldy #SCREEN_SCROLLDOWN                                          (5257)
+    //     jsr SCREEN                                                      (5258)
     screen_scrolldown();
-    //     jsr home_cursor
+    //     jsr home_cursor                                                 (5259)
     screen_setcursor(0, 1);
-    //     ldy #1
+    //     ldy #1                                                          (5260)
     y = 1;
-    //     jmp ca351
+    //     jmp ca351                                                       (5261)
     goto ca351;
 
-    // ca2dc:
+    // ca2dc:                                                              (5263)
 ca2dc:
-    //     lda l0033
+    //     lda l0033                                                       (5264)
     a = l0033;
-    //     sta ruler_stack_ptr
+    //     sta ruler_stack_ptr                                             (5265)
     ruler_stack_ptr = a;
-    // ca2e0:
+    // ca2e0:                                                              (5266)
 ca2e0:
-    //     ldx #0
+    //     ldx #0                                                          (5267)
     x = 0;
-    //     lda l0011
+    //     lda l0011                                                       (5268)
     a = (uint8_t)(top_of_screen_line_ptr & 0xff);
-    //     ldy l0012
+    //     ldy l0012                                                       (5269)
     y = (uint8_t)(top_of_screen_line_ptr >> 8);
-    // ca2e6:
+    // ca2e6:                                                              (5270)
 ca2e6:
-    //     inx
+    //     inx                                                             (5271)
     x++;
-    //     cpy ptr6+1
+    //     cpy ptr6+1                                                      (5272)
     cmp(y, (uint8_t)(ptr6 >> 8));
-    //     bne ca2f1
+    //     bne ca2f1                                                       (5273)
     if (!(flags & FLAG_Z)) goto ca2f1;
-    //     cmp ptr6
+    //     cmp ptr6                                                        (5274)
     cmp(a, (uint8_t)(ptr6 & 0xff));
-    //     bne ca2f1
+    //     bne ca2f1                                                       (5275)
     if (!(flags & FLAG_Z)) goto ca2f1;
-    //     stx l003d
+    //     stx l003d                                                       (5276)
     l003d = x;
-    // ca2f1:
+    // ca2f1:                                                              (5277)
 ca2f1:
-    //     cpy current_line_ptr+1
+    //     cpy current_line_ptr+1                                          (5278)
     cmp(y, (uint8_t)(current_line_ptr >> 8));
-    //     bne ca2f9
+    //     bne ca2f9                                                       (5279)
     if (!(flags & FLAG_Z)) goto ca2f9;
-    //     cmp current_line_ptr
+    //     cmp current_line_ptr                                            (5280)
     cmp(a, (uint8_t)(current_line_ptr & 0xff));
-    //     beq ca313
+    //     beq ca313                                                       (5281)
     if (flags & FLAG_Z) goto ca313;
-    // ca2f9:
+    // ca2f9:                                                              (5282)
 ca2f9:
-    //     jsr sub_cab1a
+    //     jsr sub_cab1a                                                   (5283)
     sub_cab1a();
-    //     beq ca313
+    //     beq ca313                                                       (5284)
     if (flags & FLAG_Z) goto ca313;
-    //     tya
+    //     tya                                                             (5285)
     a = y;
-    //     ldy tmp1
+    //     ldy tmp1                                                        (5286)
     y = tmp1;
-    //     clc
+    //     clc                                                             (5287)
     flags &= ~FLAG_C;
-    //     adc tmp0
+    //     adc tmp0                                                        (5288)
     adc(tmp0);
-    //     bcc ca307
+    //     bcc ca307                                                       (5289)
     if (!(flags & FLAG_C)) goto ca307;
-    //     iny
+    //     iny                                                             (5290)
     y++;
-    // ca307:
+    // ca307:                                                              (5291)
 ca307:
-    //     cpx screen_height
+    //     cpx screen_height                                               (5292)
     cmp(x, screen_maxrow);
-    //     beq ca2e6
+    //     beq ca2e6                                                       (5293)
     if (flags & FLAG_Z) goto ca2e6;
-    //     bcc ca2e6
+    //     bcc ca2e6                                                       (5294)
     if (!(flags & FLAG_C)) goto ca2e6;
-    // ca30d:
+    // ca30d:                                                              (5295)
 ca30d:
-    //     jsr sub_ca44e
+    //     jsr sub_ca44e                                                   (5296)
     sub_ca44e();
-    //     jmp ca2e0
+    //     jmp ca2e0                                                       (5297)
     goto ca2e0;
 
-    // ca313:
+    // ca313:                                                              (5299)
 ca313:
-    //     cpx screen_height
+    //     cpx screen_height                                               (5300)
     cmp(x, screen_maxrow);
-    //     bcc ca35e
+    //     bcc ca35e                                                       (5301)
     if (!(flags & FLAG_C)) goto ca35e;
-    //     beq ca35e
+    //     beq ca35e                                                       (5302)
     if (flags & FLAG_Z) goto ca35e;
-    //     lda l006f
+    //     lda l006f                                                       (5303)
     a = l006f;
-    //     bne ca30d
+    //     bne ca30d                                                       (5304)
     if (a != 0) goto ca30d;
-    //     ldx #0
+    //     ldx #0                                                          (5305)
     x = 0;
-    // loop_ca31f:
+    // loop_ca31f:                                                         (5306)
 loop_ca31f:
-    //     lda line_lengths+1,x
+    //     lda line_lengths+1,x                                            (5307)
     a = line_lengths[x + 1];
-    //     sta line_lengths,x
+    //     sta line_lengths,x                                              (5308)
     line_lengths[x] = a;
-    //     inx
+    //     inx                                                             (5309)
     x++;
-    //     cpx screen_height
+    //     cpx screen_height                                               (5310)
     cmp(x, screen_maxrow);
-    //     bne loop_ca31f
+    //     bne loop_ca31f                                                  (5311)
     if (!(flags & FLAG_Z)) goto loop_ca31f;
-    //     dec l003d
+    //     dec l003d                                                       (5312)
     l003d--;
-    //     ldx #0
+    //     ldx #0                                                          (5313)
     x = 0;
-    //     lda screen_width
+    //     lda screen_width                                                (5314)
     a = screen_maxcolumn;
-    //     sta line_lengths,x
+    //     sta line_lengths,x                                              (5315)
     line_lengths[x] = a;
-    //     lda l0033
+    //     lda l0033                                                       (5316)
     a = l0033;
-    //     sta ruler_stack_ptr
+    //     sta ruler_stack_ptr                                             (5317)
     ruler_stack_ptr = a;
-    //     ldy l0012
-    //     lda l0011
-    //     jsr sub_cab1a
-    //     tya
-    //     clc
-    //     adc l0011
-    //     sta l0011
-    //     bcc ca348
-    //     inc l0012
+    //     ldy l0012                                                       (5318)
+    //     lda l0011                                                       (5319)
+    //     jsr sub_cab1a                                                   (5320)
+    //     tya                                                             (5321)
+    //     clc                                                             (5322)
+    //     adc l0011                                                       (5323)
+    //     sta l0011                                                       (5324)
+    //     bcc ca348                                                       (5325)
+    //     inc l0012                                                       (5326)
     { uint8_t hi = (uint8_t)(top_of_screen_line_ptr >> 8); uint8_t lo = (uint8_t)(top_of_screen_line_ptr & 0xff); y = hi; a = lo; sub_cab1a(); top_of_screen_line_ptr += y; }
-    // ca348:
+    // ca348:                                                              (5327)
 ca348:
-    //     ldy #SCREEN_SCROLLUP
-    //     jsr SCREEN
+    //     ldy #SCREEN_SCROLLUP                                            (5328)
+    //     jsr SCREEN                                                      (5329)
     screen_scrollup();
-    //     ldx #0
-    //     ldy screen_height
+    //     ldx #0                                                          (5330)
+    //     ldy screen_height                                               (5331)
+    //     jsr set_cursor_position                                         (5332)
     screen_setcursor(0, screen_maxrow);
-    // ca351:
+    // ca351:                                                              (5333)
 ca351:
-    //     lda ruler_stack_ptr
+    //     lda ruler_stack_ptr                                             (5334)
     a = ruler_stack_ptr;
-    //     sta l0033
+    //     sta l0033                                                       (5335)
     l0033 = a;
-    //     inc input_buffer_offset+1
+    //     inc input_buffer_ptr+1                                          (5336)
     saved_status_line_needs_redrawing_flag++;
-    //     inc l0074
+    //     inc l0074                                                       (5337)
     l0074++;
-    //     tya
+    //     tya                                                             (5338)
     a = y;
-    //     tax
+    //     tax                                                             (5339)
     x = a;
-    // ca35e:
+    // ca35e:                                                              (5340)
 ca35e:
-    //     stx ypos
+    //     stx ypos                                                        (5341)
     ypos = x;
-    // ca360:
+    // ca360:                                                              (5342)
 ca360:
-    //     ldy l0034
+    //     ldy l0034                                                       (5343)
     y = l0034;
-    //     jsr cab91
+    //     jsr cab91                                                       (5344)
     cab91();
-    //     jsr unpack_line_into_buffer
+    //     jsr unpack_line_into_buffer                                     (5345)
     unpack_line_into_buffer();
-    //     jsr sub_ca608
+    //     jsr sub_ca608                                                   (5346)
     recalculate_cursor_xpos();
-    //     lda screen_width
+    //     lda screen_width                                                (5347)
     a = screen_maxcolumn;
-    //     lsr
+    //     lsr                                                             (5348)
     a >>= 1;
-    //     sta l0083
+    //     sta l0083                                                       (5349)
     l0083 = a;
-    //     lda l0072
+    //     lda l0072                                                       (5350)
     a = l0072;
-    //     cmp hscroll_pos
+    //     cmp hscroll_pos                                                 (5351)
     cmp(a, hscroll_pos);
-    //     bcc ca381
+    //     bcc ca381                                                       (5352)
     if (!(flags & FLAG_C)) goto ca381;
-    //     lda hscroll_pos
+    //     lda hscroll_pos                                                 (5353)
     a = hscroll_pos;
-    //     clc
+    //     clc                                                             (5354)
     flags &= ~FLAG_C;
-    //     adc screen_width
+    //     adc screen_width                                                (5355)
     adc(screen_maxcolumn);
-    //     sbc #3
+    //     sbc #3                                                          (5356)
     sbc(3);
-    //     cmp l0072
+    //     cmp l0072                                                       (5357)
     cmp(a, l0072);
-    //     bcs ca395
+    //     bcs ca395                                                       (5358)
     if (flags & FLAG_C) goto ca395;
-    // ca381:
+    // ca381:                                                              (5359)
 ca381:
-    //     lda l0072
+    //     lda l0072                                                       (5360)
     a = l0072;
-    //     sec
+    //     sec                                                             (5361)
     flags |= FLAG_C;
-    //     sbc l0083
+    //     sbc l0083                                                       (5362)
     sbc(l0083);
-    //     bcs ca38a
+    //     bcs ca38a                                                       (5363)
     if (flags & FLAG_C) goto ca38a;
-    //     lda #0
+    //     lda #0                                                          (5364)
     a = 0;
-    // ca38a:
+    // ca38a:                                                              (5365)
 ca38a:
-    //     sta hscroll_pos
+    //     sta hscroll_pos                                                 (5366)
     hscroll_pos = a;
-    //     lda #1
+    //     lda #1                                                          (5367)
     a = 1;
-    //     sta l0073
+    //     sta l0073                                                       (5368)
     l0073 = a;
-    //     sta input_buffer_offset+1
+    //     sta input_buffer_ptr+1                                          (5369)
     saved_status_line_needs_redrawing_flag = a;
-    //     jsr write_line_back_to_document_safely
+    //     jsr ca93c                                                       (5370)
     write_line_back_to_document_safely();
-    // ca395:
+    // ca395:                                                              (5371)
 ca395:
-    //     lda input_buffer_offset+1
+    //     lda input_buffer_ptr+1                                          (5372)
     a = saved_status_line_needs_redrawing_flag;
-    //     sta status_line_needs_redrawing_flag
+    //     sta l0076                                                       (5373)
     status_line_needs_redrawing_flag = a;
-    //     lda l0073
+    //     lda l0073                                                       (5374)
     a = l0073;
-    //     beq ca3e7
+    //     beq ca3e7                                                       (5375)
     if (a == 0) goto ca3e7;
-    //     bpl ca3b2
+    //     bpl ca3b2                                                       (5376)
     if (!((int8_t)a < 0)) goto ca3b2;
-    //     lda l003d
+    //     lda l003d                                                       (5377)
     a = l003d;
-    //     bmi ca3b2
+    //     bmi ca3b2                                                       (5378)
     if ((int8_t)a < 0) goto ca3b2;
-    //     sta l0082
+    //     sta l0082                                                       (5379)
     l0082 = a;
-    //     lda screen_height
+    //     lda screen_height                                               (5380)
     a = screen_maxrow;
-    //     sec
+    //     sec                                                             (5381)
     flags |= FLAG_C;
-    //     sbc l003d
+    //     sbc l003d                                                       (5382)
     sbc(l003d);
-    //     tax
+    //     tax                                                             (5383)
     x = a;
-    //     inx
+    //     inx                                                             (5384)
     x++;
-    //     lda ptr6
+    //     lda ptr6                                                        (5385)
     a = (uint8_t)(ptr6 & 0xff);
-    //     ldy ptr6+1
+    //     ldy ptr6+1                                                      (5386)
     y = (uint8_t)(ptr6 >> 8);
-    //     bne ca3c1
+    //     bne ca3c1                                                       (5387)
     if (y != 0) goto ca3c1;
-    // ca3b2:
+    // ca3b2:                                                              (5388)
 ca3b2:
-    //     ldy l0033
+    //     ldy l0033                                                       (5389)
     y = l0033;
-    //     jsr cab91
+    //     jsr cab91                                                       (5390)
     cab91();
-    //     lda #1
+    //     lda #1                                                          (5391)
     a = 1;
-    //     sta l0082
+    //     sta l0082                                                       (5392)
     l0082 = a;
-    //     lda l0011
+    //     lda l0011                                                       (5393)
     a = (uint8_t)(top_of_screen_line_ptr & 0xff);
-    //     ldy l0012
+    //     ldy l0012                                                       (5394)
     y = (uint8_t)(top_of_screen_line_ptr >> 8);
-    //     ldx screen_height
+    //     ldx screen_height                                               (5395)
     x = screen_maxrow;
-    // ca3c1:
+    // ca3c1:                                                              (5396)
 ca3c1:
-    //     stx l0081
+    //     stx l0081                                                       (5397)
     l0081 = x;
-    // loop_ca3c3:
+    // loop_ca3c3:                                                         (5398)
 loop_ca3c3:
-    //     jsr draw_line
+    //     jsr sub_ca486                                                   (5399)
     draw_line(((uint16_t)y << 8) | a);
-    //     lda tmp0
+    //     lda tmp0                                                        (5400)
     a = tmp0;
-    //     ldy tmp1
+    //     ldy tmp1                                                        (5401)
     y = tmp1;
-    //     jsr sub_cab1a
+    //     jsr sub_cab1a                                                   (5402)
     sub_cab1a();
-    //     beq ca422
+    //     beq ca422                                                       (5403)
     if (flags & FLAG_Z) goto ca422;
-    //     tya
+    //     tya                                                             (5404)
     a = y;
-    //     ldy tmp1
+    //     ldy tmp1                                                        (5405)
     y = tmp1;
-    //     clc
+    //     clc                                                             (5406)
     flags &= ~FLAG_C;
-    //     adc tmp0
+    //     adc tmp0                                                        (5407)
     adc(tmp0);
-    //     bcc ca3d8
+    //     bcc ca3d8                                                       (5408)
     if (!(flags & FLAG_C)) goto ca3d8;
-    //     iny
+    //     iny                                                             (5409)
     y++;
-    // ca3d8:
+    // ca3d8:                                                              (5410)
 ca3d8:
-    //     inc l0082
+    //     inc l0082                                                       (5411)
     l0082++;
-    //     dec l0081
+    //     dec l0081                                                       (5412)
     l0081--;
-    //     bne loop_ca3c3
+    //     bne loop_ca3c3                                                  (5413)
     if (l0081 != 0) goto loop_ca3c3;
     goto ca3de;
-ca422: // fall through from ca422 label; also reached from Z=1 goto
-    //     dec l0081
+    // ca422:                                                              (5451)
+ca422:
+    //     dec l0081                                                       (5452)
     l0081--;
-    //     beq ca3de
+    //     beq ca3de                                                       (5453)
     if (l0081 == 0) goto ca3de;
-    //     ldx l0082
+    //     ldx l0082                                                       (5454)
     x = l0082;
-    //     lda screen_width
+    //     lda screen_width                                                (5455)
     a = screen_maxcolumn + 1;
-    //     sta line_lengths+1,x
+    //     sta line_lengths+1,x                                            (5456)
     line_lengths[x + 1] = a;
-    //     sta l0083
+    //     sta l0083                                                       (5457)
     l0083 = a;
-    //     lda #0x2a ; '*'
+    //     lda #0x2a ; '*'                                                 (5458)
     a = 0x2a;
-    // loop_ca431:
+    // loop_ca431:                                                         (5459)
 loop_ca431:
-    //     inc l0082
+    //     inc l0082                                                       (5460)
     l0082++;
-    //     ldx #0
-    //     ldy l0082
-    //     jsr set_cursor_position
+    //     ldx #0                                                          (5461)
+    //     ldy l0082                                                       (5462)
+    //     jsr set_cursor_position                                         (5463)
     screen_setcursor(0, l0082);
-    //     jsr sub_ca597
+    //     jsr sub_ca597                                                   (5464)
     clear_to_eol();
-    //     lda l0083
+    //     lda l0083                                                       (5465)
     a = l0083;
-    //     sta line_lengths,x
+    //     sta line_lengths,x                                              (5466)
     line_lengths[x] = a;
-    //     lda #0
+    //     lda #0                                                          (5467)
     a = 0;
-    //     sta l0083
+    //     sta l0083                                                       (5468)
     l0083 = a;
-    //     lda #0x20 ; ' '
+    //     lda #0x20 ; ' '                                                 (5469)
     a = 0x20;
-    //     dec l0081
+    //     dec l0081                                                       (5470)
     l0081--;
-    //     bne loop_ca431
+    //     bne loop_ca431                                                  (5471)
     if (l0081 != 0) goto loop_ca431;
-    //     beq ca3de                                                         ; ALWAYS branch
-    // ca3de:
+    //     beq ca3de                                                       (5472)
+    // ca3de:                                                              (5414)
 ca3de:
-    //     lda #0
+    //     lda #0                                                          (5415)
     a = 0;
-    //     sta l0074
+    //     sta l0074                                                       (5416)
     l0074 = a;
-    //     ldy l0034
+    //     ldy l0034                                                       (5417)
     y = l0034;
-    //     jsr cab91
+    //     jsr cab91                                                       (5418)
     cab91();
-    // ca3e7:
+    // ca3e7:                                                              (5419)
 ca3e7:
-    //     jsr unpack_line_into_buffer
+    //     jsr unpack_line_into_buffer                                     (5420)
     unpack_line_into_buffer();
-    //     jsr sub_caacb
+    //     jsr sub_caacb                                                   (5421)
     sub_caacb();
-    //     jsr draw_ruler
+    //     jsr draw_ruler                                                  (5422)
     draw_ruler();
-    //     lda l0074
+    //     lda l0074                                                       (5423)
     a = l0074;
-    //     beq ca3ff
+    //     beq ca3ff                                                       (5424)
     if (a == 0) goto ca3ff;
-    //     lda ypos
+    //     lda ypos                                                        (5425)
     a = ypos;
-    //     sta l0082
+    //     sta l0082                                                       (5426)
     l0082 = a;
+    //     lda current_format_line_ptr                                     (5427)
+    //     ldy current_format_line_ptr+1                                   (5428)
+    //     jsr sub_ca486                                                   (5429)
     draw_line(current_format_line_ptr);
-    // ca3ff:
+    // ca3ff:                                                              (5430)
 ca3ff:
-    //     lda flags_need_redrawing_flag
+    //     lda flags_need_redrawing_flag                                   (5431)
     a = flags_need_redrawing_flag;
-    //     beq ca406
+    //     beq ca406                                                       (5432)
     if (a == 0) goto ca406;
-    //     jsr sub_ca651
+    //     jsr sub_ca651                                                   (5433)
     draw_status_word();
-    // ca406:
+    // ca406:                                                              (5434)
 ca406:
-    //     lda l0072
+    //     lda l0072                                                       (5435)
     a = l0072;
-    //     sec
+    //     sec                                                             (5436)
     flags |= FLAG_C;
-    //     sbc hscroll_pos
+    //     sbc hscroll_pos                                                 (5437)
     sbc(hscroll_pos);
-    //     clc
+    //     clc                                                             (5438)
     flags &= ~FLAG_C;
-    //     adc #3
+    //     adc #3                                                          (5439)
     adc(3);
-    //     tax
+    //     tax                                                             (5440)
     x = a;
-    //     ldy #0
+    //     ldy #0                                                          (5441)
     y = 0;
-    //     sty l0073
+    //     sty l0073                                                       (5442)
     l0073 = y;
-    //     sty l0074
+    //     sty l0074                                                       (5443)
     l0074 = y;
-    //     sty l006f
+    //     sty l006f                                                       (5444)
     l006f = y;
-    //     dey                                                               ; Y=0xff
+    //     dey                                                             (5445)
     y--;
-    //     sty ptr6+1
+    //     sty ptr6+1                                                      (5446)
     ptr6 = (ptr6 & 0x00ff) | ((uint16_t)y << 8);
-    //     ldy ypos
+    //     ldy ypos                                                        (5447)
+    //     jsr set_cursor_position                                         (5448)
     screen_setcursor(x, ypos);
-    //     jmp cursor_on
+    //     jmp cursor_on                                                   (5449)
     cursor_on(); return;
 }
 static void sub_ca44e(void) {
