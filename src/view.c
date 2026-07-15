@@ -10118,48 +10118,7 @@ ca3d8:
     l0081--;
     //     bne loop_ca3c3                                                  (5413)
     if (l0081 != 0) goto loop_ca3c3;
-    goto ca3de;
-    // ca422:                                                              (5451)
-ca422:
-    //     dec l0081                                                       (5452)
-    l0081--;
-    //     beq ca3de                                                       (5453)
-    if (l0081 == 0) goto ca3de;
-    //     ldx l0082                                                       (5454)
-    x = l0082;
-    //     lda screen_width                                                (5455)
-    a = screen_maxcolumn + 1;
-    //     sta line_lengths+1,x                                            (5456)
-    line_lengths[x + 1] = a;
-    //     sta l0083                                                       (5457)
-    l0083 = a;
-    //     lda #0x2a ; '*'                                                 (5458)
-    a = 0x2a;
-    // loop_ca431:                                                         (5459)
-loop_ca431:
-    //     inc l0082                                                       (5460)
-    l0082++;
-    //     ldx #0                                                          (5461)
-    //     ldy l0082                                                       (5462)
-    //     jsr set_cursor_position                                         (5463)
-    screen_setcursor(0, l0082);
-    //     jsr sub_ca597                                                   (5464)
-    clear_to_eol();
-    //     lda l0083                                                       (5465)
-    a = l0083;
-    //     sta line_lengths,x                                              (5466)
-    line_lengths[x] = a;
-    //     lda #0                                                          (5467)
-    a = 0;
-    //     sta l0083                                                       (5468)
-    l0083 = a;
-    //     lda #0x20 ; ' '                                                 (5469)
-    a = 0x20;
-    //     dec l0081                                                       (5470)
-    l0081--;
-    //     bne loop_ca431                                                  (5471)
-    if (l0081 != 0) goto loop_ca431;
-    //     beq ca3de                                                       (5472)
+    //     bne loop_ca3c3 fall-through → ca3de                              (5413→5414)
     // ca3de:                                                              (5414)
 ca3de:
     //     lda #0                                                          (5415)
@@ -10229,6 +10188,49 @@ ca406:
     screen_setcursor(x, ypos);
     //     jmp cursor_on                                                   (5449)
     cursor_on(); return;
+
+    // ca422:                                                              (5451)
+ca422:
+    //     dec l0081                                                       (5452)
+    l0081--;
+    //     beq ca3de                                                       (5453)
+    if (l0081 == 0) goto ca3de;
+    //     ldx l0082                                                       (5454)
+    x = l0082;
+    //     lda screen_width                                                (5455)
+    a = screen_maxcolumn + 1;
+    //     sta line_lengths+1,x                                            (5456)
+    line_lengths[x + 1] = a;
+    //     sta l0083                                                       (5457)
+    l0083 = a;
+    //     lda #0x2a ; '*'                                                 (5458)
+    a = 0x2a;
+    // loop_ca431:                                                         (5459)
+loop_ca431:
+    //     inc l0082                                                       (5460)
+    l0082++;
+    //     ldx #0                                                          (5461)
+    //     ldy l0082                                                       (5462)
+    //     jsr set_cursor_position                                         (5463)
+    screen_setcursor(0, l0082);
+    //     jsr sub_ca597                                                   (5464)
+    clear_to_eol();
+    //     lda l0083                                                       (5465)
+    a = l0083;
+    //     sta line_lengths,x                                              (5466)
+    line_lengths[x] = a;
+    //     lda #0                                                          (5467)
+    a = 0;
+    //     sta l0083                                                       (5468)
+    l0083 = a;
+    //     lda #0x20 ; ' '                                                 (5469)
+    a = 0x20;
+    //     dec l0081                                                       (5470)
+    l0081--;
+    //     bne loop_ca431                                                  (5471)
+    if (l0081 != 0) goto loop_ca431;
+    //     beq ca3de                                                       (5472)
+    goto ca3de;
 }
 static void sub_ca44e(void) {
     // sub_ca44e: Computes starting line for display based on screen position
