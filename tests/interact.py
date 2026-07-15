@@ -351,7 +351,7 @@ class EditorTests(unittest.TestCase):
     def test_enter_editor_press_enter(self):
         """Enter empty editor, press Enter, expect two empty lines."""
         screen = self._enter_editor_empty()
-        self.proc.write(b"\n")
+        self.proc.write(b"\r")
         raw = self._drain_editor(1)
         pyte.Stream(screen).feed(raw.decode("latin-1"))
         expected = [
@@ -380,13 +380,13 @@ class EditorTests(unittest.TestCase):
         """Enter empty editor, type two lines with a newline between, then check that characters appear.
         """
         screen = self._enter_editor_empty()
-        self.proc.write(b"line1\nline2")
+        self.proc.write(b"line1\rline2")
         raw = self._drain_editor(11)
         pyte.Stream(screen).feed(raw.decode("latin-1"))
         expected = [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
             "   line1                                                                        ",
-            "        line2                                                                   ",
+            "   line2                                                                        ",
             "********************************************************************************",
         ]
         self._assert_screen_lines(screen, expected)

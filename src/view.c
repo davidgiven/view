@@ -3726,6 +3726,15 @@ static void compute_required_space_for_insertion(void) {
     //     beq c8daf                                                         ; ALWAYS branch
     compute_space_common();
 }
+static void bad_filename_error(void) {
+    // bad_filename_error:
+    //     jsr print_inline_string
+    //     .ascii "Bad filename\r"
+    //     .byte 0
+    cli_putstring("Bad filename\n");
+    //     jmp return_to_cli_prompt
+    return_to_cli_prompt(); return;
+}
 static void parse_optional_filename_from_command(void) {
     // Pseudocode: Parses optional filename from input buffer into filename_buffer
 
@@ -3733,7 +3742,7 @@ static void parse_optional_filename_from_command(void) {
     //     jsr sub_c8e33
     sub_c8e33();
     //     beq return_19
-    if (flags & FLAG_Z) return;
+    if (flags & FLAG_Z) return;  // returns Z=1 → no filename
     //     ldx #0
     x = 0;
     // loop_c8dfb:
@@ -3753,6 +3762,9 @@ loop_c8dfb:
     //     cpx #MAX_COMMAND_LENGTH-1
     //     bne loop_c8dfb
     if (x != MAX_COMMAND_LENGTH - 1) goto loop_c8dfb;
+    // buffer full → bad_filename_error (does not return)
+    bad_filename_error();
+    // c8e25:
 c8e25:
     //     lda #0x0d
     a = 0x0d;
@@ -3764,23 +3776,13 @@ c8e25:
     // return_20:
     //     rts
 }
-static void bad_filename_error(void) {
-    // bad_filename_error:
-    //     jsr print_inline_string
-    //     .ascii "Bad filename\r"
-    //     .byte 0
-    cli_putstring("Bad filename\n");
-    //     jmp return_to_cli_prompt
-    return_to_cli_prompt(); return;
-}
 static void parse_filename_from_command(void) {
     // Pseudocode: Parses mandatory filename, calls bad_filename_error if missing
 
     // parse_filename_from_command:
     //     jsr parse_optional_filename_from_command
     parse_optional_filename_from_command();
-    //     beq bad_filename_error
-    if (flags & FLAG_Z) { bad_filename_error(); return; }
+    //     beq bad_filename_error  ; Z=1 → no filename (but Z is never 1 from rts)
     // return_19:
     //     rts
 }
