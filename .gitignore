@@ -1,4 +1,7 @@
 bin/
+.obj/
+.gdb_history
+.vscode/
 view.com
 view.com.elf
 **/__pycache__/
