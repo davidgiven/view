@@ -13,19 +13,19 @@ view-rebuild.rom: view-b3.0.asm
 
 bin/view: src/view.c src/cli.h src/cli_stdio.c src/screen.h src/screen_ncurses.c
 	mkdir -p bin
-	$(CC) -g -O2 -Wall -Wextra -o $@ src/view.c src/cli_stdio.c src/screen_ncurses.c -lncurses
+	$(CC) -g -O0 -Wall -Wextra -o $@ src/view.c src/cli_stdio.c src/screen_ncurses.c -lncurses
 
 bin/view_for_testing: src/view.c src/cli.h src/cli_stdio.c src/screen.h src/screen_ncurses.c
 	mkdir -p bin
-	$(CC) -g -O2 -DTEST_HARNESS -Wall -Wextra -o $@ src/view.c src/cli_stdio.c src/screen_ncurses.c -lncurses
+	$(CC) -g -O0 -DTEST_HARNESS -Wall -Wextra -o $@ src/view.c src/cli_stdio.c src/screen_ncurses.c -lncurses
 
 bin/render_number: tests/render_number.c
 	mkdir -p bin
-	$(CC) -g -O2 -Wall -Wextra -o $@ $<
+	$(CC) -g -O0 -Wall -Wextra -o $@ $<
 
 bin/test_ruler: tests/test_ruler.c
 	mkdir -p bin
-	$(CC) -g -O2 -Wall -Wextra -o $@ $<
+	$(CC) -g -O0 -Wall -Wextra -o $@ $<
 
 .PHONY: test test-render
 
