@@ -445,6 +445,17 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_enter_editor_and_a_long_line(self):
+        self._test_enter_editor_and_type(
+            b"She puzzled over this for some time, but at last a bright thought struck her.",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   She  puzzled  over this for some time, but at last a bright thought struck   ",
+                "   her.                                                                         ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
         self.assertIn(

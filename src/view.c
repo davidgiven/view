@@ -8381,38 +8381,91 @@ c9c56:
     //     cpy ruler_right_stop
     //     bcs c9c82
     if (y < ruler_right_stop) { return; }
-    // c9c82:
-    //     jsr get_line_length
+    // c9c82:                                                              (4202)
+    //     jsr get_line_length                                             (4203)
+    get_line_length();
+    //     sty l0083                                                       (4204)
     l0083 = y;
-    top_margin = 0;
+    //     lda #0                                                          (4205)
+    a = 0;
+    //     sta top_margin                                                  (4206)
+    top_margin = a;
+    //     ldy xpos                                                        (4207)
     y = xpos;
+    //     sty input_buffer_ptr+1                                           (4208)
     input_buffer_offset = y;
+    //     jsr draw_previous_word                                          (4209)
     draw_previous_word();
+    //     jsr sub_ca608                                                    (4210)
     recalculate_cursor_xpos();
-    if (l0072 < ruler_left_stop) {
-        y = input_buffer_offset;
-        y--;
-        xpos = y;
-    }
-    {
-        uint8_t ibp = input_buffer_offset;
-        top_margin = ibp - xpos;
-        l0083 = l0083 - xpos;
-        y = l0083;
-        y++;
-        if (ruler_left_stop != 0) { top_margin++; y++; }
-        tmp6 = y;
-        {
-            uint16_t sum = (uint16_t)(uint8_t)(current_line_ptr & 0xff) + l003b;
-            tmp4 = (uint8_t)(sum & 0xff);
-            tmp5 = (uint8_t)(current_line_ptr >> 8) + (sum >> 8);
-        }
-        make_space_for_insertion();
-        if (flags & FLAG_C) { show_memory_full_error(); longjmp(env, JMP_EDITOR); }
-    }
-    // c9cd0:
+    //     lda l0072                                                       (4211)
+    a = l0072;
+    //     cmp ruler_left_stop                                             (4212)
+    cmp(a, ruler_left_stop);
+    //     beq c9c9d                                                       (4213)
+    //     bcs c9ca2                                                       (4214)
+    // c9c9d:                                                              (4215)
+    //     ldy input_buffer_ptr+1, dey, sty xpos                           (4216-4218)
+    if (flags & FLAG_Z) { y = input_buffer_offset; y--; xpos = y; goto c9ca2; }
+    if (flags & FLAG_C) goto c9ca2;
+    { y = input_buffer_offset; y--; xpos = y; }
+    // c9ca2:                                                              (4219)
+c9ca2:
+    //     lda input_buffer_ptr+1                                           (4220)
+    a = input_buffer_offset;
+    //     sec                                                             (4221)
+    flags |= FLAG_C;
+    //     sbc xpos                                                        (4222)
+    sbc(xpos);
+    //     sta top_margin                                                  (4223)
+    top_margin = a;
+    //     lda l0083                                                       (4224)
+    a = l0083;
+    //     sec                                                             (4225)
+    flags |= FLAG_C;
+    //     sbc xpos                                                        (4226)
+    sbc(xpos);
+    //     sta l0083                                                       (4227)
+    l0083 = a;
+    //     tay                                                             (4228)
+    y = a;
+    //     iny                                                             (4229)
+    y++;
+    //     lda ruler_left_stop                                             (4230)
+    a = ruler_left_stop;
+    //     beq c9cb9                                                       (4231)
+    if (flags & FLAG_Z) goto c9cb9;
+    //     inc top_margin                                                  (4232)
+    top_margin++;
+    //     iny                                                             (4233)
+    y++;
+    // c9cb9:                                                              (4234)
+c9cb9:
+    //     sty tmp6                                                        (4235)
+    tmp6 = y;
+    //     lda current_line_ptr                                            (4236)
+    a = (uint8_t)(current_line_ptr & 0xff);
+    //     sec                                                             (4237)
+    flags |= FLAG_C;
+    //     adc l003b                                                       (4238)
+    adc(l003b);
+    //     sta tmp4                                                        (4239)
+    tmp4 = a;
+    //     lda current_line_ptr+1                                          (4240)
+    a = (uint8_t)(current_line_ptr >> 8);
+    //     adc #0                                                          (4241)
+    adc(0);
+    //     sta tmp5                                                        (4242)
+    tmp5 = a;
+    //     jsr make_space_for_insertion                                    (4243)
+    make_space_for_insertion();
+    //     bcc c9cd0                                                       (4244)
+    if (!(flags & FLAG_C)) goto c9cd0;
+    //     jmp ca941                                                       (4245)
+    show_memory_full_error(); longjmp(env, JMP_EDITOR);
+    // c9cd0:                                                              (4247)
 c9cd0:
-    //     ldy #0
+    //     ldy #0                                                          (4248)
     y = 0;
     //     lda ruler_left_stop
     //     beq c9cdb
