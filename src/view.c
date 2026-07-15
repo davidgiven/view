@@ -8615,7 +8615,7 @@ static void return_key(void) {
     //     clc
     flags &= ~FLAG_C;
     //     adc current_line_ptr
-    { uint16_t sum = (uint16_t)a + (uint8_t)(current_line_ptr & 0xff); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc((uint8_t)(current_line_ptr & 0xff));
     //     bcc c9d98
     if (!(flags & FLAG_C)) goto c9d98;
     //     iny
@@ -8641,7 +8641,7 @@ c9d9b:
     //     clc
     flags &= ~FLAG_C;
     //     adc current_line_ptr
-    { uint16_t sum = (uint16_t)a + (uint8_t)(current_line_ptr & 0xff); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc((uint8_t)(current_line_ptr & 0xff));
     //     sta current_line_ptr
     current_line_ptr = (uint16_t)((current_line_ptr & 0xff00) | a);
     //     bcc return_54
@@ -10722,6 +10722,7 @@ static void recalculate_cursor_xpos(void) {
     tmp1 = a;
     //     lda l0079
     a = l0079;
+    set_flags(a);
     //     bne ca624
     if (!(flags & FLAG_Z)) goto ca624;
     //     tay
@@ -10741,7 +10742,7 @@ loop_ca615:
     //     clc
     flags &= ~FLAG_C;
     //     adc l0039
-    { uint16_t tmp_ = (uint16_t)a + l0039; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ l0039) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    adc(l0039);
     //     bcc loop_ca615
     if (!(flags & FLAG_C)) goto loop_ca615;
     // ca624:
@@ -10763,7 +10764,7 @@ loop_ca629:
     //     clc
     flags &= ~FLAG_C;
     //     adc l0039
-    { uint16_t tmp_ = (uint16_t)a + l0039; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ l0039) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    adc(l0039);
     //     cmp l0072
     cmp(a, l0072);
     //     bcc loop_ca629
