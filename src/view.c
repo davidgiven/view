@@ -1887,6 +1887,7 @@ c8669:
     if (x == 0) tmp6 = a; else if (x == 1) tmp7 = a; else tmp8 = a;
     //     inc input_buffer_offset
     input_buffer_offset++;
+    set_flags(input_buffer_offset);
     //     bne c8649
     if (!(flags & FLAG_Z)) goto c8649;
     // c8672:
@@ -1901,6 +1902,7 @@ loop_c8674:
     if (x == 0) format_mode_flag = a; else if (x == 1) justifying_flag = a; else insert_mode_flag = a;
     //     dex
     x--;
+    set_flags(x);
     //     bpl loop_c8674
     if (!(flags & FLAG_N)) goto loop_c8674;
     //     bmi c869b                                                         ; ALWAYS branch
@@ -2715,6 +2717,7 @@ loop_c8a74:
     // loop_c8a74:
     //     lda output_buffer,y
     a = output_buffer[y];
+    set_flags(a);
     //     php
     { uint8_t saved_flags_ = flags;
     //     iny
@@ -4173,6 +4176,7 @@ c8fd5:
     y = l0080;
     //     lda print_flags
     a = print_flags;
+    set_flags(a);
     //     bpl c8fe6
     if (!(flags & FLAG_N)) goto c8fe6;
     //     lda microspacing_flag
@@ -4330,8 +4334,9 @@ c906f:
     if (!(flags & FLAG_N)) goto c9064;
     //     lda l0042
     a = l0042;
+    set_flags(a);
     //     beq c908a
-    if (a == 0) goto c908a;
+    if (flags & FLAG_Z) goto c908a;
     //     bmi c9087
     if (flags & FLAG_N) goto c9087;
     //     inc l0043
@@ -4467,13 +4472,13 @@ c90e2:
     //     bcc c90f8
     if (!(flags & FLAG_C)) goto c90f8;
     //     sbc l0045
-    { int16_t r = (int16_t)a - (int16_t)l0045 - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)r; if (r >= 0) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    sbc(l0045);
     //     adc #0
     adc(0);
     //     sec
     flags |= FLAG_C;
     //     sbc l0046
-    { int16_t r = (int16_t)a - (int16_t)l0046 - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)r; if (r >= 0) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    sbc(l0046);
     //     beq c9101
     if (flags & FLAG_Z) goto c9101;
     // c90f8:
@@ -5405,6 +5410,7 @@ static void sub_c93be(void) {
     // sub_c93be:
     //     lda ruler_right_stop
     a = ruler_right_stop;
+    set_flags(a);
     //     bne return_29
     if (!(flags & FLAG_Z)) goto return_29;
     //     lda l003a
@@ -5466,6 +5472,7 @@ c93e6:
     l0084 = x;
     //     lda print_flags
     a = print_flags;
+    set_flags(a);
     //     bpl return_30
     if (!(flags & FLAG_N)) goto return_30;
     //     txa
@@ -5504,6 +5511,7 @@ static void sub_c93fd(void) {
     flags |= FLAG_C;
     //     lda two_sided_flag
     a = two_sided_flag;
+    set_flags(a);
     //     beq return_31
     if (flags & FLAG_Z) goto return_31;
     //     lda register_value_p
@@ -8782,6 +8790,7 @@ static void delete_key(void) {
     if (!(flags & FLAG_C)) return;
     //     ldx insert_mode_flag
     x = insert_mode_flag;
+    set_flags(x);
     //     bne return_55
     if (!(flags & FLAG_Z)) return;
     //     jsr get_line_length
@@ -8902,6 +8911,7 @@ static void f7_delete_line_key(void) {
     y = 0;
     //     lda (current_line_ptr),y
     a = ram[current_line_ptr + y];
+    set_flags(a);
     //     bne c9e81
     if (!(flags & FLAG_Z)) goto c9e81;
     //     lda current_line_ptr
@@ -12054,7 +12064,7 @@ caad5:
     //     lda current_format_line_ptr+1
     a = (uint8_t)(current_format_line_ptr >> 8);
     //     adc #0
-    { uint16_t sum = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc(0);
     //     sta markers_array+1,x
     ((uint8_t*)markers_array)[x + 1] = a;
     //     bne caad5
@@ -13128,7 +13138,7 @@ loop_cae37:
     //     lda current_edit_line_ptr+1
     a = (uint8_t)(current_edit_line_ptr >> 8);
     //     adc #0
-    { uint16_t sum = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc(0);
     //     bne cae4d
     if (!(flags & FLAG_Z)) goto cae4d;
     // cae4b:
@@ -13215,7 +13225,7 @@ cae78:
     //     lda current_edit_line_ptr+1
     a = (uint8_t)(current_edit_line_ptr >> 8);
     //     adc #0
-    { uint16_t sum = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc(0);
     //     bne cae93
     if (!(flags & FLAG_Z)) goto cae93;
     // cae91:
@@ -13369,6 +13379,7 @@ static void sub_caef4(void) {
     a = format_mode_flag;
     //     and #0x81
     a &= 0x81;
+    set_flags(a);
     //     bne caf31
     if (!(flags & FLAG_Z)) goto caf31;
     //     jsr sub_caec2
