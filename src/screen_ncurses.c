@@ -14,7 +14,7 @@ static bool ncurses_active;
 void screen_enter(void) {
     if (ncurses_active) return;
     initscr();
-    cbreak();
+    raw();
     noecho();
     keypad(stdscr, TRUE);
     scrollok(stdscr, TRUE);
@@ -46,10 +46,10 @@ uint8_t screen_getchar(void) {
 #endif
         int c = getch();
         switch (c) {
-            case KEY_UP:    return 0x8b;
-            case KEY_DOWN:  return 0x8a;
-            case KEY_LEFT:  return 0x88;
-            case KEY_RIGHT: return 0x89;
+            case KEY_UP:    return SCREEN_KEY_UP;
+            case KEY_DOWN:  return SCREEN_KEY_DOWN;
+            case KEY_LEFT:  return SCREEN_KEY_LEFT;
+            case KEY_RIGHT: return SCREEN_KEY_RIGHT;
             case KEY_BACKSPACE: return 0x7f;
             case KEY_ENTER: return 0x0d;
             default: return (uint8_t)(c & 0xff);

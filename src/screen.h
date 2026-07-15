@@ -7,6 +7,11 @@
 #define STYLE_NORMAL  0
 #define STYLE_REVERSE 1
 
+#define SCREEN_KEY_UP    0x8b
+#define SCREEN_KEY_DOWN  0x8a
+#define SCREEN_KEY_LEFT  0x88
+#define SCREEN_KEY_RIGHT 0x89
+
 extern void screen_putchar(uint8_t a);
 extern uint8_t screen_getchar(void);
 extern void screen_setcursor(uint8_t xpos, uint8_t ypos);

@@ -49,6 +49,7 @@ static inline void sbc(uint8_t value) {
     set_flags(a);
 }
 
+#define CTRL(c) ((uint8_t)((c) & 0x1f))
 
 static inline void cmp(uint8_t reg, uint8_t value) {
     uint16_t tmp_ = (uint16_t)reg - value;
@@ -68,10 +69,6 @@ static inline void adc(uint8_t value) {
 #define MAX_LINE_LENGTH    132
 
 // ; SCREEN driver key codes
-#define SCREEN_KEY_UP		0x8b
-#define SCREEN_KEY_DOWN		0x8a
-#define SCREEN_KEY_LEFT		0x88
-#define SCREEN_KEY_RIGHT	0x89
 
 // ; File structure (removed - migrated to stdio)
 
@@ -8129,8 +8126,8 @@ c9b9f:
     l0038 = a;
     //     tay
     y = a;
-    //     bmi c9bbb
-    if (a & 0x80) goto editor_loop;
+    //     bmi c9bbb  ; omitted to support high-bit control characters
+    // if (a & 0x80) goto editor_loop;
     //     cmp #0x20 ; ' '
     cmp(a, 0x20);
     //     bcc enter_nonprintable_character
@@ -8141,35 +8138,35 @@ c9b9f:
     if (!(flags & FLAG_C)) { enter_printable_character(); goto editor_loop; }
 enter_nonprintable_character:
     switch (a) {
-        case '['-'@': esc_key(); goto editor_loop;
-        case 'M'-'@': return_key(); goto editor_loop;
+        case CTRL('['): esc_key(); goto editor_loop;
+        case CTRL('M'): return_key(); goto editor_loop;
         case 0x7f: delete_key(); goto editor_loop;
-        case 'I'-'@': tab_key(); goto editor_loop;
-        case 'E'-'@': f15_up_key(); goto editor_loop;
+        case CTRL('I'): tab_key(); goto editor_loop;
+        case CTRL('E'): f15_up_key(); goto editor_loop;
         case SCREEN_KEY_UP: f15_up_key(); goto editor_loop;
-        case 'S'-'@': f12_left_key(); goto editor_loop;
+        case CTRL('S'): f12_left_key(); goto editor_loop;
         case SCREEN_KEY_LEFT: f12_left_key(); goto editor_loop;
-        case 'D'-'@': f13_right_key(); goto editor_loop;
+        case CTRL('D'): f13_right_key(); goto editor_loop;
         case SCREEN_KEY_RIGHT: f13_right_key(); goto editor_loop;
-        case 'X'-'@': f14_down_key(); goto editor_loop;
+        case CTRL('X'): f14_down_key(); goto editor_loop;
         case SCREEN_KEY_DOWN: f14_down_key(); goto editor_loop;
-        case 'A'-'@': sf12_left_key(); goto editor_loop;
-        case 'F'-'@': sf13_right_key(); goto editor_loop;
-        case 'C'-'@': sf14_down_key(); goto editor_loop;
-        case 'R'-'@': sf15_up_key(); goto editor_loop;
-        case 'G'-'@': f9_delete_char_key(); goto editor_loop;
-        case 'H'-'@': f8_insert_char_key(); goto editor_loop;
-        case 'Y'-'@': f7_delete_line_key(); goto editor_loop;
-        case 'V'-'@': cf4_insert_mode_key(); goto editor_loop;
-        case 'N'-'@': f6_insert_line_key(); goto editor_loop;
-        case 'B'-'@': f0_format_block_key(); goto editor_loop;
-        case 'T'-'@': sf3_delete_to_char_key(); goto editor_loop;
-        case 'L'-'@': cf1_next_match_key(); goto editor_loop;
-        case 'U'-'@': cf7_join_lines_key(); goto editor_loop;
-        case 'P'-'@': sf1_swap_case_key(); goto editor_loop;
-        case 'O'-'@': o_command_key(); goto editor_loop;
-        case 'Q'-'@': q_command_key(); goto editor_loop;
-        case 'K'-'@': k_command_key(); goto editor_loop;
+        case CTRL('A'): sf12_left_key(); goto editor_loop;
+        case CTRL('F'): sf13_right_key(); goto editor_loop;
+        case CTRL('C'): sf14_down_key(); goto editor_loop;
+        case CTRL('R'): sf15_up_key(); goto editor_loop;
+        case CTRL('G'): f9_delete_char_key(); goto editor_loop;
+        case CTRL('H'): f8_insert_char_key(); goto editor_loop;
+        case CTRL('Y'): f7_delete_line_key(); goto editor_loop;
+        case CTRL('V'): cf4_insert_mode_key(); goto editor_loop;
+        case CTRL('N'): f6_insert_line_key(); goto editor_loop;
+        case CTRL('B'): f0_format_block_key(); goto editor_loop;
+        case CTRL('T'): sf3_delete_to_char_key(); goto editor_loop;
+        case CTRL('L'): cf1_next_match_key(); goto editor_loop;
+        case CTRL('J'): cf7_join_lines_key(); goto editor_loop;
+        case CTRL('P'): sf1_swap_case_key(); goto editor_loop;
+        case CTRL('O'): o_command_key(); goto editor_loop;
+        case CTRL('Q'): q_command_key(); goto editor_loop;
+        case CTRL('K'): k_command_key(); goto editor_loop;
     }
     //     jmp editor_loop
     goto editor_loop;
@@ -11059,7 +11056,6 @@ read_char:
     a = screen_getchar();
     //     bcs read_char
     if (flags & FLAG_C) goto read_char;
-    if (a == 0x0a) a = 0x0d;
 
     //     cmp #0x1b                                                         ; A=character read
     cmp(a, 0x1b);
