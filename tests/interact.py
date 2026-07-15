@@ -13,7 +13,9 @@ import termios
 import unittest
 import pyte
 
-VIEW_BIN = os.path.join(os.path.dirname(__file__), "..", "bin", "view_for_testing")
+VIEW_BIN = os.path.join(
+    os.path.dirname(__file__), "..", "bin", "view_for_testing"
+)
 
 
 def strip_escapes(text: str) -> str:
@@ -134,7 +136,9 @@ class PtyProcess:
             remaining = deadline - time.time()
             if remaining <= 0:
                 break
-            r, _, _ = select.select([self.master_fd], [], [], min(remaining, 0.1))
+            r, _, _ = select.select(
+                [self.master_fd], [], [], min(remaining, 0.1)
+            )
         pid, status = os.waitpid(self.pid, os.WNOHANG)
         if pid == 0:
             try:
@@ -173,43 +177,55 @@ class CliTests(unittest.TestCase):
         output = self.proc.read_until(b"=>", timeout=0.5)
         self.assertTrue(
             output.endswith(b"=>"),
-            f"Expected prompt '=>' at end of output, got: {repr(output[-40:])}"
+            f"Expected prompt '=>' at end of output, got: {repr(output[-40:])}",
         )
 
     def test_quit_command(self):
         self.proc.read_until(b"=>", timeout=0.5)
         self.proc.writeline("BYE")
         status, output = self.proc.wait(timeout=1.0)
-        self.assertTrue(os.WIFEXITED(status),
-                        f"Process did not exit cleanly (status={status})")
-        self.assertEqual(os.WEXITSTATUS(status), 0,
-                         f"Expected exit code 0, got {os.WEXITSTATUS(status)}")
+        self.assertTrue(
+            os.WIFEXITED(status),
+            f"Process did not exit cleanly (status={status})",
+        )
+        self.assertEqual(
+            os.WEXITSTATUS(status),
+            0,
+            f"Expected exit code 0, got {os.WEXITSTATUS(status)}",
+        )
 
     def test_load_missing_file(self):
         self.proc.read_until(b"=>", timeout=0.5)
         self.proc.writeline("load missing.v")
         output = self.proc.read_until(b"=>", timeout=0.5)
-        self.assertIn(b"File not found", output,
-                      f"Expected 'File not found' in output, got: {repr(output)}")
+        self.assertIn(
+            b"File not found",
+            output,
+            f"Expected 'File not found' in output, got: {repr(output)}",
+        )
         self.assertTrue(
             output.endswith(b"=>"),
-            f"Expected output to end with prompt, got: {repr(output[-40:])}"
+            f"Expected output to end with prompt, got: {repr(output[-40:])}",
         )
 
     def test_load_existing_file(self):
         self.proc.read_until(b"=>", timeout=0.5)
         self.proc.writeline("load examples/horse.v")
         output = self.proc.read_until(b"=>", timeout=0.5)
-        self.assertIn(b"examples/horse.v", output,
-                      f"Expected filename in output, got: {repr(output)}")
+        self.assertIn(
+            b"examples/horse.v",
+            output,
+            f"Expected filename in output, got: {repr(output)}",
+        )
         self.assertTrue(
             output.endswith(b"=>"),
-            f"Expected output to end with prompt, got: {repr(output[-40:])}"
+            f"Expected output to end with prompt, got: {repr(output[-40:])}",
         )
 
     def test_save_simple(self):
         """Load a file and save it, then verify the saved file is byte-identical."""
         import filecmp
+
         here = os.path.dirname(__file__)
         original = os.path.join(here, "..", "examples", "horse.v")
 
@@ -226,10 +242,13 @@ class CliTests(unittest.TestCase):
         self.assertTrue(os.WIFEXITED(status))
         self.assertEqual(os.WEXITSTATUS(status), 0)
 
-        self.assertTrue(os.path.exists("output.v"),
-                        "Saved file output.v does not exist")
-        self.assertTrue(filecmp.cmp(original, "output.v", shallow=False),
-                        "Saved file content differs from original")
+        self.assertTrue(
+            os.path.exists("output.v"), "Saved file output.v does not exist"
+        )
+        self.assertTrue(
+            filecmp.cmp(original, "output.v", shallow=False),
+            "Saved file content differs from original",
+        )
         os.unlink("output.v")
 
     def test_count_words(self):
@@ -240,10 +259,17 @@ class CliTests(unittest.TestCase):
 
         self.proc.writeline("COUNT")
         output = self.proc.read_until(b"=>", timeout=1.0)
-        self.assertIn(b"1731", output,
-                      f"Expected word count 1731 in output, got: {repr(output)}")
-        self.assertIn(b"word(s) counted", output,
-                      f"Expected 'word(s) counted' in output, got: {repr(output)}")
+        self.assertIn(
+            b"1731",
+            output,
+            f"Expected word count 1731 in output, got: {repr(output)}",
+        )
+        self.assertIn(
+            b"word(s) counted",
+            output,
+            f"Expected 'word(s) counted' in output, got: {repr(output)}",
+        )
+
 
 class EditorTests(unittest.TestCase):
 
@@ -267,10 +293,16 @@ class EditorTests(unittest.TestCase):
 
     def test_enter_editor_after_loading_file(self):
         output, screen = self._load_and_enter_editor("examples/horse.v")
-        self.assertIn(b"examples/horse.v", output,
-                      f"Expected filename in LOAD output, got: {repr(output)}")
-        self.assertIn(b"Editing examples/horse.v", output,
-                      f"Expected 'Editing' line showing filename, got: {repr(output)}")
+        self.assertIn(
+            b"examples/horse.v",
+            output,
+            f"Expected filename in LOAD output, got: {repr(output)}",
+        )
+        self.assertIn(
+            b"Editing examples/horse.v",
+            output,
+            f"Expected 'Editing' line showing filename, got: {repr(output)}",
+        )
         expected_lines = [
             "MJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
             "CE The Water Horse's Fireplace                                                  ",
@@ -281,20 +313,20 @@ class EditorTests(unittest.TestCase):
             "   The  *each-uisge* of Scotland, pronounced  *echh-ush-guh*  ,  is  one  of  t ",
             "   country's traditional monsters. While the relatively harmless kelpie lives   ",
             "   in running  water, the *each-uisge* ('water horse') lives in lochs. They eat ",
-            '   meat, human for  preference,  and  will  use their shapeshifting powers to   ',
+            "   meat, human for  preference,  and  will  use their shapeshifting powers to   ",
             "   lure their prey down to the water's  edge where they will be dragged under   ",
-            '   and consumed, leaving only their livers to float  to  the  shore as a sign   ',
-            '   that  the  water  horse has taken another victim. Water horses are vicious   ',
-            '   and  terrifying, far more  dangerous  than  many  of  the  other  Scottish   ',
-            '   supernatural creatures,  and  the locals would always treat the appearance   ',
+            "   and consumed, leaving only their livers to float  to  the  shore as a sign   ",
+            "   that  the  water  horse has taken another victim. Water horses are vicious   ",
+            "   and  terrifying, far more  dangerous  than  many  of  the  other  Scottish   ",
+            "   supernatural creatures,  and  the locals would always treat the appearance   ",
             "   of a lone animal  or man near the water's edge with caution, for fear that   ",
-            '   the water horse might be hungry again. And rightly so.                       ',
+            "   the water horse might be hungry again. And rightly so.                       ",
             "                                                                                ",
             "   In a small loch in  north-west Scotland whose name I can't quite remember,   ",
-            '   there once lived a water horse  and  his  wife. They preyed upon the local   ',
-            '   crofters, for of course there were no fishermen ---  with  a pair of water   ',
-            '   horses in the loch venturing into the water was far too dangerous. Luckily   ',
-            '   for the locals, water horses do not get hungry very often.                   ',
+            "   there once lived a water horse  and  his  wife. They preyed upon the local   ",
+            "   crofters, for of course there were no fishermen ---  with  a pair of water   ",
+            "   horses in the loch venturing into the water was far too dangerous. Luckily   ",
+            "   for the locals, water horses do not get hungry very often.                   ",
         ]
         self._assert_screen_lines(screen, expected_lines)
 
@@ -302,8 +334,9 @@ class EditorTests(unittest.TestCase):
         """Assert that screen.display matches *expected* (a list of row strings)."""
         for i, exp in enumerate(expected):
             self.assertEqual(
-                exp, screen.display[i],
-                f"Row {i} mismatch: expected {repr(exp)}, got {repr(screen.display[i])}"
+                exp,
+                screen.display[i],
+                f"Row {i} mismatch: expected {repr(exp)}, got {repr(screen.display[i])}",
             )
 
     def _enter_editor_empty(self):
@@ -327,11 +360,14 @@ class EditorTests(unittest.TestCase):
         self._assert_screen_lines(screen, expected_screen)
 
     def test_enter_editor_empty(self):
-        self._test_enter_editor_and_type(None, [
-            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-            "                                                                                ",
-            "********************************************************************************",
-        ])
+        self._test_enter_editor_and_type(
+            None,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "                                                                                ",
+                "********************************************************************************",
+            ],
+        )
 
     def _drain_editor(self, n_markers=1):
         """Read editor PTY output until *n_markers* (\\x05 bytes) have been
@@ -344,83 +380,102 @@ class EditorTests(unittest.TestCase):
 
     def test_enter_editor_and_type_q(self):
         """Enter empty editor, type 'q', then verify the visible screen lines."""
-        self._test_enter_editor_and_type(b"q", [
-            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-            "   q                                                                            ",
-            "********************************************************************************",
-        ])
+        self._test_enter_editor_and_type(
+            b"q",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   q                                                                            ",
+                "********************************************************************************",
+            ],
+        )
 
     def test_enter_editor_press_enter(self):
         """Enter empty editor, press Enter, expect two empty lines."""
-        self._test_enter_editor_and_type(b"\r", [
-            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-            "                                                                                ",
-            "                                                                                ",
-            "********************************************************************************",
-        ])
+        self._test_enter_editor_and_type(
+            b"\r",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "                                                                                ",
+                "                                                                                ",
+                "********************************************************************************",
+            ],
+        )
 
     def test_enter_editor_and_type_qwerty(self):
-        """Enter empty editor, type 'qwerty', then check that characters appear.
-        """
-        self._test_enter_editor_and_type(b"qwerty", [
-            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-            "   qwerty                                                                       ",
-            "********************************************************************************",
-        ])
+        """Enter empty editor, type 'qwerty', then check that characters appear."""
+        self._test_enter_editor_and_type(
+            b"qwerty",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   qwerty                                                                       ",
+                "********************************************************************************",
+            ],
+        )
 
     def test_enter_editor_and_type_two_lines(self):
-        """Enter empty editor, type two lines with a newline between, then check that characters appear.
-        """
-        self._test_enter_editor_and_type(b"line1\rline2", [
-            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-            "   line1                                                                        ",
-            "   line2                                                                        ",
-            "********************************************************************************",
-        ])
+        """Enter empty editor, type two lines with a newline between, then check that characters appear."""
+        self._test_enter_editor_and_type(
+            b"line1\rline2",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   line1                                                                        ",
+                "   line2                                                                        ",
+                "********************************************************************************",
+            ],
+        )
 
     def test_enter_editor_and_cursor_left_right(self):
-        self._test_enter_editor_and_type(b"text\x891\x88\x88\x88\x8823", [
-            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-            "   te23 1                                                                       ",
-            "********************************************************************************",
-        ])
+        self._test_enter_editor_and_type(
+            b"text\x891\x88\x88\x88\x8823",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   te23 1                                                                       ",
+                "********************************************************************************",
+            ],
+        )
 
     def test_enter_editor_and_cursor_down_up(self):
-        self._test_enter_editor_and_type(b"text\x8a1\x8b2\x8b3", [
-            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-            "   text 23                                                                      ",
-            "       1                                                                        ",
-            "********************************************************************************",
-        ])
+        self._test_enter_editor_and_type(
+            b"text\x8a1\x8b2\x8b3",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   text 23                                                                      ",
+                "       1                                                                        ",
+                "********************************************************************************",
+            ],
+        )
 
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
-        self.assertIn(b"jabber.v", output,
-                      f"Expected filename in LOAD output, got: {repr(output)}")
+        self.assertIn(
+            b"jabber.v",
+            output,
+            f"Expected filename in LOAD output, got: {repr(output)}",
+        )
         expected = [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
             "   She  puzzled  over this for some time, but at last a bright thought struck   ",
-            '   her. "Why, it\'s  a Looking-glass book, of course! And if I hold it up to a   ',
+            "   her. \"Why, it's  a Looking-glass book, of course! And if I hold it up to a   ",
             '   glass, the words will all go the right way again."                           ',
             "                                                                                ",
-            '   This was the poem that Alice read.                                           ',
+            "   This was the poem that Alice read.                                           ",
             "                                                                                ",
             "         'Twas brillig, and the slithy toves                                    ",
-            '          did gyre and gimble in the wabe;                                      ',
-            '         All mimsy were the borogroves,                                         ',
-            '          and the mome raths outgrabe.                                          ',
+            "          did gyre and gimble in the wabe;                                      ",
+            "         All mimsy were the borogroves,                                         ",
+            "          and the mome raths outgrabe.                                          ",
             "                                                                                ",
             '         "Beware the Jabberwock, my son!                                        ',
-            '          The jaws that bite, the claws that catch!                             ',
-            '         Beware the Jubjub bird, and shun                                       ',
-            '          the frumious Bandersnatch!                                            ',
+            "          The jaws that bite, the claws that catch!                             ",
+            "         Beware the Jubjub bird, and shun                                       ",
+            "          the frumious Bandersnatch!                                            ",
             "                                                                                ",
-            '         He took his vorpal sword in hand:                                      ',
-            '          long time the maxome foe he sought---                                 ',
-            '         So rested he by the Tumtum tree,                                       ',
-            '          and stood awhile in thought.                                          ',
+            "         He took his vorpal sword in hand:                                      ",
+            "          long time the maxome foe he sought---                                 ",
+            "         So rested he by the Tumtum tree,                                       ",
+            "          and stood awhile in thought.                                          ",
             "                                                                                ",
-            '         And as in uffish thought he stood,                                     ',
+            "         And as in uffish thought he stood,                                     ",
         ]
         self._assert_screen_lines(screen, expected)
 
