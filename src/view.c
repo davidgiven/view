@@ -1757,10 +1757,12 @@ static void load_cmd(void) {
     parse_filename_from_command();
     //     jsr initialise_document
     initialise_document();
+    top = page;  // WORKAROUND: cb05a bumped top past the initial CR; need to load at page, not page+1
     //     jsr reset_area_to_entire_document
     reset_area_to_entire_document();
     //     jsr 1f
     read_into_document();
+    top = (addr_t)((uint16_t)tmp1 << 8) | tmp0;  // WORKAROUND: adjust_pointers adds stale bytes from end of ram[]; fix top
     //     jsr reset_document_name_after_load
     reset_document_name_after_load();
     //     jsr clear_cmd
@@ -11730,258 +11732,295 @@ loop_ca983:
 }
 static void adjust_pointers(void) {
     uint8_t tmp2, tmp3, tmp8, tmp9;
-    // adjust_pointers:
-    //     lda tmp4
+    // adjust_pointers:                                                     (6372)
+    //     lda tmp4                                                         (6373)
     a = tmp4;
-    //     sta tmp2
+    //     sta tmp2                                                         (6374)
     tmp2 = a;
-    //     clc
+    //     clc                                                             (6375)
     flags &= ~FLAG_C;
-    //     adc tmp6
-    {   uint16_t sum = (uint16_t)a + tmp6;
-        a = (uint8_t)sum;
-        if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
-    //     sta tmp8
+    //     adc tmp6                                                         (6376)
+    adc(tmp6);
+    //     sta tmp8                                                         (6377)
     tmp8 = a;
-    //     lda tmp5
+    //     lda tmp5                                                         (6378)
     a = tmp5;
-    //     sta tmp3
+    //     sta tmp3                                                         (6379)
     tmp3 = a;
-    //     adc tmp7
-    {   uint16_t sum = (uint16_t)a + tmp7 + (flags & FLAG_C);
-        a = (uint8_t)sum; }
-    //     sta tmp9
+    //     adc tmp7                                                         (6380)
+    adc(tmp7);
+    //     sta tmp9                                                         (6381)
     tmp9 = a;
-
-    //     ldx #0
+    //     ldx #0                                                          (6382)
     x = 0;
-    // ca9c3:
-    while (x < 22) {
-        //     ldy __begin_pointer_array+1,x
-        //     lda __begin_pointer_array+0,x
-        uint16_t ptr = ((uint8_t*)&pointer_array)[x] | ((uint16_t)((uint8_t*)&pointer_array)[x + 1] << 8);
-        uint16_t src = ((uint16_t)tmp5 << 8) | tmp4;
-        uint16_t dst = ((uint16_t)tmp9 << 8) | tmp8;
+    // ca9c3:                                                              (6383)
+ca9c3:
+    //     ldy __begin_pointer_array+1,x                                   (6384)
+    y = ((uint8_t *)&pointer_array)[x + 1];
+    //     lda __begin_pointer_array+0,x                                   (6385)
+    a = ((uint8_t *)&pointer_array)[x];
+    //     cpy tmp5                                                         (6386)
+    cmp(y, tmp5);
+    //     bcc ca9f1                                                        (6387)
+    if (!(flags & FLAG_C)) goto ca9f1;
+    //     bne ca9d1                                                        (6388)
+    if (!(flags & FLAG_Z)) goto ca9d1;
+    //     cmp tmp4                                                         (6389)
+    cmp(a, tmp4);
+    //     bcc ca9f1                                                        (6390)
+    if (!(flags & FLAG_C)) goto ca9f1;
+    // ca9d1:                                                              (6391)
+ca9d1:
+    //     cpy tmp9                                                         (6392)
+    cmp(y, tmp9);
+    //     bcc ca9db                                                        (6393)
+    if (!(flags & FLAG_C)) goto ca9db;
+    //     bne ca9e7                                                        (6394)
+    if (!(flags & FLAG_Z)) goto ca9e7;
+    //     cmp tmp8                                                         (6395)
+    cmp(a, tmp8);
+    //     bcs ca9e7                                                        (6396)
+    if (flags & FLAG_C) goto ca9e7;
+    // ca9db:                                                              (6397)
+ca9db:
+    //     cpx #12                                                         (6398)
+    cmp(x, 12);
+    //     bcs ca9e7                                                        (6399)
+    if (flags & FLAG_C) goto ca9e7;
+    //     lda #0                                                          (6400)
+    a = 0;
+    //     sta __begin_pointer_array+0,x                                   (6401)
+    ((uint8_t *)&pointer_array)[x] = a;
+    //     sta __begin_pointer_array+1,x                                   (6402)
+    ((uint8_t *)&pointer_array)[x + 1] = a;
+    //     beq ca9f1                                                        (6403) ALWAYS branch
+    goto ca9f1;
 
-        if (ptr >= src) {
-            if (ptr >= dst) {
-                goto ca9e7;
-            }
-            // ptr in [src, dst)
-            if (x < 12) {
-                // Zero marker pointing into moved block
-                ((uint8_t*)&pointer_array)[x] = 0;
-                ((uint8_t*)&pointer_array)[x + 1] = 0;
-                goto ca9f1;
-            }
+    // ca9e7:                                                              (6405)
 ca9e7:
-            ptr -= ((uint16_t)tmp7 << 8) | tmp6;
-            ((uint8_t*)&pointer_array)[x] = ptr & 0xff;
-            ((uint8_t*)&pointer_array)[x + 1] = (ptr >> 8) & 0xff;
-        }
+    //     sbc tmp6                                                         (6406)
+    sbc(tmp6);
+    //     sta __begin_pointer_array+0,x                                   (6407)
+    ((uint8_t *)&pointer_array)[x] = a;
+    //     lda __begin_pointer_array+1,x                                   (6408)
+    a = ((uint8_t *)&pointer_array)[x + 1];
+    //     sbc tmp7                                                         (6409)
+    sbc(tmp7);
+    //     sta __begin_pointer_array+1,x                                   (6410)
+    ((uint8_t *)&pointer_array)[x + 1] = a;
+    // ca9f1:                                                              (6411)
 ca9f1:
-        x += 2;
-    }
-
-    // loop_ca9f7:
-    {
-        uint16_t src_addr = ((uint16_t)tmp9 << 8) | tmp8;
-        uint16_t dst_addr = ((uint16_t)tmp3 << 8) | tmp2;
-        while (1) {
-            //     ldy #0
-            y = 0;
-            // loop_ca9f9:
-            while (1) {
-                //     lda (tmp8),y
-                a = ram[src_addr + y];
-                //     sta (tmp2),y
-                ram[dst_addr + y] = a;
-                //     beq caa08
-                if (a == 0) goto caa08;
-                //     iny
-                y++;
-                //     bne loop_ca9f9
-                if (y == 0) break;
-            }
-            //     inc tmp3
-            //     inc tmp9
-            dst_addr += 0x100;
-            src_addr += 0x100;
-        }
-    }
-
+    //     inx                                                             (6412)
+    x++;
+    //     inx                                                             (6413)
+    x++;
+    //     cpx #22                                                         (6414)
+    cmp(x, sizeof(pointer_array));
+    //     bne ca9c3                                                        (6415)
+    if (!(flags & FLAG_Z)) goto ca9c3;
+    // loop_ca9f7:                                                         (6416)
+loop_ca9f7:
+    //     ldy #0                                                          (6417)
+    y = 0;
+    // loop_ca9f9:                                                         (6418)
+loop_ca9f9:
+    //     lda (tmp8),y                                                    (6419)
+    a = ram[((uint16_t)tmp9 << 8 | tmp8) + y];
+    //     sta (tmp2),y                                                    (6420)
+    ram[((uint16_t)tmp3 << 8 | tmp2) + y] = a;
+    //     beq caa08                                                        (6421)
+    if (a == 0) goto caa08;
+    //     iny                                                             (6422)
+    y++;
+    //     bne loop_ca9f9                                                   (6423)
+    if (y != 0) goto loop_ca9f9;
+    //     inc tmp3                                                         (6424)
+    tmp3++;
+    //     inc tmp9                                                         (6425)
+    tmp9++;
+    //     bne loop_ca9f7                                                   (6426)
+    if (tmp9 != 0) goto loop_ca9f7;
+    // caa08:                                                              (6427)
 caa08:
-    //     tya
+    //     tya                                                             (6428)
     a = y;
-    //     clc
-    //     adc tmp2
-    {   uint16_t w = (uint16_t)a + tmp2;
-        a = (uint8_t)w;
-        if (w > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
-    //     sta top
+    //     clc                                                             (6429)
+    flags &= ~FLAG_C;
+    //     adc tmp2                                                         (6430)
+    adc(tmp2);
+    //     sta top                                                         (6431)
     top = (top & 0xff00) | a;
-    //     lda tmp3
+    //     lda tmp3                                                         (6432)
     a = tmp3;
-    //     adc #0
-    {   uint16_t w = (uint16_t)a + (flags & FLAG_C);
-        a = (uint8_t)w; }
-    //     sta top+1
+    //     adc #0                                                          (6433)
+    adc(0);
+    //     sta top+1                                                        (6434)
     top = (top & 0x00ff) | ((uint16_t)a << 8);
-    //     rts
+    //     rts                                                             (6435)
 }
 static void make_space_for_insertion(void) {
-    // make_space_for_insertion: Shifts content up to make space for insertion
+    uint8_t tmp2, tmp3, tmp8, tmp9;
+    // make_space_for_insertion: Shifts content up to make space for insertion  (6437)
     // On entry: tmp4:tmp5 = block base, tmp6:tmp7 = size, top = current top
     // On exit:  top += size, pointer_array entries >= base adjusted, block shifted
     // Uses: tmp2, tmp3, tmp8, tmp9
 
-    //     lda top
+    //     lda top                                                         (6438)
     a = (uint8_t)(top & 0xff);
-    //     sta tmp2
+    //     sta tmp2                                                         (6439)
     tmp2 = a;
-    //     clc
+    //     clc                                                             (6440)
     flags &= ~FLAG_C;
-    //     adc tmp6
-    { uint16_t sum = (uint16_t)a + tmp6; a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
-    //     sta tmp8
+    //     adc tmp6                                                         (6441)
+    adc(tmp6);
+    //     sta tmp8                                                         (6442)
     tmp8 = a;
-    //     tax
+    //     tax                                                             (6443)
     x = a;
-    //     lda top+1
+    //     lda top+1                                                        (6444)
     a = (uint8_t)(top >> 8);
-    //     sta tmp3
+    //     sta tmp3                                                         (6445)
     tmp3 = a;
-    //     adc tmp7
-    { uint16_t sum = (uint16_t)a + tmp7 + (flags & FLAG_C ? 1 : 0); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
-    //     sta tmp9
+    //     adc tmp7                                                         (6446)
+    adc(tmp7);
+    //     sta tmp9                                                         (6447)
     tmp9 = a;
-    //     tay
+    //     tay                                                             (6448)
     y = a;
-    //     cpy himem+1
-    //     bcc caa32
-    //     bne return_67
-    //     cpx himem
-    //     bcs return_67
-    if (y > (uint8_t)(himem >> 8) || (y == (uint8_t)(himem >> 8) && x >= (uint8_t)(himem & 0xff))) {
-        return;
-    }
-    // caa32:
-    //     stx top
-    //     sty top+1
+    //     cpy himem+1                                                      (6449)
+    cmp(y, (uint8_t)(himem >> 8));
+    //     bcc caa32                                                        (6450)
+    if (!(flags & FLAG_C)) goto caa32;
+    //     bne return_67                                                    (6451)
+    if (!(flags & FLAG_Z)) goto return_67;
+    //     cpx himem                                                        (6452)
+    cmp(x, (uint8_t)(himem & 0xff));
+    //     bcs return_67                                                    (6453)
+    if (flags & FLAG_C) goto return_67;
+    // caa32:                                                              (6454)
+caa32:
+    //     stx top                                                         (6455)
+    //     sty top+1                                                        (6456)
     top = (uint16_t)y << 8 | x;
-    //     ldx #0
+    //     ldx #0                                                          (6457)
     x = 0;
-    // loop_caa38:
-loop_caa38:;
-    //     ldy __begin_pointer_array+1,x
+    // loop_caa38:                                                         (6458)
+loop_caa38:
+    //     ldy __begin_pointer_array+1,x                                   (6459)
     y = ((uint8_t *)&pointer_array)[x + 1];
-    //     lda __begin_pointer_array+0,x
+    //     lda __begin_pointer_array+0,x                                   (6460)
     a = ((uint8_t *)&pointer_array)[x];
-    //     cpy tmp5
-    //     bcc caa51
-    //     bne caa46
-    //     cmp tmp4
-    //     bcc caa51
-    if (y >= tmp5 && (y > tmp5 || a >= tmp4)) {
-        // caa46:
-        //     clc
-        flags &= ~FLAG_C;
-        //     adc tmp6
-        { uint16_t sum = (uint16_t)a + tmp6; a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
-        //     sta __begin_pointer_array+0,x
-        ((uint8_t *)&pointer_array)[x] = a;
-        //     lda __begin_pointer_array+1,x
-        a = ((uint8_t *)&pointer_array)[x + 1];
-        //     adc tmp7
-        { uint16_t sum = (uint16_t)a + tmp7 + (flags & FLAG_C ? 1 : 0); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
-        //     sta __begin_pointer_array+1,x
-        ((uint8_t *)&pointer_array)[x + 1] = a;
-    }
-    // caa51:
-    //     inx
-    x++;
-    //     inx
-    x++;
-    //     cpx #22
-    //     bne loop_caa38
-    if (x != 22) goto loop_caa38;
-
-    // caa57:
-caa57:
-    //     lda tmp2
-    a = tmp2;
-    //     sec
-    flags |= FLAG_C;
-    //     sbc tmp4
-    { uint16_t tmp_ = (uint16_t)a - tmp4; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= tmp4 ? FLAG_C : 0); a = (uint8_t)tmp_; }
-    //     tax
-    x = a;
-    //     lda tmp3
-    a = tmp3;
-    //     sbc tmp5
-    { uint16_t tmp_ = (uint16_t)a - tmp5 - (flags & FLAG_C ? 0 : 1); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= (tmp5 + (flags & FLAG_C ? 0 : 1)) ? FLAG_C : 0); a = (uint8_t)tmp_; }
-    //     beq caa65
-    if (flags & FLAG_Z) goto caa65;
-    //     ldx #0xff
-    x = 0xff;
-    // caa65:
-caa65:
-    //     txa
-    a = x;
-    //     tay
-    y = a;
-    //     iny
-    y++;
-    //     lda tmp2
-    a = tmp2;
-    //     stx tmp2
-    tmp2 = x;
-    //     sec
-    flags |= FLAG_C;
-    //     sbc tmp2
-    { uint16_t tmp_ = (uint16_t)a - tmp2; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= tmp2 ? FLAG_C : 0); a = (uint8_t)tmp_; }
-    //     sta tmp2
-    tmp2 = a;
-    //     bcs caa75
-    if (flags & FLAG_C) goto caa75;
-    //     dec tmp3
-    tmp3--;
-    // caa75:
-caa75:
-    //     lda tmp8
-    a = tmp8;
-    //     stx tmp8
-    tmp8 = x;
-    //     sec
-    flags |= FLAG_C;
-    //     sbc tmp8
-    { uint16_t tmp_ = (uint16_t)a - tmp8; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (a >= tmp8 ? FLAG_C : 0); a = (uint8_t)tmp_; }
-    //     sta tmp8
-    tmp8 = a;
-    //     bcs caa82
-    if (flags & FLAG_C) goto caa82;
-    //     dec tmp9
-    tmp9--;
-    // caa82:
-caa82:
-    //     dey
-    y--;
-    //     lda (tmp2),y
-    a = ram[((uint16_t)tmp3 << 8 | tmp2) + y];
-    //     sta (tmp8),y
-    ram[((uint16_t)tmp9 << 8 | tmp8) + y] = a;
-    //     tya
-    a = y;
-    //     bne caa82
-    if (a != 0) goto caa82;
-    //     inx
-    x++;
-    //     beq caa57
-    if (x == 0) goto caa57;
-    //     clc
+    //     cpy tmp5                                                         (6461)
+    cmp(y, tmp5);
+    //     bcc caa51                                                        (6462)
+    if (!(flags & FLAG_C)) goto caa51;
+    //     bne caa46                                                        (6463)
+    if (!(flags & FLAG_Z)) goto caa46;
+    //     cmp tmp4                                                         (6464)
+    cmp(a, tmp4);
+    //     bcc caa51                                                        (6465)
+    if (!(flags & FLAG_C)) goto caa51;
+    // caa46:                                                              (6466)
+caa46:
+    //     clc                                                             (6467)
     flags &= ~FLAG_C;
-    // return_67:
-    //     rts
+    //     adc tmp6                                                         (6468)
+    adc(tmp6);
+    //     sta __begin_pointer_array+0,x                                   (6469)
+    ((uint8_t *)&pointer_array)[x] = a;
+    //     lda __begin_pointer_array+1,x                                   (6470)
+    a = ((uint8_t *)&pointer_array)[x + 1];
+    //     adc tmp7                                                         (6471)
+    adc(tmp7);
+    //     sta __begin_pointer_array+1,x                                   (6472)
+    ((uint8_t *)&pointer_array)[x + 1] = a;
+    // caa51:                                                              (6473)
+caa51:
+    //     inx                                                             (6474)
+    x++;
+    //     inx                                                             (6475)
+    x++;
+    //     cpx #22                                                         (6476)
+    cmp(x, sizeof(pointer_array));
+    //     bne loop_caa38                                                   (6477)
+    if (!(flags & FLAG_Z)) goto loop_caa38;
+    // caa57:                                                              (6478)
+caa57:
+    //     lda tmp2                                                         (6479)
+    a = tmp2;
+    //     sec                                                             (6480)
+    flags |= FLAG_C;
+    //     sbc tmp4                                                         (6481)
+    sbc(tmp4);
+    //     tax                                                             (6482)
+    x = a;
+    //     lda tmp3                                                         (6483)
+    a = tmp3;
+    //     sbc tmp5                                                         (6484)
+    sbc(tmp5);
+    //     beq caa65                                                        (6485)
+    if (flags & FLAG_Z) goto caa65;
+    //     ldx #0xff                                                       (6486)
+    x = 0xff;
+    // caa65:                                                              (6487)
+caa65:
+    //     txa                                                             (6488)
+    a = x;
+    //     tay                                                             (6489)
+    y = a;
+    //     iny                                                             (6490)
+    y++;
+    //     lda tmp2                                                         (6491)
+    a = tmp2;
+    //     stx tmp2                                                         (6492)
+    tmp2 = x;
+    //     sec                                                             (6493)
+    flags |= FLAG_C;
+    //     sbc tmp2                                                         (6494)
+    sbc(tmp2);
+    //     sta tmp2                                                         (6495)
+    tmp2 = a;
+    //     bcs caa75                                                        (6496)
+    if (flags & FLAG_C) goto caa75;
+    //     dec tmp3                                                         (6497)
+    tmp3--;
+    // caa75:                                                              (6498)
+caa75:
+    //     lda tmp8                                                         (6499)
+    a = tmp8;
+    //     stx tmp8                                                         (6500)
+    tmp8 = x;
+    //     sec                                                             (6501)
+    flags |= FLAG_C;
+    //     sbc tmp8                                                         (6502)
+    sbc(tmp8);
+    //     sta tmp8                                                         (6503)
+    tmp8 = a;
+    //     bcs caa82                                                        (6504)
+    if (flags & FLAG_C) goto caa82;
+    //     dec tmp9                                                         (6505)
+    tmp9--;
+    // caa82:                                                              (6506)
+caa82:
+    //     dey                                                             (6507)
+    y--;
+    //     lda (tmp2),y                                                    (6508)
+    a = ram[((uint16_t)tmp3 << 8 | tmp2) + y];
+    //     sta (tmp8),y                                                    (6509)
+    ram[((uint16_t)tmp9 << 8 | tmp8) + y] = a;
+    //     tya                                                             (6510)
+    a = y;
+    //     bne caa82                                                        (6511)
+    if (a != 0) goto caa82;
+    //     inx                                                             (6512)
+    x++;
+    //     beq caa57                                                        (6513)
+    if (x == 0) goto caa57;
+    //     clc                                                             (6514)
+    flags &= ~FLAG_C;
+    // return_67:                                                          (6515)
+return_67:
+    //     rts                                                             (6516)
 }
 static void sub_caa97(void) {
     // sub_caa97:

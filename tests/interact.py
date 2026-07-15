@@ -272,8 +272,7 @@ class EditorTests(unittest.TestCase):
         self.assertIn(b"Editing examples/horse.v", output,
                       f"Expected 'Editing' line showing filename, got: {repr(output)}")
         expected_lines = [
-            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-            "                                                                                ",
+            "MJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
             "CE The Water Horse's Fireplace                                                  ",
             "CE a Scottish Halloween folk story, sort of                                     ",
             "                                                                                ",
@@ -400,7 +399,6 @@ class EditorTests(unittest.TestCase):
                       f"Expected filename in LOAD output, got: {repr(output)}")
         expected = [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-            "                                                                                ",
             "   She  puzzled  over this for some time, but at last a bright thought struck   ",
             '   her. "Why, it\'s  a Looking-glass book, of course! And if I hold it up to a   ',
             '   glass, the words will all go the right way again."                           ',
