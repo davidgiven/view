@@ -13404,7 +13404,7 @@ static void sub_caef4(void) {
     //     jsr sub_caec2
     sub_caec2();
     //     bcc caf31
-    if (flags & FLAG_C) goto caf31;
+    if (!(flags & FLAG_C)) goto caf31;
     //     jsr get_line_length
     get_line_length();
     //     lda xpos
