@@ -317,14 +317,22 @@ class EditorTests(unittest.TestCase):
         stream.feed(raw.decode("latin-1"))
         return screen
 
-    def test_enter_editor_empty(self):
+    def _test_enter_editor_and_type(self, string_to_type, expected_screen):
+        """Enter empty editor, optionally type *string_to_type*, then assert
+        the screen matches *expected_screen*."""
         screen = self._enter_editor_empty()
-        expected = [
+        if string_to_type:
+            self.proc.write(string_to_type)
+            raw = self._drain_editor(len(string_to_type))
+            pyte.Stream(screen).feed(raw.decode("latin-1"))
+        self._assert_screen_lines(screen, expected_screen)
+
+    def test_enter_editor_empty(self):
+        self._test_enter_editor_and_type(None, [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
             "                                                                                ",
             "********************************************************************************",
-        ]
-        self._assert_screen_lines(screen, expected)
+        ])
 
     def _drain_editor(self, n_markers=1):
         """Read editor PTY output until *n_markers* (\\x05 bytes) have been
@@ -337,59 +345,54 @@ class EditorTests(unittest.TestCase):
 
     def test_enter_editor_and_type_q(self):
         """Enter empty editor, type 'q', then verify the visible screen lines."""
-        screen = self._enter_editor_empty()
-        self.proc.write(b"q")
-        raw = self._drain_editor(1)
-        pyte.Stream(screen).feed(raw.decode("latin-1"))
-        expected = [
+        self._test_enter_editor_and_type(b"q", [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
             "   q                                                                            ",
             "********************************************************************************",
-        ]
-        self._assert_screen_lines(screen, expected)
+        ])
 
     def test_enter_editor_press_enter(self):
         """Enter empty editor, press Enter, expect two empty lines."""
-        screen = self._enter_editor_empty()
-        self.proc.write(b"\r")
-        raw = self._drain_editor(1)
-        pyte.Stream(screen).feed(raw.decode("latin-1"))
-        expected = [
+        self._test_enter_editor_and_type(b"\r", [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
             "                                                                                ",
             "                                                                                ",
             "********************************************************************************",
-        ]
-        self._assert_screen_lines(screen, expected)
+        ])
 
     def test_enter_editor_and_type_qwerty(self):
         """Enter empty editor, type 'qwerty', then check that characters appear.
         """
-        screen = self._enter_editor_empty()
-        self.proc.write(b"qwerty")
-        raw = self._drain_editor(6)
-        pyte.Stream(screen).feed(raw.decode("latin-1"))
-        expected = [
+        self._test_enter_editor_and_type(b"qwerty", [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
             "   qwerty                                                                       ",
             "********************************************************************************",
-        ]
-        self._assert_screen_lines(screen, expected)
+        ])
 
     def test_enter_editor_and_type_two_lines(self):
         """Enter empty editor, type two lines with a newline between, then check that characters appear.
         """
-        screen = self._enter_editor_empty()
-        self.proc.write(b"line1\rline2")
-        raw = self._drain_editor(11)
-        pyte.Stream(screen).feed(raw.decode("latin-1"))
-        expected = [
+        self._test_enter_editor_and_type(b"line1\rline2", [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
             "   line1                                                                        ",
             "   line2                                                                        ",
             "********************************************************************************",
-        ]
-        self._assert_screen_lines(screen, expected)
+        ])
+
+    def test_enter_editor_and_cursor_left_right(self):
+        self._test_enter_editor_and_type(b"text\x891\x88\x88\x88\x8823", [
+            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+            "   te23 1                                                                       ",
+            "********************************************************************************",
+        ])
+
+    def test_enter_editor_and_cursor_down_up(self):
+        self._test_enter_editor_and_type(b"text\x8a1\x8b2\x8b3", [
+            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+            "   text 23                                                                      ",
+            "       1                                                                        ",
+            "********************************************************************************",
+        ])
 
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
