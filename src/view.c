@@ -1036,6 +1036,7 @@ static void sub_c8310(void) {
     cmp(a, 0x0d);
     // return_2:
     //     rts
+    return;
 }
 static void replace_cmd(void) {
     // Pseudocode: Interactive search and replace prompting for each match (Y)es/(O)K/(N)o
@@ -2531,7 +2532,7 @@ c8977:
     //     sta tmp7
     tmp7 = a;
     //     bne return_10
-    if (a != 0) return;
+    if (a != 0) { set_flags(a); return; }
     //     lda tmp6
     a = tmp6;
     set_flags(a);
@@ -2581,6 +2582,7 @@ static void parse_mark_from_command(void) {
     a = (uint8_t)(markers_array[x] & 0xff);
     //     ldy markers_array+1,x
     y = (uint8_t)(markers_array[x] >> 8);
+    set_flags(y);
     // return_12:
     //     rts
 }
@@ -3050,6 +3052,7 @@ static void c8b78(void) {
     // c8b78:
     //     lda #0xff
     a = 0xff;
+    set_flags(a);
     //     rts
 }
 static void c8b7b(void) {
@@ -3171,6 +3174,8 @@ c8bdf:
     //     inc doc_ptr2+1
     //     bne c8b7b
     if (doc_ptr2 != 0) { c8b7b(); return; }
+    a = 0xff;
+    set_flags(a);
     return;
 c8be3:
     // c8be3:
@@ -3304,6 +3309,7 @@ c8c3e:
     ptr2 = (ptr2 & 0x00ff) | ((uint16_t)y << 8);
     //     ldx #0
     x = 0;
+    set_flags(0);
     //     rts
 }
 static void sub_c8c53(void) {
@@ -3750,6 +3756,7 @@ loop_c8dfb:
 c8e25:
     //     lda #0x0d
     a = 0x0d;
+    set_flags(a);
     //     sta filename_buffer,x
     filename_buffer[x] = a;
     //     sty input_buffer_offset
@@ -3804,8 +3811,9 @@ static void sub_c8e33(void) {
         //     bne loop_c8e3b
         if (y == 0) break;
     }
-    // return_20:
-    //     rts
+    set_flags(y);
+    //     rts (falls through to check_not_continuous_editing in 6502)
+    return;
 }
 static void sub_c8e2d(void) {
     // sub_c8e2d:
@@ -4926,6 +4934,7 @@ static void sub_c9228(void) {
     a = 0;
     //     sta l0082
     l0082 = a;
+    set_flags(a);
     //     rts
     return;
 
@@ -4941,6 +4950,7 @@ c9231:
     l0082 = a;
     //     lda #0
     a = 0;
+    set_flags(a);
     //     rts
     return;
 
@@ -4950,6 +4960,7 @@ c923c:
     { uint8_t tmp_ = a & l0082; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (l0082 & (FLAG_N|FLAG_V)); }
     //     ora #0
     a |= 0;
+    set_flags(a);
     //     rts
     return;
 }
@@ -5420,6 +5431,7 @@ static void sub_c93be(void) {
     //     sbc #1
     // PROBLEM: sbc #1 (no flag update)
     a -= 1 + (1 - (flags & FLAG_C));
+    set_flags(a);
     // return_29:
 return_29:
     ; // fallthrough to rts
@@ -6723,6 +6735,7 @@ c974c:
     set_flags(a);
     //     bpl loop_c973e
     if (!(flags & FLAG_N)) goto loop_c973e;
+    set_flags(a);
     // return_45:
 return_45:
     //     rts
@@ -6745,6 +6758,7 @@ static void execute_formatting_command(void) {
     call_through_jumptable();
     //     ldx l0030
     x = l0030;
+    set_flags(x);
     //     rts
     return;
 }
@@ -7430,6 +7444,7 @@ c995c:
     a = 0;
     //     sta l0046
     l0046 = a;
+    set_flags(0);
     //     rts
     return;
 
@@ -7452,6 +7467,7 @@ c9969:
     // return_49:
 return_49:
     //     rts
+    set_flags(0);
     return;
 }
 static void sub_c9974(void) {
@@ -7829,6 +7845,7 @@ c9aa5:
     flags &= ~FLAG_V;
     //     lda l007e
     a = l007e;
+    set_flags(a);
     //     rts
     return;
 }
@@ -10553,6 +10570,7 @@ ca550:
     if (!(flags & FLAG_Z)) goto loop_ca544;
     //     txa
     a = x;
+    set_flags(a);
     //     rts
     return;
 
@@ -10560,6 +10578,7 @@ ca550:
 ca558:
     //     lda #0
     a = 0;
+    set_flags(0);
     // return_61:
     //     rts
     return;
@@ -13499,6 +13518,7 @@ caf55:
     draw_char();
     //     dey
     y--;
+    set_flags(y);
     //     rts
 }
 static void caf5c(void) {

@@ -8,7 +8,7 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **bm_fmt_cmd** → evaluate_expression_from_fmt_cmd [bottom_margin]
 - **bye_cmd**
 - **c8b78**
-- **c8b7b** → c8b78, check_for_command_prefix, sub_c8c51, sub_c8c53, sub_c8c5f [header_text_maybe, output_buffer, doc_ptr3, doc_ptr2, l0084, l0081, l0049, l0083, l0048, l007a, tmp8, ptr2, tmp9]
+- **c8b7b** → c8b78, check_for_command_prefix, sub_c8c51, sub_c8c53, sub_c8c5f [header_text_maybe, output_buffer, doc_ptr3, doc_ptr2, l0084, l0081, l0049, l0083, l0048, l007a, tmp8, ptr2, tmp9] (returns: Z)
 - **c9263** → print_newline, print_vertical_space, render_header_or_footer [footers_enabled_flag, footer_text_maybe, bottom_margin, footer_margin, l0031, l0021, l0038]
 - **c937b** → print_char, sub_c9431 [output_buffer, l0084]
 - **c93b8** [tmp5, tmp4]
@@ -17,7 +17,7 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **c9e94** [xpos]
 - **ca684** [screen_maxcolumn, line_lengths, ypos]
 - **ca741** [current_line_ptr, l003d, l0073, ptr6]
-- **cab29** [tmp1, tmp0]
+- **cab29** [tmp1, tmp0] (returns: Z)
 - **cab91** [current_ruler_ptr, ruler_stack_ptr, oshwm]
 - **cac78** → check_for_command_prefix, make_space_for_insertion, sub_cac50 [l0084, l0083, tmp5, tmp8, tmp4, tmp9, tmp7, tmp6]
 - **cae64** → sub_ca536 [edit_buffer_dirty_flag, current_edit_line_ptr, markers_array, l0084, l0080, tmp7, tmp6, xpos]
@@ -38,8 +38,8 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **change_cmd** → c8b7b, cmd_err_no_string, cmd_err_no_target, display_not_enough_memory, move_cursor_to_address, render_number_to_screen, return_to_cli_prompt, sub_c83f0, sub_c8a4f [print_xpos, ptr3]
 - **check_continuous_editing** → display_document_file_state [file_edit_flags]
 - **check_for_at_least_150_bytes_free** → compute_bytes_free, display_not_enough_memory
-- **check_for_command_prefix**
-- **check_for_control_code**
+- **check_for_command_prefix** (returns: Z)
+- **check_for_control_code** (returns: Z)
 - **check_not_continuous_editing** → display_document_file_state [file_edit_flags]
 - **clear_cmd** [markers_array]
 - **clear_marks_1_2** [markers_array]
@@ -54,7 +54,7 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **compute_required_space_for_insertion** → compute_space_common [tmp8, tmp9]
 - **compute_space_common** → compute_bytes_free [l0081, l0080, tmp8, tmp9, tmp7, tmp1, ptr5, tmp0, tmp6]
 - **control_key_to_ascii**
-- **count_cmd** → deref_and_check_for_command_prefix, draw_char, parse_marks_from_command, render_number_to_screen, return_to_cli_prompt, sanitise_area [area_start_ptr, area_end_ptr, l0082, l0083, tmp8, tmp9, tmp1, tmp0]
+- **count_cmd** → deref_and_check_for_command_prefix, process_current_document_character, parse_marks_from_command, render_number_to_screen, return_to_cli_prompt, sanitise_area [area_start_ptr, area_end_ptr, l0082, l0083, tmp8, tmp9, tmp1, tmp0]
 - **create_default_ruler** [screen_maxcolumn, tmp1, tmp0]
 - **cursor_off**
 - **cursor_on**
@@ -63,7 +63,7 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **default_printer_off**
 - **default_printer_on** → default_printer_off
 - **delete_key** → f9_delete_char_key, get_line_length [current_edit_line_ptr, insert_mode_flag, l0072, xpos]
-- **deref_and_check_for_command_prefix** → check_for_command_prefix [tmp1, tmp0]
+- **deref_and_check_for_command_prefix** → check_for_command_prefix [tmp1, tmp0] (returns: Z)
 - **df_fmt_cmd** → c9575 [footer_text_maybe]
 - **dh_fmt_cmd** → c9575 [header_text_maybe]
 - **display_document_file_state** → stop_printing [output_filename, file_edit_flags, input_filename]
@@ -71,9 +71,9 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **display_no_text**
 - **display_not_enough_memory** → return_to_cli_prompt, stop_printing
 - **dm_fmt_cmd** → check_for_command_prefix, display_not_enough_memory, lookup_formatting_command, sub_c9241 [current_format_line_ptr, macro_executing_flag, last_macro_ptr, himem, l0084, l0081, l0080, tmp7, tmp1, tmp0, tmp6]
-- **draw_char** → process_document_character [tmp1, tmp0]
-- **draw_line** → clear_to_eol, deref_and_check_for_command_prefix, draw_char, render_char, render_xchar, sub_ca4d7 [line_lengths, hscroll_pos, l0039, l0082, l0083, l0080, tmp7, tmp1, tmp0, tmp6]
-- **draw_previous_word** → draw_char [current_edit_line_ptr, tmp1, tmp0, xpos]
+- **process_current_document_character** → process_document_character [tmp1, tmp0]
+- **draw_line** → clear_to_eol, deref_and_check_for_command_prefix, process_current_document_character, render_char, render_xchar, sub_ca4d7 [line_lengths, hscroll_pos, l0039, l0082, l0083, l0080, tmp7, tmp1, tmp0, tmp6]
+- **draw_previous_word** → process_current_document_character [current_edit_line_ptr, tmp1, tmp0, xpos] (returns: Z)
 - **draw_prompt_characters** → cursor_off, home_cursor, restore_cursor_position, save_cursor_position [tmp2, tmp3]
 - **draw_ruler** → draw_line [status_line_needs_redrawing_flag, current_ruler_ptr, l0082]
 - **draw_status_word** → home_cursor [flags_need_redrawing_flag, insert_mode_flag, format_mode_flag, justifying_flag]
@@ -86,9 +86,9 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **ep_fmt_cmd** → page_eject_fmt [ram]
 - **esc_key** → run_cli, write_line_back_to_document_safely
 - **evaluate_expression_from_fmt_cmd** → get_current_fmt_cmd_byte, get_next_fmt_cmd_byte, parse_decimal_number, render_register [l0080, tmp5, tmp8, tmp4, tmp9]
-- **execute_formatting_command** → call_through_jumptable [l0030]
+- **execute_formatting_command** → call_through_jumptable [l0030] (returns: Z)
 - **expand_escaped_string** → sub_c8310, sub_c8c5f [input_buffer_offset, header_text_maybe, l0084, l0082, l0083, l007a]
-- **expand_line** → check_for_control_code, get_current_fmt_cmd_byte, render_register [current_format_line_ptr, output_buffer, print_flags, l0083]
+- **expand_line** → check_for_control_code, get_current_fmt_cmd_byte, render_register [current_format_line_ptr, output_buffer, print_flags, l0083] (returns: C)
 - **f0_format_block_key** → ca741, show_memory_full_error, sub_c9977, write_line_back_to_document_safely [l003d, l0073]
 - **f11_copy_key** → beep, move_cursor_to_address, reset_area_to_marks_1_2, sub_ca1cc, write_line_back_to_document_safely [doc_ptr1]
 - **f12_left_key** [l0072, xpos]
@@ -109,17 +109,17 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **file_not_found_error** → return_to_cli_prompt, stop_printing
 - **find_margins_of_current_ruler_buffer** → sub_cabc4 [current_ruler_ptr, ruler_right_stop, ruler_left_stop, l003a]
 - **finish_cmd** → cb05a, check_continuous_editing, close_input_output_files, move_cursor_to_top_of_document, put_byte_to_file, read_first_chunk_from_input_file, reset_area_to_entire_document, return_to_cli_prompt, sanitise_area, select_file, sub_c89d3, write_area_to_file [input_file_empty_flag]
-- **flush_and_read_char**
+- **flush_and_read_char** (returns: C)
 - **flush_file** [file_ptr]
 - **fm_fmt_cmd** → evaluate_expression_from_fmt_cmd [footer_margin]
 - **fo_fmt_cmd** → parse_boolean_from_fmt_cmd [footers_enabled_flag]
 - **fold_cmd** → return_to_cli_prompt, sub_c8e33, sub_c976c [folding_flag]
 - **format_cmd** → display_not_enough_memory, move_cursor_to_address, parse_marks_from_command, return_to_cli_prompt, sanitise_area, sub_c9977, sub_caf5f, wipe_buffer [current_format_line_ptr, top_of_screen_line_ptr, current_edit_line_ptr, current_line_ptr, area_start_ptr, area_end_ptr]
-- **get_byte_from_file** [file_ptr]
-- **get_current_fmt_cmd_byte** [current_format_line_ptr]
+- **get_byte_from_file** [file_ptr] (returns: Z)
+- **get_current_fmt_cmd_byte** [current_format_line_ptr] (returns: Z)
 - **get_line_length** → check_for_command_prefix [current_format_line_ptr, current_edit_line_ptr]
-- **get_next_fmt_cmd_byte** → get_current_fmt_cmd_byte
-- **get_register_address** [tmp7, tmp6]
+- **get_next_fmt_cmd_byte** → get_current_fmt_cmd_byte (returns: Z)
+- **get_register_address** [tmp7, tmp6] (returns: C)
 - **go_to_marker** → ca684, move_cursor_to_address [markers_array, l0073]
 - **go_to_marker_1** → go_to_marker_n
 - **go_to_marker_2** → go_to_marker_n
@@ -138,13 +138,13 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **lj_fmt_cmd** → c950f_impl, expand_line
 - **lm_fmt_cmd** → evaluate_expression_from_fmt_cmd [left_margin]
 - **load_cmd** → check_not_continuous_editing, clear_cmd, initialise_document, move_cursor_to_top_of_document, parse_filename_from_command, read_into_document, reset_area_to_entire_document, reset_document_name_after_load [page, top]
-- **look_up_address_in_table** [tmp8, tmp9, tmp7, tmp6]
-- **lookup_formatting_command** [current_format_line_ptr, tmp2, tmp3]
-- **lookup_marker** → beep [markers_array]
+- **look_up_address_in_table** [tmp8, tmp9, tmp7, tmp6] (returns: C)
+- **lookup_formatting_command** [current_format_line_ptr, tmp2, tmp3] (returns: N)
+- **lookup_marker** → beep [markers_array] (returns: C)
 - **ls_fmt_cmd** → evaluate_expression_from_fmt_cmd [line_spacing]
 - **main** → main_
 - **main_** → cli_handler_impl, editor_loop_impl, initialise_document, run_cli, system_init [error_handling_mode]
-- **make_space_for_insertion** [himem, tmp2, tmp5, tmp8, tmp4, tmp3, tmp9, tmp7, tmp6, top]
+- **make_space_for_insertion** [himem, tmp2, tmp5, tmp8, tmp4, tmp3, tmp9, tmp7, tmp6, top] (returns: C)
 - **memory_full** → show_memory_full_error
 - **microspace_cmd** → call_printer_driver, parse_integer_from_command, prepare_printer_driver, return_to_cli_prompt [microspacing_flag, tmp8]
 - **microspace_word_processor** → print_char, print_vertical_space, sub_c9173, sub_c9431, sub_cadf0 [microspacing_flag, ruler_right_stop, output_buffer, l0039, l0021, l0045, l0043, l0046, l0047, l0042, l0083, l0048, l0080, l0044, tmp8, tmp9, tmp1, tmp0]
@@ -161,14 +161,14 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **open_input_file** → file_not_found_error, zero_terminate_filename_buffer [filename_buffer]
 - **open_output_file** → file_error, zero_terminate_filename_buffer [filename_buffer]
 - **page_eject_fmt** → c9263, render_new_page [l0031]
-- **parse_boolean_from_fmt_cmd** → get_current_fmt_cmd_byte, sub_c976c [current_format_line_ptr]
+- **parse_boolean_from_fmt_cmd** → get_current_fmt_cmd_byte, sub_c976c [current_format_line_ptr] (returns: C)
 - **parse_command** [input_buffer_offset, input_buffer, l0084, l007e, l0082, l0083]
 - **parse_decimal_number** [current_format_line_ptr, tmp8, tmp9]
 - **parse_filename_from_command** → bad_filename_error, parse_optional_filename_from_command
-- **parse_integer_from_command** → parse_decimal_number, sub_c8e33 [current_format_line_ptr, input_buffer]
-- **parse_mark_from_command** → lookup_marker, return_to_cli_prompt, sub_c8e33 [input_buffer_offset, markers_array]
+- **parse_integer_from_command** → parse_decimal_number, sub_c8e33 [current_format_line_ptr, input_buffer] (returns: Z)
+- **parse_mark_from_command** → lookup_marker, return_to_cli_prompt, sub_c8e33 [input_buffer_offset, markers_array] (returns: Z)
 - **parse_marks_from_command** → parse_mark_from_command, reset_area_to_entire_document [area_start_ptr, area_end_ptr]
-- **parse_optional_filename_from_command** → sub_c8e33 [input_buffer_offset, filename_buffer, input_buffer, l007e]
+- **parse_optional_filename_from_command** → sub_c8e33 [input_buffer_offset, filename_buffer, input_buffer, l007e] (returns: Z)
 - **pb_fmt_cmd** → parse_boolean_from_fmt_cmd [l0038]
 - **pe_fmt_cmd** → evaluate_expression_from_fmt_cmd, page_eject_fmt [l0031, l0021]
 - **pl_fmt_cmd** → evaluate_expression_from_fmt_cmd [page_length]
@@ -185,19 +185,19 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **print_x_words_of_help**
 - **printer_cmd** → print_cmd
 - **process_document_character** [current_ruler_ptr, ruler_left_stop, highlight_code, print_flags, l0039, l0084, l003a]
-- **prompt_for_marker** → draw_prompt_characters, lookup_marker, read_char [flags_need_redrawing_flag]
+- **prompt_for_marker** → draw_prompt_characters, lookup_marker, read_char [flags_need_redrawing_flag] (returns: C)
 - **push_onto_ruler_stack** → cab91 [status_line_needs_redrawing_flag, ruler_stack_ptr, oshwm, tmp1, tmp0]
 - **put_byte_to_file** [file_ptr]
 - **q_command_key** → cf6_split_line_key, control_key_to_ascii, draw_prompt_characters, f1_top_of_text_key, f2_bottom_of_text_key, f3_delete_to_eol_key, f4_beginning_of_line_key, f5_end_of_line_key, go_to_marker_1, go_to_marker_2, go_to_marker_3, go_to_marker_4, go_to_marker_5, go_to_marker_6, read_char, sf6_go_to_marker_key [flags_need_redrawing_flag]
 - **quit_cmd** → check_continuous_editing, close_input_output_files
-- **read_block_from_file** → check_for_command_prefix, check_for_control_code, get_byte_from_file, write_byte_to_memory, write_cr_to_memory [l0084, l0081, l0082, l0083, l0080, tmp1, tmp0]
-- **read_char** → flush_and_read_char
+- **read_block_from_file** → check_for_command_prefix, check_for_control_code, get_byte_from_file, write_byte_to_memory, write_cr_to_memory [l0084, l0081, l0082, l0083, l0080, tmp1, tmp0] (returns: Z)
+- **read_char** → flush_and_read_char (returns: C)
 - **read_cmd** → parse_filename_from_command, parse_marks_from_command, read_into_document, return_to_cli_prompt
-- **read_first_chunk_from_input_file** → read_next_chunk_from_input_file [page]
+- **read_first_chunk_from_input_file** → read_next_chunk_from_input_file [page] (returns: Z)
 - **read_into_document** → adjust_pointers, check_for_at_least_150_bytes_free, compute_required_space_for_insertion, make_space_for_insertion, move_cursor_to_address, open_input_file, read_block_from_file [area_start_ptr, tmp5, tmp4, tmp7, tmp1, ptr5, tmp0, tmp6]
-- **read_next_chunk_from_input_file** → read_block_from_file, select_file, sub_c8da2 [input_file_empty_flag, tmp1, tmp0, top]
+- **read_next_chunk_from_input_file** → read_block_from_file, select_file, sub_c8da2 [input_file_empty_flag, tmp1, tmp0, top] (returns: Z)
 - **readline** [input_buffer_offset, input_buffer]
-- **recalculate_cursor_xpos** → draw_char [current_edit_line_ptr, l0072, l0039, l0079, tmp1, tmp0, xpos]
+- **recalculate_cursor_xpos** → process_current_document_character [current_edit_line_ptr, l0072, l0039, l0079, tmp1, tmp0, xpos]
 - **redraw_editor** → cab91, cursor_off, cursor_on, draw_line, draw_ruler, draw_status_word, recalculate_cursor_xpos, sub_ca44e, sub_caacb, sub_cab1a, sub_cab37, unpack_line_into_buffer, write_line_back_to_document_safely [status_line_needs_redrawing_flag, edit_buffer_unpacked_flag, flags_need_redrawing_flag, current_format_line_ptr, top_of_screen_line_ptr, current_line_ptr, screen_maxcolumn, ruler_stack_ptr, screen_...]
 - **render_char** → check_for_control_code, sub_ca536 [screen_maxcolumn, line_lengths, l0084, l0082, l0083]
 - **render_header_or_footer** → c937b, sub_c9393, sub_c939b, sub_c93a1, sub_c93be, sub_c93c8, sub_c93fd, sub_c9407, sub_c941a [l0039, l0081, l0082, tmp5, tmp4]
@@ -209,7 +209,7 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **render_xchar** → render_char [hscroll_pos, l0039, l0084, l0080]
 - **replace_cmd** → c8b7b, cmd_err_no_string, cmd_err_no_target, draw_prompt_characters, enter_editor_mode, esc_key, flush_and_read_char, move_cursor_to_address, show_memory_full_error, sub_c8361, sub_c8371, sub_c83f0, sub_c8a4f [print_xpos]
 - **reset_area_to_entire_document** [area_start_ptr, area_end_ptr, page, top]
-- **reset_area_to_marks_1_2** → lookup_marker, sanitise_area, set_marker_to_here [area_start_ptr, markers_array, area_end_ptr, doc_ptr1]
+- **reset_area_to_marks_1_2** → lookup_marker, sanitise_area, set_marker_to_here [area_start_ptr, markers_array, area_end_ptr, doc_ptr1] (returns: C)
 - **reset_document_name_after_load** → set_document_name_to_filename_buffer [file_edit_flags]
 - **restore_cursor_position** [tmp5, tmp4]
 - **return_key** → cab29, sub_c9de1, sub_cab1a, write_line_back_to_document_safely [cursor_moved_flag, current_line_ptr, tmp1, tmp0, xpos]
@@ -218,7 +218,7 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **rj_fmt_cmd** → c950f_impl, expand_line [ruler_right_stop, l0083]
 - **run_cli** → clear_screen, compute_bytes_free, display_document_file_state, print_x_words_of_help, render_number_to_screen, return_to_cli_prompt [input_file_empty_flag, printer_driver_name, microspacing_flag, file_edit_flags, markers_array, l0083]
 - **run_editor** → enter_editor_mode
-- **sanitise_area** [area_start_ptr, area_end_ptr, tmp7, tmp6]
+- **sanitise_area** [area_start_ptr, area_end_ptr, tmp7, tmp6] (returns: Z)
 - **save_cmd_write_cmd** → bad_filename_error, close_file, open_output_file, parse_marks_from_command, parse_optional_filename_from_command, put_byte_to_file, return_to_cli_prompt, sanitise_area, write_area_to_file [file_edit_flags, filename_buffer, input_filename]
 - **save_cursor_position** [tmp5, tmp4]
 - **screen_cmd** → print_to_screen
@@ -254,71 +254,71 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **show_memory_full_error** → beep, clear_cmd, cursor_off, cursor_on, flush_and_read_char [status_line_needs_redrawing_flag, edit_buffer_unpacked_flag, screen_maxcolumn, line_lengths, l0073]
 - **start_printing** → return_to_cli_prompt
 - **stop_printing** → call_printer_driver [print_flags]
-- **sub_c8310** [input_buffer, l0084, l007e]
+- **sub_c8310** [input_buffer, l0084, l007e] (returns: Z)
 - **sub_c8361** → redraw_editor, write_line_back_to_document_safely [edit_buffer_unpacked_flag]
 - **sub_c8371** → ca741 [doc_ptr2, l0074, tmp8, ptr2, tmp9]
-- **sub_c83f0** → expand_escaped_string, parse_marks_from_command, sanitise_area, sub_c8412, sub_c8c7c, sub_c8e33 [input_buffer_offset, l004a]
-- **sub_c8412** → expand_escaped_string, sub_c8e33 [l004a, l007a]
+- **sub_c83f0** → expand_escaped_string, parse_marks_from_command, sanitise_area, sub_c8412, sub_c8c7c, sub_c8e33 [input_buffer_offset, l004a] (returns: Z,C)
+- **sub_c8412** → expand_escaped_string, sub_c8e33 [l004a, l007a] (returns: Z)
 - **sub_c89d3** → adjust_pointers, cac78 [area_start_ptr, tmp5, tmp4]
-- **sub_c8a4f** → adjust_pointers, cac78, make_space_for_insertion [header_text_maybe, output_buffer, folding_flag, print_xpos, doc_ptr2, l0084, l004a, l0081, l0049, l0082, l0083, l0048, l007a, l0080, tmp5, tmp4, ptr2, tmp7, tmp6]
+- **sub_c8a4f** → adjust_pointers, cac78, make_space_for_insertion [header_text_maybe, output_buffer, folding_flag, print_xpos, doc_ptr2, l0084, l004a, l0081, l0049, l0082, l0083, l0048, l007a, l0080, tmp5, tmp4, ptr2, tmp7, tmp6] (returns: C)
 - **sub_c8c51** → sub_c8c53
 - **sub_c8c53** [output_buffer, l0048]
 - **sub_c8c5f** [folding_flag]
 - **sub_c8c7c** [area_start_ptr, area_end_ptr, doc_ptr3, doc_ptr2]
 - **sub_c8da2** → compute_bytes_free, compute_space_common [tmp8, tmp9]
 - **sub_c8e2d** → sub_c8e33 [input_buffer_offset, l007e]
-- **sub_c8e33** [input_buffer_offset, input_buffer, l007e]
+- **sub_c8e33** [input_buffer_offset, input_buffer, l007e] (returns: Z)
 - **sub_c916a** → call_printer_driver, sub_c9445 [microspacing_flag, print_flags, l0043]
 - **sub_c9173** → call_printer_driver, sub_c9445 [l0043]
-- **sub_c9188** → sub_c9228, sub_c9241 [current_format_line_ptr, macro_executing_flag, current_line_buffer, l0084, l0081, l0082, l0083, l0080, ptr1, tmp1, ptr5, ptr3, tmp0]
-- **sub_c9228** [l0082]
-- **sub_c9241** → read_block_from_file [printing_from_file_flag, ptr6, tmp1, tmp0]
+- **sub_c9188** → sub_c9228, sub_c9241 [current_format_line_ptr, macro_executing_flag, current_line_buffer, l0084, l0081, l0082, l0083, l0080, ptr1, tmp1, ptr5, ptr3, tmp0] (returns: C)
+- **sub_c9228** [l0082] (returns: Z)
+- **sub_c9241** → read_block_from_file [printing_from_file_flag, ptr6, tmp1, tmp0] (returns: C)
 - **sub_c92f0** [page_length, l0021, l0038]
 - **sub_c9393** → sub_c93b6 [tmp2, tmp5, tmp4, tmp3]
 - **sub_c939b** → sub_c93b6 [tmp2, tmp5, tmp4, tmp3]
 - **sub_c93a1** → c93b8, sub_c93b6 [tmp2, tmp5, tmp4, tmp3]
 - **sub_c93b6** → c93b8
-- **sub_c93be** [ruler_right_stop, l003a]
+- **sub_c93be** [ruler_right_stop, l003a] (returns: Z)
 - **sub_c93c8** → check_for_control_code, render_register [output_buffer, print_flags, l0084, l0081, tmp2]
-- **sub_c93fd** [two_sided_flag]
+- **sub_c93fd** [two_sided_flag] (returns: C)
 - **sub_c9407** → sub_c93fd [rhs_extra_margin, two_sided_flag, left_margin]
 - **sub_c941a** [l0039]
 - **sub_c9431** → process_document_character [print_flags, l0039]
 - **sub_c9445** → print_char_just_to_printer [print_xpos]
 - **sub_c95b2** [l0081, tmp2, tmp3]
-- **sub_c976c** [l0084, tmp8, tmp9]
+- **sub_c976c** [l0084, tmp8, tmp9] (returns: C)
 - **sub_c9830** → get_line_length, sub_c9936, sub_cadf0, wipe_buffer [current_edit_line_ptr, ruler_right_stop, justifying_flag, output_buffer, input_buffer, print_xpos, l0039, l0084, l0081, l0045, l0043, l0046, l0082, l0042, l0044, tmp8, tmp9]
-- **sub_c9936** → process_document_character [current_edit_line_ptr, ruler_left_stop, output_buffer, l0039, l0046, l0042, l0083]
+- **sub_c9936** → process_document_character [current_edit_line_ptr, ruler_left_stop, output_buffer, l0039, l0046, l0042, l0083] (returns: Z)
 - **sub_c9974**
-- **sub_c9977** → c9e94, check_for_command_prefix, check_for_control_code, process_document_character, sub_c9830, sub_c9aa9, sub_c9ac1, sub_ca536, sub_cab1a, sub_caed6, wipe_buffer [current_edit_line_ptr, input_buffer_offset, cursor_moved_flag, current_line_ptr, format_mode_flag, ruler_right_stop, ruler_left_stop, markers_array, bottom_margin, print_xpos, l0039, l007e, l0038, ...]
+- **sub_c9977** → c9e94, check_for_command_prefix, check_for_control_code, process_document_character, sub_c9830, sub_c9aa9, sub_c9ac1, sub_ca536, sub_cab1a, sub_caed6, wipe_buffer [current_edit_line_ptr, input_buffer_offset, cursor_moved_flag, current_line_ptr, format_mode_flag, ruler_right_stop, ruler_left_stop, markers_array, bottom_margin, print_xpos, l0039, l007e, l0038, ...] (returns: V)
 - **sub_c9aa9** → write_line_back_to_document [edit_buffer_unpacked_flag, l0084, l003b, l0047]
-- **sub_c9ac1** → check_for_command_prefix [current_line_ptr, ruler_left_stop, l0084, l0083, tmp5, tmp8, tmp4, tmp9]
+- **sub_c9ac1** → check_for_command_prefix [current_line_ptr, ruler_left_stop, l0084, l0083, tmp5, tmp8, tmp4, tmp9] (returns: C)
 - **sub_c9bca** → beep, return_to_editor_loop
 - **sub_c9de1** → ca741, make_space_for_insertion, memory_full [cursor_moved_flag, tmp5, tmp4, tmp7, tmp6]
-- **sub_c9e22** → sub_cae06 [current_edit_line_ptr, l0074]
+- **sub_c9e22** → sub_cae06 [current_edit_line_ptr, l0074] (returns: C)
 - **sub_c9e9b** → get_line_length [xpos]
 - **sub_c9f80** → sub_c9e9b, sub_caa97, sub_cab37, write_line_back_to_document_safely [current_line_ptr, l006f, tmp1, tmp0]
 - **sub_ca071** → sub_cab37, write_line_back_to_document_safely [cursor_moved_flag, current_line_ptr, l0080, tmp2, tmp3, tmp1, tmp0]
 - **sub_ca0af** → sub_cab1a, write_line_back_to_document_safely [cursor_moved_flag, current_line_ptr, l0080, tmp1, tmp0]
-- **sub_ca1cc** → beep, cac78, make_space_for_insertion, move_cursor_to_address, show_memory_full_error [cursor_moved_flag, area_start_ptr, area_end_ptr, doc_ptr1, l0073, tmp2, tmp5, tmp8, tmp4, tmp3, tmp9, tmp7, tmp6]
+- **sub_ca1cc** → beep, cac78, make_space_for_insertion, move_cursor_to_address, show_memory_full_error [cursor_moved_flag, area_start_ptr, area_end_ptr, doc_ptr1, l0073, tmp2, tmp5, tmp8, tmp4, tmp3, tmp9, tmp7, tmp6] (returns: C)
 - **sub_ca44e** → sub_cab37 [top_of_screen_line_ptr, current_line_ptr, ruler_stack_ptr, screen_maxrow, l0073, l006f, l0034, l0033, tmp2, ypos, tmp3, tmp1, tmp0]
-- **sub_ca4d7** → draw_char, render_char
-- **sub_ca536** [markers_array, tmp8, tmp9, tmp7, tmp6]
+- **sub_ca4d7** → process_current_document_character, render_char
+- **sub_ca536** [markers_array, tmp8, tmp9, tmp7, tmp6] (returns: Z)
 - **sub_caa97** → caf5c, check_for_command_prefix, sub_caf5f, wipe_buffer [edit_buffer_unpacked_flag, current_format_line_ptr, current_edit_line_ptr, current_line_ptr, l003b, ptr1]
 - **sub_caacb** → sub_ca536 [current_format_line_ptr, current_line_ptr, markers_array, tmp7, tmp6]
-- **sub_cab1a** → cab29, push_onto_ruler_stack, sub_cab6e [tmp1, tmp0]
-- **sub_cab37** → pop_from_ruler_stack, sub_cab6e [tmp1, tmp0, page]
-- **sub_cab6e** [tmp1, tmp0]
+- **sub_cab1a** → cab29, push_onto_ruler_stack, sub_cab6e [tmp1, tmp0] (returns: Z)
+- **sub_cab37** → pop_from_ruler_stack, sub_cab6e [tmp1, tmp0, page] (returns: C)
+- **sub_cab6e** [tmp1, tmp0] (returns: Z)
 - **sub_cabc4** [ruler_right_stop, ruler_left_stop]
 - **sub_cac41** → push_onto_ruler_stack, sub_cab6e
 - **sub_cac50** [tmp8, tmp9, tmp7, tmp6]
 - **sub_cadf0** [l0046, tmp8, tmp9]
 - **sub_cae03** → beep
-- **sub_cae06** → get_line_length, sub_ca536, sub_cae03 [edit_buffer_dirty_flag, current_edit_line_ptr, markers_array, l0084, l0081, l0080, tmp7, tmp6, xpos]
-- **sub_caec2** [current_edit_line_ptr, ruler_left_stop]
+- **sub_cae06** → get_line_length, sub_ca536, sub_cae03 [edit_buffer_dirty_flag, current_edit_line_ptr, markers_array, l0084, l0081, l0080, tmp7, tmp6, xpos] (returns: C)
+- **sub_caec2** [current_edit_line_ptr, ruler_left_stop] (returns: C)
 - **sub_caed6** → sub_caec2, sub_caedd
-- **sub_caedd** → sub_cae06 [current_edit_line_ptr, xpos]
-- **sub_caef4** → get_line_length, recalculate_cursor_xpos, sub_caec2, sub_caedd [format_mode_flag, ruler_left_stop, l0072, l0074, l0083, xpos]
+- **sub_caedd** → sub_cae06 [current_edit_line_ptr, xpos] (returns: C)
+- **sub_caef4** → get_line_length, recalculate_cursor_xpos, sub_caec2, sub_caedd [format_mode_flag, ruler_left_stop, l0072, l0074, l0083, xpos] (returns: C)
 - **sub_caf5f** [flags_need_redrawing_flag, format_mode_flag]
 - **sub_cb104** → sub_c92f0 [macro_executing_flag, footers_enabled_flag, headers_enabled_flag, register_value_array, footer_text_maybe, header_text_maybe, rhs_extra_margin, highlight2_code, highlight1_code, two_sided_flag, bot...]
 - **system_init** [screen_maxcolumn, screen_maxrow, himem, oshwm]
@@ -328,7 +328,7 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **ts_fmt_cmd** → evaluate_expression_from_fmt_cmd, parse_boolean_from_fmt_cmd [rhs_extra_margin, two_sided_flag]
 - **unpack_line_into_buffer** → sub_caa97 [edit_buffer_unpacked_flag]
 - **wipe_buffer** [ptr1]
-- **write_area_to_file** → put_byte_to_file, sanitise_area [area_start_ptr, area_end_ptr, tmp8, tmp9]
+- **write_area_to_file** → put_byte_to_file, sanitise_area [area_start_ptr, area_end_ptr, tmp8, tmp9] (returns: Z)
 - **write_byte_to_memory** [l0084, l0083, tmp1, tmp0]
 - **write_cr_to_memory** → write_byte_to_memory
 - **write_line_back_to_document** → adjust_pointers, ca741, get_line_length, make_space_for_insertion, sub_ca536 [edit_buffer_unpacked_flag, current_format_line_ptr, edit_buffer_dirty_flag, current_line_ptr, markers_array, l0084, l003b, l0083, tmp5, tmp4, tmp7, tmp6]
