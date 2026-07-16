@@ -371,6 +371,7 @@ subroutine(0xA4E9, "process_current_document_character")
 subroutine(0xA651, "draw_status_word")
 subroutine(0xA608, "recalculate_cursor_xpos")
 subroutine(0xA597, "clear_to_eol")
+subroutine(0x9830, "justify_edit_buffer")
 
 subroutine(0x823B, "esc_key")
 subroutine(0x9D7B, "return_key")

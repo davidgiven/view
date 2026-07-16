@@ -306,6 +306,7 @@ static void sub_ca4d7(void);
 static void render_xchar(void);
 static void clear_to_eol(void);
 void create_default_ruler(void);
+void justify_edit_buffer(void);
 static void set_document_name_to_filename_buffer(void);
 static void clear_marks_1_2(void);
 static void reset_area_to_marks_1_2(void);
@@ -7048,10 +7049,10 @@ static void get_next_fmt_cmd_byte(void) {
     y++;
     get_current_fmt_cmd_byte();
 }
-static void sub_c9830(void) {
+void justify_edit_buffer(void) {
     // Pseudocode: Word-spacing justification: distributes extra spaces between words
 
-    // sub_c9830:
+    // justify_edit_buffer:
     //     lda justifying_flag
     a = justifying_flag;
     set_flags(a);
@@ -7468,10 +7469,10 @@ c9969:
     if (!(flags & FLAG_C)) return;
     //     inc l0039
     l0039++;
+    set_flags(l0039);
     // return_49:
 return_49:
     //     rts
-    set_flags(0);
     return;
 }
 static void sub_c9974(void) {
@@ -7798,8 +7799,8 @@ loop_c9a62:
     { uint8_t tmp_ = (input_buffer_offset & 0x01) ? FLAG_C : 0; input_buffer_offset = (input_buffer_offset >> 1) | ((flags & FLAG_C) ? 0x80 : 0); flags = (flags & ~FLAG_C) | tmp_; }
     //     jsr sub_caed6
     sub_caed6();
-    //     jsr sub_c9830
-    sub_c9830();
+    //     jsr justify_edit_buffer
+    justify_edit_buffer();
     //     jsr sub_c9aa9
     sub_c9aa9();
     //     jsr c9a8d
@@ -8567,8 +8568,8 @@ c9d30:
     //     bmi c9d15                                                         ; ALWAYS branch
     // c9d15:
 c9d15:
-    //     jsr sub_c9830
-    sub_c9830();
+    //     jsr justify_edit_buffer
+    justify_edit_buffer();
     //     jsr ca93c
     write_line_back_to_document_safely();
     //     jsr ca741

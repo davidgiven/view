@@ -51,10 +51,14 @@ bin/test_ruler: tests/test_ruler.c $(OBJ_DIR)/view_nomain.o $(OBJ_DIR)/cli_stdio
 	mkdir -p bin
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
+bin/test_justify: tests/test_justify.c $(OBJ_DIR)/view_nomain.o $(OBJ_DIR)/cli_stdio.o $(OBJ_DIR)/screen_ncurses.o
+	mkdir -p bin
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
 .PHONY: test test-render clean
 
-test: bin/render_number bin/test_ruler bin/view_for_testing
-	./bin/render_number && ./bin/test_ruler && TERM=vt100 python3 tests/interact.py
+test: bin/render_number bin/test_ruler bin/test_justify bin/view_for_testing
+	./bin/render_number && ./bin/test_ruler && ./bin/test_justify && TERM=vt100 python3 tests/interact.py
 
 clean:
-	rm -rf $(OBJ_DIR) bin/view bin/view_for_testing bin/render_number bin/test_ruler
+	rm -rf $(OBJ_DIR) bin/view bin/view_for_testing bin/render_number bin/test_ruler bin/test_justify
