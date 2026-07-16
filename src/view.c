@@ -11519,8 +11519,6 @@ static void look_up_address_in_table(void) {
     // zendproc
 }
 static void write_line_back_to_document(void) {
-    // Pseudocode: Saves edit line changes back to document memory, updating markers
-
     // write_line_back_to_document:
     //     lda l006e
     //     beq ca93a
@@ -11547,14 +11545,14 @@ static void write_line_back_to_document(void) {
     //     sta tmp6
     //     jsr adjust_pointers
     //     jmp ca8ed
+    a = l003b;
     flags |= FLAG_C;
-    { uint8_t old_a = l003b; a = l003b - l0083 - (1 - (flags & FLAG_C)); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (old_a >= l0083 ? FLAG_C : 0); }
+    sbc(l0083);
     if (!(flags & FLAG_C)) goto ca8df;
     if (flags & FLAG_Z) goto ca8ed;
     tmp6 = a;
     adjust_pointers();
     goto ca8ed;
-
     // ca8df:
 ca8df:
     //     sta l0084
@@ -11565,8 +11563,9 @@ ca8df:
     //     sta tmp6
     //     jsr make_space_for_insertion
     //     bcs return_66
+    a = 0;
     flags |= FLAG_C;
-    { uint8_t old_a = 0; a = 0 - l0084 - (1 - (flags & FLAG_C)); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (old_a >= l0084 ? FLAG_C : 0); }
+    sbc(l0084);
     tmp6 = a;
     make_space_for_insertion();
     if (flags & FLAG_C) return;
@@ -11574,11 +11573,11 @@ ca8df:
 ca8ed:
     //     lda l006e
     //     bpl ca8f8
+    if ((int8_t)edit_buffer_unpacked_flag >= 0) goto ca8f8;
     //     lda l006d
     //     beq ca8f8
-    //     jsr ca741
-    if (!(edit_buffer_unpacked_flag & 0x80)) goto ca8f8;
     if (edit_buffer_dirty_flag == 0) goto ca8f8;
+    //     jsr ca741
     ca741();
     // ca8f8:
 ca8f8:
@@ -11604,10 +11603,10 @@ ca90a:
     //     bne ca911
     //     lda #0x0d
     //     bne ca919
-    if (x != 0) goto ca911;
+    a = x;
+    if (a != 0) goto ca911;
     a = 0x0d;
     goto ca919;
-
     // ca911:
 ca911:
     //     lda (current_format_line_ptr),y

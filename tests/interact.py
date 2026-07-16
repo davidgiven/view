@@ -445,7 +445,19 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
-    def test_enter_editor_and_a_long_line(self):
+    def test_enter_editor_and_a_long_line_nonjustified(self):
+        self._test_enter_editor_and_type(
+            b"\x0f\x0a"+
+            b"She puzzled over this for some time, but at last a bright thought struck her.",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   She puzzled over this for some time, but at last a bright thought struck     ",
+                "   her.                                                                         ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_enter_editor_and_a_long_line_justified(self):
         self._test_enter_editor_and_type(
             b"She puzzled over this for some time, but at last a bright thought struck her.",
             [
