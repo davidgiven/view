@@ -46,14 +46,14 @@ static void setup_edit_buffer(const char *text) {
         ram[BUFFER_ADDR + i] = 0x10;
 }
 
-static void run_justify(const char *text, uint8_t rstop) {
+static void init_globals(const char *text, uint8_t jf, uint8_t rstop) {
     setup_edit_buffer(text);
     current_edit_line_ptr = BUFFER_ADDR;
     current_format_line_ptr = BUFFER_ADDR;
     current_line_ptr = BUFFER_ADDR;
     ptr1 = BUFFER_ADDR;
 
-    justifying_flag = 0;
+    justifying_flag = jf;
     ruler_left_stop = 0;
     ruler_right_stop = rstop;
 
@@ -65,7 +65,10 @@ static void run_justify(const char *text, uint8_t rstop) {
     a = x = y = flags = 0;
     memset(output_buffer, 0, sizeof(output_buffer));
     memset(input_buffer, 0, sizeof(input_buffer));
+}
 
+static void run_justify(const char *text, uint8_t rstop) {
+    init_globals(text, 0, rstop);
     justify_edit_buffer();
 
     int orig_len = strlen(text);
@@ -99,22 +102,7 @@ int main(void) {
 
     printf("\nTest 3: overriding justifying_flag (should skip)\n");
     {
-        setup_edit_buffer("The quick brown fox jumps over");
-        current_edit_line_ptr = BUFFER_ADDR;
-        current_format_line_ptr = BUFFER_ADDR;
-        current_line_ptr = BUFFER_ADDR;
-        ptr1 = BUFFER_ADDR;
-        justifying_flag = 0xFF;  /* non-zero → should skip */
-        ruler_left_stop = 0;
-        ruler_right_stop = 40;
-        l0039 = l0042 = l0046 = 0;
-        l0081 = l0082 = l0083 = l0084 = 0;
-        tmp8 = tmp9 = 0;
-        print_xpos = 4;
-        input_buffer_offset = 0;
-        a = x = y = flags = 0;
-        memset(output_buffer, 0, sizeof(output_buffer));
-        memset(input_buffer, 0, sizeof(input_buffer));
+        init_globals("The quick brown fox jumps over", 0xFF, 40);
         justify_edit_buffer();
         printf("  l0046=%d", l0046);
         ASSERT(l0046 == 0, "justification skipped when flag != 0");
