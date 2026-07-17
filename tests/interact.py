@@ -17,6 +17,21 @@ VIEW_BIN = os.path.join(
     os.path.dirname(__file__), "..", "bin", "view_for_testing"
 )
 
+# Control codes used in editor commands
+CTRL_A  = b"\x01"; CTRL_B  = b"\x02"; CTRL_C  = b"\x03"; CTRL_D  = b"\x04"
+CTRL_E  = b"\x05"; CTRL_F  = b"\x06"; CTRL_G  = b"\x07"; CTRL_H  = b"\x08"
+CTRL_I  = b"\x09"; CTRL_J  = b"\x0a"; CTRL_K  = b"\x0b"; CTRL_L  = b"\x0c"
+CTRL_M  = b"\x0d"; CTRL_N  = b"\x0e"; CTRL_O  = b"\x0f"; CTRL_P  = b"\x10"
+CTRL_Q  = b"\x11"; CTRL_R  = b"\x12"; CTRL_S  = b"\x13"; CTRL_T  = b"\x14"
+CTRL_U  = b"\x15"; CTRL_V  = b"\x16"; CTRL_W  = b"\x17"; CTRL_X  = b"\x18"
+CTRL_Y  = b"\x19"; CTRL_Z  = b"\x1a"
+
+# Screen key codes (from screen.h)
+KEY_UP    = b"\x8b"
+KEY_DOWN  = b"\x8a"
+KEY_LEFT  = b"\x88"
+KEY_RIGHT = b"\x89"
+
 
 def strip_escapes(text: str) -> str:
     """Remove ANSI/VT100 escape sequences and control characters."""
@@ -415,7 +430,7 @@ class EditorTests(unittest.TestCase):
     def test_enter_editor_and_type_two_lines(self):
         """Enter empty editor, type two lines with a newline between, then check that characters appear."""
         self._test_enter_editor_and_type(
-            b"line1\rline2",
+            b"line1" + CTRL_M + b"line2",
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "   line1                                                                        ",
@@ -426,7 +441,7 @@ class EditorTests(unittest.TestCase):
 
     def test_enter_editor_and_cursor_left_right(self):
         self._test_enter_editor_and_type(
-            b"text\x891\x88\x88\x88\x8823",
+            b"text" + KEY_RIGHT + b"1" + KEY_LEFT * 4 + b"23",
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "   te23 1                                                                       ",
@@ -436,7 +451,7 @@ class EditorTests(unittest.TestCase):
 
     def test_enter_editor_and_cursor_down_up(self):
         self._test_enter_editor_and_type(
-            b"text\x8a1\x8b2\x8b3",
+            b"text" + KEY_DOWN + b"1" + KEY_UP + b"2" + KEY_UP + b"3",
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "   text 23                                                                      ",
@@ -447,7 +462,7 @@ class EditorTests(unittest.TestCase):
 
     def test_enter_editor_and_a_long_line_nonjustified(self):
         self._test_enter_editor_and_type(
-            b"\x0f\x0a"
+            CTRL_O + CTRL_J +
             b"In a small loch in north-west Scotland whose name I can't quite remember, "
             b"there once lived a water horse and his wife. They preyed upon the local "
             b"crofters, for of course there were no fishermen --- with a pair of water "
@@ -478,6 +493,20 @@ class EditorTests(unittest.TestCase):
                 "   crofters, for of course there  were  no fishermen --- with a pair of water   ",
                 "   horses  in  the  loch venturing into the  water  was  far  too  dangerous.   ",
                 "   Luckily for the locals, water horses do not get hungry very often.           ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_enter_editor_and_a_reformat(self):
+        self._test_enter_editor_and_type(
+            CTRL_O + CTRL_J +
+            b"In a small loch in north-west Scotland whose name I can't quite remember, "
+            b"there once lived a water horse" +
+            KEY_UP + CTRL_V + b"WORD " + CTRL_B,
+            [
+                "F  .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   In a small loch in north-west WORD Scotland whose name I can't quite         ",
+                "   remember, there once lived a water horse                                     ",
                 "********************************************************************************",
             ],
         )
