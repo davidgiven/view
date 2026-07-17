@@ -447,23 +447,37 @@ class EditorTests(unittest.TestCase):
 
     def test_enter_editor_and_a_long_line_nonjustified(self):
         self._test_enter_editor_and_type(
-            b"\x0f\x0a"+
-            b"She puzzled over this for some time, but at last a bright thought struck her.",
+            b"\x0f\x0a"
+            b"In a small loch in north-west Scotland whose name I can't quite remember, "
+            b"there once lived a water horse and his wife. They preyed upon the local "
+            b"crofters, for of course there were no fishermen --- with a pair of water "
+            b"horses in the loch venturing into the water was far too dangerous. Luckily "
+            b"for the locals, water horses do not get hungry very often. ",
             [
                 "F  .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-                "   She puzzled over this for some time, but at last a bright thought struck     ",
-                "   her.                                                                         ",
+                "   In a small loch in north-west Scotland whose name I can't quite remember,    ",
+                "   there once lived a water horse and his wife. They preyed upon the local      ",
+                "   crofters, for of course there were no fishermen --- with a pair of water     ",
+                "   horses in the loch venturing into the water was far too dangerous.           ",
+                "   Luckily for the locals, water horses do not get hungry very often.           ",
                 "********************************************************************************",
             ],
         )
 
     def test_enter_editor_and_a_long_line_justified(self):
         self._test_enter_editor_and_type(
-            b"She puzzled over this for some time, but at last a bright thought struck her.",
+            b"In a small loch in north-west Scotland whose name I can't quite remember, "
+            b"there once lived a water horse and his wife. They preyed upon the local "
+            b"crofters, for of course there were no fishermen --- with a pair of water "
+            b"horses in the loch venturing into the water was far too dangerous. Luckily "
+            b"for the locals, water horses do not get hungry very often. ",
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-                "   She  puzzled  over this for some time, but at last a bright thought struck   ",
-                "   her.                                                                         ",
+                "   In  a small loch in north-west Scotland whose name I can't quite remember,   ",
+                "   there once  lived  a  water horse and his wife. They preyed upon the local   ",
+                "   crofters, for of course there  were  no fishermen --- with a pair of water   ",
+                "   horses  in  the  loch venturing into the  water  was  far  too  dangerous.   ",
+                "   Luckily for the locals, water horses do not get hungry very often.           ",
                 "********************************************************************************",
             ],
         )
