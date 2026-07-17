@@ -313,6 +313,7 @@ static void parse_mark_from_command(void);
 static void sub_c9445(void);
 static void c937b(void);
 static void print_vertical_space(void);
+static void print_char_x_times(void);
 static void render_header_or_footer(void);
 static void write_line_back_to_document(void);
 static void sub_c92f0(void);
@@ -835,9 +836,9 @@ c81e0:
     //     txa
     a = x;
     //     lsr
-    a >>= 1;
+    a = asr(a);
     //     adc #0x31 ; '1'
-    a += 0x31;
+    adc(0x31);
     //     jsr screen_putchar
     screen_putchar(a);
     // c81e7:
@@ -1833,11 +1834,11 @@ static void microspace_cmd(void) {
     //     jsr parse_integer_from_command
     parse_integer_from_command();
     //     php
-    // PROBLEM: php (push flags)
+    uint8_t saved_flags = flags;
     //     ldx #0x0a
     x = 0x0a;
     //     plp
-    // PROBLEM: plp (pull flags)
+    flags = saved_flags;
     //     beq c8608
     if (flags & FLAG_Z) goto c8608;
     //     ldx tmp8
@@ -1892,7 +1893,7 @@ static void setup_cmd(void) {
     // c8649:
 c8649:
     //     jsr sub_c8e33
-    // PROBLEM: jsr sub_c8e33
+    sub_c8e33();
     //     beq c8672
     if (flags & FLAG_Z) goto c8672;
     //     and #0xdf
@@ -4611,7 +4612,7 @@ c913b:
     //     pla
     a = saved_a3;
     //     jsr c9426
-    // PROBLEM: jsr c9426 not translated
+    print_char_x_times();
     //     jmp c9163
     goto c9163;
 
@@ -5194,7 +5195,9 @@ c92e8:
     sub_c92f0(); return;
 }
 static void sub_c92f0(void) {
-    // Shared code: computes remaining lines on page (c92f0)
+    // sub_c92f0: Computes remaining lines on page = page_length minus margins
+    // On exit: l0021 = result (at least 1 if any margin computation underflows)
+
     // c92f0:
     //     ldx page_length
     x = page_length;
@@ -5210,19 +5213,25 @@ static void sub_c92f0(void) {
     //     clc
     flags &= ~FLAG_C;
     //     sbc top_margin
-    // PROBLEM: sbc top_margin
+    sbc(top_margin);
     //     bcc c930d
+    if (!(flags & FLAG_C)) goto c930d;
     //     sbc header_margin
-    // PROBLEM: sbc header_margin
+    sbc(header_margin);
     //     bcc c930d
+    if (!(flags & FLAG_C)) goto c930d;
     //     clc
+    flags &= ~FLAG_C;
     //     sbc bottom_margin
-    // PROBLEM: sbc bottom_margin
+    sbc(bottom_margin);
     //     bcc c930d
+    if (!(flags & FLAG_C)) goto c930d;
     //     sbc footer_margin
-    // PROBLEM: sbc footer_margin
+    sbc(footer_margin);
     //     bcc c930d
+    if (!(flags & FLAG_C)) goto c930d;
     //     tax
+    x = a;
     // c930d:
 c930d:
     //     stx l0021
@@ -5467,9 +5476,7 @@ static void sub_c93be(void) {
     //     sec
     flags |= FLAG_C;
     //     sbc #1
-    // PROBLEM: sbc #1 (no flag update)
-    a -= 1 + (1 - (flags & FLAG_C));
-    set_flags(a);
+    sbc(1);
     // return_29:
 return_29:
     ; // fallthrough to rts
@@ -5530,8 +5537,7 @@ c93e6:
     //     sec
     flags |= FLAG_C;
     //     sbc l0081
-    // PROBLEM: sbc l0081 (no flag update)
-    a -= l0081 + (1 - (flags & FLAG_C));
+    sbc(l0081);
     //     tax
     x = a;
     // return_30:
@@ -5595,8 +5601,7 @@ static void sub_c9407(void) {
     //     clc
     flags &= ~FLAG_C;
     //     adc rhs_extra_margin
-    // PROBLEM: adc without full flag update
-    a += rhs_extra_margin + (flags & FLAG_C);
+    adc(rhs_extra_margin);
     // c9415:
 c9415:
     //     tax
@@ -5604,7 +5609,7 @@ c9415:
     //     lda #0x20 ; ' '
     a = 0x20;
     //     bne c9426                                                         ; ALWAYS branch
-    // PROBLEM: cross-function jump to c9426 in print_vertical_space
+    print_char_x_times();
 }
 static void sub_c941a(void) {
     // Pseudocode: Adds extra spaces to x position for centering/justification
@@ -5615,27 +5620,16 @@ static void sub_c941a(void) {
     //     clc
     flags &= ~FLAG_C;
     //     adc l0039
-    // PROBLEM: adc without full flag update
-    a += l0039 + (flags & FLAG_C);
+    adc(l0039);
     //     sta l0039
     l0039 = a;
     //     lda #0x20 ; ' '
     a = 0x20;
     //     bne c9426                                                         ; ALWAYS branch
-    // PROBLEM: cross-function jump to c9426 in print_vertical_space
+    print_char_x_times();
 }
-static void print_vertical_space(void) {
-    // Pseudocode: Prints X number of blank lines (newlines)
-
-    // ; ***************************************************************************************
-    // ; On Entry:
-    // ;     X: number of lines
-    // ; ***************************************************************************************
-    // print_vertical_space:
-    //     lda #0x0d
-    a = 0x0d;
-    // c9426:
-c9426:
+static void print_char_x_times(void) {
+    // c9426: Print character in A, X times. If X==0, return immediately.
     //     inx
     x++;
     //     dex
@@ -5656,6 +5650,18 @@ loop_c942a:
 return_32:
     //     rts
     return;
+}
+static void print_vertical_space(void) {
+    // Pseudocode: Prints X number of blank lines (newlines)
+
+    // ; ***************************************************************************************
+    // ; On Entry:
+    // ;     X: number of lines
+    // ; ***************************************************************************************
+    // print_vertical_space:
+    //     lda #0x0d
+    a = 0x0d;
+    print_char_x_times();
 }
 static void sub_c9431(void) {
     // Pseudocode: Converts character for printing, updates x position counter
@@ -5682,8 +5688,7 @@ c943c:
     //     clc
     flags &= ~FLAG_C;
     //     adc l0039
-    // PROBLEM: adc without full flag update
-    a += l0039 + (flags & FLAG_C);
+    adc(l0039);
     //     sta l0039
     l0039 = a;
     //     pla
@@ -11120,9 +11125,7 @@ static void render_number_to_output_buffer(void) {
     //     stx l0082
     l0082 = x;
     //     lda la69a
-    // PROBLEM: la69a function pointer data not defined
     //     ldy la69b
-    // PROBLEM: la69b function pointer data not defined
     //     jsr render_number_to_callback
     number_callback = emit_to_output_buffer_callback;
     render_number_to_callback();
@@ -11142,9 +11145,8 @@ static void emit_to_output_buffer_callback(void) {
     //     pha
 {   uint8_t saved_a = a;
     //     txa
-    a = x;
     //     pha
-    // PROBLEM: pha (stack save)
+    uint8_t saved_x = x;
     //     tsx
     x = sp;
     //     lda 0x0102,x
@@ -11162,9 +11164,8 @@ static void emit_to_output_buffer_callback(void) {
     // ca6ae:
 ca6ae:
     //     pla
-    // PROBLEM: pla (stack restore)
     //     tax
-    x = a;
+    x = saved_x;
     //     pla
     a = saved_a; }
     //     rts
