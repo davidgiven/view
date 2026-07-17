@@ -56,6 +56,11 @@ static inline void cmp(uint8_t reg, uint8_t value) {
     flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | ((uint16_t)reg >= value ? FLAG_C : 0);
 }
 
+static inline void bit(uint8_t value) {
+    uint8_t tmp_ = a & value;
+    flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (value & (FLAG_N|FLAG_V));
+}
+
 static inline void adc(uint8_t value) {
     uint16_t tmp_ = (uint16_t)a + value + (flags & FLAG_C ? 1 : 0);
     flags = (flags & ~FLAG_C) | (tmp_ > 0xff ? FLAG_C : 0);
@@ -692,7 +697,7 @@ static void run_cli(void) {
     //     jsr display_document_file_state
     display_document_file_state();
     //     bit file_edit_flags
-    { uint8_t tmp_ = a & file_edit_flags; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (file_edit_flags & (FLAG_N|FLAG_V)); }
+    bit(file_edit_flags);
     //     bvs c816d
     if (flags & FLAG_V) goto c816d;
     //     lda file_edit_flags
@@ -1594,7 +1599,7 @@ static void save_cmd_write_cmd(void) {
     //     zif eq
     if (flags & FLAG_Z) {
     //         bit file_edit_flags
-        { flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | ((a & file_edit_flags) == 0 ? FLAG_Z : 0) | (file_edit_flags & (FLAG_N|FLAG_V)); }
+        bit(file_edit_flags);
     //         zif vc
         if (!(flags & FLAG_V)) {
     //             jmp bad_filename_error
@@ -2640,7 +2645,7 @@ loop_c89fa:
 c8a07:
     // c8a07:
     //     bit file_edit_flags
-    { uint8_t tmp_ = a & file_edit_flags; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (file_edit_flags & (FLAG_N|FLAG_V)); }
+    bit(file_edit_flags);
     //     bvs c8a19
     if (flags & FLAG_V) goto c8a19;
     //     jsr print_inline_string
@@ -2857,7 +2862,7 @@ c8ada:
     //     sty l0081
     l0081 = y;
     //     bit print_xpos
-    { uint8_t tmp_ = a & print_xpos; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (print_xpos & (FLAG_N|FLAG_V)); }
+    bit(print_xpos);
     //     bmi c8b11
     if (flags & FLAG_N) goto c8b11;
     //     ldx input_buffer_offset+1
@@ -2997,7 +3002,7 @@ c8b47:
 c8b4d:
     // c8b4d:
     //     bit folding_flag
-    { uint8_t tmp_ = a & folding_flag; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (folding_flag & (FLAG_N|FLAG_V)); }
+    bit(folding_flag);
     //     bmi c8b64
     if (flags & FLAG_N) goto c8b64;
     //     ldy print_xpos
@@ -4308,7 +4313,7 @@ c9048:
     //     bne c906f
     if (a != 0x1a) goto c906f;
     //     bit l0083
-    flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | ((a & l0083) == 0 ? FLAG_Z : 0) | (l0083 & FLAG_N) | ((l0083 & 0x40) ? FLAG_V : 0);
+    bit(l0083);
     //     bpl c9064
     if (!(flags & FLAG_N)) goto c9064;
     //     lda l0048
@@ -4342,7 +4347,7 @@ c906f:
     //     bne c9090
     if (a != 0x20) goto c9090;
     //     bit l0083
-    flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | ((a & l0083) == 0 ? FLAG_Z : 0) | (l0083 & FLAG_N) | ((l0083 & 0x40) ? FLAG_V : 0);
+    bit(l0083);
     //     bpl c9064
     if (!(flags & FLAG_N)) goto c9064;
     //     lda l0042
@@ -4962,7 +4967,7 @@ c9231:
     // c923c:
 c923c:
     //     bit l0082
-    { uint8_t tmp_ = a & l0082; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (l0082 & (FLAG_N|FLAG_V)); }
+    bit(l0082);
     //     ora #0
     a |= 0;
     set_flags(a);
@@ -5083,7 +5088,7 @@ static void render_new_page(void) {
     //     sta l0031
     l0031 = a;
     //     bit print_flags
-    flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | ((a & print_flags) == 0 ? FLAG_Z : 0) | (print_flags & (FLAG_N|FLAG_V));
+    bit(print_flags);
     //     bvc c92d4
     if (!(flags & FLAG_V)) goto c92d4;
     //     jsr stop_printing
@@ -5631,7 +5636,7 @@ static void sub_c9431(void) {
     //     jsr sub_ca5ae
     process_document_character();
     //     bit print_flags
-    { uint8_t tmp_ = a & print_flags; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (print_flags & (FLAG_N|FLAG_V)); }
+    bit(print_flags);
     //     bpl c943c
     if (!(flags & FLAG_N)) goto c943c;
     //     ora #0
@@ -7700,7 +7705,7 @@ c9a21:
     //     inx                                                               ; X=0x01
     x++;
     //     bit l0046
-    { flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | ((a & l0046) == 0 ? FLAG_Z : 0) | (l0046 & (FLAG_N|FLAG_V)); }
+    bit(l0046);
     //     bmi c9a40
     if (flags & FLAG_N) goto c9a40;
     // c9a2e:
@@ -7728,7 +7733,7 @@ c9a38:
     // c9a40:
 c9a40:
     //     bit l0046
-    { flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | ((a & l0046) == 0 ? FLAG_Z : 0) | (l0046 & (FLAG_N|FLAG_V)); }
+    bit(l0046);
     //     stx l0046
     l0046 = x;
     //     bmi c9a58
@@ -7882,7 +7887,7 @@ c9aa5:
     //     sta l0084
     l0084 = a;
     //     bit l0084   ; sets V
-    { uint8_t tmp_ = a & l0084; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (l0084 & (FLAG_N|FLAG_V)); }
+    bit(l0084);
     //     rts (return to sub_c9977's caller with V=1, bypassing sub_c9977's clv)
     return true;
 }
@@ -8084,7 +8089,7 @@ c9b44_:
     //     bcs c9b84
     if (flags & FLAG_C) goto c9b84_;
     //     bit format_mode_flag
-    { uint8_t tmp_ = a & format_mode_flag; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (format_mode_flag & (FLAG_N|FLAG_V)); }
+    bit(format_mode_flag);
     //     bvs c9b6a
     if (flags & FLAG_V) goto c9b6a_;
     //     sty xpos
@@ -13137,7 +13142,7 @@ static void render_register(void) {
     //     bcs cada2
     if (flags & FLAG_C) goto cada2;
     //     bit lada6
-    { flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | ((a & 0x40) ? FLAG_V : 0); }
+    bit(0x40);
     //     cmp #0x44 ; 'D'
     cmp(a, 0x44);
     //     beq cada3
