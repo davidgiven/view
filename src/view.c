@@ -8434,6 +8434,7 @@ c9ca2:
     y++;
     //     lda ruler_left_stop                                             (4230)
     a = ruler_left_stop;
+    set_flags(a);
     //     beq c9cb9                                                       (4231)
     if (flags & FLAG_Z) goto c9cb9;
     //     inc top_margin                                                  (4232)

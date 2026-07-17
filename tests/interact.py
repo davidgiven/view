@@ -450,7 +450,7 @@ class EditorTests(unittest.TestCase):
             b"\x0f\x0a"+
             b"She puzzled over this for some time, but at last a bright thought struck her.",
             [
-                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "F  .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "   She puzzled over this for some time, but at last a bright thought struck     ",
                 "   her.                                                                         ",
                 "********************************************************************************",
