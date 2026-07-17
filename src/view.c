@@ -7489,9 +7489,12 @@ static void sub_c9974(void) {
     // Calls to sub_c9974 have been translated to goto c9a8d directly.
 }
 static void sub_c9977(void) {
-    // Pseudocode: Main line formatting routine: reads source line, handles margins, tabs, wrapping
+    //PROVISIONAL: Main line formatting routine — reads source line, handles margins, tabs, wrapping.
+    //PROVISIONAL: Called from f0_format_block_key (Ctrl+B) and fold_cmd.
+    //PROVISIONAL: Processes one line (or skips command/ruler lines), returns with Z from l007e.
 
     // sub_c9977:
+    //PROVISIONAL: Mark cursor moved, init print_xpos=4, zero input_buffer_offset and l007e.
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     ldy #4
@@ -7504,6 +7507,8 @@ static void sub_c9977(void) {
     input_buffer_offset = y;
     //     sty l007e
     l007e = y;
+    //PROVISIONAL: Check if first byte of current line is a command prefix (0x80/0x81).
+    //PROVISIONAL: If so, skip this line and return (paragraph boundary reached).
     //     lda (current_line_ptr),y
     a = ram[current_line_ptr + y];
     set_flags(a);
@@ -7511,6 +7516,9 @@ static void sub_c9977(void) {
     flags = check_for_command_prefix(a);
     //     beq c9974
     if (flags & FLAG_Z) { advance_to_next_line(); return; }
+    //PROVISIONAL: Main formatting loop entry. Check format mode — if bit 7 or bit 0 is set,
+    //PROVISIONAL: skip this line (paragraph boundary). Also skip if ruler_right_stop == 0
+    //PROVISIONAL: or if right_stop <= left_stop.
     // c998a:
 c998a:
     //     lda format_mode_flag
@@ -7532,10 +7540,12 @@ c998a:
     sbc(ruler_left_stop);
     //     bcc c9974
     if (!(flags & FLAG_C)) { advance_to_next_line(); return; }
+    //PROVISIONAL: Compute line width = right_stop - left_stop + 1, store in l0080.
     //     adc #1
     adc(1);
     //     sta input_buffer_offset+1
     l0080 = a;
+    //PROVISIONAL: Wipe the edit buffer with 0x10 (soft spaces) and set up tmp6/tmp7 = current_line_ptr.
     //     lda #0x10
     a = 0x10;
     //     jsr wipe_buffer
@@ -7548,6 +7558,8 @@ c998a:
     a = (uint8_t)((current_line_ptr >> 8) & 0xff);
     //     sta tmp7
     tmp7 = a;
+    //PROVISIONAL: Zero working variables: l0047 (character index), l0039 (column counter),
+    //PROVISIONAL: l0038 (soft-hyphen/break flag), l0046 (word-start flag), bottom_margin.
     //     ldy #0
     y = 0;
     //     sty l0047
@@ -7560,6 +7572,9 @@ c998a:
     l0046 = y;
     //     sty bottom_margin
     bottom_margin = y;
+    //PROVISIONAL: Save current buffer index in l0048. Then scan forward through the source line,
+    //PROVISIONAL: processing any marker-prefix bytes detected by sub_ca536. Increments l007e for
+    //PROVISIONAL: each marker processed (l007e counts marker bytes).
     // c99b6:
 c99b6:
     //     sty l0048
@@ -7582,8 +7597,10 @@ loop_c99ba:
     if (l007e != 0) goto loop_c99ba;
     // c99c7:
 c99c7:
-    //     ldy l0047
-    y = l0047;
+    //PROVISIONAL: Character processing loop. Reads one byte from the source document line.
+    //PROVISIONAL: l0047 tracks the read position, l0048 tracks the write position.
+    //PROVISIONAL: Handles tabs (0x09), soft hyphens / break markers (0x1a), soft spaces (0x0b), CR (0x0d),
+    //PROVISIONAL: and ordinary characters.
     // c99c9:
 c99c9:
     //     lda (current_line_ptr),y
@@ -7593,6 +7610,8 @@ c99c9:
     y++;
     //     sty l0047
     l0047 = y;
+    //PROVISIONAL: Tab (0x09): process via process_document_character to compute tab width,
+    //PROVISIONAL: subtract 1 (x--) and add to column counter l0039.
     //     cmp #9
     cmp(a, 9);
     //     bne c99e0
@@ -7620,6 +7639,9 @@ c99e0:
     cmp(a, 0x1a);
     //     bne c99ee
     if (!(flags & FLAG_Z)) goto c99ee;
+    //PROVISIONAL: Soft hyphen / break marker (0x1a): if l0046 (word-start flag) is non-zero,
+    //PROVISIONAL: skip the marker and continue reading. Otherwise, treat it as a word-break:
+    //PROVISIONAL: set l0046 (word-break state), output a space, and go to c9a2e.
     // c99e4:
 c99e4:
     //     lda l0046
@@ -7635,6 +7657,10 @@ c99e4:
     goto c9a2e;
 
     // c99ee:
+    //PROVISIONAL: Soft space (0x0b, margin tab). If input_buffer_offset is non-zero (already
+    //PROVISIONAL: in a word-break), treat as break marker (c99e4). If l0038 (soft-hyphen flag)
+    //PROVISIONAL: is set, also treat as break. Otherwise set l0038 and advance the line width
+    //PROVISIONAL: (l0080) by ruler_left_stop, or snap column to ruler_left_stop if below it.
 c99ee:
     //     cmp #0x0b
     cmp(a, 0x0b);
@@ -7678,6 +7704,10 @@ c9a0a:
     //     lda #0x0b
     a = 0x0b;
     // c9a11:
+    //PROVISIONAL: CR (0x0d) — end of source line. If y == 0 after decrement, the buffer is
+    //PROVISIONAL: empty; advance to next document line. Otherwise, call sub_c9ac1 to find the
+    //PROVISIONAL: word-wrap boundary. If C set (wrap needed), go to c9a87 to flush the current
+    //PROVISIONAL: line and advance. Otherwise, insert a space at the break.
 c9a11:
     //     cmp #0x0d
     cmp(a, 0x0d);
@@ -7697,6 +7727,9 @@ c9a11:
     //     sta input_buffer_offset
     input_buffer_offset = a;
     // c9a21:
+    //PROVISIONAL: Track word-start state. If the current character is a space (0x20), set x=1
+    //PROVISIONAL: (word-start flag). If l0046 already indicates word-start (N bit set), skip
+    //PROVISIONAL: straight to the write (c9a40) — this is a multi-space gap, keep only the first.
 c9a21:
     //     ldy l0048
     y = l0048;
@@ -7712,6 +7745,8 @@ c9a21:
     bit(l0046);
     //     bmi c9a40
     if (flags & FLAG_N) goto c9a40;
+    //PROVISIONAL: Write character to edit buffer at write position (l0048). If it's a space,
+    //PROVISIONAL: rotate bottom_margin (tracks word-boundary state for justification).
     // c9a2e:
 c9a2e:
     //     ldy l0048
@@ -7724,6 +7759,8 @@ c9a2e:
     if (!(flags & FLAG_Z)) goto c9a38;
     //     ror bottom_margin
     { uint8_t tmp_ = (bottom_margin & 1) ? FLAG_C : 0; bottom_margin >>= 1; bottom_margin |= (flags & FLAG_C) ? 0x80 : 0; flags = (flags & ~FLAG_C) | tmp_; }
+    //PROVISIONAL: Advance write position, check for control codes. If not a control code,
+    //PROVISIONAL: increment column counter l0039.
     // c9a38:
 c9a38:
     //     iny
@@ -7734,6 +7771,9 @@ c9a38:
     if (flags & FLAG_Z) goto c9a40;
     //     inc l0039
     l0039++;
+    //PROVISIONAL: Update l0046 (word-start state = x). If N bit of l0046 was set (word-start),
+    //PROVISIONAL: or character is space, or buffer index >= 0x85, or bottom_margin is zero,
+    //PROVISIONAL: or column >= line width (l0080), skip to c9a58 (clamp and loop back to c99b6).
     // c9a40:
 c9a40:
     //     bit l0046
@@ -7761,6 +7801,7 @@ c9a40:
     cmp(a, l0080);
     //     bcs c9a60
     if (flags & FLAG_C) goto c9a60;
+    //PROVISIONAL: Clamp buffer index to max 0x85 (133). Loop back to process next character.
     // c9a58:
 c9a58:
     //     cpy #0x86
@@ -7775,6 +7816,11 @@ c9a5d:
     goto c99b6;
 
     // c9a60:
+    //PROVISIONAL: Line-width exceeded — flush the current formatted line. Increment the source
+    //PROVISIONAL: index (l0047), then scan backward through the edit buffer replacing spaces (0x20)
+    //PROVISIONAL: with 0x10 (justification markers). This marks word boundaries for justify_edit_buffer.
+    //PROVISIONAL: On finding a space, call sub_caed6, justify_edit_buffer, then sub_c9aa9 to write
+    //PROVISIONAL: the line. Advance to the next document line; if non-empty, loop back to c998a.
 c9a60:
     //     inc l0047
     l0047++;
@@ -7820,6 +7866,9 @@ loop_c9a62:
     goto c998a;
 
     // c9a87:
+    //PROVISIONAL: Word-wrap path — line needs wrapping at a word boundary. Flush the current
+    //PROVISIONAL: buffer via sub_caed6 + sub_c9aa9, advance to the next document line,
+    //PROVISIONAL: and loop back to c998a if more lines exist.
 c9a87:
     //     jsr sub_caed6
     sub_caed6();
@@ -7831,6 +7880,7 @@ c9a87:
     // c9a8d: (now advance_to_next_line)
     // c9aa4: (merged into advance_to_next_line)
     // c9aa5:
+    //PROVISIONAL: Cleanup — clear overflow flag, load l007e into A (sets Z for caller).
 c9aa5:
     //     clv
     flags &= ~FLAG_V;
