@@ -358,6 +358,7 @@ static void sub_c9431(void);
 static void sub_c9936(void);
 static void sub_c9977(void);
  static bool sub_c9aa9(void);
+static void advance_to_next_line(void);
 static void sub_c9ac1(void);
 static void sub_cadf0(void);
 static void sub_cb104(void);
@@ -7509,7 +7510,7 @@ static void sub_c9977(void) {
     //     jsr check_for_command_prefix
     flags = check_for_command_prefix(a);
     //     beq c9974
-    if (flags & FLAG_Z) goto c9a8d;
+    if (flags & FLAG_Z) { advance_to_next_line(); return; }
     // c998a:
 c998a:
     //     lda format_mode_flag
@@ -7519,18 +7520,18 @@ c998a:
     a &= 0x81;
     set_flags(a);
     //     bne c9974
-    if (!(flags & FLAG_Z)) goto c9a8d;
+    if (!(flags & FLAG_Z)) { advance_to_next_line(); return; }
     //     lda ruler_right_stop
     a = ruler_right_stop;
     set_flags(a);
     //     beq c9974
-    if (flags & FLAG_Z) goto c9a8d;
+    if (flags & FLAG_Z) { advance_to_next_line(); return; }
     //     sec
     flags |= FLAG_C;
     //     sbc ruler_left_stop
     sbc(ruler_left_stop);
     //     bcc c9974
-    if (!(flags & FLAG_C)) goto c9a8d;
+    if (!(flags & FLAG_C)) { advance_to_next_line(); return; }
     //     adc #1
     adc(1);
     //     sta input_buffer_offset+1
@@ -7686,7 +7687,7 @@ c9a11:
     y--;
     set_flags(y);
     //     beq c9a8d
-    if (flags & FLAG_Z) goto c9a8d;
+    if (flags & FLAG_Z) { advance_to_next_line(); return; }
     //     jsr sub_c9ac1
     sub_c9ac1();
     //     bcs c9a87
@@ -7785,7 +7786,7 @@ loop_c9a62:
     y--;
     set_flags(y);
     //     beq c9a8d
-    if (flags & FLAG_Z) goto c9a8d;
+    if (flags & FLAG_Z) { advance_to_next_line(); return; }
     //     lda (current_edit_line_ptr),y
     a = ram[current_edit_line_ptr + y];
     set_flags(a);
@@ -7812,9 +7813,11 @@ loop_c9a62:
     //     jsr sub_c9aa9
     if (sub_c9aa9()) return;
     //     jsr c9a8d
-    goto c9a8d;
+    advance_to_next_line();
     //     beq c9aa5
+    if (flags & FLAG_Z) goto c9aa5;
     //     jmp c998a
+    goto c998a;
 
     // c9a87:
 c9a87:
@@ -7822,8 +7825,25 @@ c9a87:
     sub_caed6();
     //     jsr sub_c9aa9
     if (sub_c9aa9()) return;
-    // c9a8d:
-c9a8d:
+    advance_to_next_line();
+    if (flags & FLAG_Z) goto c9aa5;
+    goto c998a;
+    // c9a8d: (now advance_to_next_line)
+    // c9aa4: (merged into advance_to_next_line)
+    // c9aa5:
+c9aa5:
+    //     clv
+    flags &= ~FLAG_V;
+    //     lda l007e
+    a = l007e;
+    set_flags(a);
+    //     rts
+    return;
+}
+static void advance_to_next_line(void) {
+    // c9a8d: Advance to next line in document
+    // Sets Z from l007e on return (like c9aa5 does)
+
     //     jsr c9e94
     c9e94();
     //     lda current_line_ptr
@@ -7835,7 +7855,7 @@ c9a8d:
     //     sec
     flags |= FLAG_C;
     //     beq c9aa5
-    if (flags & FLAG_Z) goto c9aa5;
+    if (flags & FLAG_Z) goto c9aa5_;
     //     tya
     a = y;
     //     clc
@@ -7845,23 +7865,22 @@ c9a8d:
     //     sta current_line_ptr
     current_line_ptr = (current_line_ptr & 0xff00) | a;
     //     bcc c9aa4
-    if (!(flags & FLAG_C)) goto c9aa4;
+    if (!(flags & FLAG_C)) goto c9aa4_;
     //     inc current_line_ptr+1
     current_line_ptr = (current_line_ptr & 0x00ff) | ((uint16_t)((current_line_ptr >> 8) + 1) << 8);
     // c9aa4:
-c9aa4:
+c9aa4_:
     //     clc
     flags &= ~FLAG_C;
     // c9aa5:
-c9aa5:
+c9aa5_:
     //     clv
     flags &= ~FLAG_V;
     //     lda l007e
     a = l007e;
     set_flags(a);
-    //     rts
-    return;
 }
+
 [[nodiscard]] static bool sub_c9aa9(void) {
     // Pseudocode: Completes line formatting: adjusts pointers updates ruler stack
     // Returns: true if write failed (V=1, caller should return immediately)
