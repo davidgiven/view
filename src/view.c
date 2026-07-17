@@ -7034,19 +7034,22 @@ c9821:
 }
 static void get_current_fmt_cmd_byte(void) {
     // get_current_fmt_cmd_byte:
-    while (1) {
-        //     lda (current_format_line_ptr),y
-        a = ram[current_format_line_ptr + y];
-        //     cmp #0x0d
-        //     beq return_47
-        if (a == 0x0d) return;
-        //     cmp #0x20 ; ' '
-        //     beq get_next_fmt_cmd_byte
-        if (a != 0x20) return;
-        y++;
-    }
-    // return_47:
-    //     rts
+loop:
+    //     lda (current_format_line_ptr),y
+    a = ram[current_format_line_ptr + y];
+    //     cmp #0x0d
+    cmp(a, 0x0d);
+    //     beq return_47
+    if (flags & FLAG_Z) return;
+    //     cmp #0x20 ; ' '
+    cmp(a, 0x20);
+    //     beq get_next_fmt_cmd_byte
+    if (!(flags & FLAG_Z)) return;
+    // get_next_fmt_cmd_byte:
+    //     iny
+    y++;
+    //     jmp get_current_fmt_cmd_byte
+    goto loop;
 }
 static void get_next_fmt_cmd_byte(void) {
     // get_next_fmt_cmd_byte:
