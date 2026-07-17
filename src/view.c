@@ -352,7 +352,7 @@ static void sub_c941a(void);
 static void sub_c9431(void);
 static void sub_c9936(void);
 static void sub_c9977(void);
-static void sub_c9aa9(void);
+ static bool sub_c9aa9(void);
 static void sub_c9ac1(void);
 static void sub_cadf0(void);
 static void sub_cb104(void);
@@ -7802,7 +7802,7 @@ loop_c9a62:
     //     jsr justify_edit_buffer
     justify_edit_buffer();
     //     jsr sub_c9aa9
-    sub_c9aa9();
+    if (sub_c9aa9()) return;
     //     jsr c9a8d
     goto c9a8d;
     //     beq c9aa5
@@ -7813,7 +7813,7 @@ c9a87:
     //     jsr sub_caed6
     sub_caed6();
     //     jsr sub_c9aa9
-    sub_c9aa9();
+    if (sub_c9aa9()) return;
     // c9a8d:
 c9a8d:
     //     jsr c9e94
@@ -7854,8 +7854,9 @@ c9aa5:
     //     rts
     return;
 }
-static void sub_c9aa9(void) {
+[[nodiscard]] static bool sub_c9aa9(void) {
     // Pseudocode: Completes line formatting: adjusts pointers updates ruler stack
+    // Returns: true if write failed (V=1, caller should return immediately)
 
     // sub_c9aa9:
     //     sec
@@ -7873,18 +7874,17 @@ static void sub_c9aa9(void) {
     //     jsr write_line_back_to_document
     write_line_back_to_document();
     //     bcc return_50
-    if (!(flags & FLAG_C)) return;
-    //     pla
-    //     pla
+    if (!(flags & FLAG_C)) return false;
+    //     pla (pop sub_c9aa9's return address)
+    //     pla (pop sub_c9977's return address — stack unwind)
     //     lda #0x40 ; '@'
     a = 0x40;
     //     sta l0084
     l0084 = a;
-    //     bit l0084
+    //     bit l0084   ; sets V
     { uint8_t tmp_ = a & l0084; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (l0084 & (FLAG_N|FLAG_V)); }
-    // return_50:
-    //     rts
-    return;
+    //     rts (return to sub_c9977's caller with V=1, bypassing sub_c9977's clv)
+    return true;
 }
 static void sub_c9ac1(void) {
     // Pseudocode: Finds next word boundary for line wrapping, returns carry if found
@@ -9482,17 +9482,46 @@ static void go_to_marker(void) {
     ca684(); return;
 }
 static void f0_format_block_key(void) {
+    // f0_format_block_key:
+    //     jsr ca93c
     write_line_back_to_document_safely();
-    uint8_t saved_l0073 = l0073;
-    uint8_t saved_l003d = l003d;
+    //     lda l0073
+    a = l0073;
+    //     pha
+    uint8_t saved_l0073 = a;
+    //     lda l003d
+    a = l003d;
+    //     pha
+    uint8_t saved_l003d = a;
+    //     jsr ca741
     ca741();
+    //     jsr sub_c9977
     sub_c9977();
+    //     bvs ca05b
     if (flags & FLAG_V) { show_memory_full_error(); longjmp(env, JMP_EDITOR); }
-    if (flags & FLAG_Z) {
-        l003d = saved_l003d;
-        l0073 = saved_l0073;
-    }
-    // If Z=0, values are discarded (equivalent to pla/tax + pla + bcs return)
+    //     sec
+    flags |= FLAG_C;
+    //     bne ca051
+    if (!(flags & FLAG_Z)) goto ca051;
+    //     clc
+    flags &= ~FLAG_C;
+    // ca051:
+ca051:
+    //     pla
+    a = saved_l003d;
+    //     tax
+    x = a;
+    //     pla
+    a = saved_l0073;
+    //     bcs return_59
+    if (flags & FLAG_C) goto return_59;
+    //     stx l003d
+    l003d = x;
+    //     sta l0073
+    l0073 = a;
+    // return_59:
+return_59:
+    //     rts
 }
 static void f1_top_of_text_key(void) {
     x = 0xff;
