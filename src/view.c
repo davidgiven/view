@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <fcntl.h>
  
 #include "cli.h"
 
@@ -59,6 +60,29 @@ static inline void cmp(uint8_t reg, uint8_t value) {
 static inline void bit(uint8_t value) {
     uint8_t tmp_ = a & value;
     flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (value & (FLAG_N|FLAG_V));
+}
+
+static inline uint8_t rol(uint8_t value) {
+    uint8_t c_in = (flags & FLAG_C) ? 1 : 0;
+    flags = (flags & ~FLAG_C) | ((value & 0x80) ? FLAG_C : 0);
+    value = (value << 1) | c_in;
+    set_flags(value);
+    return value;
+}
+
+static inline uint8_t ror(uint8_t value) {
+    uint8_t c_in = (flags & FLAG_C) ? 0x80 : 0;
+    flags = (flags & ~FLAG_C) | ((value & 0x01) ? FLAG_C : 0);
+    value = (value >> 1) | c_in;
+    set_flags(value);
+    return value;
+}
+
+static inline uint8_t asr(uint8_t value) {
+    flags = (flags & ~FLAG_C) | ((value & 0x01) ? FLAG_C : 0);
+    value >>= 1;
+    set_flags(value);
+    return value;
 }
 
 static inline void adc(uint8_t value) {
@@ -702,10 +726,11 @@ static void run_cli(void) {
     //     bvs c816d
     if (flags & FLAG_V) goto c816d;
     //     lda file_edit_flags
+    a = file_edit_flags;
     //     ror
-    // PROBLEM: lda file_edit_flags; ror A (checking bit 0)
+    a = ror(a);
     //     bcc c816d
-    if (!(file_edit_flags & 1)) goto c816d;
+    if (!(flags & FLAG_C)) goto c816d;
     //     jsr print_inline_string
     //     .ascii "Input file is "
     //     .byte 0
@@ -1392,11 +1417,13 @@ static void stop_printing(void) {
     //     bpl c8459
     if (!(flags & FLAG_N)) goto c8459;
     //     rol print_flags
-    // PROBLEM: rol print_flags (rotate on memory)
+    a = rol(print_flags);
+    print_flags = a;
     //     clc
     flags &= ~FLAG_C;
     //     ror print_flags
-    // PROBLEM: ror print_flags (rotate on memory)
+    a = ror(print_flags);
+    print_flags = a;
     //     lda #6
     a = 6;
     //     jsr call_printer_driver
@@ -7939,7 +7966,7 @@ c9aa5_:
     //     sec
     flags |= FLAG_C;
     //     rol l007e
-    // PROBLEM: rol l007e (rotate left on memory)
+    l007e = rol(l007e);
     //     ldy l0047
     y = l0047;
     //     dey
@@ -8039,11 +8066,11 @@ c9aef:
     //     bne c9ae9
     if (!(flags & FLAG_Z)) goto c9ae9;
     //     rol l0084
-    // PROBLEM: rol l0084 (rotate left on memory)
+    l0084 = rol(l0084);
     //     sec
     flags |= FLAG_C;
     //     ror l0084
-    // PROBLEM: ror l0084 (rotate right on memory)
+    l0084 = ror(l0084);
     //     bcs c9ae9
     if (flags & FLAG_C) goto c9ae9;
     // c9b06:
