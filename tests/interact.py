@@ -559,6 +559,105 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_enter_editor_and_type_numbers_1_to_10(self):
+        """Enter numbers 1 to 10 each on their own line (fits on screen)."""
+        keys = b""
+        for i in range(1, 11):
+            keys += str(i).encode("ascii")
+            if i < 10:
+                keys += CTRL_M
+        self._test_enter_editor_and_type(
+            keys,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   1                                                                            ",
+                "   2                                                                            ",
+                "   3                                                                            ",
+                "   4                                                                            ",
+                "   5                                                                            ",
+                "   6                                                                            ",
+                "   7                                                                            ",
+                "   8                                                                            ",
+                "   9                                                                            ",
+                "   10                                                                           ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_enter_editor_and_type_numbers_1_to_22(self):
+        """Enter numbers 1 to 22 each on their own line (fits exactly on screen)."""
+        keys = b""
+        for i in range(1, 23):
+            keys += str(i).encode("ascii")
+            if i < 22:
+                keys += CTRL_M
+        self._test_enter_editor_and_type(
+            keys,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   1                                                                            ",
+                "   2                                                                            ",
+                "   3                                                                            ",
+                "   4                                                                            ",
+                "   5                                                                            ",
+                "   6                                                                            ",
+                "   7                                                                            ",
+                "   8                                                                            ",
+                "   9                                                                            ",
+                "   10                                                                           ",
+                "   11                                                                           ",
+                "   12                                                                           ",
+                "   13                                                                           ",
+                "   14                                                                           ",
+                "   15                                                                           ",
+                "   16                                                                           ",
+                "   17                                                                           ",
+                "   18                                                                           ",
+                "   19                                                                           ",
+                "   20                                                                           ",
+                "   21                                                                           ",
+                "   22                                                                           ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_enter_editor_and_type_numbers_1_to_30(self):
+        """Enter numbers 1 to 30 each on their own line — tests scrolling."""
+        keys = b""
+        for i in range(1, 31):
+            keys += str(i).encode("ascii")
+            if i < 30:
+                keys += CTRL_M
+        self._test_enter_editor_and_type(
+            keys,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   8                                                                            ",
+                "   9                                                                            ",
+                "   10                                                                           ",
+                "   11                                                                           ",
+                "   12                                                                           ",
+                "   13                                                                           ",
+                "   14                                                                           ",
+                "   15                                                                           ",
+                "   16                                                                           ",
+                "   17                                                                           ",
+                "   18                                                                           ",
+                "   19                                                                           ",
+                "   20                                                                           ",
+                "   21                                                                           ",
+                "   22                                                                           ",
+                "   23                                                                           ",
+                "   24                                                                           ",
+                "   25                                                                           ",
+                "   26                                                                           ",
+                "   27                                                                           ",
+                "   28                                                                           ",
+                "   29                                                                           ",
+                "   30                                                                           ",
+            ],
+        )
+
     def test_enter_editor_and_join_two_lines(self):
         """Join two adjacent lines."""
         self._test_enter_editor_and_type(

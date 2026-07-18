@@ -18,7 +18,7 @@ void screen_enter(void) {
     nonl();
     noecho();
     keypad(stdscr, TRUE);
-    scrollok(stdscr, TRUE);
+    scrollok(stdscr, FALSE);
     ncurses_active = true;
 }
 
@@ -43,6 +43,7 @@ void screen_putchar(uint8_t a) {
 uint8_t screen_getchar(void) {
     if (ncurses_active) {
 #if defined(TEST_HARNESS)
+        fflush(stdout);
         write(STDOUT_FILENO, "\x05", 1);
 #endif
         int c = getch();
