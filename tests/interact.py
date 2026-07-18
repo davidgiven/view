@@ -559,6 +559,41 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_enter_editor_and_join_two_lines(self):
+        """Join two adjacent lines."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_M + b"def" + KEY_UP + CTRL_J,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abcdef                                                                       ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_enter_editor_and_join_last_line_noop(self):
+        """Joining when on the last line should do nothing."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_M + b"def" + CTRL_J,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abc                                                                          ",
+                "   def                                                                          ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_enter_editor_and_join_middle_line(self):
+        """Join the first of three lines — the third line shifts up."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_M + b"def" + CTRL_M + b"ghi" + KEY_UP * 2 + CTRL_J,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abcdef                                                                       ",
+                "   ghi                                                                          ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
         self.assertIn(
