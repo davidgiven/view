@@ -26,7 +26,7 @@ typedef uint16_t addr_t;
 uint8_t a, x, y, sp, flags;
 
 // ; Longjmp buffer for stack unwinding (txs equivalent)
-static volatile jmp_buf env;
+static jmp_buf env;
 #define JMP_CLI     1
 #define JMP_EDITOR  2
 
@@ -7516,10 +7516,6 @@ return_49:
     //     rts
     return;
 }
-static void sub_c9974(void) {
-    // This is an alternate entry point into sub_c9977 at label c9a8d.
-    // Calls to sub_c9974 have been translated to goto c9a8d directly.
-}
 static void sub_c9977(void) {
     //PROVISIONAL: Main line formatting routine — reads source line, handles margins, tabs, wrapping.
     //PROVISIONAL: Called from f0_format_block_key (Ctrl+B) and fold_cmd.
@@ -8309,14 +8305,6 @@ enter_nonprintable_character:
     //     jmp editor_loop
     goto editor_loop;
     }
-}
-static void sub_c9bca(void) {
-    // c9bca:
-    //     jsr beep
-    // c9bbb:
-    //     jmp editor_loop
-    beep();
-    return_to_editor_loop();
 }
 static void enter_printable_character(void) {
     // enter_printable_character:
@@ -11595,63 +11583,6 @@ static void call_through_jumptable(void) {
         }
     }
 }
-static void look_up_address_in_table(void) {
-    // Pseudocode: Looks up a key in an address table and returns the associated handler address
-
-    // ; On entry: YX is the address of the table, A is the value
-    // ; On exit, tmp6 is the routine; C if error, !C if success
-    // zproc look_up_address_in_table
-    //     stx tmp8
-    tmp8 = x;
-    //     sty tmp9
-    tmp9 = y;
-    //     sta tmp6
-    tmp6 = a;
-    //     ldy #0
-    y = 0;
-    //     zloop
-    do {
-    //         lda (tmp8), y
-        a = ram[(uint16_t)tmp8 + y];
-        set_flags(a);
-        //         zbreakif eq
-        if (flags & FLAG_Z) break;
-    //         cmp tmp6
-        cmp(a, tmp6);
-    //         zif eq
-        if (flags & FLAG_Z) {
-    //             iny
-            y++;
-    //             lda (tmp8), y
-            a = ram[(uint16_t)tmp8 + y];
-    //             sta tmp6
-            tmp6 = a;
-    //             iny
-            y++;
-    //             lda (tmp8), y
-            a = ram[(uint16_t)tmp8 + y];
-    //             sta tmp7
-            tmp7 = a;
-    //             clc
-            flags &= ~FLAG_C;
-    //             rts
-            return;
-    //         zendif
-        }
-    //         iny
-        y++;
-    //         iny
-        y++;
-    //         iny
-        y++;
-    //     zendloop
-    } while (1);
-    //     sec
-    flags |= FLAG_C;
-    //     rts
-    return;
-    // zendproc
-}
 static void write_line_back_to_document(void) {
     // write_line_back_to_document:
     //     lda l006e
@@ -13794,16 +13725,6 @@ static void system_init(void) {
     if (screen_maxrow > MAX_LINES)
         screen_maxrow = MAX_LINES;
 }
-static void noscreen(void) {
-    // Pseudocode: Screen driver not found: displays error and exits
-
-    // noscreen:
-    //     jsr print_inline_string
-    //     .ascii "No SCREEN\n"
-    //     .byte 0
-    cli_putstring("No SCREEN\n");
-    exit(0);
-}
 static void compute_bytes_free(void) {
     // Pseudocode: Computes number of free bytes between top and himem
 
@@ -14657,11 +14578,6 @@ static void open_output_file(void) {
     file_ptr = output_fp;
 }
 
-static void flush_file(void) {
-    if (file_ptr) {
-        fflush(file_ptr);
-    }
-}
 static void close_file(void) {
     if (file_ptr) {
         fclose(file_ptr);
