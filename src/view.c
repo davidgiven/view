@@ -10146,15 +10146,23 @@ loop_ca31f:
     //     sta ruler_stack_ptr                                             (5317)
     ruler_stack_ptr = a;
     //     ldy l0012                                                       (5318)
+    y = (uint8_t)(top_of_screen_line_ptr >> 8);
     //     lda l0011                                                       (5319)
+    a = (uint8_t)(top_of_screen_line_ptr & 0xff);
     //     jsr sub_cab1a                                                   (5320)
+    sub_cab1a();
     //     tya                                                             (5321)
+    a = y;
     //     clc                                                             (5322)
+    flags &= ~FLAG_C;
     //     adc l0011                                                       (5323)
+    adc((uint8_t)(top_of_screen_line_ptr & 0xff));
     //     sta l0011                                                       (5324)
+    top_of_screen_line_ptr = (top_of_screen_line_ptr & 0xff00) | a;
     //     bcc ca348                                                       (5325)
+    if (!(flags & FLAG_C)) goto ca348;
     //     inc l0012                                                       (5326)
-    { uint8_t hi = (uint8_t)(top_of_screen_line_ptr >> 8); uint8_t lo = (uint8_t)(top_of_screen_line_ptr & 0xff); y = hi; a = lo; sub_cab1a(); top_of_screen_line_ptr += y; }
+    top_of_screen_line_ptr += 0x0100;
     // ca348:                                                              (5327)
 ca348:
     //     ldy #SCREEN_SCROLLUP                                            (5328)
