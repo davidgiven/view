@@ -511,6 +511,54 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_enter_editor_and_split_line(self):
+        """Enter empty editor, type 'Hello World', then split at the space between words."""
+        self._test_enter_editor_and_type(
+            b"Hello World" + KEY_LEFT * 6 + CTRL_Q + b"J",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   Hello                                                                        ",
+                "    World                                                                       ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_enter_editor_and_split_line_at_char(self):
+        """Enter empty editor, type 'abcd', then split at middle (after 'b')."""
+        self._test_enter_editor_and_type(
+            b"abcd" + KEY_LEFT * 2 + CTRL_Q + b"J",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   ab                                                                           ",
+                "   cd                                                                           ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_enter_editor_and_split_line_at_beginning(self):
+        """Split at the very beginning of the text — creates an empty first line."""
+        self._test_enter_editor_and_type(
+            b"abcd" + KEY_LEFT * 4 + CTRL_Q + b"J",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "                                                                                ",
+                "   abcd                                                                         ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_enter_editor_and_split_line_at_end(self):
+        """Split at the very end of the text — creates an empty second line."""
+        self._test_enter_editor_and_type(
+            b"abcd" + CTRL_Q + b"J",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abcd                                                                         ",
+                "                                                                                ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
         self.assertIn(
