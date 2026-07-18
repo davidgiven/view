@@ -7900,17 +7900,16 @@ loop_c9a62:
     // c9a87:
     //PROVISIONAL: Word-wrap path — line needs wrapping at a word boundary. Flush the current
     //PROVISIONAL: buffer via sub_caed6 + sub_c9aa9, advance to the next document line,
-    //PROVISIONAL: and loop back to c998a if more lines exist.
+    //PROVISIONAL: then fall through to c9a8d (returns to sub_c9977's caller).
 c9a87:
     //     jsr sub_caed6
     sub_caed6();
     //     jsr sub_c9aa9
     if (sub_c9aa9()) return;
+    //     (fall through to c9a8d in 6502 — no jsr)
     advance_to_next_line();
-    if (flags & FLAG_Z) goto c9aa5;
-    goto c998a;
-    // c9a8d: (now advance_to_next_line)
-    // c9aa4: (merged into advance_to_next_line)
+    //     (c9a8d/c9aa5 merged into advance_to_next_line; return directly to caller)
+    goto c9aa5;
     // c9aa5:
     //PROVISIONAL: Cleanup — clear overflow flag, load l007e into A (sets Z for caller).
 c9aa5:
