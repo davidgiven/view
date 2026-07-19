@@ -3468,7 +3468,7 @@ c8cc8:
     //     ldy l0083
     y = l0083;
     //     cpy #0x84
-    cmp(y, 0x84);
+    cmp(y, MAX_LINE_LENGTH);
     //     bne c8cdb
     if (!(flags & FLAG_Z)) goto c8cdb;
     //     pha
@@ -6179,7 +6179,8 @@ c95aa:
     sub_c95b2();
     //     jsr sub_c95b2
     sub_c95b2();
-
+    //     (fall through into sub_c95b2)
+    sub_c95b2();
     // MULTIPLE ENTRY POINTS: dh_fmt_cmd, df_fmt_cmd
 }
 static void df_fmt_cmd(void) {
@@ -6392,36 +6393,39 @@ static void pe_fmt_cmd(void) {
     //     rts
     return;
 }
-static void op_fmt_cmd(void) {
-    // Pseudocode: Odd page: forces page eject if current page is even
+static void c9642_tail(void) {
+    // c9642:
+    //     jsr page_eject_fmt
+    page_eject_fmt();
+    //     (fall through into page_eject_fmt)
+    page_eject_fmt();
+}
 
-    // ; ***************************************************************************************
+static void op_fmt_cmd(void) {
     // op_fmt_cmd:
     //     lda register_value_p
     a = ram[RAM_REGISTER_VALUE_P];
-    set_flags(a);
     //     lsr
-    { flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | ((a & 1) ? FLAG_C : 0); a >>= 1; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | ((a & 1) ? FLAG_C : 0);
+    a >>= 1;
+    flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bcc page_eject_fmt
     if (!(flags & FLAG_C)) { page_eject_fmt(); return; }
     //     bcs c9642                                                         ; ALWAYS branch
-    return;
+    c9642_tail(); return;
 }
 static void ep_fmt_cmd(void) {
-    // Pseudocode: Even page: forces page eject if current page is odd
-
-    // ; ***************************************************************************************
     // ep_fmt_cmd:
     //     lda register_value_p
     a = ram[RAM_REGISTER_VALUE_P];
-    set_flags(a);
     //     lsr
-    { flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | ((a & 1) ? FLAG_C : 0); a >>= 1; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N); }
+    flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | ((a & 1) ? FLAG_C : 0);
+    a >>= 1;
+    flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bcs page_eject_fmt
     if (flags & FLAG_C) { page_eject_fmt(); return; }
-// c9642:
-    //     rts
-    return;
+    // c9642:
+    c9642_tail(); return;
 }
 static void page_eject_fmt(void) {
     // Pseudocode: Performs page eject by rendering new page and moving to sheet bottom
@@ -7198,7 +7202,7 @@ c9871:
     //     sec
     flags |= FLAG_C;
     //     sbc #0x84
-    sbc(0x84);
+    sbc(MAX_LINE_LENGTH);
     //     bcc c988c
     if (!(flags & FLAG_C)) goto c988c;
     //     sta l0084
@@ -7415,7 +7419,7 @@ c9922:
     // loop_c992c:
     //     cpy #0x84
 loop_c992c:
-    cmp(y, 0x84);
+    cmp(y, MAX_LINE_LENGTH);
     //     bcs return_48
     if (flags & FLAG_C) return;
     //     sta (current_edit_line_ptr),y
@@ -7815,7 +7819,7 @@ c9a40:
     //     beq c9a58
     if (flags & FLAG_Z) goto c9a58;
     //     cpy #0x85
-    cmp(y, 0x85);
+    cmp(y, MAX_LINE_LENGTH + 1);
     //     bcs c9a60
     if (flags & FLAG_C) goto c9a60;
     //     lda bottom_margin
@@ -9928,7 +9932,7 @@ ca12a:
         y = xpos;
         uint8_t start_x = y;
         // loop_ca132: scan forward to find matching char
-        while (y < 0x84) {
+        while (y < MAX_LINE_LENGTH) {
             a = ram[current_edit_line_ptr + y];
             y++;
             if (a == search_char) goto loop_ca13d;
@@ -9936,7 +9940,7 @@ ca12a:
         beep(); return;
 loop_ca13d:
         // loop_ca13d: scan forward to find end of matching sequence
-        while (y < 0x84) {
+        while (y < MAX_LINE_LENGTH) {
             a = ram[current_edit_line_ptr + y];
             y++;
             if (a != search_char) break;
@@ -12409,7 +12413,7 @@ static void get_line_length(void) {
     //     php
     { uint8_t saved_f = flags;
     //     ldy #0x84
-    y = 0x84;
+    y = MAX_LINE_LENGTH;
     // loop_caafb:
 loop_caafb:
     //     dey
@@ -12713,7 +12717,7 @@ cabb3:
     //     iny
     y++;
     //     cpy #0x84
-    cmp(y, 0x84);
+    cmp(y, MAX_LINE_LENGTH);
     //     bne loop_caba5
     if (!(flags & FLAG_Z)) goto loop_caba5;
     // cabbc:
@@ -12971,7 +12975,7 @@ cac7b:
     a = 0;
     l0083 = 0;
     //     ldx #0x85
-    x = 0x85;
+    x = MAX_LINE_LENGTH + 1;
     //     ldy #1
     y = 1;
     //     lda (tmp8),y
@@ -13392,7 +13396,7 @@ static void sub_cae06(void) {
     //     bcs cae03
     if (flags & FLAG_C) { sub_cae03(); return; }
     //     cmp #0x85
-    cmp(a, 0x85);
+    cmp(a, MAX_LINE_LENGTH + 1);
     //     bcs cae03
     if (flags & FLAG_C) { sub_cae03(); return; }
     //     inc l006d
@@ -13406,7 +13410,7 @@ static void sub_cae06(void) {
     //     sta tmp7
     tmp7 = a;
     //     ldy #0x84
-    y = 0x84;
+    y = MAX_LINE_LENGTH;
     // cae27:
 cae27:
     //     dey
@@ -13422,7 +13426,7 @@ cae27:
     //     bcs cae35
     if (flags & FLAG_C) goto cae35;
     //     cmp #0x84
-    cmp(a, 0x84);
+    cmp(a, MAX_LINE_LENGTH);
     //     bcs cae35
     if (flags & FLAG_C) goto cae35;
     //     tax
@@ -13557,13 +13561,13 @@ cae98:
     //     iny
     y++;
     //     cpy #0x85
-    cmp(y, 0x85);
+    cmp(y, MAX_LINE_LENGTH + 1);
     //     bcc cae78
     if (!(flags & FLAG_C)) goto cae78;
     //     lda xpos
     a = xpos;
     //     cmp #0x84
-    cmp(a, 0x84);
+    cmp(a, MAX_LINE_LENGTH);
     //     bcs return_78
     if (flags & FLAG_C) { /* return_78: */ return; }
     //     ldy xpos
@@ -13585,7 +13589,7 @@ loop_caea5:
     //     tay
     y = a;
     //     cpy #0x84
-    cmp(y, 0x84);
+    cmp(y, MAX_LINE_LENGTH);
     //     bcs caeb7
     if (flags & FLAG_C) goto caeb7;
     //     lda (current_edit_line_ptr),y
@@ -13603,7 +13607,7 @@ caeb7:
     //     iny
     y++;
     //     cpy #0x84
-    cmp(y, 0x84);
+    cmp(y, MAX_LINE_LENGTH);
     //     bcc loop_caea5
     if (!(flags & FLAG_C)) goto loop_caea5;
     // return_78:
@@ -13630,7 +13634,7 @@ loop_caec8:
     //     beq caed4
     if (flags & FLAG_Z) goto caed4;
     //     cpy #0x84
-    cmp(y, 0x84);
+    cmp(y, MAX_LINE_LENGTH);
     //     bcc loop_caec8
     if (!(flags & FLAG_C)) goto loop_caec8;
     //     rts
