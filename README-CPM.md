@@ -31,10 +31,10 @@ The BBC Micro has ten function keys, and the original version of VIEW is control
     <dd>Page up, page down.</dd>
     <dt>^Q^R, ^Q^C</dt>
     <dd>Top of file, bottom of file.</dd>
-    <dt>^G</dt>
-    <dd>Delete one character.</dd>
-    <dt>^H</dt>
-    <dd>Insert one character.</dd>
+    <dt>^G, ^H</dt>
+    <dd>Delete one character, insert one character.</dd>
+    <dt>^P</dt>
+    <dd>Swap case.</dd>
     <dt>^Y, ^N</dt>
     <dd>Delete, insert one line.</dd>
     <dt>^Q^Y</dt>
