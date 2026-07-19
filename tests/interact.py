@@ -953,6 +953,28 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_delete_to_char(self):
+        """Type 'abc.def', go to start, CTRL_T + '.' — deletes forward through '.'."""
+        self._test_enter_editor_and_type(
+            b"abc.def" + CTRL_Q + CTRL_S + CTRL_T + b".",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   def                                                                          ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_delete_to_char_not_found(self):
+        """Type 'abc', CTRL_T + 'z' — character not found, no change."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_T + b"z",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abc                                                                          ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_delete_line_at_end(self):
         """Type three lines, CTRL_Y — deletes last line (cursor already on it)."""
         self._test_enter_editor_and_type(
