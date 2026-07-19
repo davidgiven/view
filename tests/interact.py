@@ -892,6 +892,79 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_insert_line(self):
+        """Type 'abc', CTRL_N (insert line), type 'def' — new line inserted above current."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_N + b"def",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "      def                                                                       ",
+                "   abc                                                                          ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_delete_line(self):
+        """Type two lines, go to first line, CTRL_Y — deletes current line."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_M + b"def" + KEY_UP + CTRL_Y,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   def                                                                          ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_insert_line_at_beginning(self):
+        """Type two lines, go to top, CTRL_N, type 'XYZ' — inserted above first line."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_M + b"def" + CTRL_Q + CTRL_R + CTRL_N + b"XYZ",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "      XYZ                                                                       ",
+                "   abc                                                                          ",
+                "   def                                                                          ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_insert_line_at_end(self):
+        """Type two lines, go to bottom, CTRL_N, type 'XYZ' — inserted above last line."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_M + b"def" + CTRL_Q + CTRL_C + CTRL_N + b"XYZ",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abc                                                                          ",
+                "      XYZ                                                                       ",
+                "   def                                                                          ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_delete_line_at_beginning(self):
+        """Type three lines, go to top, CTRL_Y — deletes first line."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_M + b"def" + CTRL_M + b"ghi" + CTRL_Q + CTRL_R + CTRL_Y,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   def                                                                          ",
+                "   ghi                                                                          ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_delete_line_at_end(self):
+        """Type three lines, CTRL_Y — deletes last line (cursor already on it)."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_M + b"def" + CTRL_M + b"ghi" + CTRL_Y,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abc                                                                          ",
+                "   def                                                                          ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
         self.assertIn(
