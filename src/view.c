@@ -233,8 +233,8 @@ static uint8_t deref_and_check_for_command_prefix(void);
 static uint8_t check_for_command_prefix(uint8_t ch);
 static void sub_cab6e(void);
 static void cab29(void);
-void push_onto_ruler_stack(void);
-void pop_from_ruler_stack(void);
+void push_onto_ruler_index(void);
+void pop_from_ruler_index(void);
 static void sub_cabc4(void);
 static void sub_cac41(void);
 static void sub_cac50(void);
@@ -439,9 +439,9 @@ uint8_t l0031; // PROVISIONAL: page-break-requested flag for the print engine
 //X printing_from_file_flag: .fill 1
 uint8_t printing_from_file_flag; // PROVISIONAL: selects between file-buffer and in-memory reading during printing
 //X l0033: .fill 1
-uint8_t l0033; // PROVISIONAL: saved ruler_stack_ptr during editor scroll-up operations
+uint8_t l0033; // PROVISIONAL: saved ruler_index_ptr during editor scroll-up operations
 //X l0034: .fill 1
-uint8_t l0034; // PROVISIONAL: saved ruler_stack_ptr during editor redraw
+uint8_t l0034; // PROVISIONAL: saved ruler_index_ptr during editor redraw
 //X l0038: .fill 1
 uint8_t l0038; // PROVISIONAL: page-break flag in print path; stores current key in editor input
 //X l0039: .fill 1
@@ -491,7 +491,7 @@ uint8_t edit_buffer_unpacked_flag; // PROVISIONAL: tracks whether edit line has 
 //X l006f: .fill 1
 uint8_t l006f; // PROVISIONAL: line-counter/index used in document body scanning and vertical-scroll calculations
 //X ruler_stack_ptr: .fill 1
-uint8_t ruler_stack_ptr; // PROVISIONAL: stack pointer into ruler-stack stored in high RAM at oshwm
+uint8_t ruler_index_ptr; // PROVISIONAL: index pointer into ruler-index stored in high RAM at oshwm
 //X hscroll_pos: .fill 1
 uint8_t hscroll_pos; // PROVISIONAL: horizontal scroll offset of the editor viewport
 //X l0072: .fill 1
@@ -10060,7 +10060,7 @@ static void redraw_editor(void) {
     //     jsr cursor_off                                                (5207)
     cursor_off();
     //     lda ruler_stack_ptr                                           (5208)
-    a = ruler_stack_ptr;
+    a = ruler_index_ptr;
     //     sta l0034                                                     (5209)
     l0034 = a;
     //     lda l0076                                                     (5210)
@@ -10099,7 +10099,7 @@ ca29c:
     //     lda l0033                                                       (5230)
     a = l0033;
     //     sta ruler_stack_ptr                                             (5231)
-    ruler_stack_ptr = a;
+    ruler_index_ptr = a;
     //     ldy l0012                                                       (5232)
     //     lda l0011                                                       (5233)
     //     cpy top+1                                                       (5234)
@@ -10158,7 +10158,7 @@ ca2dc:
     //     lda l0033                                                       (5264)
     a = l0033;
     //     sta ruler_stack_ptr                                             (5265)
-    ruler_stack_ptr = a;
+    ruler_index_ptr = a;
     // ca2e0:                                                              (5266)
 ca2e0:
     //     ldx #0                                                          (5267)
@@ -10261,7 +10261,7 @@ loop_ca31f:
     //     lda l0033                                                       (5316)
     a = l0033;
     //     sta ruler_stack_ptr                                             (5317)
-    ruler_stack_ptr = a;
+    ruler_index_ptr = a;
     //     ldy l0012                                                       (5318)
     y = (uint8_t)(top_of_screen_line_ptr >> 8);
     //     lda l0011                                                       (5319)
@@ -10296,7 +10296,7 @@ ca348:
     // ca351:                                                              (5333)
 ca351:
     //     lda ruler_stack_ptr                                             (5334)
-    a = ruler_stack_ptr;
+    a = ruler_index_ptr;
     //     sta l0033                                                       (5335)
     l0033 = a;
     //     inc input_buffer_ptr+1                                          (5336)
@@ -10575,7 +10575,7 @@ static void sub_ca44e(void) {
     //     lda l0034
     a = l0034;
     //     sta ruler_stack_ptr
-    ruler_stack_ptr = a;
+    ruler_index_ptr = a;
     //     lda screen_height
     a = screen_maxrow;
     //     sta l0073
@@ -10628,13 +10628,13 @@ ca479:
     //     sty l0012
     top_of_screen_line_ptr = ((addr_t)y << 8) | a;
     //     lda ruler_stack_ptr
-    a = ruler_stack_ptr;
+    a = ruler_index_ptr;
     //     sta l0033
     l0033 = a;
     //     lda l0034
     a = l0034;
     //     sta ruler_stack_ptr
-    ruler_stack_ptr = a;
+    ruler_index_ptr = a;
     //     rts
 }
 static void draw_line(uint16_t addr) {
@@ -12483,7 +12483,7 @@ static void sub_cab1a(void) {
     //     jsr cab29
     cab29();
     //     bne push_onto_ruler_stack
-    if (!(flags & FLAG_Z)) { push_onto_ruler_stack(); return; }
+    if (!(flags & FLAG_Z)) { push_onto_ruler_index(); return; }
     //     rts
     return;
 }
@@ -12578,7 +12578,7 @@ cab64:
     //     bne cab6c
     if (!(flags & FLAG_Z)) goto cab6c;
     //     jsr pop_from_ruler_stack
-    pop_from_ruler_stack();
+    pop_from_ruler_index();
     // cab6c:
 cab6c:
     //     sec
@@ -12600,8 +12600,8 @@ static void sub_cab6e(void) {
     //     rts
     return;
 }
-void push_onto_ruler_stack(void) {
-    // Pseudocode: Pushes current ruler position onto the ruler stack
+void push_onto_ruler_index(void) {
+    // Pseudocode: Pushes current ruler position onto the ruler index
 
     // push_onto_ruler_stack:
     //     tya
@@ -12610,7 +12610,7 @@ void push_onto_ruler_stack(void) {
     //     inc status_line_needs_redrawing_flag
     status_line_needs_redrawing_flag++;
     //     ldy ruler_stack_ptr
-    y = ruler_stack_ptr;
+    y = ruler_index_ptr;
     //     dey
     y--;
     //     lda tmp0
@@ -12631,29 +12631,29 @@ void push_onto_ruler_stack(void) {
     //     rts
     return;
 }
-void pop_from_ruler_stack(void) {
-    // Pseudocode: Pops ruler position from the ruler stack
+void pop_from_ruler_index(void) {
+    // Pseudocode: Pops ruler position from the ruler index
 
     // pop_from_ruler_stack:
     //     inc status_line_needs_redrawing_flag
     status_line_needs_redrawing_flag++;
     //     ldy ruler_stack_ptr
-    y = ruler_stack_ptr;
+    y = ruler_index_ptr;
     //     iny
     y++;
     //     iny
     y++;
 
-    // MULTIPLE ENTRY POINTS: pop_from_ruler_stack, cab91
+    // MULTIPLE ENTRY POINTS: pop_from_ruler_index, cab91
     cab91();
 }
 static void cab91(void) {
 
-    // Pseudocode: Sets current_ruler_ptr from stack at ruler_stack_ptr offset
+    // Pseudocode: Sets current_ruler_ptr from stack at ruler_index_ptr offset
 
     // cab91:
     //     sty ruler_stack_ptr
-    ruler_stack_ptr = y;
+    ruler_index_ptr = y;
     //     iny
     y++;
     //     lda (oshwm),y
@@ -12675,7 +12675,7 @@ static void cab91(void) {
     adc(0);
     //     sta current_ruler_ptr+1
     current_ruler_ptr = (current_ruler_ptr & 0x00ff) | ((uint16_t)a << 8);
-    // MULTIPLE ENTRY POINTS: pop_from_ruler_stack, cab91
+    // MULTIPLE ENTRY POINTS: pop_from_ruler_index, cab91
     //     (falls through to find_margins_of_current_ruler_buffer)
     find_margins_of_current_ruler_buffer();
 }
@@ -12896,7 +12896,7 @@ static void sub_cac41(void) {
     //     bne cac4c
     if (!(flags & FLAG_Z)) goto cac4c;
     //     jsr push_onto_ruler_stack
-    push_onto_ruler_stack();
+    push_onto_ruler_index();
     // cac4c:
 cac4c:
     //     pla
@@ -13901,7 +13901,7 @@ static void initialise_document(void) {
     //     dex
     //     bpl loop_cafe9
     print_flags = 0; edit_buffer_dirty_flag = 0; edit_buffer_unpacked_flag = 0; l006f = 0;
-    ruler_stack_ptr = 0; hscroll_pos = 0; l0072 = 0; l0073 = 0; l0074 = 0;
+    ruler_index_ptr = 0; hscroll_pos = 0; l0072 = 0; l0073 = 0; l0074 = 0;
     flags_need_redrawing_flag = 0; l0076 = 0; ypos = 0; print_xpos = 0;
     l0079 = 0; l007a = 0; cursor_moved_flag = 0; l007e = 0; input_buffer_offset = 0;
     // cafee:
@@ -14053,7 +14053,7 @@ static void move_cursor_to_top_of_document(void) {
     //     sty l0012
     top_of_screen_line_ptr = (addr_t)0xfe << 8;
     //     sty ruler_stack_ptr
-    ruler_stack_ptr = y;
+    ruler_index_ptr = y;
     //     sty l0033
     l0033 = y;
     //     jmp cab91

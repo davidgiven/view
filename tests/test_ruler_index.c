@@ -1,4 +1,4 @@
-/* Test for ruler stack push/pop */
+/* Test for ruler index push/pop */
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
@@ -8,7 +8,7 @@ typedef uint16_t addr_t;
 extern uint8_t ram[65536];
 extern uint8_t a, x, y, flags;
 extern uint8_t tmp0, tmp1;
-extern uint8_t ruler_stack_ptr;
+extern uint8_t ruler_index_ptr;
 extern addr_t oshwm;
 extern addr_t current_ruler_ptr;
 extern uint8_t ruler_left_stop;
@@ -17,8 +17,8 @@ extern uint8_t status_line_needs_redrawing_flag;
 extern uint8_t l003a;
 extern uint8_t screen_maxcolumn;
 
-void push_onto_ruler_stack(void);
-void pop_from_ruler_stack(void);
+void push_onto_ruler_index(void);
+void pop_from_ruler_index(void);
 void create_default_ruler(void);
 
 static int test_failures;
@@ -34,7 +34,7 @@ static int test_failures;
 
 int main(void) {
     test_failures = 0;
-    printf("ruler stack tests:\n\n");
+    printf("ruler index tests:\n\n");
 
     screen_maxcolumn = 79;
     memset(ram, 0, sizeof(ram));
@@ -54,10 +54,10 @@ int main(void) {
     ram[ruler2_addr + 60] = '<';
     ram[ruler2_addr + 78] = 0x0d;
 
-    printf("Test 1: push first ruler onto stack\n");
+    printf("Test 1: push first ruler onto index\n");
     {
         oshwm = 0x0800;
-        ruler_stack_ptr = 0;
+        ruler_index_ptr = 0;
         status_line_needs_redrawing_flag = 0;
         a = x = y = flags = 0;
         ruler_left_stop = ruler_right_stop = 0;
@@ -67,22 +67,22 @@ int main(void) {
         tmp0 = (uint8_t)((ruler1_addr - 3) & 0xff);
         tmp1 = (uint8_t)((ruler1_addr - 3) >> 8);
 
-        push_onto_ruler_stack();
+        push_onto_ruler_index();
 
-        ASSERT_EQ(0xfe, ruler_stack_ptr, "%d", "ruler_stack_ptr decremented from 0 to 0xfe");
+        ASSERT_EQ(0xfe, ruler_index_ptr, "%d", "ruler_index_ptr decremented from 0 to 0xfe");
         ASSERT_EQ(ruler1_addr, current_ruler_ptr, "0x%04x", "current_ruler_ptr points to ruler1");
         ASSERT_EQ(ruler_left_stop, 10, "%d", "ruler_left_stop = 10");
         ASSERT_EQ(ruler_right_stop, 70, "%d", "ruler_right_stop = 70");
     }
 
-    printf("\nTest 2: push second ruler (stack contains both)\n");
+    printf("\nTest 2: push second ruler (index contains both)\n");
     {
         tmp0 = (uint8_t)((ruler2_addr - 3) & 0xff);
         tmp1 = (uint8_t)((ruler2_addr - 3) >> 8);
 
-        push_onto_ruler_stack();
+        push_onto_ruler_index();
 
-        ASSERT_EQ(0xfc, ruler_stack_ptr, "%d", "ruler_stack_ptr decremented to 0xfc");
+        ASSERT_EQ(0xfc, ruler_index_ptr, "%d", "ruler_index_ptr decremented to 0xfc");
         ASSERT_EQ(ruler2_addr, current_ruler_ptr, "0x%04x", "current_ruler_ptr points to ruler2");
         ASSERT_EQ(ruler_left_stop, 5, "%d", "ruler_left_stop = 5");
         ASSERT_EQ(ruler_right_stop, 60, "%d", "ruler_right_stop = 60");
@@ -90,42 +90,41 @@ int main(void) {
 
     printf("\nTest 3: pop — restores ruler1\n");
     {
-        pop_from_ruler_stack();
+        pop_from_ruler_index();
 
-        ASSERT_EQ(0xfe, ruler_stack_ptr, "%d", "ruler_stack_ptr incremented back to 0xfe");
+        ASSERT_EQ(0xfe, ruler_index_ptr, "%d", "ruler_index_ptr incremented back to 0xfe");
         ASSERT_EQ(ruler1_addr, current_ruler_ptr, "0x%04x", "current_ruler_ptr restored to ruler1");
         ASSERT_EQ(ruler_left_stop, 10, "%d", "ruler_left_stop restored to 10");
         ASSERT_EQ(ruler_right_stop, 70, "%d", "ruler_right_stop restored to 70");
     }
 
-    printf("\nTest 4: pop again — stack empty (ruler_stack_ptr wraps to 0)\n");
+    printf("\nTest 4: pop again — index empty (ruler_index_ptr wraps to 0)\n");
     {
-        pop_from_ruler_stack();
+        pop_from_ruler_index();
 
-        ASSERT_EQ(0x00, ruler_stack_ptr, "%d", "ruler_stack_ptr back to 0");
-        /* With stack empty, current_ruler_ptr points to whatever was at stack base */
+        ASSERT_EQ(0x00, ruler_index_ptr, "%d", "ruler_index_ptr back to 0");
     }
 
-    printf("\nTest 5: verify stack memory layout\n");
+    printf("\nTest 5: verify index memory layout\n");
     {
         oshwm = 0x0800;
-        ruler_stack_ptr = 0;
+        ruler_index_ptr = 0;
         tmp0 = (uint8_t)((ruler1_addr - 3) & 0xff);
         tmp1 = (uint8_t)((ruler1_addr - 3) >> 8);
-        push_onto_ruler_stack();
+        push_onto_ruler_index();
 
-        /* After push with ruler_stack_ptr=0: y goes from 0→0xff→0xfe,
+        /* After push with ruler_index_ptr=0: y goes from 0→0xff→0xfe,
            so hi byte is at ram[oshwm+0xfe], lo byte at ram[oshwm+0xff] */
         uint8_t hi = ram[oshwm + 0xfe];
         uint8_t lo = ram[oshwm + 0xff];
         addr_t stored = (addr_t)(((addr_t)hi << 8) | lo);
-        ASSERT_EQ(ruler1_addr - 3, stored, "0x%04x", "stack stores (ruler_addr - 3) at oshwm+0xfe, oshwm+0xff");
+        ASSERT_EQ(ruler1_addr - 3, stored, "0x%04x", "index stores (ruler_addr - 3) at oshwm+0xfe, oshwm+0xff");
     }
 
     printf("\nTest 6: create_default_ruler and push it\n");
     {
         oshwm = 0x0800;
-        ruler_stack_ptr = 0;
+        ruler_index_ptr = 0;
         a = x = y = flags = 0;
         ruler_left_stop = ruler_right_stop = 0;
         screen_maxcolumn = 79;
@@ -136,12 +135,12 @@ int main(void) {
         y = (uint8_t)(ruler_addr >> 8);
         create_default_ruler();
 
-        /* Push this ruler onto the stack */
+        /* Push this ruler onto the index */
         tmp0 = (uint8_t)((ruler_addr - 3) & 0xff);
         tmp1 = (uint8_t)((ruler_addr - 3) >> 8);
-        push_onto_ruler_stack();
+        push_onto_ruler_index();
 
-        ASSERT_EQ(0xfe, ruler_stack_ptr, "%d", "ruler_stack_ptr = 0xfe");
+        ASSERT_EQ(0xfe, ruler_index_ptr, "%d", "ruler_index_ptr = 0xfe");
         /* Default ruler has no '>' so left_stop should be 0 */
         ASSERT_EQ(0, ruler_left_stop, "%d", "default ruler left_stop = 0");
         /* Default ruler has '<' at position screen_maxcolumn - 6 */
