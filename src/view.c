@@ -9887,25 +9887,48 @@ static void sf14_down_key(void) {
     sub_ca0af();
 }
 static void sf11_copy_key(void) {
+    // sf11_copy_key:
+    //     jsr f6_insert_line_key
     f6_insert_line_key();
+    //     jsr sub_ca276
     redraw_editor();
+    //     ldx l003a
     x = l003a;
-    if (x != 0) {
-        y = 0;
-        do {
-            ram[current_edit_line_ptr + y] = ram[current_ruler_ptr + y];
-            y++;
-            x--;
-        } while (x != 0);
-    }
+    //     beq ca0ef
+    if (x == 0) goto ca0ef;
+    //     ldy #0
+    y = 0;
+    // loop_ca0e7:
+loop_ca0e7:
+    //     lda (current_ruler_ptr),y
+    a = ram[current_ruler_ptr + y];
+    //     sta (current_edit_line_ptr),y
+    ram[current_edit_line_ptr + y] = a;
+    //     iny
+    y++;
+    //     dex
+    x--;
+    //     bne loop_ca0e7
+    if (x != 0) goto loop_ca0e7;
+    // ca0ef:
+ca0ef:
+    //     jmp cf8_mark_as_ruler_key
     cf8_mark_as_ruler_key();
 }
+
 static void cf5_default_ruler_key(void) {
+    // cf5_default_ruler_key:
+    //     jsr f6_insert_line_key
     f6_insert_line_key();
+    //     jsr sub_ca276
     redraw_editor();
+    //     jsr cf8_mark_as_ruler_key
     cf8_mark_as_ruler_key();
+    //     lda current_edit_line_ptr
     a = (uint8_t)(current_edit_line_ptr & 0xff);
+    //     ldy current_edit_line_ptr+1
     y = (uint8_t)(current_edit_line_ptr >> 8);
+    //     jmp create_default_ruler
     create_default_ruler();
 }
 static void sf3_delete_to_char_key(void) {
@@ -10079,8 +10102,8 @@ static void redraw_editor(void) {
     a = l0073;
     //     ora l006f                                                     (5215)
     a |= l006f;
-    //     beq ca28e                                                     (5216)
-    if (a == 0) goto ca28e;
+    //     bne ca28e                                                     (5216)
+    if (a != 0) goto ca28e;
     //     jmp ca360                                                     (5217)
     goto ca360;
 
