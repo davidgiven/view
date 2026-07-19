@@ -52,7 +52,7 @@ uint8_t screen_getchar(void) {
             case KEY_DOWN:  return SCREEN_KEY_DOWN;
             case KEY_LEFT:  return SCREEN_KEY_LEFT;
             case KEY_RIGHT: return SCREEN_KEY_RIGHT;
-            case KEY_BACKSPACE: return 0x7f;
+            case KEY_BACKSPACE: return 0x08;  // CTRL_H (insert char), not delete
             default: return (uint8_t)(c & 0xff);
         }
     } else {

@@ -826,6 +826,72 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_delete_char_at_beginning(self):
+        """Type 'abc', go to start, CTRL_G — deletes 'a'."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_Q + CTRL_S + CTRL_G,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   bc                                                                           ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_delete_char_in_middle(self):
+        """Type 'abc', go to second char, CTRL_G — deletes 'b'."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_Q + CTRL_S + KEY_RIGHT + CTRL_G,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   ac                                                                           ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_delete_char_at_end(self):
+        """Type 'abc', go to last char, CTRL_G — deletes 'c'."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_Q + CTRL_D + KEY_LEFT + CTRL_G,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   ab                                                                           ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_insert_char_at_beginning(self):
+        """Type 'abc', go to start, CTRL_H (insert space), then 'X'."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_Q + CTRL_S + CTRL_H + b"X",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   Xabc                                                                         ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_insert_char_in_middle(self):
+        """Type 'abc', go to second char, CTRL_H (insert space), then 'X'."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_Q + CTRL_S + KEY_RIGHT + CTRL_H + b"X",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   aXbc                                                                         ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_insert_char_at_end(self):
+        """Type 'abc', go to last char, CTRL_H (insert space), then 'X'."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_Q + CTRL_D + KEY_LEFT + CTRL_H + b"X",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abXc                                                                         ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
         self.assertIn(
