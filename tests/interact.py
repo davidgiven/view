@@ -451,7 +451,7 @@ class EditorTests(unittest.TestCase):
 
     def test_enter_editor_and_cursor_down_up(self):
         self._test_enter_editor_and_type(
-            b"text" + KEY_DOWN + b"1" + KEY_UP + b"2" + KEY_UP + b"3",
+            CTRL_M + KEY_UP + b"text" + KEY_DOWN + b"1" + KEY_UP + b"2" + KEY_UP + b"3",
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "   text 23                                                                      ",

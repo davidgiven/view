@@ -10178,6 +10178,10 @@ ca348:
     //     ldy screen_height                                               (5331)
     //     jsr set_cursor_position                                         (5332)
     screen_setcursor(0, screen_maxrow);
+    // After the jsr, Y still holds screen_height (set by ldy above).
+    // The C equivalent must restore it explicitly since screen_setcursor
+    // receives the value as a parameter rather than via the global y.
+    y = screen_maxrow;
     // ca351:                                                              (5333)
 ca351:
     //     lda ruler_stack_ptr                                             (5334)
