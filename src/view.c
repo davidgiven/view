@@ -8833,6 +8833,46 @@ c9d98:
     //     // falls through to c9d9b
     c9d9b_advance_ptr();
 }
+// c9de3: Insert-line entry point used by cf6_split_line_key.
+// Skips cursor_moved_flag++ that sub_c9de1 would do.
+// Expects A = low byte, Y = high byte of insertion address.
+static void c9de3_insert_line(void) {
+    //     sta tmp4
+    tmp4 = a;
+    //     sty tmp5
+    tmp5 = y;
+    //     lda #1
+    a = 1;
+    //     sta tmp6
+    tmp6 = a;
+    //     lda #0
+    a = 0;
+    //     sta tmp7
+    tmp7 = a;
+    //     jsr make_space_for_insertion
+    make_space_for_insertion();
+    //     bcs c9dfd
+    if (flags & FLAG_C) goto c9dfd;
+    //     lda #0x0d
+    a = 0x0d;
+    //     ldy #0
+    y = 0;
+    //     sta (tmp4),y
+    ram[((uint16_t)tmp5 << 8 | tmp4) + y] = a;
+    //     jmp ca741
+    ca741(); return;
+
+c9dfd:
+    //     jmp ca941
+    memory_full(); return;
+}
+static void sub_c9de1(void) {
+    // sub_c9de1:
+    //     inc cursor_moved_flag
+    cursor_moved_flag++;
+    //     falls through to c9de3
+    c9de3_insert_line();
+}
 static void cf6_split_line_key(void) {
     // cf6_split_line_key: Splits line at cursor position
 
@@ -8879,13 +8919,13 @@ c9dcd:
     //     adc current_line_ptr
     { uint16_t sum = (uint16_t)a + (uint8_t)(current_line_ptr & 0xff); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
     //     bcc c9de3
-    if (!(flags & FLAG_C)) { sub_c9de1(); return; }
+    if (!(flags & FLAG_C)) { c9de3_insert_line(); return; }
     //     iny
     y++;
     //     bne c9de3
-    if (y != 0) { sub_c9de1(); return; }
-    //     (fall through - y wrapped to 0)
-    sub_c9de1(); return;
+    if (y != 0) { c9de3_insert_line(); return; }
+    //     (fall through - y wrapped to 0 → f6_insert_line_key)
+    f6_insert_line_key();
 }
 
 // MULTIPLE ENTRY POINTS: cf6_split_line_key, f6_insert_line_key, sub_c9de1
@@ -8900,45 +8940,8 @@ static void f6_insert_line_key(void) {
     //     inc l0079
     l0079++;
     //     falls through to sub_c9de1
-    sub_c9de1(); return;
+    sub_c9de1();
 }
-
-static void sub_c9de1(void) {
-    // sub_c9de1:
-    //     inc cursor_moved_flag
-    cursor_moved_flag++;
-    // c9de3:
-c9de3:
-    //     sta tmp4
-    tmp4 = a;
-    //     sty tmp5
-    tmp5 = y;
-    //     lda #1
-    a = 1;
-    //     sta tmp6
-    tmp6 = a;
-    //     lda #0
-    a = 0;
-    //     sta tmp7
-    tmp7 = a;
-    //     jsr make_space_for_insertion
-    make_space_for_insertion();
-    //     bcs c9dfd
-    if (flags & FLAG_C) goto c9dfd;
-    //     lda #0x0d
-    a = 0x0d;
-    //     ldy #0
-    y = 0;
-    //     sta (tmp4),y
-    ram[((uint16_t)tmp5 << 8 | tmp4) + y] = a;
-    //     jmp ca741
-    ca741(); return;
-
-c9dfd:
-    //     jmp ca941
-    memory_full(); return;
-}
-// MULTIPLE ENTRY POINTS: delete_key, f8_insert_char_key
 static void delete_key(void) {
     // delete_key:
     //     lda l0072
@@ -8975,9 +8978,10 @@ static void delete_key(void) {
     if (!(flags & FLAG_C)) return;
     //     beq return_55
     if (flags & FLAG_Z) return;
-    //     rts
-    return;
+    //     falls through to f8_insert_char_key
+    f8_insert_char_key();
 }
+// MULTIPLE ENTRY POINTS: delete_key, f8_insert_char_key
 static void f8_insert_char_key(void) {
     // f8_insert_char_key:
     //     lda #0x20 ; ' '
