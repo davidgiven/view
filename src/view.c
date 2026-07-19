@@ -11745,110 +11745,129 @@ static void call_through_jumptable(void) {
     }
 }
 static void write_line_back_to_document(void) {
+    // sub_ca8b9:
     // write_line_back_to_document:
     //     lda l006e
     //     beq ca93a
-    if (edit_buffer_unpacked_flag == 0) goto ca93a;
+    a = edit_buffer_unpacked_flag;
+    set_flags(a);
+    if (flags & FLAG_Z) goto ca93a;
     //     lda current_line_ptr
+    a = (uint8_t)(current_line_ptr & 0xff);
     //     sta tmp4
+    tmp4 = a;
     //     lda current_line_ptr+1
+    a = (uint8_t)(current_line_ptr >> 8);
     //     sta tmp5
-    tmp4 = (uint8_t)(current_line_ptr & 0xff);
-    tmp5 = (uint8_t)(current_line_ptr >> 8);
+    tmp5 = a;
     //     ldy #0
-    //     sty tmp7
     y = 0;
-    tmp7 = 0;
+    //     sty tmp7
+    tmp7 = y;
     //     jsr get_line_length
     get_line_length();
     //     sta l0083
     l0083 = a;
     //     lda l003b
-    //     sec
-    //     sbc l0083
-    //     bcc ca8df
-    //     beq ca8ed
-    //     sta tmp6
-    //     jsr adjust_pointers
-    //     jmp ca8ed
     a = l003b;
+    //     sec
     flags |= FLAG_C;
+    //     sbc l0083
     sbc(l0083);
+    //     bcc ca8df
     if (!(flags & FLAG_C)) goto ca8df;
+    //     beq ca8ed
     if (flags & FLAG_Z) goto ca8ed;
+    //     sta tmp6
     tmp6 = a;
+    //     jsr adjust_pointers
     adjust_pointers();
+    //     jmp ca8ed
     goto ca8ed;
+
     // ca8df:
 ca8df:
     //     sta l0084
     l0084 = a;
     //     lda #0
-    //     sec
-    //     sbc l0084
-    //     sta tmp6
-    //     jsr make_space_for_insertion
-    //     bcs return_66
     a = 0;
+    //     sec
     flags |= FLAG_C;
+    //     sbc l0084
     sbc(l0084);
+    //     sta tmp6
     tmp6 = a;
+    //     jsr make_space_for_insertion
     make_space_for_insertion();
+    //     bcs return_66
     if (flags & FLAG_C) return;
+
     // ca8ed:
 ca8ed:
     //     lda l006e
+    a = edit_buffer_unpacked_flag;
+    set_flags(a);
     //     bpl ca8f8
-    if ((int8_t)edit_buffer_unpacked_flag >= 0) goto ca8f8;
+    if (!(flags & FLAG_N)) goto ca8f8;
     //     lda l006d
+    a = edit_buffer_dirty_flag;
+    set_flags(a);
     //     beq ca8f8
-    if (edit_buffer_dirty_flag == 0) goto ca8f8;
+    if (flags & FLAG_Z) goto ca8f8;
     //     jsr ca741
     ca741();
+
     // ca8f8:
 ca8f8:
     //     ldy #0
-    //     sty l006d
-    //     sty l006e
     y = 0;
-    edit_buffer_dirty_flag = 0;
-    edit_buffer_unpacked_flag = 0;
+    //     sty l006d
+    edit_buffer_dirty_flag = y;
+    //     sty l006e
+    edit_buffer_unpacked_flag = y;
     //     lda current_format_line_ptr
+    a = (uint8_t)(current_format_line_ptr & 0xff);
     //     sta tmp6
+    tmp6 = a;
     //     lda current_format_line_ptr+1
+    a = (uint8_t)(current_format_line_ptr >> 8);
     //     sta tmp7
-    tmp6 = (uint8_t)(current_format_line_ptr & 0xff);
-    tmp7 = (uint8_t)(current_format_line_ptr >> 8);
+    tmp7 = a;
     //     ldx l0083
-    //     stx l003b
     x = l0083;
+    //     stx l003b
     l003b = x;
+
     // ca90a:
 ca90a:
     //     txa
-    //     bne ca911
-    //     lda #0x0d
-    //     bne ca919
     a = x;
-    if (a != 0) goto ca911;
+    set_flags(a);
+    //     bne ca911
+    if (!(flags & FLAG_Z)) goto ca911;
+    //     lda #0x0d
     a = 0x0d;
+    //     bne ca919
     goto ca919;
+
     // ca911:
 ca911:
     //     lda (current_format_line_ptr),y
-    //     cmp #0x10
-    //     bne ca919
-    //     lda #0x20 ; ' '
     a = ram[current_format_line_ptr + y];
-    if (a != 0x10) goto ca919;
+    //     cmp #0x10
+    cmp(a, 0x10);
+    //     bne ca919
+    if (!(flags & FLAG_Z)) goto ca919;
+    //     lda #0x20 ; ' '
     a = 0x20;
+
     // ca919:
 ca919:
     //     pha
-    //     txa
-    //     pha
     { uint8_t saved_a = a;
-      a = x;
+    //     txa
+    a = x;
+    //     pha
     { uint8_t saved_x = a;
 
     // loop_ca91c:
@@ -11862,22 +11881,23 @@ loop_ca91c:
     //     clc
     flags &= ~FLAG_C;
     //     adc current_line_ptr
-    { uint16_t tmp_ = (uint16_t)a + (uint16_t)(current_line_ptr & 0xff); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ (uint8_t)(current_line_ptr & 0xff)) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    adc((uint8_t)(current_line_ptr & 0xff));
     //     sta markers_array,x
     ((uint8_t*)markers_array)[x] = a;
     //     lda current_line_ptr+1
     a = (uint8_t)(current_line_ptr >> 8);
     //     adc #0
-    { uint16_t tmp_ = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 0) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    adc(0);
     //     sta markers_array+1,x
     ((uint8_t*)markers_array)[x+1] = a;
     //     bne loop_ca91c
     if (a != 0) goto loop_ca91c;
+
     // ca92f:
 ca92f:
     //     pla
-    //     tax
     a = saved_x; }
+    //     tax
     x = a;
     //     pla
     a = saved_a; }
@@ -11891,6 +11911,7 @@ ca92f:
     cmp(a, 0x0d);
     //     bne ca90a
     if (!(flags & FLAG_Z)) goto ca90a;
+
     // ca93a:
 ca93a:
     //     clc
@@ -12654,7 +12675,8 @@ void push_onto_ruler_index(void) {
     cab91();
     //     pla
     //     tay
-    y = saved_y; }
+    y = saved_y;
+    set_flags(y); }
     //     rts
     return;
 }
