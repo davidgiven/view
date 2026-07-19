@@ -8751,6 +8751,33 @@ static void f15_up_key(void) {
     cursor_moved_flag++;
     // return_53:
 }
+// c9d9b: Shared line-advance logic used by return_key and f14_down_key
+static void c9d9b_advance_ptr(void) {
+    //     inc cursor_moved_flag
+    cursor_moved_flag++;
+    //     lda current_line_ptr
+    //     ldy current_line_ptr+1
+    //     jsr sub_cab1a
+    a = (uint8_t)(current_line_ptr & 0xff);
+    y = (uint8_t)(current_line_ptr >> 8);
+    sub_cab1a();
+    //     beq return_54
+    if (flags & FLAG_Z) return;
+    //     tya
+    a = y;
+    //     clc
+    flags &= ~FLAG_C;
+    //     adc current_line_ptr
+    adc((uint8_t)(current_line_ptr & 0xff));
+    //     sta current_line_ptr
+    current_line_ptr = (uint16_t)((current_line_ptr & 0xff00) | a);
+    //     bcc return_54
+    if (!(flags & FLAG_C)) return;
+    //     inc current_line_ptr+1
+    current_line_ptr = (uint16_t)(current_line_ptr + 0x100);
+    // return_54:
+    //     rts
+}
 static void f14_down_key(void) {
     // Pseudocode: Moves cursor to next line
 
@@ -8761,10 +8788,9 @@ static void f14_down_key(void) {
     //     inc l0079
     l0079++;
     //     bne c9d9b
-    if (l0079 != 0) goto c9d9b;
+    if (l0079 != 0) { c9d9b_advance_ptr(); return; }
 
-    // MULTIPLE ENTRY POINTS: f14_down_key, return_key
-c9d9b:
+    //     jsr return_key
     return_key();
 }
 static void return_key(void) {
@@ -8787,7 +8813,7 @@ static void return_key(void) {
     //     jsr cab29
     cab29();
     //     bne c9d9b
-    if (!(flags & FLAG_Z)) goto c9d9b;
+    if (!(flags & FLAG_Z)) { c9d9b_advance_ptr(); return; }
     //     tya
     a = y;
     //     ldy current_line_ptr+1
@@ -8804,32 +8830,8 @@ static void return_key(void) {
 c9d98:
     //     jsr sub_c9de1
     sub_c9de1();
-    // c9d9b:
-c9d9b:
-    //     inc cursor_moved_flag
-    cursor_moved_flag++;
-    //     lda current_line_ptr
-    a = (uint8_t)(current_line_ptr & 0xff);
-    //     ldy current_line_ptr+1
-    y = (uint8_t)(current_line_ptr >> 8);
-    //     jsr sub_cab1a
-    sub_cab1a();
-    //     beq return_54
-    if (flags & FLAG_Z) return;
-    //     tya
-    a = y;
-    //     clc
-    flags &= ~FLAG_C;
-    //     adc current_line_ptr
-    adc((uint8_t)(current_line_ptr & 0xff));
-    //     sta current_line_ptr
-    current_line_ptr = (uint16_t)((current_line_ptr & 0xff00) | a);
-    //     bcc return_54
-    if (!(flags & FLAG_C)) return;
-    //     inc current_line_ptr+1
-    current_line_ptr = (uint16_t)(current_line_ptr + 0x100);
-    // return_54:
-    //     rts
+    //     // falls through to c9d9b
+    c9d9b_advance_ptr();
 }
 static void cf6_split_line_key(void) {
     // cf6_split_line_key: Splits line at cursor position
