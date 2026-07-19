@@ -113,13 +113,17 @@ void screen_clear(void) {
 
 void screen_scrollup(void) {
     if (ncurses_active) {
+        scrollok(stdscr, TRUE);
         scrl(1);
+        scrollok(stdscr, FALSE);
     }
 }
 
 void screen_scrolldown(void) {
     if (ncurses_active) {
+        scrollok(stdscr, TRUE);
         scrl(-1);
+        scrollok(stdscr, FALSE);
     }
 }
 

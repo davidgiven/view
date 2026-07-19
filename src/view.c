@@ -11036,6 +11036,11 @@ static void draw_ruler(void) {
     //     sty l0082
     l0082 = y;
     draw_line(current_ruler_ptr);
+    // The 6502 never sets flags_need_redrawing_flag in the scroll/redraw path,
+    // so draw_status_word is not called after draw_ruler.  This would leave
+    // three spaces at columns 0-2 (draw_line writes a 3-byte prefix for
+    // non-0x80 lines).  Re-enable the status-word refresh here.
+    flags_need_redrawing_flag = 1;
     //     rts
     return;
 }
