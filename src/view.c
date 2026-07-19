@@ -233,8 +233,8 @@ static uint8_t deref_and_check_for_command_prefix(void);
 static uint8_t check_for_command_prefix(uint8_t ch);
 static void sub_cab6e(void);
 static void cab29(void);
-static void push_onto_ruler_stack(void);
-static void pop_from_ruler_stack(void);
+void push_onto_ruler_stack(void);
+void pop_from_ruler_stack(void);
 static void sub_cabc4(void);
 static void sub_cac41(void);
 static void sub_cac50(void);
@@ -12600,7 +12600,7 @@ static void sub_cab6e(void) {
     //     rts
     return;
 }
-static void push_onto_ruler_stack(void) {
+void push_onto_ruler_stack(void) {
     // Pseudocode: Pushes current ruler position onto the ruler stack
 
     // push_onto_ruler_stack:
@@ -12631,7 +12631,7 @@ static void push_onto_ruler_stack(void) {
     //     rts
     return;
 }
-static void pop_from_ruler_stack(void) {
+void pop_from_ruler_stack(void) {
     // Pseudocode: Pops ruler position from the ruler stack
 
     // pop_from_ruler_stack:

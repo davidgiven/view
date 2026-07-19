@@ -1153,12 +1153,27 @@ class EditorTests(unittest.TestCase):
         )
 
     def test_highlight2(self):
-        """Type 'ab', CTRL_O+CTRL_B (highlight 2), then 'X'."""
+        """Type 'ab', CTRL_O+CTRL_B (highlight 2), then 'X' — h2 ('*') inserted, X overwrites 'a'."""
         self._test_enter_editor_and_type(
-            b"ab" + CTRL_O + CTRL_B + b"X",
+            b"ab" + CTRL_Q + CTRL_S + CTRL_O + CTRL_B + b"X",
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-                "   ab*X                                                                         ",
+                "   *Xb                                                                          ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_insert_ruler(self):
+        self._test_enter_editor_and_type(
+            b"Normal text"+CTRL_M +
+            CTRL_O+CTRL_R+b"        >"+CTRL_M+
+            b"Indented text"
+            ,
+            [
+                "MJ         >......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   Normal text                                                                  ",
+                "..         >......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "           Indented text                                                        ",
                 "********************************************************************************",
             ],
         )
