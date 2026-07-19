@@ -1031,6 +1031,50 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_swap_case(self):
+        """Type 'ABC', go to start, CTRL_P three times — uppercase letters become lowercase."""
+        self._test_enter_editor_and_type(
+            b"ABC" + CTRL_Q + CTRL_S + CTRL_P + CTRL_P + CTRL_P,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abc                                                                          ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_swap_case_lowercase_unchanged(self):
+        """Lowercase 'abc', CTRL_P — no change (only uppercase→lowercase)."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_Q + CTRL_S + CTRL_P + CTRL_P + CTRL_P,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abc                                                                          ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_swap_case_non_alpha_unchanged(self):
+        """Non-alphabetic '123!@#', CTRL_P — no change, cursor moves past."""
+        self._test_enter_editor_and_type(
+            b"123!@#" + CTRL_Q + CTRL_S + CTRL_P + CTRL_P + CTRL_P + CTRL_P + CTRL_P + CTRL_P,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   123!@#                                                                       ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_swap_case_mixed(self):
+        """Mixed 'A1b2C', CTRL_P — only uppercase letters (A,C) lowercased."""
+        self._test_enter_editor_and_type(
+            b"A1b2C" + CTRL_Q + CTRL_S + CTRL_P + CTRL_P + CTRL_P + CTRL_P + CTRL_P,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   a1b2c                                                                        ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
         self.assertIn(
