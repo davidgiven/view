@@ -770,6 +770,17 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_go_to_beginning_and_end_of_line(self):
+        """Type 'abc def', go to beginning (CTRL_Q+CTRL_S), overwrite with 'X', go to end (CTRL_Q+CTRL_D), append 'Y'."""
+        self._test_enter_editor_and_type(
+            b"abc def" + CTRL_Q + CTRL_S + b"X" + CTRL_Q + CTRL_D + b"Y",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   Xbc defY                                                                     ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
         self.assertIn(
