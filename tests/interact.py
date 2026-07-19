@@ -1075,6 +1075,72 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_insert_mode_at_beginning(self):
+        """Type 'abc', go to start, CTRL_V (insert mode), 'XYZ' — inserted at beginning."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_Q + CTRL_S + CTRL_V + b"XYZ",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   XYZabc                                                                       ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_insert_mode_at_middle(self):
+        """Type 'abc', go to second char, CTRL_V, 'XYZ' — inserted in middle."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_Q + CTRL_S + KEY_RIGHT + CTRL_V + b"XYZ",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   aXYZbc                                                                       ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_insert_mode_at_end(self):
+        """Type 'abc', go to end, CTRL_V, 'XYZ' — appended at end."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_Q + CTRL_D + CTRL_V + b"XYZ",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abcXYZ                                                                       ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_insert_mode_toggle_off_at_beginning(self):
+        """CTRL_V on, insert 'XYZ', toggle off, type '123' — 123 overwrites."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_Q + CTRL_S + CTRL_V + b"XYZ" + CTRL_V + b"123",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   XYZ123                                                                       ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_insert_mode_toggle_off_at_middle(self):
+        """Insert mode on, insert 'XY', toggle off, '12' overwrites."""
+        self._test_enter_editor_and_type(
+            b"abcde" + CTRL_Q + CTRL_S + KEY_RIGHT + KEY_RIGHT + CTRL_V + b"XY" + CTRL_V + b"12",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abXY12e                                                                      ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_insert_mode_toggle_off_at_end(self):
+        """Insert mode on, append 'XY', toggle off, '12' overwrites past end (appends)."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_Q + CTRL_D + CTRL_V + b"XY" + CTRL_V + b"12",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abcXY12                                                                      ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
         self.assertIn(
