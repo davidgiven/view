@@ -12293,23 +12293,21 @@ static void sub_caa97(void) {
     //     jsr check_for_command_prefix
     flags = check_for_command_prefix(a);
     //     bne caab7
-    if (flags & FLAG_Z) {
-        // Z=1 (0x80 or 0x81)
-        //     bcs caab0
-        if (flags & FLAG_C) {
-            // 0x80 case: goto caab0
-        }
-        //     sta l006e (0x81 case or bcc)
-        if (!(flags & FLAG_C)) edit_buffer_unpacked_flag = a;
-        // caab0:
-        //     jsr caf5c
-        caf5c();
+    if (!(flags & FLAG_Z)) goto caab7;
+    //     bcs caab0
+    if (flags & FLAG_C) goto caab0;
+    //     sta l006e
+    edit_buffer_unpacked_flag = a;
+    // caab0:
+caab0:
+    //     jsr caf5c
+    caf5c();
         //     ldx ptr1
         x = (uint8_t)(ptr1 & 0xff);
         //     ldy ptr1+1
         y = (uint8_t)((ptr1 >> 8) & 0xff);
-    }
     // caab7:
+caab7:
     //     stx current_format_line_ptr
     current_format_line_ptr = (current_format_line_ptr & 0xff00) | x;
     //     sty current_format_line_ptr+1
@@ -12317,20 +12315,21 @@ static void sub_caa97(void) {
     //     ldy #0
     y = 0;
     // loop_caabd:
-    while (1) {
-        //     lda (current_line_ptr),y
-        a = ram[current_line_ptr + y];
-        //     cmp #0x0d
-        //     beq caac8
-        if (a == 0x0d) break;
-        //     sta (current_format_line_ptr),y
-        ram[current_format_line_ptr + y] = a;
-        //     iny
-        y++;
-        //     bne loop_caabd
-        if (y == 0) break;
-    }
+loop_caabd:
+    //     lda (current_line_ptr),y
+    a = ram[current_line_ptr + y];
+    //     cmp #0x0d
+    cmp(a, 0x0d);
+    //     beq caac8
+    if (flags & FLAG_Z) goto caac8;
+    //     sta (current_format_line_ptr),y
+    ram[current_format_line_ptr + y] = a;
+    //     iny
+    y++;
+    //     bne loop_caabd
+    if (y != 0) goto loop_caabd;
     // caac8:
+caac8:
     //     sty l003b
     l003b = y;
     // return_68:
@@ -12370,7 +12369,7 @@ caad5:
     //     clc
     flags &= ~FLAG_C;
     //     adc current_format_line_ptr
-    { uint16_t sum = (uint16_t)a + (uint8_t)(current_format_line_ptr & 0xff); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc((uint8_t)(current_format_line_ptr & 0xff));
     //     sta __begin_pointer_array,x
     ((uint8_t*)markers_array)[x] = a;
     //     lda current_format_line_ptr+1
@@ -12411,8 +12410,6 @@ static void get_line_length(void) {
     { uint8_t saved_f = flags;
     //     ldy #0x84
     y = 0x84;
-    //     ldy #0x84
-    y = 0x84;
     // loop_caafb:
 loop_caafb:
     //     dey
@@ -12444,7 +12441,7 @@ cab06:
     //     clc
     flags &= ~FLAG_C;
     //     adc #3
-    { uint16_t tmp_ = (uint16_t)a + 3; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 3) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    adc(3);
     // return_69:
 return_69:
     //     rts
