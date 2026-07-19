@@ -975,6 +975,50 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_edit_command_immediate_exit(self):
+        """Type 'Hello', CTRL_O+CTRL_C, CR — enter and exit edit command, no change."""
+        self._test_enter_editor_and_type(
+            b"Hello" + CTRL_O + CTRL_C + CTRL_M,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   Hello                                                                        ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_edit_command_set_and_change(self):
+        """Set command 'AB', then change to 'CD'."""
+        self._test_enter_editor_and_type(
+            b"Hello" + CTRL_O + CTRL_C + b"AB" + CTRL_M + CTRL_O + CTRL_C + b"CD" + CTRL_M,
+            [
+                "MJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "CD Hello                                                                        ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_edit_command_set_then_immediate_exit(self):
+        """Set command 'AB', then enter edit command again and exit immediately — command unchanged."""
+        self._test_enter_editor_and_type(
+            b"Hello" + CTRL_O + CTRL_C + b"AB" + CTRL_M + CTRL_O + CTRL_C + CTRL_M,
+            [
+                "MJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "AB Hello                                                                        ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_edit_command_set_then_delete(self):
+        """Set command 'AB', then delete it with CTRL_O+CTRL_D — returns to normal."""
+        self._test_enter_editor_and_type(
+            b"Hello" + CTRL_O + CTRL_C + b"AB" + CTRL_M + CTRL_O + CTRL_D,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   Hello                                                                        ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_delete_line_at_end(self):
         """Type three lines, CTRL_Y — deletes last line (cursor already on it)."""
         self._test_enter_editor_and_type(
