@@ -9446,10 +9446,119 @@ static void sf12_left_key(void) {
 //     rts
 }
 static void sf13_right_key(void) {
-    // Pseudocode: Moves cursor right by one word
+    // sf13_right_key: Moves cursor right by one word
+    uint8_t line_len;
 
-    // MULTIPLE ENTRY POINTS: sf12_left_key, sf13_right_key
-    sub_c9f80();
+entry:
+    //     lda current_edit_line_ptr
+    a = (uint8_t)(current_edit_line_ptr & 0xff);
+    //     sta tmp0
+    tmp0 = a;
+    //     lda current_edit_line_ptr+1
+    a = (uint8_t)(current_edit_line_ptr >> 8);
+    //     sta tmp1
+    tmp1 = a;
+    //     jsr get_line_length
+    get_line_length();
+    //     sty input_buffer_ptr+1
+    line_len = y;
+    //     cpy xpos
+    //     bcc c9fab
+    if (y < xpos) goto c9fab;
+    //     beq c9fab
+    if (y == xpos) goto c9fab;
+    //     ldy xpos
+    y = xpos;
+    // loop_c9ff8:
+    goto loop_c9ff8;
+
+c9fab:
+    // c9fab:  (when cursor is at or past end of line, move to next line)
+    //     sty xpos
+    xpos = y;
+    //     jsr ca93c
+    write_line_back_to_document_safely();
+    //     lda current_line_ptr
+    a = (uint8_t)(current_line_ptr & 0xff);
+    //     ldy current_line_ptr+1
+    y = (uint8_t)(current_line_ptr >> 8);
+    //     jsr sub_cab1a
+    sub_cab1a();
+    //     beq return_58
+    if (flags & FLAG_Z) return;
+    //     tya
+    a = y;
+    //     clc
+    flags &= ~FLAG_C;
+    //     adc current_line_ptr
+    adc((uint8_t)(current_line_ptr & 0xff));
+    //     sta current_line_ptr
+    current_line_ptr = (uint16_t)((current_line_ptr & 0xff00) | a);
+    //     bcc c9fc3
+    if (!(flags & FLAG_C)) goto c9fc3;
+    //     inc current_line_ptr+1
+    current_line_ptr = (uint16_t)(current_line_ptr + 0x100);
+    // c9fc3:
+c9fc3:
+    //     jsr sub_caa97
+    sub_caa97();
+    //     dec l006f
+    l006f--;
+    //     jsr c9e94
+    c9e94();
+    //     jsr get_line_length
+    get_line_length();
+    //     cpy xpos
+    if (y == xpos) return;          // xpos == 0, empty line
+    //     lda current_edit_line_ptr
+    a = (uint8_t)(current_edit_line_ptr & 0xff);
+    //     sta tmp0
+    tmp0 = a;
+    //     lda current_edit_line_ptr+1
+    a = (uint8_t)(current_edit_line_ptr >> 8);
+    //     sta tmp1
+    tmp1 = a;
+    //     ldy xpos
+    y = 0;
+    //     jsr draw_char
+    draw_char();
+    //     cmp #0x20 ; ' '
+    cmp(a, 0x20);
+    //     bne return_58
+    if (!(flags & FLAG_Z)) return;
+    //     (fall through — line starts with space, scan forward as usual)
+    goto entry;
+
+loop_c9ff8:
+    //     cpy input_buffer_ptr+1
+    //     bcs ca00f
+    if (y >= line_len) goto ca00f;
+    //     jsr draw_char
+    draw_char();
+    //     cmp #0x20 ; ' '
+    cmp(a, 0x20);
+    //     bne loop_c9ff8
+    if (!(flags & FLAG_Z)) goto loop_c9ff8;
+
+loop_ca003:
+    //     cpy input_buffer_ptr+1
+    //     bcs ca00f
+    if (y >= line_len) goto ca00f;
+    //     jsr draw_char
+    draw_char();
+    //     cmp #0x20 ; ' '
+    cmp(a, 0x20);
+    //     beq loop_ca003
+    if (flags & FLAG_Z) goto loop_ca003;
+    //     dey
+    y--;
+
+ca00f:
+    //     sty xpos
+    xpos = y;
+return_58:
+    //     rts
+    return;
 }
 static void set_marker(void);
 static void set_marker_common(void);

@@ -781,6 +781,51 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_word_left(self):
+        """Type 'abc def', go to end, word left (CTRL_A), overwrite with 'X' — X should replace 'd' at start of 'def'."""
+        self._test_enter_editor_and_type(
+            b"abc def" + CTRL_Q + CTRL_D + CTRL_A + b"X",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abc Xef                                                                      ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_word_right(self):
+        self._test_enter_editor_and_type(
+            b"abc def" + CTRL_Q + CTRL_S + CTRL_F + b"X",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abc Xef                                                                      ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_word_left_at_line_start_wraps_to_previous_line(self):
+        """Type two lines, go to start of line 2, word left twice — wraps to previous line start."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_M + b"def" + CTRL_Q + CTRL_S + CTRL_A + CTRL_A + b"X",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   Xbc                                                                          ",
+                "   def                                                                          ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_word_right_at_line_end_wraps_to_next_line(self):
+        """Type two lines, go to start of line 1, word right twice — wraps to start of line 2."""
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_M + b"def" + KEY_UP + CTRL_Q + CTRL_S + CTRL_F + CTRL_F + b"X",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abc                                                                          ",
+                "   Xef                                                                          ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
         self.assertIn(
