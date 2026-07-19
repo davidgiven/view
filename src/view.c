@@ -214,7 +214,7 @@ static void get_next_fmt_cmd_byte(void);
 static void sub_c9e9b(void);
 static void sub_caa97(void);
 
-static void sub_cab37(void);
+static void move_tmp01_to_previous_line(void);
 static void sub_ca0af(void);
 static void draw_previous_word(void);
 static void draw_char(void);
@@ -232,7 +232,7 @@ static void sub_caf5f(void);
 static uint8_t deref_and_check_for_command_prefix(void);
 static uint8_t check_for_command_prefix(uint8_t ch);
 static void sub_cab6e(void);
-static void cab29(void);
+static void move_tmp01_to_next_line(void);
 void push_onto_ruler_index(void);
 void pop_from_ruler_index(void);
 static void sub_cabc4(void);
@@ -8734,7 +8734,7 @@ static void f15_up_key(void) {
     //     ldy current_line_ptr+1
     y = (uint8_t)(current_line_ptr >> 8);
     //     jsr sub_cab37
-    sub_cab37();
+    move_tmp01_to_previous_line();
     //     bcc return_53
     if (!(flags & FLAG_C)) return;
     //     lda tmp0
@@ -8811,7 +8811,7 @@ static void return_key(void) {
     //     sta tmp1
     tmp1 = a;
     //     jsr cab29
-    cab29();
+    move_tmp01_to_next_line();
     //     bne c9d9b
     if (!(flags & FLAG_Z)) { c9d9b_advance_ptr(); return; }
     //     tya
@@ -9099,7 +9099,7 @@ static void f7_delete_line_key(void) {
     //     ldy current_line_ptr+1
     y = (uint8_t)(current_line_ptr >> 8);
     //     jsr sub_cab37
-    sub_cab37();
+    move_tmp01_to_previous_line();
     //     lda tmp0
     a = tmp0;
     //     sta current_line_ptr
@@ -9176,7 +9176,7 @@ static void cf7_join_lines_key(void) {
     //     sta tmp1
     tmp1 = a;
     //     jsr cab29
-    cab29();
+    move_tmp01_to_next_line();
     //     beq c9eda
     if (flags & FLAG_Z) { beep(); return; }
     //     jsr check_for_command_prefix
@@ -9409,7 +9409,7 @@ static void sub_c9f80(void) {
     //     ldy current_line_ptr+1
     y = current_line_ptr >> 8;
     //     jsr sub_cab37
-    sub_cab37();
+    move_tmp01_to_previous_line();
     //     bcc return_56
     if (!(flags & FLAG_C)) return;
     //     lda tmp0
@@ -9761,7 +9761,7 @@ static void sub_ca071(void) {
         //     sty tmp3
         tmp3 = y;
         //     jsr sub_cab37
-        sub_cab37();
+        move_tmp01_to_previous_line();
         //     lda tmp0
         a = tmp0;
         //     ldy tmp1
@@ -10111,7 +10111,7 @@ ca29c:
     // ca2b2:                                                              (5239)
 ca2b2:
     //     jsr sub_cab37                                                   (5240)
-    sub_cab37();
+    move_tmp01_to_previous_line();
     //     ldy tmp1                                                        (5241)
     y = tmp1;
     //     cpy current_line_ptr+1                                          (5242)
@@ -10611,7 +10611,7 @@ loop_ca465:
     //     sty tmp3
     tmp3 = y;
     //     jsr sub_cab37
-    sub_cab37();
+    move_tmp01_to_previous_line();
     //     lda tmp0
     a = tmp0;
     //     ldy tmp1
@@ -12479,15 +12479,15 @@ static void sub_cab1a(void) {
     //     jsr sub_cab6e
     sub_cab6e();
     //     bne cab29
-    if (!(flags & FLAG_Z)) { cab29(); return; }
+    if (!(flags & FLAG_Z)) { move_tmp01_to_next_line(); return; }
     //     jsr cab29
-    cab29();
+    move_tmp01_to_next_line();
     //     bne push_onto_ruler_stack
     if (!(flags & FLAG_Z)) { push_onto_ruler_index(); return; }
     //     rts
     return;
 }
-static void cab29(void) {
+static void move_tmp01_to_next_line(void) {
     // Pseudocode: Skips to next CR or zero terminator in memory
 
     // cab29:
@@ -12497,7 +12497,7 @@ static void cab29(void) {
 loop_cab2b:
     //     lda (tmp0),y
     a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
-    flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
+    set_flags(a);
     //     beq return_70
     if (flags & FLAG_Z) goto return_70;
     //     iny
@@ -12508,24 +12508,24 @@ loop_cab2b:
     if (!(flags & FLAG_Z)) goto loop_cab2b;
     //     lda (tmp0),y
     a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
-    flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
+    set_flags(a);
     // return_70:
 return_70:
     //     rts
     return;
 }
-static void sub_cab37(void) {
-    // Pseudocode: Finds previous line in document, handling ruler stack
-
+static void move_tmp01_to_previous_line(void) {
     // sub_cab37:
     //     sec
     flags |= FLAG_C;
     //     sbc #1
-    { uint8_t old_a = a; a = a - 1 - (1 - (flags & FLAG_C)); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (old_a >= 1 ? FLAG_C : 0); }
+    sbc(1);
     //     sta tmp0
     tmp0 = a;
     //     bcs cab3f
-    if (!(flags & FLAG_C)) y--;
+    if (flags & FLAG_C) goto cab3f;
+    //     dey
+    y--;
     // cab3f:
 cab3f:
     //     sty tmp1
@@ -12547,15 +12547,17 @@ cab4b:
     // loop_cab4d:
 loop_cab4d:
     //     lda tmp0
+    a = tmp0;
     //     sec
-    //     sbc #1
-    //     sta tmp0
-    //     bcs cab58
-    //     dec tmp1
     flags |= FLAG_C;
-    { uint8_t old_a = tmp0; a = tmp0 - 1 - (1 - (flags & FLAG_C)); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (old_a >= 1 ? FLAG_C : 0); }
+    //     sbc #1
+    sbc(1);
+    //     sta tmp0
     tmp0 = a;
-    if (!(flags & FLAG_C)) tmp1--;
+    //     bcs cab58
+    if (flags & FLAG_C) goto cab58;
+    //     dec tmp1
+    tmp1--;
     // cab58:
 cab58:
     //     lda (tmp0),y
@@ -12584,6 +12586,7 @@ cab6c:
     //     sec
     flags |= FLAG_C;
     // return_71:
+return_71:
     //     rts
     return;
 }
@@ -12767,7 +12770,7 @@ static void move_cursor_to_address(void) {
     // cabdf:
 cabdf:
     //     jsr sub_cab37
-    sub_cab37();
+    move_tmp01_to_previous_line();
     //     lda tmp0
     a = tmp0;
     //     ldy tmp1
@@ -12800,7 +12803,7 @@ cabf9:
     //     sty tmp1
     tmp1 = y;
     //     jsr cab29
-    cab29();
+    move_tmp01_to_next_line();
     //     beq cac17
     if (flags & FLAG_Z) goto cac17;
     //     tya

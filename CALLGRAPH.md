@@ -94,14 +94,14 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **f12_left_key** [l0072, xpos]
 - **f13_right_key** [xpos]
 - **f14_down_key** → return_key, write_line_back_to_document_safely [l0079]
-- **f15_up_key** → sub_cab37, write_line_back_to_document_safely [cursor_moved_flag, current_line_ptr, l0079, tmp1, tmp0]
+- **f15_up_key** → move_tmp01_to_previous_line, write_line_back_to_document_safely [cursor_moved_flag, current_line_ptr, l0079, tmp1, tmp0]
 - **f1_top_of_text_key** → sub_ca071, sub_caa97 [l006f]
 - **f2_bottom_of_text_key** → sub_c9e9b, sub_ca0af, sub_caa97 [l006f]
 - **f3_delete_to_eol_key** → cae64 [l0074, xpos]
 - **f4_beginning_of_line_key** → c9e94 [cursor_moved_flag]
 - **f5_end_of_line_key** → sub_c9e9b [cursor_moved_flag]
 - **f6_insert_line_key** → sub_c9de1, write_line_back_to_document_safely [current_line_ptr, l0079]
-- **f7_delete_line_key** → adjust_pointers, ca741, cb05a, sub_cab37, write_line_back_to_document_safely [cursor_moved_flag, current_line_ptr, l003b, l0079, tmp5, tmp4, tmp7, tmp1, tmp0, tmp6]
+- **f7_delete_line_key** → adjust_pointers, ca741, cb05a, move_tmp01_to_previous_line, write_line_back_to_document_safely [cursor_moved_flag, current_line_ptr, l003b, l0079, tmp5, tmp4, tmp7, tmp1, tmp0, tmp6]
 - **f8_insert_char_key** → sub_c9e22
 - **f9_delete_char_key** → cae64 [l0074]
 - **field_cmd** → parse_integer_from_command, return_to_cli_prompt [current_tab_key, tmp8]
@@ -150,7 +150,7 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **microspace_word_processor** → print_char, print_vertical_space, sub_c9173, sub_c9431, sub_cadf0 [microspacing_flag, ruler_right_stop, output_buffer, l0039, l0021, l0045, l0043, l0046, l0047, l0042, l0083, l0048, l0080, l0044, tmp8, tmp9, tmp1, tmp0]
 - **mode_cmd** → return_to_cli_prompt
 - **more_cmd** → cb05a, check_continuous_editing, check_for_at_least_150_bytes_free, move_cursor_to_address, move_cursor_to_top_of_document, parse_marks_from_command, read_next_chunk_from_input_file, return_to_cli_prompt, select_file, sub_c89d3, write_area_to_file [input_file_empty_flag, current_ruler_buffer, current_ruler_ptr, area_start_ptr, l003a, top]
-- **move_cursor_to_address** → cab29, check_for_command_prefix, sub_cab37, sub_cac41 [current_line_ptr, tmp8, tmp9, tmp1, tmp0, xpos]
+- **move_cursor_to_address** → cab29, check_for_command_prefix, move_tmp01_to_previous_line, sub_cac41 [current_line_ptr, tmp8, tmp9, tmp1, tmp0, xpos]
 - **move_cursor_to_top_of_document** → cab91 [top_of_screen_line_ptr, current_line_ptr, ruler_index_ptr, l0033, xpos, page]
 - **name_cmd** → check_not_continuous_editing, parse_optional_filename_from_command, reset_document_name_after_load [file_edit_flags]
 - **nested_macro_error** → return_to_cli_prompt, stop_printing
@@ -198,7 +198,7 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **read_next_chunk_from_input_file** → read_block_from_file, select_file, sub_c8da2 [input_file_empty_flag, tmp1, tmp0, top] (returns: Z)
 - **readline** [input_buffer_offset, input_buffer]
 - **recalculate_cursor_xpos** → process_current_document_character [current_edit_line_ptr, l0072, l0039, l0079, tmp1, tmp0, xpos]
-- **redraw_editor** → cab91, cursor_off, cursor_on, draw_line, draw_ruler, draw_status_word, recalculate_cursor_xpos, sub_ca44e, sub_caacb, sub_cab1a, sub_cab37, unpack_line_into_buffer, write_line_back_to_document_safely [status_line_needs_redrawing_flag, edit_buffer_unpacked_flag, flags_need_redrawing_flag, current_format_line_ptr, top_of_screen_line_ptr, current_line_ptr, screen_maxcolumn, ruler_index_ptr, screen_...]
+- **redraw_editor** → cab91, cursor_off, cursor_on, draw_line, draw_ruler, draw_status_word, recalculate_cursor_xpos, sub_ca44e, sub_caacb, sub_cab1a, move_tmp01_to_previous_line, unpack_line_into_buffer, write_line_back_to_document_safely [status_line_needs_redrawing_flag, edit_buffer_unpacked_flag, flags_need_redrawing_flag, current_format_line_ptr, top_of_screen_line_ptr, current_line_ptr, screen_maxcolumn, ruler_index_ptr, screen_...]
 - **render_char** → check_for_control_code, sub_ca536 [screen_maxcolumn, line_lengths, l0084, l0082, l0083]
 - **render_header_or_footer** → c937b, sub_c9393, sub_c939b, sub_c93a1, sub_c93be, sub_c93c8, sub_c93fd, sub_c9407, sub_c941a [l0039, l0081, l0082, tmp5, tmp4]
 - **render_new_page** → flush_and_read_char, print_newline, print_vertical_space, render_header_or_footer, render_number_to_screen, return_to_cli_prompt, start_printing, stop_printing, sub_c92f0 [headers_enabled_flag, header_text_maybe, header_margin, print_flags, top_margin, l0031, l0038]
@@ -297,17 +297,17 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **sub_c9de1** → ca741, make_space_for_insertion, memory_full [cursor_moved_flag, tmp5, tmp4, tmp7, tmp6]
 - **sub_c9e22** → sub_cae06 [current_edit_line_ptr, l0074] (returns: C)
 - **sub_c9e9b** → get_line_length [xpos]
-- **sub_c9f80** → sub_c9e9b, sub_caa97, sub_cab37, write_line_back_to_document_safely [current_line_ptr, l006f, tmp1, tmp0]
-- **sub_ca071** → sub_cab37, write_line_back_to_document_safely [cursor_moved_flag, current_line_ptr, l0080, tmp2, tmp3, tmp1, tmp0]
+- **sub_c9f80** → sub_c9e9b, sub_caa97, move_tmp01_to_previous_line, write_line_back_to_document_safely [current_line_ptr, l006f, tmp1, tmp0]
+- **sub_ca071** → move_tmp01_to_previous_line, write_line_back_to_document_safely [cursor_moved_flag, current_line_ptr, l0080, tmp2, tmp3, tmp1, tmp0]
 - **sub_ca0af** → sub_cab1a, write_line_back_to_document_safely [cursor_moved_flag, current_line_ptr, l0080, tmp1, tmp0]
 - **sub_ca1cc** → beep, cac78, make_space_for_insertion, move_cursor_to_address, show_memory_full_error [cursor_moved_flag, area_start_ptr, area_end_ptr, doc_ptr1, l0073, tmp2, tmp5, tmp8, tmp4, tmp3, tmp9, tmp7, tmp6] (returns: C)
-- **sub_ca44e** → sub_cab37 [top_of_screen_line_ptr, current_line_ptr, ruler_index_ptr, screen_maxrow, l0073, l006f, l0034, l0033, tmp2, ypos, tmp3, tmp1, tmp0]
+- **sub_ca44e** → move_tmp01_to_previous_line [top_of_screen_line_ptr, current_line_ptr, ruler_index_ptr, screen_maxrow, l0073, l006f, l0034, l0033, tmp2, ypos, tmp3, tmp1, tmp0]
 - **sub_ca4d7** → process_current_document_character, render_char
 - **sub_ca536** [markers_array, tmp8, tmp9, tmp7, tmp6] (returns: Z)
 - **sub_caa97** → caf5c, check_for_command_prefix, sub_caf5f, wipe_buffer [edit_buffer_unpacked_flag, current_format_line_ptr, current_edit_line_ptr, current_line_ptr, l003b, ptr1]
 - **sub_caacb** → sub_ca536 [current_format_line_ptr, current_line_ptr, markers_array, tmp7, tmp6]
 - **sub_cab1a** → cab29, push_onto_ruler_index, sub_cab6e [tmp1, tmp0] (returns: Z)
-- **sub_cab37** → pop_from_ruler_index, sub_cab6e [tmp1, tmp0, page] (returns: C)
+- **move_tmp01_to_previous_line** → pop_from_ruler_index, sub_cab6e [tmp1, tmp0, page] (returns: C)
 - **sub_cab6e** [tmp1, tmp0] (returns: Z)
 - **sub_cabc4** [ruler_right_stop, ruler_left_stop]
 - **sub_cac41** → push_onto_ruler_index, sub_cab6e
