@@ -693,6 +693,83 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_go_to_top_of_file(self):
+        """Type numbers 1 to 30, then go to top — viewport should show lines 1-23."""
+        keys = b""
+        for i in range(1, 31):
+            keys += str(i).encode("ascii")
+            if i < 30:
+                keys += CTRL_M
+        keys += CTRL_Q + CTRL_R
+        self._test_enter_editor_and_type(
+            keys,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   1                                                                            ",
+                "   2                                                                            ",
+                "   3                                                                            ",
+                "   4                                                                            ",
+                "   5                                                                            ",
+                "   6                                                                            ",
+                "   7                                                                            ",
+                "   8                                                                            ",
+                "   9                                                                            ",
+                "   10                                                                           ",
+                "   11                                                                           ",
+                "   12                                                                           ",
+                "   13                                                                           ",
+                "   14                                                                           ",
+                "   15                                                                           ",
+                "   16                                                                           ",
+                "   17                                                                           ",
+                "   18                                                                           ",
+                "   19                                                                           ",
+                "   20                                                                           ",
+                "   21                                                                           ",
+                "   22                                                                           ",
+                "   23                                                                           ",
+            ],
+        )
+
+    def test_go_to_bottom_of_file(self):
+        """Type numbers 1 to 30, go to top, then go to bottom — viewport shows lines 19-30 (sub_ca44e recenters cursor at ~row 12), remaining rows blank."""
+        keys = b""
+        for i in range(1, 31):
+            keys += str(i).encode("ascii")
+            if i < 30:
+                keys += CTRL_M
+        keys += CTRL_Q + CTRL_R  # go to top
+        keys += CTRL_Q + CTRL_C  # go to bottom
+        self._test_enter_editor_and_type(
+            keys,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   19                                                                           ",
+                "   20                                                                           ",
+                "   21                                                                           ",
+                "   22                                                                           ",
+                "   23                                                                           ",
+                "   24                                                                           ",
+                "   25                                                                           ",
+                "   26                                                                           ",
+                "   27                                                                           ",
+                "   28                                                                           ",
+                "   29                                                                           ",
+                "   30                                                                           ",
+                "********************************************************************************",
+                "                                                                                ",
+                "                                                                                ",
+                "                                                                                ",
+                "                                                                                ",
+                "                                                                                ",
+                "                                                                                ",
+                "                                                                                ",
+                "                                                                                ",
+                "                                                                                ",
+                "                                                                                ",
+            ],
+        )
+
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
         self.assertIn(
