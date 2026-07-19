@@ -9034,9 +9034,11 @@ static void sf5_highlight2_key(void) {
 static void tab_highlight_common(void) {
     // c9e3a:
     //     pha
+    {   uint8_t saved_a = a;
     //     jsr sub_caef4
     sub_caef4();
     //     pla
+    a = saved_a; }
     //     bcs return_55
     if (flags & FLAG_C) return;
     //     jsr sub_c9e22

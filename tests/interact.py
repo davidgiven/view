@@ -1141,6 +1141,28 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_highlight1(self):
+        """Type 'ab', CTRL_O+CTRL_U (highlight 1), then 'X'."""
+        self._test_enter_editor_and_type(
+            b"ab" + CTRL_O + CTRL_U + b"X",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   ab-X                                                                         ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_highlight2(self):
+        """Type 'ab', CTRL_O+CTRL_B (highlight 2), then 'X'."""
+        self._test_enter_editor_and_type(
+            b"ab" + CTRL_O + CTRL_B + b"X",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   ab*X                                                                         ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
         self.assertIn(
