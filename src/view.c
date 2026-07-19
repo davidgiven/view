@@ -12664,7 +12664,7 @@ static void cab91(void) {
     //     lda (oshwm),y
     a = ram[oshwm + y];
     //     adc #3
-    { uint16_t tmp_ = (uint16_t)a + 3; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 3) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    adc(3);
     //     sta current_ruler_ptr
     current_ruler_ptr = (current_ruler_ptr & 0xff00) | a;
     //     dey
@@ -12672,7 +12672,7 @@ static void cab91(void) {
     //     lda (oshwm),y
     a = ram[oshwm + y];
     //     adc #0
-    { uint16_t tmp_ = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 0) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    adc(0);
     //     sta current_ruler_ptr+1
     current_ruler_ptr = (current_ruler_ptr & 0x00ff) | ((uint16_t)a << 8);
     // MULTIPLE ENTRY POINTS: pop_from_ruler_stack, cab91
@@ -12743,51 +12743,51 @@ static void sub_cabc4(void) {
     return;
 }
 static void move_cursor_to_address(void) {
-    // Pseudocode: Moves cursor to a given memory address, handling ruler stack and setting xpos
-
     // move_cursor_to_address:
     //     sta tmp8
-    //     sty tmp9
     tmp8 = a;
+    //     sty tmp9
     tmp9 = y;
     //     lda current_line_ptr
-    //     ldy current_line_ptr+1
-    //     cpy tmp9
-    //     bcc cabf9
-    //     bne cabdf
-    //     cmp tmp8
-    //     bcc cabf9
-    //     beq cac20
     a = (uint8_t)(current_line_ptr & 0xff);
+    //     ldy current_line_ptr+1
     y = (uint8_t)(current_line_ptr >> 8);
+    //     cpy tmp9
     cmp(y, tmp9);
+    //     bcc cabf9
     if (!(flags & FLAG_C)) goto cabf9;
+    //     bne cabdf
     if (!(flags & FLAG_Z)) goto cabdf;
+    //     cmp tmp8
     cmp(a, tmp8);
+    //     bcc cabf9
     if (!(flags & FLAG_C)) goto cabf9;
+    //     beq cac20
     if (flags & FLAG_Z) goto cac20;
     // cabdf:
 cabdf:
     //     jsr sub_cab37
     sub_cab37();
     //     lda tmp0
+    a = tmp0;
     //     ldy tmp1
+    y = tmp1;
     //     bcc cac20
-    if (!(flags & FLAG_C)) { a = tmp0; y = tmp1; goto cac20; }
+    if (!(flags & FLAG_C)) goto cac20;
     //     cpy tmp9
-    { uint16_t tmp_ = tmp1 - tmp9; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp1 >= tmp9 ? FLAG_C : 0); }
+    cmp(y, tmp9);
     //     bcc cac20
-    if (!(flags & FLAG_C)) { a = tmp0; y = tmp1; goto cac20; }
+    if (!(flags & FLAG_C)) goto cac20;
     //     bne cabdf
     if (!(flags & FLAG_Z)) goto cabdf;
     //     cmp tmp8
-    { uint16_t tmp_ = tmp0 - tmp8; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp0 >= tmp8 ? FLAG_C : 0); }
+    cmp(a, tmp8);
     //     bcc cac20
-    if (!(flags & FLAG_C)) { a = tmp0; y = tmp1; goto cac20; }
+    if (!(flags & FLAG_C)) goto cac20;
     //     bne cabdf
     if (!(flags & FLAG_Z)) goto cabdf;
-    //     beq cac20
-    { a = tmp0; y = tmp1; goto cac20; }
+    //     beq cac20                                                         ; ALWAYS branch
+    goto cac20;
 
     // cabf6:
 cabf6:
@@ -12796,8 +12796,8 @@ cabf6:
     // cabf9:
 cabf9:
     //     sta tmp0
-    //     sty tmp1
     tmp0 = a;
+    //     sty tmp1
     tmp1 = y;
     //     jsr cab29
     cab29();
@@ -12810,7 +12810,7 @@ cabf9:
     //     clc
     flags &= ~FLAG_C;
     //     adc tmp0
-    { uint16_t tmp_ = (uint16_t)a + tmp0; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ tmp0) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    adc(tmp0);
     //     bcc cac0b
     if (!(flags & FLAG_C)) goto cac0b;
     //     iny
@@ -12832,10 +12832,10 @@ cac0b:
     // cac17:
 cac17:
     //     lda tmp0
-    //     ldy tmp1
-    //     bne cac20
     a = tmp0;
+    //     ldy tmp1
     y = tmp1;
+    //     bne cac20
     goto cac20;
     // cac1d:
 cac1d:
@@ -12847,11 +12847,12 @@ cac20:
     //     sty current_line_ptr+1
     current_line_ptr = ((uint16_t)y << 8) | a;
     //     lda tmp8
+    a = tmp8;
     //     sec
-    //     sbc current_line_ptr
-    //     tax
     flags |= FLAG_C;
-    { uint8_t old_a = tmp8; a = tmp8 - (uint8_t)(current_line_ptr & 0xff) - (1 - (flags & FLAG_C)); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (old_a >= (uint8_t)(current_line_ptr & 0xff) ? FLAG_C : 0); }
+    //     sbc current_line_ptr
+    sbc((uint8_t)(current_line_ptr & 0xff));
+    //     tax
     x = a;
     //     ldy #0
     y = 0;
@@ -12872,7 +12873,7 @@ cac20:
     //     sec
     flags |= FLAG_C;
     //     sbc #3
-    { uint8_t old_a = a; a = a - 3 - (1 - (flags & FLAG_C)); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | (old_a >= 3 ? FLAG_C : 0); }
+    sbc(3);
     //     tax
     x = a;
     // cac3e:
