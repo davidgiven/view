@@ -203,7 +203,7 @@ static void prompt_for_marker(void);
 static void lookup_marker(void);
 static void set_marker_to_here(void);
 static void move_cursor_to_address(void);
-static void sub_cae06(void);
+static void insert_edit_buffer_bytes_at_xpos(void);
 static void start_printing(void);
 static void compute_bytes_free(void);
 static void parse_optional_filename_from_command(void);
@@ -327,7 +327,7 @@ static void sub_ca536(void);
 static void readline(void);
 static void input_line_not_escaped(void);
 static void parse_command(void);
-static void cae64(void);
+static void delete_edit_buffer_bytes_at_xpos(void);
 static void c9e94(void);
 static void render_char(void);
 
@@ -8357,8 +8357,8 @@ c9c00:
     l0074++;
     //     ldx #1
     x = 1;
-    //     jsr sub_cae06
-    sub_cae06();
+    //     jsr insert_edit_buffer_bytes_at_xpos
+    insert_edit_buffer_bytes_at_xpos();
     //     bcs c9c7f
     if (flags & FLAG_C) { return; }
     // c9c09:
@@ -8402,9 +8402,9 @@ c9c1d:
     //     clc
     flags &= ~FLAG_C;
     //     adc l0039
-    { uint16_t sum = (uint16_t)a + l0039; a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc(l0039);
     //     bne c9c43
-    if (a != 0) { l0039 = a; goto c9c1d; }
+    if (a != 0) goto c9c43;
     // c9c31:
 c9c31:
     //     cmp #0x0b
@@ -8414,15 +8414,15 @@ c9c31:
     a = ruler_left_stop;
     set_flags(a);
     //     beq c9c48
-    if (flags & FLAG_Z) { a = 0x20; goto c9c4a; }
+    if (flags & FLAG_Z) goto c9c48;
     //     ldx l0039
     x = l0039;
     //     beq c9c43
-    if (x == 0) { a = l0039; l0039 = a; goto c9c1d; }
+    if (x == 0) goto c9c43;
     //     cpx ruler_left_stop
     cmp(x, ruler_left_stop);
     //     bcc c9c43
-    if (!(flags & FLAG_C)) { a = l0039; l0039 = a; goto c9c1d; }
+    if (!(flags & FLAG_C)) goto c9c43;
     //     inx
     x++;
     //     txa
@@ -8434,12 +8434,14 @@ c9c43:
     //     jmp c9c1d
     goto c9c1d;
     // c9c48:
+c9c48:
     //     lda #0x20 ; ' '
+    a = 0x20;
     // c9c4a:
 c9c4a:
     //     cmp #0x1b
     //     bcc c9c48
-    if (a < 0x1b) { a = 0x20; goto c9c4a; }
+    if (a < 0x1b) goto c9c48;
     //     cmp #0x20
     //     bcc c9c1d
     if (a < 0x20) goto c9c1d;
@@ -8464,24 +8466,24 @@ c9c56:
     a = l0038;
     //     cmp #0x20 ; ' '
     //     beq c9c7f
-    if (a == 0x20) { return; }
+    if (a == 0x20) return;
     //     lda ruler_right_stop
     //     beq c9c7f
     if (ruler_right_stop == 0) { l0074 = 0; return_to_editor_loop(); }
     //     lda format_mode_flag
     //     bne c9c7f
-    if (format_mode_flag != 0) { return; }
+    if (format_mode_flag != 0) return;
     //     lda #0
     //     sta tmp7
     tmp7 = 0;
     //     tya
     //     beq c9c7f
-    if (y == 0) { return; }
+    if (y == 0) return;
     //     dey
     y--;
     //     cpy ruler_right_stop
     //     bcs c9c82
-    if (y < ruler_right_stop) { return; }
+    if (y < ruler_right_stop) return;
     // c9c82:                                                              (4202)
     //     jsr get_line_length                                             (4203)
     get_line_length();
@@ -8622,13 +8624,13 @@ loop_c9cf9:
     //     clc
     flags &= ~FLAG_C;
     //     adc tmp4
-    { uint16_t sum = (uint16_t)a + tmp4; a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc(tmp4);
     //     sta markers_array,x
     ((uint8_t*)markers_array)[x] = a;
     //     lda tmp5
     a = tmp5;
     //     adc #0
-    { uint16_t sum = (uint16_t)a + (flags & FLAG_C ? 1 : 0); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc(0);
     //     sta markers_array+1,x
     ((uint8_t*)markers_array)[x + 1] = a;
     //     bcc loop_c9cf9
@@ -8999,8 +9001,8 @@ static void sub_c9e22(void) {
     { uint8_t saved_a = a;
     //     ldx #1
     x = 1;
-    //     jsr sub_cae06
-    sub_cae06();
+    //     jsr insert_edit_buffer_bytes_at_xpos
+    insert_edit_buffer_bytes_at_xpos();
     //     pla
     a = saved_a; }
     //     bcs return_55
@@ -9059,8 +9061,8 @@ static void f9_delete_char_key(void) {
     x = 1;
     //     inc l0074
     l0074++;
-    //     jmp cae64
-    cae64(); return;
+    //     jmp delete_edit_buffer_bytes_at_xpos
+    delete_edit_buffer_bytes_at_xpos(); return;
 }
 static void f7_delete_line_key(void) {
     // f7_delete_line_key: Deletes current line and moves cursor up
@@ -9239,8 +9241,8 @@ static void f3_delete_to_eol_key(void) {
     //     tax
     //     inc l0074
     l0074++;
-    //     jmp cae64
-    cae64(); return;
+    //     jmp delete_edit_buffer_bytes_at_xpos
+    delete_edit_buffer_bytes_at_xpos(); return;
 }
 static void sf8_edit_command_key(void) {
     // sf8_edit_command_key: Allows editing formatting command on current line interactively
@@ -9976,7 +9978,7 @@ loop_ca13d:
         }
         y--;
         x = y - start_x;
-        cae64();
+        delete_edit_buffer_bytes_at_xpos();
     }
 }
 static void cf2_format_mode_key(void) {
@@ -10879,13 +10881,13 @@ static void sub_ca536(void) {
     //     clc
     flags &= ~FLAG_C;
     //     adc tmp6
-    { uint16_t tmp_ = (uint16_t)a + tmp6; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ tmp6) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    adc(tmp6);
     //     sta tmp8
     tmp8 = a;
     //     lda tmp7
     a = tmp7;
     //     adc #0
-    { uint16_t tmp_ = (uint16_t)a + 0; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 0) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    adc(0);
     //     sta tmp9
     tmp9 = a;
     //     ldx #0
@@ -13433,8 +13435,8 @@ static void sub_cae03(void) {
     //     jmp beep
     beep();
 }
-static void sub_cae06(void) {
-    // sub_cae06: Inserts bytes at cursor position, shifting existing content right
+static void insert_edit_buffer_bytes_at_xpos(void) {
+    // insert_edit_buffer_bytes_at_xpos: Inserts bytes at cursor position, shifting existing content right
 
     //     lda xpos
     a = xpos;
@@ -13451,7 +13453,7 @@ static void sub_cae06(void) {
     //     clc
     flags &= ~FLAG_C;
     //     adc input_buffer_offset+1
-    { uint16_t sum = (uint16_t)a + l0080; a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc(l0080);
     //     bcs cae03
     if (flags & FLAG_C) { sub_cae03(); return; }
     //     cmp #0x85
@@ -13481,7 +13483,7 @@ cae27:
     //     clc
     flags &= ~FLAG_C;
     //     adc input_buffer_offset+1
-    { uint16_t sum = (uint16_t)a + l0080; a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc(l0080);
     //     bcs cae35
     if (flags & FLAG_C) goto cae35;
     //     cmp #0x84
@@ -13508,7 +13510,7 @@ loop_cae37:
     //     clc
     flags &= ~FLAG_C;
     //     adc current_edit_line_ptr
-    { uint16_t sum = (uint16_t)a + (uint8_t)(current_edit_line_ptr & 0xff); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc((uint8_t)(current_edit_line_ptr & 0xff));
     //     sta markers_array,x
     ((uint8_t*)markers_array)[x] = a;
     //     lda current_edit_line_ptr+1
@@ -13552,8 +13554,8 @@ cae5c:
     flags &= ~FLAG_C;
     //     rts
 }
-static void cae64(void) {
-    // cae64: Deletes N bytes at cursor position, shifting existing content left
+static void delete_edit_buffer_bytes_at_xpos(void) {
+    // delete_edit_buffer_bytes_at_xpos: Deletes N bytes at cursor position, shifting existing content left
 
     //     stx input_buffer_offset+1
     l0080 = x;
@@ -13574,7 +13576,7 @@ static void cae64(void) {
     //     clc
     flags &= ~FLAG_C;
     //     adc input_buffer_offset+1
-    { uint16_t sum = (uint16_t)a + l0080; a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc(l0080);
     //     sta l0084
     // cae78:
 cae78:
@@ -13595,7 +13597,7 @@ cae78:
     //     clc
     flags &= ~FLAG_C;
     //     adc current_edit_line_ptr
-    { uint16_t sum = (uint16_t)a + (uint8_t)(current_edit_line_ptr & 0xff); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc((uint8_t)(current_edit_line_ptr & 0xff));
     //     sta markers_array,x
     ((uint8_t*)markers_array)[x] = a;
     //     lda current_edit_line_ptr+1
@@ -13642,7 +13644,7 @@ loop_caea5:
     //     clc
     flags &= ~FLAG_C;
     //     adc input_buffer_offset+1
-    { uint16_t sum = (uint16_t)a + l0080; a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc(l0080);
     //     bcs caeb7
     if (flags & FLAG_C) goto caeb7;
     //     tay
@@ -13715,8 +13717,8 @@ static void sub_caedd(void) {
     xpos = y;
     //     ldx #1
     x = 1;
-    //     jsr sub_cae06
-    sub_cae06();
+    //     jsr insert_edit_buffer_bytes_at_xpos
+    insert_edit_buffer_bytes_at_xpos();
     //     bcs caef0
     if (!(flags & FLAG_C)) {
         //     ldy xpos
