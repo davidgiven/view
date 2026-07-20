@@ -10963,18 +10963,27 @@ return_62:
 static void process_document_character(void) {
     // sub_ca5ae:
     //     cmp #9
-    if (a == 9) goto ca5e1;
+    cmp(a, 9);
+    //     beq ca5e1
+    if (flags & FLAG_Z) goto ca5e1;
     //     cmp #0x10
-    if (a == 0x10) goto ca5d5;
+    cmp(a, 0x10);
+    //     beq ca5d5
+    if (flags & FLAG_Z) goto ca5d5;
     //     cmp #0x0b
-    if (a == 0x0b) goto ca5d9;
+    cmp(a, 0x0b);
+    //     beq ca5d9
+    if (flags & FLAG_Z) goto ca5d9;
     //     cmp #0x1a
-    if (a == 0x1a) goto ca5d5;
+    cmp(a, 0x1a);
+    //     beq ca5d5
+    if (flags & FLAG_Z) goto ca5d5;
     //     bcc ca5d1
-    if (a < 0x1a) goto ca5d1;
+    if (!(flags & FLAG_C)) goto ca5d1;
     //     cmp #0x20 ; ' '
+    cmp(a, 0x20);
     //     bcs ca5d1
-    if (a >= 0x20) goto ca5d1;
+    if (flags & FLAG_C) goto ca5d1;
     //     sty l0084
     l0084 = y;
     //     ldy print_flags
@@ -10982,8 +10991,7 @@ static void process_document_character(void) {
     //     bpl ca5cf
     if (!(y & 0x80)) goto ca5cf;
     //     sbc #0x1b
-    a = a - 0x1b - (1 - (flags & FLAG_C));
-    if ((uint8_t)(a + 0x1b + (1 - (flags & FLAG_C))) >= a) flags |= FLAG_C; else flags &= ~FLAG_C;
+    sbc(0x1b);
     //     tax
     x = a;
     //     lda highlight1_code,x
@@ -11008,8 +11016,9 @@ ca5d5:
 ca5d9:
     //     lda ruler_left_stop
     a = ruler_left_stop;
+    set_flags(a);
     //     beq ca5d5
-    if (a == 0) goto ca5d5;
+    if (flags & FLAG_Z) goto ca5d5;
     //     sty l0084
     l0084 = y;
     //     bne ca5f1
@@ -11024,8 +11033,9 @@ loop_ca5e5:
     //     iny
     y++;
     //     cpy l003a
+    cmp(y, l003a);
     //     bcs ca5f8
-    if (y >= l003a) goto ca5f8;
+    if (flags & FLAG_C) goto ca5f8;
     //     lda (current_ruler_ptr),y
     a = ram[current_ruler_ptr + y];
     //     cmp #0x2a ; '*'
@@ -11036,11 +11046,7 @@ loop_ca5e5:
     a = y;
 ca5f1:
     //     sbc l0039
-    {
-        uint16_t r = (uint16_t)a - (uint16_t)l0039 - (1 - (flags & FLAG_C));
-        a = (uint8_t)r;
-        if (r < 0x100) flags |= FLAG_C; else flags &= ~FLAG_C;
-    }
+    sbc(l0039);
     //     tax
     x = a;
     //     beq ca5f8
@@ -11058,6 +11064,7 @@ ca5fa:
     //     sec
     flags |= FLAG_C;
     //     rts
+    return;
 }
 static void draw_char(void) {
     // draw_char:
