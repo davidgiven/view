@@ -1187,6 +1187,16 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_tab_key(self):
+        self._test_enter_editor_and_type(
+            b"a" + CTRL_I + b"b" + CTRL_I + b"c" + CTRL_I + b"d",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   a      b       c       d                                                     ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
         self.assertIn(
@@ -1202,22 +1212,22 @@ class EditorTests(unittest.TestCase):
             "                                                                                ",
             "   This was the poem that Alice read.                                           ",
             "                                                                                ",
-            "         'Twas brillig, and the slithy toves                                    ",
-            "          did gyre and gimble in the wabe;                                      ",
-            "         All mimsy were the borogroves,                                         ",
-            "          and the mome raths outgrabe.                                          ",
+            "          'Twas brillig, and the slithy toves                                   ",
+            "                  did gyre and gimble in the wabe;                              ",
+            "          All mimsy were the borogroves,                                        ",
+            "                  and the mome raths outgrabe.                                  ",
             "                                                                                ",
-            '         "Beware the Jabberwock, my son!                                        ',
-            "          The jaws that bite, the claws that catch!                             ",
-            "         Beware the Jubjub bird, and shun                                       ",
-            "          the frumious Bandersnatch!                                            ",
+            '          "Beware the Jabberwock, my son!                                       ',
+            "                  The jaws that bite, the claws that catch!                     ",
+            "          Beware the Jubjub bird, and shun                                      ",
+            "                  the frumious Bandersnatch!                                    ",
             "                                                                                ",
-            "         He took his vorpal sword in hand:                                      ",
-            "          long time the maxome foe he sought---                                 ",
-            "         So rested he by the Tumtum tree,                                       ",
-            "          and stood awhile in thought.                                          ",
+            "          He took his vorpal sword in hand:                                     ",
+            "                  long time the maxome foe he sought---                         ",
+            "          So rested he by the Tumtum tree,                                      ",
+            "                  and stood awhile in thought.                                  ",
             "                                                                                ",
-            "         And as in uffish thought he stood,                                     ",
+            "          And as in uffish thought he stood,                                    ",
         ]
         self._assert_screen_lines(screen, expected)
 

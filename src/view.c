@@ -11023,8 +11023,9 @@ loop_ca5e5:
     //     lda (current_ruler_ptr),y
     a = ram[current_ruler_ptr + y];
     //     cmp #0x2a ; '*'
+    cmp(a, 0x2a);
     //     bne loop_ca5e5
-    if (a != 0x2a) goto loop_ca5e5;
+    if (!(flags & FLAG_Z)) goto loop_ca5e5;
     //     tya
     a = y;
 ca5f1:
