@@ -9677,6 +9677,12 @@ static void go_to_marker_6(void) {
     go_to_marker_n(); return;
 }
 static void go_to_marker_n(void) {
+    //     pha
+    uint8_t saved_a = a;
+    //     jsr ca93c
+    write_line_back_to_document_safely();
+    //     pla
+    a = saved_a;
     //     jsr lookup_marker
     lookup_marker();
     //     jmp go_to_marker

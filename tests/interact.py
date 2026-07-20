@@ -1197,6 +1197,42 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_k_command_key_extra_marker(self):
+        """^K calls read_char internally for the sub-command; extra \x05 marker.
+        Send 'a'+^K+'1' (3 bytes → 4 markers); verify 'a' is still on screen."""
+        screen = self._enter_editor_empty()
+        self.proc.write(b"a" + CTRL_K + b"1")
+        raw = self._drain_editor(4)
+        pyte.Stream(screen).feed(raw.decode("latin-1"))
+        expected = [
+            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+            "   a                                                                            ",
+            "********************************************************************************",
+        ]
+        self._assert_screen_lines(screen, expected)
+
+    def test_set_and_go_to_marker(self):
+        """Type 'hello', set marker 1 (^K1), type ' world', go to marker 1 (^Q1),
+        type 'XYZ' at the marker position.  The cursor goes back to where the marker
+        was set — after 'hello' — so 'X' overwrites the space, 'Y' overwrites 'w',
+        'Z' overwrites 'o': 'helloXYZrld'.  Drain 1 extra marker to capture the
+        final redraw (18 bytes → 19 markers)."""
+        screen = self._enter_editor_empty()
+        self.proc.write(b"hello" + CTRL_K + b"1" + b" world" + CTRL_Q + b"1" + b"XYZ")
+        # 18 data bytes → 18 read_char markers (main read_char per byte; ^K and ^Q
+        # add one internal read_char each).  Drain 19 — the extra marker captures
+        # the final redraw for 'Z'.
+        raw = self._drain_editor(19)
+        pyte.Stream(screen).feed(raw.decode("latin-1"))
+        self._assert_screen_lines(
+            screen,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   helloXYZrld                                                                  ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
         self.assertIn(
