@@ -16,9 +16,15 @@ view-b3.0.asm: view.py view-b3.0.rom
 view-rebuild.rom: view-b3.0.asm
 	beebasm -i $< -o $@
 
-SRC = src/view.c src/cli_stdio.c src/screen_ncurses.c
-OBJ = $(addprefix $(OBJ_DIR)/, view.o cli_stdio.o screen_ncurses.o)
-OBJ_TEST = $(addprefix $(OBJ_DIR)/, view.o cli_stdio.o screen_ncurses_test.o)
+SRC_COMMON = src/view.c src/screen_ncurses.c
+SRC_INTERACTIVE = src/cli_readline.c
+SRC_TEST = src/cli_stdio.c
+
+OBJ_COMMON = $(addprefix $(OBJ_DIR)/, view.o screen_ncurses.o)
+OBJ_COMMON_TEST = $(addprefix $(OBJ_DIR)/, view.o screen_ncurses_test.o)
+
+OBJ_INTERACTIVE = $(OBJ_COMMON) $(OBJ_DIR)/cli_readline.o
+OBJ_TEST = $(OBJ_COMMON_TEST) $(OBJ_DIR)/cli_stdio.o
 
 $(OBJ_DIR)/%.o: src/%.c | $(OBJ_DIR)
 	$(CC) $(CFLAGS) $(DEPFLAGS) -c -o $@ $<
@@ -32,12 +38,12 @@ $(OBJ_DIR)/view_nomain.o: src/view.c | $(OBJ_DIR)
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
 
-DEPFILES = $(OBJ:.o=.d) $(OBJ_TEST:.o=.d) $(OBJ_DIR)/view_nomain.d
+DEPFILES = $(OBJ_INTERACTIVE:.o=.d) $(OBJ_TEST:.o=.d) $(OBJ_DIR)/view_nomain.d
 -include $(DEPFILES)
 
-bin/view: $(OBJ)
+bin/view: $(OBJ_INTERACTIVE)
 	mkdir -p bin
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) -lreadline
 
 bin/view_for_testing: $(OBJ_TEST)
 	mkdir -p bin
