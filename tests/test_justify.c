@@ -32,8 +32,6 @@ static int test_failures;
     if (!(cond)) { \
         fprintf(stderr, "FAIL %s\n", msg); \
         test_failures++; \
-    } else { \
-        printf("  ok %s\n", msg); \
     } \
 } while(0)
 
@@ -82,9 +80,6 @@ static void run_justify(const char *text, uint8_t rstop) {
     for (int i = 0; i < l0046; i++)
         total_extra += input_buffer[i];
 
-    printf("  gaps=%d buf=%d->%d extra_distrib=%d\n",
-           l0046, orig_len, buf_len, total_extra);
-
     ASSERT(l0046 > 1, "justification found word gaps");
     ASSERT(buf_len > orig_len, "buffer expanded beyond original text");
     ASSERT(total_extra > 0, "extra spaces were distributed");
@@ -92,22 +87,18 @@ static void run_justify(const char *text, uint8_t rstop) {
 
 int main(void) {
     test_failures = 0;
-    printf("justify tests:\n\n");
 
-    printf("Test 1: justification with room to expand\n");
     run_justify("The quick brown fox jumps over", 40);
 
-    printf("\nTest 2: exact fit (no expansion expected)\n");
     run_justify("The quick brown fox jumps over", 30);
 
-    printf("\nTest 3: overriding justifying_flag (should skip)\n");
     {
         init_globals("The quick brown fox jumps over", 0xFF, 40);
         justify_edit_buffer();
-        printf("  l0046=%d", l0046);
         ASSERT(l0046 == 0, "justification skipped when flag != 0");
     }
 
-    printf("\n%d failure(s)\n", test_failures);
+    if (test_failures)
+        printf("\n%d failure(s)\n", test_failures);
     return test_failures ? 1 : 0;
 }

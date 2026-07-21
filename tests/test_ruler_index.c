@@ -27,25 +27,21 @@ static int test_failures;
     if ((expected) != (actual)) { \
         fprintf(stderr, "FAIL %s: expected " fmt " but got " fmt "\n", msg, (expected), (actual)); \
         test_failures++; \
-    } else { \
-        printf("  ok %s\n", msg); \
     } \
 } while(0)
 
 int main(void) {
     test_failures = 0;
-    printf("ruler index tests:\n\n");
 
     screen_maxcolumn = 79;
     memset(ram, 0, sizeof(ram));
 
-    /* Place a ruler definition in high memory (dots with '>'/'<' markers) */
     addr_t ruler1_addr = 0x7000;
     for (int i = 0; i < 78; i++)
         ram[ruler1_addr + i] = '.';
-    ram[ruler1_addr + 10] = '>';   /* left margin at column 10 */
-    ram[ruler1_addr + 70] = '<';   /* right margin at column 70 */
-    ram[ruler1_addr + 78] = 0x0d;  /* CR terminator */
+    ram[ruler1_addr + 10] = '>';
+    ram[ruler1_addr + 70] = '<';
+    ram[ruler1_addr + 78] = 0x0d;
 
     addr_t ruler2_addr = 0x7100;
     for (int i = 0; i < 78; i++)
@@ -54,7 +50,6 @@ int main(void) {
     ram[ruler2_addr + 60] = '<';
     ram[ruler2_addr + 78] = 0x0d;
 
-    printf("Test 1: push first ruler onto index\n");
     {
         oshwm = 0x0800;
         ruler_index_ptr = 0;
@@ -62,8 +57,6 @@ int main(void) {
         a = x = y = flags = 0;
         ruler_left_stop = ruler_right_stop = 0;
 
-        /* Set up tmp0/tmp1 as the ruler address + 3
-           (cab91 will add 3, so we store raw address - 3) */
         tmp0 = (uint8_t)((ruler1_addr - 3) & 0xff);
         tmp1 = (uint8_t)((ruler1_addr - 3) >> 8);
 
@@ -75,7 +68,6 @@ int main(void) {
         ASSERT_EQ(ruler_right_stop, 70, "%d", "ruler_right_stop = 70");
     }
 
-    printf("\nTest 2: push second ruler (index contains both)\n");
     {
         tmp0 = (uint8_t)((ruler2_addr - 3) & 0xff);
         tmp1 = (uint8_t)((ruler2_addr - 3) >> 8);
@@ -88,7 +80,6 @@ int main(void) {
         ASSERT_EQ(ruler_right_stop, 60, "%d", "ruler_right_stop = 60");
     }
 
-    printf("\nTest 3: pop — restores ruler1\n");
     {
         pop_from_ruler_index();
 
@@ -98,14 +89,12 @@ int main(void) {
         ASSERT_EQ(ruler_right_stop, 70, "%d", "ruler_right_stop restored to 70");
     }
 
-    printf("\nTest 4: pop again — index empty (ruler_index_ptr wraps to 0)\n");
     {
         pop_from_ruler_index();
 
         ASSERT_EQ(0x00, ruler_index_ptr, "%d", "ruler_index_ptr back to 0");
     }
 
-    printf("\nTest 5: verify index memory layout\n");
     {
         oshwm = 0x0800;
         ruler_index_ptr = 0;
@@ -113,15 +102,12 @@ int main(void) {
         tmp1 = (uint8_t)((ruler1_addr - 3) >> 8);
         push_onto_ruler_index();
 
-        /* After push with ruler_index_ptr=0: y goes from 0→0xff→0xfe,
-           so hi byte is at ram[oshwm+0xfe], lo byte at ram[oshwm+0xff] */
         uint8_t hi = ram[oshwm + 0xfe];
         uint8_t lo = ram[oshwm + 0xff];
         addr_t stored = (addr_t)(((addr_t)hi << 8) | lo);
         ASSERT_EQ(ruler1_addr - 3, stored, "0x%04x", "index stores (ruler_addr - 3) at oshwm+0xfe, oshwm+0xff");
     }
 
-    printf("\nTest 6: create_default_ruler and push it\n");
     {
         oshwm = 0x0800;
         ruler_index_ptr = 0;
@@ -129,24 +115,21 @@ int main(void) {
         ruler_left_stop = ruler_right_stop = 0;
         screen_maxcolumn = 79;
 
-        /* Create a default ruler at 0x7200 */
         addr_t ruler_addr = 0x7200;
         a = (uint8_t)(ruler_addr & 0xff);
         y = (uint8_t)(ruler_addr >> 8);
         create_default_ruler();
 
-        /* Push this ruler onto the index */
         tmp0 = (uint8_t)((ruler_addr - 3) & 0xff);
         tmp1 = (uint8_t)((ruler_addr - 3) >> 8);
         push_onto_ruler_index();
 
         ASSERT_EQ(0xfe, ruler_index_ptr, "%d", "ruler_index_ptr = 0xfe");
-        /* Default ruler has no '>' so left_stop should be 0 */
         ASSERT_EQ(0, ruler_left_stop, "%d", "default ruler left_stop = 0");
-        /* Default ruler has '<' at position screen_maxcolumn - 6 */
         ASSERT_EQ(73, ruler_right_stop, "%d", "default ruler right_stop = 73");
     }
 
-    printf("\n%d failure(s)\n", test_failures);
+    if (test_failures)
+        printf("\n%d failure(s)\n", test_failures);
     return test_failures ? 1 : 0;
 }

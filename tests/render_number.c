@@ -54,8 +54,6 @@ static int test_failures;
     if ((expected) != (actual)) { \
         fprintf(stderr, "FAIL %s: expected " fmt " but got " fmt "\n", msg, (expected), (actual)); \
         test_failures++; \
-    } else { \
-        printf("  ok %s\n", msg); \
     } \
 } while(0)
 
@@ -102,13 +100,13 @@ static void test_render_65535(void) {
 int main(void) {
     test_failures = 0;
 
-    printf("render_number_to_callback tests:\n");
     test_render_0();
     test_render_1();
     test_render_66();
     test_render_10000();
     test_render_65535();
 
-    printf("\n%d failure(s)\n", test_failures);
+    if (test_failures)
+        printf("\n%d failure(s)\n", test_failures);
     return test_failures ? 1 : 0;
 }
