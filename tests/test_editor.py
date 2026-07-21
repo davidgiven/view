@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Editor integration tests for VIEW via PTY."""
 
+import os
+import select
 import unittest
 import pyte
 
@@ -21,7 +23,7 @@ class EditorTests(unittest.TestCase):
         self.proc.writeline(f"LOAD {filename}")
         load_output = self.proc.read_until(b"=>", timeout=1.0)
         self.proc.writeline("")
-        raw = self._drain_editor(1)
+        raw = self._drain_editor()
         screen = pyte.Screen(80, 24)
         stream = pyte.Stream(screen)
         stream.feed(raw.decode("latin-1"))
@@ -77,7 +79,7 @@ class EditorTests(unittest.TestCase):
     def _enter_editor_empty(self):
         self.proc.read_until(b"=>", timeout=0.5)
         self.proc.writeline("")
-        raw = self._drain_editor(1)
+        raw = self._drain_editor()
         screen = pyte.Screen(80, 24)
         stream = pyte.Stream(screen)
         stream.feed(raw.decode("latin-1"))
@@ -87,7 +89,7 @@ class EditorTests(unittest.TestCase):
         screen = self._enter_editor_empty()
         if string_to_type:
             self.proc.write(string_to_type)
-            raw = self._drain_editor(len(string_to_type))
+            raw = self._drain_editor()
             pyte.Stream(screen).feed(raw.decode("latin-1"))
         self._assert_screen_lines(screen, expected_screen)
 
@@ -101,11 +103,21 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
-    def _drain_editor(self, n_markers=1):
+    def _drain_editor(self):
+        """Drain PTY output with a short idle timeout (resets per character)."""
         data = b""
-        for _ in range(n_markers):
-            data += self.proc.read_until(b"\x05", timeout=2.0)
-        return data.replace(b"\x05", b"")
+        while True:
+            r, _, _ = select.select([self.proc.master_fd], [], [], 0.005)
+            if not r:
+                break
+            try:
+                chunk = os.read(self.proc.master_fd, 4096)
+                if not chunk:
+                    break
+                data += chunk
+            except OSError:
+                break
+        return data
 
     def test_enter_editor_and_type_q(self):
         self._test_enter_editor_and_type(
@@ -906,26 +918,16 @@ class EditorTests(unittest.TestCase):
         )
 
     def test_k_command_key_extra_marker(self):
-        screen = self._enter_editor_empty()
-        self.proc.write(b"a" + CTRL_K + b"1")
-        raw = self._drain_editor(3)
-        pyte.Stream(screen).feed(raw.decode("latin-1"))
         expected = [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
             "   a                                                                            ",
             "********************************************************************************",
         ]
-        self._assert_screen_lines(screen, expected)
+        self._test_enter_editor_and_type(b"a" + CTRL_K + b"1", expected)
 
     def test_set_and_go_to_marker(self):
-        screen = self._enter_editor_empty()
-        self.proc.write(
-            b"hello" + CTRL_K + b"1" + b" world" + CTRL_Q + b"1" + b"XYZ"
-        )
-        raw = self._drain_editor(18)
-        pyte.Stream(screen).feed(raw.decode("latin-1"))
-        self._assert_screen_lines(
-            screen,
+        self._test_enter_editor_and_type(
+            b"hello" + CTRL_K + b"1" + b" world" + CTRL_Q + b"1" + b"XYZ",
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "   helloXYZrld                                                                  ",
@@ -967,12 +969,12 @@ class EditorTests(unittest.TestCase):
         self.proc.writeline("LOAD examples/horse.v")
         self.proc.read_until(b"=>", timeout=1.0)
         self.proc.writeline("")
-        self.proc.read_until(b"\x05", timeout=2.0)
+        self._drain_editor()
         self.proc.write(b"\x1b")
         output = self.proc.read_until(b"=>", timeout=2.0)
         screen = pyte.Screen(80, 24)
         stream = pyte.Stream(screen)
-        stream.feed(output.replace(b"\x05", b"").decode("latin-1"))
+        stream.feed(output.decode("latin-1"))
         expected_re = [
             r"VIEW B3\.0 for CP/M-65\s+",
             r"\s+",
