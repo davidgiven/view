@@ -18,18 +18,37 @@ VIEW_BIN = os.path.join(
 )
 
 # Control codes used in editor commands
-CTRL_A  = b"\x01"; CTRL_B  = b"\x02"; CTRL_C  = b"\x03"; CTRL_D  = b"\x04"
-CTRL_E  = b"\x05"; CTRL_F  = b"\x06"; CTRL_G  = b"\x07"; CTRL_H  = b"\x08"
-CTRL_I  = b"\x09"; CTRL_J  = b"\x0a"; CTRL_K  = b"\x0b"; CTRL_L  = b"\x0c"
-CTRL_M  = b"\x0d"; CTRL_N  = b"\x0e"; CTRL_O  = b"\x0f"; CTRL_P  = b"\x10"
-CTRL_Q  = b"\x11"; CTRL_R  = b"\x12"; CTRL_S  = b"\x13"; CTRL_T  = b"\x14"
-CTRL_U  = b"\x15"; CTRL_V  = b"\x16"; CTRL_W  = b"\x17"; CTRL_X  = b"\x18"
-CTRL_Y  = b"\x19"; CTRL_Z  = b"\x1a"
+CTRL_A = b"\x01"
+CTRL_B = b"\x02"
+CTRL_C = b"\x03"
+CTRL_D = b"\x04"
+CTRL_E = b"\x05"
+CTRL_F = b"\x06"
+CTRL_G = b"\x07"
+CTRL_H = b"\x08"
+CTRL_I = b"\x09"
+CTRL_J = b"\x0a"
+CTRL_K = b"\x0b"
+CTRL_L = b"\x0c"
+CTRL_M = b"\x0d"
+CTRL_N = b"\x0e"
+CTRL_O = b"\x0f"
+CTRL_P = b"\x10"
+CTRL_Q = b"\x11"
+CTRL_R = b"\x12"
+CTRL_S = b"\x13"
+CTRL_T = b"\x14"
+CTRL_U = b"\x15"
+CTRL_V = b"\x16"
+CTRL_W = b"\x17"
+CTRL_X = b"\x18"
+CTRL_Y = b"\x19"
+CTRL_Z = b"\x1a"
 
 # Screen key codes (from screen.h)
-KEY_UP    = b"\x8b"
-KEY_DOWN  = b"\x8a"
-KEY_LEFT  = b"\x88"
+KEY_UP = b"\x8b"
+KEY_DOWN = b"\x8a"
+KEY_LEFT = b"\x88"
 KEY_RIGHT = b"\x89"
 
 
@@ -451,7 +470,15 @@ class EditorTests(unittest.TestCase):
 
     def test_enter_editor_and_cursor_down_up(self):
         self._test_enter_editor_and_type(
-            CTRL_M + KEY_UP + b"text" + KEY_DOWN + b"1" + KEY_UP + b"2" + KEY_UP + b"3",
+            CTRL_M
+            + KEY_UP
+            + b"text"
+            + KEY_DOWN
+            + b"1"
+            + KEY_UP
+            + b"2"
+            + KEY_UP
+            + b"3",
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "   text 23                                                                      ",
@@ -462,8 +489,9 @@ class EditorTests(unittest.TestCase):
 
     def test_enter_editor_and_a_long_line_nonjustified(self):
         self._test_enter_editor_and_type(
-            CTRL_O + CTRL_J +
-            b"In a small loch in north-west Scotland whose name I can't quite remember, "
+            CTRL_O
+            + CTRL_J
+            + b"In a small loch in north-west Scotland whose name I can't quite remember, "
             b"there once lived a water horse and his wife. They preyed upon the local "
             b"crofters, for of course there were no fishermen --- with a pair of water "
             b"horses in the loch venturing into the water was far too dangerous. Luckily "
@@ -499,10 +527,14 @@ class EditorTests(unittest.TestCase):
 
     def test_enter_editor_and_a_reformat(self):
         self._test_enter_editor_and_type(
-            CTRL_O + CTRL_J +
-            b"In a small loch in north-west Scotland whose name I can't quite remember, "
-            b"there once lived a water horse" +
-            KEY_UP + CTRL_V + b"WORD " + CTRL_B,
+            CTRL_O
+            + CTRL_J
+            + b"In a small loch in north-west Scotland whose name I can't quite remember, "
+            b"there once lived a water horse"
+            + KEY_UP
+            + CTRL_V
+            + b"WORD "
+            + CTRL_B,
             [
                 "F  .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "   In a small loch in north-west WORD Scotland whose name I can't quite         ",
@@ -817,7 +849,15 @@ class EditorTests(unittest.TestCase):
     def test_word_right_at_line_end_wraps_to_next_line(self):
         """Type two lines, go to start of line 1, word right twice — wraps to start of line 2."""
         self._test_enter_editor_and_type(
-            b"abc" + CTRL_M + b"def" + KEY_UP + CTRL_Q + CTRL_S + CTRL_F + CTRL_F + b"X",
+            b"abc"
+            + CTRL_M
+            + b"def"
+            + KEY_UP
+            + CTRL_Q
+            + CTRL_S
+            + CTRL_F
+            + CTRL_F
+            + b"X",
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "   abc                                                                          ",
@@ -944,7 +984,14 @@ class EditorTests(unittest.TestCase):
     def test_delete_line_at_beginning(self):
         """Type three lines, go to top, CTRL_Y — deletes first line."""
         self._test_enter_editor_and_type(
-            b"abc" + CTRL_M + b"def" + CTRL_M + b"ghi" + CTRL_Q + CTRL_R + CTRL_Y,
+            b"abc"
+            + CTRL_M
+            + b"def"
+            + CTRL_M
+            + b"ghi"
+            + CTRL_Q
+            + CTRL_R
+            + CTRL_Y,
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "   def                                                                          ",
@@ -989,7 +1036,15 @@ class EditorTests(unittest.TestCase):
     def test_edit_command_set_and_change(self):
         """Set command 'AB', then change to 'CD'."""
         self._test_enter_editor_and_type(
-            b"Hello" + CTRL_O + CTRL_C + b"AB" + CTRL_M + CTRL_O + CTRL_C + b"CD" + CTRL_M,
+            b"Hello"
+            + CTRL_O
+            + CTRL_C
+            + b"AB"
+            + CTRL_M
+            + CTRL_O
+            + CTRL_C
+            + b"CD"
+            + CTRL_M,
             [
                 "MJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "CD Hello                                                                        ",
@@ -1000,7 +1055,14 @@ class EditorTests(unittest.TestCase):
     def test_edit_command_set_then_immediate_exit(self):
         """Set command 'AB', then enter edit command again and exit immediately — command unchanged."""
         self._test_enter_editor_and_type(
-            b"Hello" + CTRL_O + CTRL_C + b"AB" + CTRL_M + CTRL_O + CTRL_C + CTRL_M,
+            b"Hello"
+            + CTRL_O
+            + CTRL_C
+            + b"AB"
+            + CTRL_M
+            + CTRL_O
+            + CTRL_C
+            + CTRL_M,
             [
                 "MJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "AB Hello                                                                        ",
@@ -1056,7 +1118,15 @@ class EditorTests(unittest.TestCase):
     def test_swap_case_non_alpha_unchanged(self):
         """Non-alphabetic '123!@#', CTRL_P — no change, cursor moves past."""
         self._test_enter_editor_and_type(
-            b"123!@#" + CTRL_Q + CTRL_S + CTRL_P + CTRL_P + CTRL_P + CTRL_P + CTRL_P + CTRL_P,
+            b"123!@#"
+            + CTRL_Q
+            + CTRL_S
+            + CTRL_P
+            + CTRL_P
+            + CTRL_P
+            + CTRL_P
+            + CTRL_P
+            + CTRL_P,
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "   123!@#                                                                       ",
@@ -1067,7 +1137,14 @@ class EditorTests(unittest.TestCase):
     def test_swap_case_mixed(self):
         """Mixed 'A1b2C', CTRL_P — only uppercase letters (A,C) lowercased."""
         self._test_enter_editor_and_type(
-            b"A1b2C" + CTRL_Q + CTRL_S + CTRL_P + CTRL_P + CTRL_P + CTRL_P + CTRL_P,
+            b"A1b2C"
+            + CTRL_Q
+            + CTRL_S
+            + CTRL_P
+            + CTRL_P
+            + CTRL_P
+            + CTRL_P
+            + CTRL_P,
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "   a1b2c                                                                        ",
@@ -1122,7 +1199,15 @@ class EditorTests(unittest.TestCase):
     def test_insert_mode_toggle_off_at_middle(self):
         """Insert mode on, insert 'XY', toggle off, '12' overwrites."""
         self._test_enter_editor_and_type(
-            b"abcde" + CTRL_Q + CTRL_S + KEY_RIGHT + KEY_RIGHT + CTRL_V + b"XY" + CTRL_V + b"12",
+            b"abcde"
+            + CTRL_Q
+            + CTRL_S
+            + KEY_RIGHT
+            + KEY_RIGHT
+            + CTRL_V
+            + b"XY"
+            + CTRL_V
+            + b"12",
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "   abXY12e                                                                      ",
@@ -1165,8 +1250,7 @@ class EditorTests(unittest.TestCase):
 
     def test_insert_ruler(self):
         self._test_enter_editor_and_type(
-            CTRL_O+CTRL_S
-            ,
+            CTRL_O + CTRL_S,
             [
                 "MJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 ".. .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
@@ -1177,8 +1261,7 @@ class EditorTests(unittest.TestCase):
 
     def test_insert_ruler_and_down(self):
         self._test_enter_editor_and_type(
-            CTRL_O+CTRL_S+KEY_DOWN
-            ,
+            CTRL_O + CTRL_S + KEY_DOWN,
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 ".. .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
@@ -1217,7 +1300,9 @@ class EditorTests(unittest.TestCase):
         was set — after 'hello' — so 'X' overwrites the space, 'Y' overwrites 'w',
         'Z' overwrites 'o': 'helloXYZrld'."""
         screen = self._enter_editor_empty()
-        self.proc.write(b"hello" + CTRL_K + b"1" + b" world" + CTRL_Q + b"1" + b"XYZ")
+        self.proc.write(
+            b"hello" + CTRL_K + b"1" + b" world" + CTRL_Q + b"1" + b"XYZ"
+        )
         # 18 data bytes → 18 markers (every read_char produces one \x05;
         # ^K and ^Q each consume their sub-byte via an internal read_char,
         # but the total is still 1 marker per byte).
@@ -1235,8 +1320,7 @@ class EditorTests(unittest.TestCase):
     def test_indent(self):
         """Insert a ruler with '>' at column 7, then type on the next line."""
         self._test_enter_editor_and_type(
-        CTRL_O+CTRL_S+b"       >"+CTRL_M+ b"hello"
-            ,
+            CTRL_O + CTRL_S + b"       >" + CTRL_M + b"hello",
             [
                 "FJ        >.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "..        >.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
@@ -1248,9 +1332,14 @@ class EditorTests(unittest.TestCase):
     def test_indent_and_margin_release(self):
         """Insert a ruler with '>' at column 7, then type on the next line, then insert some text in the margin."""
         self._test_enter_editor_and_type(
-        CTRL_O+CTRL_S+b"       >"+CTRL_M+ b"hello"
-        +CTRL_O+CTRL_X+b">>"
-            ,
+            CTRL_O
+            + CTRL_S
+            + b"       >"
+            + CTRL_M
+            + b"hello"
+            + CTRL_O
+            + CTRL_X
+            + b">>",
             [
                 "FJ        >.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "..        >.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
