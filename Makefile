@@ -68,7 +68,12 @@ bin/test_ruler_index: tests/test_ruler_index.c $(OBJ_DIR)/view_nomain.o $(OBJ_DI
 .PHONY: test test-render clean
 
 test: bin/render_number bin/test_ruler bin/test_justify bin/test_ruler_index bin/view_for_testing
-	./bin/render_number && ./bin/test_ruler && ./bin/test_justify && ./bin/test_ruler_index && TERM=vt100 python3 tests/interact.py
+	./bin/render_number
+	./bin/test_ruler
+	./bin/test_justify
+	./bin/test_ruler_index
+	TERM=vt100 python3 tests/test_cli.py
+	TERM=vt100 python3 tests/interact.py
 
 clean:
 	rm -rf $(OBJ_DIR) bin/view bin/view_for_testing bin/render_number bin/test_ruler bin/test_justify
