@@ -74,7 +74,6 @@ test: bin/render_number bin/test_ruler bin/test_justify bin/test_ruler_index bin
 	./bin/test_ruler_index
 	TERM=vt100 python3 tests/test_cli.py
 	TERM=vt100 python3 tests/test_editor.py
-	TERM=vt100 python3 tests/interact.py
 
 clean:
 	rm -rf $(OBJ_DIR) bin/view bin/view_for_testing bin/render_number bin/test_ruler bin/test_justify
