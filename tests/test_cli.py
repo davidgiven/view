@@ -5,6 +5,7 @@ import os
 import unittest
 import filecmp
 
+import re
 from utils import *
 from process import PtyProcess
 
@@ -111,6 +112,42 @@ class CliTests(unittest.TestCase):
             output,
             f"Expected 'word(s) counted' in output, got: {repr(output)}",
         )
+
+    def test_screen_shows_lines(self):
+        """Load a file and run SCREEN, then verify the first ten output lines."""
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("LOAD examples/horse.v")
+        self.proc.read_until(b"=>", timeout=1.0)
+
+        self.proc.writeline("SCREEN")
+        output = self.proc.read_until(b"=>", timeout=3.0)
+
+        # Strip the command echo (SCREEN\r\n) and trailing prompt
+        start = output.find(b"SCREEN\r\n")
+        if start >= 0:
+            output = output[start + 8:]
+        prompt_pos = output.rfind(b"=>")
+        if prompt_pos >= 0:
+            output = output[:prompt_pos]
+
+        # Split on CR to get lines; take first 10 non-empty
+        lines = [l for l in output.split(b"\r") if l.strip()]
+        first_ten = lines[:10]
+
+        expected = [
+            b"                       The Water Horse's Fireplace",
+            b'                 a Scottish Halloween folk story, sort of',
+            b'                           (c) 2012 David Given',
+            b'The  \x01each-uisge\x01 of Scotland, pronounced  \x01echh-ush-guh\x01  ,  is  one  of  the',
+            b"country's traditional monsters. While the relatively harmless kelpie lives",
+            b"in running  water, the \x01each-uisge\x01 ('water horse') lives in lochs. They eat",
+            b'meat, human for  preference,  and  will  use their shapeshifting powers to',
+            b"lure their prey down to the water's  edge where they will be dragged under",
+            b'and consumed, leaving only their livers to float  to  the  shore as a sign',
+            b'that  the  water  horse has taken another victim. Water horses are vicious',
+        ]
+
+        self.assertEqual(first_ten, expected)
 
 
 if __name__ == "__main__":

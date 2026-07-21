@@ -3916,8 +3916,6 @@ static void display_nl_then_no_text(void) {
     display_no_text();
 }
 static void print_document(void) {
-    // Pseudocode: Main print/preview loop: formats document with headers, footers, macros, page breaks
-
     // print_document:
     //     jsr check_not_continuous_editing
     check_not_continuous_editing();
@@ -4232,7 +4230,7 @@ c8fd5:
     //     bne c9034
     if (a != 0) { microspace_word_processor(); goto c8f30; }
     // c8fe6:
-c8fe6:
+    c8fe6:
     //     lda (tmp0),y
     a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     //     iny
@@ -4766,22 +4764,22 @@ static void sub_c9173(void) {
     // return_25:
     //     rts
     return;
-
+}
+static void sub_c9188(void) {
     // c9184:
     //     lda #0
     //     sta macro_executing_flag
-}
-static void sub_c9188(void) {
-    // Pseudocode: Gets next line of text for printing, handling macro execution
+    // (handled inline below)
 
     // sub_c9188:
     //     lda macro_executing_flag
     a = macro_executing_flag;
     //     bne c91a3
     if (a != 0) goto c91a3;
+c9188_normal_entry:
     //     lda ptr5
     a = (uint8_t)(ptr5 & 0xff);
-    //     sta input_buffer_offset+1
+    //     sta input_buffer_ptr+1
     l0080 = a;
     //     sta tmp0
     tmp0 = a;
@@ -4813,7 +4811,7 @@ c91a7:
     a = ram[ptr3 + y];
     //     cmp #4
     //     beq c9184
-    if (a == 4) { macro_executing_flag = 0; return; }
+    if (a == 4) { macro_executing_flag = 0; goto c9188_normal_entry; }
     //     cmp #0x40 ; '@'
     //     beq c91da
     if (a == 0x40) goto c91da;
@@ -4828,9 +4826,9 @@ loop_c91b2:
     //     cmp #0x0d
     //     beq c91c2
     if (a == 0x0d) goto c91c2;
-    //     cpx #MAX_LINE_LENGTH-1
+    //     cpx #0x83
     //     bcc c91a7
-    if (x < MAX_LINE_LENGTH - 1) goto c91a7;
+    if (x < 0x83) goto c91a7;
     //     lda #0x0d
     a = 0x0d;
     //     bne loop_c91b2                                                    ; ALWAYS branch
@@ -4870,6 +4868,7 @@ c91d0:
     flags &= ~FLAG_C;
     // return_26:
     //     rts
+    return;
 
     // c91da:
 c91da:
@@ -4880,7 +4879,7 @@ c91da:
     //     sec
     flags |= FLAG_C;
     //     sbc #0x30 ; '0'
-    { uint16_t r = (uint16_t)a - 0x30 - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r < 0x100) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    sbc(0x30);
     //     bcc c9225
     if (!(flags & FLAG_C)) goto c9225;
     //     cmp #0x0a
@@ -4950,9 +4949,9 @@ c921b:
     current_line_buffer[x] = a;
     //     inx
     x++;
-    //     cpx #MAX_LINE_LENGTH-2
+    //     cpx #0x82
     //     bcc c9209
-    if (x < MAX_LINE_LENGTH - 2) goto c9209;
+    if (x < 0x82) goto c9209;
     // c9223:
 c9223:
     //     ldy l0084
@@ -4961,6 +4960,7 @@ c9223:
 c9225:
     //     jmp c91a7
     goto c91a7;
+
 }
 static void sub_c9228(void) {
     // Pseudocode: Parses register reference markers (<, >, =) in format line
