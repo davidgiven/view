@@ -962,6 +962,31 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_load_horse_and_enter_editor_then_exit_with_escape(self):
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("LOAD examples/horse.v")
+        self.proc.read_until(b"=>", timeout=1.0)
+        self.proc.writeline("")
+        self.proc.read_until(b"\x05", timeout=2.0)
+        self.proc.write(b"\x1b")
+        output = self.proc.read_until(b"=>", timeout=2.0)
+        screen = pyte.Screen(80, 24)
+        stream = pyte.Stream(screen)
+        stream.feed(output.replace(b"\x05", b"").decode("latin-1"))
+        expected_re = [
+            r"VIEW B3\.0 for CP/M-65\s+",
+            r"\s+",
+            r"Bytes free \d+\s+",
+            r"Editing examples/horse\.v\s+",
+            r"=>\s+",
+        ]
+        for i, exp in enumerate(expected_re):
+            self.assertRegex(
+                screen.display[i],
+                exp,
+                f"Row {i} after ESCAPE exit: expected pattern {repr(exp)}, got {repr(screen.display[i])}",
+            )
+
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
         self.assertIn(
