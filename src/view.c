@@ -664,7 +664,8 @@ uint8_t printer_driver_name[0x14]; // PROVISIONAL: filename of loaded printer dr
 //X register_value_p                = register_value_array + ('P'-'A')*2
 #define RAM_REGISTER_VALUE_P (RAM_REGISTER_VALUE_ARRAY + ('P'-'A')*2)
 
-#define MAX_LINES 32
+#define MAX_LINES 100
+#define MAX_COLUMNS 132
 //X line_lengths:                   .fill 32
 uint8_t line_lengths[MAX_LINES]; // PROVISIONAL: table of displayed line widths indexed by screen row
 //X input_filename:                 .fill 20
@@ -13922,8 +13923,10 @@ static void system_init(void) {
     uint16_t size_ = screen_getsize();
     screen_maxcolumn = (uint8_t)(size_ & 0xff);
     screen_maxrow = (uint8_t)(size_ >> 8);
-    if (screen_maxrow > MAX_LINES)
-        screen_maxrow = MAX_LINES;
+    if (screen_maxrow > MAX_LINES - 1)
+        screen_maxrow = MAX_LINES - 1;
+    if (screen_maxcolumn > MAX_COLUMNS - 1)
+        screen_maxcolumn = MAX_COLUMNS - 1;
 }
 static void compute_bytes_free(void) {
     // Pseudocode: Computes number of free bytes between top and himem
