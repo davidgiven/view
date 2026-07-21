@@ -1,5 +1,6 @@
 """PTY process management for VIEW editor tests."""
 
+import atexit
 import pty
 import os
 import time
@@ -12,6 +13,8 @@ import termios
 
 class PtyProcess:
     """Manage a child process running inside a PTY."""
+
+    _instances = set()
 
     def __init__(self, argv, env=None, term="vt100"):
         env = env or {}
@@ -37,20 +40,30 @@ class PtyProcess:
         self.master_fd = master_fd
         self.pid = pid
         self._buf = b""
+        self._closed = False
+        self._instances.add(self)
 
     def close(self):
-        if self.master_fd < 0:
+        if self._closed:
             return
-        os.close(self.master_fd)
-        self.master_fd = -1
-        try:
-            os.kill(self.pid, signal.SIGKILL)
-        except OSError:
-            pass
-        try:
-            os.waitpid(self.pid, 0)
-        except ChildProcessError:
-            pass
+        self._closed = True
+        self._instances.discard(self)
+        if self.master_fd >= 0:
+            try:
+                os.close(self.master_fd)
+            except OSError:
+                pass
+            self.master_fd = -1
+        if self.pid > 0:
+            try:
+                os.kill(self.pid, signal.SIGKILL)
+            except OSError:
+                pass
+            try:
+                os.waitpid(self.pid, 0)
+            except ChildProcessError:
+                pass
+            self.pid = -1
 
     def read(self, timeout=5.0):
         deadline = time.time() + timeout
@@ -128,3 +141,10 @@ class PtyProcess:
                 self._buf += data
             except OSError:
                 break
+
+
+def _cleanup_all():
+    for proc in list(PtyProcess._instances):
+        proc.close()
+
+atexit.register(_cleanup_all)
