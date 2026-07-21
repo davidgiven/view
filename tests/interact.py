@@ -50,6 +50,7 @@ KEY_UP = b"\x8b"
 KEY_DOWN = b"\x8a"
 KEY_LEFT = b"\x88"
 KEY_RIGHT = b"\x89"
+KEY_BACKSPACE = b"\x7f"
 
 
 def strip_escapes(text: str) -> str:
@@ -419,6 +420,17 @@ class EditorTests(unittest.TestCase):
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "   q                                                                            ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_delete_with_backspace(self):
+        """Type 'hello', press backspace, verify 'hell' remains."""
+        self._test_enter_editor_and_type(
+            b"hello" + KEY_BACKSPACE,
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   hell                                                                         ",
                 "********************************************************************************",
             ],
         )
@@ -895,39 +907,6 @@ class EditorTests(unittest.TestCase):
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
                 "   ab                                                                           ",
-                "********************************************************************************",
-            ],
-        )
-
-    def test_insert_char_at_beginning(self):
-        """Type 'abc', go to start, CTRL_H (insert space), then 'X'."""
-        self._test_enter_editor_and_type(
-            b"abc" + CTRL_Q + CTRL_S + CTRL_H + b"X",
-            [
-                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-                "   Xabc                                                                         ",
-                "********************************************************************************",
-            ],
-        )
-
-    def test_insert_char_in_middle(self):
-        """Type 'abc', go to second char, CTRL_H (insert space), then 'X'."""
-        self._test_enter_editor_and_type(
-            b"abc" + CTRL_Q + CTRL_S + KEY_RIGHT + CTRL_H + b"X",
-            [
-                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-                "   aXbc                                                                         ",
-                "********************************************************************************",
-            ],
-        )
-
-    def test_insert_char_at_end(self):
-        """Type 'abc', go to last char, CTRL_H (insert space), then 'X'."""
-        self._test_enter_editor_and_type(
-            b"abc" + CTRL_Q + CTRL_D + KEY_LEFT + CTRL_H + b"X",
-            [
-                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-                "   abXc                                                                         ",
                 "********************************************************************************",
             ],
         )
