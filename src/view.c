@@ -217,7 +217,7 @@ static void sub_caa97(void);
 static void move_tmp01_to_previous_line(void);
 static void sub_ca0af(void);
 static void draw_previous_word(void);
-static void draw_char(void);
+static void process_current_document_character(void);
 static void sub_cab1a(void);
 static void sub_ca44e(void);
 static void draw_line(uint16_t);
@@ -2083,8 +2083,8 @@ c86df:
 c86ea:
     //     ldy #0
     y = 0;
-    //     jsr draw_char
-    draw_char();
+    //     jsr process_current_document_character
+    process_current_document_character();
     //     and #0x7f
     a &= 0x7f;
     set_flags(a);
@@ -9528,8 +9528,8 @@ c9fc3:
     tmp1 = a;
     //     ldy xpos
     y = 0;
-    //     jsr draw_char
-    draw_char();
+    //     jsr process_current_document_character
+    process_current_document_character();
     //     cmp #0x20 ; ' '
     cmp(a, 0x20);
     //     bne return_58
@@ -9541,8 +9541,8 @@ loop_c9ff8:
     //     cpy input_buffer_ptr+1
     //     bcs ca00f
     if (y >= line_len) goto ca00f;
-    //     jsr draw_char
-    draw_char();
+    //     jsr process_current_document_character
+    process_current_document_character();
     //     cmp #0x20 ; ' '
     cmp(a, 0x20);
     //     bne loop_c9ff8
@@ -9552,8 +9552,8 @@ loop_ca003:
     //     cpy input_buffer_ptr+1
     //     bcs ca00f
     if (y >= line_len) goto ca00f;
-    //     jsr draw_char
-    draw_char();
+    //     jsr process_current_document_character
+    process_current_document_character();
     //     cmp #0x20 ; ' '
     cmp(a, 0x20);
     //     beq loop_ca003
@@ -10730,8 +10730,8 @@ ca4bc:
     render_char();
     // loop_ca4bf:
     loop_ca4bf:
-    //     jsr draw_char
-    draw_char();
+    //     jsr process_current_document_character
+    process_current_document_character();
     // loop_ca4c2:
 loop_ca4c2:
     //     jsr render_xchar
@@ -10757,8 +10757,8 @@ loop_ca4c2:
 static void sub_ca4d7(void) {
     // sub_ca4d7: Draws a character and advances x position
 
-    //     jsr draw_char
-    draw_char();
+    //     jsr process_current_document_character
+    process_current_document_character();
     //     jmp ca4e9
     render_char();
 }
@@ -11068,7 +11068,7 @@ ca5fa:
     //     rts
     return;
 }
-static void draw_char(void) {
+static void process_current_document_character(void) {
     // draw_char:
     //     lda (tmp0),y
     a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
@@ -11120,8 +11120,8 @@ loop_ca615:
     if (flags & FLAG_Z) goto ca63d;
     //     sta l0039
     l0039 = a;
-    //     jsr draw_char
-    draw_char();
+    //     jsr process_current_document_character
+    process_current_document_character();
     //     txa
     a = x;
     //     clc
@@ -11142,8 +11142,8 @@ ca624:
 loop_ca629:
     //     sta l0039
     l0039 = a;
-    //     jsr draw_char
-    draw_char();
+    //     jsr process_current_document_character
+    process_current_document_character();
     //     txa
     a = x;
     //     clc
@@ -13847,8 +13847,8 @@ loop_caf3f:
     y--;
     //     beq caf55
     if (y == 0) goto caf55;
-    //     jsr draw_char
-    draw_char();
+    //     jsr process_current_document_character
+    process_current_document_character();
     //     dey
     y--;
     //     cmp #0x20 ; ' '
@@ -13859,8 +13859,8 @@ loop_caf3f:
 loop_caf4a:
     //     dey
     y--;
-    //     jsr draw_char
-    draw_char();
+    //     jsr process_current_document_character
+    process_current_document_character();
     //     cmp #0x20 ; ' '
     cmp(a, 0x20);
     //     beq caf55
@@ -13873,8 +13873,8 @@ loop_caf4a:
 caf55:
     //     sty xpos
     xpos = y;
-    //     jsr draw_char
-    draw_char();
+    //     jsr process_current_document_character
+    process_current_document_character();
     //     dey
     y--;
     set_flags(y);
