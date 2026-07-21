@@ -18,6 +18,7 @@ void screen_enter(void) {
     nonl();
     noecho();
     keypad(stdscr, TRUE);
+    set_escdelay(100);
     scrollok(stdscr, FALSE);
     ncurses_active = true;
 }

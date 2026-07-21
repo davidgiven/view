@@ -14747,19 +14747,10 @@ uint8_t parser_table[] = {
 
 static void readline(void) {
     input_buffer_offset = 0;
-    if (!cli_readstring((char *)input_buffer, MAX_COMMAND_LENGTH)) {
+    if (cli_readstring((char *)input_buffer, MAX_COMMAND_LENGTH)) {
         flags |= FLAG_C;
         return;
     }
-    size_t len = strlen((char *)input_buffer);
-    if (len > 0 && input_buffer[len - 1] == '\n')
-        len--;
-    if (len == 0) {
-        input_buffer[0] = 0x0d;
-        flags |= FLAG_C;
-        return;
-    }
-    input_buffer[len] = 0x0d;
     flags &= ~FLAG_C;
 }
 static void select_file(void) {
