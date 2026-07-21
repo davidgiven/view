@@ -13806,7 +13806,7 @@ caf19:
     //     bcc caf2a
     if (!(flags & FLAG_C)) goto caf2a;
     //     adc xpos
-    { uint16_t sum = (uint16_t)a + xpos; a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc(xpos);
     // caf28:
 caf28:
     //     sta xpos
