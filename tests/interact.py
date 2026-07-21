@@ -1232,6 +1232,33 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_indent(self):
+        """Insert a ruler with '>' at column 7, then type on the next line."""
+        self._test_enter_editor_and_type(
+        CTRL_O+CTRL_S+b"       >"+CTRL_M+ b"hello"
+            ,
+            [
+                "FJ        >.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "..        >.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "          hello                                                                 ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_indent_and_margin_release(self):
+        """Insert a ruler with '>' at column 7, then type on the next line, then insert some text in the margin."""
+        self._test_enter_editor_and_type(
+        CTRL_O+CTRL_S+b"       >"+CTRL_M+ b"hello"
+        +CTRL_O+CTRL_X+b">>"
+            ,
+            [
+                "FJ        >.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "..        >.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   >>     hello                                                                 ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_enter_editor_after_loading_jabber(self):
         output, screen = self._load_and_enter_editor("examples/jabber.v")
         self.assertIn(
