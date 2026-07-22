@@ -205,6 +205,52 @@ class PrintTests(unittest.TestCase):
             keep_empty=True,
         )
 
+    def test_ts_swaps_header_footer_on_even_pages(self):
+        """Set TS 1: two-sided output swaps left/right on even pages."""
+        keys = self._page_layout_setup()
+        keys += _command("TS", "1") + CTRL_M
+        keys += b"A" + CTRL_M + _command("PE", "") + CTRL_M + b"B"
+        self._type_and_screen(
+            keys,
+            [
+                b"lefth                            middleh                            righth",
+                b"", b"A", b"",
+                b"leftf                            middlef                            rightf",
+                b"", b"",
+                b"righth                           middleh                             lefth",
+                b"", b"", b"",
+                b"rightf                           middlef                             leftf",
+                b"", b"",
+                b"lefth                            middleh                            righth",
+                b"", b"B", b"",
+                b"leftf                            middlef                            rightf",
+            ],
+            keep_empty=True,
+        )
+
+    def test_ts_one_one_indents_alternate_pages(self):
+        """TS 1 1: two-sided with rhs_extra_margin=1 indents odd pages one space."""
+        keys = self._page_layout_setup()
+        keys += _command("TS", "1") + b" 1" + CTRL_M
+        keys += b"A" + CTRL_M + _command("PE", "") + CTRL_M + b"B"
+        self._type_and_screen(
+            keys,
+            [
+                b" lefth                            middleh                            righth",
+                b"", b" A", b"",
+                b" leftf                            middlef                            rightf",
+                b"", b"",
+                b"righth                           middleh                             lefth",
+                b"", b"", b"",
+                b"rightf                           middlef                             leftf",
+                b"", b"",
+                b" lefth                            middleh                            righth",
+                b"", b" B", b"",
+                b" leftf                            middlef                            rightf",
+            ],
+            keep_empty=True,
+        )
+
     def test_ep_even_page_eject(self):
         """Insert EP (even page eject) — B goes on the next even page (4)."""
         self._page_eject_test("EP", [
