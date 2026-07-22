@@ -5799,13 +5799,13 @@ c9472:
     if (!(flags & FLAG_C)) a = 0x2a; // '*'
     // c947e:
     //     jsr set_inverted_text_if_not_mode_7
-    a = STYLE_REVERSE; screen_setstyle(a);
+    screen_setstyle(STYLE_REVERSE);
     //     jsr bdos_print_char
     cli_putchar(a);
     //     pla
     a = saved_a; }
     //     jmp set_normal_text_if_not_mode_7
-    a = 0; screen_setstyle(a);
+    screen_setstyle(0);
     return;
 
 c9488:
