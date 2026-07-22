@@ -82,10 +82,9 @@ class PtyProcess:
         while time.time() < deadline:
             if pattern in self._buf:
                 break
-            remaining = deadline - time.time()
-            if remaining <= 0:
-                break
-            self.read(timeout=remaining)
+            data = self.read(timeout=max(0.01, deadline - time.time()))
+            if data:
+                deadline = time.time() + timeout  # reset on any data
         if pattern in self._buf:
             idx = self._buf.index(pattern) + len(pattern)
             data = self._buf[:idx]
