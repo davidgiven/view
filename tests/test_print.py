@@ -100,8 +100,8 @@ class PrintTests(unittest.TestCase):
             keep_empty=True,
         )
 
-    def test_page_layout(self):
-        """Set TM, DH, PL, DF, HM, BM, FM and verify every output line."""
+    def _page_layout_setup(self):
+        """Return keys to set up a small test page (PL 5, TM 1, HM 1, BM 1, FM 1)."""
         keys = _command("TM", "1") + CTRL_M
         keys += _command("DH", "/lefth/middleh/righth/") + CTRL_M
         keys += _command("PL", "5") + CTRL_M
@@ -109,18 +109,79 @@ class PrintTests(unittest.TestCase):
         keys += _command("HM", "1") + CTRL_M
         keys += _command("BM", "1") + CTRL_M
         keys += _command("FM", "1") + CTRL_M
+        return keys
+
+    def test_page_layout(self):
+        """Set TM, DH, PL, DF, HM, BM, FM and verify every output line."""
+        keys = self._page_layout_setup()
         keys += _command("LJ", "Body")
         self._type_and_screen(
             keys,
-            [
-                b"lefth                            middleh                            righth",
-                b"",
-                b"Body",
-                b"",
-                b"leftf                            middlef                            rightf",
-            ],
+            [b"lefth                            middleh                            righth",
+             b"", b"Body", b"",
+             b"leftf                            middlef                            rightf"],
             keep_empty=True,
         )
+
+    def _page_eject_test(self, cmd, expected_lines):
+        """Run a page-eject test for the given format command with full expected output."""
+        keys = self._page_layout_setup()
+        keys += b"A" + CTRL_M
+        keys += _command(cmd, "") + CTRL_M
+        keys += b"B"
+        self._type_and_screen(keys, expected_lines, keep_empty=True)
+
+    def test_pe_page_eject(self):
+        """Insert PE (page eject) and verify it breaks between pages."""
+        self._page_eject_test("PE", [
+            b"lefth                            middleh                            righth",
+            b"", b"A", b"",
+            b"leftf                            middlef                            rightf",
+            b"", b"",
+            b"lefth                            middleh                            righth",
+            b"", b"", b"",
+            b"leftf                            middlef                            rightf",
+            b"", b"",
+            b"lefth                            middleh                            righth",
+            b"", b"B", b"",
+            b"leftf                            middlef                            rightf",
+        ])
+
+    def test_op_odd_page_eject(self):
+        """Insert OP (odd page eject) — B goes on the next odd page (3)."""
+        self._page_eject_test("OP", [
+            b"lefth                            middleh                            righth",
+            b"", b"A", b"",
+            b"leftf                            middlef                            rightf",
+            b"", b"",
+            b"lefth                            middleh                            righth",
+            b"", b"", b"",
+            b"leftf                            middlef                            rightf",
+            b"", b"",
+            b"lefth                            middleh                            righth",
+            b"", b"B", b"",
+            b"leftf                            middlef                            rightf",
+        ])
+
+    def test_ep_even_page_eject(self):
+        """Insert EP (even page eject) — B goes on the next even page (4)."""
+        self._page_eject_test("EP", [
+            b"lefth                            middleh                            righth",
+            b"", b"A", b"",
+            b"leftf                            middlef                            rightf",
+            b"", b"",
+            b"lefth                            middleh                            righth",
+            b"", b"", b"",
+            b"leftf                            middlef                            rightf",
+            b"", b"",
+            b"lefth                            middleh                            righth",
+            b"", b"", b"",
+            b"leftf                            middlef                            rightf",
+            b"", b"",
+            b"lefth                            middleh                            righth",
+            b"", b"B", b"",
+            b"leftf                            middlef                            rightf",
+        ])
 
 
 if __name__ == "__main__":
