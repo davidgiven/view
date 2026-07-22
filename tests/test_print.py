@@ -56,6 +56,30 @@ class PrintTests(unittest.TestCase):
             ["                                  Hello"],
         )
 
+    def test_lj_left_justifies_text(self):
+        """Type LJ format command + text, SCREEN should show left-justified output."""
+        self._type_and_screen(
+            _command("LJ", "Hello"),
+            ["Hello"],
+        )
+
+    def test_rj_right_justifies_text(self):
+        """Type RJ format command + text, SCREEN should show right-justified output."""
+        self._type_and_screen(
+            _command("RJ", "Hello"),
+            ["                                                                     Hello"],
+        )
+
+    def test_lj_with_indented_ruler(self):
+        """Set ruler left stop (>) then LJ text."""
+        keys = CTRL_O + CTRL_S + b"     >" + CTRL_M + _command("LJ", "Hello")
+        self._type_and_screen(keys, ["Hello"])
+
+    def test_lj_with_left_margin(self):
+        """Set LM indentation, then LJ text — output indented accordingly."""
+        keys = _command("LM", "10") + CTRL_M + _command("LJ", "Hello")
+        self._type_and_screen(keys, ["          Hello"])
+
 
 if __name__ == "__main__":
     unittest.main()
