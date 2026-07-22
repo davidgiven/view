@@ -5512,9 +5512,6 @@ return_29:
 static void sub_c93c8(void) {
     // Pseudocode: Copies header/footer text to output_buffer, expanding register references
 
-    //     rts
-    return;
-
     // sub_c93c8:
     //     ldx #0
     x = 0;
@@ -5525,7 +5522,7 @@ static void sub_c93c8(void) {
     // c93ce:
 c93ce:
     //     lda (tmp2),y
-    a = ram[(uint16_t)tmp2 + y];
+    a = ram[((uint16_t)tmp3 << 8 | tmp2) + y];
     set_flags(a);
     //     bmi c93e6
     if (flags & FLAG_N) goto c93e6;
@@ -5576,7 +5573,7 @@ return_30:
     // c93f2:
 c93f2:
     //     lda (tmp2),y
-    a = ram[(uint16_t)tmp2 + y];
+    a = ram[((uint16_t)tmp3 << 8 | tmp2) + y];
     set_flags(a);
     //     bmi c93e6
     if (flags & FLAG_N) goto c93e6;
@@ -5610,9 +5607,6 @@ return_31:
 }
 static void sub_c9407(void) {
     // Pseudocode: Outputs left margin spaces, adjusting for two-sided printing
-
-    //     rts
-    return;
 
     // sub_c9407:
     //     jsr sub_c93fd

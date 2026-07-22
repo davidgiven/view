@@ -51,7 +51,8 @@ class PrintTests(unittest.TestCase):
                 lines.pop()
         else:
             lines = [l.rstrip(b"\r") for l in output.split(b"\n") if l.strip()]
-        self.assertEqual(lines, [s.encode("ascii") for s in expected_lines])
+        expected = [s.encode("ascii") if isinstance(s, str) else s for s in expected_lines]
+        self.assertEqual(lines, expected)
 
     def test_type_text_and_screen(self):
         """Type 'test' in the editor, ESC, SCREEN, verify output."""
@@ -96,6 +97,28 @@ class PrintTests(unittest.TestCase):
         self._type_and_screen(
             keys,
             ["123", "456", "123", "", "", "456"],
+            keep_empty=True,
+        )
+
+    def test_page_layout(self):
+        """Set TM, DH, PL, DF, HM, BM, FM and verify every output line."""
+        keys = _command("TM", "1") + CTRL_M
+        keys += _command("DH", "/lefth/middleh/righth/") + CTRL_M
+        keys += _command("PL", "5") + CTRL_M
+        keys += _command("DF", "/leftf/middlef/rightf/") + CTRL_M
+        keys += _command("HM", "1") + CTRL_M
+        keys += _command("BM", "1") + CTRL_M
+        keys += _command("FM", "1") + CTRL_M
+        keys += _command("LJ", "Body")
+        self._type_and_screen(
+            keys,
+            [
+                b"lefth                            middleh                            righth",
+                b"",
+                b"Body",
+                b"",
+                b"leftf                            middlef                            rightf",
+            ],
             keep_empty=True,
         )
 
