@@ -78,13 +78,22 @@ class PtyProcess:
             return b""
 
     def read_until(self, pattern, timeout=5.0):
-        deadline = time.time() + timeout
-        while time.time() < deadline:
+        idle = 0.0
+        while True:
             if pattern in self._buf:
                 break
-            data = self.read(timeout=max(0.01, deadline - time.time()))
-            if data:
-                deadline = time.time() + timeout  # reset on any data
+            r, _, _ = select.select([self.master_fd], [], [], 0.05)
+            if not r:
+                idle += 0.05
+                if idle >= timeout:
+                    break
+                continue
+            idle = 0.0
+            try:
+                data = os.read(self.master_fd, 4096)
+                self._buf += data
+            except OSError:
+                break
         if pattern in self._buf:
             idx = self._buf.index(pattern) + len(pattern)
             data = self._buf[:idx]
@@ -127,8 +136,7 @@ class PtyProcess:
         self._buf = b""
         return status, output
 
-    def drain(self, timeout=0.3):
-        time.sleep(0.1)
+    def drain(self, timeout=0.05):
         while True:
             r, _, _ = select.select([self.master_fd], [], [], timeout)
             if not r:
