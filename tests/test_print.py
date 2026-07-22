@@ -23,8 +23,10 @@ class PrintTests(unittest.TestCase):
     def tearDown(self):
         self.proc.close()
 
-    def _type_and_screen(self, keys_to_type, expected_lines):
-        """Type keys into the editor, exit with Escape, SCREEN, compare output."""
+    def _type_and_screen(self, keys_to_type, expected_lines, keep_empty=False):
+        """Type keys into the editor, exit with Escape, SCREEN, compare output.
+        If keep_empty is True, empty lines are included in the comparison.
+        """
         self.proc.read_until(b"=>", timeout=0.5)
         self.proc.writeline("")
         self.proc.drain()
@@ -42,7 +44,13 @@ class PrintTests(unittest.TestCase):
         if prompt_pos >= 0:
             output = output[:prompt_pos]
 
-        lines = [l.rstrip(b"\r") for l in output.split(b"\n") if l.strip()]
+        if keep_empty:
+            lines = [l.rstrip(b"\r") for l in output.split(b"\n")]
+            # strip trailing empty lines
+            while lines and lines[-1] == b"":
+                lines.pop()
+        else:
+            lines = [l.rstrip(b"\r") for l in output.split(b"\n") if l.strip()]
         self.assertEqual(lines, [s.encode("ascii") for s in expected_lines])
 
     def test_type_text_and_screen(self):
@@ -79,6 +87,17 @@ class PrintTests(unittest.TestCase):
         """Set LM indentation, then LJ text — output indented accordingly."""
         keys = _command("LM", "10") + CTRL_M + _command("LJ", "Hello")
         self._type_and_screen(keys, ["          Hello"])
+
+    def test_ls_doubles_line_spacing(self):
+        """Type two lines, set LS 2, type two more — verify extra blank line."""
+        keys = b"123" + CTRL_M + b"456" + CTRL_M
+        keys += _command("LS", "2") + CTRL_M
+        keys += b"123" + CTRL_M + b"456"
+        self._type_and_screen(
+            keys,
+            ["123", "456", "123", "", "", "456"],
+            keep_empty=True,
+        )
 
 
 if __name__ == "__main__":
