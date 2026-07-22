@@ -163,6 +163,48 @@ class PrintTests(unittest.TestCase):
             b"leftf                            middlef                            rightf",
         ])
 
+    def test_he_zero_suppresses_header(self):
+        """Set HE 0, then PE — pages after the eject have no header."""
+        keys = self._page_layout_setup()
+        keys += _command("HE", "0") + CTRL_M
+        keys += b"Body" + CTRL_M + _command("PE", "") + CTRL_M + b"Body2"
+        self._type_and_screen(
+            keys,
+            [
+                b"Body",
+                b"",
+                b"leftf                            middlef                            rightf",
+                b"", b"", b"", b"", b"", b"",
+                b"leftf                            middlef                            rightf",
+                b"", b"", b"", b"",
+                b"Body2",
+                b"",
+                b"leftf                            middlef                            rightf",
+            ],
+            keep_empty=True,
+        )
+
+    def test_fo_zero_suppresses_footer(self):
+        """Set FO 0, then PE — pages have no footer."""
+        keys = self._page_layout_setup()
+        keys += _command("FO", "0") + CTRL_M
+        keys += b"Body" + CTRL_M + _command("PE", "") + CTRL_M + b"Body2"
+        self._type_and_screen(
+            keys,
+            [
+                b"lefth                            middleh                            righth",
+                b"",
+                b"Body",
+                b"", b"", b"", b"",
+                b"lefth                            middleh                            righth",
+                b"", b"", b"", b"", b"", b"",
+                b"lefth                            middleh                            righth",
+                b"",
+                b"Body2",
+            ],
+            keep_empty=True,
+        )
+
     def test_ep_even_page_eject(self):
         """Insert EP (even page eject) — B goes on the next even page (4)."""
         self._page_eject_test("EP", [
