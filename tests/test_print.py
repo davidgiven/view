@@ -251,6 +251,15 @@ class PrintTests(unittest.TestCase):
             keep_empty=True,
         )
 
+    def test_dm_em_macro_definition(self):
+        """Define macro ZZ via DM ZZ … EM, invoke it twice via ZZ."""
+        keys = _command("DM", "ZZ") + CTRL_M
+        keys += b"Body" + CTRL_M
+        keys += _command("EM", "") + CTRL_M
+        keys += _command("ZZ", "") + CTRL_M
+        keys += _command("ZZ", "")
+        self._type_and_screen(keys, [b"Body", b"Body"])
+
     def test_ep_even_page_eject(self):
         """Insert EP (even page eject) — B goes on the next even page (4)."""
         self._page_eject_test("EP", [

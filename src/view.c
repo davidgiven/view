@@ -6649,13 +6649,13 @@ c96ce:
     //     jsr check_for_command_prefix
     flags = check_for_command_prefix(a);
     //     bne c96f8
-    if (!(flags & FLAG_Z)) { last_macro_ptr = (uint16_t)tmp0 | ((uint16_t)tmp1 << 8); return; }
+    if (!(flags & FLAG_Z)) goto c96f8;
     //     jsr lookup_formatting_command
     lookup_formatting_command();
     //     cpx #5
     cmp(x, 5);
     //     bne c96f8
-    if (!(flags & FLAG_Z)) { last_macro_ptr = (uint16_t)tmp0 | ((uint16_t)tmp1 << 8); return; }
+    if (!(flags & FLAG_Z)) goto c96f8;
     //     lda #4
     a = 4;
     //     ldy #0
@@ -6684,6 +6684,19 @@ add_macro_to_linked_list:
     ram[((uint16_t)tmp7 << 8) | (uint16_t)(tmp6 + y)] = a;
     //     rts
     return;
+
+    // c96f8:
+c96f8:
+    //     lda tmp0
+    a = tmp0;
+    //     sta last_macro_ptr
+    last_macro_ptr = (last_macro_ptr & 0xff00) | a;
+    //     lda tmp1
+    a = tmp1;
+    //     sta last_macro_ptr+1
+    last_macro_ptr = (last_macro_ptr & 0x00ff) | ((uint16_t)a << 8);
+    //     bne c96a2                                                         ; ALWAYS branch
+    goto c96a2;
 }
 static void ht_fmt_cmd(void) {
     // Pseudocode: Sets highlight codes (highlight1_code, highlight2_code) from format command
