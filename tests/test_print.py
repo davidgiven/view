@@ -260,6 +260,15 @@ class PrintTests(unittest.TestCase):
         keys += _command("ZZ", "")
         self._type_and_screen(keys, [b"Body", b"Body"])
 
+    def test_dm_em_macro_with_parameters(self):
+        """Define macro with @0 parameter, invoke with different arguments."""
+        keys = _command("DM", "ZZ") + CTRL_M
+        keys += b"Body: <@0>" + CTRL_M
+        keys += _command("EM", "") + CTRL_M
+        keys += _command("ZZ", "one") + CTRL_M
+        keys += _command("ZZ", "two")
+        self._type_and_screen(keys, [b"Body: <one>", b"Body: <two>"])
+
     def test_ep_even_page_eject(self):
         """Insert EP (even page eject) — B goes on the next even page (4)."""
         self._page_eject_test("EP", [
