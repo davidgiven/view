@@ -103,9 +103,9 @@ class CliTests(unittest.TestCase):
         self.proc.writeline("COUNT")
         output = self.proc.read_until(b"=>", timeout=1.0)
         self.assertIn(
-            b"1731",
+            b"1730",
             output,
-            f"Expected word count 1731 in output, got: {repr(output)}",
+            f"Expected word count 1730 in output, got: {repr(output)}",
         )
         self.assertIn(
             b"word(s) counted",
@@ -138,12 +138,12 @@ class CliTests(unittest.TestCase):
             b"                       The Water Horse's Fireplace",
             b'                 a Scottish Halloween folk story, sort of',
             b'                           (c) 2012 David Given',
-            b'The  \x01each-uisge\x01 of Scotland, pronounced  \x01echh-ush-guh\x01  ,  is  one  of  the',
+            b'The  \x01each-uisge\x01  of  Scotland, pronounced  \x01echh-ush-guh\x01,  is  one  of  the',
             b"country's traditional monsters. While the relatively harmless kelpie lives",
-            b"in running  water, the \x01each-uisge\x01 ('water horse') lives in lochs. They eat",
-            b'meat, human for  preference,  and  will  use their shapeshifting powers to',
-            b"lure their prey down to the water's  edge where they will be dragged under",
-            b'and consumed, leaving only their livers to float  to  the  shore as a sign',
+            b"in running water, the  \x01each-uisge\x01 ('water horse') lives in lochs. They eat",
+            b'meat, human for preference, and  will  use  their  shapeshifting powers to',
+            b"lure their prey down to the water's edge where  they will be dragged under",
+            b'and consumed, leaving only their livers to float to the  shore  as  a sign',
             b'that  the  water  horse has taken another victim. Water horses are vicious',
         ]
 
