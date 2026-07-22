@@ -122,16 +122,16 @@ class CliTests(unittest.TestCase):
         self.proc.writeline("SCREEN")
         output = self.proc.read_until(b"=>", timeout=3.0)
 
-        # Strip the command echo (SCREEN\r\n) and trailing prompt
-        start = output.find(b"SCREEN\r\n")
+        # Strip the command echo (SCREEN\r\n or SCREEN\n) and trailing prompt
+        start = output.find(b"SCREEN")
         if start >= 0:
-            output = output[start + 8:]
+            output = output[start + 6:].lstrip(b"\r\n")
         prompt_pos = output.rfind(b"=>")
         if prompt_pos >= 0:
             output = output[:prompt_pos]
 
-        # Split on CR to get lines; take first 10 non-empty
-        lines = [l for l in output.split(b"\r") if l.strip()]
+        # Split on NL to get lines; take first 10 non-empty, stripping trailing CR
+        lines = [l.rstrip(b"\r") for l in output.split(b"\n") if l.strip()]
         first_ten = lines[:10]
 
         expected = [

@@ -271,7 +271,7 @@ static void read_next_chunk_from_input_file(void);
 static void sub_c8da2(void);
 static void print_newline(void);
 static void print_char(void);
-static void print_char_just_to_printer(void);
+static void print_char_just_to_screen(void);
 static void sub_caed6(void);
 static void sub_caedd(void);
 static void compute_space_common(void);
@@ -364,6 +364,8 @@ static void page_eject_fmt(void);
 static void parse_boolean_from_fmt_cmd(void);
 static void parse_integer_from_command(void);
 static void print_document(void);
+static void c8f29_sub(void);
+static void print_loop(void);
 static void read_block_from_file(void);
 static void render_new_page(void);
 static void sub_c916a(void);
@@ -3915,6 +3917,16 @@ static void display_nl_then_no_text(void) {
     cli_putchar('\n');
     display_no_text();
 }
+static void c8f29_sub(void) {
+    // c8f29:
+    //     #if 0
+    //     lda #0x40 ; '@'
+    //     jsr open_file
+    //     #endif
+    //     sta rw_file_handle
+    rw_file_handle = a;
+    //     rts (falls through to c8f30 in original 6502)
+}
 static void print_document(void) {
     // print_document:
     //     jsr check_not_continuous_editing
@@ -3995,7 +4007,7 @@ c8edb:
     //     sta ptr6+1
     ptr6 = (ptr6 & 0x00ff) | ((uint16_t)a << 8);
     //     bne c8f30
-    if (a != 0) goto c8f30;
+    if (a != 0) { print_loop(); goto c8f0d; }
     // c8f0a:
 c8f0a:
     // c8f0d:
@@ -4003,7 +4015,7 @@ c8f0d:
     //     jsr parse_optional_filename_from_command
     parse_optional_filename_from_command();
     //     bne c8f29
-    if (!(flags & FLAG_Z)) goto c8f29;
+    if (!(flags & FLAG_Z)) { c8f29_sub(); print_loop(); goto c8f0d; }
     //     lda l0031
     a = l0031;
     set_flags(a);
@@ -4019,263 +4031,267 @@ c8f0d:
     //     jsr stop_printing
     //     jsr bdos_print_newline
     //     jmp return_to_cli_prompt
-
-    // c8f29:
-c8f29:
-    //     #if 0
-    //     lda #0x40 ; '@'
-    //     jsr open_file
-    //     #endif
-    //     sta rw_file_handle
-    rw_file_handle = a;
+}
+static void print_loop(void) {
     // c8f30:
-c8f30:
-    //     lda l0031
-    a = l0031;
-    //     beq c8f3b
-    if (a == 0) goto c8f3b;
-    //     lda l0021
-    a = l0021;
-    //     bne c8f3b
-    if (a != 0) goto c8f3b;
-    //     jsr c9263
-    c9263();
-    // c8f3b:
-c8f3b:
-    //     jsr sub_c9188
-    sub_c9188();
-    //     bcs c8f0a
-    if (flags & FLAG_C) goto c8f0a;
-    //     jsr sub_c916a
-    sub_c916a();
-    //     ldy #0
-    y = 0;
-    //     sty input_buffer_offset+1
-    l0080 = y;
-    //     jsr deref_and_check_for_command_prefix
-    flags = deref_and_check_for_command_prefix();
-    //     bne c8fce_thunk
-    if (!(flags & FLAG_Z)) goto c8fce_thunk;
-    //     ldy #3
-    y = 3;
-    //     sty input_buffer_offset+1
-    l0080 = y;
-    //     jsr sub_cab6e
-    sub_cab6e();
-    //     bne c8f6e
-    if (!(flags & FLAG_Z)) goto c8f6e;
-    //     ldy #3
-    y = 3;
-    //     ldx #0
-    x = 0;
-    // loop_c8f5d:
-loop_c8f5d:
-    //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
-    //     sta current_ruler_buffer,x
-    current_ruler_buffer[x] = a;
-    //     iny
-    y++;
-    //     inx
-    x++;
-    //     cmp #0x0d
-    //     bne loop_c8f5d
-    if (a != 0x0d) goto loop_c8f5d;
-    //     jsr find_margins_of_current_ruler_buffer
-    find_margins_of_current_ruler_buffer();
-    // c8f6b:
-c8f6b:
-    //     jmp c900e
-    goto c900e;
+    while (1) {
+        //     lda l0031
+        a = l0031;
+        set_flags(a);
+        //     beq c8f3b
+        if (flags & FLAG_Z) goto c8f3b_l;
+        //     lda l0021
+        a = l0021;
+        set_flags(a);
+        //     bne c8f3b
+        if (!(flags & FLAG_Z)) goto c8f3b_l;
+        //     jsr c9263
+        c9263();
+        // c8f3b:
+c8f3b_l:
+        //     jsr sub_c9188
+        sub_c9188();
+        //     bcs c8f0a
+        if (flags & FLAG_C) return;
+        //     jsr sub_c916a
+        sub_c916a();
+        //     ldy #0
+        y = 0;
+        //     sty input_buffer_ptr+1
+        l0080 = y;
+        //     jsr deref_and_check_for_command_prefix
+        flags = deref_and_check_for_command_prefix();
+        //     bne c8fce_thunk
+        if (!(flags & FLAG_Z)) goto c8fce_thunk_l;
+        //     ldy #3
+        y = 3;
+        //     sty input_buffer_ptr+1
+        l0080 = y;
+        //     jsr sub_cab6e
+        sub_cab6e();
+        //     bne c8f6e
+        if (!(flags & FLAG_Z)) goto c8f6e_l;
+        //     ldy #3
+        y = 3;
+        //     ldx #0
+        x = 0;
+        // loop_c8f5d:
+loop_c8f5d_l:
+        //     lda (tmp0),y
+        a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
+        //     sta current_ruler_buffer,x
+        current_ruler_buffer[x] = a;
+        //     iny
+        y++;
+        //     inx
+        x++;
+        //     cmp #0x0d
+        cmp(a, 0x0d);
+        //     bne loop_c8f5d
+        if (!(flags & FLAG_Z)) goto loop_c8f5d_l;
+        //     jsr find_margins_of_current_ruler_buffer
+        find_margins_of_current_ruler_buffer();
+        // c8f6b:
+c8f6b_l:
+        //     jmp c900e
+        continue;
 
-    // c8f6e:
-c8f6e:
-    //     jsr lookup_formatting_command
-    lookup_formatting_command();
-    //     bmi c8f7a
-    if (flags & FLAG_N) goto c8f7a;
-    //     jsr execute_formatting_command
-    execute_formatting_command();
-    //     beq c8f6b
-    if (flags & FLAG_Z) goto c8f6b;
-    // c8fce_thunk:
-c8fce_thunk:
-    //     bne c8fce                                                         ; ALWAYS branch
-    goto c8fce;
+        // c8f6e:
+c8f6e_l:
+        //     jsr lookup_formatting_command
+        lookup_formatting_command();
+        //     bmi c8f7a
+        if (flags & FLAG_N) goto c8f7a_l;
+        //     jsr execute_formatting_command
+        execute_formatting_command();
+        //     beq c8f6b
+        if (flags & FLAG_Z) goto c8f6b_l;
+        // c8fce_thunk:
+c8fce_thunk_l:
+        //     bne c8fce                                                         ; ALWAYS branch
+        goto c8fce_l;
 
-    // c8f7a:
-c8f7a:
-    //     lda first_macro_ptr
-    a = (uint8_t)(first_macro_ptr & 0xff);
-    //     sta tmp6
-    tmp6 = a;
-    //     lda first_macro_ptr+1
-    a = (uint8_t)(first_macro_ptr >> 8);
-    //     sta tmp7
-    tmp7 = a;
-    //     ldy #1
-    y = 1;
-    //     lda (current_format_line_ptr),y
-    a = ram[current_format_line_ptr + y];
-    //     sta tmp8
-    tmp8 = a;
-    //     iny                                                               ; Y=0x02
-    y++;
-    //     lda (current_format_line_ptr),y
-    a = ram[current_format_line_ptr + y];
-    //     jsr is_uppercase
-    if (isupper(a)) { flags &= ~FLAG_C; } else { flags |= FLAG_C; }
-    //     bcc c8f92
-    if (!(flags & FLAG_C)) goto c8f92;
-    //     lda #0x20 ; ' '
-    a = 0x20;
-    // c8f92:
-c8f92:
-    //     sta tmp9
-    tmp9 = a;
-    // lookup_macro_name:
-lookup_macro_name:
-    //     ldy #0
-    y = 0;
-    //     lda (tmp6),y
-    a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
-    //     beq c8f6b
-    if (a == 0) goto c8f6b;
-    //     ldy #2
-    y = 2;
-    //     lda (tmp6),y
-    a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
-    //     cmp tmp8
-    cmp(a, tmp8);
-    //     bne get_next_macro_in_linked_list
-    if (!(flags & FLAG_Z)) goto get_next_macro_in_linked_list;
-    //     iny                                                               ; Y=0x03
-    y++;
-    //     lda (tmp6),y
-    a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
-    //     cmp tmp9
-    cmp(a, tmp9);
-    //     beq c8fb9
-    if (flags & FLAG_Z) goto c8fb9;
-    // get_next_macro_in_linked_list:
-get_next_macro_in_linked_list:
-    //     ldy #0
-    y = 0;
-    //     lda (tmp6),y
-    a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
-    //     pha
+        // c8f7a:
+c8f7a_l:
+        //     lda first_macro_ptr
+        a = (uint8_t)(first_macro_ptr & 0xff);
+        //     sta tmp6
+        tmp6 = a;
+        //     lda first_macro_ptr+1
+        a = (uint8_t)(first_macro_ptr >> 8);
+        //     sta tmp7
+        tmp7 = a;
+        //     ldy #1
+        y = 1;
+        //     lda (current_format_line_ptr),y
+        a = ram[current_format_line_ptr + y];
+        //     sta tmp8
+        tmp8 = a;
+        //     iny                                                               ; Y=0x02
+        y++;
+        //     lda (current_format_line_ptr),y
+        a = ram[current_format_line_ptr + y];
+        //     jsr is_uppercase
+        // (is_uppercase returns C=0 for A-Z/a-z, C=1 otherwise)
+        if (a >= 'A' && a < '[') { flags &= ~FLAG_C; }
+        else if (a >= 'a' && a < '{') { flags &= ~FLAG_C; }
+        else { flags |= FLAG_C; }
+        //     bcc c8f92
+        if (!(flags & FLAG_C)) goto c8f92_l;
+        //     lda #0x20 ; ' '
+        a = 0x20;
+        // c8f92:
+c8f92_l:
+        //     sta tmp9
+        tmp9 = a;
+        // lookup_macro_name:
+lookup_macro_name_l:
+        //     ldy #0
+        y = 0;
+        //     lda (tmp6),y
+        a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
+        set_flags(a);
+        //     beq c8f6b
+        if (flags & FLAG_Z) goto c8f6b_l;
+        //     ldy #2
+        y = 2;
+        //     lda (tmp6),y
+        a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
+        //     cmp tmp8
+        cmp(a, tmp8);
+        //     bne get_next_macro_in_linked_list
+        if (!(flags & FLAG_Z)) goto get_next_macro_in_linked_list_l;
+        //     iny                                                               ; Y=0x03
+        y++;
+        //     lda (tmp6),y
+        a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
+        //     cmp tmp9
+        cmp(a, tmp9);
+        //     beq c8fb9
+        if (flags & FLAG_Z) goto c8fb9_l;
+        // get_next_macro_in_linked_list:
+get_next_macro_in_linked_list_l:
+        //     ldy #0
+        y = 0;
+        //     lda (tmp6),y
+        a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
+        //     pha
 {   uint8_t saved_tmp = a;
-    //     iny                                                               ; Y=0x01
-    y++;
-    //     lda (tmp6),y
-    a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
-    //     sta tmp7
-    tmp7 = a;
-    //     pla
-    a = saved_tmp; }
-    //     sta tmp6
-    tmp6 = a;
-    //     jmp lookup_macro_name
-    goto lookup_macro_name;
+        //     iny                                                               ; Y=0x01
+        y++;
+        //     lda (tmp6),y
+        a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
+        //     sta tmp7
+        tmp7 = a;
+        //     pla
+        a = saved_tmp; }
+        //     sta tmp6
+        tmp6 = a;
+        //     jmp lookup_macro_name
+        goto lookup_macro_name_l;
 
-    // c8fb9:
-c8fb9:
-    //     lda macro_executing_flag
-    a = macro_executing_flag;
-    //     bne nested_macro_error
-    if (a != 0) { nested_macro_error(); return; }
-    //     lda tmp6
-    a = tmp6;
-    //     clc
-    flags &= ~FLAG_C;
-    //     adc #4
-    adc(4);
-    //     sta ptr3
-    ptr3 = (ptr3 & 0xff00) | a;
-    //     lda tmp7
-    a = tmp7;
-    //     adc #0
-    adc(0);
-    //     sta ptr3+1
-    ptr3 = (ptr3 & 0x00ff) | ((uint16_t)a << 8);
-    //     sta macro_executing_flag
-    macro_executing_flag = a;
-    //     bne c900e
-    if (a != 0) goto c900e;
-    // c8fce:
-c8fce:
-    //     lda l0031
-    a = l0031;
-    //     bne c8fd5
-    if (a != 0) goto c8fd5;
-    //     jsr render_new_page
-    render_new_page();
-    // c8fd5:
-c8fd5:
-    //     jsr sub_c9407
-    sub_c9407();
-    //     lda #0
-    a = 0;
-    //     sta l0039
-    l0039 = a;
-    //     ldy input_buffer_offset+1
-    y = l0080;
-    //     lda print_flags
-    a = print_flags;
-    set_flags(a);
-    //     bpl c8fe6
-    if (!(flags & FLAG_N)) goto c8fe6;
-    //     lda microspacing_flag
-    a = microspacing_flag;
-    //     bne c9034
-    if (a != 0) { microspace_word_processor(); goto c8f30; }
-    // c8fe6:
-    c8fe6:
-    //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
-    //     iny
-    y++;
-    //     jsr sub_c9431
-    sub_c9431();
-    //     jsr c9426
-    while (x > 0) { print_char(); x--; }
-    //     cmp #0x0d
-    //     bne c8fe6
-    if (a != 0x0d) goto c8fe6;
-    //     inc register_value_l
-    ram[RAM_REGISTER_VALUE_L]++; set_flags(ram[RAM_REGISTER_VALUE_L]);
-    //     bne c8ffb
-    if (!(flags & FLAG_Z)) goto c8ffb;
-    //     inc register_value_l+1
-    ram[RAM_REGISTER_VALUE_L+1]++; set_flags(ram[RAM_REGISTER_VALUE_L+1]);
-    // c8ffb:
-c8ffb:
-    //     ldx line_spacing
-    x = line_spacing;
-    //     lda l0021
-    a = l0021;
-    //     clc
-    flags &= ~FLAG_C;
-    //     sbc line_spacing
-    { uint16_t r = (uint16_t)a - (uint16_t)line_spacing - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r < 0x100) flags |= FLAG_C; else flags &= ~FLAG_C; }
-    //     bcs c9009
-    if (flags & FLAG_C) goto c9009;
-    //     lda #0
-    a = 0;
-    //     ldx l0021
-    x = l0021;
-    //     dex
-    x--;
-    // c9009:
-c9009:
-    //     sta l0021
-    l0021 = a;
-    //     jsr print_vertical_space
-    print_vertical_space();
-    // c900e:
-c900e:
-    //     jmp c8f30
-    goto c8f30;
+        // c8fb9:
+c8fb9_l:
+        //     lda macro_executing_flag
+        a = macro_executing_flag;
+        set_flags(a);
+        //     bne nested_macro_error
+        if (!(flags & FLAG_Z)) { nested_macro_error(); return; }
+        //     lda tmp6
+        a = tmp6;
+        //     clc
+        flags &= ~FLAG_C;
+        //     adc #4
+        adc(4);
+        //     sta ptr3
+        ptr3 = (ptr3 & 0xff00) | a;
+        //     lda tmp7
+        a = tmp7;
+        //     adc #0
+        adc(0);
+        //     sta ptr3+1
+        ptr3 = (ptr3 & 0x00ff) | ((uint16_t)a << 8);
+        //     sta macro_executing_flag
+        macro_executing_flag = a;
+        //     bne c900e
+        set_flags(macro_executing_flag);
+        if (!(flags & FLAG_Z)) continue;
+        // c8fce:
+c8fce_l:
+        //     lda l0031
+        a = l0031;
+        set_flags(a);
+        //     bne c8fd5
+        if (!(flags & FLAG_Z)) goto c8fd5_l;
+        //     jsr render_new_page
+        render_new_page();
+        // c8fd5:
+c8fd5_l:
+        //     jsr sub_c9407
+        sub_c9407();
+        //     lda #0
+        a = 0;
+        //     sta l0039
+        l0039 = a;
+        //     ldy input_buffer_ptr+1
+        y = l0080;
+        //     lda print_flags
+        a = print_flags;
+        set_flags(a);
+        //     bpl c8fe6
+        if (!(flags & FLAG_N)) goto c8fe6_l;
+        //     lda microspacing_flag
+        a = microspacing_flag;
+        set_flags(a);
+        //     bne c9034
+        if (!(flags & FLAG_Z)) { microspace_word_processor(); continue; }
+        // c8fe6:
+c8fe6_l:
+        //     lda (tmp0),y
+        a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
+        //     iny
+        y++;
+        //     jsr sub_c9431
+        sub_c9431();
+        //     jsr c9426
+        print_char_x_times();
+        //     cmp #0x0d
+        cmp(a, 0x0d);
+        //     bne c8fe6
+        if (!(flags & FLAG_Z)) goto c8fe6_l;
+        //     inc register_value_l
+        ram[RAM_REGISTER_VALUE_L]++; set_flags(ram[RAM_REGISTER_VALUE_L]);
+        //     bne c8ffb
+        if (!(flags & FLAG_Z)) goto c8ffb_l;
+        //     inc register_value_l+1
+        ram[RAM_REGISTER_VALUE_L+1]++; set_flags(ram[RAM_REGISTER_VALUE_L+1]);
+        // c8ffb:
+c8ffb_l:
+        //     ldx line_spacing
+        x = line_spacing;
+        //     lda l0021
+        a = l0021;
+        //     clc
+        flags &= ~FLAG_C;
+        //     sbc line_spacing
+        sbc(line_spacing);
+        //     bcs c9009
+        if (flags & FLAG_C) goto c9009_l;
+        //     lda #0
+        a = 0;
+        //     ldx l0021
+        x = l0021;
+        //     dex
+        x--;
+        // c9009:
+c9009_l:
+        //     sta l0021
+        l0021 = a;
+        //     jsr print_vertical_space
+        print_vertical_space();
+        // c900e:
+        //     jmp c8f30
+    }
 }
 static void nested_macro_error(void) {
     // nested_macro_error:
@@ -4338,8 +4354,9 @@ c9048:
     //     iny
     y++;
     //     cmp #0x1a
+    cmp(a, 0x1a);
     //     bne c906f
-    if (a != 0x1a) goto c906f;
+    if (!(flags & FLAG_Z)) goto c906f;
     //     bit l0083
     bit(l0083);
     //     bpl c9064
@@ -4370,10 +4387,11 @@ c906b:
     // c906f:
 c906f:
     //     cmp #0x20 ; ' '
+    cmp(a, 0x20);
     //     bcc c9092
-    if (a < 0x20) goto c9092;
+    if (!(flags & FLAG_C)) goto c9092;
     //     bne c9090
-    if (a != 0x20) goto c9090;
+    if (!(flags & FLAG_Z)) goto c9090;
     //     bit l0083
     bit(l0083);
     //     bpl c9064
@@ -4399,7 +4417,7 @@ c9087:
     //     clc
     flags &= ~FLAG_C;
     //     ror l0042
-    { uint8_t old_c = (flags & FLAG_C) ? 1 : 0; flags = (flags & ~FLAG_C) | (l0042 & 1); l0042 = (l0042 >> 1) | (old_c << 7); set_flags(l0042); }
+    l0042 = ror(l0042);
     // c908a:
 c908a:
     //     inc l0048
@@ -4418,15 +4436,17 @@ c9090:
     // c9092:
 c9092:
     //     cmp #9
+    cmp(a, 9);
     //     beq c90a0
-    if (a == 9) goto c90a0;
+    if (flags & FLAG_Z) goto c90a0;
     //     cmp #0x0b
+    cmp(a, 0x0b);
     //     beq c90a0
-    if (a == 0x0b) goto c90a0;
+    if (flags & FLAG_Z) goto c90a0;
     //     sec
     flags |= FLAG_C;
     //     ror l0083
-    { uint8_t old_c = (flags & FLAG_C) ? 1 : 0; flags = (flags & ~FLAG_C) | (l0083 & 1); l0083 = (l0083 >> 1) | (old_c << 7); set_flags(l0083); }
+    l0083 = ror(l0083);
     //     jmp c90b6
     goto c90b6;
 
@@ -4463,11 +4483,13 @@ c90b6:
     //     inx
     x++;
     //     cmp #0x0d
+    cmp(a, 0x0d);
     //     beq c90e2
-    if (a == 0x0d) goto c90e2;
+    if (flags & FLAG_Z) goto c90e2;
     //     cmp #0x20 ; ' '
+    cmp(a, 0x20);
     //     beq c9048
-    if (a == 0x20) goto c9048;
+    if (flags & FLAG_Z) goto c9048;
     //     lda l0048
     a = l0048;
     //     beq c9048
@@ -4505,16 +4527,18 @@ c90b6:
 c90e2:
     //     lda l0045
     a = l0045;
+    set_flags(a);
     //     beq c90f8
-    if (a == 0) goto c90f8;
+    if (flags & FLAG_Z) goto c90f8;
     //     lda ruler_right_stop
     a = ruler_right_stop;
+    set_flags(a);
     //     beq c90f8
-    if (a == 0) goto c90f8;
+    if (flags & FLAG_Z) goto c90f8;
     //     sec
     flags |= FLAG_C;
     //     sbc l0047
-    { int16_t r = (int16_t)a - (int16_t)l0047 - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)r; if (r >= 0) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    sbc(l0047);
     //     bcc c90f8
     if (!(flags & FLAG_C)) goto c90f8;
     //     sbc l0045
@@ -4549,11 +4573,11 @@ c9101:
     // loop_c9107:
 loop_c9107:
     //     asl
-    flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | ((a & 0x80) ? FLAG_C : 0); a <<= 1; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
+    { uint8_t c = (a & 0x80) ? FLAG_C : 0; a <<= 1; flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | c; set_flags(a); }
     //     rol tmp9
-    { uint8_t old_c = (flags & FLAG_C) ? 1 : 0; uint8_t new_c = (tmp9 & 0x80) ? FLAG_C : 0; tmp9 = (tmp9 << 1) | old_c; flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | new_c | (tmp9 == 0 ? FLAG_Z : 0) | (tmp9 & FLAG_N); }
+    tmp9 = rol(tmp9);
     //     asl l0045
-    { uint8_t new_c = (l0045 & 0x80) ? FLAG_C : 0; l0045 <<= 1; flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | new_c | (l0045 == 0 ? FLAG_Z : 0) | (l0045 & FLAG_N); }
+    { uint8_t c = (l0045 & 0x80) ? FLAG_C : 0; l0045 <<= 1; flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | c; set_flags(l0045); }
     //     bcc c9115
     if (!(flags & FLAG_C)) goto c9115;
     //     clc
@@ -4620,8 +4644,9 @@ c9142:
     //     pla
     a = saved_a3;
     //     cmp #0x20 ; ' '
+    cmp(a, 0x20);
     //     bne c915b
-    if (a != 0x20) goto c915b;
+    if (!(flags & FLAG_Z)) goto c915b;
     //     lda microspacing_flag
     a = microspacing_flag;
     //     clc
@@ -4660,8 +4685,9 @@ c9160:
     // c9163:
 c9163:
     //     cmp #0x0d
+    cmp(a, 0x0d);
     //     bne c912b
-    if (a != 0x0d) goto c912b;
+    if (!(flags & FLAG_Z)) goto c912b;
     //     jmp c8ffb
     goto c8ffb_inline;
 }
@@ -4674,10 +4700,11 @@ c8fe6_inline:
     //     jsr sub_c9431
     sub_c9431();
     //     jsr c9426
-    while (x > 0) { print_char(); x--; }
+    print_char_x_times();
     //     cmp #0x0d
+    cmp(a, 0x0d);
     //     bne c8fe6_inline
-    if (a != 0x0d) goto c8fe6_inline;
+    if (!(flags & FLAG_Z)) goto c8fe6_inline;
     //     inc register_value_l
     ram[RAM_REGISTER_VALUE_L]++; set_flags(ram[RAM_REGISTER_VALUE_L]);
     //     bne c8ffb_inline
@@ -4692,7 +4719,7 @@ c8ffb_inline:
     //     clc
     flags &= ~FLAG_C;
     //     sbc line_spacing
-    { uint16_t r = (uint16_t)a - (uint16_t)line_spacing - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r < 0x100) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    sbc(line_spacing);
     //     bcs c9009_inline
     if (flags & FLAG_C) goto c9009_inline;
     //     lda #0
@@ -5714,7 +5741,7 @@ static void sub_c9445(void) {
     // loop_c944c:
 loop_c944c:
     //     jsr print_char_just_to_printer
-    print_char_just_to_printer();
+    print_char_just_to_screen();
     //     dec print_xpos
     print_xpos--;
     //     bne loop_c944c
@@ -5754,9 +5781,9 @@ c9462:
 c9468:
     //     jsr sub_c9445
     sub_c9445();
-    print_char_just_to_printer();
+    print_char_just_to_screen();
 }
-static void print_char_just_to_printer(void) {
+static void print_char_just_to_screen(void) {
     // print_char_just_to_printer:
     //     bit print_flags
     //     bpl c9472
@@ -5789,6 +5816,7 @@ c9472:
 
 c9488:
     //     jmp bdos_print_char
+    if (a == 0x0d) { cli_putchar('\n'); return; }
     cli_putchar(a);
 }
 static void prepare_printer_driver(void) {

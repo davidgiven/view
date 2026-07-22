@@ -174,8 +174,8 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **pl_fmt_cmd** → evaluate_expression_from_fmt_cmd [page_length]
 - **pop_from_ruler_index** → cab91 [status_line_needs_redrawing_flag, ruler_index_ptr]
 - **prepare_printer_driver** [microspacing_flag]
-- **print_char** → print_char_just_to_printer, sub_c9445 [print_xpos]
-- **print_char_just_to_printer** → check_for_control_code, print_char [print_flags]
+- **print_char** → print_char_just_to_screen, sub_c9445 [print_xpos]
+- **print_char_just_to_screen** → check_for_control_code, print_char [print_flags]
 - **print_char_via_putchar**
 - **print_cmd** → print_to_screen, start_printing
 - **print_document** → c9263, check_for_at_least_150_bytes_free, check_not_continuous_editing, deref_and_check_for_command_prefix, execute_formatting_command, find_margins_of_current_ruler_buffer, lookup_formatting_command, microspace_word_processor, nested_macro_error, parse_optional_filename_from_command, print_char, print_vertical_space, render_new_page, sub_c8e33, sub_c916a, sub_c9188, sub_c9407, sub_c9431, sub_cab6e, sub_cb104 [printing_from_file_flag, current_format_line_ptr, current_ruler_buffer, macro_executing_flag, current_ruler_ptr, microspacing_flag, first_macro_ptr, rw_file_handle, last_macro_ptr, print_flags, pri...]
@@ -284,7 +284,7 @@ Functions defined in `view.c` and their callees (only calls to other functions i
 - **sub_c9407** → sub_c93fd [rhs_extra_margin, two_sided_flag, left_margin]
 - **sub_c941a** [l0039]
 - **sub_c9431** → process_document_character [print_flags, l0039]
-- **sub_c9445** → print_char_just_to_printer [print_xpos]
+- **sub_c9445** → print_char_just_to_screen [print_xpos]
 - **sub_c95b2** [l0081, tmp2, tmp3]
 - **sub_c976c** [l0084, tmp8, tmp9] (returns: C)
 - **sub_c9830** → get_line_length, sub_c9936, sub_cadf0, wipe_buffer [current_edit_line_ptr, ruler_right_stop, justifying_flag, output_buffer, input_buffer, print_xpos, l0039, l0084, l0081, l0045, l0043, l0046, l0082, l0042, l0044, tmp8, tmp9]
