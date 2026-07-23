@@ -169,6 +169,28 @@ class CliTests(unittest.TestCase):
             "Expected 'Horse' (capital H) to remain in title",
         )
 
+    def test_read_appends_document(self):
+        """LOAD jabber.v, READ horse.v, COUNT — combined word count."""
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("LOAD examples/jabber.v")
+        self.proc.read_until(b"=>", timeout=1.0)
+
+        self.proc.writeline("READ examples/horse.v")
+        read_output = self.proc.read_until(b"=>", timeout=2.0)
+        self.assertNotIn(
+            b"Not all read in",
+            read_output,
+            f"READ should not say 'Not all read in', got: {repr(read_output)}",
+        )
+
+        self.proc.writeline("COUNT")
+        output = self.proc.read_until(b"=>", timeout=1.0)
+        self.assertIn(
+            b"2005",
+            output,
+            f"Expected combined word count 2005, got: {repr(output)}",
+        )
+
     def test_new_clears_document(self):
         """Load a file, COUNT, NEW, COUNT — verify document is cleared."""
         self.proc.read_until(b"=>", timeout=0.5)

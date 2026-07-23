@@ -1759,7 +1759,6 @@ c8584:
     //     .ascii "Not all read in\r"
     //     .byte 0
     cli_putstring("Not all read in\n");
-
     // c8598:
 c8598:
     //     lda tmp0
@@ -14809,7 +14808,7 @@ static void put_byte_to_file(void) {
 }
 static void get_byte_from_file(void) {
     int c = fgetc(file_ptr);
-    if (c == EOF) {
+    if (c == EOF || c == 0) {
         a = 0;
         flags |= FLAG_C;
         flags = (flags & ~(FLAG_Z | FLAG_N)) | FLAG_Z;
