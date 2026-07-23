@@ -113,6 +113,62 @@ class CliTests(unittest.TestCase):
             f"Expected 'word(s) counted' in output, got: {repr(output)}",
         )
 
+    def test_change_replaces_all_occurrences(self):
+        """LOAD, FOLD 1, CHANGE horse cow, SCREEN — count 'cow' occurrences."""
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("LOAD examples/horse.v")
+        self.proc.read_until(b"=>", timeout=1.0)
+
+        self.proc.writeline("FOLD 1")
+        self.proc.read_until(b"=>", timeout=1.0)
+
+        self.proc.writeline("CHANGE horse cow")
+        self.proc.read_until(b"=>", timeout=2.0)
+
+        self.proc.writeline("SCREEN")
+        output = self.proc.read_until(b"=>", timeout=3.0)
+
+        start = output.find(b"SCREEN")
+        if start >= 0:
+            output = output[start + 6:].lstrip(b"\r\n")
+        prompt_pos = output.rfind(b"=>")
+        if prompt_pos >= 0:
+            output = output[:prompt_pos]
+
+        lines = [l.rstrip(b"\r") for l in output.split(b"\n") if l.strip()]
+        count = sum(l.count(b"cow") for l in lines)
+        self.assertEqual(count, 29)
+
+    def test_change_case_sensitive(self):
+        """FOLD 0 makes CHANGE case-sensitive — 'Horse' in title left alone."""
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("LOAD examples/horse.v")
+        self.proc.read_until(b"=>", timeout=1.0)
+
+        self.proc.writeline("FOLD 0")
+        self.proc.read_until(b"=>", timeout=1.0)
+
+        self.proc.writeline("CHANGE horse cow")
+        self.proc.read_until(b"=>", timeout=2.0)
+
+        self.proc.writeline("SCREEN")
+        output = self.proc.read_until(b"=>", timeout=3.0)
+
+        start = output.find(b"SCREEN")
+        if start >= 0:
+            output = output[start + 6:].lstrip(b"\r\n")
+        prompt_pos = output.rfind(b"=>")
+        if prompt_pos >= 0:
+            output = output[:prompt_pos]
+
+        lines = [l.rstrip(b"\r") for l in output.split(b"\n") if l.strip()]
+        count = sum(l.count(b"cow") for l in lines)
+        self.assertEqual(count, 28)
+        self.assertTrue(
+            any(b"Horse" in l for l in lines),
+            "Expected 'Horse' (capital H) to remain in title",
+        )
+
     def test_new_clears_document(self):
         """Load a file, COUNT, NEW, COUNT — verify document is cleared."""
         self.proc.read_until(b"=>", timeout=0.5)
