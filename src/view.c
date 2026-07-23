@@ -198,7 +198,7 @@ void sub_c8361(void);
 void sub_c8371(void);
 void write_area_to_file(void);
 static void memory_full(void);
-static void run_editor(void);
+void run_editor(void);
 void enter_editor_mode(void);
 void move_cursor_to_top_of_document(void);
 void cb05a(void);
@@ -219,16 +219,13 @@ static void compute_space_common(void);
 void select_file(void);
 void check_for_control_code(void);
 
-static void clear_screen(void);
-static void print_x_words_of_help(void);
+void clear_screen(void);
 static void home_cursor(void);
 static void cursor_on(void);
 static void cursor_off(void);
 static void save_cursor_position(void);
 static void restore_cursor_position(void);
-static void cli_handler_impl(void);
 static void return_to_editor_loop(void);
-static void run_cli(void);
 void prepare_printer_driver(void);
 static void default_print_char(void);
 static void default_printer_on(void);
@@ -254,9 +251,7 @@ static void system_init(void);
 void initialise_document(void);
 static const struct printer_driver default_printer_driver;
 static void sub_ca536(void);
-static void readline(void);
-static void input_line_not_escaped(void);
-static void parse_command(void);
+void parse_command(void);
 static void delete_edit_buffer_bytes_at_xpos(void);
 static void c9e94(void);
 static void render_char(void);
@@ -619,199 +614,10 @@ static void main_(void) {
     initialise_document();
     run_cli();
 }
-static void run_cli(void) {
-    screen_leave();
-    // run_cli:
-    //     jsr clear_screen
-    clear_screen();
-    //     ldx #1
-    x = 1;
-    //     jsr print_x_words_of_help
-    print_x_words_of_help();
-    //     jsr print_inline_string
-    //     .ascii "\r\rBytes free "
-    //     .byte 0
-    cli_putstring("\n\nBytes free ");
-
-    //     jsr compute_bytes_free
-    compute_bytes_free();
-    //     jsr render_number_to_screen
-    render_number_to_screen();
-    //     jsr bdos_print_newline
-    cli_putchar('\n');
-    //     jsr display_document_file_state
-    display_document_file_state();
-    //     bit file_edit_flags
-    bit(file_edit_flags);
-    //     bvs c816d
-    if (flags & FLAG_V) goto c816d;
-    //     lda file_edit_flags
-    a = file_edit_flags;
-    //     ror
-    a = ror(a);
-    //     bcc c816d
-    if (!(flags & FLAG_C)) goto c816d;
-    //     jsr print_inline_string
-    //     .ascii "Input file is "
-    //     .byte 0
-    cli_putstring("Input file is ");
-
-    //     lda input_file_empty_flag
-    a = input_file_empty_flag;
-    //     bne c8163
-    if (a != 0) goto c8163;
-    //     jsr print_inline_string
-    //     .ascii "not "
-    //     .byte 0
-    cli_putstring("not ");
-
-    // c8163:
-c8163:
-    //     jsr print_inline_string
-    //     .ascii "empty\r"
-    //     .byte 0
-    cli_putstring("empty\n");
-
-    // c816d:
-c816d:
-    //     lda printer_driver_name
-    a = printer_driver_name[0];
-    set_flags(a);
-    //     beq c81b6
-    if (flags & FLAG_Z) goto c81b6;
-    //     jsr print_inline_string
-    //     .ascii "Printer "
-    //     .byte 0
-    cli_putstring("Printer ");
-
-    //     ldx #0
-    x = 0;
-    // loop_c819a:
-    //     lda printer_driver_name,x
-    //     cmp #0x0d
-    //     beq c81a7
-    //     jsr bdos_print_char
-    //     inx
-    //     bne loop_c819a
-    do {
-        a = printer_driver_name[x];
-        if (a == 0x0d) break;
-        cli_putchar(a);
-        x++;
-    } while (x != 0);
-    // c81a7:
-    //     lda microspacing_flag
-    a = microspacing_flag;
-    set_flags(a);
-    //     beq c81b3
-    if (flags & FLAG_Z) goto c81b3;
-    //     jsr print_inline_string
-    //     .ascii " (m)"
-    //     .byte 0
-    cli_putstring(" (m)");
-
-    // c81b3:
-c81b3:
-    //     jsr bdos_print_newline
-    cli_putchar('\n');
-    // c81b6:
-c81b6:
-    //     ldx #0
-    x = 0;
-    //     ldy #0
-    y = 0;
-    // c81ba:
-c81ba:
-    //     lda markers_array+1,x
-    a = ((uint8_t*)markers_array)[x + 1];
-    set_flags(a);
-    //     beq c81e7
-    if (flags & FLAG_Z) goto c81e7;
-    //     tya
-    //     bne c81db
-    if (y != 0) goto c81db;
-    //     stx l0083
-    l0083 = x;
-    //     jsr print_inline_string
-    //     .ascii "Marker(s) set "
-    //     .byte 0
-    cli_putstring("Marker(s) set ");
-
-    //     ldx l0083
-    x = l0083;
-    //     ldy #1
-    y = 1;
-    //     bne c81e0                                                         ; ALWAYS branch
-    goto c81e0;
-
-    // c81db:
-c81db:
-    //     lda #0x2c ; ','
-    a = 0x2c;
-    //     jsr screen_putchar
-    screen_putchar(a);
-    // c81e0:
-c81e0:
-    //     txa
-    a = x;
-    //     lsr
-    a = asr(a);
-    //     adc #0x31 ; '1'
-    adc(0x31);
-    //     jsr screen_putchar
-    screen_putchar(a);
-    // c81e7:
-c81e7:
-    //     inx
-    x++;
-    //     inx
-    x++;
-    //     cpx #0x0c
-    //     bne c81ba
-    if (x != 0x0c) goto c81ba;
-    //     tya
-    //     beq c81f3
-    if (y == 0) goto c81f3;
-    //     jsr bdos_print_newline
-    cli_putchar('\n');
-    // c81f3:
-c81f3:
-    //     jsr bdos_print_newline
-    cli_putchar('\n');
-    return_to_cli_prompt();
-}
-static void run_editor(void) {
+void run_editor(void) {
     // run_editor: Enter editor mode and jump to editor loop.
     enter_editor_mode();
     longjmp(env, JMP_EDITOR);
-}
-static void cli_handler_impl(void) {
-    // cli_handler_impl: Main CLI loop (called after setjmp reset)
-
-    //     jsr stop_printing
-    stop_printing();
-    //     ldx #0xff
-    x = 0xff;
-    //     stx error_handling_mode
-    error_handling_mode = 0xff;
-    //     txs  (handled by setjmp/longjmp in main_)
-    //     inx  ; X=0x00
-    x = 0;
-    //     stx print_flags
-    print_flags = 0;
-    //     jsr print_inline_string ; .ascii "=>"
-    cli_putstring("=>");
-    //     jsr readline
-    readline();
-    //     lda #<input_buffer
-    //     sta tmp0
-    //     ldx #>input_buffer
-    //     stx tmp1
-    // (tmp0/tmp1 no longer used as a pointer; parse_command reads input_buffer[] directly)
-    //     bcc input_line_not_escaped
-    if (!(flags & FLAG_C)) { input_line_not_escaped(); return; }
-    //     jmp run_editor
-    run_editor();
 }
 static void return_to_editor_loop(void) {
     longjmp(env, JMP_EDITOR);
@@ -823,34 +629,6 @@ void esc_key(void) {
     //     jsr write_line_back_to_document_safely
     //     jmp run_cli
     write_line_back_to_document_safely();
-    run_cli();
-}
-static void input_line_not_escaped(void) {
-    // input_line_not_escaped: Parses command input and dispatches through CLI jump table
-
-    //     jsr parse_command
-    parse_command();
-    //     sty input_buffer_offset+1
-    l0080 = y;
-    //     bcs c8263
-    if (flags & FLAG_C) goto c8263;
-    //     cpy #(jumptable4_cli_end-jumptable4_cli)/2
-    cmp(y, 48);
-    //     bcc c826e
-    if (!(flags & FLAG_C)) goto c826e;
-    // c8263:
-c8263:
-    //     jsr print_inline_string ; .ascii "Mistake\n"
-    cli_putstring("Mistake\n");
-    // c826e:
-c826e:
-    //     lda input_buffer_offset+1
-    a = l0080;
-    //     ldy #2
-    y = 2;
-    //     jsr call_through_jumptable
-    execute_cli_command();
-    //     jmp run_cli
     run_cli();
 }
 static void sub_c8310(void) {
@@ -8608,7 +8386,7 @@ static void ca741(void) {
     l003d = x;
     //     rts
 }
-static void clear_screen(void) {
+void clear_screen(void) {
     // Pseudocode: Clears the screen via SCREEN call
 
     // ; ***************************************************************************************
@@ -8693,41 +8471,8 @@ static void restore_cursor_position(void) {
     //     ldy tmp5
     screen_setcursor(tmp4, tmp5);
 }
-static const uint8_t la83d[] = "VIEW\0B3.0 for CP/M-65";
-
-static void print_x_words_of_help(void) {
-    // Pseudocode: Prints X words of the help string showing VIEW and version
-
-    // ; ***************************************************************************************
-    // print_x_words_of_help:
-    //     ldy #0
-    y = 0;
-    //     beq ca832                                                         ; ALWAYS branch
-    goto ca832;
-
-    // ca82e:
-ca82e:
-    //     jsr bdos_print_char
-    cli_putchar(a);
-    //     iny
-    y++;
-    // ca832:
-ca832:
-    //     lda la83d,y
-    a = la83d[y];
-    //     bne ca82e
-    if (a != 0) goto ca82e;
-    //     lda #0x20 ; ' '
-    a = 0x20;
-    //     dex
-    x--;
-    //     bpl ca82e
-    if ((int8_t)x >= 0) goto ca82e;
-    //     rts
-    return;
-}
 extern uint8_t parser_table[];
-static void parse_command(void) {
+void parse_command(void) {
     // Pseudocode: Parses command input against parser_table to identify command number
 
     // la83d:
@@ -11615,14 +11360,6 @@ uint8_t parser_table[] = {
     //     .word hm_fmt_cmd, fm_fmt_cmd, lm_fmt_cmd, ls_fmt_cmd, op_fmt_cmd
     //     .word ep_fmt_cmd, lj_fmt_cmd, pb_fmt_cmd
 
-static void readline(void) {
-    input_buffer_offset = 0;
-    if (cli_readstring((char *)input_buffer, MAX_COMMAND_LENGTH)) {
-        flags |= FLAG_C;
-        return;
-    }
-    flags &= ~FLAG_C;
-}
 void select_file(void) {
     file_ptr = x ? output_fp : input_fp;
 }

@@ -110,6 +110,8 @@ extern void parse_decimal_number(void);
 extern void check_for_control_code(void);
 extern void render_number_to_screen(void);
 extern void print_char_via_putchar(void);
+extern void clear_screen(void);
+extern void parse_command(void);
 // Functions in view.c called by other modules
 extern void sub_c8412(void);
 extern void c8b7b(void);
@@ -202,4 +204,9 @@ extern struct pointer_array_t pointer_array;
 
 #define RAM_CURRENT_RULER_BUF 0x05CF
 #define current_ruler_buffer (&ram[RAM_CURRENT_RULER_BUF])
+
+extern uint8_t error_handling_mode;
+extern uint8_t printer_driver_name[];
+extern void run_editor(void);
+
 #endif
