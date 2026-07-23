@@ -69,46 +69,29 @@ jmp_buf env;
 
 // Forward declarations
 static void sub_c8c5f(void);
-void control_key_to_ascii(void);
 void draw_prompt_characters(void);
-void tab_highlight_common(void);
-static void go_to_marker_n(void);
-static void set_marker_common(void);
+void go_to_marker_n(void);
+void set_marker_common(void);
 void set_marker(void);
 void go_to_marker(void);
 void sub_caec2(void);
-static void sub_caef4(void);
+void sub_caef4(void);
 static void cab91(void);
 void check_continuous_editing(void);
 void display_not_enough_memory(void);
 void reset_document_name_after_load(void);
-void go_to_marker_1(void);
-void go_to_marker_2(void);
-void go_to_marker_3(void);
-void go_to_marker_4(void);
-void go_to_marker_5(void);
-void go_to_marker_6(void);
-void set_marker_1(void);
-void set_marker_2(void);
-void set_marker_3(void);
-void set_marker_4(void);
-void set_marker_5(void);
-void set_marker_6(void);
 void beep(void);
-void enter_printable_character(void);
-void sub_c9de1(void);
 void sub_c9e22(void);
 void show_memory_full_error(void);
 void ca741(void);
 void write_line_back_to_document_safely(void);
-static void ca684(void);
-static void make_space_for_insertion(void);
+void ca684(void);
+void make_space_for_insertion(void);
 void get_line_length(void);
-void prompt_for_marker(void);
-static void lookup_marker(void);
-static void set_marker_to_here(void);
+void lookup_marker(void);
+void set_marker_to_here(void);
 void move_cursor_to_address(void);
-static void insert_edit_buffer_bytes_at_xpos(void);
+void insert_edit_buffer_bytes_at_xpos(void);
 void parse_optional_filename_from_command(void);
 void parse_filename_from_command(void);
 void check_not_continuous_editing(void);
@@ -116,7 +99,6 @@ void sub_c9e9b(void);
 void sub_caa97(void);
 
 void move_tmp01_to_previous_line(void);
-void sub_ca0af(void);
 void draw_previous_word(void);
 void process_current_document_character(void);
 void sub_cab1a(void);
@@ -135,7 +117,7 @@ void push_onto_ruler_index(void);
 void pop_from_ruler_index(void);
 static void sub_cac41(void);
 static void sub_cac50(void);
-static void lookup_marker(void);
+void lookup_marker(void);
 void draw_prompt_characters(void);
 
 static void sub_c93b6(void);
@@ -159,7 +141,6 @@ void reset_area_to_entire_document(void);
 void read_first_chunk_from_input_file(void);
 void put_byte_to_file(void);
 static void c93b8(void);
-void sub_ca071(void);
 // Input:  a = document character, y = line offset (for tab stop lookup)
 // Output: a = character to render, x = screen width consumed, y preserved, flags.C=0
 void read_next_chunk_from_input_file(void);
@@ -202,9 +183,8 @@ static void sub_c92f0(void);
 static void system_init(void);
 void initialise_document(void);
 static const struct printer_driver default_printer_driver;
-static void sub_ca536(void);
+void sub_ca536(void);
 void parse_command(void);
-void delete_edit_buffer_bytes_at_xpos(void);
 void c9e94(void);
 static void render_char(void);
 
@@ -215,9 +195,6 @@ static void clear_to_eol(void);
 void create_default_ruler(void);
 void justify_edit_buffer(void);
 void set_document_name_to_filename_buffer(void);
-void clear_marks_1_2(void);
-void reset_area_to_marks_1_2(void);
-void sub_ca1cc(void);
 void recalculate_cursor_xpos(void);
 // Forward declarations for recently translated functions
 void bad_filename_error(void);
@@ -5257,408 +5234,6 @@ c9b31:
     //     rts
     return;
 }
-void enter_printable_character(void) {
-    // enter_printable_character:
-    //     ldy xpos
-    y = xpos;
-    //     cpy #0x84
-    if (y >= MAX_LINE_LENGTH) return;
-    //     inc l006d
-    edit_buffer_dirty_flag++;
-    //     jsr sub_caef4
-    sub_caef4();
-    //     bcs c9bca
-    if (flags & FLAG_C) return;
-    //     lda current_edit_line_ptr
-    tmp6 = (uint8_t)(current_edit_line_ptr & 0xff);
-    //     lda current_edit_line_ptr+1
-    tmp7 = (uint8_t)(current_edit_line_ptr >> 8);
-    //     ldy xpos
-    y = xpos;
-    //     jsr sub_ca536
-    sub_ca536();
-    //     bne c9bf2
-    if (!(flags & FLAG_Z)) goto c9bf2;
-    //     cpx #4
-    //     bcs c9bf2
-    if (x >= 4) goto c9bf2;
-    //     inc l0074
-    l0074++;
-    // c9bf2:
-c9bf2:
-    //     ldx insert_mode_flag
-    x = insert_mode_flag;
-    //     bne c9c00
-    if (x != 0) goto c9c00;
-    //     lda (current_edit_line_ptr),y
-    a = ram[current_edit_line_ptr + y];
-    //     cmp #9
-    //     beq c9c00
-    if (a == 9) goto c9c00;
-    //     cmp #0x0b
-    //     bne c9c09
-    if (a != 0x0b) goto c9c09;
-    // c9c00:
-c9c00:
-    //     inc l0074
-    l0074++;
-    //     ldx #1
-    x = 1;
-    //     jsr insert_edit_buffer_bytes_at_xpos
-    insert_edit_buffer_bytes_at_xpos();
-    //     bcs c9c7f
-    if (flags & FLAG_C) { return; }
-    // c9c09:
-c9c09:
-    //     lda l0038
-    a = l0038;
-    //     sta (current_edit_line_ptr),y
-    ram[current_edit_line_ptr + y] = a;
-    //     ldy l0074
-    y = l0074;
-    //     bne c9c14
-    if (y != 0) goto c9c14;
-    //     jsr screen_putchar
-    screen_putchar(a);
-    // c9c14:
-c9c14:
-    //     inc xpos
-    xpos++;
-    //     jsr ca684
-    ca684();
-    //     ldy #0
-    y = 0;
-    //     sty l0039
-    l0039 = 0;
-    // c9c1d:
-c9c1d:
-    //     lda (current_edit_line_ptr),y
-    a = ram[current_edit_line_ptr + y];
-    //     iny
-    y++;
-    //     cpy xpos
-    //     bcs c9c56
-    if (y > xpos) goto c9c56;
-    //     cmp #9
-    //     bne c9c31
-    if (a != 9) goto c9c31;
-    //     jsr sub_ca5ae
-    process_document_character();
-    //     txa
-    a = x;
-    //     clc
-    flags &= ~FLAG_C;
-    //     adc l0039
-    adc(l0039);
-    //     bne c9c43
-    if (a != 0) goto c9c43;
-    // c9c31:
-c9c31:
-    //     cmp #0x0b
-    //     bne c9c4a
-    if (a != 0x0b) goto c9c4a;
-    //     lda ruler_left_stop
-    a = ruler_left_stop;
-    set_flags(a);
-    //     beq c9c48
-    if (flags & FLAG_Z) goto c9c48;
-    //     ldx l0039
-    x = l0039;
-    //     beq c9c43
-    if (x == 0) goto c9c43;
-    //     cpx ruler_left_stop
-    cmp(x, ruler_left_stop);
-    //     bcc c9c43
-    if (!(flags & FLAG_C)) goto c9c43;
-    //     inx
-    x++;
-    //     txa
-    a = x;
-    // c9c43:
-c9c43:
-    //     sta l0039
-    l0039 = a;
-    //     jmp c9c1d
-    goto c9c1d;
-    // c9c48:
-c9c48:
-    //     lda #0x20 ; ' '
-    a = 0x20;
-    // c9c4a:
-c9c4a:
-    //     cmp #0x1b
-    //     bcc c9c48
-    if (a < 0x1b) goto c9c48;
-    //     cmp #0x20
-    //     bcc c9c1d
-    if (a < 0x20) goto c9c1d;
-    //     inc l0039
-    l0039++;
-    //     bne c9c1d
-    goto c9c1d;
-    // c9c56:
-c9c56:
-    //     ldy l0039
-    y = l0039;
-    //     cpy l003a
-    if (y < l003a) {
-        //     lda (current_ruler_ptr),y
-        a = ram[current_ruler_ptr + y];
-        //     and #0xdf
-        a &= 0xdf;
-        //     cmp #0x42 ; 'B'
-        if (a == 0x42) beep();
-    }
-    //     lda l0038
-    a = l0038;
-    //     cmp #0x20 ; ' '
-    //     beq c9c7f
-    if (a == 0x20) return;
-    //     lda ruler_right_stop
-    //     beq c9c7f
-    if (ruler_right_stop == 0) { l0074 = 0; return_to_editor_loop(); }
-    //     lda format_mode_flag
-    //     bne c9c7f
-    if (format_mode_flag != 0) return;
-    //     lda #0
-    //     sta tmp7
-    tmp7 = 0;
-    //     tya
-    //     beq c9c7f
-    if (y == 0) return;
-    //     dey
-    y--;
-    //     cpy ruler_right_stop
-    //     bcs c9c82
-    if (y < ruler_right_stop) return;
-    // c9c82:                                                              (4202)
-    //     jsr get_line_length                                             (4203)
-    get_line_length();
-    //     sty l0083                                                       (4204)
-    l0083 = y;
-    //     lda #0                                                          (4205)
-    a = 0;
-    //     sta top_margin                                                  (4206)
-    top_margin = a;
-    //     ldy xpos                                                        (4207)
-    y = xpos;
-    //     sty input_buffer_ptr+1                                           (4208)
-    input_buffer_offset = y;
-    //     jsr draw_previous_word                                          (4209)
-    draw_previous_word();
-    //     jsr sub_ca608                                                    (4210)
-    recalculate_cursor_xpos();
-    //     lda l0072                                                       (4211)
-    a = l0072;
-    //     cmp ruler_left_stop                                             (4212)
-    cmp(a, ruler_left_stop);
-    //     beq c9c9d                                                       (4213)
-    //     bcs c9ca2                                                       (4214)
-    // c9c9d:                                                              (4215)
-    //     ldy input_buffer_ptr+1, dey, sty xpos                           (4216-4218)
-    if (flags & FLAG_Z) { y = input_buffer_offset; y--; xpos = y; goto c9ca2; }
-    if (flags & FLAG_C) goto c9ca2;
-    { y = input_buffer_offset; y--; xpos = y; }
-    // c9ca2:                                                              (4219)
-c9ca2:
-    //     lda input_buffer_ptr+1                                           (4220)
-    a = input_buffer_offset;
-    //     sec                                                             (4221)
-    flags |= FLAG_C;
-    //     sbc xpos                                                        (4222)
-    sbc(xpos);
-    //     sta top_margin                                                  (4223)
-    top_margin = a;
-    //     lda l0083                                                       (4224)
-    a = l0083;
-    //     sec                                                             (4225)
-    flags |= FLAG_C;
-    //     sbc xpos                                                        (4226)
-    sbc(xpos);
-    //     sta l0083                                                       (4227)
-    l0083 = a;
-    //     tay                                                             (4228)
-    y = a;
-    //     iny                                                             (4229)
-    y++;
-    //     lda ruler_left_stop                                             (4230)
-    a = ruler_left_stop;
-    set_flags(a);
-    //     beq c9cb9                                                       (4231)
-    if (flags & FLAG_Z) goto c9cb9;
-    //     inc top_margin                                                  (4232)
-    top_margin++;
-    //     iny                                                             (4233)
-    y++;
-    // c9cb9:                                                              (4234)
-c9cb9:
-    //     sty tmp6                                                        (4235)
-    tmp6 = y;
-    //     lda current_line_ptr                                            (4236)
-    a = (uint8_t)(current_line_ptr & 0xff);
-    //     sec                                                             (4237)
-    flags |= FLAG_C;
-    //     adc l003b                                                       (4238)
-    adc(l003b);
-    //     sta tmp4                                                        (4239)
-    tmp4 = a;
-    //     lda current_line_ptr+1                                          (4240)
-    a = (uint8_t)(current_line_ptr >> 8);
-    //     adc #0                                                          (4241)
-    adc(0);
-    //     sta tmp5                                                        (4242)
-    tmp5 = a;
-    //     jsr make_space_for_insertion                                    (4243)
-    make_space_for_insertion();
-    //     bcc c9cd0                                                       (4244)
-    if (!(flags & FLAG_C)) goto c9cd0;
-    //     jmp ca941                                                       (4245)
-    show_memory_full_error(); longjmp(env, JMP_EDITOR);
-    // c9cd0:                                                              (4247)
-c9cd0:
-    //     ldy #0                                                          (4248)
-    y = 0;
-    //     lda ruler_left_stop
-    //     beq c9cdb
-    if (ruler_left_stop != 0) {
-        //     lda #0x0b
-        //     sta (tmp4),y
-        ram[((uint16_t)tmp5 << 8) | tmp4] = 0x0b;
-        //     iny                                                               ; Y=0x01
-        y = 1;
-    }
-    // c9cdb:
-c9cdb:
-    //     sty l0081
-    l0081 = y;
-    //     lda current_edit_line_ptr
-    tmp6 = (uint8_t)(current_edit_line_ptr & 0xff);
-    //     lda current_edit_line_ptr+1
-    tmp7 = (uint8_t)(current_edit_line_ptr >> 8);
-    //     ldy xpos
-    y = xpos;
-    //     dey
-    y--;
-    //     lda (current_edit_line_ptr),y
-    a = ram[current_edit_line_ptr + y];
-    //     cmp #0x20 ; ' '
-    //     bne c9cf2
-    if (a == 0x20) {
-        //     lda #0x10
-        //     sta (current_edit_line_ptr),y
-        ram[current_edit_line_ptr + y] = 0x10;
-    }
-    // c9cf2:
-c9cf2:
-    //     iny
-    y++;
-    //     sty l0082
-    l0082 = y;
-    // c9cf5:
-c9cf5:
-    //     ldy l0082
-    y = l0082;
-    //     inc l0082
-    l0082++;
-    // loop_c9cf9:
-loop_c9cf9:
-    //     jsr sub_ca536
-    sub_ca536();
-    //     bne c9d0d
-    if (!(flags & FLAG_Z)) goto c9d0d;
-    //     lda l0081
-    a = l0081;
-    //     clc
-    flags &= ~FLAG_C;
-    //     adc tmp4
-    adc(tmp4);
-    //     sta markers_array,x
-    ((uint8_t*)markers_array)[x] = a;
-    //     lda tmp5
-    a = tmp5;
-    //     adc #0
-    adc(0);
-    //     sta markers_array+1,x
-    ((uint8_t*)markers_array)[x + 1] = a;
-    //     bcc loop_c9cf9
-    if (!(flags & FLAG_C)) goto loop_c9cf9;
-    // c9d0d:
-c9d0d:
-    //     lda l0083
-    a = l0083;
-    //     bne c9d28
-    if (a != 0) goto c9d28;
-    //     lda #0x0d
-    a = 0x0d;
-    //     bne c9d30                                                         ; ALWAYS branch
-    goto c9d30;
-    // c9d28:
-c9d28:
-    //     lda (current_edit_line_ptr),y
-    a = ram[current_edit_line_ptr + y];
-    //     pha
-    { uint8_t saved = a;
-    //     lda #0x10
-    //     sta (current_edit_line_ptr),y
-    ram[current_edit_line_ptr + y] = 0x10;
-    //     pla
-    a = saved; }
-    // c9d30:
-c9d30:
-    //     ldy l0081
-    y = l0081;
-    //     inc l0081
-    l0081++;
-    //     sta (tmp4),y
-    ram[((uint16_t)tmp5 << 8 | tmp4) + y] = a;
-    //     dec l0083
-    l0083--;
-    //     bpl c9cf5
-    if (!(l0083 & 0x80)) goto c9cf5;
-    //     bmi c9d15                                                         ; ALWAYS branch
-    // c9d15:
-c9d15:
-    //     jsr justify_edit_buffer
-    justify_edit_buffer();
-    //     jsr ca93c
-    write_line_back_to_document_safely();
-    //     jsr ca741
-    ca741();
-    //     jsr return_key
-    return_key();
-    //     lda top_margin
-    //     sta xpos
-    xpos = top_margin;
-    //     jmp editor_loop
-    return;
-}
-// MULTIPLE ENTRY POINTS: sf1_swap_case_key, f13_right_key
-void c9d9b_advance_ptr(void) {
-    //     inc cursor_moved_flag
-    cursor_moved_flag++;
-    //     lda current_line_ptr
-    //     ldy current_line_ptr+1
-    //     jsr sub_cab1a
-    a = (uint8_t)(current_line_ptr & 0xff);
-    y = (uint8_t)(current_line_ptr >> 8);
-    sub_cab1a();
-    //     beq return_54
-    if (flags & FLAG_Z) return;
-    //     tya
-    a = y;
-    //     clc
-    flags &= ~FLAG_C;
-    //     adc current_line_ptr
-    adc((uint8_t)(current_line_ptr & 0xff));
-    //     sta current_line_ptr
-    current_line_ptr = (uint16_t)((current_line_ptr & 0xff00) | a);
-    //     bcc return_54
-    if (!(flags & FLAG_C)) return;
-    //     inc current_line_ptr+1
-    current_line_ptr = (uint16_t)(current_line_ptr + 0x100);
-    // return_54:
-    //     rts
-}
 void c9de3_insert_line(void) {
     //     sta tmp4
     tmp4 = a;
@@ -5689,13 +5264,6 @@ c9dfd:
     //     jmp ca941
     memory_full(); return;
 }
-void sub_c9de1(void) {
-    // sub_c9de1:
-    //     inc cursor_moved_flag
-    cursor_moved_flag++;
-    //     falls through to c9de3
-    c9de3_insert_line();
-}
 void sub_c9e22(void) {
     // sub_c9e22:
     //     pha
@@ -5717,23 +5285,6 @@ void sub_c9e22(void) {
     return;
 }
 // MULTIPLE ENTRY POINTS: tab_key, sf4_highlight1_key, sf5_highlight2_key
-void tab_highlight_common(void) {
-    // c9e3a:
-    //     pha
-    {   uint8_t saved_a = a;
-    //     jsr sub_caef4
-    sub_caef4();
-    //     pla
-    a = saved_a; }
-    //     bcs return_55
-    if (flags & FLAG_C) return;
-    //     jsr sub_c9e22
-    sub_c9e22();
-    //     bcs return_55
-    if (flags & FLAG_C) return;
-    //     jmp f13_right_key
-    f13_right_key(); return;
-}
 void c9e94(void) {
     // c9e94:
     //     lda #0
@@ -5751,64 +5302,7 @@ void sub_c9e9b(void) {
     xpos = y;
     //     rts
 }
-void sub_c9f80(void) {
-    // c9f80:
-    //     jsr write_line_back_to_document_safely
-    write_line_back_to_document_safely();
-    //     lda current_line_ptr
-    a = current_line_ptr;
-    //     ldy current_line_ptr+1
-    y = current_line_ptr >> 8;
-    //     jsr sub_cab37
-    move_tmp01_to_previous_line();
-    //     bcc return_56
-    if (!(flags & FLAG_C)) return;
-    //     lda tmp0
-    a = tmp0;
-    //     sta current_line_ptr
-    current_line_ptr = (current_line_ptr & 0xff00) | a;
-    //     lda tmp1
-    a = tmp1;
-    //     sta current_line_ptr+1
-    current_line_ptr = (current_line_ptr & 0x00ff) | ((uint16_t)a << 8);
-    //     jsr sub_caa97
-    sub_caa97();
-    //     jsr c9e9b
-    sub_c9e9b();
-    //     dec l006f
-    l006f--;
-}
-void set_marker_1(void) {
-    // set_marker_1:
-    a = '1';
-    set_marker_common(); return;
-}
-void set_marker_2(void) {
-    // set_marker_2:
-    a = '2';
-    set_marker_common(); return;
-}
-void set_marker_3(void) {
-    // set_marker_3:
-    a = '3';
-    set_marker_common(); return;
-}
-void set_marker_4(void) {
-    // set_marker_4:
-    a = '4';
-    set_marker_common(); return;
-}
-void set_marker_5(void) {
-    // set_marker_5:
-    a = '5';
-    set_marker_common(); return;
-}
-void set_marker_6(void) {
-    // set_marker_6:
-    a = '6';
-    set_marker_common(); return;
-}
-static void set_marker_common(void) {
+void set_marker_common(void) {
     //     pha
     uint8_t saved_a = a;
     //     jsr write_line_back_to_document_safely
@@ -5831,37 +5325,7 @@ void set_marker(void) {
 }
 void go_to_marker(void);
 // MULTIPLE ENTRY POINTS: sf6_go_to_marker_key, go_to_marker, go_to_marker_1..6
-void go_to_marker_1(void) {
-    // go_to_marker_1:
-    a = '1';
-    go_to_marker_n(); return;
-}
-void go_to_marker_2(void) {
-    // go_to_marker_2:
-    a = '2';
-    go_to_marker_n(); return;
-}
-void go_to_marker_3(void) {
-    // go_to_marker_3:
-    a = '3';
-    go_to_marker_n(); return;
-}
-void go_to_marker_4(void) {
-    // go_to_marker_4:
-    a = '4';
-    go_to_marker_n(); return;
-}
-void go_to_marker_5(void) {
-    // go_to_marker_5:
-    a = '5';
-    go_to_marker_n(); return;
-}
-void go_to_marker_6(void) {
-    // go_to_marker_6:
-    a = '6';
-    go_to_marker_n(); return;
-}
-static void go_to_marker_n(void) {
+void go_to_marker_n(void) {
     //     pha
     uint8_t saved_a = a;
     //     jsr ca93c
@@ -5888,157 +5352,6 @@ void go_to_marker(void) {
     l0073 = a;
     //     jmp ca684
     ca684(); return;
-}
-void sub_ca071(void) {
-    // sub_ca071:
-    //     inc cursor_moved_flag
-    cursor_moved_flag++;
-    //     stx input_buffer_offset+1
-    l0080 = x;
-    //     jsr write_line_back_to_document_safely
-    write_line_back_to_document_safely();
-    //     lda current_line_ptr
-    a = (uint8_t)(current_line_ptr & 0xff);
-    //     ldy current_line_ptr+1
-    y = (uint8_t)((current_line_ptr >> 8) & 0xff);
-    // ca07c:
-    while (1) {
-        //     sta tmp2
-        tmp2 = a;
-        //     sty tmp3
-        tmp3 = y;
-        //     jsr sub_cab37
-        move_tmp01_to_previous_line();
-        //     lda tmp0
-        a = tmp0;
-        //     ldy tmp1
-        y = tmp1;
-        //     bcc ca093
-        if (!(flags & FLAG_C)) {
-            // ca093:
-            //     lda tmp2
-            a = tmp2;
-            //     ldy tmp3
-            y = tmp3;
-            break;
-        }
-        //     ldx input_buffer_offset+1
-        x = l0080;
-        //     bmi ca07c
-        if ((int8_t)x < 0) continue;
-        //     dec input_buffer_offset+1
-        l0080--;
-        //     bne ca07c
-        if (l0080 != 0) continue;
-        break;
-    }
-    // ca097:
-    //     sta current_line_ptr
-    current_line_ptr = (current_line_ptr & 0xff00) | a;
-    //     sty current_line_ptr+1
-    current_line_ptr = (current_line_ptr & 0x00ff) | ((uint16_t)y << 8);
-    //     rts
-}
-void sub_ca0af(void) {
-    // sub_ca0af:
-    //     inc cursor_moved_flag
-    cursor_moved_flag++;
-    //     stx input_buffer_offset+1
-    l0080 = x;
-    //     jsr write_line_back_to_document_safely
-    write_line_back_to_document_safely();
-    //     lda current_line_ptr
-    a = (uint8_t)(current_line_ptr & 0xff);
-    //     ldy current_line_ptr+1
-    y = (uint8_t)((current_line_ptr >> 8) & 0xff);
-    // ca0ba:
-    while (1) {
-        //     jsr sub_cab1a
-        sub_cab1a();
-        //     beq ca0d2
-        if (flags & FLAG_Z) {
-            // ca0d2:
-            //     lda tmp0
-            a = tmp0;
-            //     ldy tmp1
-            y = tmp1;
-            break;
-        }
-        //     tya
-        //     ldy tmp1
-        //     clc
-        //     adc tmp0
-        {
-            uint16_t sum = (uint16_t)y + tmp0;
-            y = tmp1;
-            a = (uint8_t)(sum & 0xff);
-            if (sum > 0xff) y++;
-        }
-        // ca0c8:
-        //     ldx input_buffer_offset+1
-        x = l0080;
-        //     bmi ca0ba
-        if ((int8_t)x < 0) continue;
-        //     dec input_buffer_offset+1
-        l0080--;
-        //     bne ca0ba
-        if (l0080 != 0) continue;
-        //     beq ca0d6
-        break;
-    }
-    // ca0d6:
-    //     sta current_line_ptr
-    current_line_ptr = (current_line_ptr & 0xff00) | a;
-    //     sty current_line_ptr+1
-    current_line_ptr = (current_line_ptr & 0x00ff) | ((uint16_t)y << 8);
-    //     rts
-}
-void sub_ca1cc(void) {
-    if (doc_ptr1 >= area_start_ptr && doc_ptr1 < area_end_ptr) {
-        beep(); return;
-    }
-    a = (uint8_t)(area_start_ptr & 0xff);
-    y = (uint8_t)(area_start_ptr >> 8);
-    move_cursor_to_address();
-    {
-        uint16_t diff = area_end_ptr - area_start_ptr;
-        tmp6 = (uint8_t)(diff & 0xff);
-        tmp7 = (uint8_t)(diff >> 8);
-    }
-    tmp4 = (uint8_t)(doc_ptr1 & 0xff);
-    tmp5 = (uint8_t)(doc_ptr1 >> 8);
-    make_space_for_insertion();
-    if (flags & FLAG_C) { show_memory_full_error(); longjmp(env, JMP_EDITOR); }
-    tmp8 = (uint8_t)(area_start_ptr & 0xff);
-    tmp9 = (uint8_t)(area_start_ptr >> 8);
-    tmp2 = tmp4;
-    tmp3 = tmp5;
-    // ca219:
-    while (1) {
-        ram[((uint16_t)tmp3 << 8) | ((uint16_t)tmp2)] = ram[((uint16_t)tmp9 << 8) | ((uint16_t)tmp8)];
-        tmp2++;
-        if (tmp2 == 0) tmp3++;
-        tmp8++;
-        if (tmp8 == 0) tmp9++;
-        if (((uint16_t)tmp9 << 8 | tmp8) == area_end_ptr) break;
-    }
-    uint8_t saved_tmp6 = tmp6;
-    uint8_t saved_tmp7 = tmp7;
-    doc_ptr1 = (uint16_t)tmp5 << 8 | tmp4;
-    {
-        uint16_t adjusted = ((uint16_t)tmp3 << 8 | tmp2) - 1;
-        a = (uint8_t)(adjusted & 0xff);
-        y = (uint8_t)(adjusted >> 8);
-    }
-    cac78();
-    a = (uint8_t)(doc_ptr1 & 0xff);
-    y = (uint8_t)(doc_ptr1 >> 8);
-    cac78();
-    tmp7 = saved_tmp7;
-    tmp6 = saved_tmp6;
-    l0073 = 1;
-    cursor_moved_flag = 1;
-    flags &= ~FLAG_C;
 }
 void redraw_editor(void) {
     // Pseudocode: Main screen update routine: scrolls, redraws lines, updates status and cursor
@@ -6825,7 +6138,7 @@ static void render_xchar(void) {
     //     jmp ca4e9
     render_char();
 }
-static void sub_ca536(void) {
+void sub_ca536(void) {
     // Pseudocode: Checks if a position in the edit line corresponds to a marker
 
     // sub_ca536:
@@ -7093,7 +6406,7 @@ ca672:
     //     bne ca681                                                         ; ALWAYS branch
     home_cursor(); return;
 }
-static void ca684(void) {
+void ca684(void) {
     // Pseudocode: Sets line_lengths[ypos] = screen_width after cursor movement
 
     // ca684:
@@ -7775,7 +7088,7 @@ caa08:
     top = (top & 0x00ff) | ((uint16_t)a << 8);
     //     rts                                                             (6435)
 }
-static void make_space_for_insertion(void) {
+void make_space_for_insertion(void) {
     uint8_t tmp2, tmp3, tmp8, tmp9;
     // make_space_for_insertion: Shifts content up to make space for insertion  (6437)
     // On entry: tmp4:tmp5 = block base, tmp6:tmp7 = size, top = current top
@@ -8658,33 +7971,6 @@ cacad:
     if (tmp9 != 0) goto cac7b;
     return;
 }
-void prompt_for_marker(void) {
-    // Pseudocode: Prompts for a marker character and looks it up
-
-    // prompt_for_marker:
-    //     ldx #0x4d ; 'M'
-    //     ldy #0x4b ; 'K'
-    x = 0x4d;
-    y = 0x4b;
-    //     jsr draw_prompt_characters
-    draw_prompt_characters();
-    //     inc flags_need_redrawing_flag
-    flags_need_redrawing_flag++;
-    //     jsr read_char
-    read_char();
-    //     jsr lookup_marker
-    lookup_marker();
-    //     bcc return_74
-    if (!(flags & FLAG_C)) return;
-    // ; ***************************************************************************************
-    // beep:
-    // loop_caced:
-    //     sec
-    // return_74:
-    //     rts
-    flags |= FLAG_C;
-    return;
-}
 void beep(void) {
     // beep: Emits a beep (returns with carry set as flag)
 
@@ -8698,7 +7984,7 @@ void beep(void) {
     // return_74:
     //     rts
 }
-static void lookup_marker(void) {
+void lookup_marker(void) {
     // lookup_marker: Converts marker character '1'-'6' to index
 
     //     sec
@@ -8739,72 +8025,7 @@ void reset_area_to_entire_document(void) {
     //     sta area_end_ptr+1
     //     rts
 }
-void clear_marks_1_2(void) {
-    // clear_marks_1_2: Clears markers 1 and 2 (resets to zero)
-
-    //     lda #0
-    a = 0;
-    //     ldx #3
-    x = 3;
-    // loop_cad12:
-loop_cad12:
-    //     sta __begin_pointer_array,x
-    ((uint8_t*)markers_array)[x] = a;
-    //     dex
-    x--;
-    //     bpl loop_cad12
-    if (!(x & 0x80)) goto loop_cad12;
-    //     rts
-}
-void reset_area_to_marks_1_2(void) {
-    // reset_area_to_marks_1_2: Sets area to markers 1 and 2, then adjusts doc_ptr1
-
-    //     lda #0x31 ; '1'
-    a = 0x31;
-    //     jsr lookup_marker
-    lookup_marker();
-    //     bcs return_76
-    if (flags & FLAG_C) return;
-    //     beq cad45
-    if (flags & FLAG_Z) goto cad45;
-    //     lda __begin_pointer_array,x
-    a = ((uint8_t*)markers_array)[x];
-    //     sta area_start_ptr
-    area_start_ptr = (uint16_t)((uint8_t*)markers_array)[x + 1] << 8 | a;
-    //     lda markers_array+1,x
-    //     sta area_start_ptr+1
-    //     lda #0x32 ; '2'
-    a = 0x32;
-    //     jsr lookup_marker
-    lookup_marker();
-    //     bcs return_76
-    if (flags & FLAG_C) return;
-    //     beq cad45
-    if (flags & FLAG_Z) goto cad45;
-    //     lda __begin_pointer_array,x
-    a = ((uint8_t*)markers_array)[x];
-    //     sta area_end_ptr
-    area_end_ptr = (uint16_t)((uint8_t*)markers_array)[x + 1] << 8 | a;
-    //     lda markers_array+1,x
-    //     sta area_end_ptr+1
-    //     ldx #doc_ptr1
-    x = ((uint8_t*)&doc_ptr1 - (uint8_t*)markers_array);
-    //     jsr set_marker_to_here
-    set_marker_to_here();
-    //     jsr sanitise_area
-    sanitise_area();
-    //     clc
-    flags &= ~FLAG_C;
-    //     bne return_76
-    if (!(flags & FLAG_Z)) return;
-    // cad45:
-cad45:
-    //     sec
-    flags |= FLAG_C;
-    // return_76:
-    //     rts
-}
-static void set_marker_to_here(void) {
+void set_marker_to_here(void) {
     // set_marker_to_here: Sets marker at current cursor position
 
     //     jsr get_line_length
@@ -8890,7 +8111,7 @@ static void sub_cae03(void) {
     //     jmp beep
     beep();
 }
-static void insert_edit_buffer_bytes_at_xpos(void) {
+void insert_edit_buffer_bytes_at_xpos(void) {
     // insert_edit_buffer_bytes_at_xpos: Inserts bytes at cursor position, shifting existing content right
 
     //     lda xpos
@@ -9009,126 +8230,6 @@ cae5c:
     flags &= ~FLAG_C;
     //     rts
 }
-void delete_edit_buffer_bytes_at_xpos(void) {
-    // delete_edit_buffer_bytes_at_xpos: Deletes N bytes at cursor position, shifting existing content left
-
-    //     stx input_buffer_offset+1
-    l0080 = x;
-    //     inc l006d
-    edit_buffer_dirty_flag++;
-    //     lda current_edit_line_ptr
-    a = (uint8_t)(current_edit_line_ptr & 0xff);
-    //     sta tmp6
-    tmp6 = a;
-    //     lda current_edit_line_ptr+1
-    a = (uint8_t)(current_edit_line_ptr >> 8);
-    //     sta tmp7
-    tmp7 = a;
-    //     ldy xpos
-    y = xpos;
-    //     tya
-    a = y;
-    //     clc
-    flags &= ~FLAG_C;
-    //     adc input_buffer_offset+1
-    adc(l0080);
-    //     sta l0084
-    // cae78:
-cae78:
-    //     jsr sub_ca536
-    sub_ca536();
-    //     bne cae98
-    if (!(flags & FLAG_Z)) goto cae98;
-    //     lda #0
-    a = 0;
-    //     cpy l0084
-    cmp(y, l0084);
-    //     bcc cae91
-    if (!(flags & FLAG_C)) goto cae91;
-    //     tya
-    a = y;
-    //     sbc input_buffer_offset+1
-    sbc(l0080);
-    //     clc
-    flags &= ~FLAG_C;
-    //     adc current_edit_line_ptr
-    adc((uint8_t)(current_edit_line_ptr & 0xff));
-    //     sta markers_array,x
-    ((uint8_t*)markers_array)[x] = a;
-    //     lda current_edit_line_ptr+1
-    a = (uint8_t)(current_edit_line_ptr >> 8);
-    //     adc #0
-    adc(0);
-    //     bne cae93
-    if (!(flags & FLAG_Z)) goto cae93;
-    // cae91:
-cae91:
-    //     sta markers_array,x
-    ((uint8_t*)markers_array)[x] = a;
-    // cae93:
-cae93:
-    //     sta markers_array+1,x
-    ((uint8_t*)markers_array)[x + 1] = a;
-    //     jmp cae78
-    goto cae78;
-
-    // cae98:
-cae98:
-    //     iny
-    y++;
-    //     cpy #0x85
-    cmp(y, MAX_LINE_LENGTH + 1);
-    //     bcc cae78
-    if (!(flags & FLAG_C)) goto cae78;
-    //     lda xpos
-    a = xpos;
-    //     cmp #0x84
-    cmp(a, MAX_LINE_LENGTH);
-    //     bcs return_78
-    if (flags & FLAG_C) { /* return_78: */ return; }
-    //     ldy xpos
-    y = xpos;
-    // loop_caea5:
-loop_caea5:
-    //     sty l0084
-    l0084 = y;
-    //     ldx #0x10
-    x = 0x10;
-    //     tya
-    a = y;
-    //     clc
-    flags &= ~FLAG_C;
-    //     adc input_buffer_offset+1
-    adc(l0080);
-    //     bcs caeb7
-    if (flags & FLAG_C) goto caeb7;
-    //     tay
-    y = a;
-    //     cpy #0x84
-    cmp(y, MAX_LINE_LENGTH);
-    //     bcs caeb7
-    if (flags & FLAG_C) goto caeb7;
-    //     lda (current_edit_line_ptr),y
-    a = ram[current_edit_line_ptr + y];
-    //     tax
-    x = a;
-    // caeb7:
-caeb7:
-    //     ldy l0084
-    y = l0084;
-    //     txa
-    a = x;
-    //     sta (current_edit_line_ptr),y
-    ram[current_edit_line_ptr + y] = a;
-    //     iny
-    y++;
-    //     cpy #0x84
-    cmp(y, MAX_LINE_LENGTH);
-    //     bcc loop_caea5
-    if (!(flags & FLAG_C)) goto loop_caea5;
-    // return_78:
-    //     rts
-}
 void sub_caec2(void) {
     // sub_caec2: Finds left margin stop (0x0b) in edit line
 
@@ -9205,7 +8306,7 @@ static void sub_caed6(void) {
     // caed4:
     //     rts
 }
-static void sub_caef4(void) {
+void sub_caef4(void) {
     // sub_caef4: Handles margin/folding adjustments when typing at left margin
 
     //     lda format_mode_flag
@@ -9690,18 +8791,6 @@ static void sub_cb104(void) {
     //     jmp c92f0
     sub_c92f0();
     return;
-}
-void control_key_to_ascii(void) {
-    // Pseudocode: Converts control key code to ASCII letter by ORing with 0x40
-    // zproc control_key_to_ascii
-    //     cmp #0x20
-    //     zif lt
-    //         ora #0x40
-    //     zendif
-    //     jmp to_uppercase
-    // zendproc
-    if (a < 0x20) a |= 0x40;
-    a = toupper(a); return;
 }
 void select_file(void) {
     file_ptr = x ? output_fp : input_fp;
