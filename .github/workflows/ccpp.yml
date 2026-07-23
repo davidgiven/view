@@ -16,6 +16,7 @@ jobs:
     - name: packages
       run: |
         sudo snap install beebasm
+        sudo apt install libreadline-dev
 
     - name: install llvm-mos
       run: |
