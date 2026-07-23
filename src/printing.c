@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <ctype.h>
-#include "cli.h"
+#include "io.h"
 #include "printing.h"
 #include "document.h"
 

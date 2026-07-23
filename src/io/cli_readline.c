@@ -1,6 +1,6 @@
 /* CLI input via GNU Readline.  Pressing ESCAPE enters the editor. */
 
-#include "cli.h"
+#include "../io.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

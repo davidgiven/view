@@ -14,7 +14,7 @@
 #include <ctype.h>
 #include <fcntl.h>
  
-#include "cli.h"
+#include "io.h"
 
 // Functions defined in printing.c
 extern void execute_formatting_command(void);
@@ -318,7 +318,7 @@ static void advance_to_next_line(void);
 static void sub_c9ac1(void);
 static void sub_cb104(void);
 
-#include "screen.h"
+#include "io.h"
 
 #include "document.h"
 

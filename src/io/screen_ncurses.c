@@ -1,4 +1,4 @@
-#include "screen.h"
+#include "../io.h"
 #include <ncurses.h>
 #include <term.h>
 #include <stdint.h>

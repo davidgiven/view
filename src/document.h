@@ -2,8 +2,8 @@
 #define DOCUMENT_H
 
 #include "globals.h"
-#include "cli.h"
-#include "screen.h"
+#include "io.h"
+#include "io.h"
 
 extern void call_printer_driver(void);
 extern uint8_t check_for_command_prefix(uint8_t ch);

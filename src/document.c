@@ -1,6 +1,6 @@
 #include "document.h"
-#include "cli.h"
-#include "screen.h"
+#include "io.h"
+#include "io.h"
 
 void call_printer_driver(void) {
     // Pseudocode: Calls a numbered entry point in the printer driver via struct function pointer

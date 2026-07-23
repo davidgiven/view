@@ -1,6 +1,6 @@
 LLVM = /opt/pkg/llvm-mos/bin
 CC = cc
-CFLAGS = -g -O0 -Wall -Wextra
+CFLAGS = -g -O0 -Wall -Wextra -Isrc
 LDFLAGS = -lncurses
 OBJ_DIR = .obj
 DEPFLAGS = -MMD -MP
@@ -16,9 +16,9 @@ view-b3.0.asm: view.py view-b3.0.rom
 view-rebuild.rom: view-b3.0.asm
 	beebasm -i $< -o $@
 
-SRC_COMMON = src/view.c src/printing.c src/document.c src/editor.c src/screen_ncurses.c
-SRC_INTERACTIVE = src/cli_readline.c
-SRC_TEST = src/cli_stdio.c
+SRC_COMMON = src/view.c src/printing.c src/document.c src/editor.c src/io/screen_ncurses.c
+SRC_INTERACTIVE = src/io/cli_readline.c
+SRC_TEST = src/io/cli_stdio.c
 
 OBJ_COMMON = $(addprefix $(OBJ_DIR)/, view.o printing.o document.o editor.o screen_ncurses.o)
 OBJ_COMMON_TEST = $(addprefix $(OBJ_DIR)/, view.o printing.o document.o editor.o screen_ncurses_test.o)
@@ -29,7 +29,10 @@ OBJ_TEST = $(OBJ_COMMON_TEST) $(OBJ_DIR)/cli_stdio.o
 $(OBJ_DIR)/%.o: src/%.c | $(OBJ_DIR)
 	$(CC) $(CFLAGS) $(DEPFLAGS) -c -o $@ $<
 
-$(OBJ_DIR)/screen_ncurses_test.o: src/screen_ncurses.c | $(OBJ_DIR)
+$(OBJ_DIR)/%.o: src/io/%.c | $(OBJ_DIR)
+	$(CC) $(CFLAGS) $(DEPFLAGS) -c -o $@ $<
+
+$(OBJ_DIR)/screen_ncurses_test.o: src/io/screen_ncurses.c | $(OBJ_DIR)
 	$(CC) $(CFLAGS) $(DEPFLAGS) -DTEST_HARNESS -c -o $@ $<
 
 $(OBJ_DIR)/view_nomain.o: src/view.c | $(OBJ_DIR)
