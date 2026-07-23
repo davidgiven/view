@@ -23,4 +23,45 @@ extern void sub_cabc4(void);
 extern void sub_cadf0(void);
 extern void check_for_at_least_150_bytes_free(void);
 
+
+extern void cab91(void);
+
+extern void cb05a(void);
+
+extern void close_file(void);
+
+extern void create_default_ruler(void);
+
+extern void get_byte_from_file(void);
+
+extern void get_register_address(void);
+
+extern void initialise_document(void);
+
+extern void lookup_marker(void);
+
+extern void move_cursor_to_address(void);
+
+extern void move_cursor_to_top_of_document(void);
+
+extern void move_tmp01_to_next_line(void);
+
+extern void move_tmp01_to_previous_line(void);
+
+extern void open_input_file(void);
+
+extern void open_output_file(void);
+
+extern void pop_from_ruler_index(void);
+
+extern void push_onto_ruler_index(void);
+
+extern void put_byte_to_file(void);
+
+extern void reset_area_to_entire_document(void);
+
+extern void select_file(void);
+
+extern void sub_cab1a(void);
+
 #endif

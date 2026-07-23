@@ -76,7 +76,6 @@ void set_marker(void);
 void go_to_marker(void);
 void sub_caec2(void);
 void sub_caef4(void);
-static void cab91(void);
 void check_continuous_editing(void);
 void display_not_enough_memory(void);
 void reset_document_name_after_load(void);
@@ -88,9 +87,7 @@ void write_line_back_to_document_safely(void);
 void ca684(void);
 void make_space_for_insertion(void);
 void get_line_length(void);
-void lookup_marker(void);
 void set_marker_to_here(void);
-void move_cursor_to_address(void);
 void insert_edit_buffer_bytes_at_xpos(void);
 void parse_optional_filename_from_command(void);
 void parse_filename_from_command(void);
@@ -98,10 +95,8 @@ void check_not_continuous_editing(void);
 void sub_c9e9b(void);
 void sub_caa97(void);
 
-void move_tmp01_to_previous_line(void);
 void draw_previous_word(void);
 void process_current_document_character(void);
-void sub_cab1a(void);
 static void sub_ca44e(void);
 static void draw_line(uint16_t);
 static void sub_caacb(void);
@@ -112,12 +107,8 @@ void wipe_buffer(void);
 void caf5c(void);
 void sub_caf5f(void);
 uint8_t check_for_command_prefix(uint8_t ch);
-void move_tmp01_to_next_line(void);
-void push_onto_ruler_index(void);
-void pop_from_ruler_index(void);
-static void sub_cac41(void);
+void sub_cac41(void);
 static void sub_cac50(void);
-void lookup_marker(void);
 void draw_prompt_characters(void);
 
 static void sub_c93b6(void);
@@ -135,11 +126,7 @@ void write_area_to_file(void);
 static void memory_full(void);
 void run_editor(void);
 void enter_editor_mode(void);
-void move_cursor_to_top_of_document(void);
-void cb05a(void);
-void reset_area_to_entire_document(void);
 void read_first_chunk_from_input_file(void);
-void put_byte_to_file(void);
 static void c93b8(void);
 // Input:  a = document character, y = line offset (for tab stop lookup)
 // Output: a = character to render, x = screen width consumed, y preserved, flags.C=0
@@ -150,7 +137,6 @@ static void print_char(void);
 static void sub_caed6(void);
 static void sub_caedd(void);
 static void compute_space_common(void);
-void select_file(void);
 void check_for_control_code(void);
 
 void clear_screen(void);
@@ -170,7 +156,6 @@ static void sub_c8c53(void);
 static void sub_c8c51(void);
 static void write_byte_to_memory(void);
 static void write_cr_to_memory(void);
-static void get_byte_from_file(void);
 void adjust_pointers(void);
 void cac78(void);
 static void parse_mark_from_command(void);
@@ -181,7 +166,6 @@ static void render_header_or_footer(void);
 static void write_line_back_to_document(void);
 static void sub_c92f0(void);
 static void system_init(void);
-void initialise_document(void);
 static const struct printer_driver default_printer_driver;
 void sub_ca536(void);
 void parse_command(void);
@@ -192,7 +176,6 @@ static void render_char(void);
 static void sub_ca4d7(void);
 static void render_xchar(void);
 static void clear_to_eol(void);
-void create_default_ruler(void);
 void justify_edit_buffer(void);
 void set_document_name_to_filename_buffer(void);
 void recalculate_cursor_xpos(void);
@@ -200,13 +183,9 @@ void recalculate_cursor_xpos(void);
 void bad_filename_error(void);
 void c9263(void);
 void parse_decimal_number(void);
-void close_file(void);
 static void compute_required_space_for_insertion(void);
-void get_register_address(void);
 static void microspace_word_processor(void);
 static void nested_macro_error(void);
-void open_input_file(void);
-void open_output_file(void);
 static void page_eject_fmt(void);
 void parse_integer_from_command(void);
 void print_document(void);
@@ -899,7 +878,7 @@ void parse_integer_from_command(void) {
     //     jmp ca6fe
     parse_decimal_number(); return;
 }
-static void file_not_found_error(void) {
+void file_not_found_error(void) {
     // Pseudocode: Displays File not found error and returns to CLI
 
     // ; ***************************************************************************************
@@ -955,7 +934,7 @@ return_9:
 
     // MULTIPLE ENTRY POINTS: also called directly from edit_cmd
 }
-static void file_error(void) {
+void file_error(void) {
     // Pseudocode: Displays File error and returns to CLI
 
     // ; ***************************************************************************************
@@ -968,7 +947,7 @@ static void file_error(void) {
     return_to_cli_prompt(); return;
     // zendproc
 }
-static void zero_terminate_filename_buffer(void) {
+void zero_terminate_filename_buffer(void) {
     // zero_terminate_filename_buffer:
     //     ldx #0
     x = 0;
@@ -7443,350 +7422,7 @@ void wipe_buffer(void) {
     } while (x != 0);
     //     rts
 }
-void sub_cab1a(void) {
-    // Pseudocode: Finds next line in document, handling command prefix and ruler stack
-
-    // sub_cab1a:
-    //     sta tmp0
-    //     sty tmp1
-    tmp0 = a;
-    tmp1 = y;
-    //     jsr sub_cab6e
-    sub_cab6e();
-    //     bne cab29
-    if (!(flags & FLAG_Z)) { move_tmp01_to_next_line(); return; }
-    //     jsr cab29
-    move_tmp01_to_next_line();
-    //     bne push_onto_ruler_stack
-    if (!(flags & FLAG_Z)) { push_onto_ruler_index(); return; }
-    //     rts
-    return;
-}
-void move_tmp01_to_next_line(void) {
-    // Pseudocode: Skips to next CR or zero terminator in memory
-
-    // cab29:
-    //     ldy #0
-    y = 0;
-    // loop_cab2b:
-loop_cab2b:
-    //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
-    set_flags(a);
-    //     beq return_70
-    if (flags & FLAG_Z) goto return_70;
-    //     iny
-    y++;
-    //     cmp #0x0d
-    cmp(a, 0x0d);
-    //     bne loop_cab2b
-    if (!(flags & FLAG_Z)) goto loop_cab2b;
-    //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
-    set_flags(a);
-    // return_70:
-return_70:
-    //     rts
-    return;
-}
-void move_tmp01_to_previous_line(void) {
-    // sub_cab37:
-    //     sec
-    flags |= FLAG_C;
-    //     sbc #1
-    sbc(1);
-    //     sta tmp0
-    tmp0 = a;
-    //     bcs cab3f
-    if (flags & FLAG_C) goto cab3f;
-    //     dey
-    y--;
-    // cab3f:
-cab3f:
-    //     sty tmp1
-    tmp1 = y;
-    //     cpy page+1
-    cmp(y, (uint8_t)(page >> 8));
-    //     bcc return_71
-    if (!(flags & FLAG_C)) return;
-    //     bne cab4b
-    if (!(flags & FLAG_Z)) goto cab4b;
-    //     cmp page
-    cmp(a, (uint8_t)(page & 0xff));
-    //     bcc return_71
-    if (!(flags & FLAG_C)) return;
-    // cab4b:
-cab4b:
-    //     ldy #0
-    y = 0;
-    // loop_cab4d:
-loop_cab4d:
-    //     lda tmp0
-    a = tmp0;
-    //     sec
-    flags |= FLAG_C;
-    //     sbc #1
-    sbc(1);
-    //     sta tmp0
-    tmp0 = a;
-    //     bcs cab58
-    if (flags & FLAG_C) goto cab58;
-    //     dec tmp1
-    tmp1--;
-    // cab58:
-cab58:
-    //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
-    //     cmp #0x0d
-    cmp(a, 0x0d);
-    //     bne loop_cab4d
-    if (!(flags & FLAG_Z)) goto loop_cab4d;
-    //     inc tmp0
-    tmp0++;
-    set_flags(tmp0);
-    //     bne cab64
-    if (!(flags & FLAG_Z)) goto cab64;
-    //     inc tmp1
-    tmp1++;
-    // cab64:
-cab64:
-    //     jsr sub_cab6e
-    sub_cab6e();
-    //     bne cab6c
-    if (!(flags & FLAG_Z)) goto cab6c;
-    //     jsr pop_from_ruler_stack
-    pop_from_ruler_index();
-    // cab6c:
-cab6c:
-    //     sec
-    flags |= FLAG_C;
-    // return_71:
-return_71:
-    //     rts
-    return;
-}
-void push_onto_ruler_index(void) {
-    // Pseudocode: Pushes current ruler position onto the ruler index
-
-    // push_onto_ruler_stack:
-    //     tya
-    //     pha
-    { uint8_t saved_y = y;
-    //     inc status_line_needs_redrawing_flag
-    status_line_needs_redrawing_flag++;
-    //     ldy ruler_stack_ptr
-    y = ruler_index_ptr;
-    //     dey
-    y--;
-    //     lda tmp0
-    a = tmp0;
-    //     sta (oshwm),y
-    ram[oshwm + y] = a;
-    //     dey
-    y--;
-    //     lda tmp1
-    a = tmp1;
-    //     sta (oshwm),y
-    ram[oshwm + y] = a;
-    //     jsr cab91
-    cab91();
-    //     pla
-    //     tay
-    y = saved_y;
-    set_flags(y); }
-    //     rts
-    return;
-}
-void pop_from_ruler_index(void) {
-    // Pseudocode: Pops ruler position from the ruler index
-
-    // pop_from_ruler_stack:
-    //     inc status_line_needs_redrawing_flag
-    status_line_needs_redrawing_flag++;
-    //     ldy ruler_stack_ptr
-    y = ruler_index_ptr;
-    //     iny
-    y++;
-    //     iny
-    y++;
-
-    // MULTIPLE ENTRY POINTS: pop_from_ruler_index, cab91
-    cab91();
-}
-static void cab91(void) {
-
-    // Pseudocode: Sets current_ruler_ptr from stack at ruler_index_ptr offset
-
-    // cab91:
-    //     sty ruler_stack_ptr
-    ruler_index_ptr = y;
-    //     iny
-    y++;
-    //     lda (oshwm),y
-    //     clc
-    //     adc #3
-    //     sta current_ruler_ptr
-    flags &= ~FLAG_C;
-    //     lda (oshwm),y
-    a = ram[oshwm + y];
-    //     adc #3
-    adc(3);
-    //     sta current_ruler_ptr
-    current_ruler_ptr = (current_ruler_ptr & 0xff00) | a;
-    //     dey
-    y--;
-    //     lda (oshwm),y
-    a = ram[oshwm + y];
-    //     adc #0
-    adc(0);
-    //     sta current_ruler_ptr+1
-    current_ruler_ptr = (current_ruler_ptr & 0x00ff) | ((uint16_t)a << 8);
-    // MULTIPLE ENTRY POINTS: pop_from_ruler_index, cab91
-    //     (falls through to find_margins_of_current_ruler_buffer)
-    find_margins_of_current_ruler_buffer();
-}
-void move_cursor_to_address(void) {
-    // move_cursor_to_address:
-    //     sta tmp8
-    tmp8 = a;
-    //     sty tmp9
-    tmp9 = y;
-    //     lda current_line_ptr
-    a = (uint8_t)(current_line_ptr & 0xff);
-    //     ldy current_line_ptr+1
-    y = (uint8_t)(current_line_ptr >> 8);
-    //     cpy tmp9
-    cmp(y, tmp9);
-    //     bcc cabf9
-    if (!(flags & FLAG_C)) goto cabf9;
-    //     bne cabdf
-    if (!(flags & FLAG_Z)) goto cabdf;
-    //     cmp tmp8
-    cmp(a, tmp8);
-    //     bcc cabf9
-    if (!(flags & FLAG_C)) goto cabf9;
-    //     beq cac20
-    if (flags & FLAG_Z) goto cac20;
-    // cabdf:
-cabdf:
-    //     jsr sub_cab37
-    move_tmp01_to_previous_line();
-    //     lda tmp0
-    a = tmp0;
-    //     ldy tmp1
-    y = tmp1;
-    //     bcc cac20
-    if (!(flags & FLAG_C)) goto cac20;
-    //     cpy tmp9
-    cmp(y, tmp9);
-    //     bcc cac20
-    if (!(flags & FLAG_C)) goto cac20;
-    //     bne cabdf
-    if (!(flags & FLAG_Z)) goto cabdf;
-    //     cmp tmp8
-    cmp(a, tmp8);
-    //     bcc cac20
-    if (!(flags & FLAG_C)) goto cac20;
-    //     bne cabdf
-    if (!(flags & FLAG_Z)) goto cabdf;
-    //     beq cac20                                                         ; ALWAYS branch
-    goto cac20;
-
-    // cabf6:
-cabf6:
-    //     jsr sub_cac41
-    sub_cac41();
-    // cabf9:
-cabf9:
-    //     sta tmp0
-    tmp0 = a;
-    //     sty tmp1
-    tmp1 = y;
-    //     jsr cab29
-    move_tmp01_to_next_line();
-    //     beq cac17
-    if (flags & FLAG_Z) goto cac17;
-    //     tya
-    a = y;
-    //     ldy tmp1
-    y = tmp1;
-    //     clc
-    flags &= ~FLAG_C;
-    //     adc tmp0
-    adc(tmp0);
-    //     bcc cac0b
-    if (!(flags & FLAG_C)) goto cac0b;
-    //     iny
-    y++;
-    // cac0b:
-cac0b:
-    //     cpy tmp9
-    cmp(y, tmp9);
-    //     bcc cabf6
-    if (!(flags & FLAG_C)) goto cabf6;
-    //     bne cac17
-    if (!(flags & FLAG_Z)) goto cac17;
-    //     cmp tmp8
-    cmp(a, tmp8);
-    //     bcc cabf6
-    if (!(flags & FLAG_C)) goto cabf6;
-    //     beq cac1d
-    if (flags & FLAG_Z) goto cac1d;
-    // cac17:
-cac17:
-    //     lda tmp0
-    a = tmp0;
-    //     ldy tmp1
-    y = tmp1;
-    //     bne cac20
-    goto cac20;
-    // cac1d:
-cac1d:
-    //     jsr sub_cac41
-    sub_cac41();
-    // cac20:
-cac20:
-    //     sta current_line_ptr
-    //     sty current_line_ptr+1
-    current_line_ptr = ((uint16_t)y << 8) | a;
-    //     lda tmp8
-    a = tmp8;
-    //     sec
-    flags |= FLAG_C;
-    //     sbc current_line_ptr
-    sbc((uint8_t)(current_line_ptr & 0xff));
-    //     tax
-    x = a;
-    //     ldy #0
-    y = 0;
-    //     lda (current_line_ptr),y
-    a = ram[current_line_ptr + y];
-    //     jsr check_for_command_prefix
-    flags = check_for_command_prefix(a);
-    //     bne cac3e
-    if (!(flags & FLAG_Z)) goto cac3e;
-    //     txa
-    a = x;
-    //     cpx #3
-    cmp(x, 3);
-    //     ldx #0
-    x = 0;
-    //     bcc cac3e
-    if (!(flags & FLAG_C)) goto cac3e;
-    //     sec
-    flags |= FLAG_C;
-    //     sbc #3
-    sbc(3);
-    //     tax
-    x = a;
-    // cac3e:
-cac3e:
-    //     stx xpos
-    xpos = x;
-    //     rts
-    return;
-}
-static void sub_cac41(void) {
+void sub_cac41(void) {
     // Pseudocode: Pushes ruler stack before entering a new ruler region
 
     // sub_cac41:
@@ -7984,47 +7620,6 @@ void beep(void) {
     // return_74:
     //     rts
 }
-void lookup_marker(void) {
-    // lookup_marker: Converts marker character '1'-'6' to index
-
-    //     sec
-    flags |= FLAG_C;
-    //     sbc #0x31 ; '1'
-    a = a - 0x31;
-    //     bcc loop_caced
-    if (!(flags & FLAG_C)) { beep(); return; }
-    //     asl
-    a <<= 1;
-    //     cmp #0x0c
-    cmp(a, 0x0c);
-    //     bcs return_75
-    if (flags & FLAG_C) { /* return_75: */ return; }
-    //     tax
-    x = a;
-    //     lda markers_array+1,x
-    a = ((uint8_t*)markers_array)[x + 1];
-    // return_75:
-    //     rts
-}
-void reset_area_to_entire_document(void) {
-    // reset_area_to_entire_document: Resets area to entire document (top to page)
-
-    //     lda top
-    a = (uint8_t)(top & 0xff);
-    //     sta area_start_ptr
-    area_start_ptr = top;
-    //     lda top+1
-    a = (uint8_t)(top >> 8);
-    //     sta area_start_ptr+1
-    //     lda page
-    a = (uint8_t)(page & 0xff);
-    //     sta area_end_ptr
-    area_end_ptr = page;
-    //     lda page+1
-    a = (uint8_t)(page >> 8);
-    //     sta area_end_ptr+1
-    //     rts
-}
 void set_marker_to_here(void) {
     // set_marker_to_here: Sets marker at current cursor position
 
@@ -8070,42 +7665,6 @@ cad5d:
     ((uint8_t*)markers_array)[x + 1] = a;
     //     rts
 }
-void get_register_address(void) {
-    // get_register_address: Gets address of a register value by letter name
-
-    //     jsr is_uppercase
-    if (isupper(a)) { flags &= ~FLAG_C; } else { flags |= FLAG_C; }
-    //     bcs return_77
-    if (flags & FLAG_C) { /* return_77: */ return; }
-    //     and #0xdf
-    a &= 0xdf;
-    //     pha
-    { uint8_t saved_a = a;
-    //     sbc #0x40 ; '@'
-    sbc(0x40);
-    //     asl
-    a <<= 1;
-    //     adc #<register_value_array
-    { uint16_t sum = (uint16_t)a + (uint8_t)(RAM_REGISTER_VALUE_ARRAY & 0xff); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
-    //     sta tmp6
-    tmp6 = a;
-    //     lda #>register_value_array
-    a = (uint8_t)(RAM_REGISTER_VALUE_ARRAY >> 8);
-    //     adc #0
-    { uint16_t sum = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
-    //     sta tmp7
-    tmp7 = a;
-    //     pla
-    a = saved_a; }
-    //     clc
-    flags &= ~FLAG_C;
-    // return_77:
-    //     rts
-}
-// lada6:
-//     .byte 0x40
-static const uint8_t lada6 = 0x40;
-
 static void sub_cae03(void) {
     // cae03:
     //     jmp beep
@@ -8463,182 +8022,6 @@ static void system_init(void) {
     if (screen_maxcolumn > MAX_COLUMNS - 1)
         screen_maxcolumn = MAX_COLUMNS - 1;
 }
-void initialise_document(void) {
-    // initialise_document:
-    //     lda #0
-    a = 0;
-    //     sta printer_driver_name
-    printer_driver_name[0] = a;
-    //     sta format_mode_flag
-    format_mode_flag = a;
-    //     sta justifying_flag
-    justifying_flag = a;
-    //     sta insert_mode_flag
-    insert_mode_flag = a;
-    //     ldx #(input_buffer_ptr+2 - print_flags)
-    // loop_cafe9:
-    //     sta print_flags,x
-    //     dex
-    //     bpl loop_cafe9
-    print_flags = 0; edit_buffer_dirty_flag = 0; edit_buffer_unpacked_flag = 0; l006f = 0;
-    ruler_index_ptr = 0; hscroll_pos = 0; l0072 = 0; l0073 = 0; l0074 = 0;
-    flags_need_redrawing_flag = 0; l0076 = 0; ypos = 0; print_xpos = 0;
-    l0079 = 0; l007a = 0; cursor_moved_flag = 0; l007e = 0; input_buffer_offset = 0;
-    // cafee:
-    //     ldx oshwm
-    //     ldy oshwm+1
-    //     iny
-    //     inx
-    //     stx page
-    //     bne caffe
-    //     iny
-    // caffe:
-    //     sty page+1
-    page = oshwm + 0x101;
-    //     ldy #0
-    y = 0;
-    //     sty file_edit_flags
-    file_edit_flags = y;
-    //     sty xpos
-    xpos = y;
-    //     lda #0xaa
-    a = 0xaa;
-    //     sta (oshwm),y
-    ram[oshwm + y] = a;
-    //     lda page
-    //     sec
-    //     sbc #1
-    //     sta tmp8
-    //     lda page+1
-    //     sbc #0
-    //     sta tmp9
-    tmp8 = (uint8_t)((page - 1) & 0xff);
-    tmp9 = (uint8_t)((page - 1) >> 8);
-    //     lda #0x0d
-    a = 0x0d;
-    //     sta (tmp8),y
-    ram[((uint16_t)tmp9 << 8) | tmp8] = a;
-    //     sta current_line_buffer + 0x89
-    current_line_buffer[MAX_LINE_LENGTH - 1] = a;
-    //     lda page / sta top / lda page+1 / sta top+1
-    top = page;
-    //     lda #<(current_line_buffer)
-    a = (uint8_t)(RAM_CURRENT_LINE_BUF & 0xff);
-    //     sta ptr1
-    ptr1 = (ptr1 & 0xff00) | a;
-    //     clc
-    flags &= ~FLAG_C;
-    //     adc #3
-    { uint16_t tmp_ = (uint16_t)a + 3; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 3) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
-    //     sta current_edit_line_ptr
-    //     sta current_format_line_ptr
-    current_edit_line_ptr = (current_edit_line_ptr & 0xff00) | a;
-    current_format_line_ptr = current_edit_line_ptr;
-    //     lda #>(current_line_buffer)
-    a = (uint8_t)(RAM_CURRENT_LINE_BUF >> 8);
-    //     sta ptr1+1
-    ptr1 = (ptr1 & 0x00ff) | ((uint16_t)a << 8);
-    //     adc #0
-    { uint16_t tmp_ = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 0) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
-    //     sta current_edit_line_ptr+1
-    //     sta current_format_line_ptr+1
-    current_edit_line_ptr = (current_edit_line_ptr & 0x00ff) | ((uint16_t)a << 8);
-    current_format_line_ptr = current_edit_line_ptr;
-    //     lda #<(current_ruler_buffer)
-    a = (uint8_t)(RAM_CURRENT_RULER_BUF & 0xff);
-    //     ldy #>(current_ruler_buffer)
-    y = (uint8_t)(RAM_CURRENT_RULER_BUF >> 8);
-    //     jsr create_default_ruler
-    create_default_ruler();
-    //     iny
-    y++;
-    //     lda #0x0d
-    a = 0x0d;
-    //     sta (tmp0),y
-    ram[((uint16_t)tmp1 << 8 | tmp0) + y] = a;
-    //     ldy #0xff
-    y = 0xff;
-    //     lda #<(just_before_current_ruler_buffer)
-    a = (uint8_t)(RAM_JUST_BEFORE_RULER_BUF & 0xff);
-    //     sta (oshwm),y
-    ram[oshwm + y] = a;
-    //     dey                                                               ; Y=0xfe
-    y--;
-    //     lda #>(just_before_current_ruler_buffer)
-    a = (uint8_t)(RAM_JUST_BEFORE_RULER_BUF >> 8);
-    //     sta (oshwm),y
-    ram[oshwm + y] = a;
-    //     jsr move_cursor_to_top_of_document
-    move_cursor_to_top_of_document();
-    //     jsr clear_cmd
-    clear_cmd();
-    //     (falls through to cb05a)
-    cb05a();
-}
-void cb05a(void) {
-    // cb05a: Ensures at least one CR at top of document
-
-    //     ldy page+1
-    y = (uint8_t)(page >> 8);
-    //     cpy top+1
-    cmp(y, (uint8_t)(top >> 8));
-    //     bne return_85
-    if (!(flags & FLAG_Z)) return;
-    //     lda page
-    a = (uint8_t)(page & 0xff);
-    //     cmp top
-    cmp(a, (uint8_t)(top & 0xff));
-    //     bne return_85
-    if (!(flags & FLAG_Z)) return;
-    //     inc top
-    top++;
-    //     bne cb06c
-    if (top != 0) goto cb06c;
-    //     inc top+1
-    // (automatically handled by 16-bit top)
-    // cb06c:
-cb06c:
-    //     sta current_line_ptr
-    current_line_ptr = (uint16_t)y << 8 | a;
-    //     sty current_line_ptr+1
-    //     ldy #0
-    y = 0;
-    //     lda #0x0d
-    a = 0x0d;
-    //     sta (page),y
-    ram[page + y] = a;
-    //     tya
-    a = y;
-    //     sta (top),y
-    ram[top + y] = a;
-    // return_85:
-    //     rts
-}
-void move_cursor_to_top_of_document(void) {
-    // move_cursor_to_top_of_document: Moves cursor to the top (page) of the document
-
-    //     lda page
-    a = (uint8_t)(page & 0xff);
-    //     sta current_line_ptr
-    current_line_ptr = page;
-    //     lda page+1
-    a = (uint8_t)(page >> 8);
-    //     sta current_line_ptr+1
-    //     lda #0
-    a = 0;
-    //     sta xpos
-    xpos = 0;
-    //     ldy #0xfe
-    y = 0xfe;
-    //     sty l0012
-    top_of_screen_line_ptr = (addr_t)0xfe << 8;
-    //     sty ruler_stack_ptr
-    ruler_index_ptr = y;
-    //     sty l0033
-    l0033 = y;
-    //     jmp cab91
-    cab91();
-}
 void enter_editor_mode(void) {
     screen_enter();
     // enter_editor_mode: Enters editor mode: clears screen, resets state variables
@@ -8671,64 +8054,6 @@ loop_cb0a8:
     status_line_needs_redrawing_flag = 2;
     flags_need_redrawing_flag = 1;
     //     rts
-}
-void create_default_ruler(void) {
-    // Pseudocode: Creates a default ruler with tab stops every 6 columns
-
-    // ; ***************************************************************************************
-    // create_default_ruler:
-    //     sta tmp0
-    tmp0 = a;
-    //     sty tmp1
-    tmp1 = y;
-
-    //     lda #0
-    a = 0;
-    //     tay                                                               ; Y=0x00
-    y = a;
-    // loop_cb0e7:
-loop_cb0e7:
-    //     lda #0x2e ; '.'
-    a = 0x2e;
-    // loop_cb0e9:
-loop_cb0e9:
-    //     sta (tmp0),y
-    ram[((uint16_t)tmp1 << 8 | tmp0) + y] = a;
-    //     iny
-    y++;
-    //     tya
-    a = y;
-    //     tax
-    x = a;
-    //     inx
-    x++;
-    //     clc
-    flags &= ~FLAG_C;
-    //     adc #6
-    adc(6);
-    //     cmp screen_width
-    cmp(a, screen_maxcolumn);
-    //     beq cb0ff
-    if (flags & FLAG_Z) goto cb0ff;
-    //     txa
-    a = x;
-    //     and #7
-    a &= 7;
-    //     bne loop_cb0e7
-    if (a != 0) goto loop_cb0e7;
-    //     lda #0x2a ; '*'
-    a = 0x2a;
-    //     bne loop_cb0e9                                                    ; ALWAYS branch
-    goto loop_cb0e9;
-
-    // cb0ff:
-cb0ff:
-    //     lda #0x3c ; '<'
-    a = 0x3c;
-    //     sta (tmp0),y
-    ram[((uint16_t)tmp1 << 8 | tmp0) + y] = a;
-    //     rts
-    return;
 }
 static void sub_cb104(void) {
     // Pseudocode: Resets formatting registers and default print settings
@@ -8792,45 +8117,6 @@ static void sub_cb104(void) {
     sub_c92f0();
     return;
 }
-void select_file(void) {
-    file_ptr = x ? output_fp : input_fp;
-}
-void open_input_file(void) {
-    zero_terminate_filename_buffer();
-    input_fp = fopen((char *)filename_buffer, "rb");
-    if (!input_fp) { file_not_found_error(); return; }
-    file_ptr = input_fp;
-}
-void open_output_file(void) {
-    zero_terminate_filename_buffer();
-    output_fp = fopen((char *)filename_buffer, "wb");
-    if (!output_fp) { file_error(); return; }
-    file_ptr = output_fp;
-}
-
-void close_file(void) {
-    if (file_ptr) {
-        fclose(file_ptr);
-        file_ptr = NULL;
-    }
-}
-void put_byte_to_file(void) {
-    fputc(a, file_ptr);
-}
-static void get_byte_from_file(void) {
-    int c = fgetc(file_ptr);
-    if (c == EOF || c == 0) {
-        a = 0;
-        flags |= FLAG_C;
-        flags = (flags & ~(FLAG_Z | FLAG_N)) | FLAG_Z;
-    } else {
-        a = (uint8_t)c;
-        flags &= ~FLAG_C;
-        flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
-    }
-    y = a;
-}
-
 int main(int argc, char* argv[]) {
     main_();
     return 0;

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <setjmp.h>
+#include <stdio.h>
 
 typedef uint16_t addr_t;
 
@@ -100,7 +101,6 @@ extern uint8_t tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8, tmp9;
 extern uint8_t print_flags, folding_flag, macro_executing_flag;
 extern uint8_t ruler_right_stop, ruler_left_stop;
 extern void (*number_callback)(void);
-extern void get_register_address(void);
 extern void render_new_page(void);
 extern void c9263(void);
 extern void display_not_enough_memory(void);
@@ -116,7 +116,6 @@ extern void parse_command(void);
 extern void sub_c8412(void);
 extern void c8b7b(void);
 extern void sub_c8c7c(void);
-extern void move_cursor_to_address(void);
 extern void enter_editor_mode(void);
 extern void sub_c83f0(void);
 extern void sub_c8a4f(void);
@@ -128,25 +127,16 @@ extern void esc_key(void);
 extern void print_document(void);
 extern void parse_filename_from_command(void);
 extern void set_document_name_to_filename_buffer(void);
-extern void open_input_file(void);
-extern void open_output_file(void);
-extern void initialise_document(void);
 extern void read_first_chunk_from_input_file(void);
 extern void check_not_continuous_editing(void);
 extern void check_continuous_editing(void);
 extern void parse_marks_from_command(void);
 extern void sanitise_area(void);
-extern void select_file(void);
 extern void write_area_to_file(void);
 extern void sub_c89d3(void);
-extern void move_cursor_to_top_of_document(void);
 extern void read_next_chunk_from_input_file(void);
-extern void cb05a(void);
-extern void put_byte_to_file(void);
 extern void read_into_document(void);
-extern void reset_area_to_entire_document(void);
 extern void bad_filename_error(void);
-extern void close_file(void);
 extern void parse_optional_filename_from_command(void);
 extern void reset_document_name_after_load(void);
 extern void prepare_printer_driver(void);
@@ -237,4 +227,23 @@ extern uint8_t edit_buffer_dirty_flag;
 extern uint8_t line_lengths[];
 
 extern uint8_t l0073;
+
+extern uint8_t ruler_index_ptr;
+extern addr_t oshwm;
+extern uint8_t l0076;
+#define RAM_CURRENT_LINE_BUF 0x0545
+#define RAM_JUST_BEFORE_RULER_BUF 0x05CC
+extern uint8_t screen_maxcolumn;
+extern FILE *file_ptr;
+extern FILE *input_fp;
+extern FILE *output_fp;
+extern void clear_cmd(void);
+extern void beep(void);
+extern void sub_cac41(void);
+extern void zero_terminate_filename_buffer(void);
+extern void file_not_found_error(void);
+extern void file_error(void);
+
+#define current_line_buffer (&ram[RAM_CURRENT_LINE_BUF])
+
 #endif
