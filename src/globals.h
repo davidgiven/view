@@ -209,4 +209,13 @@ extern uint8_t error_handling_mode;
 extern uint8_t printer_driver_name[];
 extern void run_editor(void);
 
+
+extern uint8_t edit_buffer_unpacked_flag;
+extern uint8_t l0072;
+extern uint8_t l0079;
+extern uint8_t cursor_moved_flag;
+extern uint8_t xpos;
+extern uint8_t flags_need_redrawing_flag;
+#define CTRL(c) ((uint8_t)((c) & 0x1f))
+
 #endif

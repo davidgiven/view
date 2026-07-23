@@ -76,14 +76,14 @@ static void go_to_marker_n(void);
 static void set_marker_common(void);
 static void set_marker(void);
 static void go_to_marker(void);
-static void sub_caec2(void);
+void sub_caec2(void);
 static void sub_caef4(void);
 static void cab91(void);
 void check_continuous_editing(void);
 void display_not_enough_memory(void);
 void reset_document_name_after_load(void);
-static void return_key(void);
-static void sf13_right_key(void);
+void return_key(void);
+void sf13_right_key(void);
 static void f1_top_of_text_key(void);
 static void f2_bottom_of_text_key(void);
 static void f4_beginning_of_line_key(void);
@@ -117,40 +117,39 @@ static void set_marker_3(void);
 static void set_marker_4(void);
 static void set_marker_5(void);
 static void set_marker_6(void);
-static void tab_key(void);
-static void delete_key(void);
-static void f8_insert_char_key(void);
+void tab_key(void);
+void delete_key(void);
+void f8_insert_char_key(void);
 void esc_key(void);
-static void f15_up_key(void);
-static void f12_left_key(void);
-static void f13_right_key(void);
-static void f14_down_key(void);
-static void sf12_left_key(void);
-static void sf14_down_key(void);
-static void sf15_up_key(void);
-static void f9_delete_char_key(void);
-static void f7_delete_line_key(void);
-static void cf4_insert_mode_key(void);
-static void f6_insert_line_key(void);
-static void f0_format_block_key(void);
-static void sf3_delete_to_char_key(void);
-static void cf1_next_match_key(void);
-static void cf7_join_lines_key(void);
-static void sf1_swap_case_key(void);
-static void o_command_key(void);
-static void q_command_key(void);
-static void k_command_key(void);
+void f15_up_key(void);
+void f12_left_key(void);
+void f13_right_key(void);
+void f14_down_key(void);
+void sf12_left_key(void);
+void sf14_down_key(void);
+void sf15_up_key(void);
+void f9_delete_char_key(void);
+void f7_delete_line_key(void);
+void cf4_insert_mode_key(void);
+void f6_insert_line_key(void);
+void f0_format_block_key(void);
+void sf3_delete_to_char_key(void);
+void cf1_next_match_key(void);
+void cf7_join_lines_key(void);
+void sf1_swap_case_key(void);
+void o_command_key(void);
+void q_command_key(void);
+void k_command_key(void);
 static void beep(void);
-static void enter_printable_character(void);
+void enter_printable_character(void);
 static void sub_c9de1(void);
 static void sub_c9e22(void);
 void show_memory_full_error(void);
-static void editor_loop_impl(void);
 static void ca741(void);
 static void write_line_back_to_document_safely(void);
 static void ca684(void);
 static void make_space_for_insertion(void);
-static void get_line_length(void);
+void get_line_length(void);
 static void prompt_for_marker(void);
 static void lookup_marker(void);
 static void set_marker_to_here(void);
@@ -160,7 +159,7 @@ void parse_optional_filename_from_command(void);
 void parse_filename_from_command(void);
 void check_not_continuous_editing(void);
 static void sub_c9e9b(void);
-static void sub_caa97(void);
+void sub_caa97(void);
 
 static void move_tmp01_to_previous_line(void);
 static void sub_ca0af(void);
@@ -225,13 +224,12 @@ static void cursor_on(void);
 static void cursor_off(void);
 static void save_cursor_position(void);
 static void restore_cursor_position(void);
-static void return_to_editor_loop(void);
 void prepare_printer_driver(void);
 static void default_print_char(void);
 static void default_printer_on(void);
 static void default_printer_off(void);
 static void default_printer_entry3(void);
-static void redraw_editor(void);
+void redraw_editor(void);
 void sub_c8e33(void);
 static void sub_c8c53(void);
 static void sub_c8c51(void);
@@ -266,7 +264,7 @@ void set_document_name_to_filename_buffer(void);
 static void clear_marks_1_2(void);
 static void reset_area_to_marks_1_2(void);
 static void sub_ca1cc(void);
-static void recalculate_cursor_xpos(void);
+void recalculate_cursor_xpos(void);
 // Forward declarations for recently translated functions
 void bad_filename_error(void);
 void c9263(void);
@@ -310,6 +308,7 @@ static void sub_cb104(void);
 
 #include "document.h"
 #include "cli.h"
+#include "editor.h"
 
 //X ram:                              .fill 65536
 uint8_t ram[65536];
@@ -617,9 +616,6 @@ static void main_(void) {
 void run_editor(void) {
     // run_editor: Enter editor mode and jump to editor loop.
     enter_editor_mode();
-    longjmp(env, JMP_EDITOR);
-}
-static void return_to_editor_loop(void) {
     longjmp(env, JMP_EDITOR);
 }
 void esc_key(void) {
@@ -5316,175 +5312,7 @@ c9b31:
     //     rts
     return;
 }
-static void editor_loop_impl(void) {
-    screen_enter();
-    // Pseudocode: Main editor loop: handles cursor positioning, redrawing, key dispatch
-    for (;;) {
-editor_loop:
-    //     lda format_mode_flag
-    //     pha
-    {   uint8_t saved_fmt = format_mode_flag;
-    //     lda l006e
-    a = edit_buffer_unpacked_flag;
-    //     bne c9b44
-    if (a != 0) goto c9b44_;
-    //     pha
-    {   uint8_t saved_a_ = a;
-    //     jsr sub_caa97
-    sub_caa97();
-    //     pla
-    a = saved_a_; }
-    //     sta l006e
-    edit_buffer_unpacked_flag = a;
-c9b44_:
-    //     jsr sub_ca608
-    recalculate_cursor_xpos();
-    //     lda ruler_left_stop
-    a = ruler_left_stop;
-    //     beq c9b73
-    if (a == 0) goto c9b73_;
-    //     ldx format_mode_flag
-    x = format_mode_flag;
-    //     bmi c9b73
-    if (x & 0x80) goto c9b73_;
-    //     cmp l0072
-    cmp(a, l0072);
-    //     bcc c9b73
-    if (!(flags & FLAG_C)) goto c9b73_;
-    //     beq c9b73
-    if (flags & FLAG_Z) goto c9b73_;
-    //     ldx cursor_moved_flag
-    x = cursor_moved_flag;
-    //     bne c9b6a
-    if (x != 0) goto c9b6a_;
-    //     jsr get_line_length
-    get_line_length();
-    //     lda format_mode_flag
-    a = format_mode_flag;
-    //     cpy xpos
-    cmp(y, xpos);
-    //     bcs c9b84
-    if (flags & FLAG_C) goto c9b84_;
-    //     bit format_mode_flag
-    bit(format_mode_flag);
-    //     bvs c9b6a
-    if (flags & FLAG_V) goto c9b6a_;
-    //     sty xpos
-    xpos = y;
-    //     bvc c9b84                                                         ; ALWAYS branch
-    goto c9b84_;
-
-c9b6a_:
-    //     lda ruler_left_stop
-    a = ruler_left_stop;
-    //     sta l0072
-    l0072 = a;
-    //     inc l0079
-    l0079++;
-    //     jsr sub_ca608
-    recalculate_cursor_xpos();
-    //     lda format_mode_flag
-    a = format_mode_flag;
-    //     and #0xbf
-    a &= 0xbf;
-    //     pha
-    {   uint8_t saved_mod = a;
-    //     jsr sub_caec2
-    sub_caec2();
-    //     pla
-    a = saved_mod; }
-    //     bcs c9b86
-    if (flags & FLAG_C) goto c9b86_;
-    //     cpy xpos
-    cmp(y, xpos);
-    //     bcc c9b86
-    if (!(flags & FLAG_C)) goto c9b86_;
-    //     beq c9b86
-    if (flags & FLAG_Z) goto c9b86_;
-    //     ora #0x40 ; '@'
-    a |= 0x40;
-c9b84_:
-    // c9b86:
-    //     sta format_mode_flag
-    format_mode_flag = a;
-c9b8f_:
-c9b73_:
-c9b86_:
-    //     pla (was: pop saved_fmt)
-    //     cmp format_mode_flag
-    //     beq c9b8f
-    if (saved_fmt != format_mode_flag) {
-    //     inc flags_need_redrawing_flag
-        flags_need_redrawing_flag++;
-    }
-    // c9b8f:
-    //     lda #0
-    //     sta cursor_moved_flag
-    cursor_moved_flag = 0;
-    //     jsr redraw_editor
-    redraw_editor();
-    }
-c9b96:
-    //     jsr read_char
-    read_char();
-    //     cmp current_tab_key
-    cmp(a, current_tab_key);
-    //     bne c9b9f
-    if (!(flags & FLAG_Z)) goto c9b9f;
-    //     lda #9
-    a = 9;
-c9b9f:
-    //     sta l0038
-    l0038 = a;
-    //     tay
-    y = a;
-    //     bmi c9bbb  ; omitted to support high-bit control characters
-    // if (a & 0x80) goto editor_loop;
-    //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
-    //     bcc enter_nonprintable_character
-    if (!(flags & FLAG_C)) goto enter_nonprintable_character;
-    //     cmp #0x7f
-    cmp(a, 0x7f);
-    //     bcc enter_printable_character
-    if (!(flags & FLAG_C)) { enter_printable_character(); goto editor_loop; }
-enter_nonprintable_character:
-    switch (a) {
-        case CTRL('['): esc_key(); goto editor_loop;
-        case CTRL('M'): return_key(); goto editor_loop;
-        case 0x7f: delete_key(); goto editor_loop;
-        case CTRL('I'): tab_key(); goto editor_loop;
-        case CTRL('E'): f15_up_key(); goto editor_loop;
-        case SCREEN_KEY_UP: f15_up_key(); goto editor_loop;
-        case CTRL('S'): f12_left_key(); goto editor_loop;
-        case SCREEN_KEY_LEFT: f12_left_key(); goto editor_loop;
-        case CTRL('D'): f13_right_key(); goto editor_loop;
-        case SCREEN_KEY_RIGHT: f13_right_key(); goto editor_loop;
-        case CTRL('X'): f14_down_key(); goto editor_loop;
-        case SCREEN_KEY_DOWN: f14_down_key(); goto editor_loop;
-        case CTRL('A'): sf12_left_key(); goto editor_loop;
-        case CTRL('F'): sf13_right_key(); goto editor_loop;
-        case CTRL('C'): sf14_down_key(); goto editor_loop;
-        case CTRL('R'): sf15_up_key(); goto editor_loop;
-        case CTRL('G'): f9_delete_char_key(); goto editor_loop;
-        case CTRL('H'): f8_insert_char_key(); goto editor_loop;
-        case CTRL('Y'): f7_delete_line_key(); goto editor_loop;
-        case CTRL('V'): cf4_insert_mode_key(); goto editor_loop;
-        case CTRL('N'): f6_insert_line_key(); goto editor_loop;
-        case CTRL('B'): f0_format_block_key(); goto editor_loop;
-        case CTRL('T'): sf3_delete_to_char_key(); goto editor_loop;
-        case CTRL('L'): cf1_next_match_key(); goto editor_loop;
-        case CTRL('J'): cf7_join_lines_key(); goto editor_loop;
-        case CTRL('P'): sf1_swap_case_key(); goto editor_loop;
-        case CTRL('O'): o_command_key(); goto editor_loop;
-        case CTRL('Q'): q_command_key(); goto editor_loop;
-        case CTRL('K'): k_command_key(); goto editor_loop;
-    }
-    //     jmp editor_loop
-    goto editor_loop;
-    }
-}
-static void enter_printable_character(void) {
+void enter_printable_character(void) {
     // enter_printable_character:
     //     ldy xpos
     y = xpos;
@@ -5860,7 +5688,7 @@ c9d15:
     return;
 }
 // MULTIPLE ENTRY POINTS: sf1_swap_case_key, f13_right_key
-static void sf1_swap_case_key(void) {
+void sf1_swap_case_key(void) {
     // sf1_swap_case_key:
     //     ldy xpos
     y = xpos;
@@ -5879,7 +5707,7 @@ static void sf1_swap_case_key(void) {
     //     falls through to f13_right_key
     f13_right_key(); return;
 }
-static void f13_right_key(void) {
+void f13_right_key(void) {
     // f13_right_key:
     //     ldy xpos
     y = xpos;
@@ -5893,7 +5721,7 @@ static void f13_right_key(void) {
     //     rts
     return;
 }
-static void f12_left_key(void) {
+void f12_left_key(void) {
     // f12_left_key: Moves cursor left by one position
 
     //     ldy l0072
@@ -5904,7 +5732,7 @@ static void f12_left_key(void) {
     xpos--;
     // return_52:
 }
-static void f15_up_key(void) {
+void f15_up_key(void) {
     // f15_up_key: Moves cursor to previous line, handling ruler stack
 
     //     jsr write_line_back_to_document_safely
@@ -5958,7 +5786,7 @@ static void c9d9b_advance_ptr(void) {
     // return_54:
     //     rts
 }
-static void f14_down_key(void) {
+void f14_down_key(void) {
     // Pseudocode: Moves cursor to next line
 
     // ; ***************************************************************************************
@@ -5973,7 +5801,7 @@ static void f14_down_key(void) {
     //     jsr return_key
     return_key();
 }
-static void return_key(void) {
+void return_key(void) {
     // return_key: Carriage return: moves to next line at column 0
 
     //     jsr write_line_back_to_document_safely
@@ -6109,7 +5937,7 @@ c9dcd:
 }
 
 // MULTIPLE ENTRY POINTS: cf6_split_line_key, f6_insert_line_key, sub_c9de1
-static void f6_insert_line_key(void) {
+void f6_insert_line_key(void) {
     // f6_insert_line_key:
     //     jsr write_line_back_to_document_safely
     write_line_back_to_document_safely();
@@ -6122,7 +5950,7 @@ static void f6_insert_line_key(void) {
     //     falls through to sub_c9de1
     sub_c9de1();
 }
-static void delete_key(void) {
+void delete_key(void) {
     // delete_key:
     //     lda l0072
     a = l0072;
@@ -6162,7 +5990,7 @@ static void delete_key(void) {
     f8_insert_char_key();
 }
 // MULTIPLE ENTRY POINTS: delete_key, f8_insert_char_key
-static void f8_insert_char_key(void) {
+void f8_insert_char_key(void) {
     // f8_insert_char_key:
     //     lda #0x20 ; ' '
     a = 0x20;
@@ -6190,7 +6018,7 @@ static void sub_c9e22(void) {
     return;
 }
 // MULTIPLE ENTRY POINTS: tab_key, sf4_highlight1_key, sf5_highlight2_key
-static void tab_key(void) {
+void tab_key(void) {
     // tab_key:
     //     lda #9
     a = 9;
@@ -6228,7 +6056,7 @@ static void tab_highlight_common(void) {
     //     jmp f13_right_key
     f13_right_key(); return;
 }
-static void f9_delete_char_key(void) {
+void f9_delete_char_key(void) {
     // f9_delete_char_key: Deletes character under cursor
 
     //     ldx #1
@@ -6238,7 +6066,7 @@ static void f9_delete_char_key(void) {
     //     jmp delete_edit_buffer_bytes_at_xpos
     delete_edit_buffer_bytes_at_xpos(); return;
 }
-static void f7_delete_line_key(void) {
+void f7_delete_line_key(void) {
     // f7_delete_line_key: Deletes current line and moves cursor up
 
     //     jsr write_line_back_to_document_safely
@@ -6342,7 +6170,7 @@ static void f5_end_of_line_key(void) {
     // c9e9b:
     sub_c9e9b();
 }
-static void cf7_join_lines_key(void) {
+void cf7_join_lines_key(void) {
     // cf7_join_lines_key: Joins current line with next line
 
     //     jsr write_line_back_to_document_safely
@@ -6607,7 +6435,7 @@ static void sub_c9f80(void) {
     //     dec l006f
     l006f--;
 }
-static void sf12_left_key(void) {
+void sf12_left_key(void) {
     // Pseudocode: Moves cursor left by one word
 
     // ; ***************************************************************************************
@@ -6627,7 +6455,7 @@ static void sf12_left_key(void) {
 // return_57:
 //     rts
 }
-static void sf13_right_key(void) {
+void sf13_right_key(void) {
     // sf13_right_key: Moves cursor right by one word
     uint8_t line_len;
 
@@ -6880,7 +6708,7 @@ static void go_to_marker(void) {
     //     jmp ca684
     ca684(); return;
 }
-static void f0_format_block_key(void) {
+void f0_format_block_key(void) {
     // f0_format_block_key:
     //     jsr ca93c
     write_line_back_to_document_safely();
@@ -6978,7 +6806,7 @@ static void sub_ca071(void) {
     current_line_ptr = (current_line_ptr & 0x00ff) | ((uint16_t)y << 8);
     //     rts
 }
-static void sf15_up_key(void) {
+void sf15_up_key(void) {
     // sf15_up_key:
     //     ldx screen_height
     x = screen_maxrow;
@@ -7058,7 +6886,7 @@ static void sub_ca0af(void) {
     current_line_ptr = (current_line_ptr & 0x00ff) | ((uint16_t)y << 8);
     //     rts
 }
-static void sf14_down_key(void) {
+void sf14_down_key(void) {
     // sf14_down_key:
     //     ldx screen_height
     //     inc l0079
@@ -7113,7 +6941,7 @@ static void cf5_default_ruler_key(void) {
     //     jmp create_default_ruler
     create_default_ruler();
 }
-static void sf3_delete_to_char_key(void) {
+void sf3_delete_to_char_key(void) {
     x = 0x43;
     y = 0x48;
     draw_prompt_characters();
@@ -7167,7 +6995,7 @@ static void cf3_justify_mode_key(void) {
     justifying_flag ^= 0xff;
     flags_need_redrawing_flag++;
 }
-static void cf4_insert_mode_key(void) {
+void cf4_insert_mode_key(void) {
     insert_mode_flag ^= 0xff;
     flags_need_redrawing_flag++;
 }
@@ -7255,13 +7083,13 @@ static void sub_ca1cc(void) {
     cursor_moved_flag = 1;
     flags &= ~FLAG_C;
 }
-static void cf1_next_match_key(void) {
+void cf1_next_match_key(void) {
     write_line_back_to_document_safely();
     c8b7b();
     if (!(flags & FLAG_Z)) { esc_key(); return; }
     move_cursor_to_address();
 }
-static void redraw_editor(void) {
+void redraw_editor(void) {
     // Pseudocode: Main screen update routine: scrolls, redraws lines, updates status and cursor
     uint8_t saved_status_line_needs_redrawing_flag;
 
@@ -8144,7 +7972,7 @@ void process_current_document_character(void) {
     y++;
     process_document_character();
 }
-static void recalculate_cursor_xpos(void) {
+void recalculate_cursor_xpos(void) {
     // Pseudocode: Recalculates cursor xpos from visual position accounting for tabs and margins
 
     // sub_ca608:
@@ -9160,7 +8988,7 @@ caa82:
 return_67:
     //     rts                                                             (6516)
 }
-static void sub_caa97(void) {
+void sub_caa97(void) {
     // sub_caa97:
     //     lda #0x10
     a = 0x10;
@@ -9281,7 +9109,7 @@ caae8:
     // return_68:
     //     rts
 }
-static void get_line_length(void) {
+void get_line_length(void) {
     // Pseudocode: Returns the length of the current edit line
 
     // ; ***************************************************************************************
@@ -10350,7 +10178,7 @@ caeb7:
     // return_78:
     //     rts
 }
-static void sub_caec2(void) {
+void sub_caec2(void) {
     // sub_caec2: Finds left margin stop (0x0b) in edit line
 
     //     lda ruler_left_stop
@@ -10924,7 +10752,7 @@ static void control_key_to_ascii(void) {
     if (a < 0x20) a |= 0x40;
     a = toupper(a); return;
 }
-static void q_command_key(void) {
+void q_command_key(void) {
     // Pseudocode: Q-command handler: prompts for Q-key, looks up in q_key_table
 
     // zproc q_command_key
@@ -10963,7 +10791,7 @@ static void q_command_key(void) {
     }
     return;
 }
-static void o_command_key(void) {
+void o_command_key(void) {
     // Pseudocode: O-command handler: prompts for O-key, looks up in o_key_table
 
     // zproc o_command_key
@@ -10999,7 +10827,7 @@ static void o_command_key(void) {
     }
     return;
 }
-static void k_command_key(void) {
+void k_command_key(void) {
     // Pseudocode: K-command handler: prompts for K-key, looks up in k_key_table
 
     // zproc k_command_key
