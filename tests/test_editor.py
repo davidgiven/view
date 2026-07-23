@@ -964,6 +964,34 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_search_finds_horse_then_ctrl_l_finds_next(self):
+        """SEARCH 'horse' enters editor on first match; CTRL_L goes to next."""
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("LOAD examples/horse.v")
+        self.proc.read_until(b"=>", timeout=1.0)
+
+        self.proc.writeline("SEARCH horse")
+        raw = self._drain_editor()
+        screen = pyte.Screen(80, 24)
+        stream = pyte.Stream(screen)
+        stream.feed(raw.decode("latin-1"))
+        cx, cy = screen.cursor.x, screen.cursor.y
+        char = screen.display[cy][cx] if cy < len(screen.display) else ""
+        self.assertEqual(
+            char, "H",
+            f"Expected 'H' at cursor ({cx},{cy}), got {repr(char)}",
+        )
+
+        self.proc.write(CTRL_L)
+        raw = self._drain_editor()
+        stream.feed(raw.decode("latin-1"))
+        cx, cy = screen.cursor.x, screen.cursor.y
+        char = screen.display[cy][cx] if cy < len(screen.display) else ""
+        self.assertEqual(
+            char, "h",
+            f"Expected 'h' at cursor ({cx},{cy}), got {repr(char)}",
+        )
+
     def test_load_horse_and_enter_editor_then_exit_with_escape(self):
         self.proc.read_until(b"=>", timeout=0.5)
         self.proc.writeline("LOAD examples/horse.v")
