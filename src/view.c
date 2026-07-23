@@ -6112,6 +6112,8 @@ c955e:
     y++;
     //     jsr render_register
     render_register();
+    // advance x past the digits written by render_number_to_output_buffer
+    if (l0082 > x) x = l0082;
     //     jmp c9537
     goto c9537;
 }
@@ -11333,18 +11335,15 @@ static void emit_to_output_buffer_callback(void) {
 
     // emit_to_output_buffer_callback:
     //     pha
-{   uint8_t saved_a = a;
+    // (digit value is in a at entry — set by render_number_to_callback)
+{   uint8_t digit = a;
     //     txa
     //     pha
     uint8_t saved_x = x;
-    //     tsx
-    x = sp;
-    //     lda 0x0102,x
-    a = ram[(uint16_t)0x0102 + x];
     //     ldx l0082
     x = l0082;
     //     sta output_buffer,x
-    output_buffer[x] = a;
+    output_buffer[x] = digit;
     //     cpx #MAX_LINE_LENGTH-2
     cmp(x, MAX_LINE_LENGTH - 2);
     //     bcs ca6ae
@@ -11356,8 +11355,8 @@ ca6ae:
     //     pla
     //     tax
     x = saved_x;
-    //     pla
-    a = saved_a; }
+    //     pla (restore a — but we didn't push it; keep the digit value)
+    a = digit; }
     //     rts
     return;
 }
@@ -13382,9 +13381,12 @@ static void get_register_address(void) {
     // return_77:
     //     rts
 }
-static void render_register(void) {
-    // render_register: Renders the value of a named register to output buffer
+// lada6:
+//     .byte 0x40
+static const uint8_t lada6 = 0x40;
 
+static void render_register(void) {
+    // render_register:
     //     sty l0084
     l0084 = y;
     //     jsr get_register_address
@@ -13398,35 +13400,29 @@ static void render_register(void) {
     //     bcs cada2
     if (flags & FLAG_C) goto cada2;
     //     bit lada6
-    bit(0x40);
-    //     cmp #0x44 ; 'D'
-    cmp(a, 0x44);
-    //     beq cada3
-    if (flags & FLAG_Z) goto cada3;
-    //     cmp #0x54 ; 'T'
-    cmp(a, 0x54);
-    //     beq cada3
-    if (flags & FLAG_Z) goto cada3;
+    bit(lada6);
     //     lda (tmp6),y
     a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
     //     sta tmp8
     tmp8 = a;
-    //     iny
+    //     iny                                                               ; Y=0x01
     y++;
     //     lda (tmp6),y
     a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
     //     sta tmp9
     tmp9 = a;
+    //     jsr render_number_to_output_buffer
+    render_number_to_output_buffer();
     // cada2:
 cada2:
     //     clv
     flags &= ~FLAG_V;
-    // cada3:
-cada3:
     //     ldy l0084
     y = l0084;
     //     rts
+    return;
 }
+
 static void sub_cadf0(void) {
     // sub_cadf0: Performs 8-bit by 8-bit division for microspacing
 

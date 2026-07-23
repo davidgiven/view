@@ -58,6 +58,16 @@ class PrintTests(unittest.TestCase):
         """Type 'test' in the editor, ESC, SCREEN, verify output."""
         self._type_and_screen(b"test", ["test"])
 
+    def test_sr_sets_register_then_renders(self):
+        """SR sets registers; LJ renders them."""
+        keys = _command("SR", "A 10") + CTRL_M
+        keys += _command("SR", "B 2+3") + CTRL_M
+        keys += _command("SR", "C 10-3") + CTRL_M
+        keys += _command("SR", "D 10+2") + CTRL_M
+        keys += _command("SR", "E 10-3") + CTRL_M
+        keys += _command("LJ", "|A |B |C |D |E")
+        self._type_and_screen(keys, ["10 5 7 12 7"])
+
     def test_ce_centers_text(self):
         """Type CE format command + text, SCREEN should show centered output."""
         self._type_and_screen(
