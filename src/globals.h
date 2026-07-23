@@ -110,6 +110,50 @@ extern void parse_decimal_number(void);
 extern void check_for_control_code(void);
 extern void render_number_to_screen(void);
 extern void print_char_via_putchar(void);
+// Functions in view.c called by other modules
+extern void sub_c8412(void);
+extern void c8b7b(void);
+extern void sub_c8c7c(void);
+extern void move_cursor_to_address(void);
+extern void enter_editor_mode(void);
+extern void sub_c83f0(void);
+extern void sub_c8a4f(void);
+extern void draw_prompt_characters(void);
+extern void sub_c8361(void);
+extern void sub_c8371(void);
+extern void show_memory_full_error(void);
+extern void esc_key(void);
+extern void print_document(void);
+extern void parse_filename_from_command(void);
+extern void set_document_name_to_filename_buffer(void);
+extern void open_input_file(void);
+extern void open_output_file(void);
+extern void initialise_document(void);
+extern void read_first_chunk_from_input_file(void);
+extern void check_not_continuous_editing(void);
+extern void check_continuous_editing(void);
+extern void parse_marks_from_command(void);
+extern void sanitise_area(void);
+extern void select_file(void);
+extern void write_area_to_file(void);
+extern void sub_c89d3(void);
+extern void move_cursor_to_top_of_document(void);
+extern void read_next_chunk_from_input_file(void);
+extern void cb05a(void);
+extern void put_byte_to_file(void);
+extern void read_into_document(void);
+extern void reset_area_to_entire_document(void);
+extern void bad_filename_error(void);
+extern void close_file(void);
+extern void parse_optional_filename_from_command(void);
+extern void reset_document_name_after_load(void);
+extern void prepare_printer_driver(void);
+extern void parse_integer_from_command(void);
+extern void sub_c8e33(void);
+extern void process_current_document_character(void);
+extern void sub_caf5f(void);
+extern void wipe_buffer(void);
+extern void sub_c9977(void);
 extern uint8_t l0021, l0031, l0038, l007a;
 #define RAM_REGISTER_VALUE_P (RAM_REGISTER_VALUE_ARRAY + ('P'-'A')*2)
 #define RAM_REGISTER_VALUE_L (RAM_REGISTER_VALUE_ARRAY + ('L'-'A')*2)
@@ -125,6 +169,37 @@ extern uint8_t input_filename[];
 extern uint8_t output_filename[];
 extern uint8_t file_edit_flags;
 extern addr_t current_ruler_ptr;
+extern addr_t current_edit_line_ptr;
+extern addr_t current_line_ptr;
+extern addr_t top_of_screen_line_ptr;
 extern uint8_t l003a;
 extern uint8_t l0046;
+extern uint8_t input_file_empty_flag;
+extern uint8_t filename_buffer[];
+extern uint8_t current_tab_key;
+extern uint8_t input_buffer[];
+extern uint8_t microspacing_flag;
+extern uint8_t input_buffer_offset;
+extern uint8_t insert_mode_flag;
+extern addr_t ptr3;
+
+// Pointer array struct (markers, area pointers, doc pointers)
+struct pointer_array_t {
+    addr_t markers_array[6];
+    addr_t area_start_ptr;
+    addr_t area_end_ptr;
+    addr_t doc_ptr1;
+    addr_t doc_ptr2;
+    addr_t doc_ptr3;
+};
+extern struct pointer_array_t pointer_array;
+#define markers_array pointer_array.markers_array
+#define area_start_ptr pointer_array.area_start_ptr
+#define area_end_ptr pointer_array.area_end_ptr
+#define doc_ptr1 pointer_array.doc_ptr1
+#define doc_ptr2 pointer_array.doc_ptr2
+#define doc_ptr3 pointer_array.doc_ptr3
+
+#define RAM_CURRENT_RULER_BUF 0x05CF
+#define current_ruler_buffer (&ram[RAM_CURRENT_RULER_BUF])
 #endif

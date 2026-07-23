@@ -79,6 +79,23 @@ void compute_bytes_free(void) {
     return;
 }
 
+void check_for_at_least_150_bytes_free(void) {
+    // Pseudocode: Checks if at least 150 bytes of memory are available
+
+    // check_for_at_least_150_bytes_free:
+    //     jsr compute_bytes_free
+    compute_bytes_free();
+    //     tya
+    //     bne return_6
+    if (y != 0) return;
+    //     cpx #0x96
+    //     bcs return_6
+    if (x >= 0x96) return;
+
+    // MULTIPLE ENTRY POINTS: check_for_at_least_150_bytes_free, display_not_enough_memory
+    display_not_enough_memory();
+}
+
 uint8_t deref_and_check_for_command_prefix(void) {
     // deref_and_check_for_command_prefix:
     //     lda (tmp0),y

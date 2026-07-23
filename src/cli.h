@@ -1,6 +1,10 @@
 #ifndef CLI_H
 #define CLI_H
 
-// Stub — CLI command handling functions will be moved here.
+#include "globals.h"
+
+extern void execute_cli_command(void);
+extern void start_printing(void);
+extern void clear_cmd(void);
 
 #endif

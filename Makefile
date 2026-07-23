@@ -56,15 +56,15 @@ bin/render_number: tests/render_number.c
 	mkdir -p bin
 	$(CC) $(CFLAGS) -o $@ $<
 
-bin/test_ruler: tests/test_ruler.c $(OBJ_DIR)/view_nomain.o $(OBJ_DIR)/printing.o $(OBJ_DIR)/document.o $(OBJ_DIR)/editor.o $(OBJ_DIR)/cli_stdio.o $(OBJ_DIR)/screen_ncurses.o
+bin/test_ruler: tests/test_ruler.c $(OBJ_DIR)/view_nomain.o $(OBJ_DIR)/cli.o $(OBJ_DIR)/printing.o $(OBJ_DIR)/document.o $(OBJ_DIR)/editor.o $(OBJ_DIR)/cli_stdio.o $(OBJ_DIR)/screen_ncurses.o
 	mkdir -p bin
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-bin/test_justify: tests/test_justify.c $(OBJ_DIR)/view_nomain.o $(OBJ_DIR)/printing.o $(OBJ_DIR)/document.o $(OBJ_DIR)/editor.o $(OBJ_DIR)/cli_stdio.o $(OBJ_DIR)/screen_ncurses.o
+bin/test_justify: tests/test_justify.c $(OBJ_DIR)/view_nomain.o $(OBJ_DIR)/cli.o $(OBJ_DIR)/printing.o $(OBJ_DIR)/document.o $(OBJ_DIR)/editor.o $(OBJ_DIR)/cli_stdio.o $(OBJ_DIR)/screen_ncurses.o
 	mkdir -p bin
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-bin/test_ruler_index: tests/test_ruler_index.c $(OBJ_DIR)/view_nomain.o $(OBJ_DIR)/printing.o $(OBJ_DIR)/document.o $(OBJ_DIR)/editor.o $(OBJ_DIR)/cli_stdio.o $(OBJ_DIR)/screen_ncurses.o
+bin/test_ruler_index: tests/test_ruler_index.c $(OBJ_DIR)/view_nomain.o $(OBJ_DIR)/cli.o $(OBJ_DIR)/printing.o $(OBJ_DIR)/document.o $(OBJ_DIR)/editor.o $(OBJ_DIR)/cli_stdio.o $(OBJ_DIR)/screen_ncurses.o
 	mkdir -p bin
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 

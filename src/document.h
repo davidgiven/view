@@ -3,7 +3,6 @@
 
 #include "globals.h"
 #include "io.h"
-#include "io.h"
 
 extern void call_printer_driver(void);
 extern uint8_t check_for_command_prefix(uint8_t ch);
@@ -22,5 +21,6 @@ extern void sub_c9445(void);
 extern void sub_cab6e(void);
 extern void sub_cabc4(void);
 extern void sub_cadf0(void);
+extern void check_for_at_least_150_bytes_free(void);
 
 #endif
