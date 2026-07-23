@@ -992,6 +992,70 @@ class EditorTests(unittest.TestCase):
             f"Expected 'h' at cursor ({cx},{cy}), got {repr(char)}",
         )
 
+    def test_replace_horse_with_cow_fold_1(self):
+        """FOLD 1, REPLACE horse cow, Y to replace, verify title changes."""
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("LOAD examples/horse.v")
+        self.proc.read_until(b"=>", timeout=1.0)
+
+        self.proc.writeline("FOLD 1")
+        self.proc.read_until(b"=>", timeout=1.0)
+
+        self.proc.writeline("REPLACE horse cow")
+        raw = self._drain_editor()
+        screen = pyte.Screen(80, 24)
+        stream = pyte.Stream(screen)
+        stream.feed(raw.decode("latin-1"))
+
+        # Top-left should be "RP" (replace mode indicator)
+        self.assertEqual(screen.display[0][:2], "RP")
+        # Cursor should be on 'H' of "Horse"
+        cx, cy = screen.cursor.x, screen.cursor.y
+        char = screen.display[cy][cx]
+        self.assertEqual(char, "H")
+        self.assertIn("Water Horse's", screen.display[1])
+
+        # Type 'Y' to confirm the replacement
+        self.proc.write(b"Y")
+        raw = self._drain_editor()
+        stream.feed(raw.decode("latin-1"))
+        self.assertIn(
+            "Water cow's Fireplace",
+            screen.display[1],
+            f"Expected 'Water cow's Fireplace' on line 1, got {repr(screen.display[1])}",
+        )
+
+    def test_replace_horse_with_cow_fold_0(self):
+        """FOLD 0 makes REPLACE case-sensitive: 'horse' skips 'Horse' in title."""
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("LOAD examples/horse.v")
+        self.proc.read_until(b"=>", timeout=1.0)
+
+        self.proc.writeline("FOLD 0")
+        self.proc.read_until(b"=>", timeout=1.0)
+
+        self.proc.writeline("REPLACE horse cow")
+        raw = self._drain_editor()
+        screen = pyte.Screen(80, 24)
+        stream = pyte.Stream(screen)
+        stream.feed(raw.decode("latin-1"))
+
+        self.assertEqual(screen.display[0][:2], "RP")
+        # Cursor on lowercase 'h' in "water horse" (line 8), not 'H' in title
+        cx, cy = screen.cursor.x, screen.cursor.y
+        self.assertEqual(cy, 8)
+        char = screen.display[cy][cx]
+        self.assertEqual(char, "h")
+        self.assertIn("The Water Horse's", screen.display[1])
+
+        self.proc.write(b"Y")
+        raw = self._drain_editor()
+        stream.feed(raw.decode("latin-1"))
+        # Title unchanged
+        self.assertIn("The Water Horse's", screen.display[1])
+        # Body match was replaced
+        self.assertIn("water cow", screen.display[8])
+
     def test_load_horse_and_enter_editor_then_exit_with_escape(self):
         self.proc.read_until(b"=>", timeout=0.5)
         self.proc.writeline("LOAD examples/horse.v")

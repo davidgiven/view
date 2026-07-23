@@ -2283,27 +2283,18 @@ static void fold_cmd(void) {
     sub_c8e33();
     //     beq c87b4
     if (flags & FLAG_Z) goto c87b4;
-    //     lda #0
-    a = 0;
-    //     ldx #5
-    x = 5;
-    //     jsr sub_c976c
-    sub_c976c();
-    //     bcs c87b4
-    if (flags & FLAG_C) goto c87b4;
-    //     ldx #0x80
-    x = 0x80;
-    //     tay
-    y = a;
-    set_flags(y);
-    //     beq c87b2
-    if (flags & FLAG_Z) goto c87b2;
-    //     ldx #0
-    x = 0;
-    // c87b2:
-c87b2:
-    //     stx folding_flag
-    folding_flag = x;
+    //     lda input_buffer,y
+    a = input_buffer[y];
+    //     cmp #'1'
+    cmp(a, '1');
+    //     beq c87b2 (true → folding_flag = 0)
+    if (flags & FLAG_Z) { folding_flag = 0; goto c87b4; }
+    //     cmp #'0'
+    cmp(a, '0');
+    //     bne c87b4 (not 0 or 1 → just show state)
+    if (!(flags & FLAG_Z)) goto c87b4;
+    //     false → folding_flag = 0x80
+    folding_flag = 0x80;
     // c87b4:
 c87b4:
     //     jsr print_inline_string
