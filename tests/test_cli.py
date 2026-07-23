@@ -113,6 +113,35 @@ class CliTests(unittest.TestCase):
             f"Expected 'word(s) counted' in output, got: {repr(output)}",
         )
 
+    def test_new_clears_document(self):
+        """Load a file, COUNT, NEW, COUNT — verify document is cleared."""
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("LOAD examples/horse.v")
+        self.proc.read_until(b"=>", timeout=1.0)
+
+        self.proc.writeline("COUNT")
+        output = self.proc.read_until(b"=>", timeout=1.0)
+        self.assertIn(
+            b"1730",
+            output,
+            f"Expected 1730 word(s) before NEW, got: {repr(output)}",
+        )
+        self.assertIn(
+            b"word(s) counted",
+            output,
+        )
+
+        self.proc.writeline("NEW")
+        self.proc.read_until(b"=>", timeout=1.0)
+
+        self.proc.writeline("COUNT")
+        output = self.proc.read_until(b"=>", timeout=1.0)
+        self.assertIn(
+            b"0 word(s) counted",
+            output,
+            f"Expected 0 word(s) after NEW, got: {repr(output)}",
+        )
+
     def test_screen_shows_lines(self):
         """Load a file and run SCREEN, then verify the first ten output lines."""
         self.proc.read_until(b"=>", timeout=0.5)
