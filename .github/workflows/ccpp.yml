@@ -23,7 +23,7 @@ jobs:
         wget -q -O - https://github.com/llvm-mos/llvm-mos-sdk/releases/latest/download/llvm-mos-linux.tar.xz | tar xJf - -C $HOME
 
     - name: make
-      run: make LLVM=$HOME/llvm-mos/bin -j
+      run: make LLVM=$HOME/llvm-mos/bin -j all test
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
