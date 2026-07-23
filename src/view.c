@@ -347,7 +347,8 @@ static void bad_filename_error(void);
 static void read_into_document(void);
 static void c9263(void);
 static void parse_decimal_number(void);
-static void call_through_jumptable(void);
+static void call_through_jumptable_0(void);
+static void call_through_jumptable_2(void);
 static void close_file(void);
 static void compute_required_space_for_insertion(void);
 static void evaluate_expression_from_fmt_cmd(void);
@@ -936,7 +937,7 @@ c826e:
     //     ldy #2
     y = 2;
     //     jsr call_through_jumptable
-    call_through_jumptable();
+    call_through_jumptable_2();
     //     jmp run_cli
     run_cli();
 }
@@ -6830,7 +6831,7 @@ static void execute_formatting_command(void) {
     //     stx l0030
     l0030 = x;
     //     jsr call_through_jumptable
-    call_through_jumptable();
+    call_through_jumptable_0();
     //     ldx l0030
     x = l0030;
     set_flags(x);
@@ -11711,8 +11712,8 @@ ca890:
     //     rts
     return;
 }
-static void call_through_jumptable(void) {
-    // call_through_jumptable:
+static void call_through_jumptable_0(void) {
+    // call_through_jumptable (y=0):
     //     asl
     //     clc
     //     adc jumptable_ptrs,y
@@ -11727,62 +11728,75 @@ static void call_through_jumptable(void) {
     //     lda (tmp8),y
     //     sta tmp7
     //     jmp (tmp6)
-
-    if (y == 0) {
-        switch (a) {
-            case 0: ce_fmt_cmd(); break;
-            case 1: rj_fmt_cmd(); break;
-            case 2: df_fmt_cmd(); break;
-            case 3: dh_fmt_cmd(); break;
-            case 4: dm_fmt_cmd(); break;
-            case 5: return;  // return_34
-            case 6: em_fmt_cmd(); break;
-            case 7: pe_fmt_cmd(); break;
-            case 8: tm_fmt_cmd(); break;
-            case 9: bm_fmt_cmd(); break;
-            case 10: pl_fmt_cmd(); break;
-            case 11: ts_fmt_cmd(); break;
-            case 12: fo_fmt_cmd(); break;
-            case 13: he_fmt_cmd(); break;
-            case 14: ht_fmt_cmd(); break;
-            case 15: hm_fmt_cmd(); break;
-            case 16: fm_fmt_cmd(); break;
-            case 17: lm_fmt_cmd(); break;
-            case 18: ls_fmt_cmd(); break;
-            case 19: op_fmt_cmd(); break;
-            case 20: ep_fmt_cmd(); break;
-            case 21: lj_fmt_cmd(); break;
-            case 22: pb_fmt_cmd(); break;
-        }
-    } else {
-        switch (a) {
-            case 0: quit_cmd(); break;
-            case 1: new_cmd(); break;
-            case 2: format_cmd(); break;
-            case 3: setup_cmd(); break;
-            case 4: read_cmd(); break;
-            case 5: more_cmd(); break;
-            case 6: screen_cmd(); break;
-            case 7: sheets_cmd(); break;
-            case 8: save_cmd_write_cmd(); break;
-            case 9: count_cmd(); break;
-            case 10: field_cmd(); break;
-            case 11: printer_cmd(); break;
-            case 12: search_cmd(); break;
-            case 13: clear_cmd(); break;
-            case 14: microspace_cmd(); break;
-            case 15: fold_cmd(); break;
-            case 16: name_cmd(); break;
-            case 17: mode_cmd(); break;
-            case 18: finish_cmd(); break;
-            case 19: print_cmd(); break;
-            case 20: change_cmd(); break;
-            case 21: save_cmd_write_cmd(); break;
-            case 22: edit_cmd(); break;
-            case 23: replace_cmd(); break;
-            case 24: load_cmd(); break;
-            case 25: bye_cmd(); break;
-        }
+    switch (a) {
+        case 0: ce_fmt_cmd(); break;
+        case 1: rj_fmt_cmd(); break;
+        case 2: df_fmt_cmd(); break;
+        case 3: dh_fmt_cmd(); break;
+        case 4: dm_fmt_cmd(); break;
+        case 5: return;  // return_34
+        case 6: em_fmt_cmd(); break;
+        case 7: pe_fmt_cmd(); break;
+        case 8: tm_fmt_cmd(); break;
+        case 9: bm_fmt_cmd(); break;
+        case 10: pl_fmt_cmd(); break;
+        case 11: ts_fmt_cmd(); break;
+        case 12: fo_fmt_cmd(); break;
+        case 13: he_fmt_cmd(); break;
+        case 14: ht_fmt_cmd(); break;
+        case 15: hm_fmt_cmd(); break;
+        case 16: fm_fmt_cmd(); break;
+        case 17: lm_fmt_cmd(); break;
+        case 18: ls_fmt_cmd(); break;
+        case 19: op_fmt_cmd(); break;
+        case 20: ep_fmt_cmd(); break;
+        case 21: lj_fmt_cmd(); break;
+        case 22: pb_fmt_cmd(); break;
+    }
+}
+static void call_through_jumptable_2(void) {
+    // call_through_jumptable (y=2):
+    //     asl
+    //     clc
+    //     adc jumptable_ptrs,y
+    //     sta tmp8
+    //     lda #0
+    //     adc jumptable_ptrs+1,y
+    //     sta tmp9
+    //     ldy #0
+    //     lda (tmp8),y
+    //     sta tmp6
+    //     iny
+    //     lda (tmp8),y
+    //     sta tmp7
+    //     jmp (tmp6)
+    switch (a) {
+        case 0: quit_cmd(); break;
+        case 1: new_cmd(); break;
+        case 2: format_cmd(); break;
+        case 3: setup_cmd(); break;
+        case 4: read_cmd(); break;
+        case 5: more_cmd(); break;
+        case 6: screen_cmd(); break;
+        case 7: sheets_cmd(); break;
+        case 8: save_cmd_write_cmd(); break;
+        case 9: count_cmd(); break;
+        case 10: field_cmd(); break;
+        case 11: printer_cmd(); break;
+        case 12: search_cmd(); break;
+        case 13: clear_cmd(); break;
+        case 14: microspace_cmd(); break;
+        case 15: fold_cmd(); break;
+        case 16: name_cmd(); break;
+        case 17: mode_cmd(); break;
+        case 18: finish_cmd(); break;
+        case 19: print_cmd(); break;
+        case 20: change_cmd(); break;
+        case 21: save_cmd_write_cmd(); break;
+        case 22: edit_cmd(); break;
+        case 23: replace_cmd(); break;
+        case 24: load_cmd(); break;
+        case 25: bye_cmd(); break;
     }
 }
 static void write_line_back_to_document(void) {
