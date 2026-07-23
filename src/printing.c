@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include "cli.h"
 #include "printing.h"
+#include "document.h"
 
 
 // Functions from view.c used by printing code

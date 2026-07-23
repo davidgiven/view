@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <setjmp.h>
 
 typedef uint16_t addr_t;
 
@@ -14,10 +15,20 @@ typedef uint16_t addr_t;
 
 #define MAX_LINE_LENGTH 132
 #define MAX_COMMAND_LENGTH 68
+#define JMP_CLI     1
+#define JMP_EDITOR  2
 
 // 6502 CPU register globals
 extern uint8_t a, x, y, flags;
 extern uint8_t ram[65536];
+
+// Printer driver struct
+struct printer_driver {
+    void (*print_char)(void);
+    void (*printer_on)(void);
+    void (*printer_off)(void);
+    void (*entry3)(void);
+};
 
 // Inline helpers
 static inline void set_flags(uint8_t v) {
@@ -38,6 +49,30 @@ static inline void sbc(uint8_t value) {
     flags = (flags & ~FLAG_C) | (tmp_ <= 0xff ? FLAG_C : 0);
     a = (uint8_t)tmp_;
     set_flags(a);
+}
+static inline void bit(uint8_t value) {
+    uint8_t tmp_ = a & value;
+    flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (value & (FLAG_N|FLAG_V));
+}
+static inline uint8_t rol(uint8_t value) {
+    uint8_t c_in = (flags & FLAG_C) ? 1 : 0;
+    flags = (flags & ~FLAG_C) | ((value & 0x80) ? FLAG_C : 0);
+    value = (value << 1) | c_in;
+    set_flags(value);
+    return value;
+}
+static inline uint8_t ror(uint8_t value) {
+    uint8_t c_in = (flags & FLAG_C) ? 0x80 : 0;
+    flags = (flags & ~FLAG_C) | ((value & 0x01) ? FLAG_C : 0);
+    value = (value >> 1) | c_in;
+    set_flags(value);
+    return value;
+}
+static inline uint8_t asr(uint8_t value) {
+    flags = (flags & ~FLAG_C) | ((value & 0x01) ? FLAG_C : 0);
+    value >>= 1;
+    set_flags(value);
+    return value;
 }
 static inline void bit_val(uint8_t value) {
     uint8_t tmp_ = a & value;
@@ -82,4 +117,14 @@ extern uint8_t l0021, l0031, l0038, l007a;
 #define RAM_REGISTER_VALUE_ARRAY 0x0798
 #define RAM_CURRENT_RULER_BUF 0x05CF
 
+
+extern jmp_buf env;
+extern const struct printer_driver *printer_driver_ptr;
+extern uint8_t print_xpos;
+extern uint8_t input_filename[];
+extern uint8_t output_filename[];
+extern uint8_t file_edit_flags;
+extern addr_t current_ruler_ptr;
+extern uint8_t l003a;
+extern uint8_t l0046;
 #endif

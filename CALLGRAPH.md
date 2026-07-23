@@ -8,7 +8,6 @@ Functions defined in the source files and their callees (only calls to other fun
 - **run_cli** → clear_screen, compute_bytes_free, display_document_file_state, print_x_words_of_help, render_number_to_screen, return_to_cli_prompt [a, file_edit_flags, flags, input_file_empty_flag, l0083, markers_array, microspacing_flag, printer_driver_name, x, y]
 - **run_editor** → enter_editor_mode
 - **cli_handler_impl** → input_line_not_escaped, readline, run_editor, stop_printing [error_handling_mode, flags, print_flags, x]
-- **return_to_cli_prompt**
 - **return_to_editor_loop**
 - **esc_key** → run_cli, write_line_back_to_document_safely
 - **input_line_not_escaped** → call_through_jumptable_2, parse_command, run_cli [a, flags, l0080, y]
@@ -28,7 +27,6 @@ Functions defined in the source files and their callees (only calls to other fun
 - **sheets_cmd** → print_document, return_to_cli_prompt, start_printing, stop_printing [a]
 - **print_cmd** → print_to_screen, start_printing [a]
 - **print_to_screen** → print_document, return_to_cli_prompt
-- **stop_printing** → call_printer_driver [a, flags, print_flags]
 - **start_printing** → return_to_cli_prompt
 - **edit_cmd** → check_not_continuous_editing, close_input_output_files, initialise_document, open_input_file, open_output_file, parse_filename_from_command, read_first_chunk_from_input_file, return_to_cli_prompt, set_document_name_to_filename_buffer [a, file_edit_flags, filename_buffer, flags, input_file_empty_flag, output_filename, x]
 - **more_cmd** → cb05a, check_continuous_editing, check_for_at_least_150_bytes_free, move_cursor_to_address, move_cursor_to_top_of_document, parse_marks_from_command, read_next_chunk_from_input_file, return_to_cli_prompt, select_file, sub_c89d3, write_area_to_file [a, area_start_ptr, current_ruler_buffer, current_ruler_ptr, flags, input_file_empty_flag, l003a, ram, top, x, y]
@@ -61,7 +59,6 @@ Functions defined in the source files and their callees (only calls to other fun
 - **parse_marks_from_command** → parse_mark_from_command, reset_area_to_entire_document [a, area_end_ptr, area_start_ptr, flags, y]
 - **parse_mark_from_command** → lookup_marker, return_to_cli_prompt, sub_c8e33 [a, flags, input_buffer_offset, markers_array, x, y]
 - **sub_c89d3** → adjust_pointers, cac78 [a, area_start_ptr, tmp4, tmp5, y]
-- **display_document_file_state** → stop_printing [a, file_edit_flags, flags, input_filename, output_filename, y]
 - **sub_c8a4f** → adjust_pointers, cac78, make_space_for_insertion [a, doc_ptr2, flags, folding_flag, header_text_maybe, l0048, l0049, l004a, l007a, l0080, l0081, l0082, l0083, l0084, output_buffer, print_xpos, ptr2, ram, tmp4, tmp5, tmp6, tmp7, x, y]
 - **c8b78** [a]
 - **c8b7b** → c8b78, check_for_command_prefix, sub_c8c51, sub_c8c53, sub_c8c5f [a, doc_ptr2, doc_ptr3, flags, header_text_maybe, l0048, l0049, l007a, l0081, l0083, l0084, output_buffer, ptr2, ram, tmp8, tmp9, x, y]
@@ -115,12 +112,8 @@ Functions defined in the source files and their callees (only calls to other fun
 - **print_char_x_times** → print_char [flags, x]
 - **print_vertical_space** → print_char_x_times [a]
 - **sub_c9431** → process_document_character [a, flags, l0039, print_flags, x]
-- **sub_c9445** → print_char_just_to_screen [a, print_xpos]
 - **print_newline** → print_char [a]
-- **print_char** → print_char_just_to_screen, sub_c9445 [a, print_xpos]
-- **print_char_just_to_screen** → check_for_control_code, print_char [a, flags, print_flags, printer_driver_ptr]
 - **prepare_printer_driver** [a, default_printer_driver, microspacing_flag, printer_driver_ptr]
-- **call_printer_driver** → print_char [a, printer_driver_ptr]
 - **default_print_char** [a]
 - **default_printer_on** → default_printer_off [a]
 - **default_printer_off** [a]
@@ -209,9 +202,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **render_xchar** → render_char [flags, hscroll_pos, l0039, l0080, l0084, x]
 - **sub_ca536** [a, flags, markers_array, tmp6, tmp7, tmp8, tmp9, x, y]
 - **clear_to_eol** [a, flags, l0082, l0084, line_lengths, x]
-- **process_document_character** [a, current_ruler_ptr, flags, highlight_code, l0039, l003a, l0084, print_flags, ram, ruler_left_stop, x, y]
 - **process_current_document_character** → process_document_character [a, ram, tmp0, tmp1, y]
-- **check_for_control_code** [a, flags]
 - **recalculate_cursor_xpos** → process_current_document_character [a, current_edit_line_ptr, flags, l0039, l0072, l0079, tmp0, tmp1, x, xpos, y]
 - **draw_ruler** → draw_line [a, current_ruler_ptr, flags, flags_need_redrawing_flag, l0082, status_line_needs_redrawing_flag, y]
 - **home_cursor**
@@ -219,7 +210,6 @@ Functions defined in the source files and their callees (only calls to other fun
 - **ca684** [a, line_lengths, number_callback, screen_maxcolumn, x, ypos]
 - **parse_decimal_number** [a, current_format_line_ptr, ram, tmp8, tmp9, x, y]
 - **ca741** [current_line_ptr, l003d, l0073, ptr6, x, y]
-- **read_char** [a, flags, x]
 - **clear_screen**
 - **draw_prompt_characters** → cursor_off, home_cursor, restore_cursor_position, save_cursor_position [a, tmp2, tmp3, x, y]
 - **cursor_on**
@@ -243,12 +233,9 @@ Functions defined in the source files and their callees (only calls to other fun
 - **sub_cab1a** → move_tmp01_to_next_line, push_onto_ruler_index, sub_cab6e [a, flags, tmp0, tmp1, y]
 - **move_tmp01_to_next_line** [a, flags, ram, tmp0, tmp1, y]
 - **move_tmp01_to_previous_line** → pop_from_ruler_index, sub_cab6e [a, flags, page, ram, tmp0, tmp1, y]
-- **sub_cab6e** [a, ram, tmp0, tmp1, y]
 - **push_onto_ruler_index** → cab91 [a, oshwm, ram, ruler_index_ptr, status_line_needs_redrawing_flag, tmp0, tmp1, y]
 - **pop_from_ruler_index** → cab91 [ruler_index_ptr, status_line_needs_redrawing_flag, y]
 - **cab91** → find_margins_of_current_ruler_buffer [a, current_ruler_ptr, flags, oshwm, ram, ruler_index_ptr, y]
-- **find_margins_of_current_ruler_buffer** → sub_cabc4 [a, current_ruler_ptr, flags, l003a, ram, ruler_left_stop, ruler_right_stop, y]
-- **sub_cabc4** [ruler_left_stop, ruler_right_stop, y]
 - **move_cursor_to_address** → check_for_command_prefix, move_tmp01_to_next_line, move_tmp01_to_previous_line, sub_cac41 [a, current_line_ptr, flags, ram, tmp0, tmp1, tmp8, tmp9, x, xpos, y]
 - **sub_cac41** → push_onto_ruler_index, sub_cab6e [a, flags, y]
 - **sub_cac50** [a, flags, ram, tmp6, tmp7, tmp8, tmp9, y]
@@ -261,7 +248,6 @@ Functions defined in the source files and their callees (only calls to other fun
 - **reset_area_to_marks_1_2** → lookup_marker, sanitise_area, set_marker_to_here [a, area_end_ptr, area_start_ptr, doc_ptr1, flags, markers_array, x]
 - **set_marker_to_here** → check_for_command_prefix, get_line_length [a, current_format_line_ptr, current_line_ptr, flags, markers_array, ram, x, xpos, y]
 - **get_register_address** [a, flags, tmp6, tmp7]
-- **sub_cadf0** [a, flags, l0046, tmp8, tmp9, x]
 - **sub_cae03** → beep
 - **insert_edit_buffer_bytes_at_xpos** → get_line_length, sub_ca536, sub_cae03 [a, current_edit_line_ptr, edit_buffer_dirty_flag, flags, l0080, l0081, l0084, markers_array, ram, tmp6, tmp7, x, xpos, y]
 - **delete_edit_buffer_bytes_at_xpos** → sub_ca536 [a, current_edit_line_ptr, edit_buffer_dirty_flag, flags, l0080, l0084, markers_array, ram, tmp6, tmp7, x, xpos, y]
@@ -272,10 +258,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **draw_previous_word** → process_current_document_character [a, current_edit_line_ptr, flags, tmp0, tmp1, xpos, y]
 - **caf5c** [flags_need_redrawing_flag, format_mode_flag]
 - **sub_caf5f** [flags_need_redrawing_flag, format_mode_flag]
-- **deref_and_check_for_command_prefix** → check_for_command_prefix [a, ram, tmp0, tmp1, y]
-- **check_for_command_prefix**
 - **system_init** [himem, oshwm, screen_maxcolumn, screen_maxrow]
-- **compute_bytes_free** [a, flags, himem, top, x, y]
 - **initialise_document** → cb05a, clear_cmd, create_default_ruler, move_cursor_to_top_of_document [a, current_edit_line_ptr, current_format_line_ptr, current_line_buffer, cursor_moved_flag, edit_buffer_dirty_flag, edit_buffer_unpacked_flag, file_edit_flags, flags, flags_need_redrawing_flag, format_mode_flag, hscroll_pos, input_buffer_offset, insert_mode_flag, justifying_flag, l006f, l0072, l0073, l0074, l0076, l0079, l007a, l007e, oshwm, page, print_flags, print_xpos, printer_driver_name, ptr1, ram, ruler_index_ptr, tmp0, tmp1, tmp8, tmp9, top, xpos, y, ypos]
 - **cb05a** [a, current_line_ptr, flags, page, ram, top, y]
 - **move_cursor_to_top_of_document** → cab91 [a, current_line_ptr, l0033, page, ruler_index_ptr, top_of_screen_line_ptr, xpos, y]
@@ -342,7 +325,23 @@ Functions defined in the source files and their callees (only calls to other fun
 
 ## document
 
-*(stub)*
+- **call_printer_driver** → print_char [a, printer_driver_ptr]
+- **check_for_command_prefix**
+- **check_for_control_code** [a, flags]
+- **compute_bytes_free** [a, flags, himem, top, x, y]
+- **deref_and_check_for_command_prefix** → check_for_command_prefix [a, ram, tmp0, tmp1, y]
+- **display_document_file_state** → stop_printing [a, file_edit_flags, flags, input_filename, output_filename, y]
+- **find_margins_of_current_ruler_buffer** → sub_cabc4 [a, current_ruler_ptr, flags, l003a, ram, ruler_left_stop, ruler_right_stop, y]
+- **print_char** → print_char_just_to_screen, sub_c9445 [a, print_xpos]
+- **print_char_just_to_screen** → check_for_control_code, print_char [a, flags, print_flags, printer_driver_ptr]
+- **process_document_character** [a, current_ruler_ptr, flags, highlight_code, l0039, l003a, l0084, print_flags, ram, ruler_left_stop, x, y]
+- **read_char** [a, flags, x]
+- **return_to_cli_prompt**
+- **stop_printing** → call_printer_driver [a, flags, print_flags]
+- **sub_c9445** → print_char_just_to_screen [a, print_xpos]
+- **sub_cab6e** [a, ram, tmp0, tmp1, y]
+- **sub_cabc4** [ruler_left_stop, ruler_right_stop, y]
+- **sub_cadf0** [a, flags, l0046, tmp8, tmp9, x]
 
 ## editor
 
