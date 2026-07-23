@@ -218,4 +218,23 @@ extern uint8_t xpos;
 extern uint8_t flags_need_redrawing_flag;
 #define CTRL(c) ((uint8_t)((c) & 0x1f))
 
+
+extern uint8_t l0074;
+extern uint8_t l0084;
+extern uint8_t l003b;
+extern uint8_t l007e;
+extern uint8_t l0083;
+extern uint8_t l006f;
+extern uint8_t l0033;
+extern uint8_t l0034;
+extern uint8_t l003d;
+extern uint8_t hscroll_pos;
+extern uint8_t ypos;
+extern uint8_t screen_maxrow;
+extern uint8_t status_line_needs_redrawing_flag;
+extern addr_t ptr1;
+extern uint8_t edit_buffer_dirty_flag;
+extern uint8_t line_lengths[];
+
+extern uint8_t l0073;
 #endif
