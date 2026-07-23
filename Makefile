@@ -16,12 +16,12 @@ view-b3.0.asm: view.py view-b3.0.rom
 view-rebuild.rom: view-b3.0.asm
 	beebasm -i $< -o $@
 
-SRC_COMMON = src/view.c src/printing.c src/document.c src/editor.c src/io/screen_ncurses.c
+SRC_COMMON = src/view.c src/printing.c src/document.c src/editor.c src/cli.c src/io/screen_ncurses.c
 SRC_INTERACTIVE = src/io/cli_readline.c
 SRC_TEST = src/io/cli_stdio.c
 
-OBJ_COMMON = $(addprefix $(OBJ_DIR)/, view.o printing.o document.o editor.o screen_ncurses.o)
-OBJ_COMMON_TEST = $(addprefix $(OBJ_DIR)/, view.o printing.o document.o editor.o screen_ncurses_test.o)
+OBJ_COMMON = $(addprefix $(OBJ_DIR)/, view.o printing.o document.o editor.o cli.o screen_ncurses.o)
+OBJ_COMMON_TEST = $(addprefix $(OBJ_DIR)/, view.o printing.o document.o editor.o cli.o screen_ncurses_test.o)
 
 OBJ_INTERACTIVE = $(OBJ_COMMON) $(OBJ_DIR)/cli_readline.o
 OBJ_TEST = $(OBJ_COMMON_TEST) $(OBJ_DIR)/cli_stdio.o
