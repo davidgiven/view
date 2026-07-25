@@ -810,13 +810,13 @@ c8a87:
     //     sec
     flags |= FLAG_C;
     //     sbc ptr2
-    { int16_t tmp_ = (int16_t)a - (int16_t)(uint8_t)(ptr2 & 0xff); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ >= 0 ? FLAG_C : 0); }
+    flags |= FLAG_C; sbc((uint8_t)(ptr2 & 0xff));
     //     sta input_buffer_offset+1
     l0080 = a;
     //     lda doc_ptr2+1
     a = (uint8_t)(doc_ptr2 >> 8);
     //     sbc ptr2+1
-    { int16_t tmp_ = (int16_t)a - (int16_t)(uint8_t)(ptr2 >> 8) - (1 - (flags & FLAG_C)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ >= 0 ? FLAG_C : 0); }
+    sbc((uint8_t)(ptr2 >> 8));
     //     sta l0081
     l0081 = a;
     //     ldx l0082
@@ -846,7 +846,7 @@ c8aa3:
     //     lda ptr2+1
     a = (uint8_t)(ptr2 >> 8);
     //     adc #0
-    { uint16_t sum = (uint16_t)a + (flags & FLAG_C); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)sum == 0 ? FLAG_Z : 0) | ((uint8_t)sum & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(0);
     //     sta tmp5
     tmp5 = a;
     //     lda l0082
@@ -854,13 +854,13 @@ c8aa3:
     //     sec
     flags |= FLAG_C;
     //     sbc input_buffer_offset+1
-    { int16_t tmp_ = (int16_t)a - (int16_t)l0080; a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ >= 0 ? FLAG_C : 0); }
+    flags |= FLAG_C; sbc(l0080);
     //     sta tmp6
     tmp6 = a;
     //     lda #0
     a = 0;
     //     sbc l0081
-    { int16_t tmp_ = (int16_t)a - (int16_t)l0081 - (1 - (flags & FLAG_C)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ >= 0 ? FLAG_C : 0); }
+    sbc(l0081);
     //     sta tmp7
     tmp7 = a;
     //     bmi c8aca
@@ -886,13 +886,13 @@ c8aca:
     //     sec
     flags |= FLAG_C;
     //     sbc tmp6
-    { int16_t tmp_ = (int16_t)a - (int16_t)tmp6; a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ >= 0 ? FLAG_C : 0); }
+    flags |= FLAG_C; sbc(tmp6);
     //     sta tmp6
     tmp6 = a;
     //     lda #0
     a = 0;
     //     sbc tmp7
-    { int16_t tmp_ = (int16_t)a - (int16_t)tmp7 - (1 - (flags & FLAG_C)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ >= 0 ? FLAG_C : 0); }
+    sbc(tmp7);
     //     sta tmp7
     tmp7 = a;
     //     jsr adjust_pointers
@@ -921,7 +921,7 @@ loop_c8ae4:
     //     bcc c8af3
     if (!(flags & FLAG_C)) goto c8af3;
     //     ror print_xpos
-    { uint8_t old_carry_ = (flags & FLAG_C) ? 0x80 : 0; flags = (flags & ~FLAG_C) | (print_xpos & 1); print_xpos = (print_xpos >> 1) | old_carry_; set_flags(print_xpos); }
+    print_xpos = ror(print_xpos);
     //     dex
     x--;
     set_flags(x);
@@ -1243,33 +1243,16 @@ static void compute_space_common(void) {
     }
     // c8dce:
     //     lda tmp6; sbc tmp8; sta tmp6
-    {
-        uint16_t r = (uint16_t)tmp6 - (uint16_t)tmp8 - (1 - (flags & FLAG_C));
-        tmp6 = (uint8_t)(r & 0xff);
-        if (r < 0x100) flags |= FLAG_C; else flags &= ~FLAG_C;
-    }
+    a = tmp6; sbc(tmp8); tmp6 = a;
     //     lda tmp7; sbc tmp9; sta tmp7
-    {
-        uint16_t r = (uint16_t)tmp7 - (uint16_t)tmp9 - (1 - (flags & FLAG_C));
-        tmp7 = (uint8_t)(r & 0xff);
-        if (r < 0x100) flags |= FLAG_C; else flags &= ~FLAG_C;
-    }
+    a = tmp7; sbc(tmp9); tmp7 = a;
     //     lda tmp0; clc; adc tmp6
-    flags &= ~FLAG_C;
-    {
-        uint16_t sum = (uint16_t)tmp0 + (uint16_t)tmp6;
-        a = (uint8_t)(sum & 0xff);
-        if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C;
-    }
+    a = tmp0; flags &= ~FLAG_C; adc(tmp6);
     //     sta ptr5
     ptr5 = (ptr5 & 0xff00) | a;
     //     pha
     //     lda tmp1; adc tmp7
-    {
-        uint16_t sum = (uint16_t)tmp1 + (uint16_t)tmp7 + (flags & FLAG_C ? 1U : 0U);
-        a = (uint8_t)(sum & 0xff);
-        if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C;
-    }
+    a = tmp1; adc(tmp7);
     //     sta ptr5+1
     ptr5 = (ptr5 & 0x00ff) | ((uint16_t)a << 8);
     //     sta l0081
@@ -1277,11 +1260,7 @@ static void compute_space_common(void) {
     //     pla
     a = (uint8_t)(ptr5 & 0xff);
     //     sbc #0x8b
-    {
-        uint16_t r = (uint16_t)a - 0x8bU - (1 - (flags & FLAG_C));
-        a = (uint8_t)(r & 0xff);
-        if (r < 0x100) flags |= FLAG_C; else flags &= ~FLAG_C;
-    }
+    sbc(0x8b);
     //     sta input_buffer_offset+1
     l0080 = a;
     //     bcs return_18
@@ -1347,13 +1326,13 @@ void check_continuous_editing(void) {
 
     // check_continuous_editing:
     //     bit file_edit_flags
-    { uint8_t tmp_ = file_edit_flags; flags = (flags & ~(FLAG_N|FLAG_V)) | (tmp_ & FLAG_N) | ((tmp_ << 1) & FLAG_V); }
+    bit(file_edit_flags);
     //     bvs c8e5d
     if (flags & FLAG_V) goto c8e5d;
     //     lda file_edit_flags
     a = file_edit_flags;
     //     ror
-    { uint8_t old_c = flags & FLAG_C; flags = (flags & ~FLAG_C) | (a & 1); a = (a >> 1) | (old_c << 7); }
+    a = ror(a);
     //     bcs return_20
     if (flags & FLAG_C) return;
 c8e5d:

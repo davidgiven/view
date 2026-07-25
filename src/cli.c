@@ -313,7 +313,7 @@ c86df:
     //     clc
     flags &= ~FLAG_C;
     //     adc #3
-    { uint16_t tmp_ = (uint16_t)a + 3 + ((flags & FLAG_C) ? 1 : 0); flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ > 0xff ? FLAG_C : 0); a = (uint8_t)tmp_; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N) | ((((a ^ 3) & 0x80) && ((a ^ (uint8_t)tmp_) & 0x80)) ? FLAG_V : 0); }
+    adc(3);
     //     sta tmp0
     tmp0 = a;
     //     bcs c871d

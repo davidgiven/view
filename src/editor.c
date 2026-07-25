@@ -778,7 +778,7 @@ c9dcd:
 
     //     adc current_line_ptr
 
-    { uint16_t sum = (uint16_t)a + (uint8_t)(current_line_ptr & 0xff); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    flags &= ~FLAG_C; adc((uint8_t)(current_line_ptr & 0xff));
 
     //     bcc c9de3
 
@@ -860,7 +860,7 @@ static void cf7_join_lines_key(void) {
 
     //     adc current_line_ptr
 
-    { uint16_t sum = (uint16_t)a + (uint8_t)(current_line_ptr & 0xff); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    flags &= ~FLAG_C; adc((uint8_t)(current_line_ptr & 0xff));
 
     //     sta tmp4
 
@@ -872,7 +872,7 @@ static void cf7_join_lines_key(void) {
 
     //     adc #0
 
-    { uint16_t sum = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc(0);
 
     //     sta tmp5
 
@@ -4800,13 +4800,13 @@ cad5d:
     //     clc
     flags &= ~FLAG_C;
     //     adc current_line_ptr
-    { uint16_t sum = (uint16_t)a + (uint8_t)(current_line_ptr & 0xff); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    flags &= ~FLAG_C; adc((uint8_t)(current_line_ptr & 0xff));
     //     sta 0,x
     ((uint8_t*)markers_array)[x] = a;
     //     lda current_line_ptr+1
     a = (uint8_t)(current_line_ptr >> 8);
     //     adc #0
-    { uint16_t sum = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc(0);
     //     sta 1,x
     ((uint8_t*)markers_array)[x + 1] = a;
     //     rts
@@ -4885,7 +4885,7 @@ cacad:
     //     clc
     flags &= ~FLAG_C;
     //     adc tmp8
-    { uint16_t tmp_ = (uint16_t)a + tmp8; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ tmp8) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    adc(tmp8);
     //     sta tmp4
     //     sta tmp8
     tmp4 = a;
@@ -4895,7 +4895,7 @@ cacad:
     //     sta tmp5
     //     sta tmp9
     a = tmp9;
-    { uint16_t tmp_ = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 0) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    adc(0);
     tmp5 = a;
     tmp9 = a;
     //     lda #1
@@ -5203,7 +5203,7 @@ c8b9f:
     //     clc
     flags &= ~FLAG_C;
     //     adc #3
-    { uint16_t sum = (uint16_t)a + 3; a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)sum == 0 ? FLAG_Z : 0) | ((uint8_t)sum & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    flags &= ~FLAG_C; adc(3);
     //     sta doc_ptr2+0
     doc_ptr2 = (doc_ptr2 & 0xff00) | a;
     //     lda tmp9
@@ -7137,13 +7137,13 @@ c8977:
     //     sec
     flags |= FLAG_C;
     //     sbc area_start_ptr
-    { int16_t tmp_ = (int16_t)a - (int16_t)(uint8_t)(area_start_ptr & 0xff); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ >= 0 ? FLAG_C : 0); }
+    flags |= FLAG_C; sbc((uint8_t)(area_start_ptr & 0xff));
     //     sta tmp6
     tmp6 = a;
     //     lda area_end_ptr+1
     a = (uint8_t)(area_end_ptr >> 8);
     //     sbc area_start_ptr+1
-    { int16_t tmp_ = (int16_t)a - (int16_t)(uint8_t)(area_start_ptr >> 8) - (1 - (flags & FLAG_C)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ >= 0 ? FLAG_C : 0); }
+    sbc((uint8_t)(area_start_ptr >> 8));
     //     sta tmp7
     tmp7 = a;
     //     bne return_10
@@ -7339,7 +7339,7 @@ static void sub_c9936(void) {
 
     // sub_c9936:
     //     ror l0083
-    { uint8_t tmp_ = (l0083 & 1) ? FLAG_C : 0; l0083 >>= 1; l0083 |= (flags & FLAG_C) ? 0x80 : 0; flags = (flags & ~FLAG_C) | tmp_; }
+    l0083 = ror(l0083);
     //     lda (current_edit_line_ptr),y
     a = ram[current_edit_line_ptr + y];
     set_flags(a);
@@ -7692,7 +7692,7 @@ c9a2e:
     //     bne c9a38
     if (!(flags & FLAG_Z)) goto c9a38;
     //     ror bottom_margin
-    { uint8_t tmp_ = (bottom_margin & 1) ? FLAG_C : 0; bottom_margin >>= 1; bottom_margin |= (flags & FLAG_C) ? 0x80 : 0; flags = (flags & ~FLAG_C) | tmp_; }
+    bottom_margin = ror(bottom_margin);
     //PROVISIONAL: Advance write position, check for control codes. If not a control code,
     //PROVISIONAL: increment column counter l0039.
     // c9a38:
@@ -7785,7 +7785,7 @@ loop_c9a62:
     //     sec
     flags |= FLAG_C;
     //     ror input_buffer_offset
-    { uint8_t tmp_ = (input_buffer_offset & 0x01) ? FLAG_C : 0; input_buffer_offset = (input_buffer_offset >> 1) | ((flags & FLAG_C) ? 0x80 : 0); flags = (flags & ~FLAG_C) | tmp_; }
+    input_buffer_offset = ror(input_buffer_offset);
     //     jsr sub_caed6
     sub_caed6();
     //     jsr justify_edit_buffer
@@ -7841,7 +7841,7 @@ static void sub_c9ac1(void) {
     //     lda current_line_ptr+1
     a = (uint8_t)(current_line_ptr >> 8);
     //     adc #0
-    { uint16_t sum = (uint16_t)a + (flags & FLAG_C); a = (uint8_t)sum; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)sum == 0 ? FLAG_Z : 0) | ((uint8_t)sum & FLAG_N) | (sum > 0xff ? FLAG_C : 0); }
+    adc(0);
     //     sta tmp9
     tmp9 = a;
     //     sta tmp5

@@ -47,13 +47,13 @@ void compute_bytes_free(void) {
     //     sec
     flags |= FLAG_C;
     //     sbc top
-    { int16_t tmp_ = (int16_t)a - (int16_t)(uint8_t)(top & 0xff); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ >= 0 ? FLAG_C : 0); }
+    flags |= FLAG_C; sbc((uint8_t)(top & 0xff));
     //     tax
     x = a;
     //     lda himem+1
     a = (uint8_t)(himem >> 8);
     //     sbc top+1
-    { int16_t tmp_ = (int16_t)a - (int16_t)(uint8_t)(top >> 8) - (1 - ((flags & FLAG_C) ? 1 : 0)); a = (uint8_t)tmp_; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | ((uint8_t)tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | (tmp_ >= 0 ? FLAG_C : 0); }
+    sbc((uint8_t)(top >> 8));
     //     tay
     y = a;
     // return_84:
@@ -502,9 +502,9 @@ void sub_cadf0(void) {
     // loop_cadf4:
 loop_cadf4:
     //     asl tmp8
-    { uint8_t old_c = flags & FLAG_C ? 1 : 0; flags = (flags & ~FLAG_C) | ((tmp8 & 0x80) ? FLAG_C : 0); tmp8 <<= 1; }
+    tmp8 = rol(tmp8);
     //     rol
-    { uint8_t old_c = flags & FLAG_C ? 1 : 0; flags = (flags & ~FLAG_C) | ((a & 0x80) ? FLAG_C : 0); a = (a << 1) | old_c; }
+    a = rol(a);
     //     cmp l0046
     cmp(a, l0046);
     //     bcc cadff
@@ -693,13 +693,13 @@ void get_register_address(void) {
     //     asl
     a <<= 1;
     //     adc #<register_value_array
-    { uint16_t sum = (uint16_t)a + (uint8_t)(RAM_REGISTER_VALUE_ARRAY & 0xff); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    flags &= ~FLAG_C; adc((uint8_t)(RAM_REGISTER_VALUE_ARRAY & 0xff));
     //     sta tmp6
     tmp6 = a;
     //     lda #>register_value_array
     a = (uint8_t)(RAM_REGISTER_VALUE_ARRAY >> 8);
     //     adc #0
-    { uint16_t sum = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); a = (uint8_t)sum; if (sum > 0xff) flags |= FLAG_C; else flags &= ~FLAG_C; }
+    adc(0);
     //     sta tmp7
     tmp7 = a;
     //     pla
@@ -778,7 +778,7 @@ void initialise_document(void) {
     //     clc
     flags &= ~FLAG_C;
     //     adc #3
-    { uint16_t tmp_ = (uint16_t)a + 3; flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 3) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    adc(3);
     //     sta current_edit_line_ptr
     //     sta current_format_line_ptr
     current_edit_line_ptr = (current_edit_line_ptr & 0xff00) | a;
@@ -788,7 +788,7 @@ void initialise_document(void) {
     //     sta ptr1+1
     ptr1 = (ptr1 & 0x00ff) | ((uint16_t)a << 8);
     //     adc #0
-    { uint16_t tmp_ = (uint16_t)a + 0 + (flags & FLAG_C ? 1 : 0); flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C|FLAG_V)) | ((tmp_ & 0xff) == 0 ? FLAG_Z : 0) | ((tmp_ & 0x80) ? FLAG_N : 0) | (tmp_ > 255 ? FLAG_C : 0) | (((~(a ^ 0) & (a ^ (uint8_t)tmp_)) >> 1) & FLAG_V); a = (uint8_t)tmp_; }
+    adc(0);
     //     sta current_edit_line_ptr+1
     //     sta current_format_line_ptr+1
     current_edit_line_ptr = (current_edit_line_ptr & 0x00ff) | ((uint16_t)a << 8);

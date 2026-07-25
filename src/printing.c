@@ -1633,13 +1633,13 @@ void check_not_continuous_editing(void) {
 
     // check_not_continuous_editing:
     //     bit file_edit_flags
-    { uint8_t tmp_ = file_edit_flags; flags = (flags & ~(FLAG_N|FLAG_V)) | (tmp_ & FLAG_N) | ((tmp_ << 1) & FLAG_V); }
+    bit(file_edit_flags);
     //     bvs return_20
     if (flags & FLAG_V) return;
     //     lda file_edit_flags
     a = file_edit_flags;
     //     ror
-    { uint8_t old_c = flags & FLAG_C; flags = (flags & ~FLAG_C) | (a & 1); a = (a >> 1) | (old_c << 7); }
+    a = ror(a);
     //     bcc return_20
     if (!(flags & FLAG_C)) return;
     //     bcs c8e5d                                                         ; ALWAYS branch
@@ -2777,7 +2777,7 @@ c932e:
     //     txa
     a = x;
     //     lsr
-    flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | ((a & 1) ? FLAG_C : 0); a >>= 1; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
+    a = asr(a);
     //     sta l0081
     l0081 = a;
     //     jsr sub_c93be
@@ -2785,15 +2785,15 @@ c932e:
     //     beq c9355
     if (flags & FLAG_Z) goto c9355;
     //     lsr
-    flags = (flags & ~(FLAG_C|FLAG_Z|FLAG_N)) | ((a & 1) ? FLAG_C : 0); a >>= 1; flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
+    a = asr(a);
     //     sec
     flags |= FLAG_C;
     //     sbc l0081
-    { int16_t r = (int16_t)a - (int16_t)l0081 - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r >= 0) { flags |= FLAG_C; } else { flags &= ~FLAG_C; } }
+    sbc(l0081);
     //     bcc c9355
     if (!(flags & FLAG_C)) goto c9355;
     //     sbc l0039
-    { int16_t r = (int16_t)a - (int16_t)l0039 - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r >= 0) { flags |= FLAG_C; } else { flags &= ~FLAG_C; } }
+    sbc(l0039);
     //     bcc c9355
     if (!(flags & FLAG_C)) goto c9355;
     //     tax
@@ -2825,11 +2825,11 @@ c9363:
     //     sec
     flags |= FLAG_C;
     //     sbc l0081
-    { int16_t r = (int16_t)a - (int16_t)l0081 - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r >= 0) { flags |= FLAG_C; } else { flags &= ~FLAG_C; } }
+    sbc(l0081);
     //     bcc c937b
     if (!(flags & FLAG_C)) { c937b(); return; }
     //     sbc l0039
-    { int16_t r = (int16_t)a - (int16_t)l0039 - (1 - ((flags & FLAG_C) ? 1U : 0U)); a = (uint8_t)(r & 0xff); if (r >= 0) { flags |= FLAG_C; } else { flags &= ~FLAG_C; } }
+    sbc(l0039);
     //     bcc c937b
     if (!(flags & FLAG_C)) { c937b(); return; }
     //     tax
@@ -3364,12 +3364,12 @@ static void sub_c9393(void) {
         // c93aa:
         //     clc
         //     adc tmp4
-        uint16_t sum = (uint16_t)a + tmp4;
-        tmp2 = (uint8_t)sum;
+        flags &= ~FLAG_C; adc(tmp4);
+        tmp2 = a;
         //     lda tmp5
         a = tmp5;
         //     adc #0
-        a += (uint8_t)(sum >> 8);
+        adc(0);
         tmp3 = a;
     }
 }
@@ -3388,10 +3388,10 @@ static void sub_c939b(void) {
     y--;
     {
         // c93aa:
-        uint16_t sum = (uint16_t)a + tmp4;
-        tmp2 = (uint8_t)sum;
+        flags &= ~FLAG_C; adc(tmp4);
+        tmp2 = a;
         a = tmp5;
-        a += (uint8_t)(sum >> 8);
+        adc(0);
         tmp3 = a;
     }
 }
@@ -3408,10 +3408,10 @@ static void sub_c93a1(void) {
     y--;
     // c93aa:
     {
-        uint16_t sum = (uint16_t)a + tmp4;
-        tmp2 = (uint8_t)sum;
+        flags &= ~FLAG_C; adc(tmp4);
+        tmp2 = a;
         a = tmp5;
-        a += (uint8_t)(sum >> 8);
+        adc(0);
         tmp3 = a;
     }
 }
