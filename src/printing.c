@@ -2672,14 +2672,7 @@ c8edb:
     y = a;
     //     sta (last_macro_ptr),y
     ram[last_macro_ptr + y] = a;
-    //     lda #<(current_ruler_buffer)
-    a = (uint8_t)(RAM_CURRENT_RULER_BUF & 0xff);
-    //     sta current_ruler_ptr
-    current_ruler_ptr = (current_ruler_ptr & 0xff00) | a;
-    //     lda #>(current_ruler_buffer)
-    a = (uint8_t)(RAM_CURRENT_RULER_BUF >> 8);
-    //     sta current_ruler_ptr+1
-    current_ruler_ptr = (current_ruler_ptr & 0x00ff) | ((uint16_t)a << 8);
+    current_ruler_ptr = RAM_CURRENT_RULER_BUF;
     //     jsr find_margins_of_current_ruler_buffer
     find_margins_of_current_ruler_buffer();
     //     jsr sub_c8e33
@@ -2689,14 +2682,7 @@ c8edb:
         goto c8f0d;
     //     inc printing_from_file_flag
     printing_from_file_flag++;
-    //     lda page
-    a = (uint8_t)(page & 0xff);
-    //     sta ptr6
-    ptr6 = (ptr6 & 0xff00) | a;
-    //     lda page+1
-    a = (uint8_t)(page >> 8);
-    //     sta ptr6+1
-    ptr6 = (ptr6 & 0x00ff) | ((uint16_t)a << 8);
+    ptr6 = page;
     //     bne c8f30
     if (a != 0)
     {

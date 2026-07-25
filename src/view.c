@@ -1302,22 +1302,8 @@ c8b6b:
 void sub_c8c7c(void)
 {
     // sub_c8c7c:
-    //     lda area_start_ptr
-    a = (uint8_t)(area_start_ptr & 0xff);
-    //     sta doc_ptr2+0
-    doc_ptr2 = (doc_ptr2 & 0xff00) | a;
-    //     lda area_start_ptr+1
-    a = (uint8_t)(area_start_ptr >> 8);
-    //     sta doc_ptr2+1
-    doc_ptr2 = (doc_ptr2 & 0x00ff) | ((uint16_t)a << 8);
-    //     lda area_end_ptr
-    a = (uint8_t)(area_end_ptr & 0xff);
-    //     sta doc_ptr3+0
-    doc_ptr3 = (doc_ptr3 & 0xff00) | a;
-    //     lda area_end_ptr+1
-    a = (uint8_t)(area_end_ptr >> 8);
-    //     sta doc_ptr3+1
-    doc_ptr3 = (doc_ptr3 & 0x00ff) | ((uint16_t)a << 8);
+    doc_ptr2 = area_start_ptr;
+    doc_ptr3 = area_end_ptr;
     //     rts
 }
 void read_next_chunk_from_input_file(void)
