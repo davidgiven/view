@@ -9019,20 +9019,7 @@ static void sub_ca536(void)
     // Pseudocode: Checks if a position in the edit line corresponds to a marker
 
     // sub_ca536:
-    //     tya
-    a = y;
-    //     clc
-    flags &= ~FLAG_C;
-    //     adc tmp6
-    a = adc(&flags, a, tmp6);
-    //     sta tmp8
-    tmp8 = a;
-    //     lda tmp7
-    a = tmp7;
-    //     adc #0
-    a = adc(&flags, a, 0);
-    //     sta tmp9
-    tmp9 = a;
+    tmp89 = tmp67 + y;
     //     ldx #0
     x = 0;
     // loop_ca544:

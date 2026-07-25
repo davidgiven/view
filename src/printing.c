@@ -541,14 +541,7 @@ static void em_fmt_cmd(void)
     //     bcs return_38
     if (flags & FLAG_C)
         return;
-    //     lda tmp6
-    a = tmp6;
-    //     sta tmp0
-    tmp0 = a;
-    //     lda tmp7
-    a = tmp7;
-    //     sta tmp1
-    tmp1 = a;
+    tmp01 = tmp67;
     //     jsr evaluate_expression_from_fmt_cmd
     evaluate_expression_from_fmt_cmd();
     //     ldy #0
@@ -1595,44 +1588,14 @@ c97dc:
     //     sec
     flags |= FLAG_C;
     //     sbc tmp8
-    a = sbc(&flags, a, tmp8);
-    //     sta tmp8
-    tmp8 = a;
-    //     lda tmp5
-    a = tmp5;
-    //     sbc tmp9
-    a = sbc(&flags, a, tmp9);
-    //     sta tmp9
-    tmp9 = a;
-    //     jmp c9804
+    tmp89 = tmp45 - tmp89;
     goto c9804;
 
-    // c97f7:
 c97f7:
-    //     lda tmp4
-    a = tmp4;
-    //     clc
-    flags &= ~FLAG_C;
-    //     adc tmp8
-    a = adc(&flags, a, tmp8);
-    //     sta tmp8
-    tmp8 = a;
-    //     lda tmp5
-    a = tmp5;
-    //     adc tmp9
-    a = adc(&flags, a, tmp9);
-    //     sta tmp9
-    tmp9 = a;
-    // c9804:
+    tmp89 += tmp45;
+
 c9804:
-    //     lda tmp8
-    a = tmp8;
-    //     sta tmp4
-    tmp4 = a;
-    //     lda tmp9
-    a = tmp9;
-    //     sta tmp5
-    tmp5 = a;
+    tmp45 = tmp89;
     //     jsr get_current_fmt_cmd_byte
     get_current_fmt_cmd_byte();
     //     beq c9821
