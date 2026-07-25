@@ -97,6 +97,9 @@ static void render_number_to_callback(void);
 static const uint8_t lada6 = 0x40;
 static void c950f_impl(void)
 {
+    // c950f_impl
+    //  Inputs: a, flags
+    //  Outputs: x, y
     // c950f:
     //     ldy #3
     y = 3;
@@ -147,6 +150,9 @@ return_36:
 }
 static void lj_fmt_cmd(void)
 {
+    // lj_fmt_cmd
+    //  Inputs: flags
+    //  Outputs: a
     // Pseudocode: Left-justifies the current format line
 
     // ;
@@ -165,6 +171,9 @@ static void lj_fmt_cmd(void)
 }
 static void ce_fmt_cmd(void)
 {
+    // ce_fmt_cmd
+    //  Inputs: x, flags
+    //  Outputs: a
     // Pseudocode: Centers the current format line
 
     // ;
@@ -231,6 +240,9 @@ static void ce_fmt_cmd(void)
 }
 static void rj_fmt_cmd(void)
 {
+    // rj_fmt_cmd
+    //  Inputs: x, flags
+    //  Outputs: a
     // Pseudocode: Right-justifies the current format line
 
     // ;
@@ -281,6 +293,9 @@ static void rj_fmt_cmd(void)
 }
 static void expand_line(void)
 {
+    // expand_line
+    //  Inputs: flags
+    //  Outputs: a, x, y
     // Pseudocode: Expands a format line into output_buffer, handling register
     // references via |
 
@@ -382,6 +397,10 @@ c955e:
 }
 static void sub_c95b2(void)
 {
+    // sub_c95b2
+    //  Inputs: a
+    //  Temps:  tmp23
+    //  Outputs: y
     // sub_c95b2:
     //     ldy l0081
     y = l0081;
@@ -394,6 +413,9 @@ static void sub_c95b2(void)
 }
 static void c9575(void)
 {
+    // c9575
+    //  Inputs: x, y, flags
+    //  Outputs: a; tmp23
     //     stx tmp2
     tmp23 = (addr_t)(y) << 8 | x;
     //     lda #0
@@ -496,6 +518,10 @@ static void dh_fmt_cmd(void)
 }
 static void em_fmt_cmd(void)
 {
+    // em_fmt_cmd
+    //  Inputs: flags
+    //  Temps:  tmp67
+    //  Outputs: a, y; tmp01
     // Pseudocode: Evaluates expression and stores result in a register
 
     // ;
@@ -558,6 +584,9 @@ static void pl_fmt_cmd(void)
 }
 static void ts_fmt_cmd(void)
 {
+    // ts_fmt_cmd
+    //  Inputs: a, flags
+    //  Outputs: y
     // Pseudocode: Sets two_sided_flag and rhs_extra_margin from format command
 
     // ;
@@ -678,6 +707,9 @@ static void ls_fmt_cmd(void)
 }
 static void pe_fmt_cmd(void)
 {
+    // pe_fmt_cmd
+    //  Inputs: a, flags
+    //  Outputs: x, y
     // Pseudocode: Forces page eject if remaining lines are less than value
 
     // ;
@@ -725,6 +757,8 @@ static void c9642_tail(void)
 
 static void op_fmt_cmd(void)
 {
+    // op_fmt_cmd
+    //  Outputs: a, flags
     // op_fmt_cmd:
     //     lda register_value_p
     a = ram[RAM_REGISTER_VALUE_P];
@@ -745,6 +779,8 @@ static void op_fmt_cmd(void)
 }
 static void ep_fmt_cmd(void)
 {
+    // ep_fmt_cmd
+    //  Outputs: a, flags
     // ep_fmt_cmd:
     //     lda register_value_p
     a = ram[RAM_REGISTER_VALUE_P];
@@ -764,6 +800,8 @@ static void ep_fmt_cmd(void)
 }
 static void page_eject_fmt(void)
 {
+    // page_eject_fmt
+    //  Outputs: a
     // Pseudocode: Performs page eject by rendering new page and moving to sheet
     // bottom
 
@@ -847,6 +885,9 @@ static void pb_fmt_cmd(void)
 }
 static void dm_fmt_cmd(void)
 {
+    // dm_fmt_cmd
+    //  Inputs: flags
+    //  Outputs: a, x, y; tmp01, tmp67
     // Pseudocode: Defines a macro: stores macro name and position in linked
     // list
 
@@ -1046,6 +1087,10 @@ c96f8:
 }
 static void ht_fmt_cmd(void)
 {
+    // ht_fmt_cmd
+    //  Inputs: a, flags
+    //  Temps:  tmp89
+    //  Outputs: x, y; tmp23
     // Pseudocode: Sets highlight codes (highlight1_code, highlight2_code) from
     // format command
 
@@ -1363,6 +1408,9 @@ static const uint8_t l97b0_data[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
 
 static void sub_c976c(void)
 {
+    // sub_c976c
+    //  Inputs: a, x, y, flags
+    //  Outputs: tmp89
     // Pseudocode: Parses word-based flag (ON/OFF/YES/NO) from format command
 
     // sub_c976c:
@@ -1467,6 +1515,10 @@ return_46:
 }
 static void evaluate_expression_from_fmt_cmd(void)
 {
+    // evaluate_expression_from_fmt_cmd
+    //  Inputs: x, y, flags
+    //  Temps:  tmp45
+    //  Outputs: a; tmp89
     // Pseudocode: Evaluates arithmetic expression with +, - and register
     // references
 
@@ -1648,6 +1700,10 @@ static void get_next_fmt_cmd_byte(void)
 
 void render_register(void)
 {
+    // render_register
+    //  Inputs: a, y, flags
+    //  Temps:  tmp67
+    //  Outputs: tmp89
     // render_register:
     //     sty l0084
     l0084 = y;
@@ -1710,6 +1766,8 @@ static void render_number_to_output_buffer(void)
 }
 static void emit_to_output_buffer_callback(void)
 {
+    // emit_to_output_buffer_callback
+    //  Inputs: a, x
     // Pseudocode: Callback that writes a digit character to the output buffer
 
     // la69a:
@@ -1813,6 +1871,9 @@ static void c8f29_sub(void)
 
 static void c9263(void)
 {
+    // c9263
+    //  Inputs: flags
+    //  Outputs: a, x, y
     // Pseudocode: Handles page footer processing: prints footer, increments
     // page number
 
@@ -1881,6 +1942,8 @@ c928c:
 
 static void c937b(void)
 {
+    // c937b
+    //  Outputs: a, x, y
     // c937b:
     //     ldy #0
     y = 0;
@@ -1980,6 +2043,10 @@ return_6:
 
 static void microspace_word_processor(void)
 {
+    // microspace_word_processor
+    //  Inputs: y, flags
+    //  Temps:  tmp01
+    //  Outputs: a, x; tmp89
     // Pseudocode: Processes words for microspaced justification during printing
 
     // return_24:
@@ -2508,6 +2575,9 @@ void parse_decimal_number(void)
 
 void parse_optional_filename_from_command(void)
 {
+    // parse_optional_filename_from_command
+    //  Inputs: y, flags
+    //  Outputs: a, x
     // Pseudocode: Parses optional filename from input buffer into
     // filename_buffer
 
@@ -2583,6 +2653,9 @@ return_32:
 
 void print_document(void)
 {
+    // print_document
+    //  Inputs: flags
+    //  Outputs: a, x, y; ptr5, ptr6
     // print_document:
     //     jsr check_not_continuous_editing
     check_not_continuous_editing();
@@ -2690,6 +2763,10 @@ c8f0d:
 
 static void print_loop(void)
 {
+    // print_loop
+    //  Inputs: flags
+    //  Temps:  tmp01
+    //  Outputs: a, x, y; tmp67, tmp89; ptr3
     // c8f30:
     while (1)
     {
@@ -3016,6 +3093,10 @@ static void print_vertical_space(void)
 
 void read_block_from_file(void)
 {
+    // read_block_from_file
+    //  Inputs: flags
+    //  Temps:  tmp01
+    //  Outputs: a, x, y
     // read_block_from_file:
     //     lda #0
     a = 0;
@@ -3169,6 +3250,9 @@ c8cf2:
 
 static void render_header_or_footer(void)
 {
+    // render_header_or_footer
+    //  Inputs: x, y, flags
+    //  Outputs: a; tmp45
     // Pseudocode: Renders header or footer text with centering and
     // justification
 
@@ -3305,6 +3389,9 @@ c9363:
 
 static void render_new_page(void)
 {
+    // render_new_page
+    //  Inputs: flags
+    //  Outputs: a, x, y
     // Pseudocode: Renders a new page with headers, margins, page number prompt
 
     // ;
@@ -3408,6 +3495,9 @@ c92e8:
 
 void sub_c8e33(void)
 {
+    // sub_c8e33
+    //  Inputs: flags
+    //  Outputs: a
     // sub_c8e33:
     //     lda l007e
     a = l007e;
@@ -3512,6 +3602,10 @@ static void sub_c9173(void)
 
 static void sub_c9188(void)
 {
+    // sub_c9188
+    //  Inputs: flags
+    //  Ptrs:   ptr1, ptr3, ptr5
+    //  Outputs: a, x, y; tmp01
     // c9184:
     //     lda #0
     //     sta macro_executing_flag
@@ -3738,6 +3832,8 @@ c9225:
 
 static void sub_c9228(void)
 {
+    // sub_c9228
+    //  Inputs: a, flags
     // Pseudocode: Parses register reference markers (<, >, =) in format line
 
     // sub_c9228:
@@ -3784,6 +3880,10 @@ c923c:
 
 static void sub_c9241(void)
 {
+    // sub_c9241
+    //  Inputs: flags
+    //  Ptrs:   ptr6
+    //  Outputs: a, y
     // Pseudocode: Reads next line from file buffer or calls
     // read_block_from_file for printing
 
@@ -3841,6 +3941,9 @@ c925a:
 
 static void sub_c92f0(void)
 {
+    // sub_c92f0
+    //  Inputs: flags
+    //  Outputs: a, x
     // sub_c92f0: Computes remaining lines on page = page_length minus margins
     // On exit: l0021 = result (at least 1 if any margin computation underflows)
 
@@ -3991,6 +4094,10 @@ return_29:; // fallthrough to rts
 
 static void sub_c93c8(void)
 {
+    // sub_c93c8
+    //  Inputs: flags
+    //  Temps:  tmp23
+    //  Outputs: a, x, y
     // Pseudocode: Copies header/footer text to output_buffer, expanding
     // register references
 
@@ -4194,6 +4301,8 @@ return_33:
 
 static void sub_cb104(void)
 {
+    // sub_cb104
+    //  Outputs: a
     // Pseudocode: Resets formatting registers and default print settings
 
     // sub_cb104:
