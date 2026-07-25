@@ -5538,7 +5538,6 @@ c9aa5_:
     y = l0047;
     //     dey
     y--;
-    set_flags(&flags, y);
     //     sty l003b
     l003b = y;
     //     inc l006e
@@ -5759,7 +5758,6 @@ c8be3:
     output_buffer[x] = a;
     //     inc l0049
     l0049++;
-    set_flags(&flags, l0049);
 c8bf2:
     // c8bf2:
     //     ldx l0084
@@ -5813,7 +5811,6 @@ c8bf7:
     x = l0084;
     //     inx
     x++;
-    set_flags(&flags, x);
     //     cpx l007a
     cmp(&flags, x, l007a);
     //     bcc c8bbc
@@ -5840,7 +5837,6 @@ loop_c8c2a:
         goto c8c30;
     //     inc tmp9
     tmp9++;
-    set_flags(&flags, tmp9);
 c8c30:
     // c8c30:
     //     jmp c8b91
@@ -5850,7 +5846,6 @@ c8c33:
     // c8c33:
     //     inx
     x++;
-    set_flags(&flags, x);
     //     cpx l007a
     cmp(&flags, x, l007a);
     //     bcc loop_c8c2a
@@ -5864,7 +5859,6 @@ c8c33:
         goto c8c3e;
     //     inc tmp9
     tmp9++;
-    set_flags(&flags, tmp9);
 c8c3e:
     // c8c3e:
     //     lda doc_ptr2+0
@@ -6294,7 +6288,6 @@ static void get_line_length(void)
     loop_caafb:
         //     dey
         y--;
-        set_flags(&flags, y);
         //     lda (current_edit_line_ptr),y
         a = ram[current_edit_line_ptr + y];
         //     cmp #0x10
@@ -6483,7 +6476,6 @@ c9871:
         return;
     //     lda ruler_right_stop
     a = ruler_right_stop;
-    set_flags(&flags, a);
     //     sec
     flags |= FLAG_C;
     //     sbc l0084
@@ -6663,7 +6655,6 @@ c98f6:
 c98fa:
     //     lda output_buffer,x
     a = output_buffer[x];
-    set_flags(&flags, a);
     //     cmp #0x20 ; ' '
     cmp(&flags, a, 0x20);
     //     bne c9920
@@ -6689,7 +6680,6 @@ c98fa:
         goto c9912;
     //     lda input_buffer,y
     a = input_buffer[y];
-    set_flags(&flags, a);
     // c9912:
 c9912:
     //     clc
@@ -8003,7 +7993,6 @@ static void sub_c9936(void)
     l0083 = ror(&flags, l0083);
     //     lda (current_edit_line_ptr),y
     a = ram[current_edit_line_ptr + y];
-    set_flags(&flags, a);
     //     sta output_buffer,y
     output_buffer[y] = a;
     //     cmp #9
@@ -8134,7 +8123,6 @@ void sub_c9977(void)
 c998a:
     //     lda format_mode_flag
     a = format_mode_flag;
-    set_flags(&flags, a);
     //     and #0x81
     a &= 0x81;
     set_flags(&flags, a);
@@ -8235,7 +8223,6 @@ c99c7:
 c99c9:
     //     lda (current_line_ptr),y
     a = ram[current_line_ptr + y];
-    set_flags(&flags, a);
     //     iny
     y++;
     //     sty l0047

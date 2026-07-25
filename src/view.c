@@ -586,7 +586,6 @@ c8398:
     // c8398:
     //     inc l0074
     l0074++;
-    set_flags(&flags, l0074);
     //     txa
     a = x;
     set_flags(&flags, x);
@@ -882,7 +881,6 @@ loop_c8a74:
     // loop_c8a74:
     //     lda output_buffer,y
     a = output_buffer[y];
-    set_flags(&flags, a);
     //     php
     {
         uint8_t saved_flags_ = flags;
@@ -897,7 +895,6 @@ loop_c8a74:
         goto c8a86;
     //     inc l0082
     l0082++;
-    set_flags(&flags, l0082);
     //     cpy l0048
     cmp(&flags, y, l0048);
     //     bcc loop_c8a74
@@ -905,17 +902,14 @@ loop_c8a74:
         goto loop_c8a74;
     //     dec l0082
     l0082--;
-    set_flags(&flags, l0082);
 c8a84:
     // c8a84:
     //     inc l0082
     l0082++;
-    set_flags(&flags, l0082);
 c8a86:
     // c8a86:
     //     inx
     x++;
-    set_flags(&flags, x);
 c8a87:
     // c8a87:
     //     cpx l004a
@@ -1070,7 +1064,6 @@ c8af3:
         goto c8b11;
     //     inc l0081
     l0081++;
-    set_flags(&flags, l0081);
     //     dex
     x--;
     set_flags(&flags, x);
@@ -1101,10 +1094,8 @@ c8b0d:
     // c8b0d:
     //     dec l0081
     l0081--;
-    set_flags(&flags, l0081);
     //     dec l0081
     l0081--;
-    set_flags(&flags, l0081);
 c8b11:
     // c8b11:
     //     ldx #0
@@ -1149,7 +1140,6 @@ c8b1f:
         goto c8b6a;
     //     dex
     x--;
-    set_flags(&flags, x);
     //     bcc c8b47
     goto c8b47;
 
@@ -1171,7 +1161,6 @@ c8b38:
     a = output_buffer[y];
     //     inc l0082
     l0082++;
-    set_flags(&flags, l0082);
 c8b47:
     // c8b47:
     //     cmp #2
@@ -1207,7 +1196,6 @@ c8b4d:
         goto c8b64;
     //     ora #0x20 ; ' '
     a |= 0x20;
-    set_flags(&flags, a);
     //     ldy l0081
     y = l0081;
     //     beq c8b64
@@ -1215,10 +1203,8 @@ c8b4d:
         goto c8b64;
     //     dec l0081
     l0081--;
-    set_flags(&flags, l0081);
     //     and #0xdf
     a &= 0xdf;
-    set_flags(&flags, a);
 c8b64:
     // c8b64:
     //     ldy l0083
@@ -1227,12 +1213,10 @@ c8b64:
     ram[ptr2 + y] = a;
     //     inc l0083
     l0083++;
-    set_flags(&flags, l0083);
 c8b6a:
     // c8b6a:
     //     inx
     x++;
-    set_flags(&flags, x);
 c8b6b:
     // c8b6b:
     //     cpx l004a

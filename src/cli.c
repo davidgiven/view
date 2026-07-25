@@ -426,7 +426,6 @@ c86ea:
     process_current_document_character();
     //     and #0x7f
     a &= 0x7f;
-    set_flags(&flags, a);
     //     ldx #0
     x = 0;
     //     ldy l0082
@@ -469,7 +468,6 @@ c8703:
         goto c870d;
     //     inc tmp9
     tmp9++;
-    set_flags(&flags, tmp9);
     // c870d:
 c870d:
     //     stx l0083
@@ -485,7 +483,6 @@ c870d:
 c8715:
     //     ora l0082
     a |= l0082;
-    set_flags(&flags, a);
     //     sta l0082
     l0082 = a;
     //     inc tmp0
@@ -1203,7 +1200,6 @@ c832d:
         return;
     //     and #0xdf
     a &= 0xdf;
-    set_flags(&flags, a);
     //     ldx #0
     x = 0;
     //     cmp #0x59 ; 'Y'
@@ -1405,7 +1401,6 @@ c8649:
         goto c8672;
     //     and #0xdf
     a &= 0xdf;
-    set_flags(&flags, a);
     //     ldx #0
     x = 0;
     // loop_c8652:

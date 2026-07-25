@@ -259,7 +259,6 @@ static void rj_fmt_cmd(void)
     x--;
     //     lda #0
     a = 0;
-    set_flags(&flags, a);
     //     cpx ruler_right_stop
     cmp(&flags, x, ruler_right_stop);
     //     bcs c950f
@@ -272,7 +271,6 @@ static void rj_fmt_cmd(void)
     l0083 = x;
     //     lda ruler_right_stop
     a = ruler_right_stop;
-    set_flags(&flags, a);
     //     sec
     flags |= FLAG_C;
     //     sbc l0083
@@ -306,7 +304,6 @@ static void expand_line(void)
 c9537:
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
-    set_flags(&flags, a);
     //     iny
     y++;
     //     cmp #0x7c ; '|'
@@ -341,7 +338,6 @@ c9548:
         goto c9537;
     //     lda #0x0d
     a = 0x0d;
-    set_flags(&flags, a);
     //     bne c953e                                                         ;
     //     ALWAYS branch
     goto c953e;
@@ -369,7 +365,6 @@ return_37:
 c955e:
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
-    set_flags(&flags, a);
     //     cmp #0x0d
     cmp(&flags, a, 0x0d);
     //     beq c953e
@@ -874,10 +869,8 @@ static void dm_fmt_cmd(void)
     y = 3;
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
-    set_flags(&flags, a);
     //     and #0xdf
     a &= 0xdf;
-    set_flags(&flags, a);
     //     sta l0084
     l0084 = a;
     //     iny                                                               ;
@@ -908,7 +901,6 @@ static void dm_fmt_cmd(void)
 c968d:
     //     and #0xdf
     a &= 0xdf;
-    set_flags(&flags, a);
     // c968f:
 c968f:
     //     dey
@@ -945,7 +937,6 @@ c96a2:
     a = sbc(&flags, a, (uint8_t)(last_macro_ptr & 0xff));
     //     tax
     x = a;
-    set_flags(&flags, x);
     //     lda himem+1
     a = (uint8_t)((himem >> 8) & 0xff);
     //     sbc last_macro_ptr+1
@@ -1071,10 +1062,8 @@ static void ht_fmt_cmd(void)
         return;
     //     tax
     x = a;
-    set_flags(&flags, x);
     //     lda #0
     a = 0;
-    set_flags(&flags, a);
     //     cpx #0x2d ; '-'
     cmp(&flags, x, 0x2d);
     //     beq c9716
@@ -1082,7 +1071,6 @@ static void ht_fmt_cmd(void)
         goto c9716;
     //     lda #1
     a = 1;
-    set_flags(&flags, a);
     //     cpx #0x2a ; '*'
     cmp(&flags, x, 0x2a);
     //     bne c9719
@@ -1190,7 +1178,6 @@ void lookup_formatting_command(void)
     y = 2;
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
-    set_flags(&flags, a);
     //     sta tmp3
     tmp3 = a;
     //     dey                                                               ;
@@ -1198,7 +1185,6 @@ void lookup_formatting_command(void)
     y--;
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
-    set_flags(&flags, a);
     //     sta tmp2
     tmp2 = a;
     //     dey                                                               ;
@@ -1386,13 +1372,10 @@ static void sub_c976c(void)
     tmp9 = x;
     //     lda (tmp8),y
     a = ram[tmp89 + y];
-    set_flags(&flags, a);
     //     tax
     x = a;
-    set_flags(&flags, x);
     //     lda #1
     a = 1;
-    set_flags(&flags, a);
     //     cpx #0x31 ; '1'
     cmp(&flags, x, 0x31);
     //     beq c977f
@@ -1400,7 +1383,6 @@ static void sub_c976c(void)
         goto c977f;
     //     lda #0
     a = 0;
-    set_flags(&flags, a);
     //     cpx #0x30 ; '0'
     cmp(&flags, x, 0x30);
     //     bne c9783
@@ -1429,7 +1411,6 @@ c9788:
     y++;
     //     lda (tmp8),y
     a = ram[tmp89 + y];
-    set_flags(&flags, a);
     //     jsr to_uppercase
     a = toupper(a);
     //     inx
@@ -1549,7 +1530,6 @@ c97dc:
         goto c9804;
     //     lda #0
     a = 0;
-    set_flags(&flags, a);
     //     sta input_buffer_offset+1
     l0080 = a;
     //     dex
@@ -2082,7 +2062,6 @@ c906b:
     a = 0x20;
     //     dec l0042
     l0042--;
-    set_flags(&flags, l0042);
     // c906f:
 c906f:
     //     cmp #0x20 ; ' '
@@ -2109,7 +2088,6 @@ c906f:
         goto c9087;
     //     inc l0043
     l0043++;
-    set_flags(&flags, l0043);
     //     lda #0
     a = 0;
     //     sta l0042
@@ -2128,7 +2106,6 @@ c9087:
 c908a:
     //     inc l0048
     l0048++;
-    set_flags(&flags, l0048);
     // c908c:
 c908c:
     //     lda #0x20 ; ' '
@@ -2141,7 +2118,6 @@ c908c:
 c9090:
     //     inc l0046
     l0046++;
-    set_flags(&flags, l0046);
     // c9092:
 c9092:
     //     cmp #9
@@ -2402,8 +2378,7 @@ c912b:
         x++;
         //     dec l0045
         l0045--;
-        set_flags(&flags, l0045);
-        // c9154:
+    // c9154:
     c9154:
         //     jsr sub_c9173
         sub_c9173();
@@ -2455,7 +2430,6 @@ c8fe6_inline:
         goto c8ffb_inline;
     //     inc register_value_l+1
     ram[RAM_REGISTER_VALUE_L + 1]++;
-    set_flags(&flags, ram[RAM_REGISTER_VALUE_L + 1]);
 c8ffb_inline:
     //     ldx line_spacing
     x = line_spacing;
@@ -2986,8 +2960,7 @@ static void print_loop(void)
             goto c8ffb_l;
         //     inc register_value_l+1
         ram[RAM_REGISTER_VALUE_L + 1]++;
-        set_flags(&flags, ram[RAM_REGISTER_VALUE_L + 1]);
-        // c8ffb:
+    // c8ffb:
     c8ffb_l:
         //     ldx line_spacing
         x = line_spacing;
@@ -3121,7 +3094,6 @@ c8cc8:
         goto c8cdb;
     //     dex
     x--;
-    set_flags(&flags, x);
     //     ldy l0083
     y = l0083;
     //     cpy #0x84
@@ -3139,12 +3111,10 @@ c8cc8:
     }
     //     inx
     x++;
-    set_flags(&flags, x);
 c8cdb:
     // c8cdb:
     //     inc l0083
     l0083++;
-    set_flags(&flags, l0083);
     //     jsr write_byte_to_memory
     write_byte_to_memory();
     //     txa
