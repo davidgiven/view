@@ -401,10 +401,9 @@ c86d1:
     x++;
     //     inx
     x++;
-    set_flags(&flags, x);
-    //     bne loop_c86c2
-    if (!(flags & FLAG_Z))
+    if (x != 0)
         goto loop_c86c2;
+    //     bne loop_c86c2
     // c86db:
 c86db:
     //     lda #0x80
@@ -460,10 +459,9 @@ c86ea:
 c86ff:
     //     inc l0083
     l0083++;
-    set_flags(&flags, l0083);
-    //     bne c8715
-    if (!(flags & FLAG_Z))
+    if (l0083 != 0)
         goto c8715;
+    //     bne c8715
     // c8703:
 c8703:
     //     ldy l0083
@@ -474,10 +472,9 @@ c8703:
         goto c870d;
     //     inc tmp8
     tmp8++;
-    set_flags(&flags, tmp8);
-    //     bne c870d
-    if (!(flags & FLAG_Z))
+    if (tmp8 != 0)
         goto c870d;
+    //     bne c870d
     //     inc tmp9
     tmp9++;
     // c870d:
@@ -499,10 +496,9 @@ c8715:
     l0082 = a;
     //     inc tmp0
     tmp0++;
-    set_flags(&flags, tmp0);
-    //     bne c871f
-    if (!(flags & FLAG_Z))
+    if (tmp0 != 0)
         goto c871f;
+    //     bne c871f
     // c871d:
 c871d:
     //     inc tmp1
@@ -724,10 +720,9 @@ c87b4:
 
     //     lda folding_flag
     a = folding_flag;
-    set_flags(&flags, a);
-    //     bpl c87cb
-    if (!(flags & FLAG_N))
+    if (!((int8_t)a < 0))
         goto c87cb;
+    //     bpl c87cb
     //     jsr print_inline_string
     //     .ascii "off"
     //     .byte 0xff
@@ -1485,10 +1480,9 @@ c8669:
         tmp8 = a;
     //     inc input_buffer_offset
     input_buffer_offset++;
-    set_flags(&flags, input_buffer_offset);
-    //     bne c8649
-    if (!(flags & FLAG_Z))
+    if (input_buffer_offset != 0)
         goto c8649;
+    //     bne c8649
     // c8672:
 c8672:
     //     ldx #2
@@ -1511,10 +1505,9 @@ loop_c8674:
         insert_mode_flag = a;
     //     dex
     x--;
-    set_flags(&flags, x);
-    //     bpl loop_c8674
-    if (!(flags & FLAG_N))
+    if (!((int8_t)x < 0))
         goto loop_c8674;
+    //     bpl loop_c8674
     //     bmi c869b                                                         ;
     //     ALWAYS branch
     return_to_cli_prompt();

@@ -499,10 +499,9 @@ void stop_printing(void)
     // stop_printing:
     //     lda print_flags
     a = print_flags;
-    set_flags(&flags, a);
-    //     bpl c8459
-    if (!(flags & FLAG_N))
+    if (!((int8_t)a < 0))
         goto c8459;
+    //     bpl c8459
     //     rol print_flags
     a = rol(&flags, print_flags);
     print_flags = a;
@@ -1308,10 +1307,9 @@ cab58:
         goto loop_cab4d;
     //     inc tmp0
     tmp0++;
-    set_flags(&flags, tmp0);
-    //     bne cab64
-    if (!(flags & FLAG_Z))
+    if (tmp0 != 0)
         goto cab64;
+    //     bne cab64
     //     inc tmp1
     tmp1++;
     // cab64:

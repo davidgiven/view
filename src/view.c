@@ -583,16 +583,14 @@ c8390:
     // c8390:
     //     inc tmp8
     tmp8++;
-    set_flags(&flags, tmp8);
-    //     bne c837d
-    if (!(flags & FLAG_Z))
+    if (tmp8 != 0)
         goto c837d;
+    //     bne c837d
     //     inc tmp9
     tmp9++;
-    set_flags(&flags, tmp9);
-    //     bne c837d
-    if (!(flags & FLAG_Z))
+    if (tmp9 != 0)
         goto c837d;
+    //     bne c837d
 c8398:
     // c8398:
     //     inc l0074
@@ -688,10 +686,9 @@ c83d1:
     header_text_maybe[x] = a;
     //     inc l0083
     l0083++;
-    set_flags(&flags, l0083);
-    //     bne c83a3
-    if (!(flags & FLAG_Z))
+    if (l0083 != 0)
         goto c83a3;
+    //     bne c83a3
 c83da:
     // c83da:
     //     ldx l0083
@@ -889,10 +886,9 @@ c8a5b:
         goto c8a86;
     //     inc l0081
     l0081++;
-    set_flags(&flags, l0081);
-    //     bne c8a84
-    if (!(flags & FLAG_Z))
+    if (l0081 != 0)
         goto c8a84;
+    //     bne c8a84
 c8a6c:
     // c8a6c:
     //     cmp #0x20 ; ' '
@@ -964,10 +960,9 @@ c8a87:
     x = l0082;
     //     tay
     y = a;
-    set_flags(&flags, y);
-    //     bne c8aa3
-    if (!(flags & FLAG_Z))
+    if (y != 0)
         goto c8aa3;
+    //     bne c8aa3
     //     cpx input_buffer_offset+1
     cmp(&flags, x, l0080);
     //     bcc c8aa3
@@ -1048,7 +1043,6 @@ loop_c8ae4:
     a = ram[ptr2 + y];
     //     iny
     y++;
-    set_flags(&flags, y);
     //     jsr is_uppercase
     if (isupper(a))
     {
@@ -1065,10 +1059,9 @@ loop_c8ae4:
     print_xpos = ror(&flags, print_xpos);
     //     dex
     x--;
-    set_flags(&flags, x);
-    //     bne loop_c8ae4
-    if (!(flags & FLAG_Z))
+    if (x != 0)
         goto loop_c8ae4;
+    //     bne loop_c8ae4
     //     beq c8b11
     goto c8b11;
 
@@ -1086,10 +1079,9 @@ c8af3:
     }
     //     and #0x20 ; ' '
     a &= 0x20;
-    set_flags(&flags, a);
-    //     bne c8b11
-    if (!(flags & FLAG_Z))
+    if (a != 0)
         goto c8b11;
+    //     bne c8b11
     //     inc l0081
     l0081++;
     //     dex
@@ -1114,10 +1106,9 @@ c8af3:
         goto c8b11;
     //     and #0x20 ; ' '
     a &= 0x20;
-    set_flags(&flags, a);
-    //     bne c8b11
-    if (!(flags & FLAG_Z))
+    if (a != 0)
         goto c8b11;
+    //     bne c8b11
 c8b0d:
     // c8b0d:
     //     dec l0081

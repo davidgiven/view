@@ -1169,12 +1169,10 @@ static void delete_key(void)
 
     x = insert_mode_flag;
 
-    set_flags(&flags, x);
+    if (x != 0)
+        return;
 
     //     bne return_55
-
-    if (!(flags & FLAG_Z))
-        return;
 
     //     jsr get_line_length
 
@@ -1685,12 +1683,10 @@ static void f7_delete_line_key(void)
 
     a = ram[current_line_ptr + y];
 
-    set_flags(&flags, a);
+    if (a != 0)
+        goto c9e81;
 
     //     bne c9e81
-
-    if (!(flags & FLAG_Z))
-        goto c9e81;
 
     //     lda current_line_ptr
 
@@ -5047,10 +5043,9 @@ void sub_caef4(void)
     a = format_mode_flag;
     //     and #0x81
     a &= 0x81;
-    set_flags(&flags, a);
-    //     bne caf31
-    if (!(flags & FLAG_Z))
+    if (a != 0)
         goto caf31;
+    //     bne caf31
     //     jsr sub_caec2
     sub_caec2();
     //     bcc caf31
@@ -5661,7 +5656,6 @@ c9aa5_:
     l003b = y;
     //     inc l006e
     edit_buffer_unpacked_flag++;
-    set_flags(&flags, edit_buffer_unpacked_flag);
     //     jsr write_line_back_to_document
     write_line_back_to_document();
     //     bcc return_50
@@ -5804,7 +5798,6 @@ c8bbc:
     // c8bbc:
     //     iny
     y++;
-    set_flags(&flags, y);
     //     lda (tmp8),y
     a = ram[tmp89 + y];
     //     beq c8bdb
@@ -5953,10 +5946,9 @@ loop_c8c2a:
     // loop_c8c2a:
     //     inc tmp8
     tmp8++;
-    set_flags(&flags, tmp8);
-    //     bne c8c30
-    if (!(flags & FLAG_Z))
+    if (tmp8 != 0)
         goto c8c30;
+    //     bne c8c30
     //     inc tmp9
     tmp9++;
 c8c30:
@@ -5975,10 +5967,9 @@ c8c33:
         goto loop_c8c2a;
     //     inc tmp8
     tmp8++;
-    set_flags(&flags, tmp8);
-    //     bne c8c3e
-    if (!(flags & FLAG_Z))
+    if (tmp8 != 0)
         goto c8c3e;
+    //     bne c8c3e
     //     inc tmp9
     tmp9++;
 c8c3e:
@@ -6195,10 +6186,9 @@ void draw_line(uint16_t addr)
     y = 3;
     //     lda hscroll_pos
     a = hscroll_pos;
-    set_flags(&flags, a);
-    //     bne ca4b4
-    if (!(flags & FLAG_Z))
+    if (a != 0)
         goto ca4b4;
+    //     bne ca4b4
     //     ldy #1
     y = 1;
     //     jsr sub_ca4d7
@@ -6425,10 +6415,9 @@ static void get_line_length(void)
             goto cab06;
         //     tya
         a = y;
-        set_flags(&flags, a);
-        //     bne loop_caafb
-        if (!(flags & FLAG_Z))
+        if (a != 0)
             goto loop_caafb;
+        //     bne loop_caafb
         //     dey
         y--;
         // cab06:
@@ -6509,10 +6498,9 @@ void justify_edit_buffer(void)
     // justify_edit_buffer:
     //     lda justifying_flag
     a = justifying_flag;
-    set_flags(&flags, a);
-    //     bne return_47
-    if (!(flags & FLAG_Z))
+    if (a != 0)
         return;
+    //     bne return_47
     //     sta l0046
     l0046 = a;
     //     sta l0039
@@ -6805,7 +6793,6 @@ c98fa:
     cmp(&flags, y, l0046);
     //     lda #0
     a = 0;
-    set_flags(&flags, a);
     //     bcs c9912
     if (flags & FLAG_C)
         goto c9912;
@@ -7091,10 +7078,9 @@ static void recalculate_cursor_xpos(void)
     tmp1 = a;
     //     lda l0079
     a = l0079;
-    set_flags(&flags, a);
-    //     bne ca624
-    if (!(flags & FLAG_Z))
+    if (a != 0)
         goto ca624;
+    //     bne ca624
     //     tay
     y = a;
     // loop_ca615:
@@ -8256,7 +8242,6 @@ void sub_c9977(void)
     // boundary reached).
     //      lda (current_line_ptr),y
     a = ram[current_line_ptr + y];
-    set_flags(&flags, a);
     //     jsr check_for_command_prefix
     flags = check_for_command_prefix(a);
     //     beq c9974
@@ -8416,10 +8401,9 @@ c99e0:
 c99e4:
     //     lda l0046
     a = l0046;
-    set_flags(&flags, a);
-    //     bne c99c9
-    if (!(flags & FLAG_Z))
+    if (a != 0)
         goto c99c9;
+    //     bne c99c9
     //     ldx #0xff
     x = 0xff;
     //     lda #0x20 ; ' '
@@ -8443,16 +8427,14 @@ c99ee:
         goto c9a11;
     //     ldx input_buffer_offset
     x = input_buffer_offset;
-    set_flags(&flags, x);
-    //     bne c99e4
-    if (!(flags & FLAG_Z))
+    if (x != 0)
         goto c99e4;
+    //     bne c99e4
     //     lda l0038
     a = l0038;
-    set_flags(&flags, a);
-    //     bne c99e4
-    if (!(flags & FLAG_Z))
+    if (a != 0)
         goto c99e4;
+    //     bne c99e4
     //     inc l0038
     l0038++;
     //     lda ruler_left_stop
@@ -9480,10 +9462,9 @@ ca8df:
 ca8ed:
     //     lda l006e
     a = edit_buffer_unpacked_flag;
-    set_flags(&flags, a);
-    //     bpl ca8f8
-    if (!(flags & FLAG_N))
+    if (!((int8_t)a < 0))
         goto ca8f8;
+    //     bpl ca8f8
     //     lda l006d
     a = edit_buffer_dirty_flag;
     set_flags(&flags, a);
@@ -9518,10 +9499,9 @@ ca8f8:
 ca90a:
     //     txa
     a = x;
-    set_flags(&flags, a);
-    //     bne ca911
-    if (!(flags & FLAG_Z))
+    if (a != 0)
         goto ca911;
+    //     bne ca911
     //     lda #0x0d
     a = 0x0d;
     //     bne ca919

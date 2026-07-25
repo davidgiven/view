@@ -360,10 +360,9 @@ c9548:
 c9555:
     //     lda print_flags
     a = print_flags;
-    set_flags(&flags, a);
-    //     bpl return_37
-    if (!(flags & FLAG_N))
+    if (!((int8_t)a < 0))
         return;
+    //     bpl return_37
     //     txa
     a = x;
     //     sbc l0083
@@ -803,10 +802,9 @@ static void page_eject_fmt(void)
     // page_eject_fmt:
     //     lda l0031
     a = l0031;
-    set_flags(&flags, a);
-    //     bne c964c
-    if (!(flags & FLAG_Z))
+    if (a != 0)
         goto c964c;
+    //     bne c964c
     //     jsr render_new_page
     render_new_page();
     // c964c:
@@ -886,10 +884,9 @@ static void dm_fmt_cmd(void)
     // dm_fmt_cmd:
     //     lda macro_executing_flag
     a = macro_executing_flag;
-    set_flags(&flags, a);
-    //     bne return_42
-    if (!(flags & FLAG_Z))
+    if (a != 0)
         return;
+    //     bne return_42
     //     lda last_macro_ptr
     a = (uint8_t)(last_macro_ptr & 0xff);
     //     sta tmp6
@@ -911,7 +908,6 @@ static void dm_fmt_cmd(void)
     y++;
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
-    set_flags(&flags, a);
     //     jsr is_uppercase
     if (isupper(a))
     {
@@ -1021,7 +1017,6 @@ c96ce:
     y = 0;
     //     lda (last_macro_ptr),y
     a = ram[last_macro_ptr + y];
-    set_flags(&flags, a);
     //     jsr check_for_command_prefix
     flags = check_for_command_prefix(a);
     //     bne c96f8
@@ -1256,10 +1251,9 @@ c974c:
     y++;
     //     lda commands_table,y
     a = commands_table[y];
-    set_flags(&flags, a);
-    //     bpl loop_c973e
-    if (!(flags & FLAG_N))
+    if (!((int8_t)a < 0))
         goto loop_c973e;
+    //     bpl loop_c973e
     set_flags(&flags, a);
     // return_45:
 return_45:
@@ -1490,10 +1484,9 @@ loop_c979d:
     y = l0084;
     //     lda l97b1,x
     a = l97b0_data[x + 1];
-    set_flags(&flags, a);
-    //     bpl c9788
-    if (!(flags & FLAG_N))
+    if (!((int8_t)a < 0))
         goto c9788;
+    //     bpl c9788
     // c97ae:
 c97ae:
     //     sec
@@ -2072,10 +2065,9 @@ c9048:
         goto c906b;
     //     inc l0043
     l0043++;
-    set_flags(&flags, l0043);
-    //     bne c9048
-    if (!(flags & FLAG_Z))
+    if (l0043 != 0)
         goto c9048;
+    //     bne c9048
     // c9064:
 c9064:
     //     lda l0039
@@ -2325,7 +2317,6 @@ loop_c9107:
         goto c9115;
     //     inc tmp9
     tmp9++;
-    set_flags(&flags, tmp9);
     // c9115:
 c9115:
     //     dex
@@ -2602,10 +2593,9 @@ loop_c942a:
     print_char();
     //     dex
     x--;
-    set_flags(&flags, x);
-    //     bne loop_c942a
-    if (!(flags & FLAG_Z))
+    if (x != 0)
         goto loop_c942a;
+    //     bne loop_c942a
     // return_32:
 return_32:
     //     rts
@@ -2705,10 +2695,9 @@ c8f0d:
     }
     //     lda l0031
     a = l0031;
-    set_flags(&flags, a);
-    //     bpl return_23
-    if (!(flags & FLAG_N))
+    if (!((int8_t)a < 0))
         return;
+    //     bpl return_23
     //     jmp c9263
     c9263();
     return;
@@ -2739,10 +2728,9 @@ static void print_loop(void)
             goto c8f3b_l;
         //     lda l0021
         a = l0021;
-        set_flags(&flags, a);
-        //     bne c8f3b
-        if (!(flags & FLAG_Z))
+        if (a != 0)
             goto c8f3b_l;
+        //     bne c8f3b
         //     jsr c9263
         c9263();
         // c8f3b:
@@ -2944,10 +2932,9 @@ static void print_loop(void)
     c8fce_l:
         //     lda l0031
         a = l0031;
-        set_flags(&flags, a);
-        //     bne c8fd5
-        if (!(flags & FLAG_Z))
+        if (a != 0)
             goto c8fd5_l;
+        //     bne c8fd5
         //     jsr render_new_page
         render_new_page();
         // c8fd5:
@@ -2962,10 +2949,9 @@ static void print_loop(void)
         y = l0080;
         //     lda print_flags
         a = print_flags;
-        set_flags(&flags, a);
-        //     bpl c8fe6
-        if (!(flags & FLAG_N))
+        if (!((int8_t)a < 0))
             goto c8fe6_l;
+        //     bpl c8fe6
         //     lda microspacing_flag
         a = microspacing_flag;
         set_flags(&flags, a);
@@ -4039,10 +4025,9 @@ static void sub_c93be(void)
     // sub_c93be:
     //     lda ruler_right_stop
     a = ruler_right_stop;
-    set_flags(&flags, a);
-    //     bne return_29
-    if (!(flags & FLAG_Z))
+    if (a != 0)
         goto return_29;
+    //     bne return_29
     //     lda l003a
     a = l003a;
     //     sec
@@ -4107,10 +4092,9 @@ c93e6:
     l0084 = x;
     //     lda print_flags
     a = print_flags;
-    set_flags(&flags, a);
-    //     bpl return_30
-    if (!(flags & FLAG_N))
+    if (!((int8_t)a < 0))
         goto return_30;
+    //     bpl return_30
     //     txa
     a = x;
     //     sec
