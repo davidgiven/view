@@ -1544,7 +1544,7 @@ static void f3_delete_to_eol_key(void)
 
     //     sbc xpos
 
-    a = sbc(&flags, a, xpos);
+    a -= xpos;
     x = a;
 
     //     tax
@@ -3944,9 +3944,8 @@ static void delete_edit_buffer_bytes_at_xpos(void)
     //     tya
     a = y;
     //     clc
-    flags &= ~FLAG_C;
     //     adc input_buffer_offset+1
-    a = adc(&flags, a, l0080);
+    a += l0080;
     //     sta l0084
     // cae78:
 cae78:
@@ -4160,9 +4159,8 @@ c9c1d:
     //     txa
     a = x;
     //     clc
-    flags &= ~FLAG_C;
     //     adc l0039
-    a = adc(&flags, a, l0039);
+    a += l0039;
     //     bne c9c43
     if (a != 0)
         goto c9c43;
@@ -6446,9 +6444,8 @@ static void get_line_length(void)
     if (!(flags & FLAG_Z))
         goto return_69;
     //     clc
-    flags &= ~FLAG_C;
     //     adc #3
-    a = adc(&flags, a, 3);
+    a += 3;
     // return_69:
 return_69:
     //     rts
@@ -6817,9 +6814,8 @@ c98fa:
     // c9912:
 c9912:
     //     clc
-    flags &= ~FLAG_C;
     //     adc l0084
-    a = adc(&flags, a, l0084);
+    a += l0084;
     //     inc l0039
     l0039++;
     //     tay
@@ -7139,9 +7135,8 @@ loop_ca629:
     //     txa
     a = x;
     //     clc
-    flags &= ~FLAG_C;
     //     adc l0039
-    a = adc(&flags, a, l0039);
+    a += l0039;
     //     cmp l0072
     cmp(&flags, a, l0072);
     //     bcc loop_ca629
@@ -7528,9 +7523,8 @@ ca395:
     //     lda screen_height (5380)
     a = screen_maxrow;
     //     sec (5381)
-    flags |= FLAG_C;
     //     sbc l003d (5382)
-    a = sbc(&flags, a, l003d);
+    a -= l003d;
     //     tax (5383)
     x = a;
     //     inx (5384)
@@ -7646,9 +7640,8 @@ ca406:
     //     sbc hscroll_pos (5437)
     a = sbc(&flags, a, hscroll_pos);
     //     clc (5438)
-    flags &= ~FLAG_C;
     //     adc #3 (5439)
-    a = adc(&flags, a, 3);
+    a += 3;
     //     tax (5440)
     x = a;
     //     ldy #0 (5441)
@@ -8159,9 +8152,8 @@ static void sub_c9936(void)
     //     txa
     a = x;
     //     clc
-    flags &= ~FLAG_C;
     //     adc l0039
-    a = adc(&flags, a, l0039);
+    a += l0039;
     //     bne c995c
     if (!(flags & FLAG_Z))
         goto c995c;
@@ -8399,9 +8391,8 @@ c99c9:
     //     txa
     a = x;
     //     clc
-    flags &= ~FLAG_C;
     //     adc l0039
-    a = adc(&flags, a, l0039);
+    a += l0039;
     //     sta l0039
     l0039 = a;
     //     lda #9
@@ -8484,9 +8475,8 @@ c99ee:
     // c9a0a:
 c9a0a:
     //     clc
-    flags &= ~FLAG_C;
     //     adc input_buffer_offset+1
-    a = adc(&flags, a, l0080);
+    a += l0080;
     //     sta input_buffer_offset+1
     l0080 = a;
     //     lda #0x0b
@@ -9476,9 +9466,8 @@ ca8df:
     //     lda #0
     a = 0;
     //     sec
-    flags |= FLAG_C;
     //     sbc l0084
-    a = sbc(&flags, a, l0084);
+    a -= l0084;
     //     sta tmp6
     tmp6 = a;
     //     jsr make_space_for_insertion

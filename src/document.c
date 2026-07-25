@@ -751,9 +751,8 @@ loop_cb0e9:
     //     inx
     x++;
     //     clc
-    flags &= ~FLAG_C;
     //     adc #6
-    a = adc(&flags, a, 6);
+    a += 6;
     //     cmp screen_width
     cmp(&flags, a, screen_maxcolumn);
     //     beq cb0ff
@@ -1168,9 +1167,8 @@ cac20:
     if (!(flags & FLAG_C))
         goto cac3e;
     //     sec
-    flags |= FLAG_C;
     //     sbc #3
-    a = sbc(&flags, a, 3);
+    a -= 3;
     //     tax
     x = a;
     // cac3e:

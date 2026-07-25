@@ -284,9 +284,8 @@ static void rj_fmt_cmd(void)
     //     lda ruler_right_stop
     a = ruler_right_stop;
     //     sec
-    flags |= FLAG_C;
     //     sbc l0083
-    a = sbc(&flags, a, l0083);
+    a -= l0083;
     // c950f: fall-through to shared routine
     c950f_impl();
     return;
@@ -2394,9 +2393,8 @@ c912b:
         //     lda microspacing_flag
         a = microspacing_flag;
         //     clc
-        flags &= ~FLAG_C;
         //     adc l0044
-        a = adc(&flags, a, l0044);
+        a += l0044;
         //     tax
         x = a;
         //     lda l0045
@@ -4048,9 +4046,8 @@ static void sub_c93be(void)
     //     lda l003a
     a = l003a;
     //     sec
-    flags |= FLAG_C;
     //     sbc #1
-    a = sbc(&flags, a, 1);
+    a -= 1;
     // return_29:
 return_29:; // fallthrough to rts
 }
@@ -4117,9 +4114,8 @@ c93e6:
     //     txa
     a = x;
     //     sec
-    flags |= FLAG_C;
     //     sbc l0081
-    a = sbc(&flags, a, l0081);
+    a -= l0081;
     //     tax
     x = a;
     // return_30:
@@ -4186,9 +4182,8 @@ static void sub_c9407(void)
     if (flags & FLAG_Z)
         goto c9415;
     //     clc
-    flags &= ~FLAG_C;
     //     adc rhs_extra_margin
-    a = adc(&flags, a, rhs_extra_margin);
+    a += rhs_extra_margin;
     // c9415:
 c9415:
     //     tax
@@ -4208,9 +4203,8 @@ static void sub_c941a(void)
     //     txa
     a = x;
     //     clc
-    flags &= ~FLAG_C;
     //     adc l0039
-    a = adc(&flags, a, l0039);
+    a += l0039;
     //     sta l0039
     l0039 = a;
     //     lda #0x20 ; ' '
@@ -4248,9 +4242,8 @@ c943c:
         //     txa
         a = x;
         //     clc
-        flags &= ~FLAG_C;
         //     adc l0039
-        a = adc(&flags, a, l0039);
+        a += l0039;
         //     sta l0039
         l0039 = a;
         //     pla
