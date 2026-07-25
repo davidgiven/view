@@ -101,54 +101,36 @@ extern uint8_t tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8, tmp9;
 extern uint8_t print_flags, folding_flag, macro_executing_flag;
 extern uint8_t ruler_right_stop, ruler_left_stop;
 extern void (*number_callback)(void);
-extern void render_new_page(void);
-extern void c9263(void);
-extern void display_not_enough_memory(void);
-extern void sub_c9241(void);
 extern uint8_t check_for_command_prefix(uint8_t ch);
-extern void parse_decimal_number(void);
 extern void check_for_control_code(void);
 extern void render_number_to_screen(void);
 extern void print_char_via_putchar(void);
-extern void clear_screen(void);
 extern void parse_command(void);
 // Functions in view.c called by other modules
 extern void sub_c8412(void);
-extern void c8b7b(void);
 extern void sub_c8c7c(void);
 extern void sub_c83f0(void);
 extern void sub_c8a4f(void);
-extern void draw_prompt_characters(void);
 extern void sub_c8361(void);
 extern void sub_c8371(void);
-extern void show_memory_full_error(void);
 extern void esc_key(void);
-extern void print_document(void);
 extern void parse_filename_from_command(void);
 extern void set_document_name_to_filename_buffer(void);
 extern void read_first_chunk_from_input_file(void);
-extern void check_not_continuous_editing(void);
 extern void check_continuous_editing(void);
 extern void parse_marks_from_command(void);
-extern void sanitise_area(void);
 extern void write_area_to_file(void);
-extern void sub_c89d3(void);
 extern void read_next_chunk_from_input_file(void);
 extern void read_into_document(void);
-extern void bad_filename_error(void);
-extern void parse_optional_filename_from_command(void);
 extern void reset_document_name_after_load(void);
 extern void prepare_printer_driver(void);
 extern void parse_integer_from_command(void);
-extern void sub_c8e33(void);
-extern void process_current_document_character(void);
-extern void wipe_buffer(void);
-extern void sub_c9977(void);
 extern uint8_t l0021, l0031, l0038, l007a;
 #define RAM_REGISTER_VALUE_P (RAM_REGISTER_VALUE_ARRAY + ('P'-'A')*2)
 #define RAM_REGISTER_VALUE_L (RAM_REGISTER_VALUE_ARRAY + ('L'-'A')*2)
 
 #define RAM_REGISTER_VALUE_ARRAY 0x0798
+#define register_value_array (&ram[RAM_REGISTER_VALUE_ARRAY])
 #define RAM_CURRENT_RULER_BUF 0x05CF
 
 
@@ -236,8 +218,6 @@ extern FILE *file_ptr;
 extern FILE *input_fp;
 extern FILE *output_fp;
 extern void clear_cmd(void);
-extern void beep(void);
-extern void sub_cac41(void);
 extern void enter_editor_mode(void);
 extern void sub_caf5f(void);
 extern void zero_terminate_filename_buffer(void);
@@ -246,4 +226,52 @@ extern void file_error(void);
 
 #define current_line_buffer (&ram[RAM_CURRENT_LINE_BUF])
 
+
+// Functions moved to editor.c still called from view.c/other modules
+extern void redraw_editor(void);
+extern void write_line_back_to_document_safely(void);
+extern void ca741(void);
+extern void sub_c8c5f(void);
+extern void sanitise_area(void);
+extern void make_space_for_insertion(void);
+extern void adjust_pointers(void);
+extern void parse_decimal_number(void);
+extern void parse_optional_filename_from_command(void);
+extern void read_block_from_file(void);
+extern void sub_c8e33(void);
+extern void sub_cac41(void);
+
+// Functions moved to printing.c still called from view.c/other modules
+extern void display_not_enough_memory(void);
+extern void beep(void);
+
+// Missing printing globals
+extern uint8_t rw_file_handle;
+extern uint8_t l0044;
+extern uint8_t l0045;
+extern uint8_t l0047;
+extern uint8_t l0048;
+extern uint8_t l0042;
+extern uint8_t l0043;
+extern uint8_t printing_from_file_flag;
+extern addr_t ptr6;
+extern uint8_t parser_table[];
+
+
+extern uint8_t l0049;
+extern addr_t ptr2;
+
+
+
+extern void c8b7b(void);
+extern void process_current_document_character(void);
+extern void check_not_continuous_editing(void);
+extern void sub_c89d3(void);
+extern void wipe_buffer(void);
+extern void sub_c9977(void);
+extern void print_document(void);
+extern void draw_prompt_characters(void);
+extern void show_memory_full_error(void);
+extern void bad_filename_error(void);
+extern void clear_screen(void);
 #endif
