@@ -1,3 +1,5 @@
+#include <stdint.h>
+typedef uint16_t addr_t;
 /* Test for justify_edit_buffer (justification) */
 #include <stdint.h>
 #include <string.h>
@@ -18,7 +20,9 @@ extern addr_t current_edit_line_ptr;
 extern addr_t current_format_line_ptr;
 extern addr_t current_line_ptr;
 extern addr_t ptr1;
-extern uint8_t tmp8, tmp9;
+extern addr_t tmp89;
+#define tmp8 (*((uint8_t*)&tmp89))
+#define tmp9 (*((uint8_t*)&tmp89 + 1))
 extern uint8_t output_buffer[132];
 extern uint8_t input_buffer[68];
 

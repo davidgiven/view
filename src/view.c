@@ -296,36 +296,11 @@ uint8_t l0083; // PROVISIONAL: document line length from get_line_length; also
 // X l0084: .fill 1
 uint8_t l0084; // PROVISIONAL: temporary column-position save/restore slot used
                // during character rendering
-// X tmp0: .fill 1
-uint8_t tmp0; // PROVISIONAL: temporary register (paired with tmp1 as 16-bit
-              // pointer)
-// X tmp1: .fill 1
-uint8_t tmp1; // PROVISIONAL: temporary register (high byte of tmp0:tmp1 pointer
-              // pair)
-// X tmp2: .fill 1
-uint8_t tmp2; // PROVISIONAL: temporary register (paired with tmp3 as 16-bit
-              // pointer)
-// X tmp3: .fill 1
-uint8_t tmp3; // PROVISIONAL: temporary register (high byte of tmp2:tmp3 pointer
-              // pair)
-// X tmp4: .fill 1
-uint8_t tmp4; // PROVISIONAL: temporary register (paired with tmp5 as 16-bit
-              // pointer)
-// X tmp5: .fill 1
-uint8_t tmp5; // PROVISIONAL: temporary register (high byte of tmp4:tmp5 pointer
-              // pair)
-// X tmp6: .fill 1
-uint8_t tmp6; // PROVISIONAL: temporary register (paired with tmp7 as 16-bit
-              // pointer)
-// X tmp7: .fill 1
-uint8_t tmp7; // PROVISIONAL: temporary register (high byte of tmp6:tmp7 pointer
-              // pair)
-// X tmp8: .fill 1
-uint8_t tmp8; // PROVISIONAL: temporary register (paired with tmp9 as 16-bit
-              // pointer)
-// X tmp9: .fill 1
-uint8_t tmp9; // PROVISIONAL: temporary register (high byte of tmp8:tmp9 pointer
-              // pair)
+addr_t tmp01;  // PROVISIONAL: combined 16-bit temporary (was tmp0:tmp1)
+addr_t tmp23;  // PROVISIONAL: combined 16-bit temporary (was tmp2:tmp3)
+addr_t tmp45;  // PROVISIONAL: combined 16-bit temporary (was tmp4:tmp5)
+addr_t tmp67;  // PROVISIONAL: combined 16-bit temporary (was tmp6:tmp7)
+addr_t tmp89;  // PROVISIONAL: combined 16-bit temporary (was tmp8:tmp9)
 // X file_ptr: .fill 2
 FILE* file_ptr; // PROVISIONAL: currently selected FILE* for file I/O (set to
                 // input_fp or output_fp)
@@ -1355,7 +1330,6 @@ void read_first_chunk_from_input_file(void)
 void write_area_to_file(void)
 {
     // Pseudocode: Writes document area range to output file byte by byte
-    uint8_t tmp8, tmp9;
 
     // ; Does not include trailing zero!
     // write_area_to_file:
@@ -1380,7 +1354,7 @@ void write_area_to_file(void)
         //         ldy #0
         y = 0;
         //         lda (tmp8),y
-        a = ram[((uint16_t)tmp9 << 8) | tmp8];
+        a = ram[tmp89];
         //         jsr put_byte_to_file
         put_byte_to_file();
         //         inc tmp8
@@ -1426,7 +1400,7 @@ static void compute_space_common(void)
     tmp7 = y;
     //     lsr tmp9; ror tmp8; lsr tmp9; ror tmp8
     {
-        uint16_t t = ((uint16_t)tmp9 << 8) | tmp8;
+        uint16_t t = tmp89;
         t >>= 2;
         tmp9 = (uint8_t)(t >> 8);
         tmp8 = (uint8_t)(t & 0xff);

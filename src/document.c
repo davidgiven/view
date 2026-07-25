@@ -881,7 +881,7 @@ void initialise_document(void)
     //     lda #0x0d
     a = 0x0d;
     //     sta (tmp8),y
-    ram[((uint16_t)tmp9 << 8) | tmp8] = a;
+    ram[tmp89] = a;
     //     sta current_line_buffer + 0x89
     current_line_buffer[MAX_LINE_LENGTH - 1] = a;
     //     lda page / sta top / lda page+1 / sta top+1

@@ -1,3 +1,5 @@
+#include <stdint.h>
+typedef uint16_t addr_t;
 /* Test for create_default_ruler */
 #include <stdint.h>
 #include <string.h>
@@ -5,7 +7,9 @@
 
 extern uint8_t ram[65536];
 extern uint8_t a, x, y, flags;
-extern uint8_t tmp0, tmp1;
+extern addr_t tmp01;
+#define tmp0 (*((uint8_t*)&tmp01))
+#define tmp1 (*((uint8_t*)&tmp01 + 1))
 extern uint8_t screen_maxcolumn;
 extern void create_default_ruler(void);
 

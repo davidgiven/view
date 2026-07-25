@@ -4285,7 +4285,7 @@ c9cd0:
     {
         //     lda #0x0b
         //     sta (tmp4),y
-        ram[((uint16_t)tmp5 << 8) | tmp4] = 0x0b;
+        ram[tmp45] = 0x0b;
         //     iny ; Y=0x01
         y = 1;
     }
@@ -5656,7 +5656,7 @@ c8b9f:
     //     ldy #0
     y = 0;
     //     lda (tmp8),y
-    a = ram[((uint16_t)tmp9 << 8) | tmp8];
+    a = ram[tmp89];
     //     jsr check_for_command_prefix
     flags = check_for_command_prefix(a);
     //     bne c8bb7

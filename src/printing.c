@@ -391,7 +391,7 @@ static void sub_c95b2(void)
     //     ldy l0081
     y = l0081;
     //     sta (tmp2),y
-    ram[((uint16_t)tmp3 << 8) | (uint16_t)(tmp2 + y)] = a;
+    ram[tmp23 + y] = a;
     //     iny
     y++;
     //     sty l0081
@@ -535,14 +535,14 @@ static void em_fmt_cmd(void)
     //     ldy #0
     y = 0;
     //     sta (tmp0),y
-    ram[((uint16_t)tmp1 << 8) | (uint16_t)(tmp0 + y)] = a;
+    ram[tmp01 + y] = a;
     //     iny                                                               ;
     //     Y=0x01
     y++;
     //     lda tmp9
     a = tmp9;
     //     sta (tmp0),y
-    ram[((uint16_t)tmp1 << 8) | (uint16_t)(tmp0 + y)] = a;
+    ram[tmp01 + y] = a;
     // return_38:
     //     rts
     return;
@@ -1031,13 +1031,13 @@ add_macro_to_linked_list:
     //     lda last_macro_ptr
     a = (uint8_t)(last_macro_ptr & 0xff);
     //     sta (tmp6),y
-    ram[((uint16_t)tmp7 << 8) | (uint16_t)(tmp6 + y)] = a;
+    ram[tmp67 + y] = a;
     //     iny
     y++;
     //     lda last_macro_ptr+1
     a = (uint8_t)((last_macro_ptr >> 8) & 0xff);
     //     sta (tmp6),y
-    ram[((uint16_t)tmp7 << 8) | (uint16_t)(tmp6 + y)] = a;
+    ram[tmp67 + y] = a;
     //     rts
     return;
 
@@ -1387,7 +1387,7 @@ static void sub_c976c(void)
     //     stx tmp9
     tmp9 = x;
     //     lda (tmp8),y
-    a = ram[((uint16_t)tmp9 << 8) | (uint16_t)(tmp8 + y)];
+    a = ram[tmp89 + y];
     set_flags(a);
     //     tax
     x = a;
@@ -1430,7 +1430,7 @@ c9788:
     //     iny
     y++;
     //     lda (tmp8),y
-    a = ram[((uint16_t)tmp9 << 8) | (uint16_t)(tmp8 + y)];
+    a = ram[tmp89 + y];
     set_flags(a);
     //     jsr to_uppercase
     a = toupper(a);
@@ -2528,7 +2528,7 @@ void parse_decimal_number(void)
         y++;
         had_digits = 0xff;
 
-        uint16_t val = ((uint16_t)tmp9 << 8) | tmp8;
+        uint16_t val = tmp89;
         val = val * 10 + a;
         tmp8 = (uint8_t)val;
         tmp9 = (uint8_t)(val >> 8);
@@ -4301,7 +4301,7 @@ static void write_byte_to_memory(void)
     //     ldy #0
     y = 0;
     //     sta (tmp0),y
-    ram[((uint16_t)tmp1 << 8) | tmp0] = a;
+    ram[tmp01] = a;
     //     inc tmp0
     tmp0++;
     //     bne c8d0a

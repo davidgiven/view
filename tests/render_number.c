@@ -1,11 +1,19 @@
 #include <stdint.h>
+typedef uint16_t addr_t;
+#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 /* ---- global state (same layout as view.c) ---- */
 uint8_t a, x, y, flags;
-uint8_t tmp6, tmp7, tmp8, tmp9, l0083;
+extern addr_t tmp01, tmp23, tmp45, tmp67, tmp89;
+addr_t tmp01 = 0, tmp23 = 0, tmp45 = 0, tmp67 = 0, tmp89 = 0;
+#define tmp6 (*((uint8_t*)&tmp67))
+#define tmp7 (*((uint8_t*)&tmp67 + 1))
+#define tmp8 (*((uint8_t*)&tmp89))
+#define tmp9 (*((uint8_t*)&tmp89 + 1))
+uint8_t l0083;
 static void (*number_callback)(void);
 
 /* ---- captured output for testing ---- */
