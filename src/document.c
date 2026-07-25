@@ -94,7 +94,7 @@ uint8_t deref_and_check_for_command_prefix(void)
 {
     // deref_and_check_for_command_prefix:
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
+    a = ram[tmp01 + y];
     return check_for_command_prefix(a);
 }
 // Returns flags value: if ch is 0x80 (format command) → FLAG_Z|FLAG_C;
@@ -538,7 +538,7 @@ void sub_cab6e(void)
     //     ldy #0
     y = 0;
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
+    a = ram[tmp01 + y];
     //     cmp #0x81
     cmp(a, 0x81);
     //     rts
@@ -703,7 +703,7 @@ loop_cb0e7:
     // loop_cb0e9:
 loop_cb0e9:
     //     sta (tmp0),y
-    ram[((uint16_t)tmp1 << 8 | tmp0) + y] = a;
+    ram[tmp01 + y] = a;
     //     iny
     y++;
     //     tya
@@ -739,7 +739,7 @@ cb0ff:
     //     lda #0x3c ; '<'
     a = 0x3c;
     //     sta (tmp0),y
-    ram[((uint16_t)tmp1 << 8 | tmp0) + y] = a;
+    ram[tmp01 + y] = a;
     //     rts
     return;
 }
@@ -917,7 +917,7 @@ void initialise_document(void)
     //     lda #0x0d
     a = 0x0d;
     //     sta (tmp0),y
-    ram[((uint16_t)tmp1 << 8 | tmp0) + y] = a;
+    ram[tmp01 + y] = a;
     //     ldy #0xff
     y = 0xff;
     //     lda #<(just_before_current_ruler_buffer)
@@ -1165,7 +1165,7 @@ void move_tmp01_to_next_line(void)
     // loop_cab2b:
 loop_cab2b:
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
+    a = ram[tmp01 + y];
     set_flags(a);
     //     beq return_70
     if (flags & FLAG_Z)
@@ -1178,7 +1178,7 @@ loop_cab2b:
     if (!(flags & FLAG_Z))
         goto loop_cab2b;
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
+    a = ram[tmp01 + y];
     set_flags(a);
     // return_70:
 return_70:
@@ -1239,7 +1239,7 @@ loop_cab4d:
     // cab58:
 cab58:
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
+    a = ram[tmp01 + y];
     //     cmp #0x0d
     cmp(a, 0x0d);
     //     bne loop_cab4d

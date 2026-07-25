@@ -560,7 +560,7 @@ c837d:
 c8389:
     // c8389:
     //     lda (tmp8),y
-    a = ram[((uint16_t)tmp9 << 8 | tmp8) + y];
+    a = ram[tmp89 + y];
     //     cmp #0x0d
     cmp(a, 0x0d);
     //     bne c8390
@@ -1297,7 +1297,7 @@ void read_next_chunk_from_input_file(void)
     //     Y=0x00
     y = 0;
     //     sta (tmp0),y
-    ram[((uint16_t)tmp1 << 8 | tmp0) + y] = a;
+    ram[tmp01 + y] = a;
     //     lda tmp0
     a = tmp0;
     //     sta top
@@ -1413,22 +1413,11 @@ static void compute_space_common(void)
     a = tmp7;
     sbc(tmp9);
     tmp7 = a;
-    //     lda tmp0; clc; adc tmp6
-    a = tmp0;
-    flags &= ~FLAG_C;
-    adc(tmp6);
-    //     sta ptr5
-    ptr5 = (ptr5 & 0xff00) | a;
-    //     pha
-    //     lda tmp1; adc tmp7
-    a = tmp1;
-    adc(tmp7);
-    //     sta ptr5+1
-    ptr5 = (ptr5 & 0x00ff) | ((uint16_t)a << 8);
-    //     sta l0081
-    l0081 = a;
-    //     pla
-    a = (uint8_t)(ptr5 & 0xff);
+    //     lda tmp0; clc; adc tmp6; sta ptr5; pha
+    //     lda tmp1; adc tmp7; sta ptr5+1; sta l0081; pla
+    ptr5 = tmp01 + tmp67;
+    l0081 = (uint8_t)(ptr5 >> 8);
+    a = (uint8_t)ptr5;
     //     sbc #0x8b
     sbc(0x8b);
     //     sta input_buffer_offset+1

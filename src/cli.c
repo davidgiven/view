@@ -360,7 +360,7 @@ c86b8:
     // loop_c86c2:
 loop_c86c2:
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
+    a = ram[tmp01 + y];
     //     iny
     y++;
     //     cmp l8747,x
@@ -369,7 +369,7 @@ loop_c86c2:
     if (!(flags & FLAG_Z))
         goto c86d1;
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
+    a = ram[tmp01 + y];
     //     cmp l8748,x
     cmp(a, l8747_data[x + 1]);
     //     beq c86df

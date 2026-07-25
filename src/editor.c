@@ -4375,7 +4375,7 @@ c9d30:
     //     inc l0081
     l0081++;
     //     sta (tmp4),y
-    ram[((uint16_t)tmp5 << 8 | tmp4) + y] = a;
+    ram[tmp45 + y] = a;
     //     dec l0083
     l0083--;
     //     bpl c9cf5
@@ -4764,22 +4764,21 @@ static void sub_ca1cc(void)
     // ca219:
     while (1)
     {
-        ram[((uint16_t)tmp3 << 8) | ((uint16_t)tmp2)] =
-            ram[((uint16_t)tmp9 << 8) | ((uint16_t)tmp8)];
+        ram[tmp23] = ram[tmp89];
         tmp2++;
         if (tmp2 == 0)
             tmp3++;
         tmp8++;
         if (tmp8 == 0)
             tmp9++;
-        if (((uint16_t)tmp9 << 8 | tmp8) == area_end_ptr)
+        if ((tmp89) == area_end_ptr)
             break;
     }
     uint8_t saved_tmp6 = tmp6;
     uint8_t saved_tmp7 = tmp7;
-    doc_ptr1 = (uint16_t)tmp5 << 8 | tmp4;
+    doc_ptr1 = tmp45;
     {
-        uint16_t adjusted = ((uint16_t)tmp3 << 8 | tmp2) - 1;
+        uint16_t adjusted = (tmp23)-1;
         a = (uint8_t)(adjusted & 0xff);
         y = (uint8_t)(adjusted >> 8);
     }
@@ -5233,7 +5232,7 @@ cac7b:
     //     ldy #1
     y = 1;
     //     lda (tmp8),y
-    a = ram[((uint16_t)tmp9 << 8 | tmp8) + y];
+    a = ram[tmp89 + y];
     //     jsr check_for_command_prefix
     flags = check_for_command_prefix(a);
     //     bne cac8d
@@ -5252,7 +5251,7 @@ cac8d:
     // cac8f:
 cac8f:
     //     lda (tmp8),y
-    a = ram[((uint16_t)tmp9 << 8 | tmp8) + y];
+    a = ram[tmp89 + y];
     //     iny
     y++;
     //     cmp #0x20 ; ' '
@@ -5325,7 +5324,7 @@ cacad:
     //     ldy #0
     y = 0;
     //     sta (tmp4),y
-    ram[((uint16_t)tmp5 << 8 | tmp4) + y] = a;
+    ram[tmp45 + y] = a;
     //     lda tmp4
     //     sta tmp8
     //     lda tmp5
@@ -5442,9 +5441,9 @@ loop_ca9f7:
     // loop_ca9f9: (6418)
 loop_ca9f9:
     //     lda (tmp8),y (6419)
-    a = ram[((uint16_t)tmp9 << 8 | tmp8) + y];
+    a = ram[tmp89 + y];
     //     sta (tmp2),y (6420)
-    ram[((uint16_t)tmp3 << 8 | tmp2) + y] = a;
+    ram[tmp23 + y] = a;
     //     beq caa08 (6421)
     if (a == 0)
         goto caa08;
@@ -5686,7 +5685,7 @@ c8bbc:
     y++;
     set_flags(y);
     //     lda (tmp8),y
-    a = ram[((uint16_t)tmp9 << 8 | tmp8) + y];
+    a = ram[tmp89 + y];
     //     beq c8bdb
     if (a == 0)
         goto c8bdb;
@@ -5912,7 +5911,7 @@ static void c9de3_insert_line(void)
     //     ldy #0
     y = 0;
     //     sta (tmp4),y
-    ram[((uint16_t)tmp5 << 8 | tmp4) + y] = a;
+    ram[tmp45 + y] = a;
     //     jmp ca741
     ca741();
     return;
@@ -6908,9 +6907,9 @@ caa82:
     //     dey (6507)
     y--;
     //     lda (tmp2),y (6508)
-    a = ram[((uint16_t)tmp3 << 8 | tmp2) + y];
+    a = ram[tmp23 + y];
     //     sta (tmp8),y (6509)
-    ram[((uint16_t)tmp9 << 8 | tmp8) + y] = a;
+    ram[tmp89 + y] = a;
     //     tya (6510)
     a = y;
     //     bne caa82 (6511)
@@ -6947,7 +6946,7 @@ void process_current_document_character(void)
 {
     // draw_char:
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
+    a = ram[tmp01 + y];
     //     iny
     y++;
     process_document_character();
@@ -8603,7 +8602,7 @@ static void sub_c9ac1(void)
     // c9ad5:
 c9ad5:
     //     lda (tmp4),y
-    a = ram[((uint16_t)tmp5 << 8 | tmp4) + y];
+    a = ram[tmp45 + y];
     //     beq c9b2f
     if (a == 0)
         goto c9b2f;
@@ -8640,7 +8639,7 @@ c9ae9:
     // c9aef:
 c9aef:
     //     lda (tmp8),y
-    a = ram[((uint16_t)tmp9 << 8 | tmp8) + y];
+    a = ram[tmp89 + y];
     //     beq c9b06
     if (a == 0)
         goto c9b06;
@@ -8671,7 +8670,7 @@ c9aef:
     // c9b06:
 c9b06:
     //     lda (tmp4),y
-    a = ram[((uint16_t)tmp5 << 8 | tmp4) + y];
+    a = ram[tmp45 + y];
     //     cmp #0x20 ; ' '
     cmp(a, 0x20);
     //     bne c9b1a
@@ -9110,7 +9109,7 @@ cac58:
     // cac5c:
 cac5c:
     //     lda (tmp8),y
-    a = ram[((uint16_t)tmp9 << 8 | tmp8) + y];
+    a = ram[tmp89 + y];
     //     cmp #0x0d
     cmp(a, 0x0d);
     //     beq cac6f

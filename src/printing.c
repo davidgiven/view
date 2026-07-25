@@ -1683,14 +1683,14 @@ void render_register(void)
     //     bit lada6
     bit_val(lada6);
     //     lda (tmp6),y
-    a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
+    a = ram[tmp67 + y];
     //     sta tmp8
     tmp8 = a;
     //     iny                                                               ;
     //     Y=0x01
     y++;
     //     lda (tmp6),y
-    a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
+    a = ram[tmp67 + y];
     //     sta tmp9
     tmp9 = a;
     //     jsr render_number_to_output_buffer
@@ -1797,7 +1797,7 @@ static void render_number_to_callback(void)
 
     tmp6 = a;
     tmp7 = y;
-    uint16_t value = (uint16_t)tmp8 | ((uint16_t)tmp9 << 8);
+    uint16_t value = tmp89;
     char buf[6];
     snprintf(buf, sizeof(buf), "%u", (unsigned int)value);
     for (char* p = buf; *p; p++)
@@ -1947,7 +1947,7 @@ static void c93b8(void)
     do
     {
         y++;
-        a = ram[((uint16_t)tmp5 << 8 | tmp4) + y];
+        a = ram[tmp45 + y];
     } while ((int8_t)a >= 0);
     //     rts
 }
@@ -2034,7 +2034,7 @@ c9048:
     {
         uint8_t saved_a = a;
         //     lda (tmp0),y
-        a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
+        a = ram[tmp01 + y];
         //     jsr sub_c9431
         sub_c9431();
         //     pla
@@ -2043,7 +2043,7 @@ c9048:
     //     tax
     x = a;
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
+    a = ram[tmp01 + y];
     //     iny
     y++;
     //     cmp #0x1a
@@ -2435,7 +2435,7 @@ c912b:
 
 c8fe6_inline:
     //     lda (tmp0),y
-    a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
+    a = ram[tmp01 + y];
     //     iny
     y++;
     //     jsr sub_c9431
@@ -2767,7 +2767,7 @@ static void print_loop(void)
         // loop_c8f5d:
     loop_c8f5d_l:
         //     lda (tmp0),y
-        a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
+        a = ram[tmp01 + y];
         //     sta current_ruler_buffer,x
         current_ruler_buffer[x] = a;
         //     iny
@@ -2851,7 +2851,7 @@ static void print_loop(void)
         //     ldy #0
         y = 0;
         //     lda (tmp6),y
-        a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
+        a = ram[tmp67 + y];
         set_flags(a);
         //     beq c8f6b
         if (flags & FLAG_Z)
@@ -2859,7 +2859,7 @@ static void print_loop(void)
         //     ldy #2
         y = 2;
         //     lda (tmp6),y
-        a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
+        a = ram[tmp67 + y];
         //     cmp tmp8
         cmp(a, tmp8);
         //     bne get_next_macro_in_linked_list
@@ -2868,7 +2868,7 @@ static void print_loop(void)
         //     iny ; Y=0x03
         y++;
         //     lda (tmp6),y
-        a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
+        a = ram[tmp67 + y];
         //     cmp tmp9
         cmp(a, tmp9);
         //     beq c8fb9
@@ -2879,14 +2879,14 @@ static void print_loop(void)
         //     ldy #0
         y = 0;
         //     lda (tmp6),y
-        a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
+        a = ram[tmp67 + y];
         //     pha
         {
             uint8_t saved_tmp = a;
             //     iny ; Y=0x01
             y++;
             //     lda (tmp6),y
-            a = ram[((uint16_t)tmp7 << 8 | tmp6) + y];
+            a = ram[tmp67 + y];
             //     sta tmp7
             tmp7 = a;
             //     pla
@@ -2966,7 +2966,7 @@ static void print_loop(void)
         // c8fe6:
     c8fe6_l:
         //     lda (tmp0),y
-        a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
+        a = ram[tmp01 + y];
         //     iny
         y++;
         //     jsr sub_c9431
@@ -3214,7 +3214,7 @@ static void render_header_or_footer(void)
     //     sty l0082
     l0082 = y;
     //     lda (tmp4),y
-    a = ram[((uint16_t)tmp5 << 8 | tmp4) + y];
+    a = ram[tmp45 + y];
     //     beq return_28
     if (a == 0)
         return;
@@ -3838,7 +3838,7 @@ loop_c9247:
     if (a == 0)
         return;
     //     sta (tmp0),y
-    ram[((uint16_t)tmp1 << 8 | tmp0) + y] = a;
+    ram[tmp01 + y] = a;
     //     inc ptr6
     ptr6++;
     //     bne c9254
@@ -4034,7 +4034,7 @@ static void sub_c93c8(void)
     // c93ce:
 c93ce:
     //     lda (tmp2),y
-    a = ram[((uint16_t)tmp3 << 8 | tmp2) + y];
+    a = ram[tmp23 + y];
     set_flags(a);
     //     bmi c93e6
     if (flags & FLAG_N)
@@ -4090,7 +4090,7 @@ return_30:
     // c93f2:
 c93f2:
     //     lda (tmp2),y
-    a = ram[((uint16_t)tmp3 << 8 | tmp2) + y];
+    a = ram[tmp23 + y];
     set_flags(a);
     //     bmi c93e6
     if (flags & FLAG_N)
