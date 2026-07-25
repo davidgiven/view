@@ -816,13 +816,13 @@ c8598:
     //     sec
     flags |= FLAG_C;
     //     sbc tmp0
-    sbc(&flags, (uint8_t)(tmp0 & 0xff));
+    a = sbc(&flags, a, (uint8_t)(tmp0 & 0xff));
     //     sta tmp6
     tmp6 = a;
     //     lda ptr5+1
     a = (uint8_t)((ptr5 >> 8) & 0xff);
     //     sbc tmp1
-    sbc(&flags, (uint8_t)(tmp1 & 0xff));
+    a = sbc(&flags, a, (uint8_t)(tmp1 & 0xff));
     //     sta tmp7
     tmp7 = a;
     //     jsr adjust_pointers
@@ -929,13 +929,13 @@ c8a87:
     flags |= FLAG_C;
     //     sbc ptr2
     flags |= FLAG_C;
-    sbc(&flags, (uint8_t)(ptr2 & 0xff));
+    a = sbc(&flags, a, (uint8_t)(ptr2 & 0xff));
     //     sta input_buffer_offset+1
     l0080 = a;
     //     lda doc_ptr2+1
     a = (uint8_t)(doc_ptr2 >> 8);
     //     sbc ptr2+1
-    sbc(&flags, (uint8_t)(ptr2 >> 8));
+    a = sbc(&flags, a, (uint8_t)(ptr2 >> 8));
     //     sta l0081
     l0081 = a;
     //     ldx l0082
@@ -1014,7 +1014,7 @@ c8ada:
     //     sty l0081
     l0081 = y;
     //     bit print_xpos
-    bit(&flags, print_xpos);
+    bit(&flags, a, print_xpos);
     //     bmi c8b11
     if (flags & FLAG_N)
         goto c8b11;
@@ -1184,7 +1184,7 @@ c8b47:
 c8b4d:
     // c8b4d:
     //     bit folding_flag
-    bit(&flags, folding_flag);
+    bit(&flags, a, folding_flag);
     //     bmi c8b64
     if (flags & FLAG_N)
         goto c8b64;
@@ -1391,11 +1391,11 @@ static void compute_space_common(void)
     // c8dce:
     //     lda tmp6; sbc tmp8; sta tmp6
     a = tmp6;
-    sbc(&flags, tmp8);
+    a = sbc(&flags, a, tmp8);
     tmp6 = a;
     //     lda tmp7; sbc tmp9; sta tmp7
     a = tmp7;
-    sbc(&flags, tmp9);
+    a = sbc(&flags, a, tmp9);
     tmp7 = a;
     //     lda tmp0; clc; adc tmp6; sta ptr5; pha
     //     lda tmp1; adc tmp7; sta ptr5+1; sta l0081; pla
@@ -1403,7 +1403,7 @@ static void compute_space_common(void)
     l0081 = (uint8_t)(ptr5 >> 8);
     a = (uint8_t)ptr5;
     //     sbc #0x8b
-    sbc(&flags, 0x8b);
+    a = sbc(&flags, a, 0x8b);
     //     sta input_buffer_offset+1
     l0080 = a;
     //     bcs return_18
@@ -1478,7 +1478,7 @@ void check_continuous_editing(void)
 
     // check_continuous_editing:
     //     bit file_edit_flags
-    bit(&flags, file_edit_flags);
+    bit(&flags, a, file_edit_flags);
     //     bvs c8e5d
     if (flags & FLAG_V)
         goto c8e5d;

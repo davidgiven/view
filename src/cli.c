@@ -408,7 +408,7 @@ c86df:
     //     clc
     flags &= ~FLAG_C;
     //     adc #3
-    adc(&flags, 3);
+    a = adc(&flags, a, 3);
     //     sta tmp0
     tmp0 = a;
     //     bcs c871d
@@ -1263,7 +1263,7 @@ static void save_cmd_write_cmd(void)
     if (flags & FLAG_Z)
     {
         //         bit file_edit_flags
-        bit(&flags, file_edit_flags);
+        bit(&flags, a, file_edit_flags);
         //         zif vc
         if (!(flags & FLAG_V))
         {
@@ -1668,7 +1668,7 @@ void run_cli(void)
     //     jsr display_document_file_state
     display_document_file_state();
     //     bit file_edit_flags
-    bit(&flags, file_edit_flags);
+    bit(&flags, a, file_edit_flags);
     //     bvs c816d
     if (flags & FLAG_V)
         goto c816d;
@@ -1793,7 +1793,7 @@ c81e0:
     //     lsr
     a = asr(&flags, a);
     //     adc #0x31 ; '1'
-    adc(&flags, 0x31);
+    a = adc(&flags, a, 0x31);
     //     jsr screen_putchar
     screen_putchar(a);
     // c81e7:

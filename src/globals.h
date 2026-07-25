@@ -43,25 +43,27 @@ static inline void cmp(uint8_t *flags, uint8_t reg, uint8_t value)
     *flags = (*flags & ~(FLAG_Z | FLAG_N | FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) |
             ((uint8_t)tmp_ & FLAG_N) | ((uint16_t)reg >= value ? FLAG_C : 0);
 }
-static inline void adc(uint8_t *flags, uint8_t value)
+static inline uint8_t adc(uint8_t *flags, uint8_t a, uint8_t value)
 {
     uint16_t tmp_ = (uint16_t)a + value + (*flags & FLAG_C ? 1 : 0);
     *flags = (*flags & ~FLAG_C) | (tmp_ > 0xff ? FLAG_C : 0);
     a = (uint8_t)tmp_;
     set_flags(flags, a);
+    return a;
 }
-static inline void sbc(uint8_t *flags, uint8_t value)
+static inline uint8_t sbc(uint8_t *flags, uint8_t a, uint8_t value)
 {
     uint16_t tmp_ = (uint16_t)a - value - (1 - (*flags & FLAG_C ? 1 : 0));
     *flags = (*flags & ~FLAG_C) | (tmp_ <= 0xff ? FLAG_C : 0);
     a = (uint8_t)tmp_;
     set_flags(flags, a);
+    return a;
 }
-static inline void bit(uint8_t *flags, uint8_t value)
+static inline void bit(uint8_t *flags, uint8_t a, uint8_t value)
 {
     uint8_t tmp_ = a & value;
     *flags = (*flags & ~(FLAG_Z | FLAG_N | FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) |
-            (value & (FLAG_N | FLAG_V));
+             (value & (FLAG_N | FLAG_V));
 }
 static inline uint8_t rol(uint8_t *flags, uint8_t value)
 {
@@ -85,12 +87,6 @@ static inline uint8_t asr(uint8_t *flags, uint8_t value)
     value >>= 1;
     set_flags(flags, value);
     return value;
-}
-static inline void bit_val(uint8_t *flags, uint8_t value)
-{
-    uint8_t tmp_ = a & value;
-    *flags = (*flags & ~(FLAG_Z | FLAG_N | FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) |
-            (value & (FLAG_N | FLAG_V));
 }
 
 // Global variables (shared between view.c and printing.c)

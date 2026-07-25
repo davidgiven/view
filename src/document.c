@@ -55,13 +55,13 @@ void compute_bytes_free(void)
     flags |= FLAG_C;
     //     sbc top
     flags |= FLAG_C;
-    sbc(&flags, (uint8_t)(top & 0xff));
+    a = sbc(&flags, a, (uint8_t)(top & 0xff));
     //     tax
     x = a;
     //     lda himem+1
     a = (uint8_t)(himem >> 8);
     //     sbc top+1
-    sbc(&flags, (uint8_t)(top >> 8));
+    a = sbc(&flags, a, (uint8_t)(top >> 8));
     //     tay
     y = a;
     // return_84:
@@ -136,7 +136,7 @@ loop_c89fa:
 c8a07:
     // c8a07:
     //     bit file_edit_flags
-    bit(&flags, file_edit_flags);
+    bit(&flags, a, file_edit_flags);
     //     bvs c8a19
     if (flags & FLAG_V)
         goto c8a19;
@@ -347,7 +347,7 @@ void process_document_character(void)
     if (!(y & 0x80))
         goto ca5cf;
     //     sbc #0x1b
-    sbc(&flags, 0x1b);
+    a = sbc(&flags, a, 0x1b);
     //     tax
     x = a;
     //     lda highlight1_code,x
@@ -405,7 +405,7 @@ loop_ca5e5:
     a = y;
 ca5f1:
     //     sbc l0039
-    sbc(&flags, l0039);
+    a = sbc(&flags, a, l0039);
     //     tax
     x = a;
     //     beq ca5f8
@@ -581,7 +581,7 @@ loop_cadf4:
     if (!(flags & FLAG_C))
         goto cadff;
     //     sbc l0046
-    sbc(&flags, l0046);
+    a = sbc(&flags, a, l0046);
     //     inc tmp8
     tmp8++;
     // cadff:
@@ -612,7 +612,7 @@ void cab91(void)
     //     lda (oshwm),y
     a = ram[oshwm + y];
     //     adc #3
-    adc(&flags, 3);
+    a = adc(&flags, a, 3);
     //     sta current_ruler_ptr
     current_ruler_ptr = (current_ruler_ptr & 0xff00) | a;
     //     dey
@@ -620,7 +620,7 @@ void cab91(void)
     //     lda (oshwm),y
     a = ram[oshwm + y];
     //     adc #0
-    adc(&flags, 0);
+    a = adc(&flags, a, 0);
     //     sta current_ruler_ptr+1
     current_ruler_ptr = (current_ruler_ptr & 0x00ff) | ((uint16_t)a << 8);
     // MULTIPLE ENTRY POINTS: pop_from_ruler_index, cab91
@@ -715,7 +715,7 @@ loop_cb0e9:
     //     clc
     flags &= ~FLAG_C;
     //     adc #6
-    adc(&flags, 6);
+    a = adc(&flags, a, 6);
     //     cmp screen_width
     cmp(&flags, a, screen_maxcolumn);
     //     beq cb0ff
@@ -787,18 +787,18 @@ void get_register_address(void)
     {
         uint8_t saved_a = a;
         //     sbc #0x40 ; '@'
-        sbc(&flags, 0x40);
+        a = sbc(&flags, a, 0x40);
         //     asl
         a <<= 1;
         //     adc #<register_value_array
         flags &= ~FLAG_C;
-        adc(&flags, (uint8_t)(RAM_REGISTER_VALUE_ARRAY & 0xff));
+        a = adc(&flags, a, (uint8_t)(RAM_REGISTER_VALUE_ARRAY & 0xff));
         //     sta tmp6
         tmp6 = a;
         //     lda #>register_value_array
         a = (uint8_t)(RAM_REGISTER_VALUE_ARRAY >> 8);
         //     adc #0
-        adc(&flags, 0);
+        a = adc(&flags, a, 0);
         //     sta tmp7
         tmp7 = a;
         //     pla
@@ -890,7 +890,7 @@ void initialise_document(void)
     //     clc
     flags &= ~FLAG_C;
     //     adc #3
-    adc(&flags, 3);
+    a = adc(&flags, a, 3);
     //     sta current_edit_line_ptr
     //     sta current_format_line_ptr
     current_edit_line_ptr = (current_edit_line_ptr & 0xff00) | a;
@@ -900,7 +900,7 @@ void initialise_document(void)
     //     sta ptr1+1
     ptr1 = (ptr1 & 0x00ff) | ((uint16_t)a << 8);
     //     adc #0
-    adc(&flags, 0);
+    a = adc(&flags, a, 0);
     //     sta current_edit_line_ptr+1
     //     sta current_format_line_ptr+1
     current_edit_line_ptr =
@@ -1046,7 +1046,7 @@ cabf9:
     //     clc
     flags &= ~FLAG_C;
     //     adc tmp0
-    adc(&flags, tmp0);
+    a = adc(&flags, a, tmp0);
     //     bcc cac0b
     if (!(flags & FLAG_C))
         goto cac0b;
@@ -1092,7 +1092,7 @@ cac20:
     //     sec
     flags |= FLAG_C;
     //     sbc current_line_ptr
-    sbc(&flags, (uint8_t)(current_line_ptr & 0xff));
+    a = sbc(&flags, a, (uint8_t)(current_line_ptr & 0xff));
     //     tax
     x = a;
     //     ldy #0
@@ -1116,7 +1116,7 @@ cac20:
     //     sec
     flags |= FLAG_C;
     //     sbc #3
-    sbc(&flags, 3);
+    a = sbc(&flags, a, 3);
     //     tax
     x = a;
     // cac3e:
@@ -1192,7 +1192,7 @@ void move_tmp01_to_previous_line(void)
     //     sec
     flags |= FLAG_C;
     //     sbc #1
-    sbc(&flags, 1);
+    a = sbc(&flags, a, 1);
     //     sta tmp0
     tmp0 = a;
     //     bcs cab3f
@@ -1228,7 +1228,7 @@ loop_cab4d:
     //     sec
     flags |= FLAG_C;
     //     sbc #1
-    sbc(&flags, 1);
+    a = sbc(&flags, a, 1);
     //     sta tmp0
     tmp0 = a;
     //     bcs cab58
