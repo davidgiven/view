@@ -69,7 +69,6 @@ jmp_buf env;
 
 // Forward declarations
 void check_continuous_editing(void);
-void reset_document_name_after_load(void);
 void parse_filename_from_command(void);
 
 uint8_t check_for_command_prefix(uint8_t ch);
@@ -78,7 +77,6 @@ void sub_c8412(void);
 void sub_c8c7c(void);
 void sub_c83f0(void);
 void sub_c8a4f(void);
-void parse_marks_from_command(void);
 void sub_c8361(void);
 void sub_c8371(void);
 void write_area_to_file(void);
@@ -92,22 +90,12 @@ static void print_char(void);
 static void compute_space_common(void);
 void check_for_control_code(void);
 
-void prepare_printer_driver(void);
-static void default_print_char(void);
-static void default_printer_on(void);
-static void default_printer_off(void);
-static void default_printer_entry3(void);
-static void parse_mark_from_command(void);
 static void system_init(void);
-static const struct printer_driver default_printer_driver;
-void parse_command(void);
 
 
-void set_document_name_to_filename_buffer(void);
 // Forward declarations for recently translated functions
 static void compute_required_space_for_insertion(void);
 static void page_eject_fmt(void);
-void parse_integer_from_command(void);
  static bool sub_c9aa9(void);
 
 #include "io.h"
@@ -420,11 +408,7 @@ int main(int argc, char* argv[]) {
     run_cli();
     return 0;
 }
-void run_editor(void) {
-    // run_editor: Enter editor mode and jump to editor loop.
-    enter_editor_mode();
-    longjmp(env, JMP_EDITOR);
-}
+// run_editor moved to editor.c
 static void sub_c8310(void) {
     // sub_c8310:
     //     iny
@@ -737,165 +721,6 @@ c8598:
     tmp7 = a;
     //     jsr adjust_pointers
     adjust_pointers();
-}
-void parse_integer_from_command(void) {
-    // Pseudocode: Parses a decimal integer from the command input buffer
-
-    // ; ***************************************************************************************
-    // parse_integer_from_command:
-    //     lda #<(input_buffer)
-    a = (uint8_t)((uintptr_t)input_buffer & 0xff);
-    //     sta current_format_line_ptr
-    current_format_line_ptr = (current_format_line_ptr & 0xff00) | a;
-    //     lda #>(input_buffer)
-    a = (uint8_t)(((uintptr_t)input_buffer >> 8) & 0xff);
-    //     sta current_format_line_ptr+1
-    current_format_line_ptr = (current_format_line_ptr & 0x00ff) | ((uint16_t)a << 8);
-    //     jsr sub_c8e33
-    sub_c8e33();
-    //     beq return_8
-    if (flags & FLAG_Z) return;
-    //     jmp ca6fe
-    parse_decimal_number(); return;
-}
-void file_not_found_error(void) {
-    // Pseudocode: Displays File not found error and returns to CLI
-
-    // ; ***************************************************************************************
-    // file_not_found_error:
-    //     jsr stop_printing
-    stop_printing();
-    //     jsr print_inline_string
-    //     .ascii "File not found\r"
-    //     .byte 0
-    cli_putstring("File not found\n");
-    //     jmp return_to_cli_prompt
-    return_to_cli_prompt(); return;
-}
-void reset_document_name_after_load(void) {
-    // Pseudocode: Sets file_edit_flags to indicate a document is loaded
-
-    // reset_document_name_after_load:
-    //     lda #0x40 ; '@'
-    a = 0x40;
-    //     sta file_edit_flags
-    file_edit_flags = a;
-    // fall through to set_document_name_to_filename_buffer
-    set_document_name_to_filename_buffer();
-
-    // MULTIPLE ENTRY POINTS: name_cmd, reset_document_name_after_load
-}
-void set_document_name_to_filename_buffer(void) {
-    // Pseudocode: Copies filename buffer to input filename buffer
-
-    // set_document_name_to_filename_buffer:
-    //     ldx #0
-    x = 0;
-    // loop_c88fa:
-loop_c88fa:
-    //     lda filename_buffer,x
-    a = filename_buffer[x];
-    //     sta input_filename,x
-    input_filename[x] = a;
-    //     inx
-    x++;
-    //     cmp #0x21
-    cmp(a, 0x21);
-    //     bge loop_c88fa
-    if (flags & FLAG_C) goto loop_c88fa;
-    // return_9:
-return_9:
-    //     lda #0x0d
-    a = 0x0d;
-    //     sta input_filename-1, x
-    input_filename[x-1] = a;
-    //     rts
-    return;
-
-    // MULTIPLE ENTRY POINTS: also called directly from edit_cmd
-}
-void file_error(void) {
-    // Pseudocode: Displays File error and returns to CLI
-
-    // ; ***************************************************************************************
-    // zproc file_error
-    //     jsr print_inline_string
-    //     .ascii "File error"
-    //     .byte 0
-    cli_putstring("File error");
-    //     jmp return_to_cli_prompt
-    return_to_cli_prompt(); return;
-    // zendproc
-}
-void zero_terminate_filename_buffer(void) {
-    // zero_terminate_filename_buffer:
-    //     ldx #0
-    x = 0;
-    //     lda #0x0d
-    a = 0x0d;
-    // zloop:
-zloop:
-    //     cmp filename_buffer, x
-    cmp(a, filename_buffer[x]);
-    //     zbreakif eq
-    if (flags & FLAG_Z) goto zbreak;
-    //     inx
-    x++;
-    //     bne zloop
-    goto zloop;
-zbreak:
-    //     lda #0
-    a = 0;
-    //     sta filename_buffer, x
-    filename_buffer[x] = a;
-    //     rts
-}
-void parse_marks_from_command(void) {
-    // parse_marks_from_command:
-    //     jsr reset_area_to_entire_document
-    reset_area_to_entire_document();
-    //     jsr parse_mark_from_command
-    parse_mark_from_command();
-    //     beq return_11
-    if (flags & FLAG_Z) return;
-    //     sta area_start_ptr
-    area_start_ptr = (area_start_ptr & 0xff00) | a;
-    //     sty area_start_ptr+1
-    area_start_ptr = (area_start_ptr & 0x00ff) | ((uint16_t)y << 8);
-    //     jsr parse_mark_from_command
-    parse_mark_from_command();
-    //     beq return_11
-    if (flags & FLAG_Z) return;
-    //     sta area_end_ptr
-    area_end_ptr = (area_end_ptr & 0xff00) | a;
-    //     sty area_end_ptr+1
-    area_end_ptr = (area_end_ptr & 0x00ff) | ((uint16_t)y << 8);
-    // return_11:
-    //     rts
-}
-static void parse_mark_from_command(void) {
-    // parse_mark_from_command:
-    //     jsr sub_c8e33
-    sub_c8e33();
-    //     beq return_12
-    if (flags & FLAG_Z) return;
-    //     iny
-    y++;
-    //     sty input_buffer_offset
-    input_buffer_offset = y;
-    //     jsr lookup_marker
-    lookup_marker();
-    //     bcs c89b3 / c89b3: jsr print_inline_string ; .ascii "Bad marker" ; .byte 0xff
-    if (flags & FLAG_C) { cli_putstring("Bad marker\n"); return_to_cli_prompt(); return; }
-    //     beq c89c1 / c89c1: jsr print_inline_string ; .ascii "Marker not set" ; .byte 0xff
-    if (flags & FLAG_Z) { cli_putstring("Marker not set\n"); return_to_cli_prompt(); return; }
-    //     lda markers_array,x
-    a = (uint8_t)(markers_array[x] & 0xff);
-    //     ldy markers_array+1,x
-    y = (uint8_t)(markers_array[x] >> 8);
-    set_flags(y);
-    // return_12:
-    //     rts
 }
 void sub_c8a4f(void) {
     // sub_c8a4f:
@@ -1549,176 +1374,8 @@ static void display_nl_then_no_text(void) {
     cli_putchar('\n');
     display_no_text();
 }
-void prepare_printer_driver(void) {
-    // Pseudocode: Sets up printer driver pointer from name or default driver
-
-    // ; ***************************************************************************************
-    // prepare_printer_driver:
-    //     ldx #<printer_driver_block
-    //     ldy #>printer_driver_block
-    //     lda printer_driver_name
-    //     bne c949e
-    //     ldx default_printer_driver_ptr
-    //     ldy l94b2
-    //     lda #0
-    //     sta microspacing_flag
-    a = 0;
-    microspacing_flag = a;
-    printer_driver_ptr = &default_printer_driver;
-    // c949e:
-    //     stx printer_driver_ptr
-    //     sty printer_driver_ptr+1
-    // return_35:
-    //     rts
-}
-static void default_print_char(void) {
-    // c94c0:
-    //     cmp #0x80
-    //     bcs return_35
-    if (a >= 0x80) return;
-    //     jmp bdos_print_char
-    cli_putchar(a);
-}
-
-// Default printer_on: init / set mode
-static void default_printer_on(void) {
-    // c94c7:
-    //     lda #2
-    a = 2;
-    //     jmp default_printer_off
-    default_printer_off();
-}
-
-// Default printer_off: write char with mode byte
-static void default_printer_off(void) {
-    // c94cb:
-    //     lda #3
-    a = 3;
-    // c94cd:
-    //     jmp oswrch
-    // PROBLEM: jmp oswrch (BBC Micro OS call - not available)
-}
-
-// Default printer driver entry 3: no-op
-static void default_printer_entry3(void) {
-}
-
-static const struct printer_driver default_printer_driver = {
-    .print_char   = default_print_char,
-    .printer_on   = default_printer_on,
-    .printer_off  = default_printer_off,
-    .entry3       = default_printer_entry3,
-};
-void parse_command(void) {
-    // Pseudocode: Parses command input against parser_table to identify command number
-
-    // la83d:
-    //     .ascii "VIEW"
-    //     .byte 0
-    //     .ascii "B3.0 for CP/M-65"
-    //     .byte 0
-
-    // ; ***************************************************************************************
-    // parse_command:
-    //     lda #0xff
-    a = 0xff;
-    //     sta l0082
-    l0082 = a;
-    //     tax                                                               ; X=0xff
-    x = a;
-    // ca84c:
-ca84c:
-    //     ldy input_buffer_offset
-    y = input_buffer_offset;
-    //     dey
-    y--;
-    //     inc l0082
-    l0082++;
-    // loop_ca851:
-loop_ca851:
-    //     inx
-    x++;
-    //     iny
-    y++;
-    //     lda (tmp0),y
-    a = input_buffer[y];
-    //     and #0xdf
-    a &= 0xdf;
-    //     sta l0084
-    l0084 = a;
-    //     lda parser_table,x
-    a = parser_table[x];
-    set_flags(a);
-    //     beq ca890
-    if (flags & FLAG_Z) goto ca890;
-    //     bmi ca87e
-    if (flags & FLAG_N) goto ca87e;
-    //     eor #0x5b ; '['
-    a ^= 0x5b;
-    //     sta l0083
-    l0083 = a;
-    //     and #0xdf
-    a &= 0xdf;
-    //     cmp l0084
-    cmp(a, l0084);
-    //     beq loop_ca851
-    if (flags & FLAG_Z) goto loop_ca851;
-    // loop_ca86a:
-loop_ca86a:
-    //     inx
-    x++;
-    //     lda parser_table,x
-    a = parser_table[x];
-    set_flags(a);
-    //     beq ca890
-    if (flags & FLAG_Z) goto ca890;
-    //     bpl loop_ca86a
-    if (!(flags & FLAG_N)) goto loop_ca86a;
-    //     lda l0083
-    a = l0083;
-    //     and #0x20 ; ' '
-    a &= 0x20;
-    flags = (flags & ~FLAG_Z) | (a == 0 ? FLAG_Z : 0);
-    //     beq ca84c
-    if (flags & FLAG_Z) goto ca84c;
-    //     lda (tmp0),y
-    a = input_buffer[y];
-    //     cmp #0x30 ; '0'
-    cmp(a, 0x30);
-    //     bcs ca84c
-    if (flags & FLAG_C) goto ca84c;
-    // ca87e:
-ca87e:
-    //     lda (tmp0),y
-    a = input_buffer[y];
-    //     cmp #0x30 ; '0'
-    cmp(a, 0x30);
-    //     bcs ca887
-    if (flags & FLAG_C) goto ca887;
-    //     sta l007e
-    l007e = a;
-    //     iny
-    y++;
-    // ca887:
-ca887:
-    //     sty input_buffer_offset
-    input_buffer_offset = y;
-    //     ldy l0082
-    y = l0082;
-    //     lda parser_table,x
-    a = parser_table[x];
-    //     clc
-    flags &= ~FLAG_C;
-    //     rts
-    return;
-
-    // ca890:
-ca890:
-    //     sec
-    flags |= FLAG_C;
-    //     rts
-    return;
-}
+// prepare_printer_driver, default_printer_* moved to printing.c
+// parse_command moved to cli.c
 static void system_init(void) {
     himem = 0xffff;
     oshwm = 0x0800;

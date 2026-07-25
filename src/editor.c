@@ -233,7 +233,10 @@ void return_to_editor_loop(void) {
 
 }
 
-
+void run_editor(void) {
+    enter_editor_mode();
+    longjmp(env, JMP_EDITOR);
+}
 
 void editor_loop_impl(void) {
 

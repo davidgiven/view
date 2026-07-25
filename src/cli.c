@@ -3,6 +3,17 @@
 #include "printing.h"
 #include "io.h"
 #include <stdlib.h>
+void parse_mark_from_command(void);
+
+// Forward declarations for CLI utilities
+void file_error(void);
+void file_not_found_error(void);
+void parse_integer_from_command(void);
+void parse_marks_from_command(void);
+void reset_document_name_after_load(void);
+void set_document_name_to_filename_buffer(void);
+void zero_terminate_filename_buffer(void);
+
 
 // Forward declarations for static CLI command functions
 static void bye_cmd(void);
@@ -1256,6 +1267,8 @@ ca832:
     return;
 }
 
+static void parse_command(void);
+
 void input_line_not_escaped(void) {
     // input_line_not_escaped: Parses command input and dispatches through CLI jump table
 
@@ -1474,5 +1487,283 @@ c81f3:
     //     jsr bdos_print_newline
     cli_putchar('\n');
     return_to_cli_prompt();
+}
+
+// CLI command parser
+static void parse_command(void) {
+    //     .ascii "VIEW"
+    //     .byte 0
+    //     .ascii "B3.0 for CP/M-65"
+    //     .byte 0
+
+    // ; ***************************************************************************************
+    // parse_command:
+    //     lda #0xff
+    a = 0xff;
+    //     sta l0082
+    l0082 = a;
+    //     tax                                                               ; X=0xff
+    x = a;
+    // ca84c:
+ca84c:
+    //     ldy input_buffer_offset
+    y = input_buffer_offset;
+    //     dey
+    y--;
+    //     inc l0082
+    l0082++;
+    // loop_ca851:
+loop_ca851:
+    //     inx
+    x++;
+    //     iny
+    y++;
+    //     lda (tmp0),y
+    a = input_buffer[y];
+    //     and #0xdf
+    a &= 0xdf;
+    //     sta l0084
+    l0084 = a;
+    //     lda parser_table,x
+    a = parser_table[x];
+    set_flags(a);
+    //     beq ca890
+    if (flags & FLAG_Z) goto ca890;
+    //     bmi ca87e
+    if (flags & FLAG_N) goto ca87e;
+    //     eor #0x5b ; '['
+    a ^= 0x5b;
+    //     sta l0083
+    l0083 = a;
+    //     and #0xdf
+    a &= 0xdf;
+    //     cmp l0084
+    cmp(a, l0084);
+    //     beq loop_ca851
+    if (flags & FLAG_Z) goto loop_ca851;
+    // loop_ca86a:
+loop_ca86a:
+    //     inx
+    x++;
+    //     lda parser_table,x
+    a = parser_table[x];
+    set_flags(a);
+    //     beq ca890
+    if (flags & FLAG_Z) goto ca890;
+    //     bpl loop_ca86a
+    if (!(flags & FLAG_N)) goto loop_ca86a;
+    //     lda l0083
+    a = l0083;
+    //     and #0x20 ; ' '
+    a &= 0x20;
+    flags = (flags & ~FLAG_Z) | (a == 0 ? FLAG_Z : 0);
+    //     beq ca84c
+    if (flags & FLAG_Z) goto ca84c;
+    //     lda (tmp0),y
+    a = input_buffer[y];
+    //     cmp #0x30 ; '0'
+    cmp(a, 0x30);
+    //     bcs ca84c
+    if (flags & FLAG_C) goto ca84c;
+    // ca87e:
+ca87e:
+    //     lda (tmp0),y
+    a = input_buffer[y];
+    //     cmp #0x30 ; '0'
+    cmp(a, 0x30);
+    //     bcs ca887
+    if (flags & FLAG_C) goto ca887;
+    //     sta l007e
+    l007e = a;
+    //     iny
+    y++;
+    // ca887:
+ca887:
+    //     sty input_buffer_offset
+    input_buffer_offset = y;
+    //     ldy l0082
+    y = l0082;
+    //     lda parser_table,x
+    a = parser_table[x];
+    //     clc
+    flags &= ~FLAG_C;
+    //     rts
+    return;
+
+    // ca890:
+ca890:
+    //     sec
+    flags |= FLAG_C;
+    //     rts
+    return;
+}
+
+// CLI utility functions
+void file_error(void) {
+    // Pseudocode: Displays File error and returns to CLI
+
+    // ; ***************************************************************************************
+    // zproc file_error
+    //     jsr print_inline_string
+    //     .ascii "File error"
+    //     .byte 0
+    cli_putstring("File error");
+    //     jmp return_to_cli_prompt
+    return_to_cli_prompt(); return;
+    // zendproc
+}
+
+void file_not_found_error(void) {
+    // Pseudocode: Displays File not found error and returns to CLI
+
+    // ; ***************************************************************************************
+    // file_not_found_error:
+    //     jsr stop_printing
+    stop_printing();
+    //     jsr print_inline_string
+    //     .ascii "File not found\r"
+    //     .byte 0
+    cli_putstring("File not found\n");
+    //     jmp return_to_cli_prompt
+    return_to_cli_prompt(); return;
+}
+
+void parse_integer_from_command(void) {
+    // Pseudocode: Parses a decimal integer from the command input buffer
+
+    // ; ***************************************************************************************
+    // parse_integer_from_command:
+    //     lda #<(input_buffer)
+    a = (uint8_t)((uintptr_t)input_buffer & 0xff);
+    //     sta current_format_line_ptr
+    current_format_line_ptr = (current_format_line_ptr & 0xff00) | a;
+    //     lda #>(input_buffer)
+    a = (uint8_t)(((uintptr_t)input_buffer >> 8) & 0xff);
+    //     sta current_format_line_ptr+1
+    current_format_line_ptr = (current_format_line_ptr & 0x00ff) | ((uint16_t)a << 8);
+    //     jsr sub_c8e33
+    sub_c8e33();
+    //     beq return_8
+    if (flags & FLAG_Z) return;
+    //     jmp ca6fe
+    parse_decimal_number(); return;
+}
+
+void parse_marks_from_command(void) {
+    // parse_marks_from_command:
+    //     jsr reset_area_to_entire_document
+    reset_area_to_entire_document();
+    //     jsr parse_mark_from_command
+    parse_mark_from_command();
+    //     beq return_11
+    if (flags & FLAG_Z) return;
+    //     sta area_start_ptr
+    area_start_ptr = (area_start_ptr & 0xff00) | a;
+    //     sty area_start_ptr+1
+    area_start_ptr = (area_start_ptr & 0x00ff) | ((uint16_t)y << 8);
+    //     jsr parse_mark_from_command
+    parse_mark_from_command();
+    //     beq return_11
+    if (flags & FLAG_Z) return;
+    //     sta area_end_ptr
+    area_end_ptr = (area_end_ptr & 0xff00) | a;
+    //     sty area_end_ptr+1
+    area_end_ptr = (area_end_ptr & 0x00ff) | ((uint16_t)y << 8);
+    // return_11:
+    //     rts
+}
+
+void reset_document_name_after_load(void) {
+    // Pseudocode: Sets file_edit_flags to indicate a document is loaded
+
+    // reset_document_name_after_load:
+    //     lda #0x40 ; '@'
+    a = 0x40;
+    //     sta file_edit_flags
+    file_edit_flags = a;
+    // fall through to set_document_name_to_filename_buffer
+    set_document_name_to_filename_buffer();
+
+    // MULTIPLE ENTRY POINTS: name_cmd, reset_document_name_after_load
+}
+
+void set_document_name_to_filename_buffer(void) {
+    // Pseudocode: Copies filename buffer to input filename buffer
+
+    // set_document_name_to_filename_buffer:
+    //     ldx #0
+    x = 0;
+    // loop_c88fa:
+loop_c88fa:
+    //     lda filename_buffer,x
+    a = filename_buffer[x];
+    //     sta input_filename,x
+    input_filename[x] = a;
+    //     inx
+    x++;
+    //     cmp #0x21
+    cmp(a, 0x21);
+    //     bge loop_c88fa
+    if (flags & FLAG_C) goto loop_c88fa;
+    // return_9:
+return_9:
+    //     lda #0x0d
+    a = 0x0d;
+    //     sta input_filename-1, x
+    input_filename[x-1] = a;
+    //     rts
+    return;
+
+    // MULTIPLE ENTRY POINTS: also called directly from edit_cmd
+}
+
+void zero_terminate_filename_buffer(void) {
+    // zero_terminate_filename_buffer:
+    //     ldx #0
+    x = 0;
+    //     lda #0x0d
+    a = 0x0d;
+    // zloop:
+zloop:
+    //     cmp filename_buffer, x
+    cmp(a, filename_buffer[x]);
+    //     zbreakif eq
+    if (flags & FLAG_Z) goto zbreak;
+    //     inx
+    x++;
+    //     bne zloop
+    goto zloop;
+zbreak:
+    //     lda #0
+    a = 0;
+    //     sta filename_buffer, x
+    filename_buffer[x] = a;
+    //     rts
+}
+
+
+void parse_mark_from_command(void) {
+    // parse_mark_from_command:
+    //     jsr sub_c8e33
+    sub_c8e33();
+    //     beq return_12
+    if (flags & FLAG_Z) return;
+    //     iny
+    y++;
+    //     sty input_buffer_offset
+    input_buffer_offset = y;
+    //     jsr lookup_marker
+    lookup_marker();
+    //     bcs c89b3 / c89b3: jsr print_inline_string ; .ascii "Bad marker" ; .byte 0xff
+    if (flags & FLAG_C) { cli_putstring("Bad marker\n"); return_to_cli_prompt(); return; }
+    //     beq c89c1 / c89c1: jsr print_inline_string ; .ascii "Marker not set" ; .byte 0xff
+    if (flags & FLAG_Z) { cli_putstring("Marker not set\n"); return_to_cli_prompt(); return; }
+    //     lda markers_array,x
+    a = (uint8_t)(markers_array[x] & 0xff);
+    //     ldy markers_array+1,x
+    y = (uint8_t)(markers_array[x] >> 8);
+    set_flags(y);
+    // return_12:
+    //     rts
 }
 

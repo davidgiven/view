@@ -4,7 +4,6 @@
 #include "globals.h"
 #include "io.h"
 
-extern void call_printer_driver(void);
 extern uint8_t check_for_command_prefix(uint8_t ch);
 extern void check_for_control_code(void);
 extern void compute_bytes_free(void);

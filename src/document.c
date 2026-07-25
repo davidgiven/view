@@ -1,29 +1,10 @@
 #include "document.h"
 #include "io.h"
+#include "printing.h"
 #include <stdio.h>
 #include <ctype.h>
 
-void call_printer_driver(void) {
-    // Pseudocode: Calls a numbered entry point in the printer driver via struct function pointer
-
-    // ; ***************************************************************************************
-    // call_printer_driver:
-    //     clc
-    //     adc printer_driver_ptr          ; A = byte offset into jump table (0,3,6,9)
-    //     sta tmp8
-    //     lda printer_driver_ptr+1
-    //     adc #0
-    //     sta tmp9
-    //     jmp (tmp8)
-    // Replaced with struct dispatch: convert byte offset to entry index
-    switch (a) {
-        case 0:  printer_driver_ptr->print_char(); break;
-        case 3:  printer_driver_ptr->printer_on(); break;
-        case 6:  printer_driver_ptr->printer_off(); break;
-        case 9:  printer_driver_ptr->entry3(); break;
-    }
-}
-// Default print_char: write character (chars >= 0x80 are filtered)
+// call_printer_driver moved to printing.c
 
 uint8_t check_for_command_prefix(uint8_t ch) {
     // check_for_command_prefix:
@@ -728,9 +709,7 @@ void get_register_address(void) {
     // return_77:
     //     rts
 }
-// lada6:
-//     .byte 0x40
-static const uint8_t lada6 = 0x40;
+
 
 
 void initialise_document(void) {

@@ -8,6 +8,14 @@
 #include "document.h"
 
 extern void start_printing(void);
+extern void prepare_printer_driver(void);
+
+// Forward decls for default printer driver
+static void default_print_char(void);
+static void default_printer_on(void);
+static void default_printer_off(void);
+static void default_printer_entry3(void);
+static const struct printer_driver default_printer_driver;
 
 // Printing-only functions
 void bad_filename_error(void);
@@ -3713,3 +3721,86 @@ static void write_cr_to_memory(void) {
     write_byte_to_memory();
 }
 
+
+// Printer driver setup (called from cli.c)
+void call_printer_driver(void) {
+    // Pseudocode: Calls a numbered entry point in the printer driver via struct function pointer
+
+    // ; ***************************************************************************************
+    // call_printer_driver:
+    //     clc
+    //     adc printer_driver_ptr          ; A = byte offset into jump table (0,3,6,9)
+    //     sta tmp8
+    //     lda printer_driver_ptr+1
+    //     adc #0
+    //     sta tmp9
+    //     jmp (tmp8)
+    // Replaced with struct dispatch: convert byte offset to entry index
+    switch (a) {
+        case 0:  printer_driver_ptr->print_char(); break;
+        case 3:  printer_driver_ptr->printer_on(); break;
+        case 6:  printer_driver_ptr->printer_off(); break;
+        case 9:  printer_driver_ptr->entry3(); break;
+    }
+}
+
+void prepare_printer_driver(void) {
+    // Pseudocode: Sets up printer driver pointer from name or default driver
+
+    // ; ***************************************************************************************
+    // prepare_printer_driver:
+    //     ldx #<printer_driver_block
+    //     ldy #>printer_driver_block
+    //     lda printer_driver_name
+    //     bne c949e
+    //     ldx default_printer_driver_ptr
+    //     ldy l94b2
+    //     lda #0
+    //     sta microspacing_flag
+    a = 0;
+    microspacing_flag = a;
+    printer_driver_ptr = &default_printer_driver;
+    // c949e:
+    //     stx printer_driver_ptr
+    //     sty printer_driver_ptr+1
+    // return_35:
+    //     rts
+}
+static void default_print_char(void) {
+    // c94c0:
+    //     cmp #0x80
+    //     bcs return_35
+    if (a >= 0x80) return;
+    //     jmp bdos_print_char
+    cli_putchar(a);
+}
+
+// Default printer_on: init / set mode
+static void default_printer_on(void) {
+    // c94c7:
+    //     lda #2
+    a = 2;
+    //     jmp default_printer_off
+    default_printer_off();
+}
+
+// Default printer_off: write char with mode byte
+static void default_printer_off(void) {
+    // c94cb:
+    //     lda #3
+    a = 3;
+    // c94cd:
+    //     jmp oswrch
+    // PROBLEM: jmp oswrch (BBC Micro OS call - not available)
+}
+
+// Default printer driver entry 3: no-op
+static void default_printer_entry3(void) {
+}
+
+static const struct printer_driver default_printer_driver = {
+    .print_char   = default_print_char,
+    .printer_on   = default_printer_on,
+    .printer_off  = default_printer_off,
+    .entry3       = default_printer_entry3,
+};

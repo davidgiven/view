@@ -5,5 +5,7 @@
 
 // Functions defined in printing.c, called from view.c
 extern void execute_formatting_command(void);
+extern void prepare_printer_driver(void);
+extern void call_printer_driver(void);
 
 #endif

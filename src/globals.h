@@ -105,7 +105,6 @@ extern uint8_t check_for_command_prefix(uint8_t ch);
 extern void check_for_control_code(void);
 extern void render_number_to_screen(void);
 extern void print_char_via_putchar(void);
-extern void parse_command(void);
 // Functions in view.c called by other modules
 extern void sub_c8412(void);
 extern void sub_c8c7c(void);
@@ -123,7 +122,6 @@ extern void write_area_to_file(void);
 extern void read_next_chunk_from_input_file(void);
 extern void read_into_document(void);
 extern void reset_document_name_after_load(void);
-extern void prepare_printer_driver(void);
 extern void parse_integer_from_command(void);
 extern uint8_t l0021, l0031, l0038, l007a;
 #define RAM_REGISTER_VALUE_P (RAM_REGISTER_VALUE_ARRAY + ('P'-'A')*2)
@@ -274,4 +272,5 @@ extern void draw_prompt_characters(void);
 extern void show_memory_full_error(void);
 extern void bad_filename_error(void);
 extern void clear_screen(void);
+extern void parse_mark_from_command(void);
 #endif
