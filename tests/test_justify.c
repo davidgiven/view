@@ -28,14 +28,18 @@ void justify_edit_buffer(void);
 
 static int test_failures;
 
-#define ASSERT(cond, msg) do { \
-    if (!(cond)) { \
-        fprintf(stderr, "FAIL %s\n", msg); \
-        test_failures++; \
-    } \
-} while(0)
+#define ASSERT(cond, msg)                      \
+    do                                         \
+    {                                          \
+        if (!(cond))                           \
+        {                                      \
+            fprintf(stderr, "FAIL %s\n", msg); \
+            test_failures++;                   \
+        }                                      \
+    } while (0)
 
-static void setup_edit_buffer(const char *text) {
+static void setup_edit_buffer(const char* text)
+{
     memset(ram, 0, sizeof(ram));
     int len = strlen(text);
     for (int i = 0; i < len; i++)
@@ -44,7 +48,8 @@ static void setup_edit_buffer(const char *text) {
         ram[BUFFER_ADDR + i] = 0x10;
 }
 
-static void init_globals(const char *text, uint8_t jf, uint8_t rstop) {
+static void init_globals(const char* text, uint8_t jf, uint8_t rstop)
+{
     setup_edit_buffer(text);
     current_edit_line_ptr = BUFFER_ADDR;
     current_format_line_ptr = BUFFER_ADDR;
@@ -65,14 +70,17 @@ static void init_globals(const char *text, uint8_t jf, uint8_t rstop) {
     memset(input_buffer, 0, sizeof(input_buffer));
 }
 
-static void run_justify(const char *text, uint8_t rstop) {
+static void run_justify(const char* text, uint8_t rstop)
+{
     init_globals(text, 0, rstop);
     justify_edit_buffer();
 
     int orig_len = strlen(text);
     int buf_len = 0;
-    for (int i = 0; i < 132; i++) {
-        if (ram[BUFFER_ADDR + i] == 0x10) break;
+    for (int i = 0; i < 132; i++)
+    {
+        if (ram[BUFFER_ADDR + i] == 0x10)
+            break;
         buf_len++;
     }
 
@@ -85,7 +93,8 @@ static void run_justify(const char *text, uint8_t rstop) {
     ASSERT(total_extra > 0, "extra spaces were distributed");
 }
 
-int main(void) {
+int main(void)
+{
     test_failures = 0;
 
     run_justify("The quick brown fox jumps over", 40);

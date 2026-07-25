@@ -11,14 +11,22 @@ extern void create_default_ruler(void);
 
 static int test_failures;
 
-#define ASSERT_EQ(expected, actual, fmt, msg) do { \
-    if ((expected) != (actual)) { \
-        fprintf(stderr, "FAIL %s: expected " fmt " but got " fmt "\n", msg, (expected), (actual)); \
-        test_failures++; \
-    } \
-} while(0)
+#define ASSERT_EQ(expected, actual, fmt, msg)                  \
+    do                                                         \
+    {                                                          \
+        if ((expected) != (actual))                            \
+        {                                                      \
+            fprintf(stderr,                                    \
+                "FAIL %s: expected " fmt " but got " fmt "\n", \
+                msg,                                           \
+                (expected),                                    \
+                (actual));                                     \
+            test_failures++;                                   \
+        }                                                      \
+    } while (0)
 
-int main(void) {
+int main(void)
+{
     test_failures = 0;
 
     uint16_t ruler_addr = 0x8000;
@@ -31,10 +39,13 @@ int main(void) {
     create_default_ruler();
 
     int ruler_len = screen_maxcolumn - 6;
-    for (int i = 0; i < ruler_len; i++) {
+    for (int i = 0; i < ruler_len; i++)
+    {
         uint8_t expected;
-        if ((i & 7) == 7) expected = '*';
-        else expected = '.';
+        if ((i & 7) == 7)
+            expected = '*';
+        else
+            expected = '.';
         char desc[64];
         snprintf(desc, sizeof(desc), "ruler byte %d", i);
         ASSERT_EQ(expected, ram[ruler_addr + i], "%c", desc);

@@ -6,6 +6,11 @@ assembly is preserved as comments above each translated block and is
 the authoritative reference.  **Never modify the 6502 assembly
 comments** — they are needed for correctness verification.
 
+## Formatting
+
+Run `clang-format -i <file>` after every file edit. The project
+root has a `.clang-format` config.
+
 ## Code conventions
 
 - Global `uint8_t` registers `a`, `x`, `y`, `sp`, `flags` simulate the

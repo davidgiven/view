@@ -22,7 +22,6 @@ extern void sub_cabc4(void);
 extern void sub_cadf0(void);
 extern void check_for_at_least_150_bytes_free(void);
 
-
 extern void cab91(void);
 
 extern void cb05a(void);

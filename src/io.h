@@ -7,15 +7,15 @@
 
 // ─── CLI ──────────────────────────────────────────────────────
 extern void cli_putchar(uint8_t c);
-extern void cli_putstring(const char *s);
-extern bool cli_readstring(char *buf, size_t size);
+extern void cli_putstring(const char* s);
+extern bool cli_readstring(char* buf, size_t size);
 // ─── Screen ───────────────────────────────────────────────────
-#define STYLE_NORMAL  0
+#define STYLE_NORMAL 0
 #define STYLE_REVERSE 1
 
-#define SCREEN_KEY_UP    0x8b
-#define SCREEN_KEY_DOWN  0x8a
-#define SCREEN_KEY_LEFT  0x88
+#define SCREEN_KEY_UP 0x8b
+#define SCREEN_KEY_DOWN 0x8a
+#define SCREEN_KEY_LEFT 0x88
 #define SCREEN_KEY_RIGHT 0x89
 
 extern void screen_putchar(uint8_t a);

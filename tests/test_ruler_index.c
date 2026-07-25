@@ -23,14 +23,22 @@ void create_default_ruler(void);
 
 static int test_failures;
 
-#define ASSERT_EQ(expected, actual, fmt, msg) do { \
-    if ((expected) != (actual)) { \
-        fprintf(stderr, "FAIL %s: expected " fmt " but got " fmt "\n", msg, (expected), (actual)); \
-        test_failures++; \
-    } \
-} while(0)
+#define ASSERT_EQ(expected, actual, fmt, msg)                  \
+    do                                                         \
+    {                                                          \
+        if ((expected) != (actual))                            \
+        {                                                      \
+            fprintf(stderr,                                    \
+                "FAIL %s: expected " fmt " but got " fmt "\n", \
+                msg,                                           \
+                (expected),                                    \
+                (actual));                                     \
+            test_failures++;                                   \
+        }                                                      \
+    } while (0)
 
-int main(void) {
+int main(void)
+{
     test_failures = 0;
 
     screen_maxcolumn = 79;
@@ -62,8 +70,14 @@ int main(void) {
 
         push_onto_ruler_index();
 
-        ASSERT_EQ(0xfe, ruler_index_ptr, "%d", "ruler_index_ptr decremented from 0 to 0xfe");
-        ASSERT_EQ(ruler1_addr, current_ruler_ptr, "0x%04x", "current_ruler_ptr points to ruler1");
+        ASSERT_EQ(0xfe,
+            ruler_index_ptr,
+            "%d",
+            "ruler_index_ptr decremented from 0 to 0xfe");
+        ASSERT_EQ(ruler1_addr,
+            current_ruler_ptr,
+            "0x%04x",
+            "current_ruler_ptr points to ruler1");
         ASSERT_EQ(ruler_left_stop, 10, "%d", "ruler_left_stop = 10");
         ASSERT_EQ(ruler_right_stop, 70, "%d", "ruler_right_stop = 70");
     }
@@ -74,8 +88,12 @@ int main(void) {
 
         push_onto_ruler_index();
 
-        ASSERT_EQ(0xfc, ruler_index_ptr, "%d", "ruler_index_ptr decremented to 0xfc");
-        ASSERT_EQ(ruler2_addr, current_ruler_ptr, "0x%04x", "current_ruler_ptr points to ruler2");
+        ASSERT_EQ(
+            0xfc, ruler_index_ptr, "%d", "ruler_index_ptr decremented to 0xfc");
+        ASSERT_EQ(ruler2_addr,
+            current_ruler_ptr,
+            "0x%04x",
+            "current_ruler_ptr points to ruler2");
         ASSERT_EQ(ruler_left_stop, 5, "%d", "ruler_left_stop = 5");
         ASSERT_EQ(ruler_right_stop, 60, "%d", "ruler_right_stop = 60");
     }
@@ -83,10 +101,17 @@ int main(void) {
     {
         pop_from_ruler_index();
 
-        ASSERT_EQ(0xfe, ruler_index_ptr, "%d", "ruler_index_ptr incremented back to 0xfe");
-        ASSERT_EQ(ruler1_addr, current_ruler_ptr, "0x%04x", "current_ruler_ptr restored to ruler1");
+        ASSERT_EQ(0xfe,
+            ruler_index_ptr,
+            "%d",
+            "ruler_index_ptr incremented back to 0xfe");
+        ASSERT_EQ(ruler1_addr,
+            current_ruler_ptr,
+            "0x%04x",
+            "current_ruler_ptr restored to ruler1");
         ASSERT_EQ(ruler_left_stop, 10, "%d", "ruler_left_stop restored to 10");
-        ASSERT_EQ(ruler_right_stop, 70, "%d", "ruler_right_stop restored to 70");
+        ASSERT_EQ(
+            ruler_right_stop, 70, "%d", "ruler_right_stop restored to 70");
     }
 
     {
@@ -105,7 +130,10 @@ int main(void) {
         uint8_t hi = ram[oshwm + 0xfe];
         uint8_t lo = ram[oshwm + 0xff];
         addr_t stored = (addr_t)(((addr_t)hi << 8) | lo);
-        ASSERT_EQ(ruler1_addr - 3, stored, "0x%04x", "index stores (ruler_addr - 3) at oshwm+0xfe, oshwm+0xff");
+        ASSERT_EQ(ruler1_addr - 3,
+            stored,
+            "0x%04x",
+            "index stores (ruler_addr - 3) at oshwm+0xfe, oshwm+0xff");
     }
 
     {

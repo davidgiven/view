@@ -14,7 +14,6 @@ void reset_document_name_after_load(void);
 void set_document_name_to_filename_buffer(void);
 void zero_terminate_filename_buffer(void);
 
-
 // Forward declarations for static CLI command functions
 static void bye_cmd(void);
 static void cmd_err_no_target(void);
@@ -46,17 +45,20 @@ static void printer_cmd(void);
 static void name_cmd(void);
 // check_for_at_least_150_bytes_free defined in document.c
 
-static void bye_cmd(void) {
+static void bye_cmd(void)
+{
     // Pseudocode: Exits the program via BDOS exit system call
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // zproc bye_cmd
     //     ldy #BDOS_EXIT_PROGRAM
     //     jmp BDOS
     exit(0);
 }
 
-void execute_cli_command(void) {
+void execute_cli_command(void)
+{
     // call_through_jumptable (y=2):
     //     asl
     //     clc
@@ -72,50 +74,117 @@ void execute_cli_command(void) {
     //     lda (tmp8),y
     //     sta tmp7
     //     jmp (tmp6)
-    switch (a) {
-        case 0: quit_cmd(); break;
-        case 1: new_cmd(); break;
-        case 2: format_cmd(); break;
-        case 3: setup_cmd(); break;
-        case 4: read_cmd(); break;
-        case 5: more_cmd(); break;
-        case 6: screen_cmd(); break;
-        case 7: sheets_cmd(); break;
-        case 8: save_cmd_write_cmd(); break;
-        case 9: count_cmd(); break;
-        case 10: field_cmd(); break;
-        case 11: printer_cmd(); break;
-        case 12: search_cmd(); break;
-        case 13: clear_cmd(); break;
-        case 14: microspace_cmd(); break;
-        case 15: fold_cmd(); break;
-        case 16: name_cmd(); break;
-        case 17: mode_cmd(); break;
-        case 18: finish_cmd(); break;
-        case 19: print_cmd(); break;
-        case 20: change_cmd(); break;
-        case 21: save_cmd_write_cmd(); break;
-        case 22: edit_cmd(); break;
-        case 23: replace_cmd(); break;
-        case 24: load_cmd(); break;
-        case 25: bye_cmd(); break;
+    switch (a)
+    {
+        case 0:
+            quit_cmd();
+            break;
+        case 1:
+            new_cmd();
+            break;
+        case 2:
+            format_cmd();
+            break;
+        case 3:
+            setup_cmd();
+            break;
+        case 4:
+            read_cmd();
+            break;
+        case 5:
+            more_cmd();
+            break;
+        case 6:
+            screen_cmd();
+            break;
+        case 7:
+            sheets_cmd();
+            break;
+        case 8:
+            save_cmd_write_cmd();
+            break;
+        case 9:
+            count_cmd();
+            break;
+        case 10:
+            field_cmd();
+            break;
+        case 11:
+            printer_cmd();
+            break;
+        case 12:
+            search_cmd();
+            break;
+        case 13:
+            clear_cmd();
+            break;
+        case 14:
+            microspace_cmd();
+            break;
+        case 15:
+            fold_cmd();
+            break;
+        case 16:
+            name_cmd();
+            break;
+        case 17:
+            mode_cmd();
+            break;
+        case 18:
+            finish_cmd();
+            break;
+        case 19:
+            print_cmd();
+            break;
+        case 20:
+            change_cmd();
+            break;
+        case 21:
+            save_cmd_write_cmd();
+            break;
+        case 22:
+            edit_cmd();
+            break;
+        case 23:
+            replace_cmd();
+            break;
+        case 24:
+            load_cmd();
+            break;
+        case 25:
+            bye_cmd();
+            break;
     }
 }
 
-static void change_cmd(void) {
-    // Pseudocode: Replaces all occurrences of search string in document area, reports change count
+static void change_cmd(void)
+{
+    // Pseudocode: Replaces all occurrences of search string in document area,
+    // reports change count
 
     // change_cmd:
     //     jsr sub_c83f0
     sub_c83f0();
     //     bcs c82fa
-    if (flags & FLAG_C) { cmd_err_no_string(); return; }
+    if (flags & FLAG_C)
+    {
+        cmd_err_no_string();
+        return;
+    }
     //     beq c82e7
-    if (flags & FLAG_Z) { cmd_err_no_target(); return; }
+    if (flags & FLAG_Z)
+    {
+        cmd_err_no_target();
+        return;
+    }
     //     jsr c8b7b
     c8b7b();
     //     bne c82fa
-    if (!(flags & FLAG_Z)) { cmd_err_no_string(); return; }
+    if (!(flags & FLAG_Z))
+    {
+        cmd_err_no_string();
+        return;
+    }
     //     ldx #0
     x = 0;
     //     stx ptr3
@@ -138,11 +207,13 @@ loop_c82b3:
     //     jsr sub_c8a4f
     sub_c8a4f();
     //     bcs c830d
-    if (flags & FLAG_C) goto c830d;
+    if (flags & FLAG_C)
+        goto c830d;
     //     jsr c8b7b
     c8b7b();
     //     beq loop_c82b3
-    if (flags & FLAG_Z) goto loop_c82b3;
+    if (flags & FLAG_Z)
+        goto loop_c82b3;
     //     ldx ptr3
     x = (uint8_t)(ptr3 & 0xff);
     //     ldy ptr3+1
@@ -152,7 +223,9 @@ loop_c82b3:
     //     jsr print_inline_string
     //     .ascii " string(s) changed"
     //     .byte 0xff
-    cli_putstring(" string(s) changed\n"); return_to_cli_prompt(); return;
+    cli_putstring(" string(s) changed\n");
+    return_to_cli_prompt();
+    return;
 
     // c830d:
 c830d:
@@ -160,10 +233,12 @@ c830d:
     display_not_enough_memory();
 }
 
-void clear_cmd(void) {
+void clear_cmd(void)
+{
     // Pseudocode: Clears all markers (sets to zero)
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // clear_cmd:
     //     ldx #0x0b
     x = 0x0b;
@@ -176,12 +251,14 @@ loop_cb095:
     //     dex
     x--;
     //     bpl loop_cb095
-    if (!(x & 0x80)) goto loop_cb095;
+    if (!(x & 0x80))
+        goto loop_cb095;
     //     rts
     return;
 }
 
-static void close_input_output_files(void) {
+static void close_input_output_files(void)
+{
     // Pseudocode: Closes output file, resets editing flags, returns to CLI
 
     // close_input_output_files:
@@ -198,12 +275,14 @@ static void close_input_output_files(void) {
     //     jsr close_file
     close_file();
     //     jmp return_to_cli_prompt
-    return_to_cli_prompt(); return;
+    return_to_cli_prompt();
+    return;
 
     // MULTIPLE ENTRY POINTS: quit_cmd, close_input_output_files
 }
 
-static void cmd_err_no_string(void) {
+static void cmd_err_no_string(void)
+{
     // c82fa - shared error handler for CLI commands
     // c82fa:
     //     jsr print_inline_string
@@ -211,10 +290,12 @@ static void cmd_err_no_string(void) {
     //     .byte 0xff
     //     rts
     cli_putstring("No string found\n");
-    return_to_cli_prompt(); return;
+    return_to_cli_prompt();
+    return;
 }
 
-static void cmd_err_no_target(void) {
+static void cmd_err_no_target(void)
+{
     // c82e7 - shared error handler for CLI commands
     // c82e7:
     //     jsr print_inline_string
@@ -222,21 +303,29 @@ static void cmd_err_no_target(void) {
     //     .byte 0xff
     //     rts
     cli_putstring("No target given\n");
-    return_to_cli_prompt(); return;
+    return_to_cli_prompt();
+    return;
 }
 
-static void count_cmd(void) {
-    // Pseudocode: Counts words in document area handling command prefixes and punctuation
-    static const uint8_t l8747_data[] = { 0x52, 0x4a, 'C', 'E', 'L', 'J', 0 };
+static void count_cmd(void)
+{
+    // Pseudocode: Counts words in document area handling command prefixes and
+    // punctuation
+    static const uint8_t l8747_data[] = {0x52, 0x4a, 'C', 'E', 'L', 'J', 0};
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // count_cmd:
     //     jsr parse_marks_from_command
     parse_marks_from_command();
     //     jsr sanitise_area
     sanitise_area();
     //     beq c869b
-    if (flags & FLAG_Z) { return_to_cli_prompt(); return; }
+    if (flags & FLAG_Z)
+    {
+        return_to_cli_prompt();
+        return;
+    }
     //     lda area_start_ptr
     a = (uint8_t)(area_start_ptr & 0xff);
     //     sta tmp0
@@ -262,7 +351,8 @@ c86b8:
     //     jsr deref_and_check_for_command_prefix
     flags = deref_and_check_for_command_prefix();
     //     bne c86ea
-    if (!(flags & FLAG_Z)) goto c86ea;
+    if (!(flags & FLAG_Z))
+        goto c86ea;
     //     ldx #0
     x = 0;
     //     iny
@@ -276,20 +366,23 @@ loop_c86c2:
     //     cmp l8747,x
     cmp(a, l8747_data[x]);
     //     bne c86d1
-    if (!(flags & FLAG_Z)) goto c86d1;
+    if (!(flags & FLAG_Z))
+        goto c86d1;
     //     lda (tmp0),y
     a = ram[((uint16_t)tmp1 << 8 | tmp0) + y];
     //     cmp l8748,x
-    cmp(a, l8747_data[x+1]);
+    cmp(a, l8747_data[x + 1]);
     //     beq c86df
-    if (flags & FLAG_Z) goto c86df;
+    if (flags & FLAG_Z)
+        goto c86df;
     // c86d1:
 c86d1:
     //     lda l8749,x
-    a = l8747_data[x+2];
+    a = l8747_data[x + 2];
     set_flags(a);
     //     beq c86db
-    if (flags & FLAG_Z) goto c86db;
+    if (flags & FLAG_Z)
+        goto c86db;
     //     dey
     y--;
     //     inx
@@ -298,12 +391,14 @@ c86d1:
     x++;
     set_flags(x);
     //     bne loop_c86c2
-    if (!(flags & FLAG_Z)) goto loop_c86c2;
+    if (!(flags & FLAG_Z))
+        goto loop_c86c2;
     // c86db:
 c86db:
     //     lda #0x80
     a = 0x80;
-    //     bne c86ff                                                         ; ALWAYS branch
+    //     bne c86ff                                                         ;
+    //     ALWAYS branch
     goto c86ff;
 
     // c86df:
@@ -317,8 +412,10 @@ c86df:
     //     sta tmp0
     tmp0 = a;
     //     bcs c871d
-    if (flags & FLAG_C) goto c871d;
-    //     bcc c871f                                                         ; ALWAYS branch
+    if (flags & FLAG_C)
+        goto c871d;
+    //     bcc c871f                                                         ;
+    //     ALWAYS branch
     goto c871f;
 
     // c86ea:
@@ -336,34 +433,40 @@ c86ea:
     y = l0082;
     set_flags(y);
     //     bmi c870d
-    if (flags & FLAG_N) goto c870d;
+    if (flags & FLAG_N)
+        goto c870d;
     //     cmp #0x0d
     cmp(a, 0x0d);
     //     beq c8703
-    if (flags & FLAG_Z) goto c8703;
+    if (flags & FLAG_Z)
+        goto c8703;
     //     cmp #0x20 ; ' '
     cmp(a, 0x20);
     //     beq c8703
-    if (flags & FLAG_Z) goto c8703;
+    if (flags & FLAG_Z)
+        goto c8703;
     // c86ff:
 c86ff:
     //     inc l0083
     l0083++;
     set_flags(l0083);
     //     bne c8715
-    if (!(flags & FLAG_Z)) goto c8715;
+    if (!(flags & FLAG_Z))
+        goto c8715;
     // c8703:
 c8703:
     //     ldy l0083
     y = l0083;
     set_flags(y);
     //     beq c870d
-    if (flags & FLAG_Z) goto c870d;
+    if (flags & FLAG_Z)
+        goto c870d;
     //     inc tmp8
     tmp8++;
     set_flags(tmp8);
     //     bne c870d
-    if (!(flags & FLAG_Z)) goto c870d;
+    if (!(flags & FLAG_Z))
+        goto c870d;
     //     inc tmp9
     tmp9++;
     set_flags(tmp9);
@@ -374,7 +477,8 @@ c870d:
     //     cmp #0x0d
     cmp(a, 0x0d);
     //     bne c8715
-    if (!(flags & FLAG_Z)) goto c8715;
+    if (!(flags & FLAG_Z))
+        goto c8715;
     //     stx l0082
     l0082 = x;
     // c8715:
@@ -388,7 +492,8 @@ c8715:
     tmp0++;
     set_flags(tmp0);
     //     bne c871f
-    if (!(flags & FLAG_Z)) goto c871f;
+    if (!(flags & FLAG_Z))
+        goto c871f;
     // c871d:
 c871d:
     //     inc tmp1
@@ -400,13 +505,15 @@ c871f:
     //     cpy area_end_ptr+1
     cmp(y, (uint8_t)(area_end_ptr >> 8));
     //     bne c86b8
-    if (!(flags & FLAG_Z)) goto c86b8;
+    if (!(flags & FLAG_Z))
+        goto c86b8;
     //     ldy tmp0
     y = tmp0;
     //     cpy area_end_ptr
     cmp(y, (uint8_t)(area_end_ptr & 0xff));
     //     bne c86b8
-    if (!(flags & FLAG_Z)) goto c86b8;
+    if (!(flags & FLAG_Z))
+        goto c86b8;
     //     ldx tmp8
     x = tmp8;
     //     ldy tmp9
@@ -416,7 +523,9 @@ c871f:
     //     jsr print_inline_string
     //     .ascii " word(s) counted."
     //     .byte 0xff
-    cli_putstring(" word(s) counted.\n"); return_to_cli_prompt(); return;
+    cli_putstring(" word(s) counted.\n");
+    return_to_cli_prompt();
+    return;
 
     // l8747:
     //     .byte 0x52
@@ -427,7 +536,8 @@ c871f:
     //     .byte 0
 }
 
-static void edit_cmd(void) {
+static void edit_cmd(void)
+{
     check_not_continuous_editing();
     parse_filename_from_command();
     set_document_name_to_filename_buffer();
@@ -436,15 +546,18 @@ static void edit_cmd(void) {
     open_output_file();
     x = 0;
     input_file_empty_flag = x;
-    do {
+    do
+    {
         a = filename_buffer[x];
-        if (a == 0) a = 0x0d;
+        if (a == 0)
+            a = 0x0d;
         output_filename[x] = a;
         x++;
     } while (a != 0x0d);
     initialise_document();
     read_first_chunk_from_input_file();
-    if (flags & FLAG_Z) {
+    if (flags & FLAG_Z)
+    {
         close_input_output_files();
         return_to_cli_prompt();
         return;
@@ -452,25 +565,34 @@ static void edit_cmd(void) {
     file_edit_flags = 1;
 }
 
-static void field_cmd(void) {
+static void field_cmd(void)
+{
     // Pseudocode: Sets the tab key field width from parsed integer argument
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // field_cmd:
     //     jsr parse_integer_from_command
     parse_integer_from_command();
     //     beq c869b
-    if (flags & FLAG_Z) { return_to_cli_prompt(); return; }
+    if (flags & FLAG_Z)
+    {
+        return_to_cli_prompt();
+        return;
+    }
     //     lda tmp8
     a = tmp8;
     //     cmp #0x1b
     cmp(a, 0x1b);
     //     bne c8699
-    if (!(flags & FLAG_Z)) goto c8699;
+    if (!(flags & FLAG_Z))
+        goto c8699;
     //     jsr print_inline_string
     //     .ascii "Frump!"
     //     .byte 0xff
-    cli_putstring("Frump!\n"); return_to_cli_prompt(); return;
+    cli_putstring("Frump!\n");
+    return_to_cli_prompt();
+    return;
 
     // c8699:
 c8699:
@@ -479,13 +601,16 @@ c8699:
     // c869b:
 c869b:
     //     jmp return_to_cli_prompt
-    return_to_cli_prompt(); return;
+    return_to_cli_prompt();
+    return;
 }
 
-static void finish_cmd(void) {
+static void finish_cmd(void)
+{
     // Pseudocode: Writes remaining document content to output file in chunks
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // finish_cmd:
     //     jsr check_continuous_editing
     check_continuous_editing();
@@ -503,7 +628,11 @@ loop_c84ee:
     //     jsr write_area_to_file
     write_area_to_file();
     //     bne c84ab
-    if (!(flags & FLAG_Z)) { return_to_cli_prompt(); return; }
+    if (!(flags & FLAG_Z))
+    {
+        return_to_cli_prompt();
+        return;
+    }
     //     lda #0
     a = 0;
     //     jsr put_byte_to_file                ; write terminator
@@ -517,34 +646,51 @@ loop_c84ee:
     //     lda input_file_empty_flag
     a = input_file_empty_flag;
     //     bne close_input_output_files
-    if (a != 0) { close_input_output_files(); return; }
+    if (a != 0)
+    {
+        close_input_output_files();
+        return;
+    }
     //     jsr read_first_chunk_from_input_file
     read_first_chunk_from_input_file();
     //     beq c84ab
-    if (flags & FLAG_Z) { return_to_cli_prompt(); return; }
-    //     bne loop_c84ee                                                    ; ALWAYS branch
+    if (flags & FLAG_Z)
+    {
+        return_to_cli_prompt();
+        return;
+    }
+    //     bne loop_c84ee                                                    ;
+    //     ALWAYS branch
     goto loop_c84ee;
 }
 
-static void fold_cmd(void) {
+static void fold_cmd(void)
+{
     // Pseudocode: Toggles folding on/off and displays current folding status
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // fold_cmd:
     //     jsr sub_c8e33
     sub_c8e33();
     //     beq c87b4
-    if (flags & FLAG_Z) goto c87b4;
+    if (flags & FLAG_Z)
+        goto c87b4;
     //     lda input_buffer,y
     a = input_buffer[y];
     //     cmp #'1'
     cmp(a, '1');
     //     beq c87b2 (true → folding_flag = 0)
-    if (flags & FLAG_Z) { folding_flag = 0; goto c87b4; }
+    if (flags & FLAG_Z)
+    {
+        folding_flag = 0;
+        goto c87b4;
+    }
     //     cmp #'0'
     cmp(a, '0');
     //     bne c87b4 (not 0 or 1 → just show state)
-    if (!(flags & FLAG_Z)) goto c87b4;
+    if (!(flags & FLAG_Z))
+        goto c87b4;
     //     false → folding_flag = 0x80
     folding_flag = 0x80;
     // c87b4:
@@ -558,38 +704,49 @@ c87b4:
     a = folding_flag;
     set_flags(a);
     //     bpl c87cb
-    if (!(flags & FLAG_N)) goto c87cb;
+    if (!(flags & FLAG_N))
+        goto c87cb;
     //     jsr print_inline_string
     //     .ascii "off"
     //     .byte 0xff
-    cli_putstring("off\n"); return_to_cli_prompt(); return;
+    cli_putstring("off\n");
+    return_to_cli_prompt();
+    return;
 
     // c87cb:
 c87cb:
     //     jsr print_inline_string
     //     .ascii "on"
     //     .byte 0xff
-    cli_putstring("on\n"); return_to_cli_prompt(); return;
+    cli_putstring("on\n");
+    return_to_cli_prompt();
+    return;
 
     // c87d1:
 c87d1:
     //     jsr print_inline_string
     //     .ascii "Bad file"
     //     .byte 0xff
-    cli_putstring("Bad file\n"); return_to_cli_prompt(); return;
+    cli_putstring("Bad file\n");
+    return_to_cli_prompt();
+    return;
 }
 
-static void format_cmd(void) {
-    // Pseudocode: Formats document area by running line-by-line through formatting pipeline
+static void format_cmd(void)
+{
+    // Pseudocode: Formats document area by running line-by-line through
+    // formatting pipeline
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // format_cmd:
     //     jsr parse_marks_from_command
     parse_marks_from_command();
     //     jsr sanitise_area
     sanitise_area();
     //     beq c878b
-    if (flags & FLAG_Z) goto c878b;
+    if (flags & FLAG_Z)
+        goto c878b;
     //     lda area_start_ptr
     a = (uint8_t)(area_start_ptr & 0xff);
     //     ldy area_start_ptr+1
@@ -609,15 +766,18 @@ static void format_cmd(void) {
     //     lda current_edit_line_ptr+1
     a = (uint8_t)((current_edit_line_ptr >> 8) & 0xff);
     //     sta current_format_line_ptr+1
-    current_format_line_ptr = (current_format_line_ptr & 0x00ff) | ((uint16_t)a << 8);
+    current_format_line_ptr =
+        (current_format_line_ptr & 0x00ff) | ((uint16_t)a << 8);
     // c876d:
 c876d:
     //     jsr sub_c9977
     sub_c9977();
     //     bvs c8791
-    if (flags & FLAG_V) goto c8791;
+    if (flags & FLAG_V)
+        goto c8791;
     //     bcs c8787
-    if (flags & FLAG_C) goto c8787;
+    if (flags & FLAG_C)
+        goto c8787;
     //     lda #0x2e ; '.'
     a = 0x2e;
     //     jsr bdos_print_char
@@ -629,35 +789,42 @@ c876d:
     //     cpy area_end_ptr+1
     cmp(y, (uint8_t)(area_end_ptr >> 8));
     //     bcc c876d
-    if (!(flags & FLAG_C)) goto c876d;
+    if (!(flags & FLAG_C))
+        goto c876d;
     //     bne c8787
-    if (!(flags & FLAG_Z)) goto c8787;
+    if (!(flags & FLAG_Z))
+        goto c8787;
     //     cmp area_end_ptr
     cmp(a, (uint8_t)(area_end_ptr & 0xff));
     //     bcc c876d
-    if (!(flags & FLAG_C)) goto c876d;
+    if (!(flags & FLAG_C))
+        goto c876d;
     // c8787:
 c8787:
     //     lda #0xff
     a = 0xff;
     //     sta l0012
-    top_of_screen_line_ptr = (top_of_screen_line_ptr & 0x00ff) | ((addr_t)a << 8);
+    top_of_screen_line_ptr =
+        (top_of_screen_line_ptr & 0x00ff) | ((addr_t)a << 8);
     // c878b:
 c878b:
     //     jsr bdos_print_newline
     cli_putchar('\n');
     //     jmp return_to_cli_prompt
-    return_to_cli_prompt(); return;
+    return_to_cli_prompt();
+    return;
 
     // c8791:
 c8791:
     //     jsr bdos_print_newline
     cli_putchar('\n');
     //     jmp display_not_enough_memory
-    display_not_enough_memory(); return;
+    display_not_enough_memory();
+    return;
 }
 
-static void load_cmd(void) {
+static void load_cmd(void)
+{
     // load_cmd:
     //     jsr check_not_continuous_editing
     check_not_continuous_editing();
@@ -665,12 +832,15 @@ static void load_cmd(void) {
     parse_filename_from_command();
     //     jsr initialise_document
     initialise_document();
-    top = page;  // WORKAROUND: cb05a bumped top past the initial CR; need to load at page, not page+1
+    top = page; // WORKAROUND: cb05a bumped top past the initial CR; need to
+                // load at page, not page+1
     //     jsr reset_area_to_entire_document
     reset_area_to_entire_document();
     //     jsr 1f
     read_into_document();
-    top = (addr_t)((uint16_t)tmp1 << 8) | tmp0;  // WORKAROUND: adjust_pointers adds stale bytes from end of ram[]; fix top
+    top = (addr_t)((uint16_t)tmp1 << 8) |
+          tmp0; // WORKAROUND: adjust_pointers adds stale bytes from end of
+                // ram[]; fix top
     //     jsr reset_document_name_after_load
     reset_document_name_after_load();
     //     jsr clear_cmd
@@ -679,10 +849,12 @@ static void load_cmd(void) {
     move_cursor_to_top_of_document();
 }
 
-static void microspace_cmd(void) {
+static void microspace_cmd(void)
+{
     // Pseudocode: Configures microspacing by querying printer driver
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // microspace_cmd:
     //     jsr prepare_printer_driver
     prepare_printer_driver();
@@ -695,11 +867,13 @@ static void microspace_cmd(void) {
     //     plp
     flags = saved_flags;
     //     beq c8608
-    if (flags & FLAG_Z) goto c8608;
+    if (flags & FLAG_Z)
+        goto c8608;
     //     ldx tmp8
     x = tmp8;
     //     beq return_7
-    if (x == 0) return;
+    if (x == 0)
+        return;
     // c8608:
 c8608:
     //     ldy #0
@@ -711,9 +885,11 @@ c8608:
     //     tya
     a = y;
     //     and #1
-    a &= 1; set_flags(a);
+    a &= 1;
+    set_flags(a);
     //     beq c8617
-    if (flags & FLAG_Z) goto c8617;
+    if (flags & FLAG_Z)
+        goto c8617;
     //     stx microspacing_flag
     microspacing_flag = x;
     // return_7:
@@ -726,22 +902,31 @@ c8617:
     //     jsr print_inline_string
     //     .ascii "Driver does not support microspacing"
     //     .byte 0xff
-    cli_putstring("Driver does not support microspacing\n"); return_to_cli_prompt(); return;
+    cli_putstring("Driver does not support microspacing\n");
+    return_to_cli_prompt();
+    return;
 }
 
-static void mode_cmd(void) {
-    // ; ***************************************************************************************
+static void mode_cmd(void)
+{
+    // ;
+    // ***************************************************************************************
     // mode_cmd:
     //     jsr print_inline_string
     //     .ascii "Bad mode"
     //     .byte 0xff
-    cli_putstring("Bad mode\n"); return_to_cli_prompt(); return;
+    cli_putstring("Bad mode\n");
+    return_to_cli_prompt();
+    return;
 }
 
-static void more_cmd(void) {
-    // Pseudocode: Appends more text from input file into document at current cursor position
+static void more_cmd(void)
+{
+    // Pseudocode: Appends more text from input file into document at current
+    // cursor position
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // more_cmd:
     //     jsr check_continuous_editing
     check_continuous_editing();
@@ -760,7 +945,11 @@ static void more_cmd(void) {
     //     jsr write_area_to_file
     write_area_to_file();
     //     bne c84ab
-    if (!(flags & FLAG_Z)) { return_to_cli_prompt(); return; }
+    if (!(flags & FLAG_Z))
+    {
+        return_to_cli_prompt();
+        return;
+    }
 
     //     ldy #0
     y = 0;
@@ -777,7 +966,8 @@ loop_c84c4:
     //     dex
     x--;
     //     bne loop_c84c4
-    if (x != 0) goto loop_c84c4;
+    if (x != 0)
+        goto loop_c84c4;
     //     lda #0x0d
     a = 0x0d;
     //     sta current_ruler_buffer,y
@@ -791,7 +981,8 @@ loop_c84c4:
     //     lda input_file_empty_flag
     a = input_file_empty_flag;
     //     bne c84e8
-    if (a != 0) goto c84e8;
+    if (a != 0)
+        goto c84e8;
     //     lda top
     a = (uint8_t)(top & 0xff);
     //     ldy top+1
@@ -799,17 +990,23 @@ loop_c84c4:
     //     jsr read_next_chunk_from_input_file
     read_next_chunk_from_input_file();
     //     beq c84ab
-    if (flags & FLAG_Z) { return_to_cli_prompt(); return; }
+    if (flags & FLAG_Z)
+    {
+        return_to_cli_prompt();
+        return;
+    }
     // c84e8:
 c84e8:
     //     jmp cb05a
     cb05a();
 }
 
-static void name_cmd(void) {
+static void name_cmd(void)
+{
     // Pseudocode: Sets document name from optional filename argument
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // name_cmd:
     //     jsr check_not_continuous_editing
     check_not_continuous_editing();
@@ -824,53 +1021,68 @@ static void name_cmd(void) {
     //     plp
     flags = saved_flags;
     //     beq return_9
-    if (flags & FLAG_Z) return;
+    if (flags & FLAG_Z)
+        return;
 
     // MULTIPLE ENTRY POINTS: name_cmd, reset_document_name_after_load
     reset_document_name_after_load();
 }
 
-static void new_cmd(void) {
-    // Pseudocode: Creates a new empty document after checking continuous editing state
+static void new_cmd(void)
+{
+    // Pseudocode: Creates a new empty document after checking continuous
+    // editing state
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // new_cmd:
     //     jsr check_not_continuous_editing
     check_not_continuous_editing();
     //     jmp initialise_document
-    initialise_document(); return;
+    initialise_document();
+    return;
 }
 
-static void print_cmd(void) {
+static void print_cmd(void)
+{
     // Pseudocode: Sets print flags and falls through to print_to_screen
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // print_cmd:
     //     lda #0x80
     //     jsr start_printing
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     a = 0x80;
     start_printing();
     // MULTIPLE ENTRY POINTS: print_cmd, print_to_screen
     print_to_screen();
 }
 
-static void print_to_screen(void) {
-    // print_to_screen: Prints document for screen preview, returns to CLI when done
+static void print_to_screen(void)
+{
+    // print_to_screen: Prints document for screen preview, returns to CLI when
+    // done
 
     //     jsr print_document
     print_document();
     //     jmp return_to_cli_prompt
-    return_to_cli_prompt(); return;
+    return_to_cli_prompt();
+    return;
 }
 
-static void printer_cmd(void) {
-    // Pseudocode: Redirects to print_cmd (printer driver loading code is disabled with #if 0)
+static void printer_cmd(void)
+{
+    // Pseudocode: Redirects to print_cmd (printer driver loading code is
+    // disabled with #if 0)
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // printer_cmd:
     //     jmp print_cmd
-    print_cmd(); return;
+    print_cmd();
+    return;
     // #if 0
     //     // TODO: implement loading printer drivers.
     //     jsr parse_optional_filename_from_command
@@ -892,10 +1104,9 @@ static void printer_cmd(void) {
     //     lda #>printer_driver_block
     //     sta l0503
     //     lda #osbyte_read_high_order_address
-    //     jsr osbyte                                                        ; Read the filing system 'machine high order address'
-    //     stx l0504                                                         ; X and Y contain the machine high order address (low, high)
-    //     sty l0505
-    //     lda #0
+    //     jsr osbyte                                                        ;
+    //     Read the filing system 'machine high order address' stx l0504 ; X and
+    //     Y contain the machine high order address (low, high) sty l0505 lda #0
     //     sta l0506
     //     lda #0xff
     //     jsr do_osfile_with_buffer
@@ -906,7 +1117,8 @@ static void printer_cmd(void) {
     //     inx
     //     cmp #0x0d
     //     bne loop_c8822
-    //     beq c8834                                                         ; ALWAYS branch
+    //     beq c8834                                                         ;
+    //     ALWAYS branch
 
     // c882f:
     //     lda #0
@@ -919,10 +1131,12 @@ static void printer_cmd(void) {
     //     rts
 }
 
-static void quit_cmd(void) {
+static void quit_cmd(void)
+{
     // Pseudocode: Checks continuous editing then falls through to close files
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // quit_cmd:
     //     jsr check_continuous_editing
     check_continuous_editing();
@@ -930,7 +1144,8 @@ static void quit_cmd(void) {
     close_input_output_files();
 }
 
-static void read_cmd(void) {
+static void read_cmd(void)
+{
     // read_cmd:
     //     jsr parse_filename_from_command
     parse_filename_from_command();
@@ -939,22 +1154,34 @@ static void read_cmd(void) {
     // 1:
     read_into_document();
     //     jmp return_to_cli_prompt
-    return_to_cli_prompt(); return;
+    return_to_cli_prompt();
+    return;
 }
 
-static void replace_cmd(void) {
-    // Pseudocode: Interactive search and replace prompting for each match (Y)es/(O)K/(N)o
+static void replace_cmd(void)
+{
+    // Pseudocode: Interactive search and replace prompting for each match
+    // (Y)es/(O)K/(N)o
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // replace_cmd:
     //     jsr sub_c83f0
     sub_c83f0();
     //     beq c82e7
-    if (flags & FLAG_Z) { cmd_err_no_target(); return; }
+    if (flags & FLAG_Z)
+    {
+        cmd_err_no_target();
+        return;
+    }
     //     jsr c8b7b
     c8b7b();
     //     bne c82fa
-    if (!(flags & FLAG_Z)) { cmd_err_no_string(); return; }
+    if (!(flags & FLAG_Z))
+    {
+        cmd_err_no_string();
+        return;
+    }
     //     jsr move_cursor_to_address
     move_cursor_to_address();
     //     jsr enter_editor_mode
@@ -972,7 +1199,8 @@ c832d:
     //     jsr flush_and_read_char
     read_char();
     //     bcs return_2
-    if (flags & FLAG_C) return;
+    if (flags & FLAG_C)
+        return;
     //     and #0xdf
     a &= 0xdf;
     set_flags(a);
@@ -981,13 +1209,16 @@ c832d:
     //     cmp #0x59 ; 'Y'
     cmp(a, 0x59);
     //     beq c8349
-    if (flags & FLAG_Z) goto c8349;
-    //     dex                                                               ; X=0xff
+    if (flags & FLAG_Z)
+        goto c8349;
+    //     dex                                                               ;
+    //     X=0xff
     x--;
     //     cmp #0x4f ; 'O'
     cmp(a, 0x4f);
     //     bne c8356
-    if (!(flags & FLAG_Z)) goto c8356;
+    if (!(flags & FLAG_Z))
+        goto c8356;
     // c8349:
 c8349:
     //     stx print_xpos
@@ -997,7 +1228,12 @@ c8349:
     //     jsr sub_c8a4f
     sub_c8a4f();
     //     bcs c836b
-    if (flags & FLAG_C) { show_memory_full_error(); esc_key(); return; }
+    if (flags & FLAG_C)
+    {
+        show_memory_full_error();
+        esc_key();
+        return;
+    }
     //     jsr sub_c8361
     sub_c8361();
     // c8356:
@@ -1005,54 +1241,62 @@ c8356:
     //     jsr c8b7b
     c8b7b();
     //     bne return_2
-    if (!(flags & FLAG_Z)) return;
+    if (!(flags & FLAG_Z))
+        return;
     //     jsr move_cursor_to_address
     move_cursor_to_address();
     //     jmp c832d
     goto c832d;
 }
 
-static void save_cmd_write_cmd(void) {
+static void save_cmd_write_cmd(void)
+{
     // Pseudocode: Saves document area to output file with optional filename
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // save_cmd:
     // write_cmd:
     //     jsr parse_optional_filename_from_command
     parse_optional_filename_from_command();
     //     zif eq
-    if (flags & FLAG_Z) {
-    //         bit file_edit_flags
+    if (flags & FLAG_Z)
+    {
+        //         bit file_edit_flags
         bit(file_edit_flags);
-    //         zif vc
-        if (!(flags & FLAG_V)) {
-    //             jmp bad_filename_error
-            bad_filename_error(); return;
-    //         zendif
+        //         zif vc
+        if (!(flags & FLAG_V))
+        {
+            //             jmp bad_filename_error
+            bad_filename_error();
+            return;
+            //         zendif
         }
 
-    //         ldx #0
+        //         ldx #0
         x = 0;
-    //         zrepeat
-        do {
-    //             lda input_filename,x
+        //         zrepeat
+        do
+        {
+            //             lda input_filename,x
             a = input_filename[x];
-    //             sta filename_buffer,x
+            //             sta filename_buffer,x
             filename_buffer[x] = a;
-    //             inx
+            //             inx
             x++;
-    //             cmp #0x0d
+            //             cmp #0x0d
             cmp(a, 0x0d);
-    //         zuntil eq
+            //         zuntil eq
         } while (!(flags & FLAG_Z));
-    //     zendif
+        //     zendif
     }
     //     jsr parse_marks_from_command
     parse_marks_from_command();
     //     jsr sanitise_area
     sanitise_area();
     //     beq return_6
-    if (flags & FLAG_Z) return;
+    if (flags & FLAG_Z)
+        return;
 
     //     jsr open_output_file
     open_output_file();
@@ -1066,41 +1310,59 @@ static void save_cmd_write_cmd(void) {
     //     jsr close_file
     close_file();
     //     jmp return_to_cli_prompt
-    return_to_cli_prompt(); return;
+    return_to_cli_prompt();
+    return;
 
     // MULTIPLE ENTRY POINTS: save_cmd, write_cmd
 }
 
-static void screen_cmd(void) {
+static void screen_cmd(void)
+{
     // Pseudocode: Jumps to print_to_screen for on-screen document preview
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // screen_cmd:
     //     jmp print_to_screen
-    print_to_screen(); return;
+    print_to_screen();
+    return;
 }
 
-static void search_cmd(void) {
+static void search_cmd(void)
+{
     // Pseudocode: Searches for target string, reports position if found
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // search_cmd:
     //     jsr sub_c8412
     sub_c8412();
     //     beq c82e7
-    if (flags & FLAG_Z) { cmd_err_no_target(); return; }
+    if (flags & FLAG_Z)
+    {
+        cmd_err_no_target();
+        return;
+    }
     //     jsr parse_marks_from_command
     parse_marks_from_command();
     //     jsr sanitise_area
     sanitise_area();
     //     beq c82fa
-    if (flags & FLAG_Z) { cmd_err_no_string(); return; }
+    if (flags & FLAG_Z)
+    {
+        cmd_err_no_string();
+        return;
+    }
     //     jsr sub_c8c7c
     sub_c8c7c();
     //     jsr c8b7b
     c8b7b();
     //     bne c82fa
-    if (!(flags & FLAG_Z)) { cmd_err_no_string(); return; }
+    if (!(flags & FLAG_Z))
+    {
+        cmd_err_no_string();
+        return;
+    }
     //     jsr move_cursor_to_address
     move_cursor_to_address();
     //     jmp enter_editor_mode
@@ -1108,23 +1370,29 @@ static void search_cmd(void) {
     longjmp(env, JMP_EDITOR);
     return;
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
 }
 
-static void setup_cmd(void) {
-    // Pseudocode: Parses flag letters and sets format_mode_flag, justifying_flag, insert_mode_flag
+static void setup_cmd(void)
+{
+    // Pseudocode: Parses flag letters and sets format_mode_flag,
+    // justifying_flag, insert_mode_flag
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // setup_cmd:
     //     ldx #1
     x = 1;
     //     stx tmp6
     tmp6 = x;
-    //     dex                                                               ; X=0x00
+    //     dex                                                               ;
+    //     X=0x00
     x--;
     //     stx tmp8
     tmp8 = x;
-    //     dex                                                               ; X=0xff
+    //     dex                                                               ;
+    //     X=0xff
     x--;
     //     stx tmp7
     tmp7 = x;
@@ -1133,9 +1401,11 @@ c8649:
     //     jsr sub_c8e33
     sub_c8e33();
     //     beq c8672
-    if (flags & FLAG_Z) goto c8672;
+    if (flags & FLAG_Z)
+        goto c8672;
     //     and #0xdf
-    a &= 0xdf; set_flags(a);
+    a &= 0xdf;
+    set_flags(a);
     //     ldx #0
     x = 0;
     // loop_c8652:
@@ -1143,29 +1413,39 @@ loop_c8652:
     //     cmp c867d,x
     cmp(a, ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x]);
     //     beq c8669
-    if (flags & FLAG_Z) goto c8669;
+    if (flags & FLAG_Z)
+        goto c8669;
     //     inx
     x++;
     //     ldy c867d,x
     y = ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x];
     //     bne loop_c8652
-    if (y != 0) goto loop_c8652;
+    if (y != 0)
+        goto loop_c8652;
     //     jsr print_inline_string
     //     .ascii "Bad flag"
     //     .byte 0xff
-    cli_putstring("Bad flag\n"); return_to_cli_prompt(); return;
+    cli_putstring("Bad flag\n");
+    return_to_cli_prompt();
+    return;
 
     // c8669:
 c8669:
     //     lda c8681,x
     a = ((const uint8_t[]){0x00, 0x00, 0xff})[x];
     //     sta tmp6,x
-    if (x == 0) tmp6 = a; else if (x == 1) tmp7 = a; else tmp8 = a;
+    if (x == 0)
+        tmp6 = a;
+    else if (x == 1)
+        tmp7 = a;
+    else
+        tmp8 = a;
     //     inc input_buffer_offset
     input_buffer_offset++;
     set_flags(input_buffer_offset);
     //     bne c8649
-    if (!(flags & FLAG_Z)) goto c8649;
+    if (!(flags & FLAG_Z))
+        goto c8649;
     // c8672:
 c8672:
     //     ldx #2
@@ -1173,16 +1453,29 @@ c8672:
     // loop_c8674:
 loop_c8674:
     //     lda tmp6,x
-    if (x == 0) a = tmp6; else if (x == 1) a = tmp7; else a = tmp8;
+    if (x == 0)
+        a = tmp6;
+    else if (x == 1)
+        a = tmp7;
+    else
+        a = tmp8;
     //     sta format_mode_flag,x
-    if (x == 0) format_mode_flag = a; else if (x == 1) justifying_flag = a; else insert_mode_flag = a;
+    if (x == 0)
+        format_mode_flag = a;
+    else if (x == 1)
+        justifying_flag = a;
+    else
+        insert_mode_flag = a;
     //     dex
     x--;
     set_flags(x);
     //     bpl loop_c8674
-    if (!(flags & FLAG_N)) goto loop_c8674;
-    //     bmi c869b                                                         ; ALWAYS branch
-    return_to_cli_prompt(); return;
+    if (!(flags & FLAG_N))
+        goto loop_c8674;
+    //     bmi c869b                                                         ;
+    //     ALWAYS branch
+    return_to_cli_prompt();
+    return;
 
     // c867d:
     //     lsr l004a
@@ -1193,10 +1486,13 @@ loop_c8674:
     //     .byte 0, 0xff
 }
 
-static void sheets_cmd(void) {
-    // Pseudocode: Prints document to printer then displays newline and returns to CLI
+static void sheets_cmd(void)
+{
+    // Pseudocode: Prints document to printer then displays newline and returns
+    // to CLI
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // sheets_cmd:
     //     lda #0xc0
     a = 0xc0;
@@ -1209,11 +1505,14 @@ static void sheets_cmd(void) {
     //     jsr bdos_print_newline
     cli_putchar('\n');
     //     jmp return_to_cli_prompt
-    return_to_cli_prompt(); return;
+    return_to_cli_prompt();
+    return;
 }
 
-void start_printing(void) {
-    // Pseudocode: Initializes printer driver and starts printing with given flags
+void start_printing(void)
+{
+    // Pseudocode: Initializes printer driver and starts printing with given
+    // flags
 
     // start_printing:
     //     jsr print_inline_string
@@ -1221,12 +1520,15 @@ void start_printing(void) {
     //     .byte 0
     cli_putstring("Sorry, can't print yet\n");
     //     jmp return_to_cli_prompt
-    return_to_cli_prompt(); return;
+    return_to_cli_prompt();
+    return;
 }
 
-void readline(void) {
+void readline(void)
+{
     input_buffer_offset = 0;
-    if (cli_readstring((char *)input_buffer, MAX_COMMAND_LENGTH)) {
+    if (cli_readstring((char*)input_buffer, MAX_COMMAND_LENGTH))
+    {
         flags |= FLAG_C;
         return;
     }
@@ -1235,14 +1537,17 @@ void readline(void) {
 
 const uint8_t la83d[] = "VIEW\0B3.0 for CP/M-65";
 
-static void print_x_words_of_help(void) {
+static void print_x_words_of_help(void)
+{
     // Pseudocode: Prints X words of the help string showing VIEW and version
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // print_x_words_of_help:
     //     ldy #0
     y = 0;
-    //     beq ca832                                                         ; ALWAYS branch
+    //     beq ca832                                                         ;
+    //     ALWAYS branch
     goto ca832;
 
     // ca82e:
@@ -1256,32 +1561,38 @@ ca832:
     //     lda la83d,y
     a = la83d[y];
     //     bne ca82e
-    if (a != 0) goto ca82e;
+    if (a != 0)
+        goto ca82e;
     //     lda #0x20 ; ' '
     a = 0x20;
     //     dex
     x--;
     //     bpl ca82e
-    if ((int8_t)x >= 0) goto ca82e;
+    if ((int8_t)x >= 0)
+        goto ca82e;
     //     rts
     return;
 }
 
 static void parse_command(void);
 
-void input_line_not_escaped(void) {
-    // input_line_not_escaped: Parses command input and dispatches through CLI jump table
+void input_line_not_escaped(void)
+{
+    // input_line_not_escaped: Parses command input and dispatches through CLI
+    // jump table
 
     //     jsr parse_command
     parse_command();
     //     sty input_buffer_offset+1
     l0080 = y;
     //     bcs c8263
-    if (flags & FLAG_C) goto c8263;
+    if (flags & FLAG_C)
+        goto c8263;
     //     cpy #(jumptable4_cli_end-jumptable4_cli)/2
     cmp(y, 48);
     //     bcc c826e
-    if (!(flags & FLAG_C)) goto c826e;
+    if (!(flags & FLAG_C))
+        goto c826e;
     // c8263:
 c8263:
     //     jsr print_inline_string ; .ascii "Mistake\n"
@@ -1298,7 +1609,8 @@ c826e:
     run_cli();
 }
 
-void cli_handler_impl(void) {
+void cli_handler_impl(void)
+{
     // cli_handler_impl: Main CLI loop (called after setjmp reset)
 
     //     jsr stop_printing
@@ -1320,14 +1632,20 @@ void cli_handler_impl(void) {
     //     sta tmp0
     //     ldx #>input_buffer
     //     stx tmp1
-    // (tmp0/tmp1 no longer used as a pointer; parse_command reads input_buffer[] directly)
+    // (tmp0/tmp1 no longer used as a pointer; parse_command reads
+    // input_buffer[] directly)
     //     bcc input_line_not_escaped
-    if (!(flags & FLAG_C)) { input_line_not_escaped(); return; }
+    if (!(flags & FLAG_C))
+    {
+        input_line_not_escaped();
+        return;
+    }
     //     jmp run_editor
     run_editor();
 }
 
-void run_cli(void) {
+void run_cli(void)
+{
     screen_leave();
     // run_cli:
     //     jsr clear_screen
@@ -1352,13 +1670,15 @@ void run_cli(void) {
     //     bit file_edit_flags
     bit(file_edit_flags);
     //     bvs c816d
-    if (flags & FLAG_V) goto c816d;
+    if (flags & FLAG_V)
+        goto c816d;
     //     lda file_edit_flags
     a = file_edit_flags;
     //     ror
     a = ror(a);
     //     bcc c816d
-    if (!(flags & FLAG_C)) goto c816d;
+    if (!(flags & FLAG_C))
+        goto c816d;
     //     jsr print_inline_string
     //     .ascii "Input file is "
     //     .byte 0
@@ -1367,7 +1687,8 @@ void run_cli(void) {
     //     lda input_file_empty_flag
     a = input_file_empty_flag;
     //     bne c8163
-    if (a != 0) goto c8163;
+    if (a != 0)
+        goto c8163;
     //     jsr print_inline_string
     //     .ascii "not "
     //     .byte 0
@@ -1386,7 +1707,8 @@ c816d:
     a = printer_driver_name[0];
     set_flags(a);
     //     beq c81b6
-    if (flags & FLAG_Z) goto c81b6;
+    if (flags & FLAG_Z)
+        goto c81b6;
     //     jsr print_inline_string
     //     .ascii "Printer "
     //     .byte 0
@@ -1401,9 +1723,11 @@ c816d:
     //     jsr bdos_print_char
     //     inx
     //     bne loop_c819a
-    do {
+    do
+    {
         a = printer_driver_name[x];
-        if (a == 0x0d) break;
+        if (a == 0x0d)
+            break;
         cli_putchar(a);
         x++;
     } while (x != 0);
@@ -1412,7 +1736,8 @@ c816d:
     a = microspacing_flag;
     set_flags(a);
     //     beq c81b3
-    if (flags & FLAG_Z) goto c81b3;
+    if (flags & FLAG_Z)
+        goto c81b3;
     //     jsr print_inline_string
     //     .ascii " (m)"
     //     .byte 0
@@ -1434,10 +1759,12 @@ c81ba:
     a = ((uint8_t*)markers_array)[x + 1];
     set_flags(a);
     //     beq c81e7
-    if (flags & FLAG_Z) goto c81e7;
+    if (flags & FLAG_Z)
+        goto c81e7;
     //     tya
     //     bne c81db
-    if (y != 0) goto c81db;
+    if (y != 0)
+        goto c81db;
     //     stx l0083
     l0083 = x;
     //     jsr print_inline_string
@@ -1449,7 +1776,8 @@ c81ba:
     x = l0083;
     //     ldy #1
     y = 1;
-    //     bne c81e0                                                         ; ALWAYS branch
+    //     bne c81e0                                                         ;
+    //     ALWAYS branch
     goto c81e0;
 
     // c81db:
@@ -1476,10 +1804,12 @@ c81e7:
     x++;
     //     cpx #0x0c
     //     bne c81ba
-    if (x != 0x0c) goto c81ba;
+    if (x != 0x0c)
+        goto c81ba;
     //     tya
     //     beq c81f3
-    if (y == 0) goto c81f3;
+    if (y == 0)
+        goto c81f3;
     //     jsr bdos_print_newline
     cli_putchar('\n');
     // c81f3:
@@ -1490,19 +1820,22 @@ c81f3:
 }
 
 // CLI command parser
-static void parse_command(void) {
+static void parse_command(void)
+{
     //     .ascii "VIEW"
     //     .byte 0
     //     .ascii "B3.0 for CP/M-65"
     //     .byte 0
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // parse_command:
     //     lda #0xff
     a = 0xff;
     //     sta l0082
     l0082 = a;
-    //     tax                                                               ; X=0xff
+    //     tax                                                               ;
+    //     X=0xff
     x = a;
     // ca84c:
 ca84c:
@@ -1528,9 +1861,11 @@ loop_ca851:
     a = parser_table[x];
     set_flags(a);
     //     beq ca890
-    if (flags & FLAG_Z) goto ca890;
+    if (flags & FLAG_Z)
+        goto ca890;
     //     bmi ca87e
-    if (flags & FLAG_N) goto ca87e;
+    if (flags & FLAG_N)
+        goto ca87e;
     //     eor #0x5b ; '['
     a ^= 0x5b;
     //     sta l0083
@@ -1540,7 +1875,8 @@ loop_ca851:
     //     cmp l0084
     cmp(a, l0084);
     //     beq loop_ca851
-    if (flags & FLAG_Z) goto loop_ca851;
+    if (flags & FLAG_Z)
+        goto loop_ca851;
     // loop_ca86a:
 loop_ca86a:
     //     inx
@@ -1549,22 +1885,26 @@ loop_ca86a:
     a = parser_table[x];
     set_flags(a);
     //     beq ca890
-    if (flags & FLAG_Z) goto ca890;
+    if (flags & FLAG_Z)
+        goto ca890;
     //     bpl loop_ca86a
-    if (!(flags & FLAG_N)) goto loop_ca86a;
+    if (!(flags & FLAG_N))
+        goto loop_ca86a;
     //     lda l0083
     a = l0083;
     //     and #0x20 ; ' '
     a &= 0x20;
     flags = (flags & ~FLAG_Z) | (a == 0 ? FLAG_Z : 0);
     //     beq ca84c
-    if (flags & FLAG_Z) goto ca84c;
+    if (flags & FLAG_Z)
+        goto ca84c;
     //     lda (tmp0),y
     a = input_buffer[y];
     //     cmp #0x30 ; '0'
     cmp(a, 0x30);
     //     bcs ca84c
-    if (flags & FLAG_C) goto ca84c;
+    if (flags & FLAG_C)
+        goto ca84c;
     // ca87e:
 ca87e:
     //     lda (tmp0),y
@@ -1572,7 +1912,8 @@ ca87e:
     //     cmp #0x30 ; '0'
     cmp(a, 0x30);
     //     bcs ca887
-    if (flags & FLAG_C) goto ca887;
+    if (flags & FLAG_C)
+        goto ca887;
     //     sta l007e
     l007e = a;
     //     iny
@@ -1599,24 +1940,29 @@ ca890:
 }
 
 // CLI utility functions
-void file_error(void) {
+void file_error(void)
+{
     // Pseudocode: Displays File error and returns to CLI
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // zproc file_error
     //     jsr print_inline_string
     //     .ascii "File error"
     //     .byte 0
     cli_putstring("File error");
     //     jmp return_to_cli_prompt
-    return_to_cli_prompt(); return;
+    return_to_cli_prompt();
+    return;
     // zendproc
 }
 
-void file_not_found_error(void) {
+void file_not_found_error(void)
+{
     // Pseudocode: Displays File not found error and returns to CLI
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // file_not_found_error:
     //     jsr stop_printing
     stop_printing();
@@ -1625,13 +1971,16 @@ void file_not_found_error(void) {
     //     .byte 0
     cli_putstring("File not found\n");
     //     jmp return_to_cli_prompt
-    return_to_cli_prompt(); return;
+    return_to_cli_prompt();
+    return;
 }
 
-void parse_integer_from_command(void) {
+void parse_integer_from_command(void)
+{
     // Pseudocode: Parses a decimal integer from the command input buffer
 
-    // ; ***************************************************************************************
+    // ;
+    // ***************************************************************************************
     // parse_integer_from_command:
     //     lda #<(input_buffer)
     a = (uint8_t)((uintptr_t)input_buffer & 0xff);
@@ -1640,23 +1989,28 @@ void parse_integer_from_command(void) {
     //     lda #>(input_buffer)
     a = (uint8_t)(((uintptr_t)input_buffer >> 8) & 0xff);
     //     sta current_format_line_ptr+1
-    current_format_line_ptr = (current_format_line_ptr & 0x00ff) | ((uint16_t)a << 8);
+    current_format_line_ptr =
+        (current_format_line_ptr & 0x00ff) | ((uint16_t)a << 8);
     //     jsr sub_c8e33
     sub_c8e33();
     //     beq return_8
-    if (flags & FLAG_Z) return;
+    if (flags & FLAG_Z)
+        return;
     //     jmp ca6fe
-    parse_decimal_number(); return;
+    parse_decimal_number();
+    return;
 }
 
-void parse_marks_from_command(void) {
+void parse_marks_from_command(void)
+{
     // parse_marks_from_command:
     //     jsr reset_area_to_entire_document
     reset_area_to_entire_document();
     //     jsr parse_mark_from_command
     parse_mark_from_command();
     //     beq return_11
-    if (flags & FLAG_Z) return;
+    if (flags & FLAG_Z)
+        return;
     //     sta area_start_ptr
     area_start_ptr = (area_start_ptr & 0xff00) | a;
     //     sty area_start_ptr+1
@@ -1664,7 +2018,8 @@ void parse_marks_from_command(void) {
     //     jsr parse_mark_from_command
     parse_mark_from_command();
     //     beq return_11
-    if (flags & FLAG_Z) return;
+    if (flags & FLAG_Z)
+        return;
     //     sta area_end_ptr
     area_end_ptr = (area_end_ptr & 0xff00) | a;
     //     sty area_end_ptr+1
@@ -1673,7 +2028,8 @@ void parse_marks_from_command(void) {
     //     rts
 }
 
-void reset_document_name_after_load(void) {
+void reset_document_name_after_load(void)
+{
     // Pseudocode: Sets file_edit_flags to indicate a document is loaded
 
     // reset_document_name_after_load:
@@ -1687,7 +2043,8 @@ void reset_document_name_after_load(void) {
     // MULTIPLE ENTRY POINTS: name_cmd, reset_document_name_after_load
 }
 
-void set_document_name_to_filename_buffer(void) {
+void set_document_name_to_filename_buffer(void)
+{
     // Pseudocode: Copies filename buffer to input filename buffer
 
     // set_document_name_to_filename_buffer:
@@ -1704,20 +2061,22 @@ loop_c88fa:
     //     cmp #0x21
     cmp(a, 0x21);
     //     bge loop_c88fa
-    if (flags & FLAG_C) goto loop_c88fa;
+    if (flags & FLAG_C)
+        goto loop_c88fa;
     // return_9:
 return_9:
     //     lda #0x0d
     a = 0x0d;
     //     sta input_filename-1, x
-    input_filename[x-1] = a;
+    input_filename[x - 1] = a;
     //     rts
     return;
 
     // MULTIPLE ENTRY POINTS: also called directly from edit_cmd
 }
 
-void zero_terminate_filename_buffer(void) {
+void zero_terminate_filename_buffer(void)
+{
     // zero_terminate_filename_buffer:
     //     ldx #0
     x = 0;
@@ -1728,7 +2087,8 @@ zloop:
     //     cmp filename_buffer, x
     cmp(a, filename_buffer[x]);
     //     zbreakif eq
-    if (flags & FLAG_Z) goto zbreak;
+    if (flags & FLAG_Z)
+        goto zbreak;
     //     inx
     x++;
     //     bne zloop
@@ -1741,23 +2101,36 @@ zbreak:
     //     rts
 }
 
-
-void parse_mark_from_command(void) {
+void parse_mark_from_command(void)
+{
     // parse_mark_from_command:
     //     jsr sub_c8e33
     sub_c8e33();
     //     beq return_12
-    if (flags & FLAG_Z) return;
+    if (flags & FLAG_Z)
+        return;
     //     iny
     y++;
     //     sty input_buffer_offset
     input_buffer_offset = y;
     //     jsr lookup_marker
     lookup_marker();
-    //     bcs c89b3 / c89b3: jsr print_inline_string ; .ascii "Bad marker" ; .byte 0xff
-    if (flags & FLAG_C) { cli_putstring("Bad marker\n"); return_to_cli_prompt(); return; }
-    //     beq c89c1 / c89c1: jsr print_inline_string ; .ascii "Marker not set" ; .byte 0xff
-    if (flags & FLAG_Z) { cli_putstring("Marker not set\n"); return_to_cli_prompt(); return; }
+    //     bcs c89b3 / c89b3: jsr print_inline_string ; .ascii "Bad marker" ;
+    //     .byte 0xff
+    if (flags & FLAG_C)
+    {
+        cli_putstring("Bad marker\n");
+        return_to_cli_prompt();
+        return;
+    }
+    //     beq c89c1 / c89c1: jsr print_inline_string ; .ascii "Marker not set"
+    //     ; .byte 0xff
+    if (flags & FLAG_Z)
+    {
+        cli_putstring("Marker not set\n");
+        return_to_cli_prompt();
+        return;
+    }
     //     lda markers_array,x
     a = (uint8_t)(markers_array[x] & 0xff);
     //     ldy markers_array+1,x
@@ -1766,4 +2139,3 @@ void parse_mark_from_command(void) {
     // return_12:
     //     rts
 }
-

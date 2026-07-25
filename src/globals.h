@@ -16,15 +16,16 @@ typedef uint16_t addr_t;
 
 #define MAX_LINE_LENGTH 132
 #define MAX_COMMAND_LENGTH 68
-#define JMP_CLI     1
-#define JMP_EDITOR  2
+#define JMP_CLI 1
+#define JMP_EDITOR 2
 
 // 6502 CPU register globals
 extern uint8_t a, x, y, flags;
 extern uint8_t ram[65536];
 
 // Printer driver struct
-struct printer_driver {
+struct printer_driver
+{
     void (*print_char)(void);
     void (*printer_on)(void);
     void (*printer_off)(void);
@@ -32,52 +33,64 @@ struct printer_driver {
 };
 
 // Inline helpers
-static inline void set_flags(uint8_t v) {
-    flags = (flags & ~(FLAG_Z|FLAG_N)) | (v == 0 ? FLAG_Z : 0) | (v & FLAG_N);
+static inline void set_flags(uint8_t v)
+{
+    flags = (flags & ~(FLAG_Z | FLAG_N)) | (v == 0 ? FLAG_Z : 0) | (v & FLAG_N);
 }
-static inline void cmp(uint8_t reg, uint8_t value) {
+static inline void cmp(uint8_t reg, uint8_t value)
+{
     uint16_t tmp_ = (uint16_t)reg - value;
-    flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) | ((uint8_t)tmp_ & FLAG_N) | ((uint16_t)reg >= value ? FLAG_C : 0);
+    flags = (flags & ~(FLAG_Z | FLAG_N | FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) |
+            ((uint8_t)tmp_ & FLAG_N) | ((uint16_t)reg >= value ? FLAG_C : 0);
 }
-static inline void adc(uint8_t value) {
+static inline void adc(uint8_t value)
+{
     uint16_t tmp_ = (uint16_t)a + value + (flags & FLAG_C ? 1 : 0);
     flags = (flags & ~FLAG_C) | (tmp_ > 0xff ? FLAG_C : 0);
     a = (uint8_t)tmp_;
     set_flags(a);
 }
-static inline void sbc(uint8_t value) {
+static inline void sbc(uint8_t value)
+{
     uint16_t tmp_ = (uint16_t)a - value - (1 - (flags & FLAG_C ? 1 : 0));
     flags = (flags & ~FLAG_C) | (tmp_ <= 0xff ? FLAG_C : 0);
     a = (uint8_t)tmp_;
     set_flags(a);
 }
-static inline void bit(uint8_t value) {
+static inline void bit(uint8_t value)
+{
     uint8_t tmp_ = a & value;
-    flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (value & (FLAG_N|FLAG_V));
+    flags = (flags & ~(FLAG_Z | FLAG_N | FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) |
+            (value & (FLAG_N | FLAG_V));
 }
-static inline uint8_t rol(uint8_t value) {
+static inline uint8_t rol(uint8_t value)
+{
     uint8_t c_in = (flags & FLAG_C) ? 1 : 0;
     flags = (flags & ~FLAG_C) | ((value & 0x80) ? FLAG_C : 0);
     value = (value << 1) | c_in;
     set_flags(value);
     return value;
 }
-static inline uint8_t ror(uint8_t value) {
+static inline uint8_t ror(uint8_t value)
+{
     uint8_t c_in = (flags & FLAG_C) ? 0x80 : 0;
     flags = (flags & ~FLAG_C) | ((value & 0x01) ? FLAG_C : 0);
     value = (value >> 1) | c_in;
     set_flags(value);
     return value;
 }
-static inline uint8_t asr(uint8_t value) {
+static inline uint8_t asr(uint8_t value)
+{
     flags = (flags & ~FLAG_C) | ((value & 0x01) ? FLAG_C : 0);
     value >>= 1;
     set_flags(value);
     return value;
 }
-static inline void bit_val(uint8_t value) {
+static inline void bit_val(uint8_t value)
+{
     uint8_t tmp_ = a & value;
-    flags = (flags & ~(FLAG_Z|FLAG_N|FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) | (value & (FLAG_N|FLAG_V));
+    flags = (flags & ~(FLAG_Z | FLAG_N | FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) |
+            (value & (FLAG_N | FLAG_V));
 }
 
 // Global variables (shared between view.c and printing.c)
@@ -124,16 +137,15 @@ extern void read_into_document(void);
 extern void reset_document_name_after_load(void);
 extern void parse_integer_from_command(void);
 extern uint8_t l0021, l0031, l0038, l007a;
-#define RAM_REGISTER_VALUE_P (RAM_REGISTER_VALUE_ARRAY + ('P'-'A')*2)
-#define RAM_REGISTER_VALUE_L (RAM_REGISTER_VALUE_ARRAY + ('L'-'A')*2)
+#define RAM_REGISTER_VALUE_P (RAM_REGISTER_VALUE_ARRAY + ('P' - 'A') * 2)
+#define RAM_REGISTER_VALUE_L (RAM_REGISTER_VALUE_ARRAY + ('L' - 'A') * 2)
 
 #define RAM_REGISTER_VALUE_ARRAY 0x0798
 #define register_value_array (&ram[RAM_REGISTER_VALUE_ARRAY])
 #define RAM_CURRENT_RULER_BUF 0x05CF
 
-
 extern jmp_buf env;
-extern const struct printer_driver *printer_driver_ptr;
+extern const struct printer_driver* printer_driver_ptr;
 extern uint8_t print_xpos;
 extern uint8_t input_filename[];
 extern uint8_t output_filename[];
@@ -154,7 +166,8 @@ extern uint8_t insert_mode_flag;
 extern addr_t ptr3;
 
 // Pointer array struct (markers, area pointers, doc pointers)
-struct pointer_array_t {
+struct pointer_array_t
+{
     addr_t markers_array[6];
     addr_t area_start_ptr;
     addr_t area_end_ptr;
@@ -177,7 +190,6 @@ extern uint8_t error_handling_mode;
 extern uint8_t printer_driver_name[];
 extern void run_editor(void);
 
-
 extern uint8_t edit_buffer_unpacked_flag;
 extern uint8_t l0072;
 extern uint8_t l0079;
@@ -185,7 +197,6 @@ extern uint8_t cursor_moved_flag;
 extern uint8_t xpos;
 extern uint8_t flags_need_redrawing_flag;
 #define CTRL(c) ((uint8_t)((c) & 0x1f))
-
 
 extern uint8_t l0074;
 extern uint8_t l0084;
@@ -212,9 +223,9 @@ extern uint8_t l0076;
 #define RAM_CURRENT_LINE_BUF 0x0545
 #define RAM_JUST_BEFORE_RULER_BUF 0x05CC
 extern uint8_t screen_maxcolumn;
-extern FILE *file_ptr;
-extern FILE *input_fp;
-extern FILE *output_fp;
+extern FILE* file_ptr;
+extern FILE* input_fp;
+extern FILE* output_fp;
 extern void clear_cmd(void);
 extern void enter_editor_mode(void);
 extern void sub_caf5f(void);
@@ -223,7 +234,6 @@ extern void file_not_found_error(void);
 extern void file_error(void);
 
 #define current_line_buffer (&ram[RAM_CURRENT_LINE_BUF])
-
 
 // Functions moved to editor.c still called from view.c/other modules
 extern void redraw_editor(void);
@@ -255,11 +265,8 @@ extern uint8_t printing_from_file_flag;
 extern addr_t ptr6;
 extern uint8_t parser_table[];
 
-
 extern uint8_t l0049;
 extern addr_t ptr2;
-
-
 
 extern void c8b7b(void);
 extern void process_current_document_character(void);
