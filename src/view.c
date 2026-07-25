@@ -958,33 +958,28 @@ c8aa3:
     //     txa
     a = x;
     set_flags(x);
-    //     clc
-    flags &= ~FLAG_C;
-    //     adc ptr2
-    adc((uint8_t)(ptr2 & 0xff));
-    //     sta tmp4
-    tmp4 = a;
-    //     lda ptr2+1
-    a = (uint8_t)(ptr2 >> 8);
-    //     adc #0
-    adc(0);
-    //     sta tmp5
-    tmp5 = a;
+    //     clc; adc ptr2; sta tmp4; lda ptr2+1; adc #0; sta tmp5
+    tmp45 = ptr2 + x;
     //     lda l0082
     a = l0082;
-    //     sec
-    flags |= FLAG_C;
-    //     sbc input_buffer_offset+1
-    flags |= FLAG_C;
-    sbc(l0080);
-    //     sta tmp6
-    tmp6 = a;
-    //     lda #0
-    a = 0;
-    //     sbc l0081
-    sbc(l0081);
-    //     sta tmp7
-    tmp7 = a;
+    //     sec; sbc input_buffer_offset+1; sta tmp6; lda #0; sbc l0081; sta tmp7
+    {
+        uint16_t sub = (uint16_t)l0082 - ((uint16_t)l0081 << 8 | l0080);
+        tmp6 = (uint8_t)(sub & 0xff);
+        tmp7 = (uint8_t)(sub >> 8);
+        if ((uint16_t)l0082 >= ((uint16_t)l0081 << 8 | l0080))
+            flags |= FLAG_C;
+        else
+            flags &= ~FLAG_C;
+        if (sub & 0x8000)
+            flags |= FLAG_N;
+        else
+            flags &= ~FLAG_N;
+        if (sub == 0)
+            flags |= FLAG_Z;
+        else
+            flags &= ~FLAG_Z;
+    }
     //     bmi c8aca
     if (flags & FLAG_N)
         goto c8aca;
@@ -1008,19 +1003,8 @@ c8aca:
     // c8aca:
     //     lda #0
     a = 0;
-    //     sec
-    flags |= FLAG_C;
-    //     sbc tmp6
-    flags |= FLAG_C;
-    sbc(tmp6);
-    //     sta tmp6
-    tmp6 = a;
-    //     lda #0
-    a = 0;
-    //     sbc tmp7
-    sbc(tmp7);
-    //     sta tmp7
-    tmp7 = a;
+    //     sec; sbc tmp6; lda #0; sbc tmp7  (negate tmp67)
+    tmp67 = -tmp67;
     //     jsr adjust_pointers
     adjust_pointers();
 c8ada:
