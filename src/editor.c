@@ -3990,9 +3990,7 @@ static void enter_printable_character(void)
     if (flags & FLAG_C)
         return;
     //     lda current_edit_line_ptr
-    tmp6 = (uint8_t)(current_edit_line_ptr & 0xff);
-    //     lda current_edit_line_ptr+1
-    tmp7 = (uint8_t)(current_edit_line_ptr >> 8);
+    tmp67 = current_edit_line_ptr;
     //     ldy xpos
     y = xpos;
     //     jsr sub_ca536
@@ -4294,9 +4292,7 @@ c9cdb:
     //     sty l0081
     l0081 = y;
     //     lda current_edit_line_ptr
-    tmp6 = (uint8_t)(current_edit_line_ptr & 0xff);
-    //     lda current_edit_line_ptr+1
-    tmp7 = (uint8_t)(current_edit_line_ptr >> 8);
+    tmp67 = current_edit_line_ptr;
     //     ldy xpos
     y = xpos;
     //     dey
@@ -4644,9 +4640,7 @@ static void sub_ca071(void)
     while (1)
     {
         //     sta tmp2
-        tmp2 = a;
-        //     sty tmp3
-        tmp3 = y;
+        tmp23 = (addr_t)(y) << 8 | a;
         //     jsr sub_cab37
         move_tmp01_to_previous_line();
         //     lda tmp0
@@ -4756,21 +4750,17 @@ static void sub_ca1cc(void)
     move_cursor_to_address();
     {
         uint16_t diff = area_end_ptr - area_start_ptr;
-        tmp6 = (uint8_t)(diff & 0xff);
-        tmp7 = (uint8_t)(diff >> 8);
+        tmp67 = diff;
     }
-    tmp4 = (uint8_t)(doc_ptr1 & 0xff);
-    tmp5 = (uint8_t)(doc_ptr1 >> 8);
+    tmp45 = doc_ptr1;
     make_space_for_insertion();
     if (flags & FLAG_C)
     {
         show_memory_full_error();
         longjmp(env, JMP_EDITOR);
     }
-    tmp8 = (uint8_t)(area_start_ptr & 0xff);
-    tmp9 = (uint8_t)(area_start_ptr >> 8);
-    tmp2 = tmp4;
-    tmp3 = tmp5;
+    tmp89 = area_start_ptr;
+    tmp23 = tmp45;
     // ca219:
     while (1)
     {
@@ -5903,9 +5893,7 @@ c8c3e:
 static void c9de3_insert_line(void)
 {
     //     sta tmp4
-    tmp4 = a;
-    //     sty tmp5
-    tmp5 = y;
+    tmp45 = (addr_t)(y) << 8 | a;
     //     lda #1
     a = 1;
     //     sta tmp6
@@ -6068,13 +6056,8 @@ void draw_line(uint16_t addr)
     // draw_line: Renders a single document line to the screen
 
     //     sta tmp0
-    tmp0 = (uint8_t)(addr & 0xff);
-    //     sta tmp6
-    tmp6 = (uint8_t)(addr & 0xff);
-    //     sty tmp1
-    tmp1 = (uint8_t)(addr >> 8);
-    //     sty tmp7
-    tmp7 = (uint8_t)(addr >> 8);
+    tmp01 = addr;
+    tmp67 = addr;
     //     ldx #0
     //     ldy l0082
     screen_setcursor(0, l0082);
@@ -6159,9 +6142,7 @@ void draw_prompt_characters(void)
     // On exit: cursor position restored
 
     //     stx tmp2
-    tmp2 = x;
-    //     sty tmp3
-    tmp3 = y;
+    tmp23 = (addr_t)(y) << 8 | x;
     //     jsr save_cursor_position
     save_cursor_position();
     //     jsr cursor_off
@@ -7827,9 +7808,7 @@ static void save_cursor_position(void)
     a = (uint8_t)(cursor_ & 0xff);
     x = (uint8_t)(cursor_ >> 8);
     //     sta tmp4
-    tmp4 = a;
-    //     stx tmp5
-    tmp5 = x;
+    tmp45 = (addr_t)(x) << 8 | a;
     //     rts
 }
 
@@ -8844,9 +8823,7 @@ loop_ca465:
     if (x == 0)
         goto ca479;
     //     sta tmp2
-    tmp2 = a;
-    //     sty tmp3
-    tmp3 = y;
+    tmp23 = (addr_t)(y) << 8 | a;
     //     jsr sub_cab37
     move_tmp01_to_previous_line();
     //     lda tmp0

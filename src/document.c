@@ -689,9 +689,7 @@ void create_default_ruler(void)
     // ***************************************************************************************
     // create_default_ruler:
     //     sta tmp0
-    tmp0 = a;
-    //     sty tmp1
-    tmp1 = y;
+    tmp01 = (addr_t)(y) << 8 | a;
 
     //     lda #0
     a = 0;
@@ -876,8 +874,7 @@ void initialise_document(void)
     //     lda page+1
     //     sbc #0
     //     sta tmp9
-    tmp8 = (uint8_t)((page - 1) & 0xff);
-    tmp9 = (uint8_t)((page - 1) >> 8);
+    tmp89 = page - 1;
     //     lda #0x0d
     a = 0x0d;
     //     sta (tmp8),y
@@ -977,9 +974,7 @@ void move_cursor_to_address(void)
 {
     // move_cursor_to_address:
     //     sta tmp8
-    tmp8 = a;
-    //     sty tmp9
-    tmp9 = y;
+    tmp89 = (addr_t)(y) << 8 | a;
     //     lda current_line_ptr
     a = (uint8_t)(current_line_ptr & 0xff);
     //     ldy current_line_ptr+1
@@ -1038,9 +1033,7 @@ cabf6:
     // cabf9:
 cabf9:
     //     sta tmp0
-    tmp0 = a;
-    //     sty tmp1
-    tmp1 = y;
+    tmp01 = (addr_t)(y) << 8 | a;
     //     jsr cab29
     move_tmp01_to_next_line();
     //     beq cac17

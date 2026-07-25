@@ -781,9 +781,7 @@ void read_into_document(void)
     //     ldy area_start_ptr+1
     y = (uint8_t)((area_start_ptr >> 8) & 0xff);
     //     sta tmp4
-    tmp4 = a;
-    //     sty tmp5
-    tmp5 = y;
+    tmp45 = (addr_t)(y) << 8 | a;
     //     jsr move_cursor_to_address
     move_cursor_to_address();
     //     lda tmp4
@@ -812,13 +810,7 @@ c8584:
     // c8598:
 c8598:
     //     lda tmp0
-    a = tmp0;
-    //     sta tmp4
-    tmp4 = a;
-    //     lda tmp1
-    a = tmp1;
-    //     sta tmp5
-    tmp5 = a;
+    tmp45 = tmp01;
     //     lda ptr5
     a = (uint8_t)(ptr5 & 0xff);
     //     sec
@@ -1389,21 +1381,16 @@ static void compute_space_common(void)
 {
     // c8daf:
     //     sta tmp0
-    tmp0 = a;
-    //     sty tmp1
-    tmp1 = y;
+    tmp01 = (addr_t)(y) << 8 | a;
     //     jsr compute_bytes_free
     compute_bytes_free();
     //     stx tmp6
-    tmp6 = x;
-    //     sty tmp7
-    tmp7 = y;
+    tmp67 = (addr_t)(y) << 8 | x;
     //     lsr tmp9; ror tmp8; lsr tmp9; ror tmp8
     {
         uint16_t t = tmp89;
         t >>= 2;
-        tmp9 = (uint8_t)(t >> 8);
-        tmp8 = (uint8_t)(t & 0xff);
+        tmp89 = t;
     }
     //     lda tmp9; cmp #4
     if (tmp9 >= 4)
@@ -1467,9 +1454,7 @@ static void sub_c8da2(void)
         //     jsr compute_bytes_free
         compute_bytes_free();
         //     stx tmp8
-        tmp8 = x;
-        //     sty tmp9
-        tmp9 = y;
+        tmp89 = (addr_t)(y) << 8 | x;
         //     pla
         //     tay
         y = saved_y;
@@ -1484,9 +1469,7 @@ static void compute_required_space_for_insertion(void)
     //     ldx #0
     x = 0;
     //     stx tmp8
-    tmp8 = 0;
-    //     stx tmp9
-    tmp9 = 0;
+    tmp89 = 0;
     //     beq c8daf                                                         ;
     //     ALWAYS branch
     compute_space_common();

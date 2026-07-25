@@ -400,9 +400,7 @@ static void sub_c95b2(void)
 static void c9575(void)
 {
     //     stx tmp2
-    tmp2 = x;
-    //     sty tmp3
-    tmp3 = y;
+    tmp23 = (addr_t)(y) << 8 | x;
     //     lda #0
     a = 0;
     //     sta l0081
@@ -1678,9 +1676,7 @@ void render_register(void)
     //     ldy #0
     y = 0;
     //     sty tmp8
-    tmp8 = 0;
-    //     sty tmp9
-    tmp9 = 0;
+    tmp89 = 0;
     //     bcs cada2
     if (flags & FLAG_C)
         goto cada2;
@@ -1786,9 +1782,7 @@ void render_number_to_screen(void)
     // ***************************************************************************************
     // render_number_to_screen:
     //     stx tmp8
-    tmp8 = x;
-    //     sty tmp9
-    tmp9 = y;
+    tmp89 = (addr_t)(y) << 8 | x;
     //     lda #<(bdos_print_char)
     a = (uint8_t)((uintptr_t)&print_char_via_putchar & 0xff);
     //     ldy #>(bdos_print_char)
@@ -2530,8 +2524,7 @@ void parse_decimal_number(void)
 
         uint16_t val = tmp89;
         val = val * 10 + a;
-        tmp8 = (uint8_t)val;
-        tmp9 = (uint8_t)(val >> 8);
+        tmp89 = val;
     }
 
     a = tmp8;
