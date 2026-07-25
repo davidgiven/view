@@ -500,12 +500,12 @@ static void sub_c8310(void)
     //     sta l0084
     l0084 = a;
     //     cmp l007e
-    cmp(a, l007e);
+    cmp(&flags, a, l007e);
     //     beq return_2
     if (flags & FLAG_Z)
         return;
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     // return_2:
     //     rts
     return;
@@ -546,14 +546,14 @@ c837d:
     //     lda tmp9
     a = tmp9;
     //     cmp doc_ptr2+1
-    cmp(a, (uint8_t)(doc_ptr2 >> 8));
+    cmp(&flags, a, (uint8_t)(doc_ptr2 >> 8));
     //     bne c8389
     if (!(flags & FLAG_Z))
         goto c8389;
     //     lda tmp8
     a = tmp8;
     //     cmp doc_ptr2+0
-    cmp(a, (uint8_t)(doc_ptr2 & 0xff));
+    cmp(&flags, a, (uint8_t)(doc_ptr2 & 0xff));
     //     beq c8398
     if (flags & FLAG_Z)
         goto c8398;
@@ -562,7 +562,7 @@ c8389:
     //     lda (tmp8),y
     a = ram[tmp89 + y];
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     bne c8390
     if (!(flags & FLAG_Z))
         goto c8390;
@@ -572,13 +572,13 @@ c8390:
     // c8390:
     //     inc tmp8
     tmp8++;
-    set_flags(tmp8);
+    set_flags(&flags, tmp8);
     //     bne c837d
     if (!(flags & FLAG_Z))
         goto c837d;
     //     inc tmp9
     tmp9++;
-    set_flags(tmp9);
+    set_flags(&flags, tmp9);
     //     bne c837d
     if (!(flags & FLAG_Z))
         goto c837d;
@@ -586,10 +586,10 @@ c8398:
     // c8398:
     //     inc l0074
     l0074++;
-    set_flags(l0074);
+    set_flags(&flags, l0074);
     //     txa
     a = x;
-    set_flags(x);
+    set_flags(&flags, x);
     //     beq return_3
     if (flags & FLAG_Z)
         return;
@@ -617,7 +617,7 @@ c83a3:
     if (flags & FLAG_Z)
         goto c83da;
     //     cmp #0x5e ; '^'
-    cmp(a, 0x5e);
+    cmp(&flags, a, 0x5e);
     //     bne c83ca
     if (!(flags & FLAG_Z))
         goto c83ca;
@@ -645,7 +645,7 @@ loop_c83b8:
         if (a & 0x80)
             goto c83c8;
         //     cmp l0082
-        cmp(a, l0082);
+        cmp(&flags, a, l0082);
         //     bne loop_c83b8
         if (!(flags & FLAG_Z))
             goto loop_c83b8;
@@ -676,7 +676,7 @@ c83d1:
     header_text_maybe[x] = a;
     //     inc l0083
     l0083++;
-    set_flags(l0083);
+    set_flags(&flags, l0083);
     //     bne c83a3
     if (!(flags & FLAG_Z))
         goto c83a3;
@@ -753,7 +753,7 @@ void sub_c8412(void)
     //     stx l007a
     l007a = x;
     //     cpx #0
-    cmp(x, 0);
+    cmp(&flags, x, 0);
     // return_5:
     //     rts
 }
@@ -816,13 +816,13 @@ c8598:
     //     sec
     flags |= FLAG_C;
     //     sbc tmp0
-    sbc((uint8_t)(tmp0 & 0xff));
+    sbc(&flags, (uint8_t)(tmp0 & 0xff));
     //     sta tmp6
     tmp6 = a;
     //     lda ptr5+1
     a = (uint8_t)((ptr5 >> 8) & 0xff);
     //     sbc tmp1
-    sbc((uint8_t)(tmp1 & 0xff));
+    sbc(&flags, (uint8_t)(tmp1 & 0xff));
     //     sta tmp7
     tmp7 = a;
     //     jsr adjust_pointers
@@ -849,32 +849,32 @@ c8a5b:
     //     lda header_text_maybe,x
     a = header_text_maybe[x];
     //     cmp #1
-    cmp(a, 1);
+    cmp(&flags, a, 1);
     //     bne c8a6c
     if (!(flags & FLAG_Z))
         goto c8a6c;
     //     lda l0081
     a = l0081;
     //     cmp l0049
-    cmp(a, l0049);
+    cmp(&flags, a, l0049);
     //     bcs c8a86
     if (flags & FLAG_C)
         goto c8a86;
     //     inc l0081
     l0081++;
-    set_flags(l0081);
+    set_flags(&flags, l0081);
     //     bne c8a84
     if (!(flags & FLAG_Z))
         goto c8a84;
 c8a6c:
     // c8a6c:
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     bne c8a84
     if (!(flags & FLAG_Z))
         goto c8a84;
     //     cpy l0048
-    cmp(y, l0048);
+    cmp(&flags, y, l0048);
     //     bcs c8a84
     if (flags & FLAG_C)
         goto c8a84;
@@ -882,13 +882,13 @@ loop_c8a74:
     // loop_c8a74:
     //     lda output_buffer,y
     a = output_buffer[y];
-    set_flags(a);
+    set_flags(&flags, a);
     //     php
     {
         uint8_t saved_flags_ = flags;
         //     iny
         y++;
-        set_flags(y);
+        set_flags(&flags, y);
         //     plp
         flags = saved_flags_;
     }
@@ -897,29 +897,29 @@ loop_c8a74:
         goto c8a86;
     //     inc l0082
     l0082++;
-    set_flags(l0082);
+    set_flags(&flags, l0082);
     //     cpy l0048
-    cmp(y, l0048);
+    cmp(&flags, y, l0048);
     //     bcc loop_c8a74
     if (!(flags & FLAG_C))
         goto loop_c8a74;
     //     dec l0082
     l0082--;
-    set_flags(l0082);
+    set_flags(&flags, l0082);
 c8a84:
     // c8a84:
     //     inc l0082
     l0082++;
-    set_flags(l0082);
+    set_flags(&flags, l0082);
 c8a86:
     // c8a86:
     //     inx
     x++;
-    set_flags(x);
+    set_flags(&flags, x);
 c8a87:
     // c8a87:
     //     cpx l004a
-    cmp(x, l004a);
+    cmp(&flags, x, l004a);
     //     bcc c8a5b
     if (!(flags & FLAG_C))
         goto c8a5b;
@@ -929,25 +929,25 @@ c8a87:
     flags |= FLAG_C;
     //     sbc ptr2
     flags |= FLAG_C;
-    sbc((uint8_t)(ptr2 & 0xff));
+    sbc(&flags, (uint8_t)(ptr2 & 0xff));
     //     sta input_buffer_offset+1
     l0080 = a;
     //     lda doc_ptr2+1
     a = (uint8_t)(doc_ptr2 >> 8);
     //     sbc ptr2+1
-    sbc((uint8_t)(ptr2 >> 8));
+    sbc(&flags, (uint8_t)(ptr2 >> 8));
     //     sta l0081
     l0081 = a;
     //     ldx l0082
     x = l0082;
     //     tay
     y = a;
-    set_flags(y);
+    set_flags(&flags, y);
     //     bne c8aa3
     if (!(flags & FLAG_Z))
         goto c8aa3;
     //     cpx input_buffer_offset+1
-    cmp(x, l0080);
+    cmp(&flags, x, l0080);
     //     bcc c8aa3
     if (!(flags & FLAG_C))
         goto c8aa3;
@@ -957,7 +957,7 @@ c8aa3:
     // c8aa3:
     //     txa
     a = x;
-    set_flags(x);
+    set_flags(&flags, x);
     //     clc; adc ptr2; sta tmp4; lda ptr2+1; adc #0; sta tmp5
     tmp45 = ptr2 + x;
     //     lda l0082
@@ -985,7 +985,7 @@ c8aa3:
         goto c8aca;
     //     ora tmp6
     a |= tmp6;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq c8ada
     if (flags & FLAG_Z)
         goto c8ada;
@@ -1014,7 +1014,7 @@ c8ada:
     //     sty l0081
     l0081 = y;
     //     bit print_xpos
-    bit(print_xpos);
+    bit(&flags, print_xpos);
     //     bmi c8b11
     if (flags & FLAG_N)
         goto c8b11;
@@ -1026,7 +1026,7 @@ loop_c8ae4:
     a = ram[ptr2 + y];
     //     iny
     y++;
-    set_flags(y);
+    set_flags(&flags, y);
     //     jsr is_uppercase
     if (isupper(a))
     {
@@ -1040,10 +1040,10 @@ loop_c8ae4:
     if (!(flags & FLAG_C))
         goto c8af3;
     //     ror print_xpos
-    print_xpos = ror(print_xpos);
+    print_xpos = ror(&flags, print_xpos);
     //     dex
     x--;
-    set_flags(x);
+    set_flags(&flags, x);
     //     bne loop_c8ae4
     if (!(flags & FLAG_Z))
         goto loop_c8ae4;
@@ -1064,16 +1064,16 @@ c8af3:
     }
     //     and #0x20 ; ' '
     a &= 0x20;
-    set_flags(a);
+    set_flags(&flags, a);
     //     bne c8b11
     if (!(flags & FLAG_Z))
         goto c8b11;
     //     inc l0081
     l0081++;
-    set_flags(l0081);
+    set_flags(&flags, l0081);
     //     dex
     x--;
-    set_flags(x);
+    set_flags(&flags, x);
     //     beq c8b0d
     if (flags & FLAG_Z)
         goto c8b0d;
@@ -1093,7 +1093,7 @@ c8af3:
         goto c8b11;
     //     and #0x20 ; ' '
     a &= 0x20;
-    set_flags(a);
+    set_flags(&flags, a);
     //     bne c8b11
     if (!(flags & FLAG_Z))
         goto c8b11;
@@ -1101,10 +1101,10 @@ c8b0d:
     // c8b0d:
     //     dec l0081
     l0081--;
-    set_flags(l0081);
+    set_flags(&flags, l0081);
     //     dec l0081
     l0081--;
-    set_flags(l0081);
+    set_flags(&flags, l0081);
 c8b11:
     // c8b11:
     //     ldx #0
@@ -1129,14 +1129,14 @@ c8b1f:
     //     stx l0084
     l0084 = x;
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     bne c8b38
     if (!(flags & FLAG_Z))
         goto c8b38;
     //     ldy input_buffer_offset+1
     y = l0080;
     //     cpy l0048
-    cmp(y, l0048);
+    cmp(&flags, y, l0048);
     //     bcs c8b47
     if (flags & FLAG_C)
         goto c8b47;
@@ -1149,21 +1149,21 @@ c8b1f:
         goto c8b6a;
     //     dex
     x--;
-    set_flags(x);
+    set_flags(&flags, x);
     //     bcc c8b47
     goto c8b47;
 
 c8b38:
     // c8b38:
     //     cmp #1
-    cmp(a, 1);
+    cmp(&flags, a, 1);
     //     bne c8b47
     if (!(flags & FLAG_Z))
         goto c8b47;
     //     ldy l0082
     y = l0082;
     //     cpy l0049
-    cmp(y, l0049);
+    cmp(&flags, y, l0049);
     //     bcs c8b6a
     if (flags & FLAG_C)
         goto c8b6a;
@@ -1171,11 +1171,11 @@ c8b38:
     a = output_buffer[y];
     //     inc l0082
     l0082++;
-    set_flags(l0082);
+    set_flags(&flags, l0082);
 c8b47:
     // c8b47:
     //     cmp #2
-    cmp(a, 2);
+    cmp(&flags, a, 2);
     //     bne c8b4d
     if (!(flags & FLAG_Z))
         goto c8b4d;
@@ -1184,7 +1184,7 @@ c8b47:
 c8b4d:
     // c8b4d:
     //     bit folding_flag
-    bit(folding_flag);
+    bit(&flags, folding_flag);
     //     bmi c8b64
     if (flags & FLAG_N)
         goto c8b64;
@@ -1207,7 +1207,7 @@ c8b4d:
         goto c8b64;
     //     ora #0x20 ; ' '
     a |= 0x20;
-    set_flags(a);
+    set_flags(&flags, a);
     //     ldy l0081
     y = l0081;
     //     beq c8b64
@@ -1215,10 +1215,10 @@ c8b4d:
         goto c8b64;
     //     dec l0081
     l0081--;
-    set_flags(l0081);
+    set_flags(&flags, l0081);
     //     and #0xdf
     a &= 0xdf;
-    set_flags(a);
+    set_flags(&flags, a);
 c8b64:
     // c8b64:
     //     ldy l0083
@@ -1227,16 +1227,16 @@ c8b64:
     ram[ptr2 + y] = a;
     //     inc l0083
     l0083++;
-    set_flags(l0083);
+    set_flags(&flags, l0083);
 c8b6a:
     // c8b6a:
     //     inx
     x++;
-    set_flags(x);
+    set_flags(&flags, x);
 c8b6b:
     // c8b6b:
     //     cpx l004a
-    cmp(x, l004a);
+    cmp(&flags, x, l004a);
     //     bcc c8b1f
     if (!(flags & FLAG_C))
         goto c8b1f;
@@ -1346,14 +1346,14 @@ void write_area_to_file(void)
         //         lda tmp9
         a = tmp9;
         //         cmp area_end_ptr+1
-        cmp(a, (uint8_t)(area_end_ptr >> 8));
+        cmp(&flags, a, (uint8_t)(area_end_ptr >> 8));
         //         zif eq
         if (flags & FLAG_Z)
         {
             //             lda tmp8
             a = tmp8;
             //             cmp area_end_ptr
-            cmp(a, (uint8_t)(area_end_ptr & 0xff));
+            cmp(&flags, a, (uint8_t)(area_end_ptr & 0xff));
             //         zendif
         }
         //     zuntil eq
@@ -1391,11 +1391,11 @@ static void compute_space_common(void)
     // c8dce:
     //     lda tmp6; sbc tmp8; sta tmp6
     a = tmp6;
-    sbc(tmp8);
+    sbc(&flags, tmp8);
     tmp6 = a;
     //     lda tmp7; sbc tmp9; sta tmp7
     a = tmp7;
-    sbc(tmp9);
+    sbc(&flags, tmp9);
     tmp7 = a;
     //     lda tmp0; clc; adc tmp6; sta ptr5; pha
     //     lda tmp1; adc tmp7; sta ptr5+1; sta l0081; pla
@@ -1403,7 +1403,7 @@ static void compute_space_common(void)
     l0081 = (uint8_t)(ptr5 >> 8);
     a = (uint8_t)ptr5;
     //     sbc #0x8b
-    sbc(0x8b);
+    sbc(&flags, 0x8b);
     //     sta input_buffer_offset+1
     l0080 = a;
     //     bcs return_18
@@ -1478,14 +1478,14 @@ void check_continuous_editing(void)
 
     // check_continuous_editing:
     //     bit file_edit_flags
-    bit(file_edit_flags);
+    bit(&flags, file_edit_flags);
     //     bvs c8e5d
     if (flags & FLAG_V)
         goto c8e5d;
     //     lda file_edit_flags
     a = file_edit_flags;
     //     ror
-    a = ror(a);
+    a = ror(&flags, a);
     //     bcs return_20
     if (flags & FLAG_C)
         return;

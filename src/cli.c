@@ -364,14 +364,14 @@ loop_c86c2:
     //     iny
     y++;
     //     cmp l8747,x
-    cmp(a, l8747_data[x]);
+    cmp(&flags, a, l8747_data[x]);
     //     bne c86d1
     if (!(flags & FLAG_Z))
         goto c86d1;
     //     lda (tmp0),y
     a = ram[tmp01 + y];
     //     cmp l8748,x
-    cmp(a, l8747_data[x + 1]);
+    cmp(&flags, a, l8747_data[x + 1]);
     //     beq c86df
     if (flags & FLAG_Z)
         goto c86df;
@@ -379,7 +379,7 @@ loop_c86c2:
 c86d1:
     //     lda l8749,x
     a = l8747_data[x + 2];
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq c86db
     if (flags & FLAG_Z)
         goto c86db;
@@ -389,7 +389,7 @@ c86d1:
     x++;
     //     inx
     x++;
-    set_flags(x);
+    set_flags(&flags, x);
     //     bne loop_c86c2
     if (!(flags & FLAG_Z))
         goto loop_c86c2;
@@ -408,7 +408,7 @@ c86df:
     //     clc
     flags &= ~FLAG_C;
     //     adc #3
-    adc(3);
+    adc(&flags, 3);
     //     sta tmp0
     tmp0 = a;
     //     bcs c871d
@@ -426,22 +426,22 @@ c86ea:
     process_current_document_character();
     //     and #0x7f
     a &= 0x7f;
-    set_flags(a);
+    set_flags(&flags, a);
     //     ldx #0
     x = 0;
     //     ldy l0082
     y = l0082;
-    set_flags(y);
+    set_flags(&flags, y);
     //     bmi c870d
     if (flags & FLAG_N)
         goto c870d;
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     beq c8703
     if (flags & FLAG_Z)
         goto c8703;
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     beq c8703
     if (flags & FLAG_Z)
         goto c8703;
@@ -449,7 +449,7 @@ c86ea:
 c86ff:
     //     inc l0083
     l0083++;
-    set_flags(l0083);
+    set_flags(&flags, l0083);
     //     bne c8715
     if (!(flags & FLAG_Z))
         goto c8715;
@@ -457,25 +457,25 @@ c86ff:
 c8703:
     //     ldy l0083
     y = l0083;
-    set_flags(y);
+    set_flags(&flags, y);
     //     beq c870d
     if (flags & FLAG_Z)
         goto c870d;
     //     inc tmp8
     tmp8++;
-    set_flags(tmp8);
+    set_flags(&flags, tmp8);
     //     bne c870d
     if (!(flags & FLAG_Z))
         goto c870d;
     //     inc tmp9
     tmp9++;
-    set_flags(tmp9);
+    set_flags(&flags, tmp9);
     // c870d:
 c870d:
     //     stx l0083
     l0083 = x;
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     bne c8715
     if (!(flags & FLAG_Z))
         goto c8715;
@@ -485,12 +485,12 @@ c870d:
 c8715:
     //     ora l0082
     a |= l0082;
-    set_flags(a);
+    set_flags(&flags, a);
     //     sta l0082
     l0082 = a;
     //     inc tmp0
     tmp0++;
-    set_flags(tmp0);
+    set_flags(&flags, tmp0);
     //     bne c871f
     if (!(flags & FLAG_Z))
         goto c871f;
@@ -503,14 +503,14 @@ c871f:
     //     ldy tmp1
     y = tmp1;
     //     cpy area_end_ptr+1
-    cmp(y, (uint8_t)(area_end_ptr >> 8));
+    cmp(&flags, y, (uint8_t)(area_end_ptr >> 8));
     //     bne c86b8
     if (!(flags & FLAG_Z))
         goto c86b8;
     //     ldy tmp0
     y = tmp0;
     //     cpy area_end_ptr
-    cmp(y, (uint8_t)(area_end_ptr & 0xff));
+    cmp(&flags, y, (uint8_t)(area_end_ptr & 0xff));
     //     bne c86b8
     if (!(flags & FLAG_Z))
         goto c86b8;
@@ -583,7 +583,7 @@ static void field_cmd(void)
     //     lda tmp8
     a = tmp8;
     //     cmp #0x1b
-    cmp(a, 0x1b);
+    cmp(&flags, a, 0x1b);
     //     bne c8699
     if (!(flags & FLAG_Z))
         goto c8699;
@@ -679,7 +679,7 @@ static void fold_cmd(void)
     //     lda input_buffer,y
     a = input_buffer[y];
     //     cmp #'1'
-    cmp(a, '1');
+    cmp(&flags, a, '1');
     //     beq c87b2 (true → folding_flag = 0)
     if (flags & FLAG_Z)
     {
@@ -687,7 +687,7 @@ static void fold_cmd(void)
         goto c87b4;
     }
     //     cmp #'0'
-    cmp(a, '0');
+    cmp(&flags, a, '0');
     //     bne c87b4 (not 0 or 1 → just show state)
     if (!(flags & FLAG_Z))
         goto c87b4;
@@ -702,7 +702,7 @@ c87b4:
 
     //     lda folding_flag
     a = folding_flag;
-    set_flags(a);
+    set_flags(&flags, a);
     //     bpl c87cb
     if (!(flags & FLAG_N))
         goto c87cb;
@@ -787,7 +787,7 @@ c876d:
     //     ldy current_line_ptr+1
     y = (uint8_t)((current_line_ptr >> 8) & 0xff);
     //     cpy area_end_ptr+1
-    cmp(y, (uint8_t)(area_end_ptr >> 8));
+    cmp(&flags, y, (uint8_t)(area_end_ptr >> 8));
     //     bcc c876d
     if (!(flags & FLAG_C))
         goto c876d;
@@ -795,7 +795,7 @@ c876d:
     if (!(flags & FLAG_Z))
         goto c8787;
     //     cmp area_end_ptr
-    cmp(a, (uint8_t)(area_end_ptr & 0xff));
+    cmp(&flags, a, (uint8_t)(area_end_ptr & 0xff));
     //     bcc c876d
     if (!(flags & FLAG_C))
         goto c876d;
@@ -886,7 +886,7 @@ c8608:
     a = y;
     //     and #1
     a &= 1;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq c8617
     if (flags & FLAG_Z)
         goto c8617;
@@ -1203,11 +1203,11 @@ c832d:
         return;
     //     and #0xdf
     a &= 0xdf;
-    set_flags(a);
+    set_flags(&flags, a);
     //     ldx #0
     x = 0;
     //     cmp #0x59 ; 'Y'
-    cmp(a, 0x59);
+    cmp(&flags, a, 0x59);
     //     beq c8349
     if (flags & FLAG_Z)
         goto c8349;
@@ -1215,7 +1215,7 @@ c832d:
     //     X=0xff
     x--;
     //     cmp #0x4f ; 'O'
-    cmp(a, 0x4f);
+    cmp(&flags, a, 0x4f);
     //     bne c8356
     if (!(flags & FLAG_Z))
         goto c8356;
@@ -1263,7 +1263,7 @@ static void save_cmd_write_cmd(void)
     if (flags & FLAG_Z)
     {
         //         bit file_edit_flags
-        bit(file_edit_flags);
+        bit(&flags, file_edit_flags);
         //         zif vc
         if (!(flags & FLAG_V))
         {
@@ -1285,7 +1285,7 @@ static void save_cmd_write_cmd(void)
             //             inx
             x++;
             //             cmp #0x0d
-            cmp(a, 0x0d);
+            cmp(&flags, a, 0x0d);
             //         zuntil eq
         } while (!(flags & FLAG_Z));
         //     zendif
@@ -1405,13 +1405,13 @@ c8649:
         goto c8672;
     //     and #0xdf
     a &= 0xdf;
-    set_flags(a);
+    set_flags(&flags, a);
     //     ldx #0
     x = 0;
     // loop_c8652:
 loop_c8652:
     //     cmp c867d,x
-    cmp(a, ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x]);
+    cmp(&flags, a, ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x]);
     //     beq c8669
     if (flags & FLAG_Z)
         goto c8669;
@@ -1442,7 +1442,7 @@ c8669:
         tmp8 = a;
     //     inc input_buffer_offset
     input_buffer_offset++;
-    set_flags(input_buffer_offset);
+    set_flags(&flags, input_buffer_offset);
     //     bne c8649
     if (!(flags & FLAG_Z))
         goto c8649;
@@ -1468,7 +1468,7 @@ loop_c8674:
         insert_mode_flag = a;
     //     dex
     x--;
-    set_flags(x);
+    set_flags(&flags, x);
     //     bpl loop_c8674
     if (!(flags & FLAG_N))
         goto loop_c8674;
@@ -1589,7 +1589,7 @@ void input_line_not_escaped(void)
     if (flags & FLAG_C)
         goto c8263;
     //     cpy #(jumptable4_cli_end-jumptable4_cli)/2
-    cmp(y, 48);
+    cmp(&flags, y, 48);
     //     bcc c826e
     if (!(flags & FLAG_C))
         goto c826e;
@@ -1668,14 +1668,14 @@ void run_cli(void)
     //     jsr display_document_file_state
     display_document_file_state();
     //     bit file_edit_flags
-    bit(file_edit_flags);
+    bit(&flags, file_edit_flags);
     //     bvs c816d
     if (flags & FLAG_V)
         goto c816d;
     //     lda file_edit_flags
     a = file_edit_flags;
     //     ror
-    a = ror(a);
+    a = ror(&flags, a);
     //     bcc c816d
     if (!(flags & FLAG_C))
         goto c816d;
@@ -1705,7 +1705,7 @@ c8163:
 c816d:
     //     lda printer_driver_name
     a = printer_driver_name[0];
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq c81b6
     if (flags & FLAG_Z)
         goto c81b6;
@@ -1734,7 +1734,7 @@ c816d:
     // c81a7:
     //     lda microspacing_flag
     a = microspacing_flag;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq c81b3
     if (flags & FLAG_Z)
         goto c81b3;
@@ -1757,7 +1757,7 @@ c81b6:
 c81ba:
     //     lda markers_array+1,x
     a = ((uint8_t*)markers_array)[x + 1];
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq c81e7
     if (flags & FLAG_Z)
         goto c81e7;
@@ -1791,9 +1791,9 @@ c81e0:
     //     txa
     a = x;
     //     lsr
-    a = asr(a);
+    a = asr(&flags, a);
     //     adc #0x31 ; '1'
-    adc(0x31);
+    adc(&flags, 0x31);
     //     jsr screen_putchar
     screen_putchar(a);
     // c81e7:
@@ -1859,7 +1859,7 @@ loop_ca851:
     l0084 = a;
     //     lda parser_table,x
     a = parser_table[x];
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq ca890
     if (flags & FLAG_Z)
         goto ca890;
@@ -1873,7 +1873,7 @@ loop_ca851:
     //     and #0xdf
     a &= 0xdf;
     //     cmp l0084
-    cmp(a, l0084);
+    cmp(&flags, a, l0084);
     //     beq loop_ca851
     if (flags & FLAG_Z)
         goto loop_ca851;
@@ -1883,7 +1883,7 @@ loop_ca86a:
     x++;
     //     lda parser_table,x
     a = parser_table[x];
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq ca890
     if (flags & FLAG_Z)
         goto ca890;
@@ -1901,7 +1901,7 @@ loop_ca86a:
     //     lda (tmp0),y
     a = input_buffer[y];
     //     cmp #0x30 ; '0'
-    cmp(a, 0x30);
+    cmp(&flags, a, 0x30);
     //     bcs ca84c
     if (flags & FLAG_C)
         goto ca84c;
@@ -1910,7 +1910,7 @@ ca87e:
     //     lda (tmp0),y
     a = input_buffer[y];
     //     cmp #0x30 ; '0'
-    cmp(a, 0x30);
+    cmp(&flags, a, 0x30);
     //     bcs ca887
     if (flags & FLAG_C)
         goto ca887;
@@ -2059,7 +2059,7 @@ loop_c88fa:
     //     inx
     x++;
     //     cmp #0x21
-    cmp(a, 0x21);
+    cmp(&flags, a, 0x21);
     //     bge loop_c88fa
     if (flags & FLAG_C)
         goto loop_c88fa;
@@ -2085,7 +2085,7 @@ void zero_terminate_filename_buffer(void)
     // zloop:
 zloop:
     //     cmp filename_buffer, x
-    cmp(a, filename_buffer[x]);
+    cmp(&flags, a, filename_buffer[x]);
     //     zbreakif eq
     if (flags & FLAG_Z)
         goto zbreak;
@@ -2135,7 +2135,7 @@ void parse_mark_from_command(void)
     a = (uint8_t)(markers_array[x] & 0xff);
     //     ldy markers_array+1,x
     y = (uint8_t)(markers_array[x] >> 8);
-    set_flags(y);
+    set_flags(&flags, y);
     // return_12:
     //     rts
 }

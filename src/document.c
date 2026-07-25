@@ -28,12 +28,12 @@ void check_for_control_code(void)
 
     // check_for_control_code:
     //     cmp #0x1c
-    cmp(a, 0x1c);
+    cmp(&flags, a, 0x1c);
     //     beq return_63
     if (flags & FLAG_Z)
         goto return_63;
     //     cmp #0x1d
-    cmp(a, 0x1d);
+    cmp(&flags, a, 0x1d);
     //     clc
     flags &= ~FLAG_C;
     // return_63:
@@ -55,13 +55,13 @@ void compute_bytes_free(void)
     flags |= FLAG_C;
     //     sbc top
     flags |= FLAG_C;
-    sbc((uint8_t)(top & 0xff));
+    sbc(&flags, (uint8_t)(top & 0xff));
     //     tax
     x = a;
     //     lda himem+1
     a = (uint8_t)(himem >> 8);
     //     sbc top+1
-    sbc((uint8_t)(top >> 8));
+    sbc(&flags, (uint8_t)(top >> 8));
     //     tay
     y = a;
     // return_84:
@@ -122,7 +122,7 @@ loop_c89fa:
     //     lda input_filename,y
     a = input_filename[y];
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     beq c8a07
     if (flags & FLAG_Z)
         goto c8a07;
@@ -136,7 +136,7 @@ loop_c89fa:
 c8a07:
     // c8a07:
     //     bit file_edit_flags
-    bit(file_edit_flags);
+    bit(&flags, file_edit_flags);
     //     bvs c8a19
     if (flags & FLAG_V)
         goto c8a19;
@@ -158,7 +158,7 @@ c8a19:
     //     jsr bdos_print_char
     cli_putchar(a);
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     bne loop_c8a15
     if (!(flags & FLAG_Z))
         goto loop_c8a15;
@@ -189,7 +189,7 @@ loop_caba5:
     //     lda (current_ruler_ptr),y
     a = ram[current_ruler_ptr + y];
     //     cmp #0x3e ; '>'
-    cmp(a, 0x3e);
+    cmp(&flags, a, 0x3e);
     //     bne cabad
     if (!(flags & FLAG_Z))
         goto cabad;
@@ -198,7 +198,7 @@ loop_caba5:
     // cabad:
 cabad:
     //     cmp #0x3c ; '<'
-    cmp(a, 0x3c);
+    cmp(&flags, a, 0x3c);
     //     bne cabb3
     if (!(flags & FLAG_Z))
         goto cabb3;
@@ -207,14 +207,14 @@ cabad:
     // cabb3:
 cabb3:
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     beq cabbc
     if (flags & FLAG_Z)
         goto cabbc;
     //     iny
     y++;
     //     cpy #0x84
-    cmp(y, MAX_LINE_LENGTH);
+    cmp(&flags, y, MAX_LINE_LENGTH);
     //     bne loop_caba5
     if (!(flags & FLAG_Z))
         goto loop_caba5;
@@ -312,22 +312,22 @@ void process_document_character(void)
 {
     // sub_ca5ae:
     //     cmp #9
-    cmp(a, 9);
+    cmp(&flags, a, 9);
     //     beq ca5e1
     if (flags & FLAG_Z)
         goto ca5e1;
     //     cmp #0x10
-    cmp(a, 0x10);
+    cmp(&flags, a, 0x10);
     //     beq ca5d5
     if (flags & FLAG_Z)
         goto ca5d5;
     //     cmp #0x0b
-    cmp(a, 0x0b);
+    cmp(&flags, a, 0x0b);
     //     beq ca5d9
     if (flags & FLAG_Z)
         goto ca5d9;
     //     cmp #0x1a
-    cmp(a, 0x1a);
+    cmp(&flags, a, 0x1a);
     //     beq ca5d5
     if (flags & FLAG_Z)
         goto ca5d5;
@@ -335,7 +335,7 @@ void process_document_character(void)
     if (!(flags & FLAG_C))
         goto ca5d1;
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     bcs ca5d1
     if (flags & FLAG_C)
         goto ca5d1;
@@ -347,7 +347,7 @@ void process_document_character(void)
     if (!(y & 0x80))
         goto ca5cf;
     //     sbc #0x1b
-    sbc(0x1b);
+    sbc(&flags, 0x1b);
     //     tax
     x = a;
     //     lda highlight1_code,x
@@ -372,7 +372,7 @@ ca5d5:
 ca5d9:
     //     lda ruler_left_stop
     a = ruler_left_stop;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq ca5d5
     if (flags & FLAG_Z)
         goto ca5d5;
@@ -390,14 +390,14 @@ loop_ca5e5:
     //     iny
     y++;
     //     cpy l003a
-    cmp(y, l003a);
+    cmp(&flags, y, l003a);
     //     bcs ca5f8
     if (flags & FLAG_C)
         goto ca5f8;
     //     lda (current_ruler_ptr),y
     a = ram[current_ruler_ptr + y];
     //     cmp #0x2a ; '*'
-    cmp(a, 0x2a);
+    cmp(&flags, a, 0x2a);
     //     bne loop_ca5e5
     if (!(flags & FLAG_Z))
         goto loop_ca5e5;
@@ -405,7 +405,7 @@ loop_ca5e5:
     a = y;
 ca5f1:
     //     sbc l0039
-    sbc(l0039);
+    sbc(&flags, l0039);
     //     tax
     x = a;
     //     beq ca5f8
@@ -447,7 +447,7 @@ read_char:
 
     //     cmp #0x1b                                                         ;
     //     A=character read
-    cmp(a, 0x1b);
+    cmp(&flags, a, 0x1b);
     //     clc
     flags &= ~FLAG_C;
     //     bne return_65
@@ -476,17 +476,17 @@ void stop_printing(void)
     // stop_printing:
     //     lda print_flags
     a = print_flags;
-    set_flags(a);
+    set_flags(&flags, a);
     //     bpl c8459
     if (!(flags & FLAG_N))
         goto c8459;
     //     rol print_flags
-    a = rol(print_flags);
+    a = rol(&flags, print_flags);
     print_flags = a;
     //     clc
     flags &= ~FLAG_C;
     //     ror print_flags
-    a = ror(print_flags);
+    a = ror(&flags, print_flags);
     print_flags = a;
     //     lda #6
     a = 6;
@@ -540,7 +540,7 @@ void sub_cab6e(void)
     //     lda (tmp0),y
     a = ram[tmp01 + y];
     //     cmp #0x81
-    cmp(a, 0x81);
+    cmp(&flags, a, 0x81);
     //     rts
     return;
 }
@@ -572,16 +572,16 @@ void sub_cadf0(void)
     // loop_cadf4:
 loop_cadf4:
     //     asl tmp8
-    tmp8 = rol(tmp8);
+    tmp8 = rol(&flags, tmp8);
     //     rol
-    a = rol(a);
+    a = rol(&flags, a);
     //     cmp l0046
-    cmp(a, l0046);
+    cmp(&flags, a, l0046);
     //     bcc cadff
     if (!(flags & FLAG_C))
         goto cadff;
     //     sbc l0046
-    sbc(l0046);
+    sbc(&flags, l0046);
     //     inc tmp8
     tmp8++;
     // cadff:
@@ -612,7 +612,7 @@ void cab91(void)
     //     lda (oshwm),y
     a = ram[oshwm + y];
     //     adc #3
-    adc(3);
+    adc(&flags, 3);
     //     sta current_ruler_ptr
     current_ruler_ptr = (current_ruler_ptr & 0xff00) | a;
     //     dey
@@ -620,7 +620,7 @@ void cab91(void)
     //     lda (oshwm),y
     a = ram[oshwm + y];
     //     adc #0
-    adc(0);
+    adc(&flags, 0);
     //     sta current_ruler_ptr+1
     current_ruler_ptr = (current_ruler_ptr & 0x00ff) | ((uint16_t)a << 8);
     // MULTIPLE ENTRY POINTS: pop_from_ruler_index, cab91
@@ -635,14 +635,14 @@ void cb05a(void)
     //     ldy page+1
     y = (uint8_t)(page >> 8);
     //     cpy top+1
-    cmp(y, (uint8_t)(top >> 8));
+    cmp(&flags, y, (uint8_t)(top >> 8));
     //     bne return_85
     if (!(flags & FLAG_Z))
         return;
     //     lda page
     a = (uint8_t)(page & 0xff);
     //     cmp top
-    cmp(a, (uint8_t)(top & 0xff));
+    cmp(&flags, a, (uint8_t)(top & 0xff));
     //     bne return_85
     if (!(flags & FLAG_Z))
         return;
@@ -715,9 +715,9 @@ loop_cb0e9:
     //     clc
     flags &= ~FLAG_C;
     //     adc #6
-    adc(6);
+    adc(&flags, 6);
     //     cmp screen_width
-    cmp(a, screen_maxcolumn);
+    cmp(&flags, a, screen_maxcolumn);
     //     beq cb0ff
     if (flags & FLAG_Z)
         goto cb0ff;
@@ -787,18 +787,18 @@ void get_register_address(void)
     {
         uint8_t saved_a = a;
         //     sbc #0x40 ; '@'
-        sbc(0x40);
+        sbc(&flags, 0x40);
         //     asl
         a <<= 1;
         //     adc #<register_value_array
         flags &= ~FLAG_C;
-        adc((uint8_t)(RAM_REGISTER_VALUE_ARRAY & 0xff));
+        adc(&flags, (uint8_t)(RAM_REGISTER_VALUE_ARRAY & 0xff));
         //     sta tmp6
         tmp6 = a;
         //     lda #>register_value_array
         a = (uint8_t)(RAM_REGISTER_VALUE_ARRAY >> 8);
         //     adc #0
-        adc(0);
+        adc(&flags, 0);
         //     sta tmp7
         tmp7 = a;
         //     pla
@@ -890,7 +890,7 @@ void initialise_document(void)
     //     clc
     flags &= ~FLAG_C;
     //     adc #3
-    adc(3);
+    adc(&flags, 3);
     //     sta current_edit_line_ptr
     //     sta current_format_line_ptr
     current_edit_line_ptr = (current_edit_line_ptr & 0xff00) | a;
@@ -900,7 +900,7 @@ void initialise_document(void)
     //     sta ptr1+1
     ptr1 = (ptr1 & 0x00ff) | ((uint16_t)a << 8);
     //     adc #0
-    adc(0);
+    adc(&flags, 0);
     //     sta current_edit_line_ptr+1
     //     sta current_format_line_ptr+1
     current_edit_line_ptr =
@@ -956,7 +956,7 @@ void lookup_marker(void)
     //     asl
     a <<= 1;
     //     cmp #0x0c
-    cmp(a, 0x0c);
+    cmp(&flags, a, 0x0c);
     //     bcs return_75
     if (flags & FLAG_C)
     { /* return_75: */
@@ -980,7 +980,7 @@ void move_cursor_to_address(void)
     //     ldy current_line_ptr+1
     y = (uint8_t)(current_line_ptr >> 8);
     //     cpy tmp9
-    cmp(y, tmp9);
+    cmp(&flags, y, tmp9);
     //     bcc cabf9
     if (!(flags & FLAG_C))
         goto cabf9;
@@ -988,7 +988,7 @@ void move_cursor_to_address(void)
     if (!(flags & FLAG_Z))
         goto cabdf;
     //     cmp tmp8
-    cmp(a, tmp8);
+    cmp(&flags, a, tmp8);
     //     bcc cabf9
     if (!(flags & FLAG_C))
         goto cabf9;
@@ -1007,7 +1007,7 @@ cabdf:
     if (!(flags & FLAG_C))
         goto cac20;
     //     cpy tmp9
-    cmp(y, tmp9);
+    cmp(&flags, y, tmp9);
     //     bcc cac20
     if (!(flags & FLAG_C))
         goto cac20;
@@ -1015,7 +1015,7 @@ cabdf:
     if (!(flags & FLAG_Z))
         goto cabdf;
     //     cmp tmp8
-    cmp(a, tmp8);
+    cmp(&flags, a, tmp8);
     //     bcc cac20
     if (!(flags & FLAG_C))
         goto cac20;
@@ -1046,7 +1046,7 @@ cabf9:
     //     clc
     flags &= ~FLAG_C;
     //     adc tmp0
-    adc(tmp0);
+    adc(&flags, tmp0);
     //     bcc cac0b
     if (!(flags & FLAG_C))
         goto cac0b;
@@ -1055,7 +1055,7 @@ cabf9:
     // cac0b:
 cac0b:
     //     cpy tmp9
-    cmp(y, tmp9);
+    cmp(&flags, y, tmp9);
     //     bcc cabf6
     if (!(flags & FLAG_C))
         goto cabf6;
@@ -1063,7 +1063,7 @@ cac0b:
     if (!(flags & FLAG_Z))
         goto cac17;
     //     cmp tmp8
-    cmp(a, tmp8);
+    cmp(&flags, a, tmp8);
     //     bcc cabf6
     if (!(flags & FLAG_C))
         goto cabf6;
@@ -1092,7 +1092,7 @@ cac20:
     //     sec
     flags |= FLAG_C;
     //     sbc current_line_ptr
-    sbc((uint8_t)(current_line_ptr & 0xff));
+    sbc(&flags, (uint8_t)(current_line_ptr & 0xff));
     //     tax
     x = a;
     //     ldy #0
@@ -1107,7 +1107,7 @@ cac20:
     //     txa
     a = x;
     //     cpx #3
-    cmp(x, 3);
+    cmp(&flags, x, 3);
     //     ldx #0
     x = 0;
     //     bcc cac3e
@@ -1116,7 +1116,7 @@ cac20:
     //     sec
     flags |= FLAG_C;
     //     sbc #3
-    sbc(3);
+    sbc(&flags, 3);
     //     tax
     x = a;
     // cac3e:
@@ -1166,20 +1166,20 @@ void move_tmp01_to_next_line(void)
 loop_cab2b:
     //     lda (tmp0),y
     a = ram[tmp01 + y];
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq return_70
     if (flags & FLAG_Z)
         goto return_70;
     //     iny
     y++;
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     bne loop_cab2b
     if (!(flags & FLAG_Z))
         goto loop_cab2b;
     //     lda (tmp0),y
     a = ram[tmp01 + y];
-    set_flags(a);
+    set_flags(&flags, a);
     // return_70:
 return_70:
     //     rts
@@ -1192,7 +1192,7 @@ void move_tmp01_to_previous_line(void)
     //     sec
     flags |= FLAG_C;
     //     sbc #1
-    sbc(1);
+    sbc(&flags, 1);
     //     sta tmp0
     tmp0 = a;
     //     bcs cab3f
@@ -1205,7 +1205,7 @@ cab3f:
     //     sty tmp1
     tmp1 = y;
     //     cpy page+1
-    cmp(y, (uint8_t)(page >> 8));
+    cmp(&flags, y, (uint8_t)(page >> 8));
     //     bcc return_71
     if (!(flags & FLAG_C))
         return;
@@ -1213,7 +1213,7 @@ cab3f:
     if (!(flags & FLAG_Z))
         goto cab4b;
     //     cmp page
-    cmp(a, (uint8_t)(page & 0xff));
+    cmp(&flags, a, (uint8_t)(page & 0xff));
     //     bcc return_71
     if (!(flags & FLAG_C))
         return;
@@ -1228,7 +1228,7 @@ loop_cab4d:
     //     sec
     flags |= FLAG_C;
     //     sbc #1
-    sbc(1);
+    sbc(&flags, 1);
     //     sta tmp0
     tmp0 = a;
     //     bcs cab58
@@ -1241,13 +1241,13 @@ cab58:
     //     lda (tmp0),y
     a = ram[tmp01 + y];
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     bne loop_cab4d
     if (!(flags & FLAG_Z))
         goto loop_cab4d;
     //     inc tmp0
     tmp0++;
-    set_flags(tmp0);
+    set_flags(&flags, tmp0);
     //     bne cab64
     if (!(flags & FLAG_Z))
         goto cab64;
@@ -1344,7 +1344,7 @@ void push_onto_ruler_index(void)
         //     pla
         //     tay
         y = saved_y;
-        set_flags(y);
+        set_flags(&flags, y);
     }
     //     rts
     return;

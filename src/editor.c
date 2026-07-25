@@ -303,7 +303,7 @@ void editor_loop_impl(void)
 
             //     cmp l0072
 
-            cmp(a, l0072);
+            cmp(&flags, a, l0072);
 
             //     bcc c9b73
 
@@ -334,7 +334,7 @@ void editor_loop_impl(void)
 
             //     cpy xpos
 
-            cmp(y, xpos);
+            cmp(&flags, y, xpos);
 
             //     bcs c9b84
 
@@ -343,7 +343,7 @@ void editor_loop_impl(void)
 
             //     bit format_mode_flag
 
-            bit(format_mode_flag);
+            bit(&flags, format_mode_flag);
 
             //     bvs c9b6a
 
@@ -405,7 +405,7 @@ void editor_loop_impl(void)
 
             //     cpy xpos
 
-            cmp(y, xpos);
+            cmp(&flags, y, xpos);
 
             //     bcc c9b86
 
@@ -470,7 +470,7 @@ void editor_loop_impl(void)
 
         //     cmp current_tab_key
 
-        cmp(a, current_tab_key);
+        cmp(&flags, a, current_tab_key);
 
         //     bne c9b9f
 
@@ -497,7 +497,7 @@ void editor_loop_impl(void)
 
         //     cmp #0x20 ; ' '
 
-        cmp(a, 0x20);
+        cmp(&flags, a, 0x20);
 
         //     bcc enter_nonprintable_character
 
@@ -506,7 +506,7 @@ void editor_loop_impl(void)
 
         //     cmp #0x7f
 
-        cmp(a, 0x7f);
+        cmp(&flags, a, 0x7f);
 
         //     bcc enter_printable_character
 
@@ -768,7 +768,7 @@ static void cf6_split_line_key(void)
 
     //     cpy xpos
 
-    cmp(y, xpos);
+    cmp(&flags, y, xpos);
 
     //     bcc c9dbd
 
@@ -843,7 +843,7 @@ c9dcd:
     //     adc current_line_ptr
 
     flags &= ~FLAG_C;
-    adc((uint8_t)(current_line_ptr & 0xff));
+    adc(&flags, (uint8_t)(current_line_ptr & 0xff));
 
     //     bcc c9de3
 
@@ -936,7 +936,7 @@ static void cf7_join_lines_key(void)
     //     adc current_line_ptr
 
     flags &= ~FLAG_C;
-    adc((uint8_t)(current_line_ptr & 0xff));
+    adc(&flags, (uint8_t)(current_line_ptr & 0xff));
 
     //     sta tmp4
 
@@ -948,7 +948,7 @@ static void cf7_join_lines_key(void)
 
     //     adc #0
 
-    adc(0);
+    adc(&flags, 0);
 
     //     sta tmp5
 
@@ -1100,7 +1100,7 @@ static void delete_key(void)
 
     a = l0072;
 
-    set_flags(a);
+    set_flags(&flags, a);
 
     //     beq return_55
 
@@ -1135,7 +1135,7 @@ static void delete_key(void)
 
     //     cmp #0x0c
 
-    cmp(a, 0x0c);
+    cmp(&flags, a, 0x0c);
 
     //     bcc return_55
 
@@ -1146,7 +1146,7 @@ static void delete_key(void)
 
     x = insert_mode_flag;
 
-    set_flags(x);
+    set_flags(&flags, x);
 
     //     bne return_55
 
@@ -1159,7 +1159,7 @@ static void delete_key(void)
 
     //     cpy xpos
 
-    cmp(y, xpos);
+    cmp(&flags, y, xpos);
 
     //     bcc return_55
 
@@ -1339,7 +1339,7 @@ void f13_right_key(void)
 
     //     cpy #MAX_LINE_LENGTH
 
-    cmp(y, MAX_LINE_LENGTH);
+    cmp(&flags, y, MAX_LINE_LENGTH);
 
     //     bcs return_51
 
@@ -1502,7 +1502,7 @@ static void f3_delete_to_eol_key(void)
 
     //     sbc xpos
 
-    sbc(xpos);
+    sbc(&flags, xpos);
     x = a;
 
     //     tax
@@ -1639,7 +1639,7 @@ static void f7_delete_line_key(void)
 
     a = ram[current_line_ptr + y];
 
-    set_flags(a);
+    set_flags(&flags, a);
 
     //     bne c9e81
 
@@ -2809,7 +2809,7 @@ void return_key(void)
 
     //     adc current_line_ptr
 
-    adc((uint8_t)(current_line_ptr & 0xff));
+    adc(&flags, (uint8_t)(current_line_ptr & 0xff));
 
     //     bcc c9d98
 
@@ -2967,7 +2967,7 @@ static void sf12_left_key(void)
 
     //     cmp #0x20 ; ' '
 
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
 
     //     beq c9f80
 
@@ -3074,7 +3074,7 @@ c9fab:
 
     //     adc current_line_ptr
 
-    adc((uint8_t)(current_line_ptr & 0xff));
+    adc(&flags, (uint8_t)(current_line_ptr & 0xff));
 
     //     sta current_line_ptr
 
@@ -3140,7 +3140,7 @@ c9fc3:
 
     //     cmp #0x20 ; ' '
 
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
 
     //     bne return_58
 
@@ -3166,7 +3166,7 @@ loop_c9ff8:
 
     //     cmp #0x20 ; ' '
 
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
 
     //     bne loop_c9ff8
 
@@ -3188,7 +3188,7 @@ loop_ca003:
 
     //     cmp #0x20 ; ' '
 
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
 
     //     beq loop_ca003
 
@@ -3573,7 +3573,7 @@ edit_command_loop:
 
     //     cmp #0x0d
 
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
 
     //     beq finished_editing_command
 
@@ -3586,7 +3586,7 @@ edit_command_loop:
 
     //     cmp #0x41 ; 'A'
 
-    cmp(a, 0x41);
+    cmp(&flags, a, 0x41);
 
     //     bcc edit_command_loop
 
@@ -3595,7 +3595,7 @@ edit_command_loop:
 
     //     cmp #0x5b ; '['
 
-    cmp(a, 0x5b);
+    cmp(&flags, a, 0x5b);
 
     //     bcs edit_command_loop
 
@@ -3628,7 +3628,7 @@ edit_command_loop:
 
     //     cpy #2
 
-    cmp(y, 2);
+    cmp(&flags, y, 2);
 
     //     bcc edit_command_loop
 
@@ -3655,7 +3655,7 @@ finished_editing_command:
 
     a = l0081;
 
-    set_flags(a);
+    set_flags(&flags, a);
 
     //     beq return_56
 
@@ -3793,7 +3793,7 @@ static void c9d9b_advance_ptr(void)
     //     clc
     flags &= ~FLAG_C;
     //     adc current_line_ptr
-    adc((uint8_t)(current_line_ptr & 0xff));
+    adc(&flags, (uint8_t)(current_line_ptr & 0xff));
     //     sta current_line_ptr
     current_line_ptr = (uint16_t)((current_line_ptr & 0xff00) | a);
     //     bcc return_54
@@ -3865,7 +3865,7 @@ static void delete_edit_buffer_bytes_at_xpos(void)
     //     clc
     flags &= ~FLAG_C;
     //     adc input_buffer_offset+1
-    adc(l0080);
+    adc(&flags, l0080);
     //     sta l0084
     // cae78:
 cae78:
@@ -3877,24 +3877,24 @@ cae78:
     //     lda #0
     a = 0;
     //     cpy l0084
-    cmp(y, l0084);
+    cmp(&flags, y, l0084);
     //     bcc cae91
     if (!(flags & FLAG_C))
         goto cae91;
     //     tya
     a = y;
     //     sbc input_buffer_offset+1
-    sbc(l0080);
+    sbc(&flags, l0080);
     //     clc
     flags &= ~FLAG_C;
     //     adc current_edit_line_ptr
-    adc((uint8_t)(current_edit_line_ptr & 0xff));
+    adc(&flags, (uint8_t)(current_edit_line_ptr & 0xff));
     //     sta markers_array,x
     ((uint8_t*)markers_array)[x] = a;
     //     lda current_edit_line_ptr+1
     a = (uint8_t)(current_edit_line_ptr >> 8);
     //     adc #0
-    adc(0);
+    adc(&flags, 0);
     //     bne cae93
     if (!(flags & FLAG_Z))
         goto cae93;
@@ -3914,14 +3914,14 @@ cae98:
     //     iny
     y++;
     //     cpy #0x85
-    cmp(y, MAX_LINE_LENGTH + 1);
+    cmp(&flags, y, MAX_LINE_LENGTH + 1);
     //     bcc cae78
     if (!(flags & FLAG_C))
         goto cae78;
     //     lda xpos
     a = xpos;
     //     cmp #0x84
-    cmp(a, MAX_LINE_LENGTH);
+    cmp(&flags, a, MAX_LINE_LENGTH);
     //     bcs return_78
     if (flags & FLAG_C)
     { /* return_78: */
@@ -3940,14 +3940,14 @@ loop_caea5:
     //     clc
     flags &= ~FLAG_C;
     //     adc input_buffer_offset+1
-    adc(l0080);
+    adc(&flags, l0080);
     //     bcs caeb7
     if (flags & FLAG_C)
         goto caeb7;
     //     tay
     y = a;
     //     cpy #0x84
-    cmp(y, MAX_LINE_LENGTH);
+    cmp(&flags, y, MAX_LINE_LENGTH);
     //     bcs caeb7
     if (flags & FLAG_C)
         goto caeb7;
@@ -3966,7 +3966,7 @@ caeb7:
     //     iny
     y++;
     //     cpy #0x84
-    cmp(y, MAX_LINE_LENGTH);
+    cmp(&flags, y, MAX_LINE_LENGTH);
     //     bcc loop_caea5
     if (!(flags & FLAG_C))
         goto loop_caea5;
@@ -4078,7 +4078,7 @@ c9c1d:
     //     clc
     flags &= ~FLAG_C;
     //     adc l0039
-    adc(l0039);
+    adc(&flags, l0039);
     //     bne c9c43
     if (a != 0)
         goto c9c43;
@@ -4090,7 +4090,7 @@ c9c31:
         goto c9c4a;
     //     lda ruler_left_stop
     a = ruler_left_stop;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq c9c48
     if (flags & FLAG_Z)
         goto c9c48;
@@ -4100,7 +4100,7 @@ c9c31:
     if (x == 0)
         goto c9c43;
     //     cpx ruler_left_stop
-    cmp(x, ruler_left_stop);
+    cmp(&flags, x, ruler_left_stop);
     //     bcc c9c43
     if (!(flags & FLAG_C))
         goto c9c43;
@@ -4197,7 +4197,7 @@ c9c56:
     //     lda l0072 (4211)
     a = l0072;
     //     cmp ruler_left_stop (4212)
-    cmp(a, ruler_left_stop);
+    cmp(&flags, a, ruler_left_stop);
     //     beq c9c9d (4213) bcs c9ca2 (4214)
     // c9c9d: (4215)
     //     ldy input_buffer_ptr+1, dey, sty xpos (4216-4218)
@@ -4222,7 +4222,7 @@ c9ca2:
     //     sec (4221)
     flags |= FLAG_C;
     //     sbc xpos (4222)
-    sbc(xpos);
+    sbc(&flags, xpos);
     //     sta top_margin (4223)
     top_margin = a;
     //     lda l0083 (4224)
@@ -4230,7 +4230,7 @@ c9ca2:
     //     sec (4225)
     flags |= FLAG_C;
     //     sbc xpos (4226)
-    sbc(xpos);
+    sbc(&flags, xpos);
     //     sta l0083 (4227)
     l0083 = a;
     //     tay (4228)
@@ -4239,7 +4239,7 @@ c9ca2:
     y++;
     //     lda ruler_left_stop (4230)
     a = ruler_left_stop;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq c9cb9 (4231)
     if (flags & FLAG_Z)
         goto c9cb9;
@@ -4256,13 +4256,13 @@ c9cb9:
     //     sec (4237)
     flags |= FLAG_C;
     //     adc l003b (4238)
-    adc(l003b);
+    adc(&flags, l003b);
     //     sta tmp4 (4239)
     tmp4 = a;
     //     lda current_line_ptr+1 (4240)
     a = (uint8_t)(current_line_ptr >> 8);
     //     adc #0 (4241)
-    adc(0);
+    adc(&flags, 0);
     //     sta tmp5 (4242)
     tmp5 = a;
     //     jsr make_space_for_insertion (4243)
@@ -4331,13 +4331,13 @@ loop_c9cf9:
     //     clc
     flags &= ~FLAG_C;
     //     adc tmp4
-    adc(tmp4);
+    adc(&flags, tmp4);
     //     sta markers_array,x
     ((uint8_t*)markers_array)[x] = a;
     //     lda tmp5
     a = tmp5;
     //     adc #0
-    adc(0);
+    adc(&flags, 0);
     //     sta markers_array+1,x
     ((uint8_t*)markers_array)[x + 1] = a;
     //     bcc loop_c9cf9
@@ -4904,7 +4904,7 @@ loop_caf3f:
     //     dey
     y--;
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     beq loop_caf3f
     if (flags & FLAG_Z)
         goto loop_caf3f;
@@ -4915,7 +4915,7 @@ loop_caf4a:
     //     jsr process_current_document_character
     process_current_document_character();
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     beq caf55
     if (flags & FLAG_Z)
         goto caf55;
@@ -4932,7 +4932,7 @@ caf55:
     process_current_document_character();
     //     dey
     y--;
-    set_flags(y);
+    set_flags(&flags, y);
     //     rts
 }
 
@@ -4944,7 +4944,7 @@ void sub_caef4(void)
     a = format_mode_flag;
     //     and #0x81
     a &= 0x81;
-    set_flags(a);
+    set_flags(&flags, a);
     //     bne caf31
     if (!(flags & FLAG_Z))
         goto caf31;
@@ -4966,7 +4966,7 @@ void sub_caef4(void)
     //     lda l0072
     a = l0072;
     //     cmp ruler_left_stop
-    cmp(a, ruler_left_stop);
+    cmp(&flags, a, ruler_left_stop);
     //     bcc caf19
     if (!(flags & FLAG_C))
         goto caf19;
@@ -4986,19 +4986,19 @@ caf19:
     //     ldy xpos
     y = xpos;
     //     cpy l0083
-    cmp(y, l0083);
+    cmp(&flags, y, l0083);
     //     bcs caf28
     if (flags & FLAG_C)
         goto caf28;
     //     sec
     flags |= FLAG_C;
     //     sbc ruler_left_stop
-    sbc(ruler_left_stop);
+    sbc(&flags, ruler_left_stop);
     //     bcc caf2a
     if (!(flags & FLAG_C))
         goto caf2a;
     //     adc xpos
-    adc(xpos);
+    adc(&flags, xpos);
     // caf28:
 caf28:
     //     sta xpos
@@ -5030,7 +5030,7 @@ void insert_edit_buffer_bytes_at_xpos(void)
     //     lda xpos
     a = xpos;
     //     cmp #MAX_LINE_LENGTH
-    cmp(a, MAX_LINE_LENGTH);
+    cmp(&flags, a, MAX_LINE_LENGTH);
     //     bcs cae03
     if (flags & FLAG_C)
     {
@@ -5046,7 +5046,7 @@ void insert_edit_buffer_bytes_at_xpos(void)
     //     clc
     flags &= ~FLAG_C;
     //     adc input_buffer_offset+1
-    adc(l0080);
+    adc(&flags, l0080);
     //     bcs cae03
     if (flags & FLAG_C)
     {
@@ -5054,7 +5054,7 @@ void insert_edit_buffer_bytes_at_xpos(void)
         return;
     }
     //     cmp #0x85
-    cmp(a, MAX_LINE_LENGTH + 1);
+    cmp(&flags, a, MAX_LINE_LENGTH + 1);
     //     bcs cae03
     if (flags & FLAG_C)
     {
@@ -5084,12 +5084,12 @@ cae27:
     //     clc
     flags &= ~FLAG_C;
     //     adc input_buffer_offset+1
-    adc(l0080);
+    adc(&flags, l0080);
     //     bcs cae35
     if (flags & FLAG_C)
         goto cae35;
     //     cmp #0x84
-    cmp(a, MAX_LINE_LENGTH);
+    cmp(&flags, a, MAX_LINE_LENGTH);
     //     bcs cae35
     if (flags & FLAG_C)
         goto cae35;
@@ -5108,20 +5108,20 @@ loop_cae37:
         goto cae52;
     //     lda l0081
     a = l0081;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq cae4b
     if (flags & FLAG_Z)
         goto cae4b;
     //     clc
     flags &= ~FLAG_C;
     //     adc current_edit_line_ptr
-    adc((uint8_t)(current_edit_line_ptr & 0xff));
+    adc(&flags, (uint8_t)(current_edit_line_ptr & 0xff));
     //     sta markers_array,x
     ((uint8_t*)markers_array)[x] = a;
     //     lda current_edit_line_ptr+1
     a = (uint8_t)(current_edit_line_ptr >> 8);
     //     adc #0
-    adc(0);
+    adc(&flags, 0);
     //     bne cae4d
     if (!(flags & FLAG_Z))
         goto cae4d;
@@ -5154,7 +5154,7 @@ cae5c:
     //     ldy l0084
     y = l0084;
     //     cpy xpos
-    cmp(y, xpos);
+    cmp(&flags, y, xpos);
     //     bne cae27
     if (!(flags & FLAG_Z))
         goto cae27;
@@ -5170,7 +5170,7 @@ void set_marker_to_here(void)
     //     jsr get_line_length
     get_line_length();
     //     cpy xpos
-    cmp(y, xpos);
+    cmp(&flags, y, xpos);
     //     bcc cad5d
     if (!(flags & FLAG_C))
         goto cad5d;
@@ -5201,13 +5201,13 @@ cad5d:
     flags &= ~FLAG_C;
     //     adc current_line_ptr
     flags &= ~FLAG_C;
-    adc((uint8_t)(current_line_ptr & 0xff));
+    adc(&flags, (uint8_t)(current_line_ptr & 0xff));
     //     sta 0,x
     ((uint8_t*)markers_array)[x] = a;
     //     lda current_line_ptr+1
     a = (uint8_t)(current_line_ptr >> 8);
     //     adc #0
-    adc(0);
+    adc(&flags, 0);
     //     sta 1,x
     ((uint8_t*)markers_array)[x + 1] = a;
     //     rts
@@ -5255,12 +5255,12 @@ cac8f:
     //     iny
     y++;
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     beq cac9a
     if (flags & FLAG_Z)
         goto cac9a;
     //     cmp #0x1a
-    cmp(a, 0x1a);
+    cmp(&flags, a, 0x1a);
     //     bne cac9c
     if (!(flags & FLAG_Z))
         goto cac9c;
@@ -5271,12 +5271,12 @@ cac9a:
     // cac9c:
 cac9c:
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     beq return_73
     if (flags & FLAG_Z)
         return;
     //     cpy l0084
-    cmp(y, l0084);
+    cmp(&flags, y, l0084);
     //     beq cac8f
     if (flags & FLAG_Z)
         goto cac8f;
@@ -5298,7 +5298,7 @@ cacad:
     //     clc
     flags &= ~FLAG_C;
     //     adc tmp8
-    adc(tmp8);
+    adc(&flags, tmp8);
     //     sta tmp4
     //     sta tmp8
     tmp4 = a;
@@ -5308,7 +5308,7 @@ cacad:
     //     sta tmp5
     //     sta tmp9
     a = tmp9;
-    adc(0);
+    adc(&flags, 0);
     tmp5 = a;
     tmp9 = a;
     //     lda #1
@@ -5348,7 +5348,7 @@ void adjust_pointers(void)
     //     clc (6375)
     flags &= ~FLAG_C;
     //     adc tmp6 (6376)
-    adc(tmp6);
+    adc(&flags, tmp6);
     //     sta tmp8 (6377)
     tmp8 = a;
     //     lda tmp5 (6378)
@@ -5356,7 +5356,7 @@ void adjust_pointers(void)
     //     sta tmp3 (6379)
     tmp3 = a;
     //     adc tmp7 (6380)
-    adc(tmp7);
+    adc(&flags, tmp7);
     //     sta tmp9 (6381)
     tmp9 = a;
     //     ldx #0 (6382)
@@ -5368,7 +5368,7 @@ ca9c3:
     //     lda __begin_pointer_array+0,x (6385)
     a = ((uint8_t*)&pointer_array)[x];
     //     cpy tmp5 (6386)
-    cmp(y, tmp5);
+    cmp(&flags, y, tmp5);
     //     bcc ca9f1 (6387)
     if (!(flags & FLAG_C))
         goto ca9f1;
@@ -5376,14 +5376,14 @@ ca9c3:
     if (!(flags & FLAG_Z))
         goto ca9d1;
     //     cmp tmp4 (6389)
-    cmp(a, tmp4);
+    cmp(&flags, a, tmp4);
     //     bcc ca9f1 (6390)
     if (!(flags & FLAG_C))
         goto ca9f1;
     // ca9d1: (6391)
 ca9d1:
     //     cpy tmp9 (6392)
-    cmp(y, tmp9);
+    cmp(&flags, y, tmp9);
     //     bcc ca9db (6393)
     if (!(flags & FLAG_C))
         goto ca9db;
@@ -5391,14 +5391,14 @@ ca9d1:
     if (!(flags & FLAG_Z))
         goto ca9e7;
     //     cmp tmp8 (6395)
-    cmp(a, tmp8);
+    cmp(&flags, a, tmp8);
     //     bcs ca9e7 (6396)
     if (flags & FLAG_C)
         goto ca9e7;
     // ca9db: (6397)
 ca9db:
     //     cpx #12 (6398)
-    cmp(x, 12);
+    cmp(&flags, x, 12);
     //     bcs ca9e7 (6399)
     if (flags & FLAG_C)
         goto ca9e7;
@@ -5414,13 +5414,13 @@ ca9db:
     // ca9e7: (6405)
 ca9e7:
     //     sbc tmp6 (6406)
-    sbc(tmp6);
+    sbc(&flags, tmp6);
     //     sta __begin_pointer_array+0,x (6407)
     ((uint8_t*)&pointer_array)[x] = a;
     //     lda __begin_pointer_array+1,x (6408)
     a = ((uint8_t*)&pointer_array)[x + 1];
     //     sbc tmp7 (6409)
-    sbc(tmp7);
+    sbc(&flags, tmp7);
     //     sta __begin_pointer_array+1,x (6410)
     ((uint8_t*)&pointer_array)[x + 1] = a;
     // ca9f1: (6411)
@@ -5430,7 +5430,7 @@ ca9f1:
     //     inx (6413)
     x++;
     //     cpx #22 (6414)
-    cmp(x, sizeof(pointer_array));
+    cmp(&flags, x, sizeof(pointer_array));
     //     bne ca9c3 (6415)
     if (!(flags & FLAG_Z))
         goto ca9c3;
@@ -5466,13 +5466,13 @@ caa08:
     //     clc (6429)
     flags &= ~FLAG_C;
     //     adc tmp2 (6430)
-    adc(tmp2);
+    adc(&flags, tmp2);
     //     sta top (6431)
     top = (top & 0xff00) | a;
     //     lda tmp3 (6432)
     a = tmp3;
     //     adc #0 (6433)
-    adc(0);
+    adc(&flags, 0);
     //     sta top+1 (6434)
     top = (top & 0x00ff) | ((uint16_t)a << 8);
     //     rts (6435)
@@ -5501,7 +5501,7 @@ static void advance_to_next_line(void)
     //     clc
     flags &= ~FLAG_C;
     //     adc tmp0
-    adc(tmp0);
+    adc(&flags, tmp0);
     //     sta current_line_ptr
     current_line_ptr = (current_line_ptr & 0xff00) | a;
     //     bcc c9aa4
@@ -5520,7 +5520,7 @@ c9aa5_:
     flags &= ~FLAG_V;
     //     lda l007e
     a = l007e;
-    set_flags(a);
+    set_flags(&flags, a);
 }
 
 [[nodiscard]] static bool sub_c9aa9(void)
@@ -5533,17 +5533,17 @@ c9aa5_:
     //     sec
     flags |= FLAG_C;
     //     rol l007e
-    l007e = rol(l007e);
+    l007e = rol(&flags, l007e);
     //     ldy l0047
     y = l0047;
     //     dey
     y--;
-    set_flags(y);
+    set_flags(&flags, y);
     //     sty l003b
     l003b = y;
     //     inc l006e
     edit_buffer_unpacked_flag++;
-    set_flags(edit_buffer_unpacked_flag);
+    set_flags(&flags, edit_buffer_unpacked_flag);
     //     jsr write_line_back_to_document
     write_line_back_to_document();
     //     bcc return_50
@@ -5556,7 +5556,7 @@ c9aa5_:
     //     sta l0084
     l0084 = a;
     //     bit l0084   ; sets V
-    bit(l0084);
+    bit(&flags, l0084);
     //     rts (return to sub_c9977's caller with V=1, bypassing sub_c9977's
     //     clv)
     return true;
@@ -5582,7 +5582,7 @@ static void c8b78(void)
     // c8b78:
     //     lda #0xff
     a = 0xff;
-    set_flags(a);
+    set_flags(&flags, a);
     //     rts
 }
 
@@ -5620,7 +5620,7 @@ c8b91:
     //     lda tmp9
     a = tmp9;
     //     cmp doc_ptr3+1
-    cmp(a, (uint8_t)(doc_ptr3 >> 8));
+    cmp(&flags, a, (uint8_t)(doc_ptr3 >> 8));
     //     bcc c8b9f
     if (!(flags & FLAG_C))
         goto c8b9f;
@@ -5633,7 +5633,7 @@ c8b91:
     //     lda tmp8
     a = tmp8;
     //     cmp doc_ptr3+0
-    cmp(a, (uint8_t)(doc_ptr3 & 0xff));
+    cmp(&flags, a, (uint8_t)(doc_ptr3 & 0xff));
     //     bcs c8b78
     if (flags & FLAG_C)
     {
@@ -5657,7 +5657,7 @@ c8b9f:
     flags &= ~FLAG_C;
     //     adc #3
     flags &= ~FLAG_C;
-    adc(3);
+    adc(&flags, 3);
     //     sta doc_ptr2+0
     doc_ptr2 = (doc_ptr2 & 0xff00) | a;
     //     lda tmp9
@@ -5683,7 +5683,7 @@ c8bbc:
     // c8bbc:
     //     iny
     y++;
-    set_flags(y);
+    set_flags(&flags, y);
     //     lda (tmp8),y
     a = ram[tmp89 + y];
     //     beq c8bdb
@@ -5697,17 +5697,17 @@ c8bbc:
     //     lda header_text_maybe,x
     a = header_text_maybe[x];
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     beq c8bf7
     if (flags & FLAG_Z)
         goto c8bf7;
     //     cmp #1
-    cmp(a, 1);
+    cmp(&flags, a, 1);
     //     beq c8be3
     if (flags & FLAG_Z)
         goto c8be3;
     //     cmp #2
-    cmp(a, 2);
+    cmp(&flags, a, 2);
     //     bne c8bd7
     if (!(flags & FLAG_Z))
         goto c8bd7;
@@ -5716,7 +5716,7 @@ c8bbc:
 c8bd7:
     // c8bd7:
     //     cmp l0083
-    cmp(a, l0083);
+    cmp(&flags, a, l0083);
     //     beq c8c33
     if (flags & FLAG_Z)
         goto c8c33;
@@ -5740,7 +5740,7 @@ c8bdf:
         return;
     }
     a = 0xff;
-    set_flags(a);
+    set_flags(&flags, a);
     return;
 c8be3:
     // c8be3:
@@ -5751,7 +5751,7 @@ c8be3:
     //     ldx l0049
     x = l0049;
     //     cpx #0x14
-    cmp(x, 0x14);
+    cmp(&flags, x, 0x14);
     //     bcs c8bf2
     if (flags & FLAG_C)
         goto c8bf2;
@@ -5759,7 +5759,7 @@ c8be3:
     output_buffer[x] = a;
     //     inc l0049
     l0049++;
-    set_flags(l0049);
+    set_flags(&flags, l0049);
 c8bf2:
     // c8bf2:
     //     ldx l0084
@@ -5774,27 +5774,27 @@ c8bf7:
     //     lda l0083
     a = l0083;
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     beq c8c23
     if (flags & FLAG_Z)
         goto c8c23;
     //     cmp #9
-    cmp(a, 9);
+    cmp(&flags, a, 9);
     //     beq c8c23
     if (flags & FLAG_Z)
         goto c8c23;
     //     cmp #0x0b
-    cmp(a, 0x0b);
+    cmp(&flags, a, 0x0b);
     //     beq c8c23
     if (flags & FLAG_Z)
         goto c8c23;
     //     cmp #0x1a
-    cmp(a, 0x1a);
+    cmp(&flags, a, 0x1a);
     //     beq c8c23
     if (flags & FLAG_Z)
         goto c8c23;
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     beq c8c23
     if (flags & FLAG_Z)
         goto c8c23;
@@ -5813,9 +5813,9 @@ c8bf7:
     x = l0084;
     //     inx
     x++;
-    set_flags(x);
+    set_flags(&flags, x);
     //     cpx l007a
-    cmp(x, l007a);
+    cmp(&flags, x, l007a);
     //     bcc c8bbc
     if (!(flags & FLAG_C))
         goto c8bbc;
@@ -5834,13 +5834,13 @@ loop_c8c2a:
     // loop_c8c2a:
     //     inc tmp8
     tmp8++;
-    set_flags(tmp8);
+    set_flags(&flags, tmp8);
     //     bne c8c30
     if (!(flags & FLAG_Z))
         goto c8c30;
     //     inc tmp9
     tmp9++;
-    set_flags(tmp9);
+    set_flags(&flags, tmp9);
 c8c30:
     // c8c30:
     //     jmp c8b91
@@ -5850,21 +5850,21 @@ c8c33:
     // c8c33:
     //     inx
     x++;
-    set_flags(x);
+    set_flags(&flags, x);
     //     cpx l007a
-    cmp(x, l007a);
+    cmp(&flags, x, l007a);
     //     bcc loop_c8c2a
     if (!(flags & FLAG_C))
         goto loop_c8c2a;
     //     inc tmp8
     tmp8++;
-    set_flags(tmp8);
+    set_flags(&flags, tmp8);
     //     bne c8c3e
     if (!(flags & FLAG_Z))
         goto c8c3e;
     //     inc tmp9
     tmp9++;
-    set_flags(tmp9);
+    set_flags(&flags, tmp9);
 c8c3e:
     // c8c3e:
     //     lda doc_ptr2+0
@@ -5885,7 +5885,7 @@ c8c3e:
     ptr2 = (ptr2 & 0x00ff) | ((uint16_t)y << 8);
     //     ldx #0
     x = 0;
-    set_flags(0);
+    set_flags(&flags, 0);
     //     rts
 }
 
@@ -6005,7 +6005,7 @@ static void clear_to_eol(void)
     l0084 = a;
     //     lda line_lengths,x
     a = line_lengths[x];
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq return_62
     if (flags & FLAG_Z)
         goto return_62;
@@ -6017,7 +6017,7 @@ loop_ca5a2:
     screen_putchar(a);
     //     dec line_lengths,x
     line_lengths[x]--;
-    set_flags(line_lengths[x]);
+    set_flags(&flags, line_lengths[x]);
     //     bne loop_ca5a2
     if (!(flags & FLAG_Z))
         goto loop_ca5a2;
@@ -6077,7 +6077,7 @@ void draw_line(uint16_t addr)
     y = 3;
     //     lda hscroll_pos
     a = hscroll_pos;
-    set_flags(a);
+    set_flags(&flags, a);
     //     bne ca4b4
     if (!(flags & FLAG_Z))
         goto ca4b4;
@@ -6118,7 +6118,7 @@ loop_ca4c2:
     if (x != 0)
         goto loop_ca4c2;
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     bne loop_ca4bf
     if (!(flags & FLAG_Z))
         goto loop_ca4bf;
@@ -6294,17 +6294,17 @@ static void get_line_length(void)
     loop_caafb:
         //     dey
         y--;
-        set_flags(y);
+        set_flags(&flags, y);
         //     lda (current_edit_line_ptr),y
         a = ram[current_edit_line_ptr + y];
         //     cmp #0x10
-        cmp(a, 0x10);
+        cmp(&flags, a, 0x10);
         //     bne cab06
         if (!(flags & FLAG_Z))
             goto cab06;
         //     tya
         a = y;
-        set_flags(a);
+        set_flags(&flags, a);
         //     bne loop_caafb
         if (!(flags & FLAG_Z))
             goto loop_caafb;
@@ -6325,7 +6325,7 @@ static void get_line_length(void)
     //     clc
     flags &= ~FLAG_C;
     //     adc #3
-    adc(3);
+    adc(&flags, 3);
     // return_69:
 return_69:
     //     rts
@@ -6385,7 +6385,7 @@ void justify_edit_buffer(void)
     // justify_edit_buffer:
     //     lda justifying_flag
     a = justifying_flag;
-    set_flags(a);
+    set_flags(&flags, a);
     //     bne return_47
     if (!(flags & FLAG_Z))
         return;
@@ -6397,7 +6397,7 @@ void justify_edit_buffer(void)
     l0042 = a;
     //     lda ruler_right_stop
     a = ruler_right_stop;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq return_47
     if (flags & FLAG_Z)
         return;
@@ -6420,7 +6420,7 @@ c9847:
     //     iny
     y++;
     //     cpy l0043
-    cmp(y, l0043);
+    cmp(&flags, y, l0043);
     //     beq c9871
     if (flags & FLAG_Z)
         goto c9871;
@@ -6432,7 +6432,7 @@ c9847:
     if (flags & FLAG_Z)
         goto c985c;
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     bne c9847
     if (!(flags & FLAG_Z))
         goto c9847;
@@ -6443,7 +6443,7 @@ c985c:
     //     iny
     y++;
     //     cpy l0043
-    cmp(y, l0043);
+    cmp(&flags, y, l0043);
     //     beq c986d
     if (flags & FLAG_Z)
         goto c986d;
@@ -6457,7 +6457,7 @@ c9861:
     if (flags & FLAG_Z)
         goto c985c;
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     bne c9847
     if (!(flags & FLAG_Z))
         goto c9847;
@@ -6469,7 +6469,7 @@ c9861:
 c986d:
     //     dec l0046
     l0046--;
-    set_flags(l0046);
+    set_flags(&flags, l0046);
     //     bmi return_47
     if (flags & FLAG_N)
         return;
@@ -6477,30 +6477,30 @@ c986d:
 c9871:
     //     lda l0046
     a = l0046;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq return_47
     if (flags & FLAG_Z)
         return;
     //     lda ruler_right_stop
     a = ruler_right_stop;
-    set_flags(a);
+    set_flags(&flags, a);
     //     sec
     flags |= FLAG_C;
     //     sbc l0084
-    sbc(l0084);
+    sbc(&flags, l0084);
     //     bcc return_47
     if (!(flags & FLAG_C))
         return;
     //     adc #0
-    adc(0);
+    adc(&flags, 0);
     //     tax
     x = a;
     //     adc l0043
-    adc(l0043);
+    adc(&flags, l0043);
     //     sec
     flags |= FLAG_C;
     //     sbc #0x84
-    sbc(MAX_LINE_LENGTH);
+    sbc(&flags, MAX_LINE_LENGTH);
     //     bcc c988c
     if (!(flags & FLAG_C))
         goto c988c;
@@ -6509,7 +6509,7 @@ c9871:
     //     txa
     a = x;
     //     sbc l0084
-    sbc(l0084);
+    sbc(&flags, l0084);
     //     tax
     x = a;
     // c988c:
@@ -6553,7 +6553,7 @@ loop_c98a2:
     //     iny
     y++;
     //     cpy l0046
-    cmp(y, l0046);
+    cmp(&flags, y, l0046);
     //     bcc c98b2
     if (!(flags & FLAG_C))
         goto c98b2;
@@ -6569,7 +6569,7 @@ c98b2:
 c98b5:
     //     lda l0045
     a = l0045;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq c98bd
     if (flags & FLAG_Z)
         goto c98bd;
@@ -6582,7 +6582,7 @@ c98bd:
     //     clc
     flags &= ~FLAG_C;
     //     adc l0044
-    adc(l0044);
+    adc(&flags, l0044);
     //     sta input_buffer,y
     input_buffer[y] = a;
     //     lda l0082
@@ -6590,7 +6590,7 @@ c98bd:
     //     sec
     flags |= FLAG_C;
     //     sbc input_buffer,y
-    sbc(input_buffer[y]);
+    sbc(&flags, input_buffer[y]);
     //     php
     {
         uint8_t saved_flags = flags;
@@ -6599,7 +6599,7 @@ c98bd:
         //     iny
         y++;
         //     cpy l0046
-        cmp(y, l0046);
+        cmp(&flags, y, l0046);
         //     bcc c98d3
         if (!(flags & FLAG_C))
             goto c98d3;
@@ -6634,7 +6634,7 @@ c98d9:
     wipe_buffer();
     //     lda l0042
     a = l0042;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq c98f6
     if (flags & FLAG_Z)
         goto c98f6;
@@ -6649,7 +6649,7 @@ loop_c98ec:
     //     iny
     y++;
     //     cpy l0042
-    cmp(y, l0042);
+    cmp(&flags, y, l0042);
     //     bne loop_c98ec
     if (!(flags & FLAG_Z))
         goto loop_c98ec;
@@ -6663,15 +6663,15 @@ c98f6:
 c98fa:
     //     lda output_buffer,x
     a = output_buffer[x];
-    set_flags(a);
+    set_flags(&flags, a);
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     bne c9920
     if (!(flags & FLAG_Z))
         goto c9920;
     //     lda l0081
     a = l0081;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq c991c
     if (flags & FLAG_Z)
         goto c991c;
@@ -6680,22 +6680,22 @@ c98fa:
     //     ldy l0039
     y = l0039;
     //     cpy l0046
-    cmp(y, l0046);
+    cmp(&flags, y, l0046);
     //     lda #0
     a = 0;
-    set_flags(a);
+    set_flags(&flags, a);
     //     bcs c9912
     if (flags & FLAG_C)
         goto c9912;
     //     lda input_buffer,y
     a = input_buffer[y];
-    set_flags(a);
+    set_flags(&flags, a);
     // c9912:
 c9912:
     //     clc
     flags &= ~FLAG_C;
     //     adc l0084
-    adc(l0084);
+    adc(&flags, l0084);
     //     inc l0039
     l0039++;
     //     tay
@@ -6725,7 +6725,7 @@ c9922:
     //     inx
     x++;
     //     cpx l0043
-    cmp(x, l0043);
+    cmp(&flags, x, l0043);
     //     bne c98fa
     if (!(flags & FLAG_Z))
         goto c98fa;
@@ -6734,7 +6734,7 @@ c9922:
     // loop_c992c:
     //     cpy #0x84
 loop_c992c:
-    cmp(y, MAX_LINE_LENGTH);
+    cmp(&flags, y, MAX_LINE_LENGTH);
     //     bcs return_48
     if (flags & FLAG_C)
         return;
@@ -6765,7 +6765,7 @@ void make_space_for_insertion(void)
     //     clc (6440)
     flags &= ~FLAG_C;
     //     adc tmp6 (6441)
-    adc(tmp6);
+    adc(&flags, tmp6);
     //     sta tmp8 (6442)
     tmp8 = a;
     //     tax (6443)
@@ -6775,13 +6775,13 @@ void make_space_for_insertion(void)
     //     sta tmp3 (6445)
     tmp3 = a;
     //     adc tmp7 (6446)
-    adc(tmp7);
+    adc(&flags, tmp7);
     //     sta tmp9 (6447)
     tmp9 = a;
     //     tay (6448)
     y = a;
     //     cpy himem+1 (6449)
-    cmp(y, (uint8_t)(himem >> 8));
+    cmp(&flags, y, (uint8_t)(himem >> 8));
     //     bcc caa32 (6450)
     if (!(flags & FLAG_C))
         goto caa32;
@@ -6789,7 +6789,7 @@ void make_space_for_insertion(void)
     if (!(flags & FLAG_Z))
         goto return_67;
     //     cpx himem (6452)
-    cmp(x, (uint8_t)(himem & 0xff));
+    cmp(&flags, x, (uint8_t)(himem & 0xff));
     //     bcs return_67 (6453)
     if (flags & FLAG_C)
         goto return_67;
@@ -6806,7 +6806,7 @@ loop_caa38:
     //     lda __begin_pointer_array+0,x (6460)
     a = ((uint8_t*)&pointer_array)[x];
     //     cpy tmp5 (6461)
-    cmp(y, tmp5);
+    cmp(&flags, y, tmp5);
     //     bcc caa51 (6462)
     if (!(flags & FLAG_C))
         goto caa51;
@@ -6814,7 +6814,7 @@ loop_caa38:
     if (!(flags & FLAG_Z))
         goto caa46;
     //     cmp tmp4 (6464)
-    cmp(a, tmp4);
+    cmp(&flags, a, tmp4);
     //     bcc caa51 (6465)
     if (!(flags & FLAG_C))
         goto caa51;
@@ -6823,13 +6823,13 @@ caa46:
     //     clc (6467)
     flags &= ~FLAG_C;
     //     adc tmp6 (6468)
-    adc(tmp6);
+    adc(&flags, tmp6);
     //     sta __begin_pointer_array+0,x (6469)
     ((uint8_t*)&pointer_array)[x] = a;
     //     lda __begin_pointer_array+1,x (6470)
     a = ((uint8_t*)&pointer_array)[x + 1];
     //     adc tmp7 (6471)
-    adc(tmp7);
+    adc(&flags, tmp7);
     //     sta __begin_pointer_array+1,x (6472)
     ((uint8_t*)&pointer_array)[x + 1] = a;
     // caa51: (6473)
@@ -6839,7 +6839,7 @@ caa51:
     //     inx (6475)
     x++;
     //     cpx #22 (6476)
-    cmp(x, sizeof(pointer_array));
+    cmp(&flags, x, sizeof(pointer_array));
     //     bne loop_caa38 (6477)
     if (!(flags & FLAG_Z))
         goto loop_caa38;
@@ -6850,13 +6850,13 @@ caa57:
     //     sec (6480)
     flags |= FLAG_C;
     //     sbc tmp4 (6481)
-    sbc(tmp4);
+    sbc(&flags, tmp4);
     //     tax (6482)
     x = a;
     //     lda tmp3 (6483)
     a = tmp3;
     //     sbc tmp5 (6484)
-    sbc(tmp5);
+    sbc(&flags, tmp5);
     //     beq caa65 (6485)
     if (flags & FLAG_Z)
         goto caa65;
@@ -6877,7 +6877,7 @@ caa65:
     //     sec (6493)
     flags |= FLAG_C;
     //     sbc tmp2 (6494)
-    sbc(tmp2);
+    sbc(&flags, tmp2);
     //     sta tmp2 (6495)
     tmp2 = a;
     //     bcs caa75 (6496)
@@ -6894,7 +6894,7 @@ caa75:
     //     sec (6501)
     flags |= FLAG_C;
     //     sbc tmp8 (6502)
-    sbc(tmp8);
+    sbc(&flags, tmp8);
     //     sta tmp8 (6503)
     tmp8 = a;
     //     bcs caa82 (6504)
@@ -6968,7 +6968,7 @@ static void recalculate_cursor_xpos(void)
     tmp1 = a;
     //     lda l0079
     a = l0079;
-    set_flags(a);
+    set_flags(&flags, a);
     //     bne ca624
     if (!(flags & FLAG_Z))
         goto ca624;
@@ -6977,7 +6977,7 @@ static void recalculate_cursor_xpos(void)
     // loop_ca615:
 loop_ca615:
     //     cpy xpos
-    cmp(y, xpos);
+    cmp(&flags, y, xpos);
     //     beq ca63d
     if (flags & FLAG_Z)
         goto ca63d;
@@ -6990,7 +6990,7 @@ loop_ca615:
     //     clc
     flags &= ~FLAG_C;
     //     adc l0039
-    adc(l0039);
+    adc(&flags, l0039);
     //     bcc loop_ca615
     if (!(flags & FLAG_C))
         goto loop_ca615;
@@ -7014,9 +7014,9 @@ loop_ca629:
     //     clc
     flags &= ~FLAG_C;
     //     adc l0039
-    adc(l0039);
+    adc(&flags, l0039);
     //     cmp l0072
-    cmp(a, l0072);
+    cmp(&flags, a, l0072);
     //     bcc loop_ca629
     if (!(flags & FLAG_C))
         goto loop_ca629;
@@ -7104,14 +7104,14 @@ ca2b2:
     //     ldy tmp1 (5241)
     y = tmp1;
     //     cpy current_line_ptr+1 (5242)
-    cmp(y, (uint8_t)(current_line_ptr >> 8));
+    cmp(&flags, y, (uint8_t)(current_line_ptr >> 8));
     //     bne ca30d (5243)
     if (!(flags & FLAG_Z))
         goto ca30d;
     //     lda tmp0 (5244)
     a = tmp0;
     //     cmp current_line_ptr (5245)
-    cmp(a, (uint8_t)(current_line_ptr & 0xff));
+    cmp(&flags, a, (uint8_t)(current_line_ptr & 0xff));
     //     bne ca30d (5246)
     if (!(flags & FLAG_Z))
         goto ca30d;
@@ -7162,12 +7162,12 @@ ca2e6:
     //     inx (5271)
     x++;
     //     cpy ptr6+1 (5272)
-    cmp(y, (uint8_t)(ptr6 >> 8));
+    cmp(&flags, y, (uint8_t)(ptr6 >> 8));
     //     bne ca2f1 (5273)
     if (!(flags & FLAG_Z))
         goto ca2f1;
     //     cmp ptr6 (5274)
-    cmp(a, (uint8_t)(ptr6 & 0xff));
+    cmp(&flags, a, (uint8_t)(ptr6 & 0xff));
     //     bne ca2f1 (5275)
     if (!(flags & FLAG_Z))
         goto ca2f1;
@@ -7176,12 +7176,12 @@ ca2e6:
     // ca2f1: (5277)
 ca2f1:
     //     cpy current_line_ptr+1 (5278)
-    cmp(y, (uint8_t)(current_line_ptr >> 8));
+    cmp(&flags, y, (uint8_t)(current_line_ptr >> 8));
     //     bne ca2f9 (5279)
     if (!(flags & FLAG_Z))
         goto ca2f9;
     //     cmp current_line_ptr (5280)
-    cmp(a, (uint8_t)(current_line_ptr & 0xff));
+    cmp(&flags, a, (uint8_t)(current_line_ptr & 0xff));
     //     beq ca313 (5281)
     if (flags & FLAG_Z)
         goto ca313;
@@ -7199,7 +7199,7 @@ ca2f9:
     //     clc (5287)
     flags &= ~FLAG_C;
     //     adc tmp0 (5288)
-    adc(tmp0);
+    adc(&flags, tmp0);
     //     bcc ca307 (5289)
     if (!(flags & FLAG_C))
         goto ca307;
@@ -7208,7 +7208,7 @@ ca2f9:
     // ca307: (5291)
 ca307:
     //     cpx screen_height (5292)
-    cmp(x, screen_maxrow);
+    cmp(&flags, x, screen_maxrow);
     //     beq ca2e6 (5293)
     if (flags & FLAG_Z)
         goto ca2e6;
@@ -7225,7 +7225,7 @@ ca30d:
     // ca313: (5299)
 ca313:
     //     cpx screen_height (5300)
-    cmp(x, screen_maxrow);
+    cmp(&flags, x, screen_maxrow);
     //     bcc ca35e (5301)
     if (!(flags & FLAG_C))
         goto ca35e;
@@ -7248,7 +7248,7 @@ loop_ca31f:
     //     inx (5309)
     x++;
     //     cpx screen_height (5310)
-    cmp(x, screen_maxrow);
+    cmp(&flags, x, screen_maxrow);
     //     bne loop_ca31f (5311)
     if (!(flags & FLAG_Z))
         goto loop_ca31f;
@@ -7275,7 +7275,7 @@ loop_ca31f:
     //     clc (5322)
     flags &= ~FLAG_C;
     //     adc l0011 (5323)
-    adc((uint8_t)(top_of_screen_line_ptr & 0xff));
+    adc(&flags, (uint8_t)(top_of_screen_line_ptr & 0xff));
     //     sta l0011 (5324)
     top_of_screen_line_ptr = (top_of_screen_line_ptr & 0xff00) | a;
     //     bcc ca348 (5325)
@@ -7330,7 +7330,7 @@ ca360:
     //     lda l0072 (5350)
     a = l0072;
     //     cmp hscroll_pos (5351)
-    cmp(a, hscroll_pos);
+    cmp(&flags, a, hscroll_pos);
     //     bcc ca381 (5352)
     if (!(flags & FLAG_C))
         goto ca381;
@@ -7339,11 +7339,11 @@ ca360:
     //     clc (5354)
     flags &= ~FLAG_C;
     //     adc screen_width (5355)
-    adc(screen_maxcolumn);
+    adc(&flags, screen_maxcolumn);
     //     sbc #3 (5356)
-    sbc(3);
+    sbc(&flags, 3);
     //     cmp l0072 (5357)
-    cmp(a, l0072);
+    cmp(&flags, a, l0072);
     //     bcs ca395 (5358)
     if (flags & FLAG_C)
         goto ca395;
@@ -7354,7 +7354,7 @@ ca381:
     //     sec (5361)
     flags |= FLAG_C;
     //     sbc l0083 (5362)
-    sbc(l0083);
+    sbc(&flags, l0083);
     //     bcs ca38a (5363)
     if (flags & FLAG_C)
         goto ca38a;
@@ -7398,7 +7398,7 @@ ca395:
     //     sec (5381)
     flags |= FLAG_C;
     //     sbc l003d (5382)
-    sbc(l003d);
+    sbc(&flags, l003d);
     //     tax (5383)
     x = a;
     //     inx (5384)
@@ -7450,7 +7450,7 @@ loop_ca3c3:
     //     clc (5406)
     flags &= ~FLAG_C;
     //     adc tmp0 (5407)
-    adc(tmp0);
+    adc(&flags, tmp0);
     //     bcc ca3d8 (5408)
     if (!(flags & FLAG_C))
         goto ca3d8;
@@ -7512,11 +7512,11 @@ ca406:
     //     sec (5436)
     flags |= FLAG_C;
     //     sbc hscroll_pos (5437)
-    sbc(hscroll_pos);
+    sbc(&flags, hscroll_pos);
     //     clc (5438)
     flags &= ~FLAG_C;
     //     adc #3 (5439)
-    adc(3);
+    adc(&flags, 3);
     //     tax (5440)
     x = a;
     //     ldy #0 (5441)
@@ -7709,7 +7709,7 @@ static void render_xchar(void)
     //     inc input_buffer_offset+1
     l0080++;
     //     cpx hscroll_pos
-    cmp(x, hscroll_pos);
+    cmp(&flags, x, hscroll_pos);
     //     bcc ca533
     if (!(flags & FLAG_C))
     {
@@ -7738,7 +7738,7 @@ void sanitise_area(void)
     //     ldx area_start_ptr+1
     x = (uint8_t)(area_start_ptr >> 8);
     //     cpx area_end_ptr+1
-    cmp(x, (uint8_t)(area_end_ptr >> 8));
+    cmp(&flags, x, (uint8_t)(area_end_ptr >> 8));
     //     bcc c8977
     if (!(flags & FLAG_C))
         goto c8977;
@@ -7746,7 +7746,7 @@ void sanitise_area(void)
     if (!(flags & FLAG_Z))
         goto c896b;
     //     cmp area_end_ptr
-    cmp(a, (uint8_t)(area_end_ptr & 0xff));
+    cmp(&flags, a, (uint8_t)(area_end_ptr & 0xff));
     //     bcc c8977
     if (!(flags & FLAG_C))
         goto c8977;
@@ -7772,24 +7772,24 @@ c8977:
     flags |= FLAG_C;
     //     sbc area_start_ptr
     flags |= FLAG_C;
-    sbc((uint8_t)(area_start_ptr & 0xff));
+    sbc(&flags, (uint8_t)(area_start_ptr & 0xff));
     //     sta tmp6
     tmp6 = a;
     //     lda area_end_ptr+1
     a = (uint8_t)(area_end_ptr >> 8);
     //     sbc area_start_ptr+1
-    sbc((uint8_t)(area_start_ptr >> 8));
+    sbc(&flags, (uint8_t)(area_start_ptr >> 8));
     //     sta tmp7
     tmp7 = a;
     //     bne return_10
     if (a != 0)
     {
-        set_flags(a);
+        set_flags(&flags, a);
         return;
     }
     //     lda tmp6
     a = tmp6;
-    set_flags(a);
+    set_flags(&flags, a);
     // return_10:
     //     rts
 }
@@ -8000,14 +8000,14 @@ static void sub_c9936(void)
 
     // sub_c9936:
     //     ror l0083
-    l0083 = ror(l0083);
+    l0083 = ror(&flags, l0083);
     //     lda (current_edit_line_ptr),y
     a = ram[current_edit_line_ptr + y];
-    set_flags(a);
+    set_flags(&flags, a);
     //     sta output_buffer,y
     output_buffer[y] = a;
     //     cmp #9
-    cmp(a, 9);
+    cmp(&flags, a, 9);
     //     bne c994a
     if (!(flags & FLAG_Z))
         goto c994a;
@@ -8018,31 +8018,31 @@ static void sub_c9936(void)
     //     clc
     flags &= ~FLAG_C;
     //     adc l0039
-    adc(l0039);
+    adc(&flags, l0039);
     //     bne c995c
     if (!(flags & FLAG_Z))
         goto c995c;
     // c994a:
 c994a:
     //     cmp #0x0b
-    cmp(a, 0x0b);
+    cmp(&flags, a, 0x0b);
     //     bne c9969
     if (!(flags & FLAG_Z))
         goto c9969;
     //     lda ruler_left_stop
     a = ruler_left_stop;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq c9967
     if (flags & FLAG_Z)
         goto c9967;
     //     ldx l0039
     x = l0039;
-    set_flags(x);
+    set_flags(&flags, x);
     //     beq c995c
     if (flags & FLAG_Z)
         goto c995c;
     //     cpx ruler_left_stop
-    cmp(x, ruler_left_stop);
+    cmp(&flags, x, ruler_left_stop);
     //     bcc c995c
     if (!(flags & FLAG_C))
         goto c995c;
@@ -8062,7 +8062,7 @@ c995c:
     a = 0;
     //     sta l0046
     l0046 = a;
-    set_flags(0);
+    set_flags(&flags, 0);
     //     rts
     return;
 
@@ -8073,18 +8073,18 @@ c9967:
     // c9969:
 c9969:
     //     cmp #0x1b
-    cmp(a, 0x1b);
+    cmp(&flags, a, 0x1b);
     //     bcc c9967
     if (!(flags & FLAG_C))
         goto c9967;
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     bcc return_49
     if (!(flags & FLAG_C))
         return;
     //     inc l0039
     l0039++;
-    set_flags(l0039);
+    set_flags(&flags, l0039);
     // return_49:
 return_49:
     //     rts
@@ -8118,7 +8118,7 @@ void sub_c9977(void)
     // boundary reached).
     //      lda (current_line_ptr),y
     a = ram[current_line_ptr + y];
-    set_flags(a);
+    set_flags(&flags, a);
     //     jsr check_for_command_prefix
     flags = check_for_command_prefix(a);
     //     beq c9974
@@ -8134,10 +8134,10 @@ void sub_c9977(void)
 c998a:
     //     lda format_mode_flag
     a = format_mode_flag;
-    set_flags(a);
+    set_flags(&flags, a);
     //     and #0x81
     a &= 0x81;
-    set_flags(a);
+    set_flags(&flags, a);
     //     bne c9974
     if (!(flags & FLAG_Z))
     {
@@ -8146,7 +8146,7 @@ c998a:
     }
     //     lda ruler_right_stop
     a = ruler_right_stop;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq c9974
     if (flags & FLAG_Z)
     {
@@ -8156,7 +8156,7 @@ c998a:
     //     sec
     flags |= FLAG_C;
     //     sbc ruler_left_stop
-    sbc(ruler_left_stop);
+    sbc(&flags, ruler_left_stop);
     //     bcc c9974
     if (!(flags & FLAG_C))
     {
@@ -8166,7 +8166,7 @@ c998a:
     // PROVISIONAL: Compute line width = right_stop - left_stop + 1, store in
     // l0080.
     //      adc #1
-    adc(1);
+    adc(&flags, 1);
     //     sta input_buffer_offset+1
     l0080 = a;
     // PROVISIONAL: Wipe the edit buffer with 0x10 (soft spaces) and set up
@@ -8235,7 +8235,7 @@ c99c7:
 c99c9:
     //     lda (current_line_ptr),y
     a = ram[current_line_ptr + y];
-    set_flags(a);
+    set_flags(&flags, a);
     //     iny
     y++;
     //     sty l0047
@@ -8244,7 +8244,7 @@ c99c9:
     // compute tab width, PROVISIONAL: subtract 1 (x--) and add to column
     // counter l0039.
     //      cmp #9
-    cmp(a, 9);
+    cmp(&flags, a, 9);
     //     bne c99e0
     if (!(flags & FLAG_Z))
         goto c99e0;
@@ -8257,7 +8257,7 @@ c99c9:
     //     clc
     flags &= ~FLAG_C;
     //     adc l0039
-    adc(l0039);
+    adc(&flags, l0039);
     //     sta l0039
     l0039 = a;
     //     lda #9
@@ -8269,7 +8269,7 @@ c99c9:
     // c99e0:
 c99e0:
     //     cmp #0x1a
-    cmp(a, 0x1a);
+    cmp(&flags, a, 0x1a);
     //     bne c99ee
     if (!(flags & FLAG_Z))
         goto c99ee;
@@ -8281,7 +8281,7 @@ c99e0:
 c99e4:
     //     lda l0046
     a = l0046;
-    set_flags(a);
+    set_flags(&flags, a);
     //     bne c99c9
     if (!(flags & FLAG_Z))
         goto c99c9;
@@ -8302,19 +8302,19 @@ c99e4:
     // it.
 c99ee:
     //     cmp #0x0b
-    cmp(a, 0x0b);
+    cmp(&flags, a, 0x0b);
     //     bne c9a11
     if (!(flags & FLAG_Z))
         goto c9a11;
     //     ldx input_buffer_offset
     x = input_buffer_offset;
-    set_flags(x);
+    set_flags(&flags, x);
     //     bne c99e4
     if (!(flags & FLAG_Z))
         goto c99e4;
     //     lda l0038
     a = l0038;
-    set_flags(a);
+    set_flags(&flags, a);
     //     bne c99e4
     if (!(flags & FLAG_Z))
         goto c99e4;
@@ -8322,14 +8322,14 @@ c99ee:
     l0038++;
     //     lda ruler_left_stop
     a = ruler_left_stop;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq c99c9
     if (flags & FLAG_Z)
         goto c99c9;
     //     ldx l0039
     x = l0039;
     //     cpx ruler_left_stop
-    cmp(x, ruler_left_stop);
+    cmp(&flags, x, ruler_left_stop);
     //     bcs c9a0a
     if (flags & FLAG_C)
         goto c9a0a;
@@ -8342,7 +8342,7 @@ c9a0a:
     //     clc
     flags &= ~FLAG_C;
     //     adc input_buffer_offset+1
-    adc(l0080);
+    adc(&flags, l0080);
     //     sta input_buffer_offset+1
     l0080 = a;
     //     lda #0x0b
@@ -8355,13 +8355,13 @@ c9a0a:
     // and advance. Otherwise, insert a space at the break.
 c9a11:
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     bne c9a21
     if (!(flags & FLAG_Z))
         goto c9a21;
     //     dey
     y--;
-    set_flags(y);
+    set_flags(&flags, y);
     //     beq c9a8d
     if (flags & FLAG_Z)
     {
@@ -8388,7 +8388,7 @@ c9a21:
     //     ldx #0
     x = 0;
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     bne c9a2e
     if (!(flags & FLAG_Z))
         goto c9a2e;
@@ -8396,7 +8396,7 @@ c9a21:
     //     X=0x01
     x++;
     //     bit l0046
-    bit(l0046);
+    bit(&flags, l0046);
     //     bmi c9a40
     if (flags & FLAG_N)
         goto c9a40;
@@ -8410,12 +8410,12 @@ c9a2e:
     //     sta (current_edit_line_ptr),y
     ram[current_edit_line_ptr + y] = a;
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     bne c9a38
     if (!(flags & FLAG_Z))
         goto c9a38;
     //     ror bottom_margin
-    bottom_margin = ror(bottom_margin);
+    bottom_margin = ror(&flags, bottom_margin);
     // PROVISIONAL: Advance write position, check for control codes. If not a
     // control code, PROVISIONAL: increment column counter l0039.
     //  c9a38:
@@ -8436,32 +8436,32 @@ c9a38:
     //  c9a40:
 c9a40:
     //     bit l0046
-    bit(l0046);
+    bit(&flags, l0046);
     //     stx l0046
     l0046 = x;
     //     bmi c9a58
     if (flags & FLAG_N)
         goto c9a58;
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     beq c9a58
     if (flags & FLAG_Z)
         goto c9a58;
     //     cpy #0x85
-    cmp(y, MAX_LINE_LENGTH + 1);
+    cmp(&flags, y, MAX_LINE_LENGTH + 1);
     //     bcs c9a60
     if (flags & FLAG_C)
         goto c9a60;
     //     lda bottom_margin
     a = bottom_margin;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq c9a58
     if (flags & FLAG_Z)
         goto c9a58;
     //     lda l0039
     a = l0039;
     //     cmp input_buffer_offset+1
-    cmp(a, l0080);
+    cmp(&flags, a, l0080);
     //     bcs c9a60
     if (flags & FLAG_C)
         goto c9a60;
@@ -8470,7 +8470,7 @@ c9a40:
     //  c9a58:
 c9a58:
     //     cpy #0x86
-    cmp(y, 0x86);
+    cmp(&flags, y, 0x86);
     //     bcc c9a5d
     if (!(flags & FLAG_C))
         goto c9a5d;
@@ -8498,7 +8498,7 @@ loop_c9a62:
     l0047--;
     //     dey
     y--;
-    set_flags(y);
+    set_flags(&flags, y);
     //     beq c9a8d
     if (flags & FLAG_Z)
     {
@@ -8507,7 +8507,7 @@ loop_c9a62:
     }
     //     lda (current_edit_line_ptr),y
     a = ram[current_edit_line_ptr + y];
-    set_flags(a);
+    set_flags(&flags, a);
     //     pha
     {
         uint8_t saved_a = a;
@@ -8519,14 +8519,14 @@ loop_c9a62:
         a = saved_a;
     }
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     bne loop_c9a62
     if (!(flags & FLAG_Z))
         goto loop_c9a62;
     //     sec
     flags |= FLAG_C;
     //     ror input_buffer_offset
-    input_buffer_offset = ror(input_buffer_offset);
+    input_buffer_offset = ror(&flags, input_buffer_offset);
     //     jsr sub_caed6
     sub_caed6();
     //     jsr justify_edit_buffer
@@ -8566,7 +8566,7 @@ c9aa5:
     flags &= ~FLAG_V;
     //     lda l007e
     a = l007e;
-    set_flags(a);
+    set_flags(&flags, a);
     //     rts
     return;
 }
@@ -8582,7 +8582,7 @@ static void sub_c9ac1(void)
     //     sec
     flags |= FLAG_C;
     //     adc current_line_ptr
-    adc((uint16_t)(uint8_t)(current_line_ptr & 0xff));
+    adc(&flags, (uint16_t)(uint8_t)(current_line_ptr & 0xff));
     //     sta tmp8
     tmp8 = a;
     //     sta tmp4
@@ -8590,7 +8590,7 @@ static void sub_c9ac1(void)
     //     lda current_line_ptr+1
     a = (uint8_t)(current_line_ptr >> 8);
     //     adc #0
-    adc(0);
+    adc(&flags, 0);
     //     sta tmp9
     tmp9 = a;
     //     sta tmp5
@@ -8612,7 +8612,7 @@ c9ad5:
     if (flags & FLAG_Z)
         goto c9b2f;
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     beq c9b2f
     if (flags & FLAG_Z)
         goto c9b2f;
@@ -8644,26 +8644,26 @@ c9aef:
     if (a == 0)
         goto c9b06;
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     beq c9b06
     if (flags & FLAG_Z)
         goto c9b06;
     //     cmp #9
-    cmp(a, 9);
+    cmp(&flags, a, 9);
     //     beq c9b2f
     if (flags & FLAG_Z)
         goto c9b2f;
     //     cmp #0x0b
-    cmp(a, 0x0b);
+    cmp(&flags, a, 0x0b);
     //     bne c9ae9
     if (!(flags & FLAG_Z))
         goto c9ae9;
     //     rol l0084
-    l0084 = rol(l0084);
+    l0084 = rol(&flags, l0084);
     //     sec
     flags |= FLAG_C;
     //     ror l0084
-    l0084 = ror(l0084);
+    l0084 = ror(&flags, l0084);
     //     bcs c9ae9
     if (flags & FLAG_C)
         goto c9ae9;
@@ -8672,7 +8672,7 @@ c9b06:
     //     lda (tmp4),y
     a = ram[tmp45 + y];
     //     cmp #0x20 ; ' '
-    cmp(a, 0x20);
+    cmp(&flags, a, 0x20);
     //     bne c9b1a
     if (!(flags & FLAG_Z))
         goto c9b1a;
@@ -8698,7 +8698,7 @@ c9b06:
     // c9b1a:
 c9b1a:
     //     cmp #0x0b
-    cmp(a, 0x0b);
+    cmp(&flags, a, 0x0b);
     //     bne c9b23
     if (!(flags & FLAG_Z))
         goto c9b23;
@@ -8872,13 +8872,13 @@ static void sub_ca536(void)
     //     clc
     flags &= ~FLAG_C;
     //     adc tmp6
-    adc(tmp6);
+    adc(&flags, tmp6);
     //     sta tmp8
     tmp8 = a;
     //     lda tmp7
     a = tmp7;
     //     adc #0
-    adc(0);
+    adc(&flags, 0);
     //     sta tmp9
     tmp9 = a;
     //     ldx #0
@@ -8888,14 +8888,14 @@ loop_ca544:
     //     lda tmp9
     a = tmp9;
     //     cmp markers_array+1,x
-    cmp(a, ((uint8_t*)markers_array)[x + 1]);
+    cmp(&flags, a, ((uint8_t*)markers_array)[x + 1]);
     //     bne ca550
     if (!(flags & FLAG_Z))
         goto ca550;
     //     lda tmp8
     a = tmp8;
     //     cmp markers_array,x
-    cmp(a, ((uint8_t*)markers_array)[x]);
+    cmp(&flags, a, ((uint8_t*)markers_array)[x]);
     //     beq ca558
     if (flags & FLAG_Z)
         goto ca558;
@@ -8906,13 +8906,13 @@ ca550:
     //     inx
     x++;
     //     cpx #0x0c
-    cmp(x, 0x0c);
+    cmp(&flags, x, 0x0c);
     //     bne loop_ca544
     if (!(flags & FLAG_Z))
         goto loop_ca544;
     //     txa
     a = x;
-    set_flags(a);
+    set_flags(&flags, a);
     //     rts
     return;
 
@@ -8920,7 +8920,7 @@ ca550:
 ca558:
     //     lda #0
     a = 0;
-    set_flags(0);
+    set_flags(&flags, 0);
     // return_61:
     //     rts
     return;
@@ -8975,7 +8975,7 @@ loop_caabd:
     //     lda (current_line_ptr),y
     a = ram[current_line_ptr + y];
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     beq caac8
     if (flags & FLAG_Z)
         goto caac8;
@@ -9021,13 +9021,13 @@ caad5:
     //     clc
     flags &= ~FLAG_C;
     //     adc current_format_line_ptr
-    adc((uint8_t)(current_format_line_ptr & 0xff));
+    adc(&flags, (uint8_t)(current_format_line_ptr & 0xff));
     //     sta __begin_pointer_array,x
     ((uint8_t*)markers_array)[x] = a;
     //     lda current_format_line_ptr+1
     a = (uint8_t)(current_format_line_ptr >> 8);
     //     adc #0
-    adc(0);
+    adc(&flags, 0);
     //     sta markers_array+1,x
     ((uint8_t*)markers_array)[x + 1] = a;
     //     bne caad5
@@ -9038,7 +9038,7 @@ caae8:
     //     lda (current_line_ptr),y
     a = ram[current_line_ptr + y];
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     beq return_68
     if (flags & FLAG_Z)
         return;
@@ -9111,7 +9111,7 @@ cac5c:
     //     lda (tmp8),y
     a = ram[tmp89 + y];
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     beq cac6f
     if (flags & FLAG_Z)
         goto cac6f;
@@ -9161,7 +9161,7 @@ static void sub_caec2(void)
 
     //     lda ruler_left_stop
     a = ruler_left_stop;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq caed4
     if (flags & FLAG_Z)
         goto caed4;
@@ -9174,12 +9174,12 @@ loop_caec8:
     //     iny
     y++;
     //     cmp #0x0b
-    cmp(a, 0x0b);
+    cmp(&flags, a, 0x0b);
     //     beq caed4
     if (flags & FLAG_Z)
         goto caed4;
     //     cpy #0x84
-    cmp(y, MAX_LINE_LENGTH);
+    cmp(&flags, y, MAX_LINE_LENGTH);
     //     bcc loop_caec8
     if (!(flags & FLAG_C))
         goto loop_caec8;
@@ -9285,7 +9285,7 @@ static void write_line_back_to_document(void)
     //     lda l006e
     //     beq ca93a
     a = edit_buffer_unpacked_flag;
-    set_flags(a);
+    set_flags(&flags, a);
     if (flags & FLAG_Z)
         goto ca93a;
     //     lda current_line_ptr
@@ -9309,7 +9309,7 @@ static void write_line_back_to_document(void)
     //     sec
     flags |= FLAG_C;
     //     sbc l0083
-    sbc(l0083);
+    sbc(&flags, l0083);
     //     bcc ca8df
     if (!(flags & FLAG_C))
         goto ca8df;
@@ -9332,7 +9332,7 @@ ca8df:
     //     sec
     flags |= FLAG_C;
     //     sbc l0084
-    sbc(l0084);
+    sbc(&flags, l0084);
     //     sta tmp6
     tmp6 = a;
     //     jsr make_space_for_insertion
@@ -9345,13 +9345,13 @@ ca8df:
 ca8ed:
     //     lda l006e
     a = edit_buffer_unpacked_flag;
-    set_flags(a);
+    set_flags(&flags, a);
     //     bpl ca8f8
     if (!(flags & FLAG_N))
         goto ca8f8;
     //     lda l006d
     a = edit_buffer_dirty_flag;
-    set_flags(a);
+    set_flags(&flags, a);
     //     beq ca8f8
     if (flags & FLAG_Z)
         goto ca8f8;
@@ -9383,7 +9383,7 @@ ca8f8:
 ca90a:
     //     txa
     a = x;
-    set_flags(a);
+    set_flags(&flags, a);
     //     bne ca911
     if (!(flags & FLAG_Z))
         goto ca911;
@@ -9397,7 +9397,7 @@ ca911:
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
     //     cmp #0x10
-    cmp(a, 0x10);
+    cmp(&flags, a, 0x10);
     //     bne ca919
     if (!(flags & FLAG_Z))
         goto ca919;
@@ -9427,13 +9427,13 @@ ca919:
             //     clc
             flags &= ~FLAG_C;
             //     adc current_line_ptr
-            adc((uint8_t)(current_line_ptr & 0xff));
+            adc(&flags, (uint8_t)(current_line_ptr & 0xff));
             //     sta markers_array,x
             ((uint8_t*)markers_array)[x] = a;
             //     lda current_line_ptr+1
             a = (uint8_t)(current_line_ptr >> 8);
             //     adc #0
-            adc(0);
+            adc(&flags, 0);
             //     sta markers_array+1,x
             ((uint8_t*)markers_array)[x + 1] = a;
             //     bne loop_ca91c
@@ -9457,7 +9457,7 @@ ca919:
     //     dex
     x--;
     //     cmp #0x0d
-    cmp(a, 0x0d);
+    cmp(&flags, a, 0x0d);
     //     bne ca90a
     if (!(flags & FLAG_Z))
         goto ca90a;
