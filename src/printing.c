@@ -91,7 +91,7 @@ void lookup_formatting_command(void);
 static void sub_c95b2(uint8_t a);
 static void c9575(void);
 void render_register(void);
-static void render_number_to_output_buffer(void);
+static void render_number_to_output_buffer(uint16_t value);
 static void emit_to_output_buffer_callback(uint8_t digit);
 static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t));
 static const uint8_t lada6 = 0x40;
@@ -1627,8 +1627,7 @@ void render_register(void)
     a = ram[tmp67 + y];
     //     sta ((uint8_t*)&tmp89)[1]
     ((uint8_t*)&tmp89)[1] = a;
-    //     jsr render_number_to_output_buffer
-    render_number_to_output_buffer();
+    render_number_to_output_buffer(tmp89);
     // cada2:
 cada2:
     //     clv
@@ -1639,7 +1638,7 @@ cada2:
     return;
 }
 
-static void render_number_to_output_buffer(void)
+static void render_number_to_output_buffer(uint16_t value)
 {
     // Pseudocode: Renders a 16-bit number to the output buffer using callback
 
@@ -1655,7 +1654,7 @@ static void render_number_to_output_buffer(void)
     //     lda la69a
     //     ldy la69b
     //     jsr render_number_to_callback
-    render_number_to_callback(tmp89, emit_to_output_buffer_callback);
+    render_number_to_callback(value, emit_to_output_buffer_callback);
     //     ldx l0082
     x = l0082;
     //     rts
