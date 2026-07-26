@@ -1736,8 +1736,7 @@ static void render_number_to_callback(void)
 {
     // Pseudocode: Render 16-bit number (TMP9:TMP8) as decimal via callback
 
-    ((uint8_t*)&tmp67)[0] = a;
-    ((uint8_t*)&tmp67)[1] = y;
+    tmp67 = (addr_t)(y) << 8 | a;
     uint16_t value = tmp89;
     char buf[6];
     snprintf(buf, sizeof(buf), "%u", (unsigned int)value);

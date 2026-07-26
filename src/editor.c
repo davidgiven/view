@@ -924,24 +924,7 @@ static void cf7_join_lines_key(void)
 
     //     adc current_line_ptr
 
-    flags &= ~FLAG_C;
-    a = adc(&flags, a, (uint8_t)(current_line_ptr & 0xff));
-
-    //     sta ((uint8_t*)&tmp45)[0]
-
-    ((uint8_t*)&tmp45)[0] = a;
-
-    //     lda current_line_ptr+1
-
-    a = (uint8_t)(current_line_ptr >> 8);
-
-    //     adc #0
-
-    a = adc(&flags, a, 0);
-
-    //     sta ((uint8_t*)&tmp45)[1]
-
-    ((uint8_t*)&tmp45)[1] = a;
+    tmp45 = current_line_ptr + y;
 
     //     lda #0
 
@@ -5242,12 +5225,7 @@ cacad:
     y = 0;
     //     sta (((uint8_t*)&tmp45)[0]),y
     ram[tmp45 + y] = a;
-    //     lda ((uint8_t*)&tmp45)[0]
-    //     sta ((uint8_t*)&tmp89)[0]
-    //     lda ((uint8_t*)&tmp45)[1]
-    //     sta ((uint8_t*)&tmp89)[1]
-    ((uint8_t*)&tmp89)[0] = ((uint8_t*)&tmp45)[0];
-    ((uint8_t*)&tmp89)[1] = ((uint8_t*)&tmp45)[1];
+    tmp89 = tmp45;
     //     bne cac7b
     if (((uint8_t*)&tmp89)[1] != 0)
         goto cac7b;
@@ -8909,12 +8887,7 @@ cac5c:
     }
     // cac6f:
 cac6f:
-    //     lda ((uint8_t*)&tmp89)[0]
-    //     sta ((uint8_t*)&tmp67)[0]
-    //     lda ((uint8_t*)&tmp89)[1]
-    //     sta ((uint8_t*)&tmp67)[1]
-    ((uint8_t*)&tmp67)[0] = ((uint8_t*)&tmp89)[0];
-    ((uint8_t*)&tmp67)[1] = ((uint8_t*)&tmp89)[1];
+    tmp67 = tmp89;
     // return_73:
     //     rts
     return;

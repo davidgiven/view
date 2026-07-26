@@ -948,8 +948,7 @@ c8aa3:
     //     sbc l0081; sta ((uint8_t*)&tmp67)[1]
     {
         uint16_t sub = (uint16_t)l0082 - ((uint16_t)l0081 << 8 | l0080);
-        ((uint8_t*)&tmp67)[0] = (uint8_t)(sub & 0xff);
-        ((uint8_t*)&tmp67)[1] = (uint8_t)(sub >> 8);
+        tmp67 = sub;
         if ((uint16_t)l0082 >= ((uint16_t)l0081 << 8 | l0080))
             flags |= FLAG_C;
         else

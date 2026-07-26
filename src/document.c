@@ -1347,9 +1347,7 @@ void sub_cab1a(void)
 
     // sub_cab1a:
     //     sta ((uint8_t*)&tmp01)[0]
-    //     sty ((uint8_t*)&tmp01)[1]
-    ((uint8_t*)&tmp01)[0] = a;
-    ((uint8_t*)&tmp01)[1] = y;
+    tmp01 = (addr_t)(y) << 8 | a;
     //     jsr sub_cab6e
     sub_cab6e();
     //     bne cab29
