@@ -878,19 +878,13 @@ static void cf7_join_lines_key(void)
 
     //     lda current_line_ptr
 
-    a = (uint8_t)(current_line_ptr & 0xff);
-
     //     sta ((uint8_t*)&tmp01)[0]
-
-    ((uint8_t*)&tmp01)[0] = a;
 
     //     lda current_line_ptr+1
 
-    a = (uint8_t)(current_line_ptr >> 8);
-
     //     sta ((uint8_t*)&tmp01)[1]
 
-    ((uint8_t*)&tmp01)[1] = a;
+    tmp01 = current_line_ptr;
 
     //     jsr cab29
 
@@ -951,19 +945,13 @@ static void cf7_join_lines_key(void)
 
     //     lda #0
 
-    a = 0;
-
     //     sta ((uint8_t*)&tmp67)[1]
-
-    ((uint8_t*)&tmp67)[1] = a;
 
     //     lda #1
 
-    a = 1;
-
     //     sta ((uint8_t*)&tmp67)[0]
 
-    ((uint8_t*)&tmp67)[0] = a;
+    tmp67 = 1;
 
     //     jsr adjust_pointers
 
@@ -1418,22 +1406,7 @@ static void f15_up_key(void)
     if (!(flags & FLAG_C))
         return;
 
-    //     lda ((uint8_t*)&tmp01)[0]
-
-    a = ((uint8_t*)&tmp01)[0];
-
-    //     sta current_line_ptr
-
-    current_line_ptr = (uint16_t)((current_line_ptr & 0xff00) | a);
-
-    //     lda ((uint8_t*)&tmp01)[1]
-
-    a = ((uint8_t*)&tmp01)[1];
-
-    //     sta current_line_ptr+1
-
-    current_line_ptr =
-        (uint16_t)((current_line_ptr & 0x00ff) | ((uint16_t)a << 8));
+    current_line_ptr = tmp01;
 
     //     inc l0079
 
@@ -1596,19 +1569,13 @@ static void f7_delete_line_key(void)
 
     //     lda current_line_ptr
 
-    a = (uint8_t)(current_line_ptr & 0xff);
-
     //     sta ((uint8_t*)&tmp45)[0]
-
-    ((uint8_t*)&tmp45)[0] = a;
 
     //     lda current_line_ptr+1
 
-    a = (uint8_t)(current_line_ptr >> 8);
-
     //     sta ((uint8_t*)&tmp45)[1]
 
-    ((uint8_t*)&tmp45)[1] = a;
+    tmp45 = current_line_ptr;
 
     //     ldx l003b
 
@@ -1620,15 +1587,13 @@ static void f7_delete_line_key(void)
 
     //     stx ((uint8_t*)&tmp67)[0]
 
-    ((uint8_t*)&tmp67)[0] = x;
-
     //     lda #0
 
     a = 0;
 
     //     sta ((uint8_t*)&tmp67)[1]
 
-    ((uint8_t*)&tmp67)[1] = a;
+    tmp67 = x;
 
     //     jsr adjust_pointers
 
@@ -1665,20 +1630,7 @@ static void f7_delete_line_key(void)
 
     //     lda ((uint8_t*)&tmp01)[0]
 
-    a = ((uint8_t*)&tmp01)[0];
-
-    //     sta current_line_ptr
-
-    current_line_ptr = (uint16_t)((current_line_ptr & 0xff00) | a);
-
-    //     lda ((uint8_t*)&tmp01)[1]
-
-    a = ((uint8_t*)&tmp01)[1];
-
-    //     sta current_line_ptr+1
-
-    current_line_ptr =
-        (uint16_t)((current_line_ptr & 0x00ff) | ((uint16_t)a << 8));
+    current_line_ptr = tmp01;
 
     // c9e81:
 
@@ -2778,19 +2730,13 @@ void return_key(void)
 
     //     lda current_line_ptr
 
-    a = (uint8_t)(current_line_ptr & 0xff);
-
     //     sta ((uint8_t*)&tmp01)[0]
-
-    ((uint8_t*)&tmp01)[0] = a;
 
     //     lda current_line_ptr+1
 
-    a = (uint8_t)(current_line_ptr >> 8);
-
     //     sta ((uint8_t*)&tmp01)[1]
 
-    ((uint8_t*)&tmp01)[1] = a;
+    tmp01 = current_line_ptr;
 
     //     jsr cab29
 
@@ -3006,19 +2952,13 @@ entry:
 
     //     lda current_edit_line_ptr
 
-    a = (uint8_t)(current_edit_line_ptr & 0xff);
-
     //     sta ((uint8_t*)&tmp01)[0]
-
-    ((uint8_t*)&tmp01)[0] = a;
 
     //     lda current_edit_line_ptr+1
 
-    a = (uint8_t)(current_edit_line_ptr >> 8);
-
     //     sta ((uint8_t*)&tmp01)[1]
 
-    ((uint8_t*)&tmp01)[1] = a;
+    tmp01 = current_edit_line_ptr;
 
     //     jsr get_line_length
 
@@ -3129,11 +3069,7 @@ c9fc3:
 
     //     lda current_edit_line_ptr
 
-    a = (uint8_t)(current_edit_line_ptr & 0xff);
-
     //     sta ((uint8_t*)&tmp01)[0]
-
-    ((uint8_t*)&tmp01)[0] = a;
 
     //     lda current_edit_line_ptr+1
 
@@ -3141,7 +3077,7 @@ c9fc3:
 
     //     sta ((uint8_t*)&tmp01)[1]
 
-    ((uint8_t*)&tmp01)[1] = a;
+    tmp01 = current_edit_line_ptr;
 
     //     ldy xpos
 
@@ -3857,13 +3793,10 @@ static void delete_edit_buffer_bytes_at_xpos(void)
     //     inc l006d
     edit_buffer_dirty_flag++;
     //     lda current_edit_line_ptr
-    a = (uint8_t)(current_edit_line_ptr & 0xff);
     //     sta ((uint8_t*)&tmp67)[0]
-    ((uint8_t*)&tmp67)[0] = a;
     //     lda current_edit_line_ptr+1
-    a = (uint8_t)(current_edit_line_ptr >> 8);
     //     sta ((uint8_t*)&tmp67)[1]
-    ((uint8_t*)&tmp67)[1] = a;
+    tmp67 = current_edit_line_ptr;
     //     ldy xpos
     y = xpos;
     //     tya
@@ -4608,14 +4541,7 @@ static void sub_c9f80(void)
     //     bcc return_56
     if (!(flags & FLAG_C))
         return;
-    //     lda ((uint8_t*)&tmp01)[0]
-    a = ((uint8_t*)&tmp01)[0];
-    //     sta current_line_ptr
-    current_line_ptr = (current_line_ptr & 0xff00) | a;
-    //     lda ((uint8_t*)&tmp01)[1]
-    a = ((uint8_t*)&tmp01)[1];
-    //     sta current_line_ptr+1
-    current_line_ptr = (current_line_ptr & 0x00ff) | ((uint16_t)a << 8);
+    current_line_ptr = tmp01;
     //     jsr sub_caa97
     sub_caa97();
     //     jsr c9e9b
@@ -4882,13 +4808,10 @@ void draw_previous_word(void)
     // draw_previous_word: Moves cursor back to start of previous word
 
     //     lda current_edit_line_ptr
-    a = (uint8_t)(current_edit_line_ptr & 0xff);
     //     sta ((uint8_t*)&tmp01)[0]
-    ((uint8_t*)&tmp01)[0] = a;
     //     lda current_edit_line_ptr+1
-    a = (uint8_t)(current_edit_line_ptr >> 8);
     //     sta ((uint8_t*)&tmp01)[1]
-    ((uint8_t*)&tmp01)[1] = a;
+    tmp01 = current_edit_line_ptr;
     //     ldy xpos
     y = xpos;
     //     beq caf55
@@ -5064,13 +4987,10 @@ void insert_edit_buffer_bytes_at_xpos(void)
     //     inc l006d
     edit_buffer_dirty_flag++;
     //     lda current_edit_line_ptr
-    a = (uint8_t)(current_edit_line_ptr & 0xff);
     //     sta ((uint8_t*)&tmp67)[0]
-    ((uint8_t*)&tmp67)[0] = a;
     //     lda current_edit_line_ptr+1
-    a = (uint8_t)(current_edit_line_ptr >> 8);
     //     sta ((uint8_t*)&tmp67)[1]
-    ((uint8_t*)&tmp67)[1] = a;
+    tmp67 = current_edit_line_ptr;
     //     ldy #0x84
     y = MAX_LINE_LENGTH;
     // cae27:
@@ -5313,8 +5233,7 @@ cacad:
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda #0
     //     sta ((uint8_t*)&tmp67)[1]
-    ((uint8_t*)&tmp67)[0] = 1;
-    ((uint8_t*)&tmp67)[1] = 0;
+    tmp67 = 1;
     //     jsr make_space_for_insertion
     make_space_for_insertion();
     //     lda #0x0d
@@ -5606,13 +5525,10 @@ void c8b7b(void)
     //     stx l0081
     l0081 = x;
     //     lda doc_ptr2+0
-    a = (uint8_t)(doc_ptr2 & 0xff);
     //     sta ((uint8_t*)&tmp89)[0]
-    ((uint8_t*)&tmp89)[0] = a;
     //     lda doc_ptr2+1
-    a = (uint8_t)(doc_ptr2 >> 8);
     //     sta ((uint8_t*)&tmp89)[1]
-    ((uint8_t*)&tmp89)[1] = a;
+    tmp89 = doc_ptr2;
 c8b91:
     // c8b91:
     //     lda ((uint8_t*)&tmp89)[1]
@@ -5865,13 +5781,10 @@ static void c9de3_insert_line(void)
     //     sta ((uint8_t*)&tmp45)[0]
     tmp45 = (addr_t)(y) << 8 | a;
     //     lda #1
-    a = 1;
     //     sta ((uint8_t*)&tmp67)[0]
-    ((uint8_t*)&tmp67)[0] = a;
     //     lda #0
-    a = 0;
     //     sta ((uint8_t*)&tmp67)[1]
-    ((uint8_t*)&tmp67)[1] = a;
+    tmp67 = 1;
     //     jsr make_space_for_insertion
     make_space_for_insertion();
     //     bcs c9dfd
@@ -6488,11 +6401,9 @@ c988c:
     //     stx l0082
     l0082 = x;
     //     stx ((uint8_t*)&tmp89)[0]
-    ((uint8_t*)&tmp89)[0] = x;
     //     lda #0
-    a = 0;
     //     sta ((uint8_t*)&tmp89)[1]
-    ((uint8_t*)&tmp89)[1] = a;
+    tmp89 = x;
     //     jsr sub_cadf0
     sub_cadf0();
     //     sta l0045
@@ -6926,13 +6837,10 @@ static void recalculate_cursor_xpos(void)
 
     // sub_ca608:
     //     lda current_edit_line_ptr
-    a = (uint8_t)(current_edit_line_ptr & 0xff);
     //     sta ((uint8_t*)&tmp01)[0]
-    ((uint8_t*)&tmp01)[0] = a;
     //     lda current_edit_line_ptr+1
-    a = (uint8_t)(current_edit_line_ptr >> 8);
     //     sta ((uint8_t*)&tmp01)[1]
-    ((uint8_t*)&tmp01)[1] = a;
+    tmp01 = current_edit_line_ptr;
     //     lda l0079
     a = l0079;
     if (a != 0)
@@ -7907,13 +7815,10 @@ void sub_c89d3(void)
 {
     // sub_c89d3:
     //     lda area_start_ptr
-    a = (uint8_t)(area_start_ptr & 0xff);
     //     sta ((uint8_t*)&tmp45)[0]
-    ((uint8_t*)&tmp45)[0] = a;
     //     lda area_start_ptr+1
-    a = (uint8_t)(area_start_ptr >> 8);
     //     sta ((uint8_t*)&tmp45)[1]
-    ((uint8_t*)&tmp45)[1] = a;
+    tmp45 = area_start_ptr;
     //     jsr adjust_pointers
     adjust_pointers();
     //     lda ((uint8_t*)&tmp45)[0]
@@ -8929,13 +8834,10 @@ static void sub_caacb(void)
     // of document buffer
 
     //     lda current_line_ptr
-    a = (uint8_t)(current_line_ptr & 0xff);
     //     sta ((uint8_t*)&tmp67)[0]
-    ((uint8_t*)&tmp67)[0] = a;
     //     lda current_line_ptr+1
-    a = (uint8_t)(current_line_ptr >> 8);
     //     sta ((uint8_t*)&tmp67)[1]
-    ((uint8_t*)&tmp67)[1] = a;
+    tmp67 = current_line_ptr;
     //     ldy #0
     y = 0;
     // caad5:
@@ -9218,13 +9120,11 @@ static void write_line_back_to_document(void)
     if (flags & FLAG_Z)
         goto ca93a;
     //     lda current_line_ptr
-    a = (uint8_t)(current_line_ptr & 0xff);
     //     sta ((uint8_t*)&tmp45)[0]
-    ((uint8_t*)&tmp45)[0] = a;
     //     lda current_line_ptr+1
     a = (uint8_t)(current_line_ptr >> 8);
     //     sta ((uint8_t*)&tmp45)[1]
-    ((uint8_t*)&tmp45)[1] = a;
+    tmp45 = current_line_ptr;
     //     ldy #0
     y = 0;
     //     sty ((uint8_t*)&tmp67)[1]
@@ -9294,13 +9194,10 @@ ca8f8:
     //     sty l006e
     edit_buffer_unpacked_flag = y;
     //     lda current_format_line_ptr
-    a = (uint8_t)(current_format_line_ptr & 0xff);
     //     sta ((uint8_t*)&tmp67)[0]
-    ((uint8_t*)&tmp67)[0] = a;
     //     lda current_format_line_ptr+1
-    a = (uint8_t)(current_format_line_ptr >> 8);
     //     sta ((uint8_t*)&tmp67)[1]
-    ((uint8_t*)&tmp67)[1] = a;
+    tmp67 = current_format_line_ptr;
     //     ldx l0083
     x = l0083;
     //     stx l003b

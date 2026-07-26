@@ -861,13 +861,10 @@ static void dm_fmt_cmd(void)
         return;
     //     bne return_42
     //     lda last_macro_ptr
-    a = (uint8_t)(last_macro_ptr & 0xff);
     //     sta ((uint8_t*)&tmp67)[0]
-    ((uint8_t*)&tmp67)[0] = a;
     //     lda last_macro_ptr+1
-    a = (uint8_t)((last_macro_ptr >> 8) & 0xff);
     //     sta ((uint8_t*)&tmp67)[1]
-    ((uint8_t*)&tmp67)[1] = a;
+    tmp67 = last_macro_ptr;
     //     ldy #3
     y = 3;
     //     lda (current_format_line_ptr),y
@@ -1032,14 +1029,7 @@ c96ce:
 
     // c96f8:
 c96f8:
-    //     lda ((uint8_t*)&tmp01)[0]
-    a = ((uint8_t*)&tmp01)[0];
-    //     sta last_macro_ptr
-    last_macro_ptr = (last_macro_ptr & 0xff00) | a;
-    //     lda ((uint8_t*)&tmp01)[1]
-    a = ((uint8_t*)&tmp01)[1];
-    //     sta last_macro_ptr+1
-    last_macro_ptr = (last_macro_ptr & 0x00ff) | ((uint16_t)a << 8);
+    last_macro_ptr = tmp01;
     //     bne c96a2                                                         ;
     //     ALWAYS branch
     goto c96a2;
@@ -1483,9 +1473,8 @@ static void evaluate_expression_from_fmt_cmd(void)
     //     lda #0
     a = 0;
     //     sta ((uint8_t*)&tmp89)[0]
-    ((uint8_t*)&tmp89)[0] = a;
     //     sta ((uint8_t*)&tmp89)[1]
-    ((uint8_t*)&tmp89)[1] = a;
+    tmp89 = 0;
     //     sta input_buffer_offset+1
     l0080 = a;
     // c97c0:
@@ -2751,13 +2740,10 @@ static void print_loop(void)
         // c8f7a:
     c8f7a_l:
         //     lda first_macro_ptr
-        a = (uint8_t)(first_macro_ptr & 0xff);
         //     sta ((uint8_t*)&tmp67)[0]
-        ((uint8_t*)&tmp67)[0] = a;
         //     lda first_macro_ptr+1
-        a = (uint8_t)(first_macro_ptr >> 8);
         //     sta ((uint8_t*)&tmp67)[1]
-        ((uint8_t*)&tmp67)[1] = a;
+        tmp67 = first_macro_ptr;
         //     ldy #1
         y = 1;
         //     lda (current_format_line_ptr),y

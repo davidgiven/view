@@ -533,13 +533,10 @@ void sub_c8371(void)
     // sub_c8371:
     //     lda ptr2
     uint8_t a;
-    a = (uint8_t)(ptr2 & 0xff);
     //     sta ((uint8_t*)&tmp89)[0]
-    ((uint8_t*)&tmp89)[0] = a;
     //     lda ptr2+1
-    a = (uint8_t)(ptr2 >> 8);
     //     sta ((uint8_t*)&tmp89)[1]
-    ((uint8_t*)&tmp89)[1] = a;
+    tmp89 = ptr2;
     //     ldy #0
     uint8_t y = 0;
     //     ldx #0
@@ -1251,14 +1248,7 @@ void read_next_chunk_from_input_file(void)
     y = 0;
     //     sta (((uint8_t*)&tmp01)[0]),y
     ram[tmp01 + y] = a;
-    //     lda ((uint8_t*)&tmp01)[0]
-    a = ((uint8_t*)&tmp01)[0];
-    //     sta top
-    top = (top & 0xff00) | a;
-    //     lda ((uint8_t*)&tmp01)[1]
-    a = ((uint8_t*)&tmp01)[1];
-    //     sta top+1
-    top = (top & 0x00ff) | ((uint16_t)a << 8);
+    top = tmp01;
     //     plp
     //     rts
 }
@@ -1286,13 +1276,10 @@ void write_area_to_file(void)
         return;
 
     //     lda area_start_ptr
-    a = (uint8_t)(area_start_ptr & 0xff);
     //     sta ((uint8_t*)&tmp89)[0]
-    ((uint8_t*)&tmp89)[0] = a;
     //     lda area_start_ptr+1
-    a = (uint8_t)(area_start_ptr >> 8);
     //     sta ((uint8_t*)&tmp89)[1]
-    ((uint8_t*)&tmp89)[1] = a;
+    tmp89 = area_start_ptr;
 
     //     zrepeat
     do

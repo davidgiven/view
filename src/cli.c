@@ -334,19 +334,15 @@ static void count_cmd(void)
         return;
     }
     //     lda area_start_ptr
-    a = (uint8_t)(area_start_ptr & 0xff);
     //     sta ((uint8_t*)&tmp01)[0]
-    ((uint8_t*)&tmp01)[0] = a;
     //     lda area_start_ptr+1
-    a = (uint8_t)((area_start_ptr >> 8) & 0xff);
     //     sta ((uint8_t*)&tmp01)[1]
-    ((uint8_t*)&tmp01)[1] = a;
+    tmp01 = area_start_ptr;
     //     lda #0
     a = 0;
     //     sta ((uint8_t*)&tmp89)[0]
-    ((uint8_t*)&tmp89)[0] = a;
     //     sta ((uint8_t*)&tmp89)[1]
-    ((uint8_t*)&tmp89)[1] = a;
+    tmp89 = 0;
     //     sta l0083
     l0083 = a;
     //     sta l0082
