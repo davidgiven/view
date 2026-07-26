@@ -3778,7 +3778,7 @@ static void sub_c9241(void)
         return;
     }
     //     ldy #0
-    y = 0;
+    uint8_t y = 0;
 // loop_c9247:
 loop_c9247:
     //     lda (ptr6),y
@@ -4239,7 +4239,7 @@ static void write_byte_to_memory(uint8_t a)
 {
     // write_byte_to_memory:
     //     ldy #0
-    y = 0;
+    uint8_t y = 0;
     //     sta (tmp0),y
     ram[tmp01] = a;
     //     inc tmp0
@@ -4349,7 +4349,7 @@ void prepare_printer_driver(void)
     //     ldy l94b2
     //     lda #0
     //     sta microspacing_flag
-    a = 0;
+    uint8_t a = 0;
     microspacing_flag = a;
     printer_driver_ptr = &default_printer_driver;
     // c949e:

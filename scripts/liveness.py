@@ -452,8 +452,8 @@ def analyze_files(files):
             if callee and callee not in INLINE_HELPERS:
                 d, u = line_defs_uses(sl, i)
                 passed_to_callees |= u
-                # Include callee's live_in (implicit register args).
-                # ALL_IN_OUT functions have ALL_VARS live-in.
+                # Include variables the caller gets back from the callee
+                # (the callee's live-out, stored in backward_needs).
                 if callee in ALL_IN_OUT:
                     passed_to_callees |= ALL_VARS
                 else:
@@ -461,6 +461,10 @@ def analyze_files(files):
                     if callee_info:
                         callee_li = callee_info.get('live_in', set())
                         passed_to_callees |= callee_li
+                    # Also include what this caller needs from the callee
+                    # (variables live after the call, i.e. backward_needs).
+                    callee_needs = backward_needs.get(callee, set())
+                    passed_to_callees |= callee_needs
         locals = ((local_defs & local_uses) - live_in - live_out - passed_to_callees)
         summaries[name] = {
             'defs': all_defs,

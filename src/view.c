@@ -543,7 +543,7 @@ void sub_c8371(void)
     //     sta tmp9
     tmp9 = a;
     //     ldy #0
-    y = 0;
+    uint8_t y = 0;
     //     ldx #0
     x = 0;
 c837d:

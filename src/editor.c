@@ -4833,7 +4833,7 @@ void enter_editor_mode(void)
     //     jsr clear_screen
     clear_screen();
     //     lda #0
-    a = 0;
+    uint8_t a = 0;
     //     sta l006d
     edit_buffer_dirty_flag = 0;
     //     sta l006f
@@ -5583,7 +5583,7 @@ static void c8b78(void)
 {
     // c8b78:
     //     lda #0xff
-    a = 0xff;
+    uint8_t a = 0xff;
     set_flags(&flags, a);
     //     rts
 }
@@ -6169,7 +6169,7 @@ static void draw_ruler(void)
     if (flags & FLAG_Z)
         return;
     //     ldy #0
-    y = 0;
+    uint8_t y = 0;
     //     sty status_line_needs_redrawing_flag
     status_line_needs_redrawing_flag = y;
 
@@ -7784,7 +7784,7 @@ static void set_marker(void)
     //     jsr set_marker_to_here
     set_marker_to_here();
     //     jmp ca035
-    a = 1;
+    uint8_t a = 1;
     l0073 = a;
     ca684();
     return;

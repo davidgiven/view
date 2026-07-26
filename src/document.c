@@ -517,7 +517,7 @@ void sub_cab6e(void)
 
     // sub_cab6e:
     //     ldy #0
-    y = 0;
+    uint8_t y = 0;
     //     lda (tmp0),y
     a = ram[tmp01 + y];
     //     cmp #0x81

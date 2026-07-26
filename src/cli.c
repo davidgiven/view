@@ -246,7 +246,7 @@ void clear_cmd(void)
     //     ldx #0x0b
     x = 0x0b;
     //     lda #0
-    a = 0;
+    uint8_t a = 0;
     // loop_cb095:
 loop_cb095:
     //     sta markers_array,x
@@ -267,7 +267,7 @@ static void close_input_output_files(void)
 
     // close_input_output_files:
     //     lda #0
-    a = 0;
+    uint8_t a = 0;
     //     sta input_file_empty_flag
     input_file_empty_flag = a;
     //     sta file_edit_flags
@@ -2034,7 +2034,7 @@ void reset_document_name_after_load(void)
 
     // reset_document_name_after_load:
     //     lda #0x40 ; '@'
-    a = 0x40;
+    uint8_t a = 0x40;
     //     sta file_edit_flags
     file_edit_flags = a;
     // fall through to set_document_name_to_filename_buffer
