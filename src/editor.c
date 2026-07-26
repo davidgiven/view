@@ -428,7 +428,6 @@ void editor_loop_impl(void)
 
             format_mode_flag = a;
 
-        c9b8f_:
 
         c9b73_:
 
@@ -461,7 +460,6 @@ void editor_loop_impl(void)
             redraw_editor();
         }
 
-    c9b96:
 
         //     jsr read_char
 
@@ -3218,7 +3216,6 @@ ca00f:
 
     xpos = y;
 
-return_58:
 
     //     rts
 
@@ -4296,7 +4293,6 @@ c9cd0:
         y = 1;
     }
     // c9cdb:
-c9cdb:
     //     sty l0081
     l0081 = y;
     //     lda current_edit_line_ptr
@@ -4316,7 +4312,6 @@ c9cdb:
         ram[current_edit_line_ptr + y] = 0x10;
     }
     // c9cf2:
-c9cf2:
     //     iny
     y++;
     //     sty l0082
@@ -4392,7 +4387,6 @@ c9d30:
     //     bmi c9d15                                                         ;
     //     ALWAYS branch
     // c9d15:
-c9d15:
     //     jsr justify_edit_buffer
     justify_edit_buffer();
     //     jsr ca93c
@@ -5829,7 +5823,6 @@ loop_c8c2a:
     tmp89++;
     //     bne c8c30
     //     inc tmp9
-c8c30:
     // c8c30:
     //     jmp c8b91
     goto c8b91;
@@ -6718,7 +6711,6 @@ loop_c992c:
     //     bne loop_c992c
     goto loop_c992c;
     // return_48:
-return_48:
     //     rts
     return;
 }
@@ -7009,7 +7001,6 @@ ca63d:
     //     sta l0072
     l0072 = a;
     // return_64:
-return_64:
     //     rts
     return;
 }
@@ -7073,7 +7064,6 @@ ca29c:
     if (top_of_screen_line_ptr >= top)
         goto ca30d;
     // ca2b2: (5239)
-ca2b2:
     //     jsr sub_cab37 (5240)
     move_tmp01_to_previous_line();
     //     ldy tmp1 (5241)
@@ -7623,7 +7613,6 @@ static void render_char(void)
         goto ca514;
     // Marker match at index < 4: render inverted
     // ca50e:
-ca50e:
     a = STYLE_REVERSE;
     screen_setstyle(a);
     // ca514:
@@ -8062,7 +8051,6 @@ c9969:
     l0039++;
     set_flags(&flags, l0039);
     // return_49:
-return_49:
     //     rts
     return;
 }
@@ -9044,7 +9032,6 @@ static void sub_cac50(void)
     if (!(flags & FLAG_C))
         y--;
     // cac58:
-cac58:
     //     sty tmp9
     tmp9 = y;
     //     ldy #0

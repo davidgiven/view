@@ -1235,7 +1235,6 @@ cab58:
     //     bne cab64
     //     inc tmp1
     // cab64:
-cab64:
     //     jsr sub_cab6e
     sub_cab6e();
     //     bne cab6c
@@ -1248,7 +1247,6 @@ cab6c:
     //     sec
     flags |= FLAG_C;
     // return_71:
-return_71:
     //     rts
     return;
 }

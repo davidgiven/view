@@ -140,11 +140,9 @@ c951c:
     //     inc l0030
     l0030++;
     // c9529:
-c9529:
     //     sec
     flags |= FLAG_C;
 // return_36:
-return_36:
     //     rts
     return;
 }
@@ -362,7 +360,6 @@ c9555:
     //     tax
     x = a;
     // return_37:
-return_37:
     //     rts
     return;
 
@@ -1016,7 +1013,6 @@ c96ce:
     //     bne add_macro_to_linked_list
     //     inc last_macro_ptr+1
     // add_macro_to_linked_list:
-add_macro_to_linked_list:
     //     lda #0
     a = 0;
     //     sta (last_macro_ptr),y
@@ -1121,7 +1117,6 @@ c9725:
     //     sta highlight1_code,x
     highlight_code[x] = a;
     // return_44:
-return_44:
     //     rts
     return;
 }
@@ -1231,7 +1226,6 @@ c974c:
     //     bpl loop_c973e
     set_flags(&flags, a);
     // return_45:
-return_45:
     //     rts
     return;
 }
@@ -1465,7 +1459,6 @@ c97ae:
     //     sec
     flags |= FLAG_C;
     // return_46:
-return_46:
     //     rts
     return;
 
@@ -1934,7 +1927,6 @@ void check_not_continuous_editing(void)
         return;
     //     bcs c8e5d                                                         ;
     //     ALWAYS branch
-c8e5d:
     display_document_file_state();
 }
 
@@ -1952,7 +1944,6 @@ void display_not_enough_memory(void)
     return_to_cli_prompt();
     return;
 // return_6:
-return_6:
     //     rts
     return;
 
@@ -2638,7 +2629,6 @@ c8edb:
         goto c8f0d;
     }
     // c8f0a:
-c8f0a:
     // c8f0d:
 c8f0d:
     //     jsr parse_optional_filename_from_command
@@ -3801,13 +3791,11 @@ loop_c9247:
     //     bne c9254
     //     inc ptr6+1
     // c9254:
-c9254:
     //     inc tmp0
     tmp01++;
     //     bne c925a
     //     inc tmp1
     // c925a:
-c925a:
     //     cmp #0x0d
     cmp(&flags, a, 0x0d);
     //     bne loop_c9247

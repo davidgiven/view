@@ -594,7 +594,6 @@ c8699:
     //     sta current_tab_key
     current_tab_key = a;
     // c869b:
-c869b:
     //     jmp return_to_cli_prompt
     return_to_cli_prompt();
     return;
@@ -719,7 +718,6 @@ c87cb:
     return;
 
     // c87d1:
-c87d1:
     //     jsr print_inline_string
     //     .ascii "Bad file"
     //     .byte 0xff
@@ -891,7 +889,6 @@ c8608:
     //     stx microspacing_flag
     microspacing_flag = x;
     // return_7:
-return_7:
     //     rts
     return;
 
@@ -2069,7 +2066,6 @@ loop_c88fa:
         goto loop_c88fa;
     //     bge loop_c88fa
     // return_9:
-return_9:
     //     lda #0x0d
     a = 0x0d;
     //     sta input_filename-1, x

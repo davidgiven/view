@@ -77,7 +77,6 @@ void read_first_chunk_from_input_file(void);
 // flags.C=0
 void read_next_chunk_from_input_file(void);
 static void sub_c8da2(void);
-static void print_char(void);
 static void compute_space_common(void);
 void check_for_control_code(void);
 
@@ -85,8 +84,6 @@ static void system_init(void);
 
 // Forward declarations for recently translated functions
 static void compute_required_space_for_insertion(void);
-static void page_eject_fmt(void);
-static bool sub_c9aa9(void);
 
 #include "io.h"
 
@@ -547,7 +544,6 @@ void sub_c8371(void)
     uint8_t y = 0;
     //     ldx #0
     x = 0;
-c837d:
     // c837d:
     //     lda tmp9
     a = tmp9;
