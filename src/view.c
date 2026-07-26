@@ -460,7 +460,6 @@ FILE*
 int main(int argc, char* argv[])
 {
     // main
-    //  Outputs: x
     // Pseudocode: Program entry point with longjmp buffer for stack reset (txs
     // equivalent)
 
@@ -495,8 +494,6 @@ int main(int argc, char* argv[])
 static void sub_c8310(void)
 {
     // sub_c8310
-    //  Inputs: y
-    //  Outputs: a
     // sub_c8310:
     //     iny
     y++;
@@ -518,7 +515,6 @@ static void sub_c8310(void)
 void sub_c8361(void)
 {
     // sub_c8361
-    //  Outputs: a
     // sub_c8361:
     //     lda #0
     a = 0;
@@ -536,9 +532,7 @@ void sub_c8361(void)
 void sub_c8371(void)
 {
     // sub_c8371
-    //  Inputs: -
     //  Ptrs:   ptr2
-    //  Outputs: a, x, y; tmp89
     // sub_c8371:
     //     lda ptr2
     a = (uint8_t)(ptr2 & 0xff);
@@ -612,7 +606,6 @@ static const uint8_t l83e0_table[] = {
 static void expand_escaped_string(void)
 {
     // expand_escaped_string
-    //  Inputs: a, x, y, flags:Z
     // expand_escaped_string:
     //     stx l0083
     l0083 = x;
@@ -698,8 +691,6 @@ c83da:
 void sub_c83f0(void)
 {
     // sub_c83f0
-    //  Inputs: x, flags:Z
-    //  Outputs: a, y, flags:C
     // sub_c83f0:
     //     jsr sub_c8412
     sub_c8412();
@@ -744,8 +735,6 @@ c8410:
 void sub_c8412(void)
 {
     // sub_c8412
-    //  Inputs: -
-    //  Outputs: x
     // sub_c8412:
     //     ldx #0
     x = 0;
@@ -772,10 +761,7 @@ void sub_c8412(void)
 void read_into_document(void)
 {
     // read_into_document
-    //  Inputs: -
-    //  Temps:  tmp01
     //  Ptrs:   ptr5
-    //  Outputs: a, y, flags:C, flags:Z; tmp45, tmp67
     // 1: - shared entry point used by both load_cmd and read_cmd
 
     //     jsr check_for_at_least_150_bytes_free
@@ -848,9 +834,7 @@ c8598:
 void sub_c8a4f(void)
 {
     // sub_c8a4f
-    //  Inputs: -
     //  Ptrs:   ptr2
-    //  Outputs: a, x, y; tmp45, tmp67
     // sub_c8a4f:
     //     lda #0
     a = 0;
@@ -1249,9 +1233,6 @@ void sub_c8c7c(void)
 void read_next_chunk_from_input_file(void)
 {
     // read_next_chunk_from_input_file
-    //  Inputs: flags:C, flags:Z
-    //  Temps:  tmp01
-    //  Outputs: a, x, y
     // read_next_chunk_from_input_file:
     //     jsr sub_c8da2
     sub_c8da2();
@@ -1299,8 +1280,6 @@ void read_first_chunk_from_input_file(void)
 void write_area_to_file(void)
 {
     // write_area_to_file
-    //  Inputs: -
-    //  Outputs: a, y; tmp89
     // Pseudocode: Writes document area range to output file byte by byte
 
     // ; Does not include trailing zero!
@@ -1360,9 +1339,6 @@ void write_area_to_file(void)
 static void compute_space_common(void)
 {
     // compute_space_common
-    //  Inputs: a, x, y
-    //  Temps:  tmp89
-    //  Outputs: tmp01, tmp67, flags:C; ptr5
     // c8daf:
     //     sta tmp0
     tmp01 = (addr_t)(y) << 8 | a;
@@ -1418,8 +1394,6 @@ static void compute_space_common(void)
 static void sub_c8da2(void)
 {
     // sub_c8da2
-    //  Inputs: a, x, y
-    //  Outputs: tmp89
     // sub_c8da2:
     //     pha
     //     tya
@@ -1477,7 +1451,6 @@ static void sub_c8e2d(void)
 void check_continuous_editing(void)
 {
     // check_continuous_editing
-    //  Inputs: a
     // Pseudocode: Verifies continuous editing is active, shows file state if
     // not
 

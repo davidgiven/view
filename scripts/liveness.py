@@ -47,13 +47,29 @@ LIB_FUNCTIONS = {
     'exit', 'setjmp', 'longjmp', 'snprintf', 'sprintf', 'printf',
     'fopen', 'fclose', 'fputc', 'fgetc', 'fread', 'fwrite', 'fseek', 'ftell',
     'feof', 'ferror', 'rewind', 'fflush', 'ungetc',
-    'cli_putchar', 'cli_putstring', 'cli_getchar', 'cli_readstring',
+    'cli_putchar', 'cli_getchar', 'cli_readstring',
     'screen_putchar', 'screen_getchar', 'screen_getcursor', 'screen_setcursor',
     'screen_setstyle', 'screen_getsize', 'screen_enter', 'screen_leave',
     'screen_clear', 'screen_scrollup', 'screen_scrolldown', 'screen_enablecursor',
     'isupper', 'islower', 'isalpha', 'isdigit', 'isalnum', 'isspace',
     'toupper', 'tolower',
-    'setbuffer', 'setlinebuf',
+}
+
+# Functions known to corrupt specific registers (defs beyond what line_defs_uses sees).
+# Key = function name, Value = set of variables/flag-bits corrupted.
+CORRUPTS = {
+    'cli_putstring': {'a', 'x', 'flags:C', 'flags:Z', 'flags:N', 'flags:V'},
+    'return_to_cli_prompt': ALL_VARS,
+    'return_to_editor_loop': ALL_VARS,
+    # Error handlers that call return_to_cli_prompt (noreturn chain):
+    'cmd_err_no_string': ALL_VARS,
+    'cmd_err_no_target': ALL_VARS,
+    'file_not_found_error': ALL_VARS,
+    'file_error': ALL_VARS,
+    'display_not_enough_memory': ALL_VARS,
+    'bad_filename_error': ALL_VARS,
+    'nested_macro_error': ALL_VARS,
+    'cmd_err_no_target': ALL_VARS,
 }
 
 
@@ -140,9 +156,9 @@ def line_defs_uses(stripped, index):
                 if m:
                     defs.add(m.group(1))
                     uses.add(m.group(1))
-            # cmp only sets flags, not a
-            if helper in ('set_flags',):
-                m = re.match(r'set_flags\(&flags, (\w+)\)', stripped)
+            # cmp only sets flags, not a — but its register arg is a use
+            if helper in ('cmp', 'set_flags'):
+                m = re.match(r'(?:set_flags|cmp)\(&flags, (\w+)', stripped)
                 if m:
                     uses.add(m.group(1))
             # direct register assignment from helper
@@ -246,13 +262,17 @@ def get_local_info(lines, start, end):
         defined_so_far |= d
         
         callee = detect_call(stripped)
-        if callee and callee not in LIB_FUNCTIONS:
-            call_sites.append((i, callee))
-            # A function call can define any register/flag/tmp.
-            # Conservatively mark everything as defined so the
-            # forward scan won't treat pre-call uses as live-in
-            # when they're satisfied by the call's (unknown) defs.
-            defined_so_far.update(ALL_VARS)
+        if callee:
+            if callee not in LIB_FUNCTIONS:
+                call_sites.append((i, callee))
+                # A non-library function call can define any register/flag/tmp.
+                # Conservatively mark everything as defined so the
+                # forward scan won't treat pre-call uses as live-in
+                # when they're satisfied by the call's (unknown) defs.
+                defined_so_far.update(ALL_VARS)
+            elif callee in CORRUPTS:
+                # Known corruptions for library-like functions
+                defined_so_far.update(CORRUPTS[callee])
     return local_defs, local_uses, local_live_in, call_sites
 
 
@@ -312,11 +332,44 @@ def analyze_files(files):
         all_uses = info.get('cached_uses', info['uses'])
         # live_in: variables used before any local definition (forward scan)
         live_in = info.get('live_in', info['uses'] - info['defs'])
+        # live_out: all_defs is a conservative overestimate. 
+        # Functions whose callers always go through a noreturn (CORRUPTS_ALL)
+        # path get empty live_out.
+        # (A more precise live_out requires proper control-flow analysis.)
+        live_out = all_defs
+        # Check if EVERY return path is preceded by a CORRUPTS_ALL call
+        lines = all_funcs[name][3]
+        start = all_funcs[name][1]
+        end = all_funcs[name][2]
+        all_unreachable = True
+        for i in range(start + 1, end):
+            sl = lines[i].strip()
+            if not (re.search(r'\breturn\b', sl) or (sl == '}' and i == end - 1)):
+                continue
+            if sl == '}' and i != end - 1:
+                continue
+            # Scan backward to see if there's a CORRUPTS_ALL call on this path
+            reachable = True
+            for j in range(i - 1, start, -1):
+                slj = lines[j].strip()
+                if slj == '' or slj.startswith('//') or slj.startswith('*'):
+                    continue
+                if re.match(r'^\w+:', slj): continue
+                if slj.startswith('goto') or slj.startswith('if '): continue
+                callee = detect_call(slj)
+                if callee and callee in CORRUPTS and CORRUPTS[callee] == ALL_VARS:
+                    reachable = False
+                break
+            if reachable:
+                all_unreachable = False
+                break
+        if all_unreachable:
+            live_out = set()
         summaries[name] = {
             'defs': all_defs,
             'uses': all_uses,
             'live_in': live_in,
-            'live_out': all_defs,
+            'live_out': live_out,
             'file': info['file'],
             'calls': [c for _, c in info['call_sites']],
         }

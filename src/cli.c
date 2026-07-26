@@ -60,7 +60,6 @@ static void bye_cmd(void)
 void execute_cli_command(void)
 {
     // execute_cli_command
-    //  Inputs: a
     // call_through_jumptable (y=2):
     //     asl
     //     clc
@@ -162,8 +161,6 @@ void execute_cli_command(void)
 static void change_cmd(void)
 {
     // change_cmd
-    //  Inputs: flags:C, flags:Z
-    //  Outputs: a, x, y; ptr3
     // Pseudocode: Replaces all occurrences of search string in document area,
     // reports change count
 
@@ -241,7 +238,6 @@ c830d:
 void clear_cmd(void)
 {
     // clear_cmd
-    //  Outputs: a, x
     // Pseudocode: Clears all markers (sets to zero)
 
     // ;
@@ -267,7 +263,6 @@ loop_cb095:
 static void close_input_output_files(void)
 {
     // close_input_output_files
-    //  Outputs: a, x
     // Pseudocode: Closes output file, resets editing flags, returns to CLI
 
     // close_input_output_files:
@@ -319,8 +314,6 @@ static void cmd_err_no_target(void)
 static void count_cmd(void)
 {
     // count_cmd
-    //  Inputs: -
-    //  Outputs: a, x, y; tmp01, tmp89
     // Pseudocode: Counts words in document area handling command prefixes and
     // punctuation
     static const uint8_t l8747_data[] = {0x52, 0x4a, 'C', 'E', 'L', 'J', 0};
@@ -541,8 +534,6 @@ c871f:
 static void edit_cmd(void)
 {
     // edit_cmd
-    //  Inputs: flags:Z
-    //  Outputs: a, x
     check_not_continuous_editing();
     parse_filename_from_command();
     set_document_name_to_filename_buffer();
@@ -573,9 +564,6 @@ static void edit_cmd(void)
 static void field_cmd(void)
 {
     // field_cmd
-    //  Inputs: flags:Z
-    //  Temps:  tmp89
-    //  Outputs: a
     // Pseudocode: Sets the tab key field width from parsed integer argument
 
     // ;
@@ -616,8 +604,6 @@ c869b:
 static void finish_cmd(void)
 {
     // finish_cmd
-    //  Inputs: flags:Z
-    //  Outputs: a, x
     // Pseudocode: Writes remaining document content to output file in chunks
 
     // ;
@@ -678,8 +664,6 @@ loop_c84ee:
 static void fold_cmd(void)
 {
     // fold_cmd
-    //  Inputs: y
-    //  Outputs: a
     // Pseudocode: Toggles folding on/off and displays current folding status
 
     // ;
@@ -839,7 +823,6 @@ c8791:
 static void load_cmd(void)
 {
     // load_cmd
-    //  Temps:  tmp01
     // load_cmd:
     //     jsr check_not_continuous_editing
     check_not_continuous_editing();
@@ -867,9 +850,6 @@ static void load_cmd(void)
 static void microspace_cmd(void)
 {
     // microspace_cmd
-    //  Inputs: -
-    //  Temps:  tmp89
-    //  Outputs: a, x, y
     // Pseudocode: Configures microspacing by querying printer driver
 
     // ;
@@ -942,8 +922,6 @@ static void mode_cmd(void)
 static void more_cmd(void)
 {
     // more_cmd
-    //  Inputs: flags:Z
-    //  Outputs: a, x, y
     // Pseudocode: Appends more text from input file into document at current
     // cursor position
 
@@ -1026,8 +1004,6 @@ c84e8:
 static void name_cmd(void)
 {
     // name_cmd
-    //  Inputs: flags:Z
-    //  Outputs: a
     // Pseudocode: Sets document name from optional filename argument
 
     // ;
@@ -1186,8 +1162,6 @@ static void read_cmd(void)
 static void replace_cmd(void)
 {
     // replace_cmd
-    //  Inputs: a, flags:C, flags:Z
-    //  Outputs: x, y
     // Pseudocode: Interactive search and replace prompting for each match
     // (Y)es/(O)K/(N)o
 
@@ -1277,8 +1251,6 @@ c8356:
 static void save_cmd_write_cmd(void)
 {
     // save_cmd_write_cmd
-    //  Inputs: a
-    //  Outputs: x
     // Pseudocode: Saves document area to output file with optional filename
 
     // ;
@@ -1359,7 +1331,6 @@ static void screen_cmd(void)
 static void search_cmd(void)
 {
     // search_cmd
-    //  Inputs: flags:Z
     // Pseudocode: Searches for target string, reports position if found
 
     // ;
@@ -1407,8 +1378,6 @@ static void search_cmd(void)
 static void setup_cmd(void)
 {
     // setup_cmd
-    //  Inputs: a
-    //  Outputs: x, y; tmp67, tmp89
     // Pseudocode: Parses flag letters and sets format_mode_flag,
     // justifying_flag, insert_mode_flag
 
@@ -1570,8 +1539,6 @@ const uint8_t la83d[] = "VIEW\0B3.0 for CP/M-65";
 static void print_x_words_of_help(void)
 {
     // print_x_words_of_help
-    //  Inputs: a
-    //  Outputs: y
     // Pseudocode: Prints X words of the help string showing VIEW and version
 
     // ;
@@ -1612,7 +1579,6 @@ static void parse_command(void);
 void input_line_not_escaped(void)
 {
     // input_line_not_escaped
-    //  Inputs: y, flags:C
     // input_line_not_escaped: Parses command input and dispatches through CLI
     // jump table
 
@@ -1646,7 +1612,6 @@ c826e:
 void cli_handler_impl(void)
 {
     // cli_handler_impl
-    //  Outputs: x
     // cli_handler_impl: Main CLI loop (called after setjmp reset)
 
     //     jsr stop_printing
@@ -1683,8 +1648,6 @@ void cli_handler_impl(void)
 void run_cli(void)
 {
     // run_cli
-    //  Inputs: a
-    //  Outputs: x, y
     screen_leave();
     // run_cli:
     //     jsr clear_screen
@@ -1862,8 +1825,6 @@ c81f3:
 static void parse_command(void)
 {
     // parse_command
-    //  Inputs: -
-    //  Outputs: a, x, y, flags:C
     //     .ascii "VIEW"
     //     .byte 0
     //     .ascii "B3.0 for CP/M-65"
@@ -2085,7 +2046,6 @@ void reset_document_name_after_load(void)
 void set_document_name_to_filename_buffer(void)
 {
     // set_document_name_to_filename_buffer
-    //  Outputs: x
     // Pseudocode: Copies filename buffer to input filename buffer
 
     // set_document_name_to_filename_buffer:
@@ -2144,7 +2104,6 @@ zbreak:
 void parse_mark_from_command(void)
 {
     // parse_mark_from_command
-    //  Inputs: y, flags:C
     // parse_mark_from_command:
     //     jsr sub_c8e33
     sub_c8e33();

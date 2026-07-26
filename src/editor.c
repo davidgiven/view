@@ -233,8 +233,6 @@ void run_editor(void)
 void editor_loop_impl(void)
 {
     // editor_loop_impl
-    //  Inputs: y
-    //  Outputs: a, x
 
     screen_enter();
 
@@ -644,8 +642,6 @@ void editor_loop_impl(void)
 static void cf0_delete_block_key(void)
 {
     // cf0_delete_block_key
-    //  Inputs: flags:C
-    //  Outputs: a, y
 
     write_line_back_to_document_safely();
 
@@ -677,8 +673,6 @@ static void cf0_delete_block_key(void)
 static void cf1_next_match_key(void)
 {
     // cf1_next_match_key
-    //  Inputs: flags:Z
-    //  Outputs: a
 
     write_line_back_to_document_safely();
 
@@ -729,7 +723,6 @@ static void cf4_insert_mode_key(void)
 static void cf5_default_ruler_key(void)
 {
     // cf5_default_ruler_key
-    //  Outputs: a, y
 
     // cf5_default_ruler_key:
 
@@ -761,8 +754,6 @@ static void cf5_default_ruler_key(void)
 static void cf6_split_line_key(void)
 {
     // cf6_split_line_key
-    //  Inputs: y
-    //  Outputs: a, x
 
     // cf6_split_line_key: Splits line at cursor position
 
@@ -881,8 +872,6 @@ c9dcd:
 static void cf7_join_lines_key(void)
 {
     // cf7_join_lines_key
-    //  Inputs: y
-    //  Outputs: a; tmp01, tmp45, tmp67
 
     // cf7_join_lines_key: Joins current line with next line
 
@@ -1013,7 +1002,6 @@ static void cf8_mark_as_ruler_key(void)
 {
     // cf8_mark_as_ruler_key
     //  Ptrs:   ptr1
-    //  Outputs: a, y
 
     // cf8_mark_as_ruler_key: Marks current line as a ruler line with . as
     // default characters
@@ -1106,8 +1094,6 @@ c9f5f:
 static void delete_key(void)
 {
     // delete_key
-    //  Inputs: -
-    //  Outputs: a, x, y
 
     // delete_key:
 
@@ -1194,8 +1180,6 @@ static void delete_key(void)
 void esc_key(void)
 {
     // esc_key
-    //  Inputs: -
-    //  Outputs: a, x
 
     // Pseudocode: Saves edit buffer via write_line_back_to_document_safely and
     // returns to CLI prompt
@@ -1304,7 +1288,6 @@ return_59:
 static void f11_copy_key(void)
 {
     // f11_copy_key
-    //  Inputs: flags:C
 
     write_line_back_to_document_safely();
 
@@ -1328,7 +1311,6 @@ static void f11_copy_key(void)
 static void f12_left_key(void)
 {
     // f12_left_key
-    //  Outputs: y
 
     // f12_left_key: Moves cursor left by one position
 
@@ -1351,8 +1333,6 @@ static void f12_left_key(void)
 void f13_right_key(void)
 {
     // f13_right_key
-    //  Inputs: -
-    //  Outputs: y
 
     // f13_right_key:
 
@@ -1414,9 +1394,6 @@ static void f14_down_key(void)
 static void f15_up_key(void)
 {
     // f15_up_key
-    //  Inputs: flags:C
-    //  Temps:  tmp01
-    //  Outputs: a, y
 
     // f15_up_key: Moves cursor to previous line, handling ruler stack
 
@@ -1486,7 +1463,6 @@ static void f1_top_of_text_key(void)
 static void f2_bottom_of_text_key(void)
 {
     // f2_bottom_of_text_key
-    //  Outputs: x
 
     // Pseudocode: Moves cursor to bottom of document
 
@@ -1519,8 +1495,6 @@ static void f2_bottom_of_text_key(void)
 static void f3_delete_to_eol_key(void)
 {
     // f3_delete_to_eol_key
-    //  Inputs: -
-    //  Outputs: a, flags:C
 
     // f3_delete_to_eol_key: Deletes from cursor to end of line
 
@@ -1609,9 +1583,6 @@ static void f6_insert_line_key(void)
 static void f7_delete_line_key(void)
 {
     // f7_delete_line_key
-    //  Inputs: -
-    //  Temps:  tmp01
-    //  Outputs: a, x, y; tmp45, tmp67
 
     // f7_delete_line_key: Deletes current line and moves cursor up
 
@@ -1762,8 +1733,6 @@ static void f9_delete_char_key(void)
 static void k_command_key(void)
 {
     // k_command_key
-    //  Inputs: a
-    //  Outputs: x, y
 
     // Pseudocode: K-command handler: prompts for K-key, looks up in k_key_table
 
@@ -2598,8 +2567,6 @@ uint8_t parser_table[] = {
 static void o_command_key(void)
 {
     // o_command_key
-    //  Inputs: a
-    //  Outputs: x, y
 
     // Pseudocode: O-command handler: prompts for O-key, looks up in o_key_table
 
@@ -2691,8 +2658,6 @@ static void o_command_key(void)
 static void q_command_key(void)
 {
     // q_command_key
-    //  Inputs: a
-    //  Outputs: x, y
 
     // Pseudocode: Q-command handler: prompts for Q-key, looks up in q_key_table
 
@@ -2796,8 +2761,6 @@ static void q_command_key(void)
 void return_key(void)
 {
     // return_key
-    //  Inputs: y
-    //  Outputs: a; tmp01
 
     // return_key: Carriage return: moves to next line at column 0
 
@@ -2888,7 +2851,6 @@ c9d98:
 static void sf0_move_block_key(void)
 {
     // sf0_move_block_key
-    //  Inputs: flags:C
 
     write_line_back_to_document_safely();
 
@@ -2925,7 +2887,6 @@ static void sf0_move_block_key(void)
 static void sf11_copy_key(void)
 {
     // sf11_copy_key
-    //  Outputs: a, x, y
 
     // sf11_copy_key:
 
@@ -2987,7 +2948,6 @@ ca0ef:
 static void sf12_left_key(void)
 {
     // sf12_left_key
-    //  Outputs: y
 
     // Pseudocode: Moves cursor left by one word
 
@@ -3037,8 +2997,6 @@ static void sf12_left_key(void)
 static void sf13_right_key(void)
 {
     // sf13_right_key
-    //  Inputs: y
-    //  Outputs: a; tmp01
 
     // sf13_right_key: Moves cursor right by one word
 
@@ -3312,8 +3270,6 @@ static void sf15_up_key(void)
 static void sf1_swap_case_key(void)
 {
     // sf1_swap_case_key
-    //  Inputs: -
-    //  Outputs: a, y
 
     // sf1_swap_case_key:
 
@@ -3399,7 +3355,6 @@ static void sf2_release_margins_key(void)
 static void sf3_delete_to_char_key(void)
 {
     // sf3_delete_to_char_key
-    //  Outputs: a, x, y
 
     x = 0x43;
 
@@ -3581,9 +3536,7 @@ static void sf7_set_marker_key(void)
 static void sf8_edit_command_key(void)
 {
     // sf8_edit_command_key
-    //  Inputs: flags:C
     //  Ptrs:   ptr1
-    //  Outputs: a, y
 
     // sf8_edit_command_key: Allows editing formatting command on current line
     // interactively
@@ -3749,7 +3702,6 @@ finished_editing_command:
 static void sf9_delete_command_key(void)
 {
     // sf9_delete_command_key
-    //  Outputs: a, y
 
     // sf9_delete_command_key: Deletes any formatting command prefix from
     // current line
@@ -3898,8 +3850,6 @@ static void control_key_to_ascii(void)
 static void delete_edit_buffer_bytes_at_xpos(void)
 {
     // delete_edit_buffer_bytes_at_xpos
-    //  Inputs: x
-    //  Outputs: a, y, flags:C, flags:Z; tmp67
     // delete_edit_buffer_bytes_at_xpos: Deletes N bytes at cursor position,
     // shifting existing content left
 
@@ -4031,8 +3981,6 @@ caeb7:
 static void enter_printable_character(void)
 {
     // enter_printable_character
-    //  Inputs: x
-    //  Outputs: a, y; tmp45, tmp67
     // enter_printable_character:
     //     ldy xpos
     y = xpos;
@@ -4499,7 +4447,6 @@ static void go_to_marker_5(void)
 static void go_to_marker_6(void)
 {
     // go_to_marker_6
-    //  Outputs: a
     // go_to_marker_6:
     a = '6';
     go_to_marker_n();
@@ -4540,8 +4487,6 @@ static void prompt_for_marker(void)
 static void reset_area_to_marks_1_2(void)
 {
     // reset_area_to_marks_1_2
-    //  Inputs: x, flags:Z
-    //  Outputs: a
     // reset_area_to_marks_1_2: Sets area to markers 1 and 2, then adjusts
     // doc_ptr1
 
@@ -4686,9 +4631,6 @@ static void sub_c9f80(void)
 static void sub_ca071(void)
 {
     // sub_ca071
-    //  Inputs: x, flags:C
-    //  Temps:  tmp01
-    //  Outputs: a, y; tmp23
     // sub_ca071:
     //     inc cursor_moved_flag
     cursor_moved_flag++;
@@ -4744,9 +4686,6 @@ static void sub_ca071(void)
 static void sub_ca0af(void)
 {
     // sub_ca0af
-    //  Inputs: x, flags:Z
-    //  Temps:  tmp01
-    //  Outputs: a, y
     // sub_ca0af:
     //     inc cursor_moved_flag
     cursor_moved_flag++;
@@ -4809,8 +4748,6 @@ static void sub_ca0af(void)
 static void sub_ca1cc(void)
 {
     // sub_ca1cc
-    //  Inputs: -
-    //  Outputs: a, y; tmp45, tmp67
     if (doc_ptr1 >= area_start_ptr && doc_ptr1 < area_end_ptr)
     {
         beep();
@@ -4949,7 +4886,6 @@ void caf5c(void)
 void draw_previous_word(void)
 {
     // draw_previous_word
-    //  Outputs: a, y; tmp01
     // draw_previous_word: Moves cursor back to start of previous word
 
     //     lda current_edit_line_ptr
@@ -5010,8 +4946,6 @@ caf55:
 void sub_caef4(void)
 {
     // sub_caef4
-    //  Inputs: y
-    //  Outputs: a, flags:C
     // sub_caef4: Handles margin/folding adjustments when typing at left margin
 
     //     lda format_mode_flag
@@ -5097,8 +5031,6 @@ caf31:
 void insert_edit_buffer_bytes_at_xpos(void)
 {
     // insert_edit_buffer_bytes_at_xpos
-    //  Inputs: x, y
-    //  Outputs: a, flags:C, flags:Z; tmp67
     // insert_edit_buffer_bytes_at_xpos: Inserts bytes at cursor position,
     // shifting existing content right
 
@@ -5240,7 +5172,6 @@ cae5c:
 void set_marker_to_here(void)
 {
     // set_marker_to_here
-    //  Inputs: y
     // set_marker_to_here: Sets marker at current cursor position
 
     //     jsr get_line_length
@@ -5291,8 +5222,6 @@ cad5d:
 void cac78(void)
 {
     // cac78
-    //  Temps:  tmp89
-    //  Outputs: a, x, y, flags:C, flags:Z
     // Pseudocode: Splits a line at the word wrap position, inserting CR for new
     // line
 
@@ -5416,9 +5345,6 @@ cacad:
 void adjust_pointers(void)
 {
     // adjust_pointers
-    //  Inputs: -
-    //  Temps:  tmp23, tmp45, tmp67, tmp89
-    //  Outputs: a, x, y
     uint8_t tmp2, tmp3, tmp8, tmp9;
     // adjust_pointers: (6372)
     //     lda tmp4 (6373)
@@ -5558,9 +5484,6 @@ caa08:
 static void advance_to_next_line(void)
 {
     // advance_to_next_line
-    //  Inputs: -
-    //  Temps:  tmp01
-    //  Outputs: a, y
     // c9a8d: Advance to next line in document
     // Sets Z from l007e on return (like c9aa5 does)
 
@@ -5668,8 +5591,6 @@ static void c8b78(void)
 void c8b7b(void)
 {
     // c8b7b
-    //  Inputs: -
-    //  Outputs: a, x, y; tmp89
     // c8b7b:
     //     lda l007a
     a = l007a;
@@ -6115,7 +6036,6 @@ static void cursor_on(void)
 void draw_line(uint16_t addr)
 {
     // draw_line
-    //  Outputs: a, y; tmp01, tmp67
     // draw_line: Renders a single document line to the screen
 
     //     sta tmp0
@@ -6268,7 +6188,6 @@ static void draw_ruler(void)
 static void draw_status_word(void)
 {
     // draw_status_word
-    //  Outputs: a, x
     // Pseudocode: Redraws status line showing format mode, justify, and insert
     // indicators
 
@@ -6339,7 +6258,6 @@ ca672:
 static void get_line_length(void)
 {
     // get_line_length
-    //  Outputs: a, y
     // Pseudocode: Returns the length of the current edit line
 
     // ;
@@ -6431,9 +6349,6 @@ static void go_to_marker_n(void)
 static void home_cursor(void)
 {
     // home_cursor
-    //  Inputs: y
-    //  Temps:  tmp23, tmp45, tmp67
-    //  Outputs: a, x; tmp89
     // home_cursor:
     // ca681:
     //     ldx #0
@@ -7009,8 +6924,6 @@ void process_current_document_character(void)
 static void recalculate_cursor_xpos(void)
 {
     // recalculate_cursor_xpos
-    //  Inputs: x
-    //  Outputs: a, y, flags:C, flags:Z; tmp01
     // Pseudocode: Recalculates cursor xpos from visual position accounting for
     // tabs and margins
 
@@ -7098,10 +7011,7 @@ return_64:
 void redraw_editor(void)
 {
     // redraw_editor
-    //  Inputs: -
-    //  Temps:  tmp01
     //  Ptrs:   ptr6
-    //  Outputs: a, x, y, flags:C, flags:Z
     // Pseudocode: Main screen update routine: scrolls, redraws lines, updates
     // status and cursor
     uint8_t saved_status_line_needs_redrawing_flag;
@@ -7639,8 +7549,6 @@ loop_ca431:
 static void render_char(void)
 {
     // render_char
-    //  Inputs: a, y, flags:C, flags:Z
-    //  Outputs: x
     // ca4e9: Renders character to screen with attribute handling.
     //
     // Input:
@@ -7790,9 +7698,6 @@ extern uint8_t parser_table[];
 void sanitise_area(void)
 {
     // sanitise_area
-    //  Inputs: -
-    //  Temps:  tmp67
-    //  Outputs: a, x, flags:Z
     uint8_t tmp6, tmp7;
     // sanitise_area:
     //     lda area_start_ptr
@@ -7905,7 +7810,6 @@ static void set_marker_common(void)
 void show_memory_full_error(void)
 {
     // show_memory_full_error
-    //  Outputs: a, x, y
     // show_memory_full_error (sub_ca94a): Memory full error handler
     // On entry: (none)
     // On exit:  l006e=0, status_line_needs_redrawing_flag=1, l0073=1, cursor on
@@ -8060,8 +7964,6 @@ void sub_c8c5f(void)
 static void sub_c9936(void)
 {
     // sub_c9936
-    //  Inputs: x, y
-    //  Outputs: a, flags:Z
     // Pseudocode: Processes a character from the edit line for output, handling
     // tabs and margins
 
@@ -8155,8 +8057,6 @@ return_49:
 void sub_c9977(void)
 {
     // sub_c9977
-    //  Inputs: x
-    //  Outputs: a, y; tmp67
     // PROVISIONAL: Main line formatting routine — reads source line, handles
     // margins, tabs, wrapping. PROVISIONAL: Called from f0_format_block_key
     // (Ctrl+B) and fold_cmd. PROVISIONAL: Processes one line (or skips
@@ -8621,8 +8521,6 @@ c9aa5:
 static void sub_c9ac1(void)
 {
     // sub_c9ac1
-    //  Inputs: y
-    //  Outputs: a, x, flags:C; tmp45, tmp89
     // Pseudocode: Finds next word boundary for line wrapping, returns carry if
     // found
 
@@ -8829,7 +8727,6 @@ static void sub_c9e9b(void)
 static void sub_ca44e(void)
 {
     // sub_ca44e
-    //  Outputs: a, x
     // sub_ca44e: Computes starting line for display based on screen position
 
     //     lda l0034
@@ -8913,8 +8810,6 @@ static void sub_ca4d7(void)
 static void sub_ca536(uint8_t y)
 {
     // sub_ca536
-    //  Inputs: y
-    //  Outputs: a, flags:Z
     // Pseudocode: Checks if a position in the edit line corresponds to a marker
 
     // sub_ca536:
@@ -8966,7 +8861,6 @@ ca558:
 static void sub_caa97(void)
 {
     // sub_caa97
-    //  Outputs: a, y
     // sub_caa97:
     //     lda #0x10
     a = 0x10;
@@ -9122,7 +9016,6 @@ void sub_cac41(void)
 static void sub_cac50(void)
 {
     // sub_cac50
-    //  Inputs: -
     // Pseudocode: Finds the start of current line by scanning backward for CR
 
     // sub_cac50:
@@ -9319,8 +9212,6 @@ void wipe_buffer(uint8_t a)
 static void write_line_back_to_document(void)
 {
     // write_line_back_to_document
-    //  Inputs: -
-    //  Outputs: a, x, y, flags:C; tmp45, tmp67
     // sub_ca8b9:
     // write_line_back_to_document:
     //     lda l006e
