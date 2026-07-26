@@ -280,7 +280,7 @@ static void close_input_output_files(void)
 
     //     jsr select_file
     x = 1;
-    select_file();
+    select_file(x);
     //     jsr close_file
     close_file();
     //     jmp return_to_cli_prompt
@@ -361,7 +361,7 @@ c86b8:
     //     ldy #0
     y = 0;
     //     jsr deref_and_check_for_command_prefix
-    flags = deref_and_check_for_command_prefix();
+    flags = deref_and_check_for_command_prefix(y);
     //     bne c86ea
     if (!(flags & FLAG_Z))
         goto c86ea;
@@ -634,7 +634,7 @@ loop_c84ee:
 
     //     jsr select_file
     x = 1;
-    select_file();
+    select_file(x);
 
     //     jsr write_area_to_file
     write_area_to_file();
@@ -647,7 +647,7 @@ loop_c84ee:
     //     lda #0
     a = 0;
     //     jsr put_byte_to_file                ; write terminator
-    put_byte_to_file();
+    put_byte_to_file(a);
     //     jsr sub_c89d3
     sub_c89d3();
     //     jsr move_cursor_to_top_of_document
@@ -771,7 +771,7 @@ static void format_cmd(void)
     //     lda #0x10
     a = 0x10;
     //     jsr wipe_buffer
-    wipe_buffer();
+    wipe_buffer(a);
     //     lda current_edit_line_ptr
     a = (uint8_t)(current_edit_line_ptr & 0xff);
     //     sta current_format_line_ptr
@@ -963,7 +963,7 @@ static void more_cmd(void)
 
     //     jsr select_file
     x = 1;
-    select_file();
+    select_file(x);
     //     jsr write_area_to_file
     write_area_to_file();
     //     bne c84ab
@@ -1333,7 +1333,7 @@ static void save_cmd_write_cmd(void)
     //     lda #0
     a = 0;
     //     jsr put_byte_to_file
-    put_byte_to_file();
+    put_byte_to_file(a);
 
     //     jsr close_file
     close_file();

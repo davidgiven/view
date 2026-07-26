@@ -94,7 +94,7 @@ void check_for_at_least_150_bytes_free(void)
     display_not_enough_memory();
 }
 
-uint8_t deref_and_check_for_command_prefix(void)
+uint8_t deref_and_check_for_command_prefix(uint8_t y)
 {
     // deref_and_check_for_command_prefix:
     //     lda (tmp0),y
@@ -1411,7 +1411,7 @@ void push_onto_ruler_index(void)
     return;
 }
 
-void put_byte_to_file(void)
+void put_byte_to_file(uint8_t a)
 {
     fputc(a, file_ptr);
 }
@@ -1438,7 +1438,7 @@ void reset_area_to_entire_document(void)
     //     rts
 }
 
-void select_file(void)
+void select_file(uint8_t x)
 {
     file_ptr = x ? output_fp : input_fp;
 }

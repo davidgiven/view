@@ -19,7 +19,7 @@ static const struct printer_driver default_printer_driver;
 
 // Printing-only functions
 void bad_filename_error(void);
-static void c8f29_sub(void);
+static void c8f29_sub(uint8_t a);
 static void c9263(void);
 static void c937b(void);
 static void c93b8(void);
@@ -55,7 +55,7 @@ static void sub_c9407(void);
 static void sub_c941a(void);
 static void sub_c9431(void);
 static void sub_cb104(void);
-static void write_byte_to_memory(void);
+static void write_byte_to_memory(uint8_t a);
 static void write_cr_to_memory(void);
 
 // Functions from view.c used by printing code
@@ -88,7 +88,7 @@ static void evaluate_expression_from_fmt_cmd(void);
 static void get_current_fmt_cmd_byte(void);
 static void get_next_fmt_cmd_byte(void);
 void lookup_formatting_command(void);
-static void sub_c95b2(void);
+static void sub_c95b2(uint8_t a);
 static void c9575(void);
 void render_register(void);
 static void render_number_to_output_buffer(void);
@@ -393,7 +393,7 @@ c955e:
     //     jmp c9537
     goto c9537;
 }
-static void sub_c95b2(void)
+static void sub_c95b2(uint8_t a)
 {
     // sub_c95b2
     //  Inputs: a
@@ -462,7 +462,7 @@ c959c:
     a |= 0x80;
 c959e:
     //     jsr sub_c95b2
-    sub_c95b2();
+    sub_c95b2(a);
     //     cmp #0x8d
     cmp(&flags, a, 0x8d);
     //     beq c95aa
@@ -479,11 +479,11 @@ c95aa:
     //     lda #0x80
     a = 0x80;
     //     jsr sub_c95b2
-    sub_c95b2();
+    sub_c95b2(a);
     //     jsr sub_c95b2
-    sub_c95b2();
+    sub_c95b2(a);
     //     (fall through into sub_c95b2)
-    sub_c95b2();
+    sub_c95b2(a);
     // MULTIPLE ENTRY POINTS: dh_fmt_cmd, df_fmt_cmd
 }
 static void df_fmt_cmd(void)
@@ -1812,7 +1812,7 @@ void bad_filename_error(void)
     return;
 }
 
-static void c8f29_sub(void)
+static void c8f29_sub(uint8_t a)
 {
     // c8f29:
     //     #if 0
@@ -2689,7 +2689,7 @@ c8f0d:
     //     bne c8f29
     if (!(flags & FLAG_Z))
     {
-        c8f29_sub();
+        c8f29_sub(a);
         print_loop();
         goto c8f0d;
     }
@@ -2747,7 +2747,7 @@ static void print_loop(void)
         //     sty input_buffer_ptr+1
         l0080 = y;
         //     jsr deref_and_check_for_command_prefix
-        flags = deref_and_check_for_command_prefix();
+        flags = deref_and_check_for_command_prefix(y);
         //     bne c8fce_thunk
         if (!(flags & FLAG_Z))
             goto c8fce_thunk_l;
@@ -3144,7 +3144,7 @@ c8cdb:
     //     inc l0083
     l0083++;
     //     jsr write_byte_to_memory
-    write_byte_to_memory();
+    write_byte_to_memory(a);
     //     txa
     a = x;
     set_flags(&flags, x);
@@ -4307,7 +4307,7 @@ static void sub_cb104(void)
 }
 // main is now the function above (inlined from main_)
 
-static void write_byte_to_memory(void)
+static void write_byte_to_memory(uint8_t a)
 {
     // write_byte_to_memory:
     //     ldy #0
@@ -4340,7 +4340,7 @@ static void write_cr_to_memory(void)
     // write_cr_to_memory:
     //     lda #0x0d
     a = 0x0d;
-    write_byte_to_memory();
+    write_byte_to_memory(a);
 }
 
 // Printer driver setup (called from cli.c)

@@ -46,7 +46,7 @@ static void set_marker_common(void);
 void show_memory_full_error(void);
 void sub_c89d3(void);
 static void sub_c8c51(void);
-static void sub_c8c53(void);
+static void sub_c8c53(uint8_t a);
 void sub_c8c5f(void);
 static void sub_c9936(void);
 void sub_c9977(void);
@@ -55,7 +55,7 @@ static void sub_c9e22(void);
 static void sub_c9e9b(void);
 static void sub_ca44e(void);
 static void sub_ca4d7(void);
-static void sub_ca536(void);
+static void sub_ca536(uint8_t y);
 static void sub_caa97(void);
 static void sub_caacb(void);
 void sub_cac41(void);
@@ -65,7 +65,7 @@ static void sub_caec2(void);
 static void sub_caed6(void);
 static void sub_caedd(void);
 static void unpack_line_into_buffer(void);
-void wipe_buffer(void);
+void wipe_buffer(uint8_t a);
 static void write_line_back_to_document(void);
 void write_line_back_to_document_safely(void);
 
@@ -3926,7 +3926,7 @@ static void delete_edit_buffer_bytes_at_xpos(void)
     // cae78:
 cae78:
     //     jsr sub_ca536
-    sub_ca536();
+    sub_ca536(y);
     //     bne cae98
     if (!(flags & FLAG_Z))
         goto cae98;
@@ -4051,7 +4051,7 @@ static void enter_printable_character(void)
     //     ldy xpos
     y = xpos;
     //     jsr sub_ca536
-    sub_ca536();
+    sub_ca536(y);
     //     bne c9bf2
     if (!(flags & FLAG_Z))
         goto c9bf2;
@@ -4377,7 +4377,7 @@ c9cf5:
     // loop_c9cf9:
 loop_c9cf9:
     //     jsr sub_ca536
-    sub_ca536();
+    sub_ca536(y);
     //     bne c9d0d
     if (!(flags & FLAG_Z))
         goto c9d0d;
@@ -5176,7 +5176,7 @@ cae35:
     // loop_cae37:
 loop_cae37:
     //     jsr sub_ca536
-    sub_ca536();
+    sub_ca536(y);
     //     bne cae52
     if (!(flags & FLAG_Z))
         goto cae52;
@@ -5893,7 +5893,7 @@ c8bf7:
 c8c23:
     // c8c23:
     //     jsr sub_c8c53
-    sub_c8c53();
+    sub_c8c53(a);
     //     ldx l0084
     x = l0084;
     //     sta l0081
@@ -6133,7 +6133,7 @@ void draw_line(uint16_t addr)
     //     sty l0039
     l0039 = 0;
     //     jsr deref_and_check_for_command_prefix
-    flags = deref_and_check_for_command_prefix();
+    flags = deref_and_check_for_command_prefix(y);
     //     bne ca4b4
     if (!(flags & FLAG_Z))
         goto ca4b4;
@@ -6693,7 +6693,7 @@ c98d9:
     //     lda #0x1a
     a = 0x1a;
     //     jsr wipe_buffer
-    wipe_buffer();
+    wipe_buffer(a);
     //     lda l0042
     a = l0042;
     set_flags(&flags, a);
@@ -7689,7 +7689,7 @@ static void render_char(void)
     //     dey
     y--;
     //     jsr sub_ca536
-    sub_ca536();
+    sub_ca536(y);
     //     iny
     y++;
     //     cpx #4
@@ -8026,10 +8026,10 @@ static void sub_c8c51(void)
     // sub_c8c51:
     //     lda #0
     a = 0;
-    sub_c8c53();
+    sub_c8c53(a);
 }
 
-static void sub_c8c53(void)
+static void sub_c8c53(uint8_t a)
 {
     // sub_c8c53:
     //     ldx l0048
@@ -8236,7 +8236,7 @@ c998a:
     //      lda #0x10
     a = 0x10;
     //     jsr wipe_buffer
-    wipe_buffer();
+    wipe_buffer(a);
     //     lda current_line_ptr
     a = (uint8_t)(current_line_ptr & 0xff);
     //     sta tmp6
@@ -8273,7 +8273,7 @@ c99b6:
     // loop_c99ba:
 loop_c99ba:
     //     jsr sub_ca536
-    sub_ca536();
+    sub_ca536(y);
     //     bne c99c7
     if (!(flags & FLAG_Z))
         goto c99c7;
@@ -8910,7 +8910,7 @@ static void sub_ca4d7(void)
     render_char();
 }
 
-static void sub_ca536(void)
+static void sub_ca536(uint8_t y)
 {
     // sub_ca536
     //  Inputs: y
@@ -8971,7 +8971,7 @@ static void sub_caa97(void)
     //     lda #0x10
     a = 0x10;
     //     jsr wipe_buffer
-    wipe_buffer();
+    wipe_buffer(a);
     //     jsr sub_caf5f
     sub_caf5f();
     //     ldy #0
@@ -9050,7 +9050,7 @@ static void sub_caacb(void)
     // caad5:
 caad5:
     //     jsr sub_ca536
-    sub_ca536();
+    sub_ca536(y);
     //     bne caae8
     if (!(flags & FLAG_Z))
         goto caae8;
@@ -9295,7 +9295,7 @@ static void unpack_line_into_buffer(void)
     sub_caa97();
 }
 
-void wipe_buffer(void)
+void wipe_buffer(uint8_t a)
 {
     // wipe_buffer:
     //     ldy #0
@@ -9455,7 +9455,7 @@ ca919:
             // loop_ca91c:
         loop_ca91c:
             //     jsr sub_ca536
-            sub_ca536();
+            sub_ca536(y);
             //     bne ca92f
             if (a != 0)
                 goto ca92f;

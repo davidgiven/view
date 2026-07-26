@@ -321,7 +321,7 @@ extern void c8b7b(void);
 extern void process_current_document_character(void);
 extern void check_not_continuous_editing(void);
 extern void sub_c89d3(void);
-extern void wipe_buffer(void);
+extern void wipe_buffer(uint8_t a);
 extern void sub_c9977(void);
 extern void print_document(void);
 extern void draw_prompt_characters(void);

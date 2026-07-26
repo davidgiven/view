@@ -1256,7 +1256,7 @@ void read_next_chunk_from_input_file(void)
     //     jsr sub_c8da2
     sub_c8da2();
     x = 0;
-    select_file();
+    select_file(x);
     //     jsr read_block_from_file
     read_block_from_file();
     //     php
@@ -1328,7 +1328,7 @@ void write_area_to_file(void)
         //         lda (tmp8),y
         a = ram[tmp89];
         //         jsr put_byte_to_file
-        put_byte_to_file();
+        put_byte_to_file(a);
         //         inc tmp8
         tmp8++;
         //         zif eq
