@@ -4640,8 +4640,7 @@ static void sub_ca1cc(void)
         if ((tmp89) == area_end_ptr)
             break;
     }
-    uint8_t saved_tmp6 = ((uint8_t*)&tmp67)[0];
-    uint8_t saved_tmp7 = ((uint8_t*)&tmp67)[1];
+    addr_t saved_tmp67 = tmp67;
     doc_ptr1 = tmp45;
     {
         uint16_t adjusted = (tmp23)-1;
@@ -4652,8 +4651,7 @@ static void sub_ca1cc(void)
     a = (uint8_t)(doc_ptr1 & 0xff);
     y = (uint8_t)(doc_ptr1 >> 8);
     cac78();
-    ((uint8_t*)&tmp67)[1] = saved_tmp7;
-    ((uint8_t*)&tmp67)[0] = saved_tmp6;
+    tmp67 = saved_tmp67;
     l0073 = 1;
     cursor_moved_flag = 1;
     flags &= ~FLAG_C;

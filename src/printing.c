@@ -1357,10 +1357,7 @@ static void sub_c976c(void)
     // Pseudocode: Parses word-based flag (ON/OFF/YES/NO) from format command
 
     // sub_c976c:
-    //     sta ((uint8_t*)&tmp89)[0]
-    ((uint8_t*)&tmp89)[0] = a;
-    //     stx ((uint8_t*)&tmp89)[1]
-    ((uint8_t*)&tmp89)[1] = x;
+    tmp89 = (addr_t)(x) << 8 | a;
     //     lda (((uint8_t*)&tmp89)[0]),y
     a = ram[tmp89 + y];
     //     tax
@@ -1505,10 +1502,7 @@ c97c0:
 c97d5:
     //     jsr ca6fe
     parse_decimal_number();
-    //     sta ((uint8_t*)&tmp89)[0]
-    ((uint8_t*)&tmp89)[0] = a;
-    //     stx ((uint8_t*)&tmp89)[1]
-    ((uint8_t*)&tmp89)[1] = x;
+    tmp89 = (addr_t)(x) << 8 | a;
     // c97dc:
 c97dc:
     //     ldx input_buffer_offset+1
@@ -2444,8 +2438,7 @@ void parse_decimal_number(void)
     //           flags.Z = 1 if no digits parsed
 
     uint8_t had_digits = 0;
-    ((uint8_t*)&tmp89)[0] = 0;
-    ((uint8_t*)&tmp89)[1] = 0;
+    tmp89 = 0;
 
     for (;;)
     {
@@ -3131,10 +3124,7 @@ static void render_header_or_footer(void)
     // ;
     // ***************************************************************************************
     // render_header_or_footer:
-    //     stx ((uint8_t*)&tmp45)[0]
-    ((uint8_t*)&tmp45)[0] = x;
-    //     sty ((uint8_t*)&tmp45)[1]
-    ((uint8_t*)&tmp45)[1] = y;
+    tmp45 = (addr_t)(y) << 8 | x;
     //     ldy #0
     y = 0;
     //     sty l0082
@@ -3575,10 +3565,7 @@ c91cc:
     y = (uint8_t)(ptr1 >> 8);
     // c91d0:
 c91d0:
-    //     sta ((uint8_t*)&tmp01)[0]
-    ((uint8_t*)&tmp01)[0] = a;
-    //     sty ((uint8_t*)&tmp01)[1]
-    ((uint8_t*)&tmp01)[1] = y;
+    tmp01 = (addr_t)(y) << 8 | a;
     //     sta current_format_line_ptr
     current_format_line_ptr = (current_format_line_ptr & 0xff00) | a;
     //     sty current_format_line_ptr+1
