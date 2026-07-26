@@ -3054,12 +3054,6 @@ c9fc3:
 
     //     sta ((uint8_t*)&tmp01)[0]
 
-    //     lda current_edit_line_ptr+1
-
-    a = (uint8_t)(current_edit_line_ptr >> 8);
-
-    //     sta ((uint8_t*)&tmp01)[1]
-
     tmp01 = current_edit_line_ptr;
 
     //     ldy xpos
@@ -9035,9 +9029,6 @@ static void write_line_back_to_document(void)
         goto ca93a;
     //     lda current_line_ptr
     //     sta ((uint8_t*)&tmp45)[0]
-    //     lda current_line_ptr+1
-    a = (uint8_t)(current_line_ptr >> 8);
-    //     sta ((uint8_t*)&tmp45)[1]
     tmp45 = current_line_ptr;
     //     ldy #0
     y = 0;
