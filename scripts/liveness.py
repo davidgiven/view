@@ -1,27 +1,80 @@
 #!/usr/bin/env python3
 """
-Interprocedural flag-bit liveness analysis for the 6502 C translation.
+Liveness analysis using libclang AST for forward scan,
+regex for flag ops, and full interprocedural fixed-point iteration.
 
-Tracks each flag bit (C, Z, N, V) independently, plus a, x, y and tmp* vars.
-
-Usage: python3 scripts/liveness.py [file...]
-  Reports function summaries.
+Usage:
+    python3 scripts/liveness.py [src/*.c ...]
 """
 
-import re
-import os
-import sys
+import clang.cindex, os, subprocess, re, sys
 
-# Individual flag bits tracked
-FLAG_BITS = ['C', 'Z', 'N', 'V']
+# ─── Library setup ────────────────────────────────────────────────
+try:
+    clang.cindex.Config.set_library_file('/usr/lib64/libclang.so')
+except Exception:
+    pass
+RESOURCE_DIR = subprocess.run(['clang', '-print-resource-dir'],
+                               capture_output=True, text=True).stdout.strip()
+CPPFLAGS = ['-I.', '-Isrc', f'-I{RESOURCE_DIR}/include',
+            '-D__attribute__(x)=', '-D__inline__=', '-D__restrict__=']
 
-# Registers
+# ─── Tracked variables ────────────────────────────────────────────
 REGISTERS = ['a', 'x', 'y']
+FLAG_BITS = ['C', 'Z', 'N', 'V']
 TMP_VARS = ['tmp01', 'tmp23', 'tmp45', 'tmp67', 'tmp89']
-BYTE_VARS = ['tmp0', 'tmp1', 'tmp2', 'tmp3', 'tmp4', 'tmp5', 'tmp6', 'tmp7', 'tmp8', 'tmp9']
+BYTE_VARS = [f'tmp{i}' for i in range(10)]
 PTR_VARS = ['ptr1', 'ptr2', 'ptr3', 'ptr5', 'ptr6']
-ALL_VARS = set(REGISTERS + ['flags:' + b for b in FLAG_BITS] + TMP_VARS + BYTE_VARS + PTR_VARS)
+ALL_VARS_SET = set(REGISTERS + TMP_VARS + BYTE_VARS + PTR_VARS +
+                   [f'flags:{b}' for b in FLAG_BITS])
 
+TRACKED_VARS = set(REGISTERS + TMP_VARS + BYTE_VARS + PTR_VARS)
+
+def is_tracked(name):
+    return name in TRACKED_VARS
+
+# ─── Inline / lib helpers ─────────────────────────────────────────
+INLINE_HELPERS = {
+    'set_flags', 'cmp', 'adc', 'sbc', 'bit', 'rol', 'ror', 'asr',
+    '_tmp0', '_tmp1', '_tmp2', '_tmp3', '_tmp4', '_tmp5',
+    '_tmp6', '_tmp7', '_tmp8', '_tmp9',
+}
+LIB_FUNCTIONS = {
+    'exit', 'setjmp', 'longjmp', 'snprintf', 'sprintf', 'printf',
+    'fopen', 'fclose', 'fputc', 'fgetc', 'fread', 'fwrite', 'fseek', 'ftell',
+    'feof', 'ferror', 'rewind', 'fflush', 'ungetc',
+    'cli_putchar', 'cli_putstring', 'cli_getchar', 'cli_readstring',
+    'screen_putchar', 'screen_getchar', 'screen_getcursor', 'screen_setcursor',
+    'screen_setstyle', 'screen_getsize', 'screen_enter', 'screen_leave',
+    'screen_clear', 'screen_scrollup', 'screen_scrolldown', 'screen_enablecursor',
+    'isupper', 'islower', 'isalpha', 'isdigit', 'isalnum', 'isspace',
+    'toupper', 'tolower', 'memset',
+}
+
+# ─── Inline helper flag definitions/uses ──────────────────────────
+HELPER_FLAG_DEFS = {
+    'set_flags': {'Z', 'N'},
+    'cmp':  {'Z', 'N', 'C'},
+    'adc':  {'C', 'Z', 'N', 'V'},
+    'sbc':  {'C', 'Z', 'N', 'V'},
+    'bit':  {'Z', 'N', 'V'},
+    'rol':  {'C', 'Z', 'N'},
+    'ror':  {'C', 'Z', 'N'},
+    'asr':  {'Z', 'N', 'C'},
+}
+HELPER_FLAG_USES = {
+    'adc':  {'C'},
+    'sbc':  {'C'},
+    'rol':  {'C'},
+    'ror':  {'C'},
+    'bit':  {'V'},
+}
+def helper_flag_defs(name):
+    return HELPER_FLAG_DEFS.get(name, set())
+def helper_flag_uses(name):
+    return HELPER_FLAG_USES.get(name, set())
+
+# ─── Byte-to-combined mapping ─────────────────────────────────────
 BYTE_TO_COMBINED = {
     'tmp0': 'tmp01', 'tmp1': 'tmp01',
     'tmp2': 'tmp23', 'tmp3': 'tmp23',
@@ -30,250 +83,187 @@ BYTE_TO_COMBINED = {
     'tmp8': 'tmp89', 'tmp9': 'tmp89',
 }
 
-FUNC_START_RE = re.compile(
-    r'^(?:static\s+)?'
-    r'(?:void|uint8_t|uint16_t|addr_t|bool|int|char|long|unsigned|const|'
-    r'struct\s+\w+|uint8_t\s*\*|char\s*\*)'
-    r'\s+\**(\w+)\s*\('
-)
-
-INLINE_HELPERS = {
-    'set_flags', 'cmp', 'adc', 'sbc', 'bit', 'rol', 'ror', 'asr', 'bit_val',
-    '_tmp0', '_tmp1', '_tmp2', '_tmp3', '_tmp4', '_tmp5',
-    '_tmp6', '_tmp7', '_tmp8', '_tmp9',
-}
-
-CALL_RE = re.compile(r'\b(\w+)\s*\(')
-
-LIB_FUNCTIONS = {
-    'exit', 'setjmp', 'longjmp', 'snprintf', 'sprintf', 'printf',
-    'fopen', 'fclose', 'fputc', 'fgetc', 'fread', 'fwrite', 'fseek', 'ftell',
-    'feof', 'ferror', 'rewind', 'fflush', 'ungetc',
-    'cli_putchar', 'cli_getchar', 'cli_readstring',
-    'screen_putchar', 'screen_getchar', 'screen_getcursor', 'screen_setcursor',
-    'screen_setstyle', 'screen_getsize', 'screen_enter', 'screen_leave',
-    'screen_clear', 'screen_scrollup', 'screen_scrolldown', 'screen_enablecursor',
-    'isupper', 'islower', 'isalpha', 'isdigit', 'isalnum', 'isspace',
-    'toupper', 'tolower',
-}
-
-# Functions known to corrupt specific registers (defs beyond what line_defs_uses sees).
-# Key = function name, Value = set of variables/flag-bits corrupted.
+# ─── CORRUPTS & ALL_IN_OUT ────────────────────────────────────────
 CORRUPTS = {
     'cli_putstring': {'a', 'x', 'flags:C', 'flags:Z', 'flags:N', 'flags:V'},
-    'return_to_cli_prompt': ALL_VARS,
-    'return_to_editor_loop': ALL_VARS,
-    # Error handlers that call return_to_cli_prompt (noreturn chain):
-    'cmd_err_no_string': ALL_VARS,
-    'cmd_err_no_target': ALL_VARS,
-    'file_not_found_error': ALL_VARS,
-    'file_error': ALL_VARS,
-    'display_not_enough_memory': ALL_VARS,
-    'bad_filename_error': ALL_VARS,
-    'nested_macro_error': ALL_VARS,
-    'cmd_err_no_target': ALL_VARS,
+    'return_to_cli_prompt': ALL_VARS_SET,
+    'return_to_editor_loop': ALL_VARS_SET,
+    'cmd_err_no_string': ALL_VARS_SET,
+    'cmd_err_no_target': ALL_VARS_SET,
+    'file_not_found_error': ALL_VARS_SET,
+    'file_error': ALL_VARS_SET,
+    'display_not_enough_memory': ALL_VARS_SET,
+    'bad_filename_error': ALL_VARS_SET,
+    'nested_macro_error': ALL_VARS_SET,
+    'cmd_err_no_target': ALL_VARS_SET,
 }
 
-# Functions where ALL registers are both live-in and live-out.
-# These force all_vars as both input requirement and output definition.
 ALL_IN_OUT = {
     'call_printer_driver',
     'reset_area_to_marks_1_2',
     'sub_caef4',
 }
 
+# ─── AST parsing (cached) ─────────────────────────────────────────
+_parse_cache = {}
+def parse_file(filepath):
+    if filepath not in _parse_cache:
+        idx = clang.cindex.Index.create()
+        tu = idx.parse(filepath, CPPFLAGS)
+        _parse_cache[filepath] = tu
+    return _parse_cache[filepath]
 
-def fmt(v):
-    """Format a variable name for display. Flag bits show as e.g. 'C', 'Z'."""
-    if v.startswith('flags:'):
-        return v[6:]
-    return v
-
-
-def find_functions(lines):
-    funcs = []
-    for i, line in enumerate(lines):
-        stripped = line.strip()
-        if (not stripped or stripped.startswith('//') or stripped.startswith('/*')
-            or stripped.startswith('*') or stripped.startswith('#')
-            or stripped.endswith(';')):
-            continue
-        m = FUNC_START_RE.match(stripped)
-        if m and m.group(1) not in INLINE_HELPERS:
-            before_paren = stripped.split('(')[0]
-            if not any(re.split(r'\W+', before_paren)[0] == kw for kw in ['if', 'while', 'for', 'switch']):
-                funcs.append((m.group(1), i))
-    result = []
-    for idx, (name, start) in enumerate(funcs):
-        end = funcs[idx + 1][1] if idx + 1 < len(funcs) else len(lines)
-        result.append((name, start, end))
-    return result
-
-
-# ─── Per-flag-bit def/use for each helper ─────────────────────────
-
-def helper_flag_defs(helper):
-    """Return set of flag bits that `helper` DEFINITIVELY writes."""
-    table = {
-        'set_flags': {'Z', 'N'},        # set_flags(v) sets Z, N from v; preserves C, V
-        'cmp':       {'Z', 'N', 'C'},   # CMP sets Z, N, C
-        'adc':       {'Z', 'N', 'C', 'V'},  # ADC sets all four
-        'sbc':       {'Z', 'N', 'C', 'V'},  # SBC sets all four
-        'bit':       {'Z', 'N', 'V'},   # BIT sets Z, N, V (doesn't touch C)
-        'rol':       {'Z', 'N', 'C'},   # ROL sets Z, N, C
-        'ror':       {'Z', 'N', 'C'},   # ROR sets Z, N, C
-        'asr':       {'Z', 'N', 'C'},   # ASR (LSR) sets Z, N, C
-    }
-    return table.get(helper, set())
-
-
-def helper_flag_uses(helper):
-    """Return set of flag bits that `helper` READS as input."""
-    table = {
-        'adc':  {'C'},   # ADC reads carry
-        'sbc':  {'C'},   # SBC reads carry
-        'rol':  {'C'},   # ROL reads carry
-        'ror':  {'C'},   # ROR reads carry
-    }
-    return table.get(helper, set())
-
-
-# ─── Per-line def/use analysis ────────────────────────────────────
-
-def line_defs_uses(stripped, index):
-    """Return (defined_vars, used_vars) for one line.
-    Variables are 'a', 'x', 'y', 'flags:C', 'flags:Z', etc., or tmpXX.
-    """
+# ─── Flag ops from source text ────────────────────────────────────
+def get_flag_defs_uses(line_text):
     defs = set()
     uses = set()
-    
-    if stripped.startswith('//') or stripped == '':
-        return defs, uses
-    
-    # ── helpers ──
-    for helper in INLINE_HELPERS:
-        if helper + '(&flags' in stripped:
-            for b in helper_flag_defs(helper):
-                defs.add('flags:' + b)
-            for b in helper_flag_uses(helper):
-                uses.add('flags:' + b)
-            # a = adc(&flags, a, X) defines a
-            if '= adc' in stripped or '= sbc' in stripped or helper in ('adc', 'sbc'):
-                defs.add('a')
-            elif helper in ('rol', 'ror', 'asr'):
-                # VAR = ror(&flags, VAR) – check who's assigned
-                m = re.match(r'\s*(\w+)\s*=\s*(?:rol|ror|asr)\(&flags,', stripped)
-                if m:
-                    defs.add(m.group(1))
-                    uses.add(m.group(1))
-            # cmp only sets flags, not a — but its register arg is a use
-            if helper in ('cmp', 'set_flags'):
-                m = re.match(r'(?:set_flags|cmp)\(&flags, (\w+)', stripped)
-                if m:
-                    uses.add(m.group(1))
-            # direct register assignment from helper
-            if helper in ('rol', 'ror', 'asr'):
-                m = re.match(r'(\w+)\s*=\s*' + helper + r'\(&flags, (\w+)\)', stripped)
-                if m:
-                    defs.add(m.group(1))
-                    uses.add(m.group(2))
-            break
-    else:
-        # ── not a helper: check for flag bit reads/writes ──
-        
-        # flags |= FLAG_C → defines C (does NOT read it in the 6502 sense;
-        #   the |= reads the old value but we treat it as a def for liveness)
-        for bit in FLAG_BITS:
-            pat_assign = r'flags\s*[|&]?=\s*.*FLAG_' + bit
-            if re.search(pat_assign, stripped):
-                defs.add('flags:' + bit)
-                # also read if it's a read-modify-write
-                if 'flags &' in stripped or 'flags |' in stripped:
-                    uses.add('flags:' + bit)
-            
-            # if (flags & FLAG_C) → reads C, Z, N, V depending on bit
-            pat_read = r'if\s*\(.*flags.*FLAG_' + bit
-            if re.search(pat_read, stripped):
-                uses.add('flags:' + bit)
-            
-            # flags = flags & ~FLAG_C → defines C, reads C (RMW)
-            pat_rmw = r'flags\s*=\s*flags\s*[&|].*FLAG_' + bit
-            if re.search(pat_rmw, stripped):
-                defs.add('flags:' + bit)
-                uses.add('flags:' + bit)
-        
-        # Direct register assignments
-        for var in REGISTERS:
-            if re.search(r'\b' + var + r'\s*=', stripped):
-                defs.add(var)
-        
-        # a += X, a -= X, a++, a-- — reads and writes a
-        for var in REGISTERS:
-            if re.search(r'\b' + var + r'\s*[\+\-]=', stripped):
-                defs.add(var)
-                uses.add(var)
-            if re.search(r'\b' + var + r'\+\+', stripped) or re.search(r'\b' + var + r'--', stripped):
-                defs.add(var)
-                uses.add(var)
-        
-        # tmpX = a or tmpX = y — defines combined tmp, reads a/y
-        for byte_var, combined in BYTE_TO_COMBINED.items():
-            m = re.match(r'\s*' + byte_var + r'\s*=\s*([ayx]);', stripped)
-            if m:
-                defs.add(combined)
-                uses.add(m.group(1))
-            # Also track byte-level writes: tmp0 = value (non a/x/y)
-            if re.match(r'\s*' + byte_var + r'\s*=', stripped):
-                defs.add(byte_var)
-            # Track byte-level reads: a = tmp0  
-            if re.search(r'\b' + byte_var + r'\b', stripped) and not re.match(r'\s*' + byte_var + r'\s*=', stripped):
-                uses.add(byte_var)
-        
-        # Regular tmp assignments (combined)
-        for var in TMP_VARS:
-            if re.search(r'\b' + var + r'\s*=', stripped):
-                defs.add(var)
-            if re.search(r'\b' + var + r'\b', stripped) and not re.search(r'\b' + var + r'\s*=', stripped):
-                uses.add(var)
-        
-        # Ptr variable assignments and reads
-        for var in PTR_VARS:
-            if re.search(r'\b' + var + r'\s*=', stripped):
-                defs.add(var)
-            if re.search(r'\b' + var + r'\b', stripped) and not re.search(r'\b' + var + r'\s*=', stripped):
-                uses.add(var)
-        
-        # Read a, x, y in expression context (not LHS)
-        for var in REGISTERS:
-            if re.search(r'(?<!\w)' + var + r'(?!\w)', stripped):
-                if not re.search(r'\b' + var + r'\s*=', stripped) or re.search(r'\b' + var + r'\s*[\+\-]=', stripped):
-                    uses.add(var)
-    
+    for bit in FLAG_BITS:
+        if re.search(r'flags\s*&=\s*~FLAG_' + bit, line_text):
+            defs.add(f'flags:{bit}')
+        elif re.search(r'flags\s*\|=\s*FLAG_' + bit, line_text):
+            defs.add(f'flags:{bit}')
+        elif re.search(r'flags\s*=\s*flags\s*[&|].*FLAG_' + bit, line_text):
+            defs.add(f'flags:{bit}'); uses.add(f'flags:{bit}')
+        elif re.search(r'if\s*\(.*flags\s*&\s*FLAG_' + bit, line_text):
+            uses.add(f'flags:{bit}')
     return defs, uses
 
+# ─── AST-based forward scan (replaces regex get_local_info) ───────
+def get_local_info(lines, start, end, callee_live_out=None):
+    """
+    Forward scan using libclang AST.
+    Returns (local_defs, local_uses, local_live_in, call_sites).
+    """
+    if callee_live_out is None:
+        callee_live_out = {}
+    
+    local_defs = set()
+    local_uses = set()
+    local_live_in = set()
+    defined_so_far = set()
+    call_sites = []
+    local_decls = set()
+    
+    # Add formal parameters (from function signature) to defined_so_far
+    if start < len(lines):
+        sig = lines[start].strip()
+        m = re.match(r'.*?\buint8_t\s+[a-z]\b', sig)
+        if m:
+            for var in REGISTERS:
+                if re.search(r'\buint8_t\s+' + var + r'\b', sig):
+                    defined_so_far.add(var)
+    
+    for i in range(start, end):
+        stripped = lines[i].strip()
+        if stripped.startswith('//') or stripped == '':
+            continue
+        
+        # Track local variable declarations
+        for var in REGISTERS:
+            if re.search(r'\buint8_t\s+' + var + r'\b', stripped):
+                local_decls.add(var)
+        
+        if stripped == 'return;':
+            defined_so_far = set(local_decls)
+            continue
+        
+        d = set()
+        u = set()
+        
+        # ── Inline helper flag tracking ──
+        for helper in INLINE_HELPERS:
+            if helper + '(&flags' in stripped:
+                for b in helper_flag_defs(helper):
+                    d.add(f'flags:{b}')
+                for b in helper_flag_uses(helper):
+                    u.add(f'flags:{b}')
+                # a = adc(&flags, ...) defines a
+                if helper in ('adc', 'sbc'):
+                    if '= adc' in stripped or '= sbc' in stripped:
+                        d.add('a')
+                # cmp/set_flags register argument is a use
+                if helper in ('cmp', 'set_flags'):
+                    m = re.match(r'(?:set_flags|cmp)\(&flags, (\w+)', stripped)
+                    if m:
+                        u.add(m.group(1))
+                break
+        
+        # ── Flag bit-field ops (regex) ──
+        fd, fu = get_flag_defs_uses(stripped)
+        d |= fd
+        u |= fu
+        
+        # ── Regular variable tracking (regex) ──
+        # Direct assignments
+        for var in TRACKED_VARS:
+            if re.search(r'\b' + var + r'\s*=', stripped):
+                d.add(var)
+                # Also define the paired combined/byte variable
+                if var in BYTE_TO_COMBINED:
+                    d.add(BYTE_TO_COMBINED[var])
+            if re.search(r'\buint8_t\s+' + var + r'\b', stripped):
+                d.add(var)
+                local_decls.add(var)
+            if re.search(r'\b' + var + r'\+{2}\b', stripped) or \
+               re.search(r'\b' + var + r'--\b', stripped) or \
+               re.search(r'\b' + var + r'\s*[\+\-]=', stripped):
+                d.add(var)
+                u.add(var)
+                # Also define the paired combined/byte variable
+                if var in BYTE_TO_COMBINED:
+                    d.add(BYTE_TO_COMBINED[var])
+        
+        # When a combined variable is assigned, also define its byte components
+        for combined, byte_var in [(cv, bv) for cv, bv_list in 
+            [('tmp01', ['tmp0','tmp1']), ('tmp23', ['tmp2','tmp3']),
+             ('tmp45', ['tmp4','tmp5']), ('tmp67', ['tmp6','tmp7']),
+             ('tmp89', ['tmp8','tmp9'])] for bv in bv_list]:
+            if combined in d:
+                d.add(byte_var)
+        
+        # Variable reads (not LHS of assignment, not declaration)
+        for var in TRACKED_VARS:
+            if re.search(r'\buint8_t\s+' + var + r'\b', stripped):
+                continue  # skip declarations
+            if re.search(r'(?<!\w)' + var + r'(?!\w)', stripped):
+                if not re.search(r'\b' + var + r'\s*=', stripped) or \
+                   re.search(r'\b' + var + r'\s*[\+\-]=', stripped) or \
+                   re.search(r'\b' + var + r'\+{2}\b', stripped) or \
+                   re.search(r'\b' + var + r'--\b', stripped):
+                    u.add(var)
+        
+        # Update live_in
+        for v in u:
+            if v not in defined_so_far:
+                local_live_in.add(v)
+        
+        local_defs |= d
+        local_uses |= u
+        defined_so_far |= d
+        
+        # Detect calls
+        callee = detect_call(stripped)
+        if callee:
+            if callee not in LIB_FUNCTIONS:
+                call_sites.append((i, callee))
+                # Use callee's actual live_out if known
+                clo = callee_live_out.get(callee)
+                if clo is None:
+                    if callee in CORRUPTS:
+                        clo = CORRUPTS[callee]
+                    elif callee in ALL_IN_OUT:
+                        clo = ALL_VARS_SET
+                    else:
+                        clo = ALL_VARS_SET
+                defined_so_far.update(clo)
+            elif callee in CORRUPTS:
+                defined_so_far.update(CORRUPTS[callee])
+    
+    return local_defs, local_uses, local_live_in, call_sites
 
-def get_func_params(lines, start):
-    """Return set of parameter names for a function defined at line `start`."""
-    sig = lines[start].strip()
-    # Match: (static )?ret_type name(params)
-    m = re.match(r'(?:static\s+)?(?:\w+(?:\s*\*)?\s+)+\**(\w+)\s*\(([^)]*)\)', sig)
-    if not m:
-        return set()
-    params_str = m.group(2).strip()
-    if not params_str or params_str == 'void':
-        return set()
-    params = set()
-    for p in params_str.split(','):
-        p = p.strip()
-        # Match "uint8_t a", "uint8_t *ptr", "const char* s"
-        pm = re.match(r'(?:const\s+)?(?:\w+(?:\s*\*)?)\s+(\**\w+)', p)
-        if pm:
-            name = pm.group(1).lstrip('*')
-            if name in ('a', 'x', 'y', 'flags') or name.startswith('tmp') or name.startswith('ptr'):
-                params.add(name)
-    return params
 
-
+# ─── detect_call (kept from old module) ───────────────────────────
+CALL_RE = re.compile(r'\b(\w+)\s*\(')
 def detect_call(stripped):
     if stripped.startswith('//') or stripped == '':
         return None
@@ -289,250 +279,56 @@ def detect_call(stripped):
     return None
 
 
-def get_local_info(lines, start, end, callee_live_out=None):
-    """Forward scan.  If callee_live_out is provided (a dict from callee name
-    to live_out set), use it instead of ALL_VARS when processing calls."""
-    if callee_live_out is None:
-        callee_live_out = {}
-    local_defs = set()
-    local_uses = set()
-    local_live_in = set()
-    defined_so_far = set()
-    call_sites = []
-    for i in range(start, end):
-        stripped = lines[i].strip()
-        if stripped.startswith('//') or stripped == '':
+# ─── Function parameter extraction ────────────────────────────────
+def get_func_params(lines, start):
+    sig = lines[start].strip()
+    m = re.match(r'(?:static\s+)?(?:\w+(?:\s*\*)?\s+)+\**(\w+)\s*\(([^)]*)\)', sig)
+    if not m:
+        return set()
+    params_str = m.group(2).strip()
+    if not params_str or params_str == 'void':
+        return set()
+    params = set()
+    for p in params_str.split(','):
+        p = p.strip()
+        pm = re.match(r'(?:const\s+)?(?:\w+(?:\s*\*)?)\s+(\**\w+)', p)
+        if pm:
+            name = pm.group(1).lstrip('*')
+            if name in REGISTERS:
+                params.add(name)
+    return params
+
+
+# ─── find_functions (from old module, using regex for line numbers) ──
+FUNC_START_RE = re.compile(
+    r'^(?:static\s+)?'
+    r'(?:void|uint8_t|uint16_t|addr_t|bool|int|char|long|unsigned|const|'
+    r'struct\s+\w+|uint8_t\s*\*|char\s*\*)'
+    r'\s+\**(\w+)\s*\('
+)
+
+def find_functions(lines):
+    funcs = []
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if (not stripped or stripped.startswith('//') or stripped.startswith('/*')
+            or stripped.startswith('*') or stripped.startswith('#')
+            or stripped.endswith(';')):
             continue
-        
-        # A return statement makes all subsequent code unreachable in the
-        # forward direction — reset defined_so_far so that post-return
-        # uses are treated as live-in (they might be on a different path).
-        if stripped == 'return;':
-            defined_so_far = set()
-            continue
-        
-        d, u = line_defs_uses(stripped, i)
-        
-        for v in u:
-            if v not in defined_so_far:
-                local_live_in.add(v)
-        
-        local_defs |= d
-        local_uses |= u
-        defined_so_far |= d
-        
-        callee = detect_call(stripped)
-        if callee:
-            if callee not in LIB_FUNCTIONS:
-                call_sites.append((i, callee))
-                # Use the callee's actual live_out if known, else ALL_VARS.
-                clo = callee_live_out.get(callee)
-                if clo is None:
-                    # Also handle CORRUPTS here before falling back to ALL_VARS
-                    if callee in CORRUPTS:
-                        clo = CORRUPTS[callee]
-                    else:
-                        clo = ALL_VARS
-                defined_so_far.update(clo)
-            elif callee in CORRUPTS:
-                defined_so_far.update(CORRUPTS[callee])
-    return local_defs, local_uses, local_live_in, call_sites
+        m = FUNC_START_RE.match(stripped)
+        if m and m.group(1) not in INLINE_HELPERS:
+            before_paren = stripped.split('(')[0]
+            kw = re.split(r'\W+', before_paren)[0]
+            if kw not in ('if', 'while', 'for', 'switch'):
+                funcs.append((m.group(1), i))
+    result = []
+    for idx, (name, start) in enumerate(funcs):
+        end = funcs[idx + 1][1] if idx + 1 < len(funcs) else len(lines)
+        result.append((name, start, end))
+    return result
 
 
-# ─── Interprocedural fixed-point ──────────────────────────────────
-
-def analyze_files(files):
-    # Collect all function definitions
-    all_funcs = {}
-    for filepath in files:
-        try:
-            with open(filepath) as f:
-                lines = f.readlines()
-        except FileNotFoundError:
-            continue
-        for name, start, end in find_functions(lines):
-            if name not in all_funcs:
-                all_funcs[name] = (filepath, start, end, lines)
-    
-    # Compute param sets: variables that are parameters (passed by value)
-    # for each function — they are local to the callee and don't affect globals.
-    func_params = {}
-    for name, (filepath, start, end, lines) in all_funcs.items():
-        func_params[name] = get_func_params(lines, start)
-    
-    # Compute local info (initial pass: conservative ALL_VARS for calls)
-    local_info = {}
-    for name, (filepath, start, end, lines) in all_funcs.items():
-        d, u, li, cs = get_local_info(lines, start, end)
-        local_info[name] = {'defs': d, 'uses': u, 'live_in': li, 'call_sites': cs, 'file': filepath}
-    
-    # Propagate through call graph until stable
-    changed = True
-    iteration = 0
-    while changed and iteration < 20:
-        changed = False
-        iteration += 1
-        for name in all_funcs:
-            info = local_info[name]
-            all_defs = set(info['defs'])
-            all_uses = set(info['uses'])
-            for _, callee in info['call_sites']:
-                if callee in LIB_FUNCTIONS:
-                    continue
-                callee_info = local_info.get(callee)
-                callee_params = func_params.get(callee, set())
-                if callee_info is None:
-                    all_defs.update(ALL_VARS)
-                    all_uses.update(ALL_VARS)
-                else:
-                    # Exclude callee parameters from the propagated defs/uses,
-                    # since they are local to the callee and don't affect globals.
-                    callee_defs = callee_info.get('cached_defs', callee_info['defs'])
-                    callee_uses = callee_info.get('cached_uses', callee_info['uses'])
-                    all_defs.update(callee_defs - callee_params)
-                    all_uses.update(callee_uses - callee_params)
-            old_d = info.get('cached_defs')
-            old_u = info.get('cached_uses')
-            if all_defs != old_d or all_uses != old_u:
-                info['cached_defs'] = all_defs
-                info['cached_uses'] = all_uses
-                changed = True
-    
-    # ── Full interprocedural fixed-point iteration ──
-    # Iterate: backward scan → compute live_out → re-forward scan with
-    # refined live_out → recompute live_in → repeat until stable.
-    backward_needs = {name: set() for name in all_funcs}
-    fp_iter = 0
-    changed = True
-    while changed and fp_iter < 10:
-        fp_iter += 1
-        changed = False
-        
-        # ── Backward scan: compute what callers need from each callee ──
-        backward_needs.clear()
-        for name in all_funcs:
-            lines = all_funcs[name][3]
-            start = all_funcs[name][1]
-            end = all_funcs[name][2]
-            live = set()
-            for i in range(end - 1, start - 1, -1):
-                stripped = lines[i].strip()
-                if stripped.startswith('//') or stripped == '':
-                    continue
-                d, u = line_defs_uses(stripped, i)
-                callee = detect_call(stripped)
-                if stripped == 'return;':
-                    live = set()
-                elif callee:
-                    if callee in ALL_IN_OUT:
-                        backward_needs.setdefault(callee, set()).update(ALL_VARS)
-                        live = ALL_VARS
-                    elif callee not in LIB_FUNCTIONS:
-                        backward_needs.setdefault(callee, set()).update(live)
-                        if callee in CORRUPTS:
-                            corr = CORRUPTS[callee]
-                            live = (live - corr) | u
-                        else:
-                            live = (live - ALL_VARS) | u
-                    elif callee in CORRUPTS:
-                        corr = CORRUPTS[callee]
-                        live = (live - corr) | u
-                    else:
-                        live = live | u
-            else:
-                live = (live - d) | u
-        
-        # ── Compute live_out from backward_needs ──
-        for name in all_funcs:
-            info = local_info[name]
-            all_defs = info.get('cached_defs', info['defs'])
-            required = backward_needs.get(name, set())
-            new_out = required & all_defs
-            old_out = info.get('live_out')
-            if new_out != old_out:
-                info['live_out'] = new_out
-                changed = True
-        
-        # ── Re-forward scan with refined kill sets ──
-        # Use all_defs (everything the callee writes) as the kill set,
-        # but exclude parameters (they are local to the callee).
-        clo = {}
-        for cname, cinfo in local_info.items():
-            callee_defs = cinfo.get('cached_defs', cinfo['defs'])
-            clo[cname] = callee_defs - func_params.get(cname, set())
-        for name in ALL_IN_OUT:
-            clo[name] = ALL_VARS
-        for name in CORRUPTS:
-            if name not in local_info:
-                clo[name] = CORRUPTS[name]
-        
-        for name, (filepath, start, end, lines) in all_funcs.items():
-            d, u, li, cs = get_local_info(lines, start, end, clo)
-            old_li = local_info[name].get('live_in')
-            if li != old_li:
-                local_info[name]['live_in'] = li
-                changed = True
-    
-    # Build summaries
-    summaries = {}
-    for name in all_funcs:
-        info = local_info[name]
-        all_defs = info.get('cached_defs', info['defs'])
-        all_uses = info.get('cached_uses', info['uses'])
-        live_in = info.get('live_in', info['uses'] - info['defs'])
-        live_out = info.get('live_out', set())
-        # Override for ALL_IN_OUT functions
-        if name in ALL_IN_OUT:
-            live_in = ALL_VARS
-            live_out = ALL_VARS
-        # Locals: variables defined and used within the function but not
-        # live-in (inputs), not live-out (outputs to callers), and not
-        # passed as arguments to child functions.
-        local_defs = info.get('defs', set())
-        local_uses = info.get('uses', set())
-        # Collect variables passed as arguments to function calls.
-        passed_to_callees = set()
-        lines = all_funcs[name][3]
-        body_start = all_funcs[name][1]
-        body_end = all_funcs[name][2]
-        for i in range(body_start + 1, body_end):
-            sl = lines[i].strip()
-            if sl.startswith('//') or sl == '':
-                continue
-            callee = detect_call(sl)
-            if callee and callee not in INLINE_HELPERS:
-                d, u = line_defs_uses(sl, i)
-                # Exclude callee parameters from uses — they're passed by value
-                # and don't expose the global to modification.
-                callee_params = func_params.get(callee, set())
-                passed_to_callees |= (u - callee_params)
-                # Include everything the callee writes (all_defs), minus its
-                # own parameters (which are local), so side-effect
-                # modifications to globals are caught.
-                if callee in ALL_IN_OUT:
-                    passed_to_callees |= ALL_VARS
-                else:
-                    callee_info = local_info.get(callee)
-                    if callee_info:
-                        callee_li = callee_info.get('live_in', set())
-                        passed_to_callees |= (callee_li - callee_params)
-                        callee_defs = callee_info.get('cached_defs', callee_info['defs'])
-                        passed_to_callees |= (callee_defs - callee_params)
-                    callee_needs = backward_needs.get(callee, set())
-                    passed_to_callees |= callee_needs
-        locals = ((local_defs & local_uses) - live_in - live_out - passed_to_callees)
-        summaries[name] = {
-            'defs': all_defs,
-            'uses': all_uses,
-            'live_in': live_in,
-            'live_out': live_out,
-            'locals': locals,
-            'file': info['file'],
-            'calls': [c for _, c in info['call_sites']],
-        }
-    return summaries
-
-
+# ─── Formatting ────────────────────────────────────────────────────
 def format_vars(var_set):
     regs = sorted(v for v in var_set if v in REGISTERS)
     bits = sorted(v[6] for v in var_set if v.startswith('flags:'))
@@ -553,6 +349,210 @@ def format_vars(var_set):
     return '; '.join(parts) if parts else '(none)'
 
 
+# ─── Interprocedural analysis ─────────────────────────────────────
+def analyze_files(files):
+    # Collect all function definitions
+    all_funcs = {}
+    for filepath in files:
+        try:
+            with open(filepath) as f:
+                lines = f.readlines()
+        except FileNotFoundError:
+            continue
+        for name, start, end in find_functions(lines):
+            if name not in all_funcs:
+                all_funcs[name] = (filepath, start, end, lines)
+    
+    # Compute function params
+    func_params = {}
+    for name, (filepath, start, end, lines) in all_funcs.items():
+        func_params[name] = get_func_params(lines, start)
+    
+    # Initial forward pass
+    local_info = {}
+    for name, (filepath, start, end, lines) in all_funcs.items():
+        d, u, li, cs = get_local_info(lines, start, end)
+        local_info[name] = {
+            'defs': d, 'uses': u, 'live_in': li,
+            'call_sites': cs, 'file': filepath,
+        }
+    
+    # Propagate through call graph (cached_defs/cached_uses)
+    changed = True
+    iteration = 0
+    while changed and iteration < 20:
+        changed = False
+        iteration += 1
+        for name in all_funcs:
+            info = local_info[name]
+            all_defs = set(info['defs'])
+            all_uses = set(info['uses'])
+            for _, callee in info['call_sites']:
+                if callee in LIB_FUNCTIONS:
+                    continue
+                callee_info = local_info.get(callee)
+                callee_params = func_params.get(callee, set())
+                if callee_info is None:
+                    all_defs.update(ALL_VARS_SET)
+                    all_uses.update(ALL_VARS_SET)
+                else:
+                    cd = callee_info.get('cached_defs', callee_info['defs'])
+                    cu = callee_info.get('cached_uses', callee_info['uses'])
+                    all_defs.update(cd - callee_params)
+                    all_uses.update(cu - callee_params)
+            old_d = info.get('cached_defs')
+            old_u = info.get('cached_uses')
+            if all_defs != old_d or all_uses != old_u:
+                info['cached_defs'] = all_defs
+                info['cached_uses'] = all_uses
+                changed = True
+    
+    # ── Full interprocedural fixed-point iteration ──
+    backward_needs = {name: set() for name in all_funcs}
+    fp_iter = 0
+    changed = True
+    while changed and fp_iter < 10:
+        fp_iter += 1
+        changed = False
+        
+        # Backward scan
+        backward_needs.clear()
+        for name in all_funcs:
+            lines = all_funcs[name][3]
+            start = all_funcs[name][1]
+            end = all_funcs[name][2]
+            live = set()
+            for i in range(end - 1, start - 1, -1):
+                stripped = lines[i].strip()
+                if stripped.startswith('//') or stripped == '':
+                    continue
+                d, u = get_flag_defs_uses(stripped)
+                # Also get var defs/uses via regex
+                for var in TRACKED_VARS:
+                    if re.search(r'\b' + var + r'\s*=', stripped):
+                        d.add(var)
+                    if re.search(r'(?<!\w)' + var + r'(?!\w)', stripped):
+                        if not re.search(r'\b' + var + r'\s*=', stripped):
+                            u.add(var)
+                        elif re.search(r'\b' + var + r'\s*[\+\-]=', stripped) or \
+                             re.search(r'\b' + var + r'\+{2}\b', stripped) or \
+                             re.search(r'\b' + var + r'--\b', stripped):
+                            u.add(var)
+                
+                callee = detect_call(stripped)
+                if stripped == 'return;':
+                    live = set()
+                elif callee:
+                    if callee in ALL_IN_OUT:
+                        backward_needs.setdefault(callee, set()).update(ALL_VARS_SET)
+                        live = ALL_VARS_SET
+                    elif callee not in LIB_FUNCTIONS:
+                        backward_needs.setdefault(callee, set()).update(live)
+                        if callee in CORRUPTS:
+                            live = (live - CORRUPTS[callee]) | u
+                        else:
+                            live = (live - ALL_VARS_SET) | u
+                    elif callee in CORRUPTS:
+                        corr = CORRUPTS[callee]
+                        live = (live - corr) | u
+                    else:
+                        live = live | u
+                else:
+                    live = (live - d) | u
+        
+        # Compute live_out
+        for name in all_funcs:
+            info = local_info[name]
+            all_defs = info.get('cached_defs', info['defs'])
+            required = backward_needs.get(name, set())
+            new_out = required & all_defs
+            
+            # ALL_IN_OUT override
+            if name in ALL_IN_OUT:
+                new_out = ALL_VARS_SET
+            
+            old_out = info.get('live_out')
+            if new_out != old_out:
+                info['live_out'] = new_out
+                changed = True
+        
+        # Re-forward scan with refined kill sets
+        clo = {}
+        for cname, cinfo in local_info.items():
+            callee_defs = cinfo.get('cached_defs', cinfo['defs'])
+            clo[cname] = callee_defs - func_params.get(cname, set())
+        for name in ALL_IN_OUT:
+            clo[name] = ALL_VARS_SET
+        for name in CORRUPTS:
+            if name not in local_info:
+                clo[name] = CORRUPTS[name]
+        
+        for name, (filepath, start, end, lines) in all_funcs.items():
+            d, u, li, cs = get_local_info(lines, start, end, clo)
+            old_li = local_info[name].get('live_in')
+            if li != old_li:
+                local_info[name]['live_in'] = li
+                changed = True
+    
+    # Build summaries
+    summaries = {}
+    for name in all_funcs:
+        info = local_info[name]
+        all_defs = info.get('cached_defs', info['defs'])
+        all_uses = info.get('cached_uses', info['uses'])
+        live_in = info.get('live_in', set())
+        live_out = info.get('live_out', set())
+        
+        if name in ALL_IN_OUT:
+            live_in = ALL_VARS_SET
+            live_out = ALL_VARS_SET
+        
+        # Locals
+        local_defs = info.get('defs', set())
+        local_uses = info.get('uses', set())
+        
+        # passed_to_callees
+        passed_to_callees = set()
+        lines = all_funcs[name][3]
+        body_start = all_funcs[name][1]
+        body_end = all_funcs[name][2]
+        for i in range(body_start + 1, body_end):
+            sl = lines[i].strip()
+            if sl.startswith('//') or sl == '':
+                continue
+            callee = detect_call(sl)
+            if callee and callee not in INLINE_HELPERS:
+                d, u = get_flag_defs_uses(sl)
+                for var in TRACKED_VARS:
+                    if re.search(r'(?<!\w)' + var + r'(?!\w)', sl):
+                        if not re.search(r'\b' + var + r'\s*=', sl):
+                            passed_to_callees.add(var)
+                # Callee's defs and params
+                callee_params = func_params.get(callee, set())
+                passed_to_callees |= callee_params
+                callee_info = local_info.get(callee)
+                if callee_info:
+                    passed_to_callees |= (callee_info.get('cached_defs', callee_info['defs']) - callee_params)
+                    passed_to_callees |= (callee_info.get('live_in', set()) - callee_params)
+                callee_needs = backward_needs.get(callee, set())
+                passed_to_callees |= callee_needs
+        
+        locals_set = ((local_defs & local_uses) - live_in - live_out - passed_to_callees)
+        
+        summaries[name] = {
+            'defs': all_defs,
+            'uses': all_uses,
+            'live_in': live_in,
+            'live_out': live_out,
+            'locals': locals_set,
+            'file': info['file'],
+            'calls': [c for _, c in info['call_sites']],
+        }
+    
+    return summaries
+
+
+# ─── Main ─────────────────────────────────────────────────────────
 def main():
     files = sys.argv[1:] if len(sys.argv) > 1 else [
         'src/view.c', 'src/editor.c', 'src/printing.c',
