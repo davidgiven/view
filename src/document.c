@@ -184,7 +184,7 @@ c8a21:
 void find_margins_of_current_ruler_buffer(void)
 {
     // find_margins_of_current_ruler_buffer
-    //  Inputs: y
+    //  Inputs: -
     //  Outputs: a, flags:Z
     // Pseudocode: Finds left (>) and right (<) margin stops in the current
     // ruler buffer
@@ -192,8 +192,13 @@ void find_margins_of_current_ruler_buffer(void)
     // ;
     // ***************************************************************************************
     // find_margins_of_current_ruler_buffer:
-    //     jsr sub_cabc4
-    sub_cabc4();
+    // sub_cabc4 (inlined):
+    //     ldy #0
+    //     sty ruler_right_stop
+    //     sty ruler_left_stop
+    uint8_t y = 0;
+    ruler_right_stop = 0;
+    ruler_left_stop = 0;
     // loop_caba5:
 loop_caba5:
     //     lda (current_ruler_ptr),y
@@ -565,22 +570,6 @@ void sub_cab6e(void)
     a = ram[tmp01 + y];
     //     cmp #0x81
     cmp(&flags, a, 0x81);
-    //     rts
-    return;
-}
-
-void sub_cabc4(void)
-{
-    // Pseudocode: Resets ruler_left_stop and ruler_right_stop to zero
-
-    // sub_cabc4:
-    //     ldy #0
-    //     sty ruler_right_stop
-    //     sty ruler_left_stop
-    y = 0;
-    ruler_right_stop = 0;
-    ruler_left_stop = 0;
-    // return_72:
     //     rts
     return;
 }

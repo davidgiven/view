@@ -3864,9 +3864,9 @@ static void clear_marks_1_2(void)
     // clear_marks_1_2: Clears markers 1 and 2 (resets to zero)
 
     //     lda #0
-    a = 0;
+    uint8_t a = 0;
     //     ldx #3
-    x = 3;
+    uint8_t x = 3;
     // loop_cad12:
 loop_cad12:
     //     sta __begin_pointer_array,x
@@ -5646,7 +5646,7 @@ void beep(void)
     // beep: Emits a beep (returns with carry set as flag)
 
     //     lda #7
-    a = 7;
+    uint8_t a = 7;
     //     jsr oswrch
     cli_putchar(a);
     // loop_caced:
@@ -5988,7 +5988,7 @@ static void c9e94(void)
 {
     // c9e94:
     //     lda #0
-    a = 0;
+    uint8_t a = 0;
     //     sta xpos
     xpos = a;
     //     rts
@@ -9206,7 +9206,7 @@ static void sub_caec2(void)
     if (flags & FLAG_Z)
         goto caed4;
     //     ldy #0
-    y = 0;
+    uint8_t y = 0;
     // loop_caec8:
 loop_caec8:
     //     lda (current_edit_line_ptr),y
@@ -9299,9 +9299,9 @@ void wipe_buffer(uint8_t a)
 {
     // wipe_buffer:
     //     ldy #0
-    y = 0;
+    uint8_t y = 0;
     //     ldx #0x89
-    x = 0x89;
+    uint8_t x = 0x89;
     // loop_cab13:
     //     sta (ptr1),y
     //     iny
