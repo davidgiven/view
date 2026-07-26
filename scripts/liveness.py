@@ -18,7 +18,9 @@ FLAG_BITS = ['C', 'Z', 'N', 'V']
 # Registers
 REGISTERS = ['a', 'x', 'y']
 TMP_VARS = ['tmp01', 'tmp23', 'tmp45', 'tmp67', 'tmp89']
-ALL_VARS = REGISTERS + ['flags:' + b for b in FLAG_BITS] + TMP_VARS
+BYTE_VARS = ['tmp0', 'tmp1', 'tmp2', 'tmp3', 'tmp4', 'tmp5', 'tmp6', 'tmp7', 'tmp8', 'tmp9']
+PTR_VARS = ['ptr1', 'ptr2', 'ptr3', 'ptr5', 'ptr6']
+ALL_VARS = set(REGISTERS + ['flags:' + b for b in FLAG_BITS] + TMP_VARS + BYTE_VARS + PTR_VARS)
 
 BYTE_TO_COMBINED = {
     'tmp0': 'tmp01', 'tmp1': 'tmp01',
@@ -70,6 +72,14 @@ CORRUPTS = {
     'bad_filename_error': ALL_VARS,
     'nested_macro_error': ALL_VARS,
     'cmd_err_no_target': ALL_VARS,
+}
+
+# Functions where ALL registers are both live-in and live-out.
+# These force all_vars as both input requirement and output definition.
+ALL_IN_OUT = {
+    'call_printer_driver',
+    'reset_area_to_marks_1_2',
+    'sub_caef4',
 }
 
 
@@ -209,11 +219,26 @@ def line_defs_uses(stripped, index):
             if m:
                 defs.add(combined)
                 uses.add(m.group(1))
+            # Also track byte-level writes: tmp0 = value (non a/x/y)
+            if re.match(r'\s*' + byte_var + r'\s*=', stripped):
+                defs.add(byte_var)
+            # Track byte-level reads: a = tmp0  
+            if re.search(r'\b' + byte_var + r'\b', stripped) and not re.match(r'\s*' + byte_var + r'\s*=', stripped):
+                uses.add(byte_var)
         
-        # Regular tmp assignments
+        # Regular tmp assignments (combined)
         for var in TMP_VARS:
             if re.search(r'\b' + var + r'\s*=', stripped):
                 defs.add(var)
+            if re.search(r'\b' + var + r'\b', stripped) and not re.search(r'\b' + var + r'\s*=', stripped):
+                uses.add(var)
+        
+        # Ptr variable assignments and reads
+        for var in PTR_VARS:
+            if re.search(r'\b' + var + r'\s*=', stripped):
+                defs.add(var)
+            if re.search(r'\b' + var + r'\b', stripped) and not re.search(r'\b' + var + r'\s*=', stripped):
+                uses.add(var)
         
         # Read a, x, y in expression context (not LHS)
         for var in REGISTERS:
@@ -324,52 +349,125 @@ def analyze_files(files):
                 info['cached_uses'] = all_uses
                 changed = True
     
+    # ── Backward interprocedural live-out propagation ──
+    # Phase 1: backward scan each function, recording what callers need
+    # from each callee at each call site.
+    backward_needs = {name: set() for name in all_funcs}  # callee -> required vars
+    for name in all_funcs:
+        lines = all_funcs[name][3]
+        start = all_funcs[name][1]
+        end = all_funcs[name][2]
+        live = set()
+        for i in range(end - 1, start - 1, -1):
+            stripped = lines[i].strip()
+            if stripped.startswith('//') or stripped == '':
+                continue
+            d, u = line_defs_uses(stripped, i)
+            callee = detect_call(stripped)
+            if stripped == 'return;':
+                live = set()
+            elif callee:
+                if callee in ALL_IN_OUT:
+                    # All registers are both input and output.
+                    backward_needs.setdefault(callee, set()).update(ALL_VARS)
+                    live = ALL_VARS
+                elif callee not in LIB_FUNCTIONS:
+                    # What the caller needs from the callee = variables live
+                    # after this call (before the call's corruption is applied).
+                    backward_needs.setdefault(callee, set()).update(live)
+                    if callee in CORRUPTS:
+                        corr = CORRUPTS[callee]
+                        live = (live - corr) | u
+                    else:
+                        # Non-library, non-CORRUPTS call: defines all registers
+                        live = (live - ALL_VARS) | u
+                elif callee in CORRUPTS:
+                    corr = CORRUPTS[callee]
+                    live = (live - corr) | u
+                else:
+                    live = live | u
+            else:
+                live = (live - d) | u
+    
+    # Phase 2: fixed-point — propagate through call graph
+    # A function's live_out is what callers need, limited to what the
+    # function actually defines (all_defs).
+    # But all_defs is a forward overcount; use whichever makes sense.
+    changed = True
+    iteration = 0
+    while changed and iteration < 20:
+        changed = False
+        iteration += 1
+        for name in all_funcs:
+            info = local_info[name]
+            all_defs = info.get('cached_defs', info['defs'])
+            required = backward_needs.get(name, set())
+            # Limit to what the function actually defines
+            new_out = required & all_defs
+            old_out = info.get('live_out')
+            if new_out != old_out:
+                info['live_out'] = new_out
+                changed = True
+                # Update callers: for each call to this name, propagate
+                # the callee's definitions back to the caller's needs
+                for cname, cinfo in local_info.items():
+                    if cname == name:
+                        continue
+                    for _, callee in cinfo.get('call_sites', []):
+                        if callee == name:
+                            # The callee defines new_out variables.
+                            # In the caller's backward scan, after this call,
+                            # these variables are defined.
+                            # But the backward needs were already computed.
+                            # We just need to ensure consistency.
+                            pass
+    
     # Build summaries
     summaries = {}
     for name in all_funcs:
         info = local_info[name]
         all_defs = info.get('cached_defs', info['defs'])
         all_uses = info.get('cached_uses', info['uses'])
-        # live_in: variables used before any local definition (forward scan)
         live_in = info.get('live_in', info['uses'] - info['defs'])
-        # live_out: all_defs is a conservative overestimate. 
-        # Functions whose callers always go through a noreturn (CORRUPTS_ALL)
-        # path get empty live_out.
-        # (A more precise live_out requires proper control-flow analysis.)
-        live_out = all_defs
-        # Check if EVERY return path is preceded by a CORRUPTS_ALL call
+        live_out = info.get('live_out', set())
+        # Override for ALL_IN_OUT functions
+        if name in ALL_IN_OUT:
+            live_in = ALL_VARS
+            live_out = ALL_VARS
+        # Locals: variables defined and used within the function but not
+        # live-in (inputs), not live-out (outputs to callers), and not
+        # passed as arguments to child functions.
+        local_defs = info.get('defs', set())
+        local_uses = info.get('uses', set())
+        # Collect variables passed as arguments to function calls.
+        passed_to_callees = set()
         lines = all_funcs[name][3]
-        start = all_funcs[name][1]
-        end = all_funcs[name][2]
-        all_unreachable = True
-        for i in range(start + 1, end):
+        body_start = all_funcs[name][1]
+        body_end = all_funcs[name][2]
+        for i in range(body_start + 1, body_end):
             sl = lines[i].strip()
-            if not (re.search(r'\breturn\b', sl) or (sl == '}' and i == end - 1)):
+            if sl.startswith('//') or sl == '':
                 continue
-            if sl == '}' and i != end - 1:
-                continue
-            # Scan backward to see if there's a CORRUPTS_ALL call on this path
-            reachable = True
-            for j in range(i - 1, start, -1):
-                slj = lines[j].strip()
-                if slj == '' or slj.startswith('//') or slj.startswith('*'):
-                    continue
-                if re.match(r'^\w+:', slj): continue
-                if slj.startswith('goto') or slj.startswith('if '): continue
-                callee = detect_call(slj)
-                if callee and callee in CORRUPTS and CORRUPTS[callee] == ALL_VARS:
-                    reachable = False
-                break
-            if reachable:
-                all_unreachable = False
-                break
-        if all_unreachable:
-            live_out = set()
+            callee = detect_call(sl)
+            if callee and callee not in INLINE_HELPERS:
+                d, u = line_defs_uses(sl, i)
+                passed_to_callees |= u
+                # Include callee's live_in (implicit register args).
+                # ALL_IN_OUT functions have ALL_VARS live-in.
+                if callee in ALL_IN_OUT:
+                    passed_to_callees |= ALL_VARS
+                else:
+                    callee_info = local_info.get(callee)
+                    if callee_info:
+                        callee_li = callee_info.get('live_in', set())
+                        passed_to_callees |= callee_li
+        locals = ((local_defs & local_uses) - live_in - live_out - passed_to_callees)
         summaries[name] = {
             'defs': all_defs,
             'uses': all_uses,
             'live_in': live_in,
             'live_out': live_out,
+            'locals': locals,
             'file': info['file'],
             'calls': [c for _, c in info['call_sites']],
         }
@@ -380,6 +478,8 @@ def format_vars(var_set):
     regs = sorted(v for v in var_set if v in REGISTERS)
     bits = sorted(v[6] for v in var_set if v.startswith('flags:'))
     tmps = sorted(v for v in var_set if v in TMP_VARS)
+    bytes = sorted(v for v in var_set if v in BYTE_VARS)
+    ptrs = sorted(v for v in var_set if v in PTR_VARS)
     parts = []
     if regs:
         parts.append(', '.join(regs))
@@ -387,6 +487,10 @@ def format_vars(var_set):
         parts.append('|'.join(bits))
     if tmps:
         parts.append(', '.join(tmps))
+    if bytes:
+        parts.append(', '.join(bytes))
+    if ptrs:
+        parts.append(', '.join(ptrs))
     return '; '.join(parts) if parts else '(none)'
 
 
@@ -414,6 +518,8 @@ def main():
             print(f"\n  {name}")
             print(f"    Live in:  {format_vars(s['live_in'])}")
             print(f"    Live out: {format_vars(s['live_out'])}")
+            if s['locals']:
+                print(f"    Locals:   {format_vars(s['locals'])}")
             if s['calls']:
                 print(f"    Calls:    {calls_str}")
 
