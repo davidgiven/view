@@ -207,9 +207,12 @@ def line_defs_uses(stripped, index):
             if re.search(r'\b' + var + r'\s*=', stripped):
                 defs.add(var)
         
-        # a += X, a -= X — reads and writes a
+        # a += X, a -= X, a++, a-- — reads and writes a
         for var in REGISTERS:
             if re.search(r'\b' + var + r'\s*[\+\-]=', stripped):
+                defs.add(var)
+                uses.add(var)
+            if re.search(r'\b' + var + r'\+\+', stripped) or re.search(r'\b' + var + r'--', stripped):
                 defs.add(var)
                 uses.add(var)
         
@@ -300,6 +303,14 @@ def get_local_info(lines, start, end, callee_live_out=None):
         stripped = lines[i].strip()
         if stripped.startswith('//') or stripped == '':
             continue
+        
+        # A return statement makes all subsequent code unreachable in the
+        # forward direction — reset defined_so_far so that post-return
+        # uses are treated as live-in (they might be on a different path).
+        if stripped == 'return;':
+            defined_so_far = set()
+            continue
+        
         d, u = line_defs_uses(stripped, i)
         
         for v in u:
@@ -428,8 +439,8 @@ def analyze_files(files):
                         live = (live - corr) | u
                     else:
                         live = live | u
-                else:
-                    live = (live - d) | u
+            else:
+                live = (live - d) | u
         
         # ── Compute live_out from backward_needs ──
         for name in all_funcs:

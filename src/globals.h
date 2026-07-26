@@ -164,7 +164,7 @@ extern uint8_t print_flags, folding_flag, macro_executing_flag;
 extern uint8_t ruler_right_stop, ruler_left_stop;
 extern void (*number_callback)(void);
 extern uint8_t check_for_command_prefix(uint8_t ch);
-extern void check_for_control_code(void);
+extern void check_for_control_code(uint8_t a);
 extern void render_number_to_screen(void);
 extern void print_char_via_putchar(void);
 // Functions in view.c called by other modules

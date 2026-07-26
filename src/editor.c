@@ -428,7 +428,6 @@ void editor_loop_impl(void)
 
             format_mode_flag = a;
 
-
         c9b73_:
 
         c9b86_:
@@ -459,7 +458,6 @@ void editor_loop_impl(void)
 
             redraw_editor();
         }
-
 
         //     jsr read_char
 
@@ -3215,7 +3213,6 @@ ca00f:
     //     sty xpos
 
     xpos = y;
-
 
     //     rts
 
@@ -7619,7 +7616,7 @@ static void render_char(void)
 ca514:
     a = char_to_render;
     //     jsr check_for_control_code
-    check_for_control_code();
+    check_for_control_code(a);
     if (!(flags & FLAG_Z))
         goto ca522;
     if (flags & FLAG_C)
@@ -8374,7 +8371,7 @@ c9a38:
     //     iny
     y++;
     //     jsr check_for_control_code
-    check_for_control_code();
+    check_for_control_code(a);
     //     beq c9a40
     if (flags & FLAG_Z)
         goto c9a40;

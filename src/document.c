@@ -22,7 +22,7 @@ uint8_t check_for_command_prefix(uint8_t ch)
     return 0;
 }
 
-void check_for_control_code(void)
+void check_for_control_code(uint8_t a)
 {
     // Pseudocode: Checks if character is a control code (0x1c or 0x1d)
 
@@ -270,10 +270,10 @@ c9462:
 c9468:
     //     jsr sub_c9445
     sub_c9445();
-    print_char_just_to_screen();
+    print_char_just_to_screen(a);
 }
 
-void print_char_just_to_screen(void)
+void print_char_just_to_screen(uint8_t a)
 {
     // print_char_just_to_screen
     // print_char_just_to_printer:
@@ -287,7 +287,7 @@ void print_char_just_to_screen(void)
 
 c9472:
     //     jsr check_for_control_code
-    check_for_control_code();
+    check_for_control_code(a);
     //     bne c9488
     if (!(flags & FLAG_Z))
         goto c9488;
@@ -500,7 +500,7 @@ void sub_c9445(void)
         // loop_c944c:
     loop_c944c:
         //     jsr print_char_just_to_printer
-        print_char_just_to_screen();
+        print_char_just_to_screen(a);
         //     dec print_xpos
         print_xpos--;
         //     bne loop_c944c
@@ -740,7 +740,7 @@ void get_byte_from_file(void)
     y = a;
 }
 
-void get_register_address(void)
+void get_register_address(uint8_t a)
 {
     // get_register_address
     // get_register_address: Gets address of a register value by letter name

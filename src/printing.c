@@ -62,7 +62,7 @@ static void write_cr_to_memory(void);
 extern void cli_putstring(const char* s);
 extern void return_to_cli_prompt(void);
 extern void display_not_enough_memory(void);
-extern void get_register_address(void);
+extern void get_register_address(uint8_t a);
 extern void write_cr_to_memory(void);
 extern void adjust_pointers(void);
 extern void make_space_for_insertion(void);
@@ -72,7 +72,7 @@ extern void parse_filename_from_command(void);
 extern void c8b7b(void);
 extern void c8b78(void);
 extern uint8_t check_for_command_prefix(uint8_t ch);
-extern void check_for_control_code(void);
+extern void check_for_control_code(uint8_t a);
 extern void render_new_page(void);
 extern void c9263(void);
 extern void sub_c9241(void);
@@ -142,7 +142,7 @@ c951c:
     // c9529:
     //     sec
     flags |= FLAG_C;
-// return_36:
+    // return_36:
     //     rts
     return;
 }
@@ -320,7 +320,7 @@ c953e:
     //     sta output_buffer,x
     output_buffer[x] = a;
     //     jsr check_for_control_code
-    check_for_control_code();
+    check_for_control_code(a);
     //     bne c9548
     if (!(flags & FLAG_Z))
         goto c9548;
@@ -517,7 +517,7 @@ static void em_fmt_cmd(void)
     //     iny
     y++;
     //     jsr get_register_address
-    get_register_address();
+    get_register_address(a);
     //     bcs return_38
     if (flags & FLAG_C)
         return;
@@ -1623,7 +1623,7 @@ void render_register(void)
     //     sty l0084
     l0084 = y;
     //     jsr get_register_address
-    get_register_address();
+    get_register_address(a);
     //     ldy #0
     y = 0;
     //     sty tmp8
@@ -1943,7 +1943,7 @@ void display_not_enough_memory(void)
     cli_putstring("Not enough memory\n");
     return_to_cli_prompt();
     return;
-// return_6:
+    // return_6:
     //     rts
     return;
 
@@ -3028,7 +3028,7 @@ c8caf:
     if (flags & FLAG_C)
         goto c8cc8;
     //     jsr check_for_control_code
-    check_for_control_code();
+    check_for_control_code(a);
     //     beq c8cc8
     if (flags & FLAG_Z)
         goto c8cc8;
@@ -3984,7 +3984,7 @@ c93ce:
     if (flags & FLAG_N)
         goto c93e6;
     //     jsr check_for_control_code
-    check_for_control_code();
+    check_for_control_code(a);
     //     bne c93d9
     if (!(flags & FLAG_Z))
         goto c93d9;
