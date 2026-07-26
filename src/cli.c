@@ -1639,9 +1639,7 @@ void run_cli(void)
     //     jsr display_document_file_state
     display_document_file_state();
     //     bit file_edit_flags
-    bit(&flags, a, file_edit_flags);
-    //     bvs c816d
-    if (flags & FLAG_V)
+    if ((file_edit_flags & 0x40))
         goto c816d;
     //     lda file_edit_flags
     a = file_edit_flags;

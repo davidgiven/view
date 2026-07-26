@@ -8100,9 +8100,7 @@ c9a21:
     //     X=0x01
     x++;
     //     bit l0046
-    bit(&flags, a, l0046);
-    //     bmi c9a40
-    if (flags & FLAG_N)
+    if ((l0046 & 0x80))
         goto c9a40;
     // PROVISIONAL: Write character to edit buffer at write position (l0048). If
     // it's a space, PROVISIONAL: rotate bottom_margin (tracks word-boundary

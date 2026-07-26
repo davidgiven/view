@@ -1849,9 +1849,8 @@ void check_not_continuous_editing(void)
 
     // check_not_continuous_editing:
     //     bit file_edit_flags
-    bit(&flags, a, file_edit_flags);
     //     bvs return_20
-    if (flags & FLAG_V)
+    if ((file_edit_flags & 0x40))
         return;
     //     lda file_edit_flags
     a = file_edit_flags;
@@ -3996,9 +3995,7 @@ static void sub_c9431(void)
     //     jsr sub_ca5ae
     process_document_character();
     //     bit print_flags
-    bit(&flags, a, print_flags);
-    //     bpl c943c
-    if (!(flags & FLAG_N))
+    if (!(print_flags & 0x80))
         goto c943c;
     //     ora #0
     a |= 0;

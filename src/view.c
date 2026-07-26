@@ -1433,9 +1433,7 @@ void check_continuous_editing(void)
 
     // check_continuous_editing:
     //     bit file_edit_flags
-    bit(&flags, a, file_edit_flags);
-    //     bvs c8e5d
-    if (flags & FLAG_V)
+    if ((file_edit_flags & 0x40))
         goto c8e5d;
     //     lda file_edit_flags
     a = file_edit_flags;

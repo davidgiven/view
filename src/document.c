@@ -138,9 +138,7 @@ loop_c89fa:
 c8a07:
     // c8a07:
     //     bit file_edit_flags
-    bit(&flags, a, file_edit_flags);
-    //     bvs c8a19
-    if (flags & FLAG_V)
+    if ((file_edit_flags & 0x40))
         goto c8a19;
     //     jsr print_inline_string
     //     .ascii " to "
