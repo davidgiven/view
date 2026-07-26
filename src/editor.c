@@ -6747,38 +6747,10 @@ caa65:
     y = a;
     //     iny (6490)
     y++;
-    //     lda ((uint8_t*)&tmp23)[0] (6491)
-    a = ((uint8_t*)&tmp23)[0];
-    //     stx ((uint8_t*)&tmp23)[0] (6492)
-    ((uint8_t*)&tmp23)[0] = x;
-    //     sec (6493)
-    flags |= FLAG_C;
-    //     sbc ((uint8_t*)&tmp23)[0] (6494)
-    a = sbc(&flags, a, ((uint8_t*)&tmp23)[0]);
-    //     sta ((uint8_t*)&tmp23)[0] (6495)
-    ((uint8_t*)&tmp23)[0] = a;
-    //     bcs caa75 (6496)
-    if (flags & FLAG_C)
-        goto caa75;
-    //     dec ((uint8_t*)&tmp23)[1] (6497)
-    ((uint8_t*)&tmp23)[1]--;
+    tmp23 -= x;
     // caa75: (6498)
 caa75:
-    //     lda ((uint8_t*)&tmp89)[0] (6499)
-    a = ((uint8_t*)&tmp89)[0];
-    //     stx ((uint8_t*)&tmp89)[0] (6500)
-    ((uint8_t*)&tmp89)[0] = x;
-    //     sec (6501)
-    flags |= FLAG_C;
-    //     sbc ((uint8_t*)&tmp89)[0] (6502)
-    a = sbc(&flags, a, ((uint8_t*)&tmp89)[0]);
-    //     sta ((uint8_t*)&tmp89)[0] (6503)
-    ((uint8_t*)&tmp89)[0] = a;
-    //     bcs caa82 (6504)
-    if (flags & FLAG_C)
-        goto caa82;
-    //     dec ((uint8_t*)&tmp89)[1] (6505)
-    ((uint8_t*)&tmp89)[1]--;
+    tmp89 -= x;
     // caa82: (6506)
 caa82:
     //     dey (6507)
@@ -8917,24 +8889,7 @@ static void sub_cac50(void)
     // sub_cac50
     // Pseudocode: Finds the start of current line by scanning backward for CR
 
-    // sub_cac50:
-    //     sec
-    flags |= FLAG_C;
-    //     sbc #1
-    {
-        uint8_t old_a = a;
-        a = a - 1 - (1 - (flags & FLAG_C));
-        flags = (flags & ~(FLAG_Z | FLAG_N | FLAG_C)) | (a == 0 ? FLAG_Z : 0) |
-                (a & FLAG_N) | (old_a >= 1 ? FLAG_C : 0);
-    }
-    //     sta ((uint8_t*)&tmp89)[0]
-    ((uint8_t*)&tmp89)[0] = a;
-    //     bcs cac58
-    if (!(flags & FLAG_C))
-        y--;
-    // cac58:
-    //     sty ((uint8_t*)&tmp89)[1]
-    ((uint8_t*)&tmp89)[1] = y;
+    tmp89--;
     //     ldy #0
     y = 0;
     // cac5c:
@@ -8946,26 +8901,12 @@ cac5c:
     //     beq cac6f
     if (flags & FLAG_Z)
         goto cac6f;
-    //     lda ((uint8_t*)&tmp89)[0]
-    //     sec
-    //     sbc #1
-    //     sta ((uint8_t*)&tmp89)[0]
-    //     bcs cac5c
-    //     dec ((uint8_t*)&tmp89)[1]
-    //     bne cac5c
-    flags |= FLAG_C;
     {
-        uint8_t old_a = ((uint8_t*)&tmp89)[0];
-        a = ((uint8_t*)&tmp89)[0] - 1 - (1 - (flags & FLAG_C));
-        flags = (flags & ~(FLAG_Z | FLAG_N | FLAG_C)) | (a == 0 ? FLAG_Z : 0) |
-                (a & FLAG_N) | (old_a >= 1 ? FLAG_C : 0);
+        uint8_t old_low = (uint8_t)(tmp89 & 0xff);
+        tmp89--;
+        if (old_low > 0 || (uint8_t)(tmp89 >> 8) != 0)
+            goto cac5c;
     }
-    ((uint8_t*)&tmp89)[0] = a;
-    if (flags & FLAG_C)
-        goto cac5c;
-    ((uint8_t*)&tmp89)[1]--;
-    if (((uint8_t*)&tmp89)[1] != 0)
-        goto cac5c;
     // cac6f:
 cac6f:
     //     lda ((uint8_t*)&tmp89)[0]

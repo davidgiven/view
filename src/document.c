@@ -1205,37 +1205,14 @@ cab3f:
         return;
     // cab4b:
 cab4b:
-    //     ldy #0
-    y = 0;
     // loop_cab4d:
 loop_cab4d:
-    //     lda ((uint8_t*)&tmp01)[0]
-    a = ((uint8_t*)&tmp01)[0];
-    //     sec
-    flags |= FLAG_C;
-    //     sbc #1
-    a = sbc(&flags, a, 1);
-    //     sta ((uint8_t*)&tmp01)[0]
-    ((uint8_t*)&tmp01)[0] = a;
-    //     bcs cab58
-    if (flags & FLAG_C)
-        goto cab58;
-    //     dec ((uint8_t*)&tmp01)[1]
-    ((uint8_t*)&tmp01)[1]--;
-    // cab58:
-cab58:
-    //     lda (((uint8_t*)&tmp01)[0]),y
-    a = ram[tmp01 + y];
-    //     cmp #0x0d
+    tmp01--;
+    a = ram[tmp01];
     cmp(&flags, a, 0x0d);
-    //     bne loop_cab4d
     if (!(flags & FLAG_Z))
         goto loop_cab4d;
-    //     inc ((uint8_t*)&tmp01)[0]
     tmp01++;
-    //     bne cab64
-    //     inc ((uint8_t*)&tmp01)[1]
-    // cab64:
     //     jsr sub_cab6e
     sub_cab6e();
     //     bne cab6c
