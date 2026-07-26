@@ -1855,9 +1855,8 @@ void check_not_continuous_editing(void)
     //     lda file_edit_flags
     a = file_edit_flags;
     //     ror
-    a = ror(&flags, a);
     //     bcc return_20
-    if (!(flags & FLAG_C))
+    if (!(a & 1))
         return;
     //     bcs c8e5d                                                         ;
     //     ALWAYS branch

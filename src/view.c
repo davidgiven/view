@@ -1438,9 +1438,8 @@ void check_continuous_editing(void)
     //     lda file_edit_flags
     a = file_edit_flags;
     //     ror
-    a = ror(&flags, a);
     //     bcs return_20
-    if (flags & FLAG_C)
+    if (a & 1)
         return;
 c8e5d:
     //     jsr display_document_file_state

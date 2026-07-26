@@ -1644,9 +1644,8 @@ void run_cli(void)
     //     lda file_edit_flags
     a = file_edit_flags;
     //     ror
-    a = ror(&flags, a);
     //     bcc c816d
-    if (!(flags & FLAG_C))
+    if (!(a & 1))
         goto c816d;
     //     jsr print_inline_string
     //     .ascii "Input file is "
