@@ -233,7 +233,7 @@ void run_editor(void)
 void editor_loop_impl(void)
 {
     // editor_loop_impl
-    //  Inputs: y, flags
+    //  Inputs: y
     //  Outputs: a, x
 
     screen_enter();
@@ -337,12 +337,10 @@ void editor_loop_impl(void)
 
             //     cpy xpos
 
-            cmp(&flags, y, xpos);
+            if (y >= xpos)
+                goto c9b84_;
 
             //     bcs c9b84
-
-            if (flags & FLAG_C)
-                goto c9b84_;
 
             //     bit format_mode_flag
 
@@ -473,12 +471,10 @@ void editor_loop_impl(void)
 
         //     cmp current_tab_key
 
-        cmp(&flags, a, current_tab_key);
+        if (a != current_tab_key)
+            goto c9b9f;
 
         //     bne c9b9f
-
-        if (!(flags & FLAG_Z))
-            goto c9b9f;
 
         //     lda #9
 
@@ -500,12 +496,10 @@ void editor_loop_impl(void)
 
         //     cmp #0x20 ; ' '
 
-        cmp(&flags, a, 0x20);
+        if (a < 0x20)
+            goto enter_nonprintable_character;
 
         //     bcc enter_nonprintable_character
-
-        if (!(flags & FLAG_C))
-            goto enter_nonprintable_character;
 
         //     cmp #0x7f
 
@@ -650,7 +644,7 @@ void editor_loop_impl(void)
 static void cf0_delete_block_key(void)
 {
     // cf0_delete_block_key
-    //  Inputs: flags
+    //  Inputs: flags:C
     //  Outputs: a, y
 
     write_line_back_to_document_safely();
@@ -683,7 +677,7 @@ static void cf0_delete_block_key(void)
 static void cf1_next_match_key(void)
 {
     // cf1_next_match_key
-    //  Inputs: flags
+    //  Inputs: flags:Z
     //  Outputs: a
 
     write_line_back_to_document_safely();
@@ -767,7 +761,7 @@ static void cf5_default_ruler_key(void)
 static void cf6_split_line_key(void)
 {
     // cf6_split_line_key
-    //  Inputs: y, flags
+    //  Inputs: y
     //  Outputs: a, x
 
     // cf6_split_line_key: Splits line at cursor position
@@ -782,12 +776,10 @@ static void cf6_split_line_key(void)
 
     //     cpy xpos
 
-    cmp(&flags, y, xpos);
+    if (y < xpos)
+        goto c9dbd;
 
     //     bcc c9dbd
-
-    if (!(flags & FLAG_C))
-        goto c9dbd;
 
     //     ldy xpos
 
@@ -889,7 +881,7 @@ c9dcd:
 static void cf7_join_lines_key(void)
 {
     // cf7_join_lines_key
-    //  Inputs: y, flags
+    //  Inputs: y
     //  Outputs: a; tmp01, tmp45, tmp67
 
     // cf7_join_lines_key: Joins current line with next line
@@ -1114,7 +1106,7 @@ c9f5f:
 static void delete_key(void)
 {
     // delete_key
-    //  Inputs: flags
+    //  Inputs: -
     //  Outputs: a, x, y
 
     // delete_key:
@@ -1202,7 +1194,7 @@ static void delete_key(void)
 void esc_key(void)
 {
     // esc_key
-    //  Inputs: flags
+    //  Inputs: -
     //  Outputs: a, x
 
     // Pseudocode: Saves edit buffer via write_line_back_to_document_safely and
@@ -1312,7 +1304,7 @@ return_59:
 static void f11_copy_key(void)
 {
     // f11_copy_key
-    //  Inputs: flags
+    //  Inputs: flags:C
 
     write_line_back_to_document_safely();
 
@@ -1359,7 +1351,7 @@ static void f12_left_key(void)
 void f13_right_key(void)
 {
     // f13_right_key
-    //  Inputs: flags
+    //  Inputs: -
     //  Outputs: y
 
     // f13_right_key:
@@ -1422,7 +1414,7 @@ static void f14_down_key(void)
 static void f15_up_key(void)
 {
     // f15_up_key
-    //  Inputs: flags
+    //  Inputs: flags:C
     //  Temps:  tmp01
     //  Outputs: a, y
 
@@ -1527,8 +1519,8 @@ static void f2_bottom_of_text_key(void)
 static void f3_delete_to_eol_key(void)
 {
     // f3_delete_to_eol_key
-    //  Inputs: flags
-    //  Outputs: a
+    //  Inputs: -
+    //  Outputs: a, flags:C
 
     // f3_delete_to_eol_key: Deletes from cursor to end of line
 
@@ -1617,7 +1609,7 @@ static void f6_insert_line_key(void)
 static void f7_delete_line_key(void)
 {
     // f7_delete_line_key
-    //  Inputs: flags
+    //  Inputs: -
     //  Temps:  tmp01
     //  Outputs: a, x, y; tmp45, tmp67
 
@@ -2804,7 +2796,7 @@ static void q_command_key(void)
 void return_key(void)
 {
     // return_key
-    //  Inputs: y, flags
+    //  Inputs: y
     //  Outputs: a; tmp01
 
     // return_key: Carriage return: moves to next line at column 0
@@ -2896,7 +2888,7 @@ c9d98:
 static void sf0_move_block_key(void)
 {
     // sf0_move_block_key
-    //  Inputs: flags
+    //  Inputs: flags:C
 
     write_line_back_to_document_safely();
 
@@ -3045,7 +3037,7 @@ static void sf12_left_key(void)
 static void sf13_right_key(void)
 {
     // sf13_right_key
-    //  Inputs: y, flags
+    //  Inputs: y
     //  Outputs: a; tmp01
 
     // sf13_right_key: Moves cursor right by one word
@@ -3229,12 +3221,10 @@ loop_c9ff8:
 
     //     cmp #0x20 ; ' '
 
-    cmp(&flags, a, 0x20);
+    if (a != 0x20)
+        goto loop_c9ff8;
 
     //     bne loop_c9ff8
-
-    if (!(flags & FLAG_Z))
-        goto loop_c9ff8;
 
 loop_ca003:
 
@@ -3251,12 +3241,10 @@ loop_ca003:
 
     //     cmp #0x20 ; ' '
 
-    cmp(&flags, a, 0x20);
+    if (a == 0x20)
+        goto loop_ca003;
 
     //     beq loop_ca003
-
-    if (flags & FLAG_Z)
-        goto loop_ca003;
 
     //     dey
 
@@ -3324,7 +3312,7 @@ static void sf15_up_key(void)
 static void sf1_swap_case_key(void)
 {
     // sf1_swap_case_key
-    //  Inputs: flags
+    //  Inputs: -
     //  Outputs: a, y
 
     // sf1_swap_case_key:
@@ -3593,7 +3581,7 @@ static void sf7_set_marker_key(void)
 static void sf8_edit_command_key(void)
 {
     // sf8_edit_command_key
-    //  Inputs: flags
+    //  Inputs: flags:C
     //  Ptrs:   ptr1
     //  Outputs: a, y
 
@@ -3645,12 +3633,10 @@ edit_command_loop:
 
     //     cmp #0x0d
 
-    cmp(&flags, a, 0x0d);
+    if (a == 0x0d)
+        goto finished_editing_command;
 
     //     beq finished_editing_command
-
-    if (flags & FLAG_Z)
-        goto finished_editing_command;
 
     //     and #0xdf
 
@@ -3658,21 +3644,17 @@ edit_command_loop:
 
     //     cmp #0x41 ; 'A'
 
-    cmp(&flags, a, 0x41);
+    if (a < 0x41)
+        goto edit_command_loop;
 
     //     bcc edit_command_loop
 
-    if (!(flags & FLAG_C))
-        goto edit_command_loop;
-
     //     cmp #0x5b ; '['
 
-    cmp(&flags, a, 0x5b);
+    if (a >= 0x5b)
+        goto edit_command_loop;
 
     //     bcs edit_command_loop
-
-    if (flags & FLAG_C)
-        goto edit_command_loop;
 
     //     sta l0081
 
@@ -3700,12 +3682,10 @@ edit_command_loop:
 
     //     cpy #2
 
-    cmp(&flags, y, 2);
+    if (y < 2)
+        goto edit_command_loop;
 
     //     bcc edit_command_loop
-
-    if (!(flags & FLAG_C))
-        goto edit_command_loop;
 
     //     lda #0
 
@@ -3769,7 +3749,7 @@ finished_editing_command:
 static void sf9_delete_command_key(void)
 {
     // sf9_delete_command_key
-    //  Outputs: a, y, flags
+    //  Outputs: a, y
 
     // sf9_delete_command_key: Deletes any formatting command prefix from
     // current line
@@ -3918,8 +3898,8 @@ static void control_key_to_ascii(void)
 static void delete_edit_buffer_bytes_at_xpos(void)
 {
     // delete_edit_buffer_bytes_at_xpos
-    //  Inputs: x, flags
-    //  Outputs: a, y; tmp67
+    //  Inputs: x
+    //  Outputs: a, y, flags:C, flags:Z; tmp67
     // delete_edit_buffer_bytes_at_xpos: Deletes N bytes at cursor position,
     // shifting existing content left
 
@@ -4023,10 +4003,9 @@ loop_caea5:
     //     tay
     y = a;
     //     cpy #0x84
-    cmp(&flags, y, MAX_LINE_LENGTH);
-    //     bcs caeb7
-    if (flags & FLAG_C)
+    if (y >= MAX_LINE_LENGTH)
         goto caeb7;
+    //     bcs caeb7
     //     lda (current_edit_line_ptr),y
     a = ram[current_edit_line_ptr + y];
     //     tax
@@ -4042,10 +4021,9 @@ caeb7:
     //     iny
     y++;
     //     cpy #0x84
-    cmp(&flags, y, MAX_LINE_LENGTH);
-    //     bcc loop_caea5
-    if (!(flags & FLAG_C))
+    if (y < MAX_LINE_LENGTH)
         goto loop_caea5;
+    //     bcc loop_caea5
     // return_78:
     //     rts
 }
@@ -4053,7 +4031,7 @@ caeb7:
 static void enter_printable_character(void)
 {
     // enter_printable_character
-    //  Inputs: x, flags
+    //  Inputs: x
     //  Outputs: a, y; tmp45, tmp67
     // enter_printable_character:
     //     ldy xpos
@@ -4178,10 +4156,9 @@ c9c31:
     if (x == 0)
         goto c9c43;
     //     cpx ruler_left_stop
-    cmp(&flags, x, ruler_left_stop);
-    //     bcc c9c43
-    if (!(flags & FLAG_C))
+    if (x < ruler_left_stop)
         goto c9c43;
+    //     bcc c9c43
     //     inx
     x++;
     //     txa
@@ -4563,7 +4540,7 @@ static void prompt_for_marker(void)
 static void reset_area_to_marks_1_2(void)
 {
     // reset_area_to_marks_1_2
-    //  Inputs: x, flags
+    //  Inputs: x, flags:Z
     //  Outputs: a
     // reset_area_to_marks_1_2: Sets area to markers 1 and 2, then adjusts
     // doc_ptr1
@@ -4709,7 +4686,7 @@ static void sub_c9f80(void)
 static void sub_ca071(void)
 {
     // sub_ca071
-    //  Inputs: x
+    //  Inputs: x, flags:C
     //  Temps:  tmp01
     //  Outputs: a, y; tmp23
     // sub_ca071:
@@ -4767,7 +4744,7 @@ static void sub_ca071(void)
 static void sub_ca0af(void)
 {
     // sub_ca0af
-    //  Inputs: x, flags
+    //  Inputs: x, flags:Z
     //  Temps:  tmp01
     //  Outputs: a, y
     // sub_ca0af:
@@ -4832,7 +4809,7 @@ static void sub_ca0af(void)
 static void sub_ca1cc(void)
 {
     // sub_ca1cc
-    //  Inputs: flags
+    //  Inputs: -
     //  Outputs: a, y; tmp45, tmp67
     if (doc_ptr1 >= area_start_ptr && doc_ptr1 < area_end_ptr)
     {
@@ -5000,10 +4977,9 @@ loop_caf3f:
     //     dey
     y--;
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20);
-    //     beq loop_caf3f
-    if (flags & FLAG_Z)
+    if (a == 0x20)
         goto loop_caf3f;
+    //     beq loop_caf3f
     // loop_caf4a:
 loop_caf4a:
     //     dey
@@ -5011,10 +4987,9 @@ loop_caf4a:
     //     jsr process_current_document_character
     process_current_document_character();
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20);
-    //     beq caf55
-    if (flags & FLAG_Z)
+    if (a == 0x20)
         goto caf55;
+    //     beq caf55
     //     dey
     y--;
     //     bne loop_caf4a
@@ -5035,8 +5010,8 @@ caf55:
 void sub_caef4(void)
 {
     // sub_caef4
-    //  Inputs: y, flags
-    //  Outputs: a
+    //  Inputs: y
+    //  Outputs: a, flags:C
     // sub_caef4: Handles margin/folding adjustments when typing at left margin
 
     //     lda format_mode_flag
@@ -5064,10 +5039,9 @@ void sub_caef4(void)
     //     lda l0072
     a = l0072;
     //     cmp ruler_left_stop
-    cmp(&flags, a, ruler_left_stop);
-    //     bcc caf19
-    if (!(flags & FLAG_C))
+    if (a < ruler_left_stop)
         goto caf19;
+    //     bcc caf19
     //     ldy l0083
     y = l0083;
     //     sty xpos
@@ -5123,8 +5097,8 @@ caf31:
 void insert_edit_buffer_bytes_at_xpos(void)
 {
     // insert_edit_buffer_bytes_at_xpos
-    //  Inputs: x, y, flags
-    //  Outputs: a; tmp67
+    //  Inputs: x, y
+    //  Outputs: a, flags:C, flags:Z; tmp67
     // insert_edit_buffer_bytes_at_xpos: Inserts bytes at cursor position,
     // shifting existing content right
 
@@ -5190,10 +5164,9 @@ cae27:
     if (flags & FLAG_C)
         goto cae35;
     //     cmp #0x84
-    cmp(&flags, a, MAX_LINE_LENGTH);
-    //     bcs cae35
-    if (flags & FLAG_C)
+    if (a >= MAX_LINE_LENGTH)
         goto cae35;
+    //     bcs cae35
     //     tax
     x = a;
     // cae35:
@@ -5267,16 +5240,15 @@ cae5c:
 void set_marker_to_here(void)
 {
     // set_marker_to_here
-    //  Inputs: y, flags
+    //  Inputs: y
     // set_marker_to_here: Sets marker at current cursor position
 
     //     jsr get_line_length
     get_line_length();
     //     cpy xpos
-    cmp(&flags, y, xpos);
-    //     bcc cad5d
-    if (!(flags & FLAG_C))
+    if (y < xpos)
         goto cad5d;
+    //     bcc cad5d
     //     ldy #0
     y = 0;
     //     lda (current_format_line_ptr),y
@@ -5320,7 +5292,7 @@ void cac78(void)
 {
     // cac78
     //  Temps:  tmp89
-    //  Outputs: a, x, y, flags
+    //  Outputs: a, x, y, flags:C, flags:Z
     // Pseudocode: Splits a line at the word wrap position, inserting CR for new
     // line
 
@@ -5361,15 +5333,13 @@ cac8f:
     //     iny
     y++;
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20);
-    //     beq cac9a
-    if (flags & FLAG_Z)
+    if (a == 0x20)
         goto cac9a;
+    //     beq cac9a
     //     cmp #0x1a
-    cmp(&flags, a, 0x1a);
-    //     bne cac9c
-    if (!(flags & FLAG_Z))
+    if (a != 0x1a)
         goto cac9c;
+    //     bne cac9c
     // cac9a:
 cac9a:
     //     sty l0083
@@ -5446,7 +5416,7 @@ cacad:
 void adjust_pointers(void)
 {
     // adjust_pointers
-    //  Inputs: flags
+    //  Inputs: -
     //  Temps:  tmp23, tmp45, tmp67, tmp89
     //  Outputs: a, x, y
     uint8_t tmp2, tmp3, tmp8, tmp9;
@@ -5486,10 +5456,9 @@ ca9c3:
     if (!(flags & FLAG_Z))
         goto ca9d1;
     //     cmp tmp4 (6389)
-    cmp(&flags, a, tmp4);
-    //     bcc ca9f1 (6390)
-    if (!(flags & FLAG_C))
+    if (a < tmp4)
         goto ca9f1;
+    //     bcc ca9f1 (6390)
     // ca9d1: (6391)
 ca9d1:
     //     cpy tmp9 (6392)
@@ -5501,17 +5470,15 @@ ca9d1:
     if (!(flags & FLAG_Z))
         goto ca9e7;
     //     cmp tmp8 (6395)
-    cmp(&flags, a, tmp8);
-    //     bcs ca9e7 (6396)
-    if (flags & FLAG_C)
+    if (a >= tmp8)
         goto ca9e7;
+    //     bcs ca9e7 (6396)
     // ca9db: (6397)
 ca9db:
     //     cpx #12 (6398)
-    cmp(&flags, x, 12);
-    //     bcs ca9e7 (6399)
-    if (flags & FLAG_C)
+    if (x >= 12)
         goto ca9e7;
+    //     bcs ca9e7 (6399)
     //     lda #0 (6400)
     a = 0;
     //     sta __begin_pointer_array+0,x (6401)
@@ -5591,7 +5558,7 @@ caa08:
 static void advance_to_next_line(void)
 {
     // advance_to_next_line
-    //  Inputs: flags
+    //  Inputs: -
     //  Temps:  tmp01
     //  Outputs: a, y
     // c9a8d: Advance to next line in document
@@ -5701,7 +5668,7 @@ static void c8b78(void)
 void c8b7b(void)
 {
     // c8b7b
-    //  Inputs: flags
+    //  Inputs: -
     //  Outputs: a, x, y; tmp89
     // c8b7b:
     //     lda l007a
@@ -5811,29 +5778,25 @@ c8bbc:
     //     lda header_text_maybe,x
     a = header_text_maybe[x];
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20);
-    //     beq c8bf7
-    if (flags & FLAG_Z)
+    if (a == 0x20)
         goto c8bf7;
+    //     beq c8bf7
     //     cmp #1
-    cmp(&flags, a, 1);
-    //     beq c8be3
-    if (flags & FLAG_Z)
+    if (a == 1)
         goto c8be3;
+    //     beq c8be3
     //     cmp #2
-    cmp(&flags, a, 2);
-    //     bne c8bd7
-    if (!(flags & FLAG_Z))
+    if (a != 2)
         goto c8bd7;
+    //     bne c8bd7
     //     lda #0x20 ; ' '
     a = 0x20;
 c8bd7:
     // c8bd7:
     //     cmp l0083
-    cmp(&flags, a, l0083);
-    //     beq c8c33
-    if (flags & FLAG_Z)
+    if (a == l0083)
         goto c8c33;
+    //     beq c8c33
 c8bdb:
     // c8bdb:
     //     inc doc_ptr2+0
@@ -5865,10 +5828,9 @@ c8be3:
     //     ldx l0049
     x = l0049;
     //     cpx #0x14
-    cmp(&flags, x, 0x14);
-    //     bcs c8bf2
-    if (flags & FLAG_C)
+    if (x >= 0x14)
         goto c8bf2;
+    //     bcs c8bf2
     //     sta output_buffer,x
     output_buffer[x] = a;
     //     inc l0049
@@ -5887,30 +5849,25 @@ c8bf7:
     //     lda l0083
     a = l0083;
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20);
-    //     beq c8c23
-    if (flags & FLAG_Z)
+    if (a == 0x20)
         goto c8c23;
+    //     beq c8c23
     //     cmp #9
-    cmp(&flags, a, 9);
-    //     beq c8c23
-    if (flags & FLAG_Z)
+    if (a == 9)
         goto c8c23;
+    //     beq c8c23
     //     cmp #0x0b
-    cmp(&flags, a, 0x0b);
-    //     beq c8c23
-    if (flags & FLAG_Z)
+    if (a == 0x0b)
         goto c8c23;
+    //     beq c8c23
     //     cmp #0x1a
-    cmp(&flags, a, 0x1a);
-    //     beq c8c23
-    if (flags & FLAG_Z)
+    if (a == 0x1a)
         goto c8c23;
+    //     beq c8c23
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d);
-    //     beq c8c23
-    if (flags & FLAG_Z)
+    if (a == 0x0d)
         goto c8c23;
+    //     beq c8c23
     //     lda l0081
     a = l0081;
     //     beq c8bdb
@@ -5927,10 +5884,9 @@ c8bf7:
     //     inx
     x++;
     //     cpx l007a
-    cmp(&flags, x, l007a);
-    //     bcc c8bbc
-    if (!(flags & FLAG_C))
+    if (x < l007a)
         goto c8bbc;
+    //     bcc c8bbc
     //     bcs c8c3e
     goto c8c3e;
 
@@ -5961,10 +5917,9 @@ c8c33:
     //     inx
     x++;
     //     cpx l007a
-    cmp(&flags, x, l007a);
-    //     bcc loop_c8c2a
-    if (!(flags & FLAG_C))
+    if (x < l007a)
         goto loop_c8c2a;
+    //     bcc loop_c8c2a
     //     inc tmp8
     tmp8++;
     if (tmp8 != 0)
@@ -6160,7 +6115,7 @@ static void cursor_on(void)
 void draw_line(uint16_t addr)
 {
     // draw_line
-    //  Outputs: a, y, flags; tmp01, tmp67
+    //  Outputs: a, y; tmp01, tmp67
     // draw_line: Renders a single document line to the screen
 
     //     sta tmp0
@@ -6226,10 +6181,9 @@ loop_ca4c2:
     if (x != 0)
         goto loop_ca4c2;
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d);
-    //     bne loop_ca4bf
-    if (!(flags & FLAG_Z))
+    if (a != 0x0d)
         goto loop_ca4bf;
+    //     bne loop_ca4bf
     //     lda #0x20 ; ' '
     a = 0x20;
     //     jsr sub_ca597
@@ -6314,7 +6268,7 @@ static void draw_ruler(void)
 static void draw_status_word(void)
 {
     // draw_status_word
-    //  Outputs: a, x, flags
+    //  Outputs: a, x
     // Pseudocode: Redraws status line showing format mode, justify, and insert
     // indicators
 
@@ -6385,7 +6339,7 @@ ca672:
 static void get_line_length(void)
 {
     // get_line_length
-    //  Outputs: a, y, flags
+    //  Outputs: a, y
     // Pseudocode: Returns the length of the current edit line
 
     // ;
@@ -6409,10 +6363,9 @@ static void get_line_length(void)
         //     lda (current_edit_line_ptr),y
         a = ram[current_edit_line_ptr + y];
         //     cmp #0x10
-        cmp(&flags, a, 0x10);
-        //     bne cab06
-        if (!(flags & FLAG_Z))
+        if (a != 0x10)
             goto cab06;
+        //     bne cab06
         //     tya
         a = y;
         if (a != 0)
@@ -6478,7 +6431,7 @@ static void go_to_marker_n(void)
 static void home_cursor(void)
 {
     // home_cursor
-    //  Inputs: y, flags
+    //  Inputs: y
     //  Temps:  tmp23, tmp45, tmp67
     //  Outputs: a, x; tmp89
     // home_cursor:
@@ -6544,10 +6497,9 @@ c9847:
     if (flags & FLAG_Z)
         goto c985c;
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20);
-    //     bne c9847
-    if (!(flags & FLAG_Z))
+    if (a != 0x20)
         goto c9847;
+    //     bne c9847
     //     inc l0046
     l0046++;
     // c985c:
@@ -6664,10 +6616,9 @@ loop_c98a2:
     //     iny
     y++;
     //     cpy l0046
-    cmp(&flags, y, l0046);
-    //     bcc c98b2
-    if (!(flags & FLAG_C))
+    if (y < l0046)
         goto c98b2;
+    //     bcc c98b2
     //     ldy #1
     y = 1;
     // c98b2:
@@ -6760,10 +6711,9 @@ loop_c98ec:
     //     iny
     y++;
     //     cpy l0042
-    cmp(&flags, y, l0042);
-    //     bne loop_c98ec
-    if (!(flags & FLAG_Z))
+    if (y != l0042)
         goto loop_c98ec;
+    //     bne loop_c98ec
     // c98f6:
 c98f6:
     //     ldy l0042
@@ -6775,10 +6725,9 @@ c98fa:
     //     lda output_buffer,x
     a = output_buffer[x];
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20);
-    //     bne c9920
-    if (!(flags & FLAG_Z))
+    if (a != 0x20)
         goto c9920;
+    //     bne c9920
     //     lda l0081
     a = l0081;
     set_flags(&flags, a);
@@ -6832,10 +6781,9 @@ c9922:
     //     inx
     x++;
     //     cpx l0043
-    cmp(&flags, x, l0043);
-    //     bne c98fa
-    if (!(flags & FLAG_Z))
+    if (x != l0043)
         goto c98fa;
+    //     bne c98fa
     //     lda #0x10
     a = 0x10;
     // loop_c992c:
@@ -6921,10 +6869,9 @@ loop_caa38:
     if (!(flags & FLAG_Z))
         goto caa46;
     //     cmp tmp4 (6464)
-    cmp(&flags, a, tmp4);
-    //     bcc caa51 (6465)
-    if (!(flags & FLAG_C))
+    if (a < tmp4)
         goto caa51;
+    //     bcc caa51 (6465)
     // caa46: (6466)
 caa46:
     //     clc (6467)
@@ -7062,8 +7009,8 @@ void process_current_document_character(void)
 static void recalculate_cursor_xpos(void)
 {
     // recalculate_cursor_xpos
-    //  Inputs: x, flags
-    //  Outputs: a, y; tmp01
+    //  Inputs: x
+    //  Outputs: a, y, flags:C, flags:Z; tmp01
     // Pseudocode: Recalculates cursor xpos from visual position accounting for
     // tabs and margins
 
@@ -7086,10 +7033,9 @@ static void recalculate_cursor_xpos(void)
     // loop_ca615:
 loop_ca615:
     //     cpy xpos
-    cmp(&flags, y, xpos);
-    //     beq ca63d
-    if (flags & FLAG_Z)
+    if (y == xpos)
         goto ca63d;
+    //     beq ca63d
     //     sta l0039
     l0039 = a;
     //     jsr process_current_document_character
@@ -7152,10 +7098,10 @@ return_64:
 void redraw_editor(void)
 {
     // redraw_editor
-    //  Inputs: flags
+    //  Inputs: -
     //  Temps:  tmp01
     //  Ptrs:   ptr6
-    //  Outputs: a, x, y
+    //  Outputs: a, x, y, flags:C, flags:Z
     // Pseudocode: Main screen update routine: scrolls, redraws lines, updates
     // status and cursor
     uint8_t saved_status_line_needs_redrawing_flag;
@@ -7361,10 +7307,9 @@ loop_ca31f:
     //     inx (5309)
     x++;
     //     cpx screen_height (5310)
-    cmp(&flags, x, screen_maxrow);
-    //     bne loop_ca31f (5311)
-    if (!(flags & FLAG_Z))
+    if (x != screen_maxrow)
         goto loop_ca31f;
+    //     bne loop_ca31f (5311)
     //     dec l003d (5312)
     l003d--;
     //     ldx #0 (5313)
@@ -7456,10 +7401,9 @@ ca360:
     //     sbc #3 (5356)
     a = sbc(&flags, a, 3);
     //     cmp l0072 (5357)
-    cmp(&flags, a, l0072);
-    //     bcs ca395 (5358)
-    if (flags & FLAG_C)
+    if (a >= l0072)
         goto ca395;
+    //     bcs ca395 (5358)
     // ca381: (5359)
 ca381:
     //     lda l0072 (5360)
@@ -7695,7 +7639,7 @@ loop_ca431:
 static void render_char(void)
 {
     // render_char
-    //  Inputs: a, y
+    //  Inputs: a, y, flags:C, flags:Z
     //  Outputs: x
     // ca4e9: Renders character to screen with attribute handling.
     //
@@ -7846,9 +7790,9 @@ extern uint8_t parser_table[];
 void sanitise_area(void)
 {
     // sanitise_area
-    //  Inputs: flags
+    //  Inputs: -
     //  Temps:  tmp67
-    //  Outputs: a, x
+    //  Outputs: a, x, flags:Z
     uint8_t tmp6, tmp7;
     // sanitise_area:
     //     lda area_start_ptr
@@ -8116,8 +8060,8 @@ void sub_c8c5f(void)
 static void sub_c9936(void)
 {
     // sub_c9936
-    //  Inputs: x, y, flags
-    //  Outputs: a
+    //  Inputs: x, y
+    //  Outputs: a, flags:Z
     // Pseudocode: Processes a character from the edit line for output, handling
     // tabs and margins
 
@@ -8129,10 +8073,9 @@ static void sub_c9936(void)
     //     sta output_buffer,y
     output_buffer[y] = a;
     //     cmp #9
-    cmp(&flags, a, 9);
-    //     bne c994a
-    if (!(flags & FLAG_Z))
+    if (a != 9)
         goto c994a;
+    //     bne c994a
     //     jsr sub_ca5ae
     process_document_character();
     //     txa
@@ -8146,10 +8089,9 @@ static void sub_c9936(void)
     // c994a:
 c994a:
     //     cmp #0x0b
-    cmp(&flags, a, 0x0b);
-    //     bne c9969
-    if (!(flags & FLAG_Z))
+    if (a != 0x0b)
         goto c9969;
+    //     bne c9969
     //     lda ruler_left_stop
     a = ruler_left_stop;
     set_flags(&flags, a);
@@ -8163,10 +8105,9 @@ c994a:
     if (flags & FLAG_Z)
         goto c995c;
     //     cpx ruler_left_stop
-    cmp(&flags, x, ruler_left_stop);
-    //     bcc c995c
-    if (!(flags & FLAG_C))
+    if (x < ruler_left_stop)
         goto c995c;
+    //     bcc c995c
     //     inx
     x++;
     //     txa
@@ -8194,10 +8135,9 @@ c9967:
     // c9969:
 c9969:
     //     cmp #0x1b
-    cmp(&flags, a, 0x1b);
-    //     bcc c9967
-    if (!(flags & FLAG_C))
+    if (a < 0x1b)
         goto c9967;
+    //     bcc c9967
     //     cmp #0x20 ; ' '
     cmp(&flags, a, 0x20);
     //     bcc return_49
@@ -8215,7 +8155,7 @@ return_49:
 void sub_c9977(void)
 {
     // sub_c9977
-    //  Inputs: x, flags
+    //  Inputs: x
     //  Outputs: a, y; tmp67
     // PROVISIONAL: Main line formatting routine — reads source line, handles
     // margins, tabs, wrapping. PROVISIONAL: Called from f0_format_block_key
@@ -8365,10 +8305,9 @@ c99c9:
     // compute tab width, PROVISIONAL: subtract 1 (x--) and add to column
     // counter l0039.
     //      cmp #9
-    cmp(&flags, a, 9);
-    //     bne c99e0
-    if (!(flags & FLAG_Z))
+    if (a != 9)
         goto c99e0;
+    //     bne c99e0
     //     jsr sub_ca5ae
     process_document_character();
     //     dex
@@ -8389,10 +8328,9 @@ c99c9:
     // c99e0:
 c99e0:
     //     cmp #0x1a
-    cmp(&flags, a, 0x1a);
-    //     bne c99ee
-    if (!(flags & FLAG_Z))
+    if (a != 0x1a)
         goto c99ee;
+    //     bne c99ee
     // PROVISIONAL: Soft hyphen / break marker (0x1a): if l0046 (word-start
     // flag) is non-zero, PROVISIONAL: skip the marker and continue reading.
     // Otherwise, treat it as a word-break: PROVISIONAL: set l0046 (word-break
@@ -8421,10 +8359,9 @@ c99e4:
     // it.
 c99ee:
     //     cmp #0x0b
-    cmp(&flags, a, 0x0b);
-    //     bne c9a11
-    if (!(flags & FLAG_Z))
+    if (a != 0x0b)
         goto c9a11;
+    //     bne c9a11
     //     ldx input_buffer_offset
     x = input_buffer_offset;
     if (x != 0)
@@ -8446,10 +8383,9 @@ c99ee:
     //     ldx l0039
     x = l0039;
     //     cpx ruler_left_stop
-    cmp(&flags, x, ruler_left_stop);
-    //     bcs c9a0a
-    if (flags & FLAG_C)
+    if (x >= ruler_left_stop)
         goto c9a0a;
+    //     bcs c9a0a
     //     sta l0039
     l0039 = a;
     //     dec l0039
@@ -8471,10 +8407,9 @@ c9a0a:
     // and advance. Otherwise, insert a space at the break.
 c9a11:
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d);
-    //     bne c9a21
-    if (!(flags & FLAG_Z))
+    if (a != 0x0d)
         goto c9a21;
+    //     bne c9a21
     //     dey
     y--;
     set_flags(&flags, y);
@@ -8504,10 +8439,9 @@ c9a21:
     //     ldx #0
     x = 0;
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20);
-    //     bne c9a2e
-    if (!(flags & FLAG_Z))
+    if (a != 0x20)
         goto c9a2e;
+    //     bne c9a2e
     //     inx                                                               ;
     //     X=0x01
     x++;
@@ -8559,10 +8493,9 @@ c9a40:
     if (flags & FLAG_N)
         goto c9a58;
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20);
-    //     beq c9a58
-    if (flags & FLAG_Z)
+    if (a == 0x20)
         goto c9a58;
+    //     beq c9a58
     //     cpy #0x85
     cmp(&flags, y, MAX_LINE_LENGTH + 1);
     //     bcs c9a60
@@ -8577,19 +8510,17 @@ c9a40:
     //     lda l0039
     a = l0039;
     //     cmp input_buffer_offset+1
-    cmp(&flags, a, l0080);
-    //     bcs c9a60
-    if (flags & FLAG_C)
+    if (a >= l0080)
         goto c9a60;
+    //     bcs c9a60
     // PROVISIONAL: Clamp buffer index to max 0x85 (133). Loop back to process
     // next character.
     //  c9a58:
 c9a58:
     //     cpy #0x86
-    cmp(&flags, y, 0x86);
-    //     bcc c9a5d
-    if (!(flags & FLAG_C))
+    if (y < 0x86)
         goto c9a5d;
+    //     bcc c9a5d
     //     dey
     y--;
     // c9a5d:
@@ -8690,8 +8621,8 @@ c9aa5:
 static void sub_c9ac1(void)
 {
     // sub_c9ac1
-    //  Inputs: y, flags
-    //  Outputs: a, x; tmp45, tmp89
+    //  Inputs: y
+    //  Outputs: a, x, flags:C; tmp45, tmp89
     // Pseudocode: Finds next word boundary for line wrapping, returns carry if
     // found
 
@@ -8731,10 +8662,9 @@ c9ad5:
     if (flags & FLAG_Z)
         goto c9b2f;
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d);
-    //     beq c9b2f
-    if (flags & FLAG_Z)
+    if (a == 0x0d)
         goto c9b2f;
+    //     beq c9b2f
     //     tya
     a = y;
     //     bne c9b06
@@ -8763,15 +8693,13 @@ c9aef:
     if (a == 0)
         goto c9b06;
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d);
-    //     beq c9b06
-    if (flags & FLAG_Z)
+    if (a == 0x0d)
         goto c9b06;
+    //     beq c9b06
     //     cmp #9
-    cmp(&flags, a, 9);
-    //     beq c9b2f
-    if (flags & FLAG_Z)
+    if (a == 9)
         goto c9b2f;
+    //     beq c9b2f
     //     cmp #0x0b
     cmp(&flags, a, 0x0b);
     //     bne c9ae9
@@ -8791,10 +8719,9 @@ c9b06:
     //     lda (tmp4),y
     a = ram[tmp45 + y];
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20);
-    //     bne c9b1a
-    if (!(flags & FLAG_Z))
+    if (a != 0x20)
         goto c9b1a;
+    //     bne c9b1a
     //     ldx ruler_left_stop
     x = ruler_left_stop;
     //     beq c9b2f
@@ -8987,7 +8914,7 @@ static void sub_ca536(void)
 {
     // sub_ca536
     //  Inputs: y
-    //  Outputs: a
+    //  Outputs: a, flags:Z
     // Pseudocode: Checks if a position in the edit line corresponds to a marker
 
     // sub_ca536:
@@ -9017,10 +8944,9 @@ ca550:
     //     inx
     x++;
     //     cpx #0x0c
-    cmp(&flags, x, 0x0c);
-    //     bne loop_ca544
-    if (!(flags & FLAG_Z))
+    if (x != 0x0c)
         goto loop_ca544;
+    //     bne loop_ca544
     //     txa
     a = x;
     set_flags(&flags, a);
@@ -9088,10 +9014,9 @@ loop_caabd:
     //     lda (current_line_ptr),y
     a = ram[current_line_ptr + y];
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d);
-    //     beq caac8
-    if (flags & FLAG_Z)
+    if (a == 0x0d)
         goto caac8;
+    //     beq caac8
     //     sta (current_format_line_ptr),y
     ram[current_format_line_ptr + y] = a;
     //     iny
@@ -9197,7 +9122,7 @@ void sub_cac41(void)
 static void sub_cac50(void)
 {
     // sub_cac50
-    //  Inputs: flags
+    //  Inputs: -
     // Pseudocode: Finds the start of current line by scanning backward for CR
 
     // sub_cac50:
@@ -9289,15 +9214,13 @@ loop_caec8:
     //     iny
     y++;
     //     cmp #0x0b
-    cmp(&flags, a, 0x0b);
-    //     beq caed4
-    if (flags & FLAG_Z)
+    if (a == 0x0b)
         goto caed4;
+    //     beq caed4
     //     cpy #0x84
-    cmp(&flags, y, MAX_LINE_LENGTH);
-    //     bcc loop_caec8
-    if (!(flags & FLAG_C))
+    if (y < MAX_LINE_LENGTH)
         goto loop_caec8;
+    //     bcc loop_caec8
     //     rts
     return;
 
@@ -9396,8 +9319,8 @@ void wipe_buffer(void)
 static void write_line_back_to_document(void)
 {
     // write_line_back_to_document
-    //  Inputs: flags
-    //  Outputs: a, x, y; tmp45, tmp67
+    //  Inputs: -
+    //  Outputs: a, x, y, flags:C; tmp45, tmp67
     // sub_ca8b9:
     // write_line_back_to_document:
     //     lda l006e
@@ -9512,10 +9435,9 @@ ca911:
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
     //     cmp #0x10
-    cmp(&flags, a, 0x10);
-    //     bne ca919
-    if (!(flags & FLAG_Z))
+    if (a != 0x10)
         goto ca919;
+    //     bne ca919
     //     lda #0x20 ; ' '
     a = 0x20;
 

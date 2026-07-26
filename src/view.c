@@ -495,7 +495,7 @@ int main(int argc, char* argv[])
 static void sub_c8310(void)
 {
     // sub_c8310
-    //  Inputs: y, flags
+    //  Inputs: y
     //  Outputs: a
     // sub_c8310:
     //     iny
@@ -536,7 +536,7 @@ void sub_c8361(void)
 void sub_c8371(void)
 {
     // sub_c8371
-    //  Inputs: flags
+    //  Inputs: -
     //  Ptrs:   ptr2
     //  Outputs: a, x, y; tmp89
     // sub_c8371:
@@ -573,10 +573,9 @@ c8389:
     //     lda (tmp8),y
     a = ram[tmp89 + y];
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d);
-    //     bne c8390
-    if (!(flags & FLAG_Z))
+    if (a != 0x0d)
         goto c8390;
+    //     bne c8390
     //     inx
     x++;
 c8390:
@@ -613,7 +612,7 @@ static const uint8_t l83e0_table[] = {
 static void expand_escaped_string(void)
 {
     // expand_escaped_string
-    //  Inputs: a, x, y, flags
+    //  Inputs: a, x, y, flags:Z
     // expand_escaped_string:
     //     stx l0083
     l0083 = x;
@@ -627,10 +626,9 @@ c83a3:
     if (flags & FLAG_Z)
         goto c83da;
     //     cmp #0x5e ; '^'
-    cmp(&flags, a, 0x5e);
-    //     bne c83ca
-    if (!(flags & FLAG_Z))
+    if (a != 0x5e)
         goto c83ca;
+    //     bne c83ca
     //     jsr sub_c8310
     sub_c8310();
     //     beq c83da
@@ -655,10 +653,9 @@ loop_c83b8:
         if (a & 0x80)
             goto c83c8;
         //     cmp l0082
-        cmp(&flags, a, l0082);
-        //     bne loop_c83b8
-        if (!(flags & FLAG_Z))
+        if (a != l0082)
             goto loop_c83b8;
+        //     bne loop_c83b8
         //     lda l83e0,x
         a = l83e0_table[idx];
         //     bne c83ca
@@ -701,8 +698,8 @@ c83da:
 void sub_c83f0(void)
 {
     // sub_c83f0
-    //  Inputs: x, flags
-    //  Outputs: a, y
+    //  Inputs: x, flags:Z
+    //  Outputs: a, y, flags:C
     // sub_c83f0:
     //     jsr sub_c8412
     sub_c8412();
@@ -747,7 +744,7 @@ c8410:
 void sub_c8412(void)
 {
     // sub_c8412
-    //  Inputs: flags
+    //  Inputs: -
     //  Outputs: x
     // sub_c8412:
     //     ldx #0
@@ -775,10 +772,10 @@ void sub_c8412(void)
 void read_into_document(void)
 {
     // read_into_document
-    //  Inputs: flags
+    //  Inputs: -
     //  Temps:  tmp01
     //  Ptrs:   ptr5
-    //  Outputs: a, y; tmp45, tmp67
+    //  Outputs: a, y, flags:C, flags:Z; tmp45, tmp67
     // 1: - shared entry point used by both load_cmd and read_cmd
 
     //     jsr check_for_at_least_150_bytes_free
@@ -851,7 +848,7 @@ c8598:
 void sub_c8a4f(void)
 {
     // sub_c8a4f
-    //  Inputs: flags
+    //  Inputs: -
     //  Ptrs:   ptr2
     //  Outputs: a, x, y; tmp45, tmp67
     // sub_c8a4f:
@@ -873,17 +870,15 @@ c8a5b:
     //     lda header_text_maybe,x
     a = header_text_maybe[x];
     //     cmp #1
-    cmp(&flags, a, 1);
-    //     bne c8a6c
-    if (!(flags & FLAG_Z))
+    if (a != 1)
         goto c8a6c;
+    //     bne c8a6c
     //     lda l0081
     a = l0081;
     //     cmp l0049
-    cmp(&flags, a, l0049);
-    //     bcs c8a86
-    if (flags & FLAG_C)
+    if (a >= l0049)
         goto c8a86;
+    //     bcs c8a86
     //     inc l0081
     l0081++;
     if (l0081 != 0)
@@ -892,15 +887,13 @@ c8a5b:
 c8a6c:
     // c8a6c:
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20);
+    if (a != 0x20)
+        goto c8a84;
     //     bne c8a84
-    if (!(flags & FLAG_Z))
-        goto c8a84;
     //     cpy l0048
-    cmp(&flags, y, l0048);
-    //     bcs c8a84
-    if (flags & FLAG_C)
+    if (y >= l0048)
         goto c8a84;
+    //     bcs c8a84
 loop_c8a74:
     // loop_c8a74:
     //     lda output_buffer,y
@@ -920,10 +913,9 @@ loop_c8a74:
     //     inc l0082
     l0082++;
     //     cpy l0048
-    cmp(&flags, y, l0048);
-    //     bcc loop_c8a74
-    if (!(flags & FLAG_C))
+    if (y < l0048)
         goto loop_c8a74;
+    //     bcc loop_c8a74
     //     dec l0082
     l0082--;
 c8a84:
@@ -964,10 +956,9 @@ c8a87:
         goto c8aa3;
     //     bne c8aa3
     //     cpx input_buffer_offset+1
-    cmp(&flags, x, l0080);
-    //     bcc c8aa3
-    if (!(flags & FLAG_C))
+    if (x < l0080)
         goto c8aa3;
+    //     bcc c8aa3
     //     ldx input_buffer_offset+1
     x = l0080;
 c8aa3:
@@ -1139,17 +1130,15 @@ c8b1f:
     //     stx l0084
     l0084 = x;
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20);
-    //     bne c8b38
-    if (!(flags & FLAG_Z))
+    if (a != 0x20)
         goto c8b38;
+    //     bne c8b38
     //     ldy input_buffer_offset+1
     y = l0080;
     //     cpy l0048
-    cmp(&flags, y, l0048);
-    //     bcs c8b47
-    if (flags & FLAG_C)
+    if (y >= l0048)
         goto c8b47;
+    //     bcs c8b47
     //     inc input_buffer_offset+1
     l0080++;
     //     lda output_buffer,y
@@ -1165,17 +1154,15 @@ c8b1f:
 c8b38:
     // c8b38:
     //     cmp #1
-    cmp(&flags, a, 1);
-    //     bne c8b47
-    if (!(flags & FLAG_Z))
+    if (a != 1)
         goto c8b47;
+    //     bne c8b47
     //     ldy l0082
     y = l0082;
     //     cpy l0049
-    cmp(&flags, y, l0049);
-    //     bcs c8b6a
-    if (flags & FLAG_C)
+    if (y >= l0049)
         goto c8b6a;
+    //     bcs c8b6a
     //     lda output_buffer,y
     a = output_buffer[y];
     //     inc l0082
@@ -1239,10 +1226,9 @@ c8b6a:
 c8b6b:
     // c8b6b:
     //     cpx l004a
-    cmp(&flags, x, l004a);
-    //     bcc c8b1f
-    if (!(flags & FLAG_C))
+    if (x < l004a)
         goto c8b1f;
+    //     bcc c8b1f
     //     lda ptr2
     a = (uint8_t)(ptr2 & 0xff);
     //     ldy ptr2+1
@@ -1263,7 +1249,7 @@ void sub_c8c7c(void)
 void read_next_chunk_from_input_file(void)
 {
     // read_next_chunk_from_input_file
-    //  Inputs: flags
+    //  Inputs: flags:C, flags:Z
     //  Temps:  tmp01
     //  Outputs: a, x, y
     // read_next_chunk_from_input_file:
@@ -1313,7 +1299,7 @@ void read_first_chunk_from_input_file(void)
 void write_area_to_file(void)
 {
     // write_area_to_file
-    //  Inputs: flags
+    //  Inputs: -
     //  Outputs: a, y; tmp89
     // Pseudocode: Writes document area range to output file byte by byte
 
@@ -1374,9 +1360,9 @@ void write_area_to_file(void)
 static void compute_space_common(void)
 {
     // compute_space_common
-    //  Inputs: a, x, y, flags
+    //  Inputs: a, x, y
     //  Temps:  tmp89
-    //  Outputs: tmp01, tmp67; ptr5
+    //  Outputs: tmp01, tmp67, flags:C; ptr5
     // c8daf:
     //     sta tmp0
     tmp01 = (addr_t)(y) << 8 | a;
@@ -1491,7 +1477,7 @@ static void sub_c8e2d(void)
 void check_continuous_editing(void)
 {
     // check_continuous_editing
-    //  Inputs: a, flags
+    //  Inputs: a
     // Pseudocode: Verifies continuous editing is active, shows file state if
     // not
 

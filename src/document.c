@@ -45,9 +45,9 @@ return_63:
 void compute_bytes_free(void)
 {
     // compute_bytes_free
-    //  Inputs: flags
+    //  Inputs: -
     //  Temps:  tmp01
-    //  Outputs: a, x, y
+    //  Outputs: a, x, y, flags:C
     // Pseudocode: Computes number of free bytes between top and himem
 
     // ;
@@ -107,8 +107,8 @@ uint8_t deref_and_check_for_command_prefix(void)
 void display_document_file_state(void)
 {
     // display_document_file_state
-    //  Inputs: flags
-    //  Outputs: a, y
+    //  Inputs: -
+    //  Outputs: a, y, flags:Z
     // display_document_file_state:
     //     jsr stop_printing
     stop_printing();
@@ -184,8 +184,8 @@ c8a21:
 void find_margins_of_current_ruler_buffer(void)
 {
     // find_margins_of_current_ruler_buffer
-    //  Inputs: y, flags
-    //  Outputs: a
+    //  Inputs: y
+    //  Outputs: a, flags:Z
     // Pseudocode: Finds left (>) and right (<) margin stops in the current
     // ruler buffer
 
@@ -276,7 +276,7 @@ c9468:
 void print_char_just_to_screen(void)
 {
     // print_char_just_to_screen
-    //  Inputs: a, flags
+    //  Inputs: a, flags:C, flags:Z
     // print_char_just_to_printer:
     //     bit print_flags
     //     bpl c9472
@@ -325,8 +325,8 @@ c9488:
 void process_document_character(void)
 {
     // process_document_character
-    //  Inputs: a, y, flags
-    //  Outputs: x
+    //  Inputs: a, y
+    //  Outputs: x, flags:C
     // sub_ca5ae:
     //     cmp #9
     cmp(&flags, a, 9);
@@ -448,8 +448,8 @@ ca5fa:
 void read_char(void)
 {
 // read_char
-//  Inputs: flags
-//  Outputs: a, x
+//  Inputs: -
+//  Outputs: a, x, flags:C
 // Pseudocode: Reads a character from keyboard via SCREEN, returning escape
 // flag in carry flush_and_read_char / read_char (same entry point)
 read_char:
@@ -489,8 +489,8 @@ void return_to_cli_prompt(void)
 void stop_printing(void)
 {
     // stop_printing
-    //  Inputs: flags
-    //  Outputs: a
+    //  Inputs: -
+    //  Outputs: a, flags:C
     // Pseudocode: Stops active printing by clearing print flags and calling
     // printer driver cleanup
 
@@ -588,7 +588,7 @@ void sub_cabc4(void)
 void sub_cadf0(void)
 {
     // sub_cadf0
-    //  Inputs: flags
+    //  Inputs: -
     //  Temps:  tmp89
     //  Outputs: a, x
     // sub_cadf0: Performs 8-bit by 8-bit division for microspacing
@@ -625,7 +625,7 @@ cadff:
 void cab91(void)
 {
     // cab91
-    //  Inputs: y, flags
+    //  Inputs: y
     //  Outputs: a
 
     // Pseudocode: Sets current_ruler_ptr from stack at ruler_index_ptr offset
@@ -662,8 +662,8 @@ void cab91(void)
 void cb05a(void)
 {
     // cb05a
-    //  Inputs: flags
-    //  Outputs: a, y
+    //  Inputs: -
+    //  Outputs: a, y, flags:Z
     // cb05a: Ensures at least one CR at top of document
 
     //     ldy page+1
@@ -718,8 +718,8 @@ void close_file(void)
 void create_default_ruler(void)
 {
     // create_default_ruler
-    //  Inputs: a, y, flags
-    //  Outputs: x; tmp01
+    //  Inputs: a, y
+    //  Outputs: x, flags:Z; tmp01
     // Pseudocode: Creates a default ruler with tab stops every 6 columns
 
     // ;
@@ -804,8 +804,8 @@ void get_byte_from_file(void)
 void get_register_address(void)
 {
     // get_register_address
-    //  Inputs: a, flags
-    //  Outputs: tmp67
+    //  Inputs: a
+    //  Outputs: tmp67, flags:C
     // get_register_address: Gets address of a register value by letter name
 
     //     jsr is_uppercase
@@ -854,7 +854,7 @@ void get_register_address(void)
 void initialise_document(void)
 {
     // initialise_document
-    //  Inputs: flags
+    //  Inputs: -
     //  Temps:  tmp01
     //  Outputs: a, y; tmp89; ptr1
     // initialise_document:
@@ -987,8 +987,8 @@ void initialise_document(void)
 void lookup_marker(void)
 {
     // lookup_marker
-    //  Inputs: flags
-    //  Outputs: a
+    //  Inputs: -
+    //  Outputs: a, flags:C
     // lookup_marker: Converts marker character '1'-'6' to index
 
     //     sec
@@ -1021,9 +1021,9 @@ void lookup_marker(void)
 void move_cursor_to_address(void)
 {
     // move_cursor_to_address
-    //  Inputs: a, y, flags
+    //  Inputs: a, y
     //  Temps:  tmp01
-    //  Outputs: x; tmp89
+    //  Outputs: x, flags:C, flags:Z; tmp89
     // move_cursor_to_address:
     //     sta tmp8
     tmp89 = (addr_t)(y) << 8 | a;
@@ -1211,9 +1211,9 @@ void move_cursor_to_top_of_document(void)
 void move_tmp01_to_next_line(void)
 {
     // move_tmp01_to_next_line
-    //  Inputs: flags
+    //  Inputs: -
     //  Temps:  tmp01
-    //  Outputs: a, y
+    //  Outputs: a, y, flags:Z
     // Pseudocode: Skips to next CR or zero terminator in memory
 
     // cab29:
@@ -1246,8 +1246,8 @@ return_70:
 void move_tmp01_to_previous_line(void)
 {
     // move_tmp01_to_previous_line
-    //  Inputs: y, flags
-    //  Outputs: a; tmp01
+    //  Inputs: y
+    //  Outputs: a, flags:C; tmp01
     // sub_cab37:
     //     sec
     flags |= FLAG_C;

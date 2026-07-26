@@ -162,7 +162,7 @@ void execute_cli_command(void)
 static void change_cmd(void)
 {
     // change_cmd
-    //  Inputs: flags
+    //  Inputs: flags:C, flags:Z
     //  Outputs: a, x, y; ptr3
     // Pseudocode: Replaces all occurrences of search string in document area,
     // reports change count
@@ -319,7 +319,7 @@ static void cmd_err_no_target(void)
 static void count_cmd(void)
 {
     // count_cmd
-    //  Inputs: flags
+    //  Inputs: -
     //  Outputs: a, x, y; tmp01, tmp89
     // Pseudocode: Counts words in document area handling command prefixes and
     // punctuation
@@ -446,15 +446,13 @@ c86ea:
     if (flags & FLAG_N)
         goto c870d;
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d);
-    //     beq c8703
-    if (flags & FLAG_Z)
+    if (a == 0x0d)
         goto c8703;
+    //     beq c8703
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20);
-    //     beq c8703
-    if (flags & FLAG_Z)
+    if (a == 0x20)
         goto c8703;
+    //     beq c8703
     // c86ff:
 c86ff:
     //     inc l0083
@@ -482,10 +480,9 @@ c870d:
     //     stx l0083
     l0083 = x;
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d);
-    //     bne c8715
-    if (!(flags & FLAG_Z))
+    if (a != 0x0d)
         goto c8715;
+    //     bne c8715
     //     stx l0082
     l0082 = x;
     // c8715:
@@ -544,7 +541,7 @@ c871f:
 static void edit_cmd(void)
 {
     // edit_cmd
-    //  Inputs: flags
+    //  Inputs: flags:Z
     //  Outputs: a, x
     check_not_continuous_editing();
     parse_filename_from_command();
@@ -576,7 +573,7 @@ static void edit_cmd(void)
 static void field_cmd(void)
 {
     // field_cmd
-    //  Inputs: flags
+    //  Inputs: flags:Z
     //  Temps:  tmp89
     //  Outputs: a
     // Pseudocode: Sets the tab key field width from parsed integer argument
@@ -595,10 +592,9 @@ static void field_cmd(void)
     //     lda tmp8
     a = tmp8;
     //     cmp #0x1b
-    cmp(&flags, a, 0x1b);
-    //     bne c8699
-    if (!(flags & FLAG_Z))
+    if (a != 0x1b)
         goto c8699;
+    //     bne c8699
     //     jsr print_inline_string
     //     .ascii "Frump!"
     //     .byte 0xff
@@ -620,7 +616,7 @@ c869b:
 static void finish_cmd(void)
 {
     // finish_cmd
-    //  Inputs: flags
+    //  Inputs: flags:Z
     //  Outputs: a, x
     // Pseudocode: Writes remaining document content to output file in chunks
 
@@ -682,7 +678,7 @@ loop_c84ee:
 static void fold_cmd(void)
 {
     // fold_cmd
-    //  Inputs: y, flags
+    //  Inputs: y
     //  Outputs: a
     // Pseudocode: Toggles folding on/off and displays current folding status
 
@@ -871,7 +867,7 @@ static void load_cmd(void)
 static void microspace_cmd(void)
 {
     // microspace_cmd
-    //  Inputs: flags
+    //  Inputs: -
     //  Temps:  tmp89
     //  Outputs: a, x, y
     // Pseudocode: Configures microspacing by querying printer driver
@@ -946,7 +942,7 @@ static void mode_cmd(void)
 static void more_cmd(void)
 {
     // more_cmd
-    //  Inputs: flags
+    //  Inputs: flags:Z
     //  Outputs: a, x, y
     // Pseudocode: Appends more text from input file into document at current
     // cursor position
@@ -1030,7 +1026,7 @@ c84e8:
 static void name_cmd(void)
 {
     // name_cmd
-    //  Inputs: flags
+    //  Inputs: flags:Z
     //  Outputs: a
     // Pseudocode: Sets document name from optional filename argument
 
@@ -1190,7 +1186,7 @@ static void read_cmd(void)
 static void replace_cmd(void)
 {
     // replace_cmd
-    //  Inputs: a, flags
+    //  Inputs: a, flags:C, flags:Z
     //  Outputs: x, y
     // Pseudocode: Interactive search and replace prompting for each match
     // (Y)es/(O)K/(N)o
@@ -1238,18 +1234,16 @@ c832d:
     //     ldx #0
     x = 0;
     //     cmp #0x59 ; 'Y'
-    cmp(&flags, a, 0x59);
-    //     beq c8349
-    if (flags & FLAG_Z)
+    if (a == 0x59)
         goto c8349;
+    //     beq c8349
     //     dex                                                               ;
     //     X=0xff
     x--;
     //     cmp #0x4f ; 'O'
-    cmp(&flags, a, 0x4f);
-    //     bne c8356
-    if (!(flags & FLAG_Z))
+    if (a != 0x4f)
         goto c8356;
+    //     bne c8356
     // c8349:
 c8349:
     //     stx print_xpos
@@ -1283,7 +1277,7 @@ c8356:
 static void save_cmd_write_cmd(void)
 {
     // save_cmd_write_cmd
-    //  Inputs: a, flags
+    //  Inputs: a
     //  Outputs: x
     // Pseudocode: Saves document area to output file with optional filename
 
@@ -1365,7 +1359,7 @@ static void screen_cmd(void)
 static void search_cmd(void)
 {
     // search_cmd
-    //  Inputs: flags
+    //  Inputs: flags:Z
     // Pseudocode: Searches for target string, reports position if found
 
     // ;
@@ -1413,7 +1407,7 @@ static void search_cmd(void)
 static void setup_cmd(void)
 {
     // setup_cmd
-    //  Inputs: a, flags
+    //  Inputs: a
     //  Outputs: x, y; tmp67, tmp89
     // Pseudocode: Parses flag letters and sets format_mode_flag,
     // justifying_flag, insert_mode_flag
@@ -1618,7 +1612,7 @@ static void parse_command(void);
 void input_line_not_escaped(void)
 {
     // input_line_not_escaped
-    //  Inputs: y, flags
+    //  Inputs: y, flags:C
     // input_line_not_escaped: Parses command input and dispatches through CLI
     // jump table
 
@@ -1630,10 +1624,9 @@ void input_line_not_escaped(void)
     if (flags & FLAG_C)
         goto c8263;
     //     cpy #(jumptable4_cli_end-jumptable4_cli)/2
-    cmp(&flags, y, 48);
-    //     bcc c826e
-    if (!(flags & FLAG_C))
+    if (y < 48)
         goto c826e;
+    //     bcc c826e
     // c8263:
 c8263:
     //     jsr print_inline_string ; .ascii "Mistake\n"
@@ -1690,7 +1683,7 @@ void cli_handler_impl(void)
 void run_cli(void)
 {
     // run_cli
-    //  Inputs: a, flags
+    //  Inputs: a
     //  Outputs: x, y
     screen_leave();
     // run_cli:
@@ -1869,8 +1862,8 @@ c81f3:
 static void parse_command(void)
 {
     // parse_command
-    //  Inputs: flags
-    //  Outputs: a, x, y
+    //  Inputs: -
+    //  Outputs: a, x, y, flags:C
     //     .ascii "VIEW"
     //     .byte 0
     //     .ascii "B3.0 for CP/M-65"
@@ -1922,10 +1915,9 @@ loop_ca851:
     //     and #0xdf
     a &= 0xdf;
     //     cmp l0084
-    cmp(&flags, a, l0084);
-    //     beq loop_ca851
-    if (flags & FLAG_Z)
+    if (a == l0084)
         goto loop_ca851;
+    //     beq loop_ca851
     // loop_ca86a:
 loop_ca86a:
     //     inx
@@ -1950,19 +1942,17 @@ loop_ca86a:
     //     lda (tmp0),y
     a = input_buffer[y];
     //     cmp #0x30 ; '0'
-    cmp(&flags, a, 0x30);
-    //     bcs ca84c
-    if (flags & FLAG_C)
+    if (a >= 0x30)
         goto ca84c;
+    //     bcs ca84c
     // ca87e:
 ca87e:
     //     lda (tmp0),y
     a = input_buffer[y];
     //     cmp #0x30 ; '0'
-    cmp(&flags, a, 0x30);
-    //     bcs ca887
-    if (flags & FLAG_C)
+    if (a >= 0x30)
         goto ca887;
+    //     bcs ca887
     //     sta l007e
     l007e = a;
     //     iny
@@ -2110,10 +2100,9 @@ loop_c88fa:
     //     inx
     x++;
     //     cmp #0x21
-    cmp(&flags, a, 0x21);
-    //     bge loop_c88fa
-    if (flags & FLAG_C)
+    if (a >= 0x21)
         goto loop_c88fa;
+    //     bge loop_c88fa
     // return_9:
 return_9:
     //     lda #0x0d
@@ -2155,7 +2144,7 @@ zbreak:
 void parse_mark_from_command(void)
 {
     // parse_mark_from_command
-    //  Inputs: y, flags
+    //  Inputs: y, flags:C
     // parse_mark_from_command:
     //     jsr sub_c8e33
     sub_c8e33();
