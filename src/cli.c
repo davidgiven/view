@@ -64,17 +64,17 @@ void execute_cli_command(void)
     //     asl
     //     clc
     //     adc jumptable_ptrs,y
-    //     sta tmp8
+    //     sta ((uint8_t*)&tmp89)[0]
     //     lda #0
     //     adc jumptable_ptrs+1,y
-    //     sta tmp9
+    //     sta ((uint8_t*)&tmp89)[1]
     //     ldy #0
-    //     lda (tmp8),y
-    //     sta tmp6
+    //     lda (((uint8_t*)&tmp89)[0]),y
+    //     sta ((uint8_t*)&tmp67)[0]
     //     iny
-    //     lda (tmp8),y
-    //     sta tmp7
-    //     jmp (tmp6)
+    //     lda (((uint8_t*)&tmp89)[0]),y
+    //     sta ((uint8_t*)&tmp67)[1]
+    //     jmp (((uint8_t*)&tmp67)[0])
     switch (a)
     {
         case 0:
@@ -335,18 +335,18 @@ static void count_cmd(void)
     }
     //     lda area_start_ptr
     a = (uint8_t)(area_start_ptr & 0xff);
-    //     sta tmp0
-    tmp0 = a;
+    //     sta ((uint8_t*)&tmp01)[0]
+    ((uint8_t*)&tmp01)[0] = a;
     //     lda area_start_ptr+1
     a = (uint8_t)((area_start_ptr >> 8) & 0xff);
-    //     sta tmp1
-    tmp1 = a;
+    //     sta ((uint8_t*)&tmp01)[1]
+    ((uint8_t*)&tmp01)[1] = a;
     //     lda #0
     a = 0;
-    //     sta tmp8
-    tmp8 = a;
-    //     sta tmp9
-    tmp9 = a;
+    //     sta ((uint8_t*)&tmp89)[0]
+    ((uint8_t*)&tmp89)[0] = a;
+    //     sta ((uint8_t*)&tmp89)[1]
+    ((uint8_t*)&tmp89)[1] = a;
     //     sta l0083
     l0083 = a;
     //     sta l0082
@@ -366,7 +366,7 @@ c86b8:
     y++;
     // loop_c86c2:
 loop_c86c2:
-    //     lda (tmp0),y
+    //     lda (((uint8_t*)&tmp01)[0]),y
     a = ram[tmp01 + y];
     //     iny
     y++;
@@ -375,7 +375,7 @@ loop_c86c2:
     //     bne c86d1
     if (!(flags & FLAG_Z))
         goto c86d1;
-    //     lda (tmp0),y
+    //     lda (((uint8_t*)&tmp01)[0]),y
     a = ram[tmp01 + y];
     //     cmp l8748,x
     cmp(&flags, a, l8747_data[x + 1]);
@@ -409,14 +409,14 @@ c86db:
 
     // c86df:
 c86df:
-    //     lda tmp0
-    a = tmp0;
+    //     lda ((uint8_t*)&tmp01)[0]
+    a = ((uint8_t*)&tmp01)[0];
     //     clc
     flags &= ~FLAG_C;
     //     adc #3
     a = adc(&flags, a, 3);
-    //     sta tmp0
-    tmp0 = a;
+    //     sta ((uint8_t*)&tmp01)[0]
+    ((uint8_t*)&tmp01)[0] = a;
     //     bcs c871d
     if (flags & FLAG_C)
         goto c871d;
@@ -463,10 +463,10 @@ c8703:
     //     beq c870d
     if (flags & FLAG_Z)
         goto c870d;
-    //     inc tmp8
+    //     inc ((uint8_t*)&tmp89)[0]
     tmp89++;
     //     bne c870d
-    //     inc tmp9
+    //     inc ((uint8_t*)&tmp89)[1]
     // c870d:
 c870d:
     //     stx l0083
@@ -483,35 +483,35 @@ c8715:
     a |= l0082;
     //     sta l0082
     l0082 = a;
-    //     inc tmp0
-    tmp0++;
-    if (tmp0 != 0)
+    //     inc ((uint8_t*)&tmp01)[0]
+    ((uint8_t*)&tmp01)[0]++;
+    if (((uint8_t*)&tmp01)[0] != 0)
         goto c871f;
     //     bne c871f
     // c871d:
 c871d:
-    //     inc tmp1
-    tmp1++;
+    //     inc ((uint8_t*)&tmp01)[1]
+    ((uint8_t*)&tmp01)[1]++;
     // c871f:
 c871f:
-    //     ldy tmp1
-    y = tmp1;
+    //     ldy ((uint8_t*)&tmp01)[1]
+    y = ((uint8_t*)&tmp01)[1];
     //     cpy area_end_ptr+1
     cmp(&flags, y, (uint8_t)(area_end_ptr >> 8));
     //     bne c86b8
     if (!(flags & FLAG_Z))
         goto c86b8;
-    //     ldy tmp0
-    y = tmp0;
+    //     ldy ((uint8_t*)&tmp01)[0]
+    y = ((uint8_t*)&tmp01)[0];
     //     cpy area_end_ptr
     cmp(&flags, y, (uint8_t)(area_end_ptr & 0xff));
     //     bne c86b8
     if (!(flags & FLAG_Z))
         goto c86b8;
-    //     ldx tmp8
-    x = tmp8;
-    //     ldy tmp9
-    y = tmp9;
+    //     ldx ((uint8_t*)&tmp89)[0]
+    x = ((uint8_t*)&tmp89)[0];
+    //     ldy ((uint8_t*)&tmp89)[1]
+    y = ((uint8_t*)&tmp89)[1];
     //     jsr render_number_to_screen
     render_number_to_screen();
     //     jsr print_inline_string
@@ -576,8 +576,8 @@ static void field_cmd(void)
         return_to_cli_prompt();
         return;
     }
-    //     lda tmp8
-    a = tmp8;
+    //     lda ((uint8_t*)&tmp89)[0]
+    a = ((uint8_t*)&tmp89)[0];
     //     cmp #0x1b
     if (a != 0x1b)
         goto c8699;
@@ -833,9 +833,9 @@ static void load_cmd(void)
     reset_area_to_entire_document();
     //     jsr 1f
     read_into_document();
-    top = (addr_t)((uint16_t)tmp1 << 8) |
-          tmp0; // WORKAROUND: adjust_pointers adds stale bytes from end of
-                // ram[]; fix top
+    top = (addr_t)((uint16_t)((uint8_t*)&tmp01)[1] << 8) |
+          ((uint8_t*)&tmp01)[0]; // WORKAROUND: adjust_pointers adds stale bytes
+                                 // from end of ram[]; fix top
     //     jsr reset_document_name_after_load
     reset_document_name_after_load();
     //     jsr clear_cmd
@@ -865,8 +865,8 @@ static void microspace_cmd(void)
     //     beq c8608
     if (flags & FLAG_Z)
         goto c8608;
-    //     ldx tmp8
-    x = tmp8;
+    //     ldx ((uint8_t*)&tmp89)[0]
+    x = ((uint8_t*)&tmp89)[0];
     //     beq return_7
     if (x == 0)
         return;
@@ -1383,18 +1383,18 @@ static void setup_cmd(void)
     //     ldx #1
     uint8_t x;
     x = 1;
-    //     stx tmp6
-    tmp6 = x;
+    //     stx ((uint8_t*)&tmp67)[0]
+    ((uint8_t*)&tmp67)[0] = x;
     //     dex                                                               ;
     //     X=0x00
     x--;
-    //     stx tmp8
-    tmp8 = x;
+    //     stx ((uint8_t*)&tmp89)[0]
+    ((uint8_t*)&tmp89)[0] = x;
     //     dex                                                               ;
     //     X=0xff
     x--;
-    //     stx tmp7
-    tmp7 = x;
+    //     stx ((uint8_t*)&tmp67)[1]
+    ((uint8_t*)&tmp67)[1] = x;
     // c8649:
 c8649:
     //     jsr sub_c8e33
@@ -1431,13 +1431,13 @@ loop_c8652:
 c8669:
     //     lda c8681,x
     a = ((const uint8_t[]){0x00, 0x00, 0xff})[x];
-    //     sta tmp6,x
+    //     sta ((uint8_t*)&tmp67)[0],x
     if (x == 0)
-        tmp6 = a;
+        ((uint8_t*)&tmp67)[0] = a;
     else if (x == 1)
-        tmp7 = a;
+        ((uint8_t*)&tmp67)[1] = a;
     else
-        tmp8 = a;
+        ((uint8_t*)&tmp89)[0] = a;
     //     inc input_buffer_offset
     input_buffer_offset++;
     if (input_buffer_offset != 0)
@@ -1449,13 +1449,13 @@ c8672:
     x = 2;
     // loop_c8674:
 loop_c8674:
-    //     lda tmp6,x
+    //     lda ((uint8_t*)&tmp67)[0],x
     if (x == 0)
-        a = tmp6;
+        a = ((uint8_t*)&tmp67)[0];
     else if (x == 1)
-        a = tmp7;
+        a = ((uint8_t*)&tmp67)[1];
     else
-        a = tmp8;
+        a = ((uint8_t*)&tmp89)[0];
     //     sta format_mode_flag,x
     if (x == 0)
         format_mode_flag = a;
@@ -1628,11 +1628,11 @@ void cli_handler_impl(void)
     //     jsr readline
     readline();
     //     lda #<input_buffer
-    //     sta tmp0
+    //     sta ((uint8_t*)&tmp01)[0]
     //     ldx #>input_buffer
-    //     stx tmp1
-    // (tmp0/tmp1 no longer used as a pointer; parse_command reads
-    // input_buffer[] directly)
+    //     stx ((uint8_t*)&tmp01)[1]
+    // (((uint8_t*)&tmp01)[0]/((uint8_t*)&tmp01)[1] no longer used as a pointer;
+    // parse_command reads input_buffer[] directly)
     //     bcc input_line_not_escaped
     if (!(flags & FLAG_C))
     {
@@ -1854,7 +1854,7 @@ loop_ca851:
     x++;
     //     iny
     y++;
-    //     lda (tmp0),y
+    //     lda (((uint8_t*)&tmp01)[0]),y
     a = input_buffer[y];
     //     and #0xdf
     a &= 0xdf;
@@ -1900,7 +1900,7 @@ loop_ca86a:
     //     beq ca84c
     if (flags & FLAG_Z)
         goto ca84c;
-    //     lda (tmp0),y
+    //     lda (((uint8_t*)&tmp01)[0]),y
     a = input_buffer[y];
     //     cmp #0x30 ; '0'
     if (a >= 0x30)
@@ -1908,7 +1908,7 @@ loop_ca86a:
     //     bcs ca84c
     // ca87e:
 ca87e:
-    //     lda (tmp0),y
+    //     lda (((uint8_t*)&tmp01)[0]),y
     a = input_buffer[y];
     //     cmp #0x30 ; '0'
     if (a >= 0x30)

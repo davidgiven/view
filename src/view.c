@@ -534,26 +534,26 @@ void sub_c8371(void)
     //     lda ptr2
     uint8_t a;
     a = (uint8_t)(ptr2 & 0xff);
-    //     sta tmp8
-    tmp8 = a;
+    //     sta ((uint8_t*)&tmp89)[0]
+    ((uint8_t*)&tmp89)[0] = a;
     //     lda ptr2+1
     a = (uint8_t)(ptr2 >> 8);
-    //     sta tmp9
-    tmp9 = a;
+    //     sta ((uint8_t*)&tmp89)[1]
+    ((uint8_t*)&tmp89)[1] = a;
     //     ldy #0
     uint8_t y = 0;
     //     ldx #0
     x = 0;
     // c837d:
-    //     lda tmp9
-    a = tmp9;
+    //     lda ((uint8_t*)&tmp89)[1]
+    a = ((uint8_t*)&tmp89)[1];
     //     cmp doc_ptr2+1
     cmp(&flags, a, (uint8_t)(doc_ptr2 >> 8));
     //     bne c8389
     if (!(flags & FLAG_Z))
         goto c8389;
-    //     lda tmp8
-    a = tmp8;
+    //     lda ((uint8_t*)&tmp89)[0]
+    a = ((uint8_t*)&tmp89)[0];
     //     cmp doc_ptr2+0
     cmp(&flags, a, (uint8_t)(doc_ptr2 & 0xff));
     //     beq c8398
@@ -561,7 +561,7 @@ void sub_c8371(void)
         goto c8398;
 c8389:
     // c8389:
-    //     lda (tmp8),y
+    //     lda (((uint8_t*)&tmp89)[0]),y
     a = ram[tmp89 + y];
     //     cmp #0x0d
     if (a != 0x0d)
@@ -571,10 +571,10 @@ c8389:
     x++;
 c8390:
     // c8390:
-    //     inc tmp8
+    //     inc ((uint8_t*)&tmp89)[0]
     tmp89++;
     //     bne c837d
-    //     inc tmp9
+    //     inc ((uint8_t*)&tmp89)[1]
     //     bne c837d
 c8398:
     // c8398:
@@ -775,14 +775,14 @@ void read_into_document(void)
     a = (uint8_t)(area_start_ptr & 0xff);
     //     ldy area_start_ptr+1
     y = (uint8_t)((area_start_ptr >> 8) & 0xff);
-    //     sta tmp4
+    //     sta ((uint8_t*)&tmp45)[0]
     tmp45 = (addr_t)(y) << 8 | a;
     //     jsr move_cursor_to_address
     move_cursor_to_address();
-    //     lda tmp4
-    a = tmp4;
-    //     ldy tmp5
-    y = tmp5;
+    //     lda ((uint8_t*)&tmp45)[0]
+    a = ((uint8_t*)&tmp45)[0];
+    //     ldy ((uint8_t*)&tmp45)[1]
+    y = ((uint8_t*)&tmp45)[1];
     //     jsr compute_required_space_for_insertion
     compute_required_space_for_insertion();
     //     jsr make_space_for_insertion
@@ -804,22 +804,22 @@ c8584:
     cli_putstring("Not all read in\n");
     // c8598:
 c8598:
-    //     lda tmp0
+    //     lda ((uint8_t*)&tmp01)[0]
     tmp45 = tmp01;
     //     lda ptr5
     a = (uint8_t)(ptr5 & 0xff);
     //     sec
     flags |= FLAG_C;
-    //     sbc tmp0
-    a = sbc(&flags, a, (uint8_t)(tmp0 & 0xff));
-    //     sta tmp6
-    tmp6 = a;
+    //     sbc ((uint8_t*)&tmp01)[0]
+    a = sbc(&flags, a, (uint8_t)(((uint8_t*)&tmp01)[0] & 0xff));
+    //     sta ((uint8_t*)&tmp67)[0]
+    ((uint8_t*)&tmp67)[0] = a;
     //     lda ptr5+1
     a = (uint8_t)((ptr5 >> 8) & 0xff);
-    //     sbc tmp1
-    a = sbc(&flags, a, (uint8_t)(tmp1 & 0xff));
-    //     sta tmp7
-    tmp7 = a;
+    //     sbc ((uint8_t*)&tmp01)[1]
+    a = sbc(&flags, a, (uint8_t)(((uint8_t*)&tmp01)[1] & 0xff));
+    //     sta ((uint8_t*)&tmp67)[1]
+    ((uint8_t*)&tmp67)[1] = a;
     //     jsr adjust_pointers
     adjust_pointers();
 }
@@ -942,15 +942,17 @@ c8aa3:
     //     txa
     a = x;
     set_flags(&flags, x);
-    //     clc; adc ptr2; sta tmp4; lda ptr2+1; adc #0; sta tmp5
+    //     clc; adc ptr2; sta ((uint8_t*)&tmp45)[0]; lda ptr2+1; adc #0; sta
+    //     ((uint8_t*)&tmp45)[1]
     tmp45 = ptr2 + x;
     //     lda l0082
     a = l0082;
-    //     sec; sbc input_buffer_offset+1; sta tmp6; lda #0; sbc l0081; sta tmp7
+    //     sec; sbc input_buffer_offset+1; sta ((uint8_t*)&tmp67)[0]; lda #0;
+    //     sbc l0081; sta ((uint8_t*)&tmp67)[1]
     {
         uint16_t sub = (uint16_t)l0082 - ((uint16_t)l0081 << 8 | l0080);
-        tmp6 = (uint8_t)(sub & 0xff);
-        tmp7 = (uint8_t)(sub >> 8);
+        ((uint8_t*)&tmp67)[0] = (uint8_t)(sub & 0xff);
+        ((uint8_t*)&tmp67)[1] = (uint8_t)(sub >> 8);
         if ((uint16_t)l0082 >= ((uint16_t)l0081 << 8 | l0080))
             flags |= FLAG_C;
         else
@@ -967,14 +969,14 @@ c8aa3:
     //     bmi c8aca
     if (flags & FLAG_N)
         goto c8aca;
-    //     ora tmp6
-    a |= tmp6;
+    //     ora ((uint8_t*)&tmp67)[0]
+    a |= ((uint8_t*)&tmp67)[0];
     set_flags(&flags, a);
     //     beq c8ada
     if (flags & FLAG_Z)
         goto c8ada;
-    //     sta tmp6
-    tmp6 = a;
+    //     sta ((uint8_t*)&tmp67)[0]
+    ((uint8_t*)&tmp67)[0] = a;
     //     jsr make_space_for_insertion
     make_space_for_insertion();
     //     bcc c8ada
@@ -987,7 +989,8 @@ c8aca:
     // c8aca:
     //     lda #0
     a = 0;
-    //     sec; sbc tmp6; lda #0; sbc tmp7  (negate tmp67)
+    //     sec; sbc ((uint8_t*)&tmp67)[0]; lda #0; sbc ((uint8_t*)&tmp67)[1]
+    //     (negate tmp67)
     tmp67 = -tmp67;
     //     jsr adjust_pointers
     adjust_pointers();
@@ -1246,14 +1249,14 @@ void read_next_chunk_from_input_file(void)
     //     tay                                                               ;
     //     Y=0x00
     y = 0;
-    //     sta (tmp0),y
+    //     sta (((uint8_t*)&tmp01)[0]),y
     ram[tmp01 + y] = a;
-    //     lda tmp0
-    a = tmp0;
+    //     lda ((uint8_t*)&tmp01)[0]
+    a = ((uint8_t*)&tmp01)[0];
     //     sta top
     top = (top & 0xff00) | a;
-    //     lda tmp1
-    a = tmp1;
+    //     lda ((uint8_t*)&tmp01)[1]
+    a = ((uint8_t*)&tmp01)[1];
     //     sta top+1
     top = (top & 0x00ff) | ((uint16_t)a << 8);
     //     plp
@@ -1284,41 +1287,41 @@ void write_area_to_file(void)
 
     //     lda area_start_ptr
     a = (uint8_t)(area_start_ptr & 0xff);
-    //     sta tmp8
-    tmp8 = a;
+    //     sta ((uint8_t*)&tmp89)[0]
+    ((uint8_t*)&tmp89)[0] = a;
     //     lda area_start_ptr+1
     a = (uint8_t)(area_start_ptr >> 8);
-    //     sta tmp9
-    tmp9 = a;
+    //     sta ((uint8_t*)&tmp89)[1]
+    ((uint8_t*)&tmp89)[1] = a;
 
     //     zrepeat
     do
     {
         //         ldy #0
         y = 0;
-        //         lda (tmp8),y
+        //         lda (((uint8_t*)&tmp89)[0]),y
         a = ram[tmp89];
         //         jsr put_byte_to_file
         put_byte_to_file(a);
-        //         inc tmp8
-        tmp8++;
+        //         inc ((uint8_t*)&tmp89)[0]
+        ((uint8_t*)&tmp89)[0]++;
         //         zif eq
-        if (tmp8 == 0)
+        if (((uint8_t*)&tmp89)[0] == 0)
         {
-            //             inc tmp9
-            tmp9++;
+            //             inc ((uint8_t*)&tmp89)[1]
+            ((uint8_t*)&tmp89)[1]++;
             //         zendif
         }
 
-        //         lda tmp9
-        a = tmp9;
+        //         lda ((uint8_t*)&tmp89)[1]
+        a = ((uint8_t*)&tmp89)[1];
         //         cmp area_end_ptr+1
         cmp(&flags, a, (uint8_t)(area_end_ptr >> 8));
         //         zif eq
         if (flags & FLAG_Z)
         {
-            //             lda tmp8
-            a = tmp8;
+            //             lda ((uint8_t*)&tmp89)[0]
+            a = ((uint8_t*)&tmp89)[0];
             //             cmp area_end_ptr
             cmp(&flags, a, (uint8_t)(area_end_ptr & 0xff));
             //         zendif
@@ -1332,24 +1335,25 @@ static void compute_space_common(void)
 {
     // compute_space_common
     // c8daf:
-    //     sta tmp0
+    //     sta ((uint8_t*)&tmp01)[0]
     tmp01 = (addr_t)(y) << 8 | a;
     //     jsr compute_bytes_free
     compute_bytes_free();
-    //     stx tmp6
+    //     stx ((uint8_t*)&tmp67)[0]
     tmp67 = (addr_t)(y) << 8 | x;
-    //     lsr tmp9; ror tmp8; lsr tmp9; ror tmp8
+    //     lsr ((uint8_t*)&tmp89)[1]; ror ((uint8_t*)&tmp89)[0]; lsr
+    //     ((uint8_t*)&tmp89)[1]; ror ((uint8_t*)&tmp89)[0]
     {
         uint16_t t = tmp89;
         t >>= 2;
         tmp89 = t;
     }
-    //     lda tmp9; cmp #4
-    if (tmp9 >= 4)
+    //     lda ((uint8_t*)&tmp89)[1]; cmp #4
+    if (((uint8_t*)&tmp89)[1] >= 4)
     {
-        //     lda #4; sta tmp9; sta tmp8
-        tmp9 = 4;
-        tmp8 = 4;
+        //     lda #4; sta ((uint8_t*)&tmp89)[1]; sta ((uint8_t*)&tmp89)[0]
+        ((uint8_t*)&tmp89)[1] = 4;
+        ((uint8_t*)&tmp89)[0] = 4;
         flags |= FLAG_C;
     }
     else
@@ -1357,16 +1361,19 @@ static void compute_space_common(void)
         flags &= ~FLAG_C;
     }
     // c8dce:
-    //     lda tmp6; sbc tmp8; sta tmp6
-    a = tmp6;
-    a = sbc(&flags, a, tmp8);
-    tmp6 = a;
-    //     lda tmp7; sbc tmp9; sta tmp7
-    a = tmp7;
-    a = sbc(&flags, a, tmp9);
-    tmp7 = a;
-    //     lda tmp0; clc; adc tmp6; sta ptr5; pha
-    //     lda tmp1; adc tmp7; sta ptr5+1; sta l0081; pla
+    //     lda ((uint8_t*)&tmp67)[0]; sbc ((uint8_t*)&tmp89)[0]; sta
+    //     ((uint8_t*)&tmp67)[0]
+    a = ((uint8_t*)&tmp67)[0];
+    a = sbc(&flags, a, ((uint8_t*)&tmp89)[0]);
+    ((uint8_t*)&tmp67)[0] = a;
+    //     lda ((uint8_t*)&tmp67)[1]; sbc ((uint8_t*)&tmp89)[1]; sta
+    //     ((uint8_t*)&tmp67)[1]
+    a = ((uint8_t*)&tmp67)[1];
+    a = sbc(&flags, a, ((uint8_t*)&tmp89)[1]);
+    ((uint8_t*)&tmp67)[1] = a;
+    //     lda ((uint8_t*)&tmp01)[0]; clc; adc ((uint8_t*)&tmp67)[0]; sta ptr5;
+    //     pha lda ((uint8_t*)&tmp01)[1]; adc ((uint8_t*)&tmp67)[1]; sta ptr5+1;
+    //     sta l0081; pla
     ptr5 = tmp01 + tmp67;
     l0081 = (uint8_t)(ptr5 >> 8);
     a = (uint8_t)ptr5;
@@ -1395,7 +1402,7 @@ static void sub_c8da2(void)
         uint8_t saved_y = y;
         //     jsr compute_bytes_free
         compute_bytes_free();
-        //     stx tmp8
+        //     stx ((uint8_t*)&tmp89)[0]
         tmp89 = (addr_t)(y) << 8 | x;
         //     pla
         //     tay
@@ -1410,7 +1417,7 @@ static void compute_required_space_for_insertion(void)
     // compute_required_space_for_insertion:
     //     ldx #0
     x = 0;
-    //     stx tmp8
+    //     stx ((uint8_t*)&tmp89)[0]
     tmp89 = 0;
     //     beq c8daf                                                         ;
     //     ALWAYS branch

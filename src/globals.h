@@ -109,57 +109,6 @@ extern uint8_t l0030, l0039;
 extern uint8_t l0080, l0081, l0082, l0083, l0084;
 extern addr_t tmp01, tmp23, tmp45, tmp67, tmp89;
 
-// tmp0-tmp9 access low/high bytes of the combined 16-bit variables
-static inline uint8_t* _tmp0(void)
-{
-    return (uint8_t*)&tmp01;
-}
-static inline uint8_t* _tmp1(void)
-{
-    return ((uint8_t*)&tmp01) + 1;
-}
-static inline uint8_t* _tmp2(void)
-{
-    return (uint8_t*)&tmp23;
-}
-static inline uint8_t* _tmp3(void)
-{
-    return ((uint8_t*)&tmp23) + 1;
-}
-static inline uint8_t* _tmp4(void)
-{
-    return (uint8_t*)&tmp45;
-}
-static inline uint8_t* _tmp5(void)
-{
-    return ((uint8_t*)&tmp45) + 1;
-}
-static inline uint8_t* _tmp6(void)
-{
-    return (uint8_t*)&tmp67;
-}
-static inline uint8_t* _tmp7(void)
-{
-    return ((uint8_t*)&tmp67) + 1;
-}
-static inline uint8_t* _tmp8(void)
-{
-    return (uint8_t*)&tmp89;
-}
-static inline uint8_t* _tmp9(void)
-{
-    return ((uint8_t*)&tmp89) + 1;
-}
-#define tmp0 (*_tmp0())
-#define tmp1 (*_tmp1())
-#define tmp2 (*_tmp2())
-#define tmp3 (*_tmp3())
-#define tmp4 (*_tmp4())
-#define tmp5 (*_tmp5())
-#define tmp6 (*_tmp6())
-#define tmp7 (*_tmp7())
-#define tmp8 (*_tmp8())
-#define tmp9 (*_tmp9())
 extern uint8_t print_flags, folding_flag, macro_executing_flag;
 extern uint8_t ruler_right_stop, ruler_left_stop;
 extern void (*number_callback)(void);

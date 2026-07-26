@@ -880,17 +880,17 @@ static void cf7_join_lines_key(void)
 
     a = (uint8_t)(current_line_ptr & 0xff);
 
-    //     sta tmp0
+    //     sta ((uint8_t*)&tmp01)[0]
 
-    tmp0 = a;
+    ((uint8_t*)&tmp01)[0] = a;
 
     //     lda current_line_ptr+1
 
     a = (uint8_t)(current_line_ptr >> 8);
 
-    //     sta tmp1
+    //     sta ((uint8_t*)&tmp01)[1]
 
-    tmp1 = a;
+    ((uint8_t*)&tmp01)[1] = a;
 
     //     jsr cab29
 
@@ -933,9 +933,9 @@ static void cf7_join_lines_key(void)
     flags &= ~FLAG_C;
     a = adc(&flags, a, (uint8_t)(current_line_ptr & 0xff));
 
-    //     sta tmp4
+    //     sta ((uint8_t*)&tmp45)[0]
 
-    tmp4 = a;
+    ((uint8_t*)&tmp45)[0] = a;
 
     //     lda current_line_ptr+1
 
@@ -945,25 +945,25 @@ static void cf7_join_lines_key(void)
 
     a = adc(&flags, a, 0);
 
-    //     sta tmp5
+    //     sta ((uint8_t*)&tmp45)[1]
 
-    tmp5 = a;
+    ((uint8_t*)&tmp45)[1] = a;
 
     //     lda #0
 
     a = 0;
 
-    //     sta tmp7
+    //     sta ((uint8_t*)&tmp67)[1]
 
-    tmp7 = a;
+    ((uint8_t*)&tmp67)[1] = a;
 
     //     lda #1
 
     a = 1;
 
-    //     sta tmp6
+    //     sta ((uint8_t*)&tmp67)[0]
 
-    tmp6 = a;
+    ((uint8_t*)&tmp67)[0] = a;
 
     //     jsr adjust_pointers
 
@@ -1418,17 +1418,17 @@ static void f15_up_key(void)
     if (!(flags & FLAG_C))
         return;
 
-    //     lda tmp0
+    //     lda ((uint8_t*)&tmp01)[0]
 
-    a = tmp0;
+    a = ((uint8_t*)&tmp01)[0];
 
     //     sta current_line_ptr
 
     current_line_ptr = (uint16_t)((current_line_ptr & 0xff00) | a);
 
-    //     lda tmp1
+    //     lda ((uint8_t*)&tmp01)[1]
 
-    a = tmp1;
+    a = ((uint8_t*)&tmp01)[1];
 
     //     sta current_line_ptr+1
 
@@ -1598,17 +1598,17 @@ static void f7_delete_line_key(void)
 
     a = (uint8_t)(current_line_ptr & 0xff);
 
-    //     sta tmp4
+    //     sta ((uint8_t*)&tmp45)[0]
 
-    tmp4 = a;
+    ((uint8_t*)&tmp45)[0] = a;
 
     //     lda current_line_ptr+1
 
     a = (uint8_t)(current_line_ptr >> 8);
 
-    //     sta tmp5
+    //     sta ((uint8_t*)&tmp45)[1]
 
-    tmp5 = a;
+    ((uint8_t*)&tmp45)[1] = a;
 
     //     ldx l003b
 
@@ -1618,17 +1618,17 @@ static void f7_delete_line_key(void)
 
     x++;
 
-    //     stx tmp6
+    //     stx ((uint8_t*)&tmp67)[0]
 
-    tmp6 = x;
+    ((uint8_t*)&tmp67)[0] = x;
 
     //     lda #0
 
     a = 0;
 
-    //     sta tmp7
+    //     sta ((uint8_t*)&tmp67)[1]
 
-    tmp7 = a;
+    ((uint8_t*)&tmp67)[1] = a;
 
     //     jsr adjust_pointers
 
@@ -1663,17 +1663,17 @@ static void f7_delete_line_key(void)
 
     move_tmp01_to_previous_line();
 
-    //     lda tmp0
+    //     lda ((uint8_t*)&tmp01)[0]
 
-    a = tmp0;
+    a = ((uint8_t*)&tmp01)[0];
 
     //     sta current_line_ptr
 
     current_line_ptr = (uint16_t)((current_line_ptr & 0xff00) | a);
 
-    //     lda tmp1
+    //     lda ((uint8_t*)&tmp01)[1]
 
-    a = tmp1;
+    a = ((uint8_t*)&tmp01)[1];
 
     //     sta current_line_ptr+1
 
@@ -2780,17 +2780,17 @@ void return_key(void)
 
     a = (uint8_t)(current_line_ptr & 0xff);
 
-    //     sta tmp0
+    //     sta ((uint8_t*)&tmp01)[0]
 
-    tmp0 = a;
+    ((uint8_t*)&tmp01)[0] = a;
 
     //     lda current_line_ptr+1
 
     a = (uint8_t)(current_line_ptr >> 8);
 
-    //     sta tmp1
+    //     sta ((uint8_t*)&tmp01)[1]
 
-    tmp1 = a;
+    ((uint8_t*)&tmp01)[1] = a;
 
     //     jsr cab29
 
@@ -3008,17 +3008,17 @@ entry:
 
     a = (uint8_t)(current_edit_line_ptr & 0xff);
 
-    //     sta tmp0
+    //     sta ((uint8_t*)&tmp01)[0]
 
-    tmp0 = a;
+    ((uint8_t*)&tmp01)[0] = a;
 
     //     lda current_edit_line_ptr+1
 
     a = (uint8_t)(current_edit_line_ptr >> 8);
 
-    //     sta tmp1
+    //     sta ((uint8_t*)&tmp01)[1]
 
-    tmp1 = a;
+    ((uint8_t*)&tmp01)[1] = a;
 
     //     jsr get_line_length
 
@@ -3131,17 +3131,17 @@ c9fc3:
 
     a = (uint8_t)(current_edit_line_ptr & 0xff);
 
-    //     sta tmp0
+    //     sta ((uint8_t*)&tmp01)[0]
 
-    tmp0 = a;
+    ((uint8_t*)&tmp01)[0] = a;
 
     //     lda current_edit_line_ptr+1
 
     a = (uint8_t)(current_edit_line_ptr >> 8);
 
-    //     sta tmp1
+    //     sta ((uint8_t*)&tmp01)[1]
 
-    tmp1 = a;
+    ((uint8_t*)&tmp01)[1] = a;
 
     //     ldy xpos
 
@@ -3858,12 +3858,12 @@ static void delete_edit_buffer_bytes_at_xpos(void)
     edit_buffer_dirty_flag++;
     //     lda current_edit_line_ptr
     a = (uint8_t)(current_edit_line_ptr & 0xff);
-    //     sta tmp6
-    tmp6 = a;
+    //     sta ((uint8_t*)&tmp67)[0]
+    ((uint8_t*)&tmp67)[0] = a;
     //     lda current_edit_line_ptr+1
     a = (uint8_t)(current_edit_line_ptr >> 8);
-    //     sta tmp7
-    tmp7 = a;
+    //     sta ((uint8_t*)&tmp67)[1]
+    ((uint8_t*)&tmp67)[1] = a;
     //     ldy xpos
     y = xpos;
     //     tya
@@ -4167,8 +4167,8 @@ c9c56:
     if (format_mode_flag != 0)
         return;
     //     lda #0
-    //     sta tmp7
-    tmp7 = 0;
+    //     sta ((uint8_t*)&tmp67)[1]
+    ((uint8_t*)&tmp67)[1] = 0;
     //     tya
     //     beq c9c7f
     if (y == 0)
@@ -4251,22 +4251,22 @@ c9ca2:
     y++;
     // c9cb9: (4234)
 c9cb9:
-    //     sty tmp6 (4235)
-    tmp6 = y;
+    //     sty ((uint8_t*)&tmp67)[0] (4235)
+    ((uint8_t*)&tmp67)[0] = y;
     //     lda current_line_ptr (4236)
     a = (uint8_t)(current_line_ptr & 0xff);
     //     sec (4237)
     flags |= FLAG_C;
     //     adc l003b (4238)
     a = adc(&flags, a, l003b);
-    //     sta tmp4 (4239)
-    tmp4 = a;
+    //     sta ((uint8_t*)&tmp45)[0] (4239)
+    ((uint8_t*)&tmp45)[0] = a;
     //     lda current_line_ptr+1 (4240)
     a = (uint8_t)(current_line_ptr >> 8);
     //     adc #0 (4241)
     a = adc(&flags, a, 0);
-    //     sta tmp5 (4242)
-    tmp5 = a;
+    //     sta ((uint8_t*)&tmp45)[1] (4242)
+    ((uint8_t*)&tmp45)[1] = a;
     //     jsr make_space_for_insertion (4243)
     make_space_for_insertion();
     //     bcc c9cd0 (4244)
@@ -4284,7 +4284,7 @@ c9cd0:
     if (ruler_left_stop != 0)
     {
         //     lda #0x0b
-        //     sta (tmp4),y
+        //     sta (((uint8_t*)&tmp45)[0]),y
         ram[tmp45] = 0x0b;
         //     iny ; Y=0x01
         y = 1;
@@ -4330,12 +4330,12 @@ loop_c9cf9:
     a = l0081;
     //     clc
     flags &= ~FLAG_C;
-    //     adc tmp4
-    a = adc(&flags, a, tmp4);
+    //     adc ((uint8_t*)&tmp45)[0]
+    a = adc(&flags, a, ((uint8_t*)&tmp45)[0]);
     //     sta markers_array,x
     ((uint8_t*)markers_array)[x] = a;
-    //     lda tmp5
-    a = tmp5;
+    //     lda ((uint8_t*)&tmp45)[1]
+    a = ((uint8_t*)&tmp45)[1];
     //     adc #0
     a = adc(&flags, a, 0);
     //     sta markers_array+1,x
@@ -4374,7 +4374,7 @@ c9d30:
     y = l0081;
     //     inc l0081
     l0081++;
-    //     sta (tmp4),y
+    //     sta (((uint8_t*)&tmp45)[0]),y
     ram[tmp45 + y] = a;
     //     dec l0083
     l0083--;
@@ -4608,12 +4608,12 @@ static void sub_c9f80(void)
     //     bcc return_56
     if (!(flags & FLAG_C))
         return;
-    //     lda tmp0
-    a = tmp0;
+    //     lda ((uint8_t*)&tmp01)[0]
+    a = ((uint8_t*)&tmp01)[0];
     //     sta current_line_ptr
     current_line_ptr = (current_line_ptr & 0xff00) | a;
-    //     lda tmp1
-    a = tmp1;
+    //     lda ((uint8_t*)&tmp01)[1]
+    a = ((uint8_t*)&tmp01)[1];
     //     sta current_line_ptr+1
     current_line_ptr = (current_line_ptr & 0x00ff) | ((uint16_t)a << 8);
     //     jsr sub_caa97
@@ -4641,22 +4641,22 @@ static void sub_ca071(void)
     // ca07c:
     while (1)
     {
-        //     sta tmp2
+        //     sta ((uint8_t*)&tmp23)[0]
         tmp23 = (addr_t)(y) << 8 | a;
         //     jsr sub_cab37
         move_tmp01_to_previous_line();
-        //     lda tmp0
-        a = tmp0;
-        //     ldy tmp1
-        y = tmp1;
+        //     lda ((uint8_t*)&tmp01)[0]
+        a = ((uint8_t*)&tmp01)[0];
+        //     ldy ((uint8_t*)&tmp01)[1]
+        y = ((uint8_t*)&tmp01)[1];
         //     bcc ca093
         if (!(flags & FLAG_C))
         {
             // ca093:
-            //     lda tmp2
-            a = tmp2;
-            //     ldy tmp3
-            y = tmp3;
+            //     lda ((uint8_t*)&tmp23)[0]
+            a = ((uint8_t*)&tmp23)[0];
+            //     ldy ((uint8_t*)&tmp23)[1]
+            y = ((uint8_t*)&tmp23)[1];
             break;
         }
         //     ldx input_buffer_offset+1
@@ -4702,19 +4702,19 @@ static void sub_ca0af(void)
         if (flags & FLAG_Z)
         {
             // ca0d2:
-            //     lda tmp0
-            a = tmp0;
-            //     ldy tmp1
-            y = tmp1;
+            //     lda ((uint8_t*)&tmp01)[0]
+            a = ((uint8_t*)&tmp01)[0];
+            //     ldy ((uint8_t*)&tmp01)[1]
+            y = ((uint8_t*)&tmp01)[1];
             break;
         }
         //     tya
-        //     ldy tmp1
+        //     ldy ((uint8_t*)&tmp01)[1]
         //     clc
-        //     adc tmp0
+        //     adc ((uint8_t*)&tmp01)[0]
         {
-            uint16_t sum = (uint16_t)y + tmp0;
-            y = tmp1;
+            uint16_t sum = (uint16_t)y + ((uint8_t*)&tmp01)[0];
+            y = ((uint8_t*)&tmp01)[1];
             a = (uint8_t)(sum & 0xff);
             if (sum > 0xff)
                 y++;
@@ -4774,8 +4774,8 @@ static void sub_ca1cc(void)
         if ((tmp89) == area_end_ptr)
             break;
     }
-    uint8_t saved_tmp6 = tmp6;
-    uint8_t saved_tmp7 = tmp7;
+    uint8_t saved_tmp6 = ((uint8_t*)&tmp67)[0];
+    uint8_t saved_tmp7 = ((uint8_t*)&tmp67)[1];
     doc_ptr1 = tmp45;
     {
         uint16_t adjusted = (tmp23)-1;
@@ -4786,8 +4786,8 @@ static void sub_ca1cc(void)
     a = (uint8_t)(doc_ptr1 & 0xff);
     y = (uint8_t)(doc_ptr1 >> 8);
     cac78();
-    tmp7 = saved_tmp7;
-    tmp6 = saved_tmp6;
+    ((uint8_t*)&tmp67)[1] = saved_tmp7;
+    ((uint8_t*)&tmp67)[0] = saved_tmp6;
     l0073 = 1;
     cursor_moved_flag = 1;
     flags &= ~FLAG_C;
@@ -4883,12 +4883,12 @@ void draw_previous_word(void)
 
     //     lda current_edit_line_ptr
     a = (uint8_t)(current_edit_line_ptr & 0xff);
-    //     sta tmp0
-    tmp0 = a;
+    //     sta ((uint8_t*)&tmp01)[0]
+    ((uint8_t*)&tmp01)[0] = a;
     //     lda current_edit_line_ptr+1
     a = (uint8_t)(current_edit_line_ptr >> 8);
-    //     sta tmp1
-    tmp1 = a;
+    //     sta ((uint8_t*)&tmp01)[1]
+    ((uint8_t*)&tmp01)[1] = a;
     //     ldy xpos
     y = xpos;
     //     beq caf55
@@ -5065,12 +5065,12 @@ void insert_edit_buffer_bytes_at_xpos(void)
     edit_buffer_dirty_flag++;
     //     lda current_edit_line_ptr
     a = (uint8_t)(current_edit_line_ptr & 0xff);
-    //     sta tmp6
-    tmp6 = a;
+    //     sta ((uint8_t*)&tmp67)[0]
+    ((uint8_t*)&tmp67)[0] = a;
     //     lda current_edit_line_ptr+1
     a = (uint8_t)(current_edit_line_ptr >> 8);
-    //     sta tmp7
-    tmp7 = a;
+    //     sta ((uint8_t*)&tmp67)[1]
+    ((uint8_t*)&tmp67)[1] = a;
     //     ldy #0x84
     y = MAX_LINE_LENGTH;
     // cae27:
@@ -5231,7 +5231,7 @@ cac7b:
     x = MAX_LINE_LENGTH + 1;
     //     ldy #1
     y = 1;
-    //     lda (tmp8),y
+    //     lda (((uint8_t*)&tmp89)[0]),y
     a = ram[tmp89 + y];
     //     jsr check_for_command_prefix
     flags = check_for_command_prefix(a);
@@ -5250,7 +5250,7 @@ cac8d:
     l0084 = x;
     // cac8f:
 cac8f:
-    //     lda (tmp8),y
+    //     lda (((uint8_t*)&tmp89)[0]),y
     a = ram[tmp89 + y];
     //     iny
     y++;
@@ -5295,42 +5295,42 @@ cac9c:
 cacad:
     //     clc
     flags &= ~FLAG_C;
-    //     adc tmp8
-    a = adc(&flags, a, tmp8);
-    //     sta tmp4
-    //     sta tmp8
-    tmp4 = a;
-    tmp8 = a;
-    //     lda tmp9
+    //     adc ((uint8_t*)&tmp89)[0]
+    a = adc(&flags, a, ((uint8_t*)&tmp89)[0]);
+    //     sta ((uint8_t*)&tmp45)[0]
+    //     sta ((uint8_t*)&tmp89)[0]
+    ((uint8_t*)&tmp45)[0] = a;
+    ((uint8_t*)&tmp89)[0] = a;
+    //     lda ((uint8_t*)&tmp89)[1]
     //     adc #0
-    //     sta tmp5
-    //     sta tmp9
-    a = tmp9;
+    //     sta ((uint8_t*)&tmp45)[1]
+    //     sta ((uint8_t*)&tmp89)[1]
+    a = ((uint8_t*)&tmp89)[1];
     a = adc(&flags, a, 0);
-    tmp5 = a;
-    tmp9 = a;
+    ((uint8_t*)&tmp45)[1] = a;
+    ((uint8_t*)&tmp89)[1] = a;
     //     lda #1
-    //     sta tmp6
+    //     sta ((uint8_t*)&tmp67)[0]
     //     lda #0
-    //     sta tmp7
-    tmp6 = 1;
-    tmp7 = 0;
+    //     sta ((uint8_t*)&tmp67)[1]
+    ((uint8_t*)&tmp67)[0] = 1;
+    ((uint8_t*)&tmp67)[1] = 0;
     //     jsr make_space_for_insertion
     make_space_for_insertion();
     //     lda #0x0d
     a = 0x0d;
     //     ldy #0
     y = 0;
-    //     sta (tmp4),y
+    //     sta (((uint8_t*)&tmp45)[0]),y
     ram[tmp45 + y] = a;
-    //     lda tmp4
-    //     sta tmp8
-    //     lda tmp5
-    //     sta tmp9
-    tmp8 = tmp4;
-    tmp9 = tmp5;
+    //     lda ((uint8_t*)&tmp45)[0]
+    //     sta ((uint8_t*)&tmp89)[0]
+    //     lda ((uint8_t*)&tmp45)[1]
+    //     sta ((uint8_t*)&tmp89)[1]
+    ((uint8_t*)&tmp89)[0] = ((uint8_t*)&tmp45)[0];
+    ((uint8_t*)&tmp89)[1] = ((uint8_t*)&tmp45)[1];
     //     bne cac7b
-    if (tmp9 != 0)
+    if (((uint8_t*)&tmp89)[1] != 0)
         goto cac7b;
     return;
 }
@@ -5342,24 +5342,24 @@ void adjust_pointers(void)
     uint8_t x;
     uint8_t tmp2, tmp3, tmp8, tmp9;
     // adjust_pointers: (6372)
-    //     lda tmp4 (6373)
-    a = tmp4;
-    //     sta tmp2 (6374)
-    tmp2 = a;
+    //     lda ((uint8_t*)&tmp45)[0] (6373)
+    a = ((uint8_t*)&tmp45)[0];
+    //     sta ((uint8_t*)&tmp23)[0] (6374)
+    ((uint8_t*)&tmp23)[0] = a;
     //     clc (6375)
     flags &= ~FLAG_C;
-    //     adc tmp6 (6376)
-    a = adc(&flags, a, tmp6);
-    //     sta tmp8 (6377)
-    tmp8 = a;
-    //     lda tmp5 (6378)
-    a = tmp5;
-    //     sta tmp3 (6379)
-    tmp3 = a;
-    //     adc tmp7 (6380)
-    a = adc(&flags, a, tmp7);
-    //     sta tmp9 (6381)
-    tmp9 = a;
+    //     adc ((uint8_t*)&tmp67)[0] (6376)
+    a = adc(&flags, a, ((uint8_t*)&tmp67)[0]);
+    //     sta ((uint8_t*)&tmp89)[0] (6377)
+    ((uint8_t*)&tmp89)[0] = a;
+    //     lda ((uint8_t*)&tmp45)[1] (6378)
+    a = ((uint8_t*)&tmp45)[1];
+    //     sta ((uint8_t*)&tmp23)[1] (6379)
+    ((uint8_t*)&tmp23)[1] = a;
+    //     adc ((uint8_t*)&tmp67)[1] (6380)
+    a = adc(&flags, a, ((uint8_t*)&tmp67)[1]);
+    //     sta ((uint8_t*)&tmp89)[1] (6381)
+    ((uint8_t*)&tmp89)[1] = a;
     //     ldx #0 (6382)
     x = 0;
     // ca9c3: (6383)
@@ -5368,30 +5368,30 @@ ca9c3:
     y = ((uint8_t*)&pointer_array)[x + 1];
     //     lda __begin_pointer_array+0,x (6385)
     a = ((uint8_t*)&pointer_array)[x];
-    //     cpy tmp5 (6386)
-    cmp(&flags, y, tmp5);
+    //     cpy ((uint8_t*)&tmp45)[1] (6386)
+    cmp(&flags, y, ((uint8_t*)&tmp45)[1]);
     //     bcc ca9f1 (6387)
     if (!(flags & FLAG_C))
         goto ca9f1;
     //     bne ca9d1 (6388)
     if (!(flags & FLAG_Z))
         goto ca9d1;
-    //     cmp tmp4 (6389)
-    if (a < tmp4)
+    //     cmp ((uint8_t*)&tmp45)[0] (6389)
+    if (a < ((uint8_t*)&tmp45)[0])
         goto ca9f1;
     //     bcc ca9f1 (6390)
     // ca9d1: (6391)
 ca9d1:
-    //     cpy tmp9 (6392)
-    cmp(&flags, y, tmp9);
+    //     cpy ((uint8_t*)&tmp89)[1] (6392)
+    cmp(&flags, y, ((uint8_t*)&tmp89)[1]);
     //     bcc ca9db (6393)
     if (!(flags & FLAG_C))
         goto ca9db;
     //     bne ca9e7 (6394)
     if (!(flags & FLAG_Z))
         goto ca9e7;
-    //     cmp tmp8 (6395)
-    if (a >= tmp8)
+    //     cmp ((uint8_t*)&tmp89)[0] (6395)
+    if (a >= ((uint8_t*)&tmp89)[0])
         goto ca9e7;
     //     bcs ca9e7 (6396)
     // ca9db: (6397)
@@ -5411,14 +5411,14 @@ ca9db:
 
     // ca9e7: (6405)
 ca9e7:
-    //     sbc tmp6 (6406)
-    a = sbc(&flags, a, tmp6);
+    //     sbc ((uint8_t*)&tmp67)[0] (6406)
+    a = sbc(&flags, a, ((uint8_t*)&tmp67)[0]);
     //     sta __begin_pointer_array+0,x (6407)
     ((uint8_t*)&pointer_array)[x] = a;
     //     lda __begin_pointer_array+1,x (6408)
     a = ((uint8_t*)&pointer_array)[x + 1];
-    //     sbc tmp7 (6409)
-    a = sbc(&flags, a, tmp7);
+    //     sbc ((uint8_t*)&tmp67)[1] (6409)
+    a = sbc(&flags, a, ((uint8_t*)&tmp67)[1]);
     //     sta __begin_pointer_array+1,x (6410)
     ((uint8_t*)&pointer_array)[x + 1] = a;
     // ca9f1: (6411)
@@ -5438,9 +5438,9 @@ loop_ca9f7:
     y = 0;
     // loop_ca9f9: (6418)
 loop_ca9f9:
-    //     lda (tmp8),y (6419)
+    //     lda (((uint8_t*)&tmp89)[0]),y (6419)
     a = ram[tmp89 + y];
-    //     sta (tmp2),y (6420)
+    //     sta (((uint8_t*)&tmp23)[0]),y (6420)
     ram[tmp23 + y] = a;
     //     beq caa08 (6421)
     if (a == 0)
@@ -5450,12 +5450,12 @@ loop_ca9f9:
     //     bne loop_ca9f9 (6423)
     if (y != 0)
         goto loop_ca9f9;
-    //     inc tmp3 (6424)
-    tmp3++;
-    //     inc tmp9 (6425)
-    tmp9++;
+    //     inc ((uint8_t*)&tmp23)[1] (6424)
+    ((uint8_t*)&tmp23)[1]++;
+    //     inc ((uint8_t*)&tmp89)[1] (6425)
+    ((uint8_t*)&tmp89)[1]++;
     //     bne loop_ca9f7 (6426)
-    if (tmp9 != 0)
+    if (((uint8_t*)&tmp89)[1] != 0)
         goto loop_ca9f7;
     // caa08: (6427)
 caa08:
@@ -5463,12 +5463,12 @@ caa08:
     a = y;
     //     clc (6429)
     flags &= ~FLAG_C;
-    //     adc tmp2 (6430)
-    a = adc(&flags, a, tmp2);
+    //     adc ((uint8_t*)&tmp23)[0] (6430)
+    a = adc(&flags, a, ((uint8_t*)&tmp23)[0]);
     //     sta top (6431)
     top = (top & 0xff00) | a;
-    //     lda tmp3 (6432)
-    a = tmp3;
+    //     lda ((uint8_t*)&tmp23)[1] (6432)
+    a = ((uint8_t*)&tmp23)[1];
     //     adc #0 (6433)
     a = adc(&flags, a, 0);
     //     sta top+1 (6434)
@@ -5499,8 +5499,8 @@ static void advance_to_next_line(void)
     a = y;
     //     clc
     flags &= ~FLAG_C;
-    //     adc tmp0
-    a = adc(&flags, a, tmp0);
+    //     adc ((uint8_t*)&tmp01)[0]
+    a = adc(&flags, a, ((uint8_t*)&tmp01)[0]);
     //     sta current_line_ptr
     current_line_ptr = (current_line_ptr & 0xff00) | a;
     //     bcc c9aa4
@@ -5607,16 +5607,16 @@ void c8b7b(void)
     l0081 = x;
     //     lda doc_ptr2+0
     a = (uint8_t)(doc_ptr2 & 0xff);
-    //     sta tmp8
-    tmp8 = a;
+    //     sta ((uint8_t*)&tmp89)[0]
+    ((uint8_t*)&tmp89)[0] = a;
     //     lda doc_ptr2+1
     a = (uint8_t)(doc_ptr2 >> 8);
-    //     sta tmp9
-    tmp9 = a;
+    //     sta ((uint8_t*)&tmp89)[1]
+    ((uint8_t*)&tmp89)[1] = a;
 c8b91:
     // c8b91:
-    //     lda tmp9
-    a = tmp9;
+    //     lda ((uint8_t*)&tmp89)[1]
+    a = ((uint8_t*)&tmp89)[1];
     //     cmp doc_ptr3+1
     cmp(&flags, a, (uint8_t)(doc_ptr3 >> 8));
     //     bcc c8b9f
@@ -5628,8 +5628,8 @@ c8b91:
         c8b78();
         return;
     }
-    //     lda tmp8
-    a = tmp8;
+    //     lda ((uint8_t*)&tmp89)[0]
+    a = ((uint8_t*)&tmp89)[0];
     //     cmp doc_ptr3+0
     cmp(&flags, a, (uint8_t)(doc_ptr3 & 0xff));
     //     bcs c8b78
@@ -5642,15 +5642,15 @@ c8b9f:
     // c8b9f:
     //     ldy #0
     y = 0;
-    //     lda (tmp8),y
+    //     lda (((uint8_t*)&tmp89)[0]),y
     a = ram[tmp89];
     //     jsr check_for_command_prefix
     flags = check_for_command_prefix(a);
     //     bne c8bb7
     if (!(flags & FLAG_Z))
         goto c8bb7;
-    //     lda tmp8
-    a = tmp8;
+    //     lda ((uint8_t*)&tmp89)[0]
+    a = ((uint8_t*)&tmp89)[0];
     //     clc
     flags &= ~FLAG_C;
     //     adc #3
@@ -5658,8 +5658,8 @@ c8b9f:
     a = adc(&flags, a, 3);
     //     sta doc_ptr2+0
     doc_ptr2 = (doc_ptr2 & 0xff00) | a;
-    //     lda tmp9
-    a = tmp9;
+    //     lda ((uint8_t*)&tmp89)[1]
+    a = ((uint8_t*)&tmp89)[1];
     //     sta doc_ptr2+1
     doc_ptr2 = (doc_ptr2 & 0x00ff) | ((uint16_t)a << 8);
     //     bcc c8b7b
@@ -5681,7 +5681,7 @@ c8bbc:
     // c8bbc:
     //     iny
     y++;
-    //     lda (tmp8),y
+    //     lda (((uint8_t*)&tmp89)[0]),y
     a = ram[tmp89 + y];
     //     beq c8bdb
     if (a == 0)
@@ -5816,10 +5816,10 @@ c8c23:
     l0081 = a;
 loop_c8c2a:
     // loop_c8c2a:
-    //     inc tmp8
+    //     inc ((uint8_t*)&tmp89)[0]
     tmp89++;
     //     bne c8c30
-    //     inc tmp9
+    //     inc ((uint8_t*)&tmp89)[1]
     // c8c30:
     //     jmp c8b91
     goto c8b91;
@@ -5832,22 +5832,22 @@ c8c33:
     if (x < l007a)
         goto loop_c8c2a;
     //     bcc loop_c8c2a
-    //     inc tmp8
+    //     inc ((uint8_t*)&tmp89)[0]
     tmp89++;
     //     bne c8c3e
-    //     inc tmp9
+    //     inc ((uint8_t*)&tmp89)[1]
 c8c3e:
     // c8c3e:
     //     lda doc_ptr2+0
     a = (uint8_t)(doc_ptr2 & 0xff);
     //     ldy doc_ptr2+1
     y = (uint8_t)(doc_ptr2 >> 8);
-    //     ldx tmp8
-    x = tmp8;
+    //     ldx ((uint8_t*)&tmp89)[0]
+    x = ((uint8_t*)&tmp89)[0];
     //     stx doc_ptr2+0
     doc_ptr2 = (doc_ptr2 & 0xff00) | x;
-    //     ldx tmp9
-    x = tmp9;
+    //     ldx ((uint8_t*)&tmp89)[1]
+    x = ((uint8_t*)&tmp89)[1];
     //     stx doc_ptr2+1
     doc_ptr2 = (doc_ptr2 & 0x00ff) | ((uint16_t)x << 8);
     //     sta ptr2
@@ -5862,16 +5862,16 @@ c8c3e:
 
 static void c9de3_insert_line(void)
 {
-    //     sta tmp4
+    //     sta ((uint8_t*)&tmp45)[0]
     tmp45 = (addr_t)(y) << 8 | a;
     //     lda #1
     a = 1;
-    //     sta tmp6
-    tmp6 = a;
+    //     sta ((uint8_t*)&tmp67)[0]
+    ((uint8_t*)&tmp67)[0] = a;
     //     lda #0
     a = 0;
-    //     sta tmp7
-    tmp7 = a;
+    //     sta ((uint8_t*)&tmp67)[1]
+    ((uint8_t*)&tmp67)[1] = a;
     //     jsr make_space_for_insertion
     make_space_for_insertion();
     //     bcs c9dfd
@@ -5881,7 +5881,7 @@ static void c9de3_insert_line(void)
     a = 0x0d;
     //     ldy #0
     y = 0;
-    //     sta (tmp4),y
+    //     sta (((uint8_t*)&tmp45)[0]),y
     ram[tmp45 + y] = a;
     //     jmp ca741
     ca741();
@@ -6030,7 +6030,7 @@ void draw_line(uint16_t addr)
     // draw_line
     // draw_line: Renders a single document line to the screen
 
-    //     sta tmp0
+    //     sta ((uint8_t*)&tmp01)[0]
     tmp01 = addr;
     tmp67 = addr;
     //     ldx #0
@@ -6111,10 +6111,10 @@ void draw_prompt_characters(void)
 {
     // draw_prompt_characters: Draws two inverted prompt characters at top-left
     // On entry: x, y = prompt characters
-    // Uses: tmp2, tmp3
+    // Uses: ((uint8_t*)&tmp23)[0], ((uint8_t*)&tmp23)[1]
     // On exit: cursor position restored
 
-    //     stx tmp2
+    //     stx ((uint8_t*)&tmp23)[0]
     tmp23 = (addr_t)(y) << 8 | x;
     //     jsr save_cursor_position
     save_cursor_position();
@@ -6125,12 +6125,12 @@ void draw_prompt_characters(void)
     //     jsr set_inverted_text_if_not_mode_7
     a = STYLE_REVERSE;
     screen_setstyle(a);
-    //     lda tmp2
-    a = (uint8_t)tmp2;
+    //     lda ((uint8_t*)&tmp23)[0]
+    a = (uint8_t)((uint8_t*)&tmp23)[0];
     //     jsr screen_putchar
     screen_putchar(a);
-    //     lda tmp3
-    a = (uint8_t)tmp3;
+    //     lda ((uint8_t*)&tmp23)[1]
+    a = (uint8_t)((uint8_t*)&tmp23)[1];
     //     jsr screen_putchar
     screen_putchar(a);
     //     jsr set_normal_text_if_not_mode_7
@@ -6487,18 +6487,18 @@ c9871:
 c988c:
     //     stx l0082
     l0082 = x;
-    //     stx tmp8
-    tmp8 = x;
+    //     stx ((uint8_t*)&tmp89)[0]
+    ((uint8_t*)&tmp89)[0] = x;
     //     lda #0
     a = 0;
-    //     sta tmp9
-    tmp9 = a;
+    //     sta ((uint8_t*)&tmp89)[1]
+    ((uint8_t*)&tmp89)[1] = a;
     //     jsr sub_cadf0
     sub_cadf0();
     //     sta l0045
     l0045 = a;
-    //     lda tmp8
-    a = tmp8;
+    //     lda ((uint8_t*)&tmp89)[0]
+    a = ((uint8_t*)&tmp89)[0];
     //     sta l0044
     l0044 = a;
     //     ldy #0
@@ -6719,30 +6719,32 @@ void make_space_for_insertion(void)
     uint8_t a;
     uint8_t tmp2, tmp3, tmp8, tmp9;
     // make_space_for_insertion: Shifts content up to make space for insertion
-    // (6437) On entry: tmp4:tmp5 = block base, tmp6:tmp7 = size, top = current
+    // (6437) On entry: ((uint8_t*)&tmp45)[0]:((uint8_t*)&tmp45)[1] = block
+    // base, ((uint8_t*)&tmp67)[0]:((uint8_t*)&tmp67)[1] = size, top = current
     // top On exit:  top += size, pointer_array entries >= base adjusted, block
-    // shifted Uses: tmp2, tmp3, tmp8, tmp9
+    // shifted Uses: ((uint8_t*)&tmp23)[0], ((uint8_t*)&tmp23)[1],
+    // ((uint8_t*)&tmp89)[0], ((uint8_t*)&tmp89)[1]
 
     //     lda top (6438)
     a = (uint8_t)(top & 0xff);
-    //     sta tmp2 (6439)
-    tmp2 = a;
+    //     sta ((uint8_t*)&tmp23)[0] (6439)
+    ((uint8_t*)&tmp23)[0] = a;
     //     clc (6440)
     flags &= ~FLAG_C;
-    //     adc tmp6 (6441)
-    a = adc(&flags, a, tmp6);
-    //     sta tmp8 (6442)
-    tmp8 = a;
+    //     adc ((uint8_t*)&tmp67)[0] (6441)
+    a = adc(&flags, a, ((uint8_t*)&tmp67)[0]);
+    //     sta ((uint8_t*)&tmp89)[0] (6442)
+    ((uint8_t*)&tmp89)[0] = a;
     //     tax (6443)
     x = a;
     //     lda top+1 (6444)
     a = (uint8_t)(top >> 8);
-    //     sta tmp3 (6445)
-    tmp3 = a;
-    //     adc tmp7 (6446)
-    a = adc(&flags, a, tmp7);
-    //     sta tmp9 (6447)
-    tmp9 = a;
+    //     sta ((uint8_t*)&tmp23)[1] (6445)
+    ((uint8_t*)&tmp23)[1] = a;
+    //     adc ((uint8_t*)&tmp67)[1] (6446)
+    a = adc(&flags, a, ((uint8_t*)&tmp67)[1]);
+    //     sta ((uint8_t*)&tmp89)[1] (6447)
+    ((uint8_t*)&tmp89)[1] = a;
     //     tay (6448)
     y = a;
     //     cpy himem+1 (6449)
@@ -6770,30 +6772,30 @@ loop_caa38:
     y = ((uint8_t*)&pointer_array)[x + 1];
     //     lda __begin_pointer_array+0,x (6460)
     a = ((uint8_t*)&pointer_array)[x];
-    //     cpy tmp5 (6461)
-    cmp(&flags, y, tmp5);
+    //     cpy ((uint8_t*)&tmp45)[1] (6461)
+    cmp(&flags, y, ((uint8_t*)&tmp45)[1]);
     //     bcc caa51 (6462)
     if (!(flags & FLAG_C))
         goto caa51;
     //     bne caa46 (6463)
     if (!(flags & FLAG_Z))
         goto caa46;
-    //     cmp tmp4 (6464)
-    if (a < tmp4)
+    //     cmp ((uint8_t*)&tmp45)[0] (6464)
+    if (a < ((uint8_t*)&tmp45)[0])
         goto caa51;
     //     bcc caa51 (6465)
     // caa46: (6466)
 caa46:
     //     clc (6467)
     flags &= ~FLAG_C;
-    //     adc tmp6 (6468)
-    a = adc(&flags, a, tmp6);
+    //     adc ((uint8_t*)&tmp67)[0] (6468)
+    a = adc(&flags, a, ((uint8_t*)&tmp67)[0]);
     //     sta __begin_pointer_array+0,x (6469)
     ((uint8_t*)&pointer_array)[x] = a;
     //     lda __begin_pointer_array+1,x (6470)
     a = ((uint8_t*)&pointer_array)[x + 1];
-    //     adc tmp7 (6471)
-    a = adc(&flags, a, tmp7);
+    //     adc ((uint8_t*)&tmp67)[1] (6471)
+    a = adc(&flags, a, ((uint8_t*)&tmp67)[1]);
     //     sta __begin_pointer_array+1,x (6472)
     ((uint8_t*)&pointer_array)[x + 1] = a;
     // caa51: (6473)
@@ -6809,18 +6811,18 @@ caa51:
         goto loop_caa38;
     // caa57: (6478)
 caa57:
-    //     lda tmp2 (6479)
-    a = tmp2;
+    //     lda ((uint8_t*)&tmp23)[0] (6479)
+    a = ((uint8_t*)&tmp23)[0];
     //     sec (6480)
     flags |= FLAG_C;
-    //     sbc tmp4 (6481)
-    a = sbc(&flags, a, tmp4);
+    //     sbc ((uint8_t*)&tmp45)[0] (6481)
+    a = sbc(&flags, a, ((uint8_t*)&tmp45)[0]);
     //     tax (6482)
     x = a;
-    //     lda tmp3 (6483)
-    a = tmp3;
-    //     sbc tmp5 (6484)
-    a = sbc(&flags, a, tmp5);
+    //     lda ((uint8_t*)&tmp23)[1] (6483)
+    a = ((uint8_t*)&tmp23)[1];
+    //     sbc ((uint8_t*)&tmp45)[1] (6484)
+    a = sbc(&flags, a, ((uint8_t*)&tmp45)[1]);
     //     beq caa65 (6485)
     if (flags & FLAG_Z)
         goto caa65;
@@ -6834,45 +6836,45 @@ caa65:
     y = a;
     //     iny (6490)
     y++;
-    //     lda tmp2 (6491)
-    a = tmp2;
-    //     stx tmp2 (6492)
-    tmp2 = x;
+    //     lda ((uint8_t*)&tmp23)[0] (6491)
+    a = ((uint8_t*)&tmp23)[0];
+    //     stx ((uint8_t*)&tmp23)[0] (6492)
+    ((uint8_t*)&tmp23)[0] = x;
     //     sec (6493)
     flags |= FLAG_C;
-    //     sbc tmp2 (6494)
-    a = sbc(&flags, a, tmp2);
-    //     sta tmp2 (6495)
-    tmp2 = a;
+    //     sbc ((uint8_t*)&tmp23)[0] (6494)
+    a = sbc(&flags, a, ((uint8_t*)&tmp23)[0]);
+    //     sta ((uint8_t*)&tmp23)[0] (6495)
+    ((uint8_t*)&tmp23)[0] = a;
     //     bcs caa75 (6496)
     if (flags & FLAG_C)
         goto caa75;
-    //     dec tmp3 (6497)
-    tmp3--;
+    //     dec ((uint8_t*)&tmp23)[1] (6497)
+    ((uint8_t*)&tmp23)[1]--;
     // caa75: (6498)
 caa75:
-    //     lda tmp8 (6499)
-    a = tmp8;
-    //     stx tmp8 (6500)
-    tmp8 = x;
+    //     lda ((uint8_t*)&tmp89)[0] (6499)
+    a = ((uint8_t*)&tmp89)[0];
+    //     stx ((uint8_t*)&tmp89)[0] (6500)
+    ((uint8_t*)&tmp89)[0] = x;
     //     sec (6501)
     flags |= FLAG_C;
-    //     sbc tmp8 (6502)
-    a = sbc(&flags, a, tmp8);
-    //     sta tmp8 (6503)
-    tmp8 = a;
+    //     sbc ((uint8_t*)&tmp89)[0] (6502)
+    a = sbc(&flags, a, ((uint8_t*)&tmp89)[0]);
+    //     sta ((uint8_t*)&tmp89)[0] (6503)
+    ((uint8_t*)&tmp89)[0] = a;
     //     bcs caa82 (6504)
     if (flags & FLAG_C)
         goto caa82;
-    //     dec tmp9 (6505)
-    tmp9--;
+    //     dec ((uint8_t*)&tmp89)[1] (6505)
+    ((uint8_t*)&tmp89)[1]--;
     // caa82: (6506)
 caa82:
     //     dey (6507)
     y--;
-    //     lda (tmp2),y (6508)
+    //     lda (((uint8_t*)&tmp23)[0]),y (6508)
     a = ram[tmp23 + y];
-    //     sta (tmp8),y (6509)
+    //     sta (((uint8_t*)&tmp89)[0]),y (6509)
     ram[tmp89 + y] = a;
     //     tya (6510)
     a = y;
@@ -6909,7 +6911,7 @@ static const uint8_t la995_data[] = "Memory full - Press ESCAPE";
 void process_current_document_character(void)
 {
     // draw_char:
-    //     lda (tmp0),y
+    //     lda (((uint8_t*)&tmp01)[0]),y
     a = ram[tmp01 + y];
     //     iny
     y++;
@@ -6925,12 +6927,12 @@ static void recalculate_cursor_xpos(void)
     // sub_ca608:
     //     lda current_edit_line_ptr
     a = (uint8_t)(current_edit_line_ptr & 0xff);
-    //     sta tmp0
-    tmp0 = a;
+    //     sta ((uint8_t*)&tmp01)[0]
+    ((uint8_t*)&tmp01)[0] = a;
     //     lda current_edit_line_ptr+1
     a = (uint8_t)(current_edit_line_ptr >> 8);
-    //     sta tmp1
-    tmp1 = a;
+    //     sta ((uint8_t*)&tmp01)[1]
+    ((uint8_t*)&tmp01)[1] = a;
     //     lda l0079
     a = l0079;
     if (a != 0)
@@ -7063,15 +7065,15 @@ ca29c:
     // ca2b2: (5239)
     //     jsr sub_cab37 (5240)
     move_tmp01_to_previous_line();
-    //     ldy tmp1 (5241)
-    y = tmp1;
+    //     ldy ((uint8_t*)&tmp01)[1] (5241)
+    y = ((uint8_t*)&tmp01)[1];
     //     cpy current_line_ptr+1 (5242)
     cmp(&flags, y, (uint8_t)(current_line_ptr >> 8));
     //     bne ca30d (5243)
     if (!(flags & FLAG_Z))
         goto ca30d;
-    //     lda tmp0 (5244)
-    a = tmp0;
+    //     lda ((uint8_t*)&tmp01)[0] (5244)
+    a = ((uint8_t*)&tmp01)[0];
     //     cmp current_line_ptr (5245)
     cmp(&flags, a, (uint8_t)(current_line_ptr & 0xff));
     //     bne ca30d (5246)
@@ -7156,12 +7158,12 @@ ca2f9:
         goto ca313;
     //     tya (5285)
     a = y;
-    //     ldy tmp1 (5286)
-    y = tmp1;
+    //     ldy ((uint8_t*)&tmp01)[1] (5286)
+    y = ((uint8_t*)&tmp01)[1];
     //     clc (5287)
     flags &= ~FLAG_C;
-    //     adc tmp0 (5288)
-    a = adc(&flags, a, tmp0);
+    //     adc ((uint8_t*)&tmp01)[0] (5288)
+    a = adc(&flags, a, ((uint8_t*)&tmp01)[0]);
     //     bcc ca307 (5289)
     if (!(flags & FLAG_C))
         goto ca307;
@@ -7393,10 +7395,10 @@ ca3c1:
 loop_ca3c3:
     //     jsr sub_ca486 (5399)
     draw_line(((uint16_t)y << 8) | a);
-    //     lda tmp0 (5400)
-    a = tmp0;
-    //     ldy tmp1 (5401)
-    y = tmp1;
+    //     lda ((uint8_t*)&tmp01)[0] (5400)
+    a = ((uint8_t*)&tmp01)[0];
+    //     ldy ((uint8_t*)&tmp01)[1] (5401)
+    y = ((uint8_t*)&tmp01)[1];
     //     jsr sub_cab1a (5402)
     sub_cab1a();
     //     beq ca422 (5403)
@@ -7404,12 +7406,12 @@ loop_ca3c3:
         goto ca422;
     //     tya (5404)
     a = y;
-    //     ldy tmp1 (5405)
-    y = tmp1;
+    //     ldy ((uint8_t*)&tmp01)[1] (5405)
+    y = ((uint8_t*)&tmp01)[1];
     //     clc (5406)
     flags &= ~FLAG_C;
-    //     adc tmp0 (5407)
-    a = adc(&flags, a, tmp0);
+    //     adc ((uint8_t*)&tmp01)[0] (5407)
+    a = adc(&flags, a, ((uint8_t*)&tmp01)[0]);
     //     bcc ca3d8 (5408)
     if (!(flags & FLAG_C))
         goto ca3d8;
@@ -7681,9 +7683,9 @@ static void render_xchar(void)
 static void restore_cursor_position(void)
 {
     // restore_cursor_position:
-    //     ldx tmp4
-    //     ldy tmp5
-    screen_setcursor(tmp4, tmp5);
+    //     ldx ((uint8_t*)&tmp45)[0]
+    //     ldy ((uint8_t*)&tmp45)[1]
+    screen_setcursor(((uint8_t*)&tmp45)[0], ((uint8_t*)&tmp45)[1]);
 }
 extern uint8_t parser_table[];
 
@@ -7735,22 +7737,22 @@ c8977:
     //     sbc area_start_ptr
     flags |= FLAG_C;
     a = sbc(&flags, a, (uint8_t)(area_start_ptr & 0xff));
-    //     sta tmp6
-    tmp6 = a;
+    //     sta ((uint8_t*)&tmp67)[0]
+    ((uint8_t*)&tmp67)[0] = a;
     //     lda area_end_ptr+1
     a = (uint8_t)(area_end_ptr >> 8);
     //     sbc area_start_ptr+1
     a = sbc(&flags, a, (uint8_t)(area_start_ptr >> 8));
-    //     sta tmp7
-    tmp7 = a;
+    //     sta ((uint8_t*)&tmp67)[1]
+    ((uint8_t*)&tmp67)[1] = a;
     //     bne return_10
     if (a != 0)
     {
         set_flags(&flags, a);
         return;
     }
-    //     lda tmp6
-    a = tmp6;
+    //     lda ((uint8_t*)&tmp67)[0]
+    a = ((uint8_t*)&tmp67)[0];
     set_flags(&flags, a);
     // return_10:
     //     rts
@@ -7770,7 +7772,7 @@ static void save_cursor_position(void)
     uint16_t cursor_ = screen_getcursor();
     a = (uint8_t)(cursor_ & 0xff);
     x = (uint8_t)(cursor_ >> 8);
-    //     sta tmp4
+    //     sta ((uint8_t*)&tmp45)[0]
     tmp45 = (addr_t)(x) << 8 | a;
     //     rts
 }
@@ -7906,18 +7908,18 @@ void sub_c89d3(void)
     // sub_c89d3:
     //     lda area_start_ptr
     a = (uint8_t)(area_start_ptr & 0xff);
-    //     sta tmp4
-    tmp4 = a;
+    //     sta ((uint8_t*)&tmp45)[0]
+    ((uint8_t*)&tmp45)[0] = a;
     //     lda area_start_ptr+1
     a = (uint8_t)(area_start_ptr >> 8);
-    //     sta tmp5
-    tmp5 = a;
+    //     sta ((uint8_t*)&tmp45)[1]
+    ((uint8_t*)&tmp45)[1] = a;
     //     jsr adjust_pointers
     adjust_pointers();
-    //     lda tmp4
-    a = tmp4;
-    //     ldy tmp5
-    y = tmp5;
+    //     lda ((uint8_t*)&tmp45)[0]
+    a = ((uint8_t*)&tmp45)[0];
+    //     ldy ((uint8_t*)&tmp45)[1]
+    y = ((uint8_t*)&tmp45)[1];
     //     jmp cac78
     cac78();
     return;
@@ -8130,19 +8132,19 @@ c998a:
     //     sta input_buffer_offset+1
     l0080 = a;
     // PROVISIONAL: Wipe the edit buffer with 0x10 (soft spaces) and set up
-    // tmp6/tmp7 = current_line_ptr.
+    // ((uint8_t*)&tmp67)[0]/((uint8_t*)&tmp67)[1] = current_line_ptr.
     //      lda #0x10
     a = 0x10;
     //     jsr wipe_buffer
     wipe_buffer(a);
     //     lda current_line_ptr
     a = (uint8_t)(current_line_ptr & 0xff);
-    //     sta tmp6
-    tmp6 = a;
+    //     sta ((uint8_t*)&tmp67)[0]
+    ((uint8_t*)&tmp67)[0] = a;
     //     lda current_line_ptr+1
     a = (uint8_t)((current_line_ptr >> 8) & 0xff);
-    //     sta tmp7
-    tmp7 = a;
+    //     sta ((uint8_t*)&tmp67)[1]
+    ((uint8_t*)&tmp67)[1] = a;
     // PROVISIONAL: Zero working variables: l0047 (character index), l0039
     // (column counter), PROVISIONAL: l0038 (soft-hyphen/break flag), l0046
     // (word-start flag), bottom_margin.
@@ -8529,25 +8531,25 @@ static void sub_c9ac1(void)
     flags |= FLAG_C;
     //     adc current_line_ptr
     a = adc(&flags, a, (uint16_t)(uint8_t)(current_line_ptr & 0xff));
-    //     sta tmp8
-    tmp8 = a;
-    //     sta tmp4
-    tmp4 = a;
+    //     sta ((uint8_t*)&tmp89)[0]
+    ((uint8_t*)&tmp89)[0] = a;
+    //     sta ((uint8_t*)&tmp45)[0]
+    ((uint8_t*)&tmp45)[0] = a;
     //     lda current_line_ptr+1
     a = (uint8_t)(current_line_ptr >> 8);
     //     adc #0
     a = adc(&flags, a, 0);
-    //     sta tmp9
-    tmp9 = a;
-    //     sta tmp5
-    tmp5 = a;
+    //     sta ((uint8_t*)&tmp89)[1]
+    ((uint8_t*)&tmp89)[1] = a;
+    //     sta ((uint8_t*)&tmp45)[1]
+    ((uint8_t*)&tmp45)[1] = a;
     //     ldy #0
     y = 0;
     //     sty l0083
     l0083 = y;
     // c9ad5:
 c9ad5:
-    //     lda (tmp4),y
+    //     lda (((uint8_t*)&tmp45)[0]),y
     a = ram[tmp45 + y];
     //     beq c9b2f
     if (a == 0)
@@ -8574,13 +8576,13 @@ c9ad5:
 
     // c9ae9:
 c9ae9:
-    //     inc tmp8
+    //     inc ((uint8_t*)&tmp89)[0]
     tmp89++;
     //     bne c9aef
-    //     inc tmp9
+    //     inc ((uint8_t*)&tmp89)[1]
     // c9aef:
 c9aef:
-    //     lda (tmp8),y
+    //     lda (((uint8_t*)&tmp89)[0]),y
     a = ram[tmp89 + y];
     //     beq c9b06
     if (a == 0)
@@ -8609,7 +8611,7 @@ c9aef:
         goto c9ae9;
     // c9b06:
 c9b06:
-    //     lda (tmp4),y
+    //     lda (((uint8_t*)&tmp45)[0]),y
     a = ram[tmp45 + y];
     //     cmp #0x20 ; ' '
     if (a != 0x20)
@@ -8761,21 +8763,21 @@ loop_ca465:
     //     beq ca479
     if (x == 0)
         goto ca479;
-    //     sta tmp2
+    //     sta ((uint8_t*)&tmp23)[0]
     tmp23 = (addr_t)(y) << 8 | a;
     //     jsr sub_cab37
     move_tmp01_to_previous_line();
-    //     lda tmp0
-    a = tmp0;
-    //     ldy tmp1
-    y = tmp1;
+    //     lda ((uint8_t*)&tmp01)[0]
+    a = ((uint8_t*)&tmp01)[0];
+    //     ldy ((uint8_t*)&tmp01)[1]
+    y = ((uint8_t*)&tmp01)[1];
     //     bcs loop_ca465
     if (flags & FLAG_C)
         goto loop_ca465;
-    //     lda tmp2
-    a = tmp2;
-    //     ldy tmp3
-    y = tmp3;
+    //     lda ((uint8_t*)&tmp23)[0]
+    a = ((uint8_t*)&tmp23)[0];
+    //     ldy ((uint8_t*)&tmp23)[1]
+    y = ((uint8_t*)&tmp23)[1];
     // ca479:
 ca479:
     //     sta l0011
@@ -8813,15 +8815,15 @@ static void sub_ca536(uint8_t y)
     x = 0;
     // loop_ca544:
 loop_ca544:
-    //     lda tmp9
-    a = tmp9;
+    //     lda ((uint8_t*)&tmp89)[1]
+    a = ((uint8_t*)&tmp89)[1];
     //     cmp markers_array+1,x
     cmp(&flags, a, ((uint8_t*)markers_array)[x + 1]);
     //     bne ca550
     if (!(flags & FLAG_Z))
         goto ca550;
-    //     lda tmp8
-    a = tmp8;
+    //     lda ((uint8_t*)&tmp89)[0]
+    a = ((uint8_t*)&tmp89)[0];
     //     cmp markers_array,x
     cmp(&flags, a, ((uint8_t*)markers_array)[x]);
     //     beq ca558
@@ -8928,12 +8930,12 @@ static void sub_caacb(void)
 
     //     lda current_line_ptr
     a = (uint8_t)(current_line_ptr & 0xff);
-    //     sta tmp6
-    tmp6 = a;
+    //     sta ((uint8_t*)&tmp67)[0]
+    ((uint8_t*)&tmp67)[0] = a;
     //     lda current_line_ptr+1
     a = (uint8_t)(current_line_ptr >> 8);
-    //     sta tmp7
-    tmp7 = a;
+    //     sta ((uint8_t*)&tmp67)[1]
+    ((uint8_t*)&tmp67)[1] = a;
     //     ldy #0
     y = 0;
     // caad5:
@@ -9023,53 +9025,53 @@ static void sub_cac50(void)
         flags = (flags & ~(FLAG_Z | FLAG_N | FLAG_C)) | (a == 0 ? FLAG_Z : 0) |
                 (a & FLAG_N) | (old_a >= 1 ? FLAG_C : 0);
     }
-    //     sta tmp8
-    tmp8 = a;
+    //     sta ((uint8_t*)&tmp89)[0]
+    ((uint8_t*)&tmp89)[0] = a;
     //     bcs cac58
     if (!(flags & FLAG_C))
         y--;
     // cac58:
-    //     sty tmp9
-    tmp9 = y;
+    //     sty ((uint8_t*)&tmp89)[1]
+    ((uint8_t*)&tmp89)[1] = y;
     //     ldy #0
     y = 0;
     // cac5c:
 cac5c:
-    //     lda (tmp8),y
+    //     lda (((uint8_t*)&tmp89)[0]),y
     a = ram[tmp89 + y];
     //     cmp #0x0d
     cmp(&flags, a, 0x0d);
     //     beq cac6f
     if (flags & FLAG_Z)
         goto cac6f;
-    //     lda tmp8
+    //     lda ((uint8_t*)&tmp89)[0]
     //     sec
     //     sbc #1
-    //     sta tmp8
+    //     sta ((uint8_t*)&tmp89)[0]
     //     bcs cac5c
-    //     dec tmp9
+    //     dec ((uint8_t*)&tmp89)[1]
     //     bne cac5c
     flags |= FLAG_C;
     {
-        uint8_t old_a = tmp8;
-        a = tmp8 - 1 - (1 - (flags & FLAG_C));
+        uint8_t old_a = ((uint8_t*)&tmp89)[0];
+        a = ((uint8_t*)&tmp89)[0] - 1 - (1 - (flags & FLAG_C));
         flags = (flags & ~(FLAG_Z | FLAG_N | FLAG_C)) | (a == 0 ? FLAG_Z : 0) |
                 (a & FLAG_N) | (old_a >= 1 ? FLAG_C : 0);
     }
-    tmp8 = a;
+    ((uint8_t*)&tmp89)[0] = a;
     if (flags & FLAG_C)
         goto cac5c;
-    tmp9--;
-    if (tmp9 != 0)
+    ((uint8_t*)&tmp89)[1]--;
+    if (((uint8_t*)&tmp89)[1] != 0)
         goto cac5c;
     // cac6f:
 cac6f:
-    //     lda tmp8
-    //     sta tmp6
-    //     lda tmp9
-    //     sta tmp7
-    tmp6 = tmp8;
-    tmp7 = tmp9;
+    //     lda ((uint8_t*)&tmp89)[0]
+    //     sta ((uint8_t*)&tmp67)[0]
+    //     lda ((uint8_t*)&tmp89)[1]
+    //     sta ((uint8_t*)&tmp67)[1]
+    ((uint8_t*)&tmp67)[0] = ((uint8_t*)&tmp89)[0];
+    ((uint8_t*)&tmp67)[1] = ((uint8_t*)&tmp89)[1];
     // return_73:
     //     rts
     return;
@@ -9217,16 +9219,16 @@ static void write_line_back_to_document(void)
         goto ca93a;
     //     lda current_line_ptr
     a = (uint8_t)(current_line_ptr & 0xff);
-    //     sta tmp4
-    tmp4 = a;
+    //     sta ((uint8_t*)&tmp45)[0]
+    ((uint8_t*)&tmp45)[0] = a;
     //     lda current_line_ptr+1
     a = (uint8_t)(current_line_ptr >> 8);
-    //     sta tmp5
-    tmp5 = a;
+    //     sta ((uint8_t*)&tmp45)[1]
+    ((uint8_t*)&tmp45)[1] = a;
     //     ldy #0
     y = 0;
-    //     sty tmp7
-    tmp7 = y;
+    //     sty ((uint8_t*)&tmp67)[1]
+    ((uint8_t*)&tmp67)[1] = y;
     //     jsr get_line_length
     get_line_length();
     //     sta l0083
@@ -9243,8 +9245,8 @@ static void write_line_back_to_document(void)
     //     beq ca8ed
     if (flags & FLAG_Z)
         goto ca8ed;
-    //     sta tmp6
-    tmp6 = a;
+    //     sta ((uint8_t*)&tmp67)[0]
+    ((uint8_t*)&tmp67)[0] = a;
     //     jsr adjust_pointers
     adjust_pointers();
     //     jmp ca8ed
@@ -9259,8 +9261,8 @@ ca8df:
     //     sec
     //     sbc l0084
     a -= l0084;
-    //     sta tmp6
-    tmp6 = a;
+    //     sta ((uint8_t*)&tmp67)[0]
+    ((uint8_t*)&tmp67)[0] = a;
     //     jsr make_space_for_insertion
     make_space_for_insertion();
     //     bcs return_66
@@ -9293,12 +9295,12 @@ ca8f8:
     edit_buffer_unpacked_flag = y;
     //     lda current_format_line_ptr
     a = (uint8_t)(current_format_line_ptr & 0xff);
-    //     sta tmp6
-    tmp6 = a;
+    //     sta ((uint8_t*)&tmp67)[0]
+    ((uint8_t*)&tmp67)[0] = a;
     //     lda current_format_line_ptr+1
     a = (uint8_t)(current_format_line_ptr >> 8);
-    //     sta tmp7
-    tmp7 = a;
+    //     sta ((uint8_t*)&tmp67)[1]
+    ((uint8_t*)&tmp67)[1] = a;
     //     ldx l0083
     x = l0083;
     //     stx l003b

@@ -389,7 +389,7 @@ static void sub_c95b2(uint8_t a)
     //     ldy l0081
     uint8_t y;
     y = l0081;
-    //     sta (tmp2),y
+    //     sta (((uint8_t*)&tmp23)[0]),y
     ram[tmp23 + y] = a;
     //     iny
     y++;
@@ -399,7 +399,7 @@ static void sub_c95b2(uint8_t a)
 static void c9575(void)
 {
     // c9575
-    //     stx tmp2
+    //     stx ((uint8_t*)&tmp23)[0]
     tmp23 = (addr_t)(y) << 8 | x;
     //     lda #0
     a = 0;
@@ -526,14 +526,14 @@ static void em_fmt_cmd(void)
     evaluate_expression_from_fmt_cmd();
     //     ldy #0
     y = 0;
-    //     sta (tmp0),y
+    //     sta (((uint8_t*)&tmp01)[0]),y
     ram[tmp01 + y] = a;
     //     iny                                                               ;
     //     Y=0x01
     y++;
-    //     lda tmp9
-    a = tmp9;
-    //     sta (tmp0),y
+    //     lda ((uint8_t*)&tmp89)[1]
+    a = ((uint8_t*)&tmp89)[1];
+    //     sta (((uint8_t*)&tmp01)[0]),y
     ram[tmp01 + y] = a;
     // return_38:
     //     rts
@@ -862,12 +862,12 @@ static void dm_fmt_cmd(void)
     //     bne return_42
     //     lda last_macro_ptr
     a = (uint8_t)(last_macro_ptr & 0xff);
-    //     sta tmp6
-    tmp6 = a;
+    //     sta ((uint8_t*)&tmp67)[0]
+    ((uint8_t*)&tmp67)[0] = a;
     //     lda last_macro_ptr+1
     a = (uint8_t)((last_macro_ptr >> 8) & 0xff);
-    //     sta tmp7
-    tmp7 = a;
+    //     sta ((uint8_t*)&tmp67)[1]
+    ((uint8_t*)&tmp67)[1] = a;
     //     ldy #3
     y = 3;
     //     lda (current_format_line_ptr),y
@@ -961,16 +961,16 @@ c96a2:
 c96b8:
     //     lda last_macro_ptr
     a = (uint8_t)(last_macro_ptr & 0xff);
-    //     sta tmp0
-    tmp0 = a;
+    //     sta ((uint8_t*)&tmp01)[0]
+    ((uint8_t*)&tmp01)[0] = a;
     //     sta input_buffer_offset+1
     l0080 = a;
     //     sta current_format_line_ptr
     current_format_line_ptr = (current_format_line_ptr & 0xff00) | a;
     //     lda last_macro_ptr+1
     a = (uint8_t)((last_macro_ptr >> 8) & 0xff);
-    //     sta tmp1
-    tmp1 = a;
+    //     sta ((uint8_t*)&tmp01)[1]
+    ((uint8_t*)&tmp01)[1] = a;
     //     sta l0081
     l0081 = a;
     //     sta current_format_line_ptr+1
@@ -1019,25 +1019,25 @@ c96ce:
     ram[last_macro_ptr + y] = a;
     //     lda last_macro_ptr
     a = (uint8_t)(last_macro_ptr & 0xff);
-    //     sta (tmp6),y
+    //     sta (((uint8_t*)&tmp67)[0]),y
     ram[tmp67 + y] = a;
     //     iny
     y++;
     //     lda last_macro_ptr+1
     a = (uint8_t)((last_macro_ptr >> 8) & 0xff);
-    //     sta (tmp6),y
+    //     sta (((uint8_t*)&tmp67)[0]),y
     ram[tmp67 + y] = a;
     //     rts
     return;
 
     // c96f8:
 c96f8:
-    //     lda tmp0
-    a = tmp0;
+    //     lda ((uint8_t*)&tmp01)[0]
+    a = ((uint8_t*)&tmp01)[0];
     //     sta last_macro_ptr
     last_macro_ptr = (last_macro_ptr & 0xff00) | a;
-    //     lda tmp1
-    a = tmp1;
+    //     lda ((uint8_t*)&tmp01)[1]
+    a = ((uint8_t*)&tmp01)[1];
     //     sta last_macro_ptr+1
     last_macro_ptr = (last_macro_ptr & 0x00ff) | ((uint16_t)a << 8);
     //     bne c96a2                                                         ;
@@ -1112,8 +1112,8 @@ c9725:
     //     tax
     x = a;
     set_flags(&flags, x);
-    //     lda tmp8
-    a = tmp8;
+    //     lda ((uint8_t*)&tmp89)[0]
+    a = ((uint8_t*)&tmp89)[0];
     //     sta highlight1_code,x
     highlight_code[x] = a;
     // return_44:
@@ -1180,15 +1180,15 @@ void lookup_formatting_command(void)
     y = 2;
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
-    //     sta tmp3
-    tmp3 = a;
+    //     sta ((uint8_t*)&tmp23)[1]
+    ((uint8_t*)&tmp23)[1] = a;
     //     dey                                                               ;
     //     Y=0x01
     y--;
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
-    //     sta tmp2
-    tmp2 = a;
+    //     sta ((uint8_t*)&tmp23)[0]
+    ((uint8_t*)&tmp23)[0] = a;
     //     dey                                                               ;
     //     Y=0x00
     y--;
@@ -1196,15 +1196,15 @@ void lookup_formatting_command(void)
     x = 0;
     // loop_c973e:
 loop_c973e:
-    //     lda tmp2
-    a = tmp2;
+    //     lda ((uint8_t*)&tmp23)[0]
+    a = ((uint8_t*)&tmp23)[0];
     //     cmp commands_table,y
     cmp(&flags, a, commands_table[y]);
     //     bne c974c
     if (!(flags & FLAG_Z))
         goto c974c;
-    //     lda tmp3
-    a = tmp3;
+    //     lda ((uint8_t*)&tmp23)[1]
+    a = ((uint8_t*)&tmp23)[1];
     //     cmp lb2a1,y                                                    ;
     //     lb2a1 = commands_table+1
     cmp(&flags, a, commands_table[y + 1]);
@@ -1249,17 +1249,17 @@ void execute_formatting_command(void)
     //     asl
     //     clc
     //     adc jumptable_ptrs,y
-    //     sta tmp8
+    //     sta ((uint8_t*)&tmp89)[0]
     //     lda #0
     //     adc jumptable_ptrs+1,y
-    //     sta tmp9
+    //     sta ((uint8_t*)&tmp89)[1]
     //     ldy #0
-    //     lda (tmp8),y
-    //     sta tmp6
+    //     lda (((uint8_t*)&tmp89)[0]),y
+    //     sta ((uint8_t*)&tmp67)[0]
     //     iny
-    //     lda (tmp8),y
-    //     sta tmp7
-    //     jmp (tmp6)
+    //     lda (((uint8_t*)&tmp89)[0]),y
+    //     sta ((uint8_t*)&tmp67)[1]
+    //     jmp (((uint8_t*)&tmp67)[0])
     switch (a)
     {
         case 0:
@@ -1367,11 +1367,11 @@ static void sub_c976c(void)
     // Pseudocode: Parses word-based flag (ON/OFF/YES/NO) from format command
 
     // sub_c976c:
-    //     sta tmp8
-    tmp8 = a;
-    //     stx tmp9
-    tmp9 = x;
-    //     lda (tmp8),y
+    //     sta ((uint8_t*)&tmp89)[0]
+    ((uint8_t*)&tmp89)[0] = a;
+    //     stx ((uint8_t*)&tmp89)[1]
+    ((uint8_t*)&tmp89)[1] = x;
+    //     lda (((uint8_t*)&tmp89)[0]),y
     a = ram[tmp89 + y];
     //     tax
     x = a;
@@ -1410,7 +1410,7 @@ c9783:
 c9788:
     //     iny
     y++;
-    //     lda (tmp8),y
+    //     lda (((uint8_t*)&tmp89)[0]),y
     a = ram[tmp89 + y];
     //     jsr to_uppercase
     a = toupper(a);
@@ -1482,10 +1482,10 @@ static void evaluate_expression_from_fmt_cmd(void)
     // evaluate_expression_from_fmt_cmd:
     //     lda #0
     a = 0;
-    //     sta tmp8
-    tmp8 = a;
-    //     sta tmp9
-    tmp9 = a;
+    //     sta ((uint8_t*)&tmp89)[0]
+    ((uint8_t*)&tmp89)[0] = a;
+    //     sta ((uint8_t*)&tmp89)[1]
+    ((uint8_t*)&tmp89)[1] = a;
     //     sta input_buffer_offset+1
     l0080 = a;
     // c97c0:
@@ -1516,10 +1516,10 @@ c97c0:
 c97d5:
     //     jsr ca6fe
     parse_decimal_number();
-    //     sta tmp8
-    tmp8 = a;
-    //     stx tmp9
-    tmp9 = x;
+    //     sta ((uint8_t*)&tmp89)[0]
+    ((uint8_t*)&tmp89)[0] = a;
+    //     stx ((uint8_t*)&tmp89)[1]
+    ((uint8_t*)&tmp89)[1] = x;
     // c97dc:
 c97dc:
     //     ldx input_buffer_offset+1
@@ -1538,11 +1538,11 @@ c97dc:
     //     beq c97f7
     if (flags & FLAG_Z)
         goto c97f7;
-    //     lda tmp4
-    a = tmp4;
+    //     lda ((uint8_t*)&tmp45)[0]
+    a = ((uint8_t*)&tmp45)[0];
     //     sec
     flags |= FLAG_C;
-    //     sbc tmp8
+    //     sbc ((uint8_t*)&tmp89)[0]
     tmp89 = tmp45 - tmp89;
     goto c9804;
 
@@ -1581,8 +1581,8 @@ c981c:
     goto c97c0;
     // c9821:
 c9821:
-    //     lda tmp8
-    a = tmp8;
+    //     lda ((uint8_t*)&tmp89)[0]
+    a = ((uint8_t*)&tmp89)[0];
     //     rts
     return;
 }
@@ -1626,24 +1626,24 @@ void render_register(void)
     get_register_address(a);
     //     ldy #0
     y = 0;
-    //     sty tmp8
+    //     sty ((uint8_t*)&tmp89)[0]
     tmp89 = 0;
     //     bcs cada2
     if (flags & FLAG_C)
         goto cada2;
     //     bit lada6
     bit(&flags, a, lada6);
-    //     lda (tmp6),y
+    //     lda (((uint8_t*)&tmp67)[0]),y
     a = ram[tmp67 + y];
-    //     sta tmp8
-    tmp8 = a;
+    //     sta ((uint8_t*)&tmp89)[0]
+    ((uint8_t*)&tmp89)[0] = a;
     //     iny                                                               ;
     //     Y=0x01
     y++;
-    //     lda (tmp6),y
+    //     lda (((uint8_t*)&tmp67)[0]),y
     a = ram[tmp67 + y];
-    //     sta tmp9
-    tmp9 = a;
+    //     sta ((uint8_t*)&tmp89)[1]
+    ((uint8_t*)&tmp89)[1] = a;
     //     jsr render_number_to_output_buffer
     render_number_to_output_buffer();
     // cada2:
@@ -1733,7 +1733,7 @@ void render_number_to_screen(void)
     // ;
     // ***************************************************************************************
     // render_number_to_screen:
-    //     stx tmp8
+    //     stx ((uint8_t*)&tmp89)[0]
     tmp89 = (addr_t)(y) << 8 | x;
     //     lda #<(bdos_print_char)
     a = (uint8_t)((uintptr_t)&print_char_via_putchar & 0xff);
@@ -1747,8 +1747,8 @@ static void render_number_to_callback(void)
 {
     // Pseudocode: Render 16-bit number (TMP9:TMP8) as decimal via callback
 
-    tmp6 = a;
-    tmp7 = y;
+    ((uint8_t*)&tmp67)[0] = a;
+    ((uint8_t*)&tmp67)[1] = y;
     uint16_t value = tmp89;
     char buf[6];
     snprintf(buf, sizeof(buf), "%u", (unsigned int)value);
@@ -1896,7 +1896,7 @@ static void c93b8(void)
 {
     // c93b8:
     //     iny
-    //     lda (tmp4),y
+    //     lda (((uint8_t*)&tmp45)[0]),y
     //     bpl c93b8
     uint8_t a;
     do
@@ -1987,7 +1987,7 @@ c9048:
     //     pha
     {
         uint8_t saved_a = a;
-        //     lda (tmp0),y
+        //     lda (((uint8_t*)&tmp01)[0]),y
         a = ram[tmp01 + y];
         //     jsr sub_c9431
         sub_c9431();
@@ -1996,7 +1996,7 @@ c9048:
     }
     //     tax
     x = a;
-    //     lda (tmp0),y
+    //     lda (((uint8_t*)&tmp01)[0]),y
     a = ram[tmp01 + y];
     //     iny
     y++;
@@ -2235,8 +2235,8 @@ c90f8:
 c9101:
     //     lda #0
     a = 0;
-    //     sta tmp9
-    tmp9 = a;
+    //     sta ((uint8_t*)&tmp89)[1]
+    ((uint8_t*)&tmp89)[1] = a;
     //     ldx #8
     x = 8;
     // loop_c9107:
@@ -2248,8 +2248,8 @@ loop_c9107:
         flags = (flags & ~(FLAG_C | FLAG_Z | FLAG_N)) | c;
         set_flags(&flags, a);
     }
-    //     rol tmp9
-    tmp9 = rol(&flags, tmp9);
+    //     rol ((uint8_t*)&tmp89)[1]
+    ((uint8_t*)&tmp89)[1] = rol(&flags, ((uint8_t*)&tmp89)[1]);
     //     asl l0045
     {
         uint8_t c = (l0045 & 0x80) ? FLAG_C : 0;
@@ -2267,8 +2267,8 @@ loop_c9107:
     //     bcc c9115
     if (!(flags & FLAG_C))
         goto c9115;
-    //     inc tmp9
-    tmp9++;
+    //     inc ((uint8_t*)&tmp89)[1]
+    ((uint8_t*)&tmp89)[1]++;
     // c9115:
 c9115:
     //     dex
@@ -2276,8 +2276,8 @@ c9115:
     //     bne loop_c9107
     if (x != 0)
         goto loop_c9107;
-    //     sta tmp8
-    tmp8 = a;
+    //     sta ((uint8_t*)&tmp89)[0]
+    ((uint8_t*)&tmp89)[0] = a;
     //     lda l0044
     a = l0044;
     //     sta l0046
@@ -2286,8 +2286,8 @@ c9115:
     sub_cadf0();
     //     sta l0045
     l0045 = a;
-    //     lda tmp8
-    a = tmp8;
+    //     lda ((uint8_t*)&tmp89)[0]
+    a = ((uint8_t*)&tmp89)[0];
     //     sta l0044
     l0044 = a;
     //     ldy #0
@@ -2380,7 +2380,7 @@ c912b:
     }
 
 c8fe6_inline:
-    //     lda (tmp0),y
+    //     lda (((uint8_t*)&tmp01)[0]),y
     a = ram[tmp01 + y];
     //     iny
     y++;
@@ -2451,12 +2451,13 @@ void parse_decimal_number(void)
 {
     // ca6fe - Parse decimal number from format command line
     // On entry: y = index into current_format_line_ptr
-    // On exit:  tmp8:tmp9 = parsed value, a/x = value, y = advanced past digits
+    // On exit:  ((uint8_t*)&tmp89)[0]:((uint8_t*)&tmp89)[1] = parsed value, a/x
+    // = value, y = advanced past digits
     //           flags.Z = 1 if no digits parsed
 
     uint8_t had_digits = 0;
-    tmp8 = 0;
-    tmp9 = 0;
+    ((uint8_t*)&tmp89)[0] = 0;
+    ((uint8_t*)&tmp89)[1] = 0;
 
     for (;;)
     {
@@ -2472,8 +2473,8 @@ void parse_decimal_number(void)
         tmp89 = val;
     }
 
-    a = tmp8;
-    x = tmp9;
+    a = ((uint8_t*)&tmp89)[0];
+    x = ((uint8_t*)&tmp89)[1];
     set_flags(&flags, had_digits);
 }
 
@@ -2710,7 +2711,7 @@ static void print_loop(void)
         x = 0;
         // loop_c8f5d:
     loop_c8f5d_l:
-        //     lda (tmp0),y
+        //     lda (((uint8_t*)&tmp01)[0]),y
         a = ram[tmp01 + y];
         //     sta current_ruler_buffer,x
         current_ruler_buffer[x] = a;
@@ -2751,18 +2752,18 @@ static void print_loop(void)
     c8f7a_l:
         //     lda first_macro_ptr
         a = (uint8_t)(first_macro_ptr & 0xff);
-        //     sta tmp6
-        tmp6 = a;
+        //     sta ((uint8_t*)&tmp67)[0]
+        ((uint8_t*)&tmp67)[0] = a;
         //     lda first_macro_ptr+1
         a = (uint8_t)(first_macro_ptr >> 8);
-        //     sta tmp7
-        tmp7 = a;
+        //     sta ((uint8_t*)&tmp67)[1]
+        ((uint8_t*)&tmp67)[1] = a;
         //     ldy #1
         y = 1;
         //     lda (current_format_line_ptr),y
         a = ram[current_format_line_ptr + y];
-        //     sta tmp8
-        tmp8 = a;
+        //     sta ((uint8_t*)&tmp89)[0]
+        ((uint8_t*)&tmp89)[0] = a;
         //     iny ; Y=0x02
         y++;
         //     lda (current_format_line_ptr),y
@@ -2788,13 +2789,13 @@ static void print_loop(void)
         a = 0x20;
         // c8f92:
     c8f92_l:
-        //     sta tmp9
-        tmp9 = a;
+        //     sta ((uint8_t*)&tmp89)[1]
+        ((uint8_t*)&tmp89)[1] = a;
         // lookup_macro_name:
     lookup_macro_name_l:
         //     ldy #0
         y = 0;
-        //     lda (tmp6),y
+        //     lda (((uint8_t*)&tmp67)[0]),y
         a = ram[tmp67 + y];
         set_flags(&flags, a);
         //     beq c8f6b
@@ -2802,19 +2803,19 @@ static void print_loop(void)
             goto c8f6b_l;
         //     ldy #2
         y = 2;
-        //     lda (tmp6),y
+        //     lda (((uint8_t*)&tmp67)[0]),y
         a = ram[tmp67 + y];
-        //     cmp tmp8
-        cmp(&flags, a, tmp8);
+        //     cmp ((uint8_t*)&tmp89)[0]
+        cmp(&flags, a, ((uint8_t*)&tmp89)[0]);
         //     bne get_next_macro_in_linked_list
         if (!(flags & FLAG_Z))
             goto get_next_macro_in_linked_list_l;
         //     iny ; Y=0x03
         y++;
-        //     lda (tmp6),y
+        //     lda (((uint8_t*)&tmp67)[0]),y
         a = ram[tmp67 + y];
-        //     cmp tmp9
-        cmp(&flags, a, tmp9);
+        //     cmp ((uint8_t*)&tmp89)[1]
+        cmp(&flags, a, ((uint8_t*)&tmp89)[1]);
         //     beq c8fb9
         if (flags & FLAG_Z)
             goto c8fb9_l;
@@ -2822,22 +2823,22 @@ static void print_loop(void)
     get_next_macro_in_linked_list_l:
         //     ldy #0
         y = 0;
-        //     lda (tmp6),y
+        //     lda (((uint8_t*)&tmp67)[0]),y
         a = ram[tmp67 + y];
         //     pha
         {
             uint8_t saved_tmp = a;
             //     iny ; Y=0x01
             y++;
-            //     lda (tmp6),y
+            //     lda (((uint8_t*)&tmp67)[0]),y
             a = ram[tmp67 + y];
-            //     sta tmp7
-            tmp7 = a;
+            //     sta ((uint8_t*)&tmp67)[1]
+            ((uint8_t*)&tmp67)[1] = a;
             //     pla
             a = saved_tmp;
         }
-        //     sta tmp6
-        tmp6 = a;
+        //     sta ((uint8_t*)&tmp67)[0]
+        ((uint8_t*)&tmp67)[0] = a;
         //     jmp lookup_macro_name
         goto lookup_macro_name_l;
 
@@ -2852,16 +2853,16 @@ static void print_loop(void)
             nested_macro_error();
             return;
         }
-        //     lda tmp6
-        a = tmp6;
+        //     lda ((uint8_t*)&tmp67)[0]
+        a = ((uint8_t*)&tmp67)[0];
         //     clc
         flags &= ~FLAG_C;
         //     adc #4
         a = adc(&flags, a, 4);
         //     sta ptr3
         ptr3 = (ptr3 & 0xff00) | a;
-        //     lda tmp7
-        a = tmp7;
+        //     lda ((uint8_t*)&tmp67)[1]
+        a = ((uint8_t*)&tmp67)[1];
         //     adc #0
         a = adc(&flags, a, 0);
         //     sta ptr3+1
@@ -2907,7 +2908,7 @@ static void print_loop(void)
         }
         // c8fe6:
     c8fe6_l:
-        //     lda (tmp0),y
+        //     lda (((uint8_t*)&tmp01)[0]),y
         a = ram[tmp01 + y];
         //     iny
         y++;
@@ -3092,8 +3093,8 @@ c8cdb:
     //     beq c8c95
     if (flags & FLAG_Z)
         goto c8c95;
-    //     lda tmp1
-    a = tmp1;
+    //     lda ((uint8_t*)&tmp01)[1]
+    a = ((uint8_t*)&tmp01)[1];
     //     cmp l0081
     cmp(&flags, a, l0081);
     //     bcc c8c95
@@ -3102,8 +3103,8 @@ c8cdb:
     //     bne c8cf1
     if (!(flags & FLAG_Z))
         goto c8cf1;
-    //     lda tmp0
-    a = tmp0;
+    //     lda ((uint8_t*)&tmp01)[0]
+    a = ((uint8_t*)&tmp01)[0];
     //     cmp input_buffer_offset+1
     cmp(&flags, a, l0080);
     //     bcc c8c95
@@ -3145,15 +3146,15 @@ static void render_header_or_footer(void)
     // ;
     // ***************************************************************************************
     // render_header_or_footer:
-    //     stx tmp4
-    tmp4 = x;
-    //     sty tmp5
-    tmp5 = y;
+    //     stx ((uint8_t*)&tmp45)[0]
+    ((uint8_t*)&tmp45)[0] = x;
+    //     sty ((uint8_t*)&tmp45)[1]
+    ((uint8_t*)&tmp45)[1] = y;
     //     ldy #0
     y = 0;
     //     sty l0082
     l0082 = y;
-    //     lda (tmp4),y
+    //     lda (((uint8_t*)&tmp45)[0]),y
     a = ram[tmp45 + y];
     //     beq return_28
     if (a == 0)
@@ -3502,14 +3503,14 @@ c9188_normal_entry:
     a = (uint8_t)(ptr5 & 0xff);
     //     sta input_buffer_ptr+1
     l0080 = a;
-    //     sta tmp0
-    tmp0 = a;
+    //     sta ((uint8_t*)&tmp01)[0]
+    ((uint8_t*)&tmp01)[0] = a;
     //     lda ptr5+1
     a = (uint8_t)(ptr5 >> 8);
     //     sta l0081
     l0081 = a;
-    //     sta tmp1
-    tmp1 = a;
+    //     sta ((uint8_t*)&tmp01)[1]
+    ((uint8_t*)&tmp01)[1] = a;
     //     jsr sub_c9241
     sub_c9241();
     //     bcs return_26
@@ -3589,10 +3590,10 @@ c91cc:
     y = (uint8_t)(ptr1 >> 8);
     // c91d0:
 c91d0:
-    //     sta tmp0
-    tmp0 = a;
-    //     sty tmp1
-    tmp1 = y;
+    //     sta ((uint8_t*)&tmp01)[0]
+    ((uint8_t*)&tmp01)[0] = a;
+    //     sty ((uint8_t*)&tmp01)[1]
+    ((uint8_t*)&tmp01)[1] = y;
     //     sta current_format_line_ptr
     current_format_line_ptr = (current_format_line_ptr & 0xff00) | a;
     //     sty current_format_line_ptr+1
@@ -3784,17 +3785,17 @@ loop_c9247:
     //     beq return_27
     if (a == 0)
         return;
-    //     sta (tmp0),y
+    //     sta (((uint8_t*)&tmp01)[0]),y
     ram[tmp01 + y] = a;
     //     inc ptr6
     ptr6++;
     //     bne c9254
     //     inc ptr6+1
     // c9254:
-    //     inc tmp0
+    //     inc ((uint8_t*)&tmp01)[0]
     tmp01++;
     //     bne c925a
-    //     inc tmp1
+    //     inc ((uint8_t*)&tmp01)[1]
     // c925a:
     //     cmp #0x0d
     cmp(&flags, a, 0x0d);
@@ -3877,15 +3878,15 @@ static void sub_c9393(void)
     {
         // c93aa:
         //     clc
-        //     adc tmp4
+        //     adc ((uint8_t*)&tmp45)[0]
         flags &= ~FLAG_C;
-        a = adc(&flags, a, tmp4);
-        tmp2 = a;
-        //     lda tmp5
-        a = tmp5;
+        a = adc(&flags, a, ((uint8_t*)&tmp45)[0]);
+        ((uint8_t*)&tmp23)[0] = a;
+        //     lda ((uint8_t*)&tmp45)[1]
+        a = ((uint8_t*)&tmp45)[1];
         //     adc #0
         a = adc(&flags, a, 0);
-        tmp3 = a;
+        ((uint8_t*)&tmp23)[1] = a;
     }
 }
 
@@ -3905,11 +3906,11 @@ static void sub_c939b(void)
     {
         // c93aa:
         flags &= ~FLAG_C;
-        a = adc(&flags, a, tmp4);
-        tmp2 = a;
-        a = tmp5;
+        a = adc(&flags, a, ((uint8_t*)&tmp45)[0]);
+        ((uint8_t*)&tmp23)[0] = a;
+        a = ((uint8_t*)&tmp45)[1];
         a = adc(&flags, a, 0);
-        tmp3 = a;
+        ((uint8_t*)&tmp23)[1] = a;
     }
 }
 
@@ -3927,11 +3928,11 @@ static void sub_c93a1(void)
     // c93aa:
     {
         flags &= ~FLAG_C;
-        a = adc(&flags, a, tmp4);
-        tmp2 = a;
-        a = tmp5;
+        a = adc(&flags, a, ((uint8_t*)&tmp45)[0]);
+        ((uint8_t*)&tmp23)[0] = a;
+        a = ((uint8_t*)&tmp45)[1];
         a = adc(&flags, a, 0);
-        tmp3 = a;
+        ((uint8_t*)&tmp23)[1] = a;
     }
 }
 
@@ -3977,7 +3978,7 @@ static void sub_c93c8(void)
     l0081 = y;
     // c93ce:
 c93ce:
-    //     lda (tmp2),y
+    //     lda (((uint8_t*)&tmp23)[0]),y
     a = ram[tmp23 + y];
     set_flags(&flags, a);
     //     bmi c93e6
@@ -4031,7 +4032,7 @@ return_30:
 
     // c93f2:
 c93f2:
-    //     lda (tmp2),y
+    //     lda (((uint8_t*)&tmp23)[0]),y
     a = ram[tmp23 + y];
     set_flags(&flags, a);
     //     bmi c93e6
@@ -4235,12 +4236,12 @@ static void write_byte_to_memory(uint8_t a)
     // write_byte_to_memory:
     //     ldy #0
     uint8_t y = 0;
-    //     sta (tmp0),y
+    //     sta (((uint8_t*)&tmp01)[0]),y
     ram[tmp01] = a;
-    //     inc tmp0
+    //     inc ((uint8_t*)&tmp01)[0]
     tmp01++;
     //     bne c8d0a
-    //     inc tmp1
+    //     inc ((uint8_t*)&tmp01)[1]
     // c8d0a:
     //     sta l0084
     l0084 = a;
@@ -4276,8 +4277,9 @@ void call_printer_driver(void)
     // call_printer_driver:
     //     clc
     //     adc printer_driver_ptr          ; A = byte offset into jump table
-    //     (0,3,6,9) sta tmp8 lda printer_driver_ptr+1 adc #0 sta tmp9 jmp
-    //     (tmp8)
+    //     (0,3,6,9) sta ((uint8_t*)&tmp89)[0] lda printer_driver_ptr+1 adc #0
+    //     sta ((uint8_t*)&tmp89)[1] jmp
+    //     (((uint8_t*)&tmp89)[0])
     // Replaced with struct dispatch: convert byte offset to entry index
     switch (a)
     {
