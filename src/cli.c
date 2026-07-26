@@ -217,11 +217,7 @@ loop_c82b3:
     if (flags & FLAG_Z)
         goto loop_c82b3;
     //     ldx ptr3
-    x = (uint8_t)(ptr3 & 0xff);
-    //     ldy ptr3+1
-    y = (uint8_t)((ptr3 >> 8) & 0xff);
-    //     jsr render_number_to_screen
-    render_number_to_screen();
+    render_number_to_screen(ptr3);
     //     jsr print_inline_string
     //     .ascii " string(s) changed"
     //     .byte 0xff
@@ -505,11 +501,7 @@ c871f:
     if (!(flags & FLAG_Z))
         goto c86b8;
     //     ldx ((uint8_t*)&tmp89)[0]
-    x = ((uint8_t*)&tmp89)[0];
-    //     ldy ((uint8_t*)&tmp89)[1]
-    y = ((uint8_t*)&tmp89)[1];
-    //     jsr render_number_to_screen
-    render_number_to_screen();
+    render_number_to_screen(tmp89);
     //     jsr print_inline_string
     //     .ascii " word(s) counted."
     //     .byte 0xff
@@ -1657,8 +1649,7 @@ void run_cli(void)
 
     //     jsr compute_bytes_free
     compute_bytes_free();
-    //     jsr render_number_to_screen
-    render_number_to_screen();
+    render_number_to_screen((addr_t)(y) << 8 | x);
     //     jsr bdos_print_newline
     cli_putchar('\n');
     //     jsr display_document_file_state

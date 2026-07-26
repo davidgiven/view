@@ -5765,7 +5765,6 @@ static void ca684(void)
     //     rts
     return;
 }
-void (*number_callback)(void);
 
 void ca741(void)
 {

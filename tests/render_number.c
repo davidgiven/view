@@ -9,56 +9,45 @@ typedef uint16_t addr_t;
 uint8_t a, x, y, flags;
 extern addr_t tmp01, tmp23, tmp45, tmp67, tmp89;
 addr_t tmp01 = 0, tmp23 = 0, tmp45 = 0, tmp67 = 0, tmp89 = 0;
-#define tmp6 (*((uint8_t*)&tmp67))
-#define tmp7 (*((uint8_t*)&tmp67 + 1))
-#define tmp8 (*((uint8_t*)&tmp89))
-#define tmp9 (*((uint8_t*)&tmp89 + 1))
 uint8_t l0083;
-static void (*number_callback)(void);
 
 /* ---- captured output for testing ---- */
 static char output_buf[32];
 static int output_len;
 
-static void test_callback(void)
+static void test_callback(uint8_t digit)
 {
     if (output_len < (int)sizeof(output_buf) - 1)
-        output_buf[output_len++] = (char)a;
+        output_buf[output_len++] = (char)digit;
 }
 
 static void reset_output(void)
 {
     output_len = 0;
     memset(output_buf, 0, sizeof(output_buf));
-    number_callback = test_callback;
 }
 
 /* ---- units-under-test (transcribed from view.c) ---- */
-static void render_number_to_callback(void)
+static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t))
 {
-    tmp6 = a;
-    tmp7 = y;
-    uint16_t value = (uint16_t)tmp8 | ((uint16_t)tmp9 << 8);
     char buf[6];
     snprintf(buf, sizeof(buf), "%u", (unsigned int)value);
     for (char* p = buf; *p; p++)
     {
         a = *p - '0';
         a |= 0x30;
-        number_callback();
+        cb(a);
     }
 }
 
 /* ---- helpers ---- */
 static void render_number(uint16_t value)
 {
-    tmp8 = (uint8_t)(value & 0xff);
-    tmp9 = (uint8_t)(value >> 8);
     a = 0;
     y = 0;
     flags = 0;
     reset_output();
-    render_number_to_callback();
+    render_number_to_callback(value, test_callback);
 }
 
 static int test_failures;

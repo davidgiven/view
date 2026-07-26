@@ -92,8 +92,8 @@ static void sub_c95b2(uint8_t a);
 static void c9575(void);
 void render_register(void);
 static void render_number_to_output_buffer(void);
-static void emit_to_output_buffer_callback(void);
-static void render_number_to_callback(void);
+static void emit_to_output_buffer_callback(uint8_t digit);
+static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t));
 static const uint8_t lada6 = 0x40;
 static void c950f_impl(void)
 {
@@ -1655,14 +1655,13 @@ static void render_number_to_output_buffer(void)
     //     lda la69a
     //     ldy la69b
     //     jsr render_number_to_callback
-    number_callback = emit_to_output_buffer_callback;
-    render_number_to_callback();
+    render_number_to_callback(tmp89, emit_to_output_buffer_callback);
     //     ldx l0082
     x = l0082;
     //     rts
     return;
 }
-static void emit_to_output_buffer_callback(void)
+static void emit_to_output_buffer_callback(uint8_t digit)
 {
     // emit_to_output_buffer_callback
     // Pseudocode: Callback that writes a digit character to the output buffer
@@ -1671,11 +1670,9 @@ static void emit_to_output_buffer_callback(void)
     // la69b = la69a+1
     //     .word emit_to_output_buffer_callback
 
-    // emit_to_output_buffer_callback:
     //     pha
     // (digit value is in a at entry — set by render_number_to_callback)
     {
-        uint8_t digit = a;
         //     txa
         //     pha
         uint8_t saved_x = x;
@@ -1701,11 +1698,11 @@ static void emit_to_output_buffer_callback(void)
     //     rts
     return;
 }
-void print_char_via_putchar(void)
+void print_char_via_putchar(uint8_t a)
 {
     cli_putchar(a);
 }
-void render_number_to_screen(void)
+void render_number_to_screen(uint16_t val)
 {
     // Pseudocode: Renders a 16-bit number to screen via bdos_print_char
 
@@ -1717,28 +1714,25 @@ void render_number_to_screen(void)
     // ***************************************************************************************
     // render_number_to_screen:
     //     stx ((uint8_t*)&tmp89)[0]
-    tmp89 = (addr_t)(y) << 8 | x;
+    tmp89 = val;
     //     lda #<(bdos_print_char)
     a = (uint8_t)((uintptr_t)&print_char_via_putchar & 0xff);
     //     ldy #>(bdos_print_char)
     y = (uint8_t)((uintptr_t)&print_char_via_putchar >> 8);
-    number_callback = print_char_via_putchar;
     // Fall through to render_number_to_callback in original 6502
-    render_number_to_callback();
+    render_number_to_callback(tmp89, print_char_via_putchar);
 }
-static void render_number_to_callback(void)
+static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t))
 {
-    // Pseudocode: Render 16-bit number (TMP9:TMP8) as decimal via callback
+    // Pseudocode: Render 16-bit number as decimal via callback
 
-    tmp67 = (addr_t)(y) << 8 | a;
-    uint16_t value = tmp89;
     char buf[6];
     snprintf(buf, sizeof(buf), "%u", (unsigned int)value);
     for (char* p = buf; *p; p++)
     {
         a = *p - '0';
         a |= 0x30;
-        number_callback();
+        cb(a);
     }
 }
 void bad_filename_error(void)
@@ -3274,11 +3268,8 @@ static void render_new_page(void)
     cli_putstring("\nPage ");
 
     //     ldx register_value_p
-    x = ram[RAM_REGISTER_VALUE_P];
-    //     ldy register_value_p+1
-    y = ram[RAM_REGISTER_VALUE_P + 1];
-    //     jsr render_number_to_screen
-    render_number_to_screen();
+    render_number_to_screen(((addr_t)ram[RAM_REGISTER_VALUE_P + 1] << 8) |
+                            ram[RAM_REGISTER_VALUE_P]);
     //     jsr print_inline_string
     //     .ascii ".."
     //     .byte 0
