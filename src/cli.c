@@ -363,16 +363,12 @@ loop_c86c2:
     //     iny
     y++;
     //     cmp l8747,x
-    cmp(&flags, a, l8747_data[x]);
-    //     bne c86d1
-    if (!(flags & FLAG_Z))
+    if (a != l8747_data[x])
         goto c86d1;
     //     lda (((uint8_t*)&tmp01)[0]),y
     a = ram[tmp01 + y];
     //     cmp l8748,x
-    cmp(&flags, a, l8747_data[x + 1]);
-    //     beq c86df
-    if (flags & FLAG_Z)
+    if (a == l8747_data[x + 1])
         goto c86df;
     // c86d1:
 c86d1:
@@ -428,9 +424,7 @@ c86ea:
     x = 0;
     //     ldy l0082
     y = l0082;
-    set_flags(&flags, y);
-    //     bmi c870d
-    if (flags & FLAG_N)
+    if ((int8_t)y < 0)
         goto c870d;
     //     cmp #0x0d
     if (a == 0x0d)
@@ -489,16 +483,12 @@ c871f:
     //     ldy ((uint8_t*)&tmp01)[1]
     y = ((uint8_t*)&tmp01)[1];
     //     cpy area_end_ptr+1
-    cmp(&flags, y, (uint8_t)(area_end_ptr >> 8));
-    //     bne c86b8
-    if (!(flags & FLAG_Z))
+    if (y != (uint8_t)(area_end_ptr >> 8))
         goto c86b8;
     //     ldy ((uint8_t*)&tmp01)[0]
     y = ((uint8_t*)&tmp01)[0];
     //     cpy area_end_ptr
-    cmp(&flags, y, (uint8_t)(area_end_ptr & 0xff));
-    //     bne c86b8
-    if (!(flags & FLAG_Z))
+    if (y != (uint8_t)(area_end_ptr & 0xff))
         goto c86b8;
     //     ldx ((uint8_t*)&tmp89)[0]
     render_number_to_screen(tmp89);
@@ -671,9 +661,7 @@ static void fold_cmd(void)
         goto c87b4;
     }
     //     cmp #'0'
-    cmp(&flags, a, '0');
-    //     bne c87b4 (not 0 or 1 → just show state)
-    if (!(flags & FLAG_Z))
+    if (a != '0')
         goto c87b4;
     //     false → folding_flag = 0x80
     folding_flag = 0x80;
@@ -777,9 +765,7 @@ c876d:
     if (!(flags & FLAG_Z))
         goto c8787;
     //     cmp area_end_ptr
-    cmp(&flags, a, (uint8_t)(area_end_ptr & 0xff));
-    //     bcc c876d
-    if (!(flags & FLAG_C))
+    if (a < (uint8_t)(area_end_ptr & 0xff))
         goto c876d;
     // c8787:
 c8787:
@@ -1397,9 +1383,7 @@ c8649:
     // loop_c8652:
 loop_c8652:
     //     cmp c867d,x
-    cmp(&flags, a, ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x]);
-    //     beq c8669
-    if (flags & FLAG_Z)
+    if (a == ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x])
         goto c8669;
     //     inx
     x++;
@@ -2075,9 +2059,7 @@ void zero_terminate_filename_buffer(void)
     // zloop:
 zloop:
     //     cmp filename_buffer, x
-    cmp(&flags, a, filename_buffer[x]);
-    //     zbreakif eq
-    if (flags & FLAG_Z)
+    if (a == filename_buffer[x])
         goto zbreak;
     //     inx
     x++;

@@ -545,16 +545,12 @@ void sub_c8371(void)
     //     lda ((uint8_t*)&tmp89)[1]
     a = ((uint8_t*)&tmp89)[1];
     //     cmp doc_ptr2+1
-    cmp(&flags, a, (uint8_t)(doc_ptr2 >> 8));
-    //     bne c8389
-    if (!(flags & FLAG_Z))
+    if (a != (uint8_t)(doc_ptr2 >> 8))
         goto c8389;
     //     lda ((uint8_t*)&tmp89)[0]
     a = ((uint8_t*)&tmp89)[0];
     //     cmp doc_ptr2+0
-    cmp(&flags, a, (uint8_t)(doc_ptr2 & 0xff));
-    //     beq c8398
-    if (flags & FLAG_Z)
+    if (a == (uint8_t)(doc_ptr2 & 0xff))
         goto c8398;
 c8389:
     // c8389:
@@ -902,9 +898,7 @@ c8a86:
 c8a87:
     // c8a87:
     //     cpx l004a
-    cmp(&flags, x, l004a);
-    //     bcc c8a5b
-    if (!(flags & FLAG_C))
+    if (x < l004a)
         goto c8a5b;
     //     lda doc_ptr2+0
     a = (uint8_t)(doc_ptr2 & 0xff);
@@ -1145,9 +1139,7 @@ c8b38:
 c8b47:
     // c8b47:
     //     cmp #2
-    cmp(&flags, a, 2);
-    //     bne c8b4d
-    if (!(flags & FLAG_Z))
+    if (a != 2)
         goto c8b4d;
     //     lda #0x20 ; ' '
     a = 0x20;

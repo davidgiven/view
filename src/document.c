@@ -126,9 +126,7 @@ loop_c89fa:
     //     lda input_filename,y
     a = input_filename[y];
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d);
-    //     beq c8a07
-    if (flags & FLAG_Z)
+    if (a == 0x0d)
         goto c8a07;
     //     jsr bdos_print_char
     cli_putchar(a);
@@ -200,34 +198,26 @@ loop_caba5:
     //     lda (current_ruler_ptr),y
     a = ram[current_ruler_ptr + y];
     //     cmp #0x3e ; '>'
-    cmp(&flags, a, 0x3e);
-    //     bne cabad
-    if (!(flags & FLAG_Z))
+    if (a != 0x3e)
         goto cabad;
     //     sty ruler_left_stop
     ruler_left_stop = y;
     // cabad:
 cabad:
     //     cmp #0x3c ; '<'
-    cmp(&flags, a, 0x3c);
-    //     bne cabb3
-    if (!(flags & FLAG_Z))
+    if (a != 0x3c)
         goto cabb3;
     //     sty ruler_right_stop
     ruler_right_stop = y;
     // cabb3:
 cabb3:
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d);
-    //     beq cabbc
-    if (flags & FLAG_Z)
+    if (a == 0x0d)
         goto cabbc;
     //     iny
     y++;
     //     cpy #0x84
-    cmp(&flags, y, MAX_LINE_LENGTH);
-    //     bne loop_caba5
-    if (!(flags & FLAG_Z))
+    if (y != MAX_LINE_LENGTH)
         goto loop_caba5;
     // cabbc:
 cabbc:
@@ -326,19 +316,13 @@ void process_document_character(void)
     // process_document_character
     // sub_ca5ae:
     //     cmp #9
-    cmp(&flags, a, 9);
-    //     beq ca5e1
-    if (flags & FLAG_Z)
+    if (a == 9)
         goto ca5e1;
     //     cmp #0x10
-    cmp(&flags, a, 0x10);
-    //     beq ca5d5
-    if (flags & FLAG_Z)
+    if (a == 0x10)
         goto ca5d5;
     //     cmp #0x0b
-    cmp(&flags, a, 0x0b);
-    //     beq ca5d9
-    if (flags & FLAG_Z)
+    if (a == 0x0b)
         goto ca5d9;
     //     cmp #0x1a
     cmp(&flags, a, 0x1a);
@@ -696,9 +680,7 @@ loop_cb0e9:
     //     adc #6
     a += 6;
     //     cmp screen_width
-    cmp(&flags, a, screen_maxcolumn);
-    //     beq cb0ff
-    if (flags & FLAG_Z)
+    if (a == screen_maxcolumn)
         goto cb0ff;
     //     txa
     a = x;
@@ -1155,9 +1137,7 @@ loop_cab2b:
     //     iny
     y++;
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d);
-    //     bne loop_cab2b
-    if (!(flags & FLAG_Z))
+    if (a != 0x0d)
         goto loop_cab2b;
     //     lda (((uint8_t*)&tmp01)[0]),y
     a = ram[tmp01 + y];
@@ -1208,8 +1188,7 @@ cab4b:
 loop_cab4d:
     tmp01--;
     a = ram[tmp01];
-    cmp(&flags, a, 0x0d);
-    if (!(flags & FLAG_Z))
+    if (a != 0x0d)
         goto loop_cab4d;
     tmp01++;
     //     jsr sub_cab6e

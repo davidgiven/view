@@ -304,16 +304,7 @@ void editor_loop_impl(void)
 
             //     cmp l0072
 
-            cmp(&flags, a, l0072);
-
-            //     bcc c9b73
-
-            if (!(flags & FLAG_C))
-                goto c9b73_;
-
-            //     beq c9b73
-
-            if (flags & FLAG_Z)
+            if (a <= l0072)
                 goto c9b73_;
 
             //     ldx cursor_moved_flag
@@ -404,16 +395,7 @@ void editor_loop_impl(void)
 
             //     cpy xpos
 
-            cmp(&flags, y, xpos);
-
-            //     bcc c9b86
-
-            if (!(flags & FLAG_C))
-                goto c9b86_;
-
-            //     beq c9b86
-
-            if (flags & FLAG_Z)
+            if (y <= xpos)
                 goto c9b86_;
 
             //     ora #0x40 ; '@'
@@ -3797,9 +3779,7 @@ cae98:
     //     iny
     y++;
     //     cpy #0x85
-    cmp(&flags, y, MAX_LINE_LENGTH + 1);
-    //     bcc cae78
-    if (!(flags & FLAG_C))
+    if (y < MAX_LINE_LENGTH + 1)
         goto cae78;
     //     lda xpos
     a = xpos;
@@ -4846,9 +4826,7 @@ caf19:
     //     ldy xpos
     y = xpos;
     //     cpy l0083
-    cmp(&flags, y, l0083);
-    //     bcs caf28
-    if (flags & FLAG_C)
+    if (y >= l0083)
         goto caf28;
     //     sec
     flags |= FLAG_C;
@@ -5011,9 +4989,7 @@ cae5c:
     //     ldy l0084
     y = l0084;
     //     cpy xpos
-    cmp(&flags, y, xpos);
-    //     bne cae27
-    if (!(flags & FLAG_Z))
+    if (y != xpos)
         goto cae27;
     //     clc
     flags &= ~FLAG_C;
@@ -5280,9 +5256,7 @@ ca9f1:
     //     inx (6413)
     x++;
     //     cpx #22 (6414)
-    cmp(&flags, x, sizeof(pointer_array));
-    //     bne ca9c3 (6415)
-    if (!(flags & FLAG_Z))
+    if (x != sizeof(pointer_array))
         goto ca9c3;
     // loop_ca9f7: (6416)
 loop_ca9f7:
@@ -6238,9 +6212,7 @@ c9847:
     //     iny
     y++;
     //     cpy l0043
-    cmp(&flags, y, l0043);
-    //     beq c9871
-    if (flags & FLAG_Z)
+    if (y == l0043)
         goto c9871;
     //     clc
     flags &= ~FLAG_C;
@@ -6260,9 +6232,7 @@ c985c:
     //     iny
     y++;
     //     cpy l0043
-    cmp(&flags, y, l0043);
-    //     beq c986d
-    if (flags & FLAG_Z)
+    if (y == l0043)
         goto c986d;
     // c9861:
 c9861:
@@ -6274,9 +6244,7 @@ c9861:
     if (flags & FLAG_Z)
         goto c985c;
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20);
-    //     bne c9847
-    if (!(flags & FLAG_Z))
+    if (a != 0x20)
         goto c9847;
     //     beq c985c                                                         ;
     //     ALWAYS branch
@@ -6648,9 +6616,7 @@ caa51:
     //     inx (6475)
     x++;
     //     cpx #22 (6476)
-    cmp(&flags, x, sizeof(pointer_array));
-    //     bne loop_caa38 (6477)
-    if (!(flags & FLAG_Z))
+    if (x != sizeof(pointer_array))
         goto loop_caa38;
     // caa57: (6478)
 caa57:
@@ -6880,16 +6846,12 @@ ca29c:
     //     ldy ((uint8_t*)&tmp01)[1] (5241)
     y = ((uint8_t*)&tmp01)[1];
     //     cpy current_line_ptr+1 (5242)
-    cmp(&flags, y, (uint8_t)(current_line_ptr >> 8));
-    //     bne ca30d (5243)
-    if (!(flags & FLAG_Z))
+    if (y != (uint8_t)(current_line_ptr >> 8))
         goto ca30d;
     //     lda ((uint8_t*)&tmp01)[0] (5244)
     a = ((uint8_t*)&tmp01)[0];
     //     cmp current_line_ptr (5245)
-    cmp(&flags, a, (uint8_t)(current_line_ptr & 0xff));
-    //     bne ca30d (5246)
-    if (!(flags & FLAG_Z))
+    if (a != (uint8_t)(current_line_ptr & 0xff))
         goto ca30d;
     //     sty l0012 (5247) sta l0011 (5248)
     top_of_screen_line_ptr = ((addr_t)y << 8) | a;
@@ -6938,28 +6900,20 @@ ca2e6:
     //     inx (5271)
     x++;
     //     cpy ptr6+1 (5272)
-    cmp(&flags, y, (uint8_t)(ptr6 >> 8));
-    //     bne ca2f1 (5273)
-    if (!(flags & FLAG_Z))
+    if (y != (uint8_t)(ptr6 >> 8))
         goto ca2f1;
     //     cmp ptr6 (5274)
-    cmp(&flags, a, (uint8_t)(ptr6 & 0xff));
-    //     bne ca2f1 (5275)
-    if (!(flags & FLAG_Z))
+    if (a != (uint8_t)(ptr6 & 0xff))
         goto ca2f1;
     //     stx l003d (5276)
     l003d = x;
     // ca2f1: (5277)
 ca2f1:
     //     cpy current_line_ptr+1 (5278)
-    cmp(&flags, y, (uint8_t)(current_line_ptr >> 8));
-    //     bne ca2f9 (5279)
-    if (!(flags & FLAG_Z))
+    if (y != (uint8_t)(current_line_ptr >> 8))
         goto ca2f9;
     //     cmp current_line_ptr (5280)
-    cmp(&flags, a, (uint8_t)(current_line_ptr & 0xff));
-    //     beq ca313 (5281)
-    if (flags & FLAG_Z)
+    if (a == (uint8_t)(current_line_ptr & 0xff))
         goto ca313;
     // ca2f9: (5282)
 ca2f9:
@@ -7001,12 +6955,7 @@ ca30d:
     // ca313: (5299)
 ca313:
     //     cpx screen_height (5300)
-    cmp(&flags, x, screen_maxrow);
-    //     bcc ca35e (5301)
-    if (!(flags & FLAG_C))
-        goto ca35e;
-    //     beq ca35e (5302)
-    if (flags & FLAG_Z)
+    if (x <= screen_maxrow)
         goto ca35e;
     //     lda l006f (5303)
     a = l006f;
@@ -7105,9 +7054,7 @@ ca360:
     //     lda l0072 (5350)
     a = l0072;
     //     cmp hscroll_pos (5351)
-    cmp(&flags, a, hscroll_pos);
-    //     bcc ca381 (5352)
-    if (!(flags & FLAG_C))
+    if (a < hscroll_pos)
         goto ca381;
     //     lda hscroll_pos (5353)
     a = hscroll_pos;
@@ -7522,9 +7469,7 @@ void sanitise_area(void)
     if (!(flags & FLAG_Z))
         goto c896b;
     //     cmp area_end_ptr
-    cmp(&flags, a, (uint8_t)(area_end_ptr & 0xff));
-    //     bcc c8977
-    if (!(flags & FLAG_C))
+    if (a < (uint8_t)(area_end_ptr & 0xff))
         goto c8977;
 c896b:
     // c896b:
@@ -8206,9 +8151,7 @@ c9a40:
         goto c9a58;
     //     beq c9a58
     //     cpy #0x85
-    cmp(&flags, y, MAX_LINE_LENGTH + 1);
-    //     bcs c9a60
-    if (flags & FLAG_C)
+    if (y >= MAX_LINE_LENGTH + 1)
         goto c9a60;
     //     lda bottom_margin
     a = bottom_margin;
@@ -8275,9 +8218,7 @@ loop_c9a62:
         a = saved_a;
     }
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20);
-    //     bne loop_c9a62
-    if (!(flags & FLAG_Z))
+    if (a != 0x20)
         goto loop_c9a62;
     //     sec
     flags |= FLAG_C;
@@ -8828,9 +8769,7 @@ cac5c:
     //     lda (((uint8_t*)&tmp89)[0]),y
     a = ram[tmp89 + y];
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d);
-    //     beq cac6f
-    if (flags & FLAG_Z)
+    if (a == 0x0d)
         goto cac6f;
     {
         uint8_t old_low = (uint8_t)(tmp89 & 0xff);
@@ -9143,9 +9082,7 @@ ca919:
     //     dex
     x--;
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d);
-    //     bne ca90a
-    if (!(flags & FLAG_Z))
+    if (a != 0x0d)
         goto ca90a;
 
     // ca93a:
