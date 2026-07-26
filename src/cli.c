@@ -268,6 +268,7 @@ static void close_input_output_files(void)
 
     // close_input_output_files:
     //     lda #0
+    uint8_t x;
     uint8_t a = 0;
     //     sta input_file_empty_flag
     input_file_empty_flag = a;

@@ -4277,6 +4277,7 @@ static void write_cr_to_memory(void)
 {
     // write_cr_to_memory:
     //     lda #0x0d
+    uint8_t a;
     a = 0x0d;
     write_byte_to_memory(a);
 }

@@ -249,6 +249,28 @@ def line_defs_uses(stripped, index):
     return defs, uses
 
 
+def get_func_params(lines, start):
+    """Return set of parameter names for a function defined at line `start`."""
+    sig = lines[start].strip()
+    # Match: (static )?ret_type name(params)
+    m = re.match(r'(?:static\s+)?(?:\w+(?:\s*\*)?\s+)+\**(\w+)\s*\(([^)]*)\)', sig)
+    if not m:
+        return set()
+    params_str = m.group(2).strip()
+    if not params_str or params_str == 'void':
+        return set()
+    params = set()
+    for p in params_str.split(','):
+        p = p.strip()
+        # Match "uint8_t a", "uint8_t *ptr", "const char* s"
+        pm = re.match(r'(?:const\s+)?(?:\w+(?:\s*\*)?)\s+(\**\w+)', p)
+        if pm:
+            name = pm.group(1).lstrip('*')
+            if name in ('a', 'x', 'y', 'flags') or name.startswith('tmp') or name.startswith('ptr'):
+                params.add(name)
+    return params
+
+
 def detect_call(stripped):
     if stripped.startswith('//') or stripped == '':
         return None
@@ -321,6 +343,12 @@ def analyze_files(files):
             if name not in all_funcs:
                 all_funcs[name] = (filepath, start, end, lines)
     
+    # Compute param sets: variables that are parameters (passed by value)
+    # for each function — they are local to the callee and don't affect globals.
+    func_params = {}
+    for name, (filepath, start, end, lines) in all_funcs.items():
+        func_params[name] = get_func_params(lines, start)
+    
     # Compute local info (initial pass: conservative ALL_VARS for calls)
     local_info = {}
     for name, (filepath, start, end, lines) in all_funcs.items():
@@ -341,12 +369,17 @@ def analyze_files(files):
                 if callee in LIB_FUNCTIONS:
                     continue
                 callee_info = local_info.get(callee)
+                callee_params = func_params.get(callee, set())
                 if callee_info is None:
                     all_defs.update(ALL_VARS)
                     all_uses.update(ALL_VARS)
                 else:
-                    all_defs.update(callee_info.get('cached_defs', callee_info['defs']))
-                    all_uses.update(callee_info.get('cached_uses', callee_info['uses']))
+                    # Exclude callee parameters from the propagated defs/uses,
+                    # since they are local to the callee and don't affect globals.
+                    callee_defs = callee_info.get('cached_defs', callee_info['defs'])
+                    callee_uses = callee_info.get('cached_uses', callee_info['uses'])
+                    all_defs.update(callee_defs - callee_params)
+                    all_uses.update(callee_uses - callee_params)
             old_d = info.get('cached_defs')
             old_u = info.get('cached_uses')
             if all_defs != old_d or all_uses != old_u:
@@ -411,10 +444,11 @@ def analyze_files(files):
         
         # ── Re-forward scan with refined kill sets ──
         # Use all_defs (everything the callee writes) as the kill set,
-        # so side-effect modifications to globals are properly tracked.
+        # but exclude parameters (they are local to the callee).
         clo = {}
         for cname, cinfo in local_info.items():
-            clo[cname] = cinfo.get('cached_defs', cinfo['defs'])
+            callee_defs = cinfo.get('cached_defs', cinfo['defs'])
+            clo[cname] = callee_defs - func_params.get(cname, set())
         for name in ALL_IN_OUT:
             clo[name] = ALL_VARS
         for name in CORRUPTS:
@@ -457,19 +491,22 @@ def analyze_files(files):
             callee = detect_call(sl)
             if callee and callee not in INLINE_HELPERS:
                 d, u = line_defs_uses(sl, i)
-                passed_to_callees |= u
-                # Include everything the callee writes (all_defs), so
-                # side-effect modifications to globals are caught.
+                # Exclude callee parameters from uses — they're passed by value
+                # and don't expose the global to modification.
+                callee_params = func_params.get(callee, set())
+                passed_to_callees |= (u - callee_params)
+                # Include everything the callee writes (all_defs), minus its
+                # own parameters (which are local), so side-effect
+                # modifications to globals are caught.
                 if callee in ALL_IN_OUT:
                     passed_to_callees |= ALL_VARS
                 else:
                     callee_info = local_info.get(callee)
                     if callee_info:
                         callee_li = callee_info.get('live_in', set())
-                        passed_to_callees |= callee_li
+                        passed_to_callees |= (callee_li - callee_params)
                         callee_defs = callee_info.get('cached_defs', callee_info['defs'])
-                        passed_to_callees |= callee_defs
-                    # Also include what this caller needs from the callee
+                        passed_to_callees |= (callee_defs - callee_params)
                     callee_needs = backward_needs.get(callee, set())
                     passed_to_callees |= callee_needs
         locals = ((local_defs & local_uses) - live_in - live_out - passed_to_callees)
