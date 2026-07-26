@@ -1614,26 +1614,16 @@ void run_cli(void)
     a = file_edit_flags;
     //     ror
     //     bcc c816d
-    if (!(a & 1))
-        goto c816d;
-    //     jsr print_inline_string
-    //     .ascii "Input file is "
-    //     .byte 0
-    cli_putstring("Input file is ");
-
-    //     lda input_file_empty_flag
-    a = input_file_empty_flag;
-    //     bne c8163
-    if (!(a != 0))
+    if ((a & 1))
     {
-        cli_putstring("not ");
+        cli_putstring("Input file is ");
+        a = input_file_empty_flag;
+        if (!(a != 0))
+        {
+            cli_putstring("not ");
+        }
+        cli_putstring("empty\n");
     }
-    //     jsr print_inline_string
-    //     .ascii "empty\r"
-    //     .byte 0
-    cli_putstring("empty\n");
-
-    // c816d:
 c816d:
     //     lda printer_driver_name
     a = printer_driver_name[0];

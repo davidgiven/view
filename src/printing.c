@@ -920,17 +920,16 @@ c96a2:
     //     sbc last_macro_ptr+1
     a = sbc(&flags, a, (uint8_t)((last_macro_ptr >> 8) & 0xff));
     //     bne c96b8
-    if (!(flags & FLAG_Z))
-        goto c96b8;
-    //     cpx #0x97
-    if (!(x >= 0x97))
+    if ((flags & FLAG_Z))
     {
+        if (!(x >= 0x97))
         {
-            display_not_enough_memory();
-            return;
+            {
+                display_not_enough_memory();
+                return;
+            }
         }
     }
-c96b8:
     //     lda last_macro_ptr
     a = (uint8_t)(last_macro_ptr & 0xff);
     //     sta ((uint8_t*)&tmp01)[0]
@@ -2148,18 +2147,15 @@ loop_c9107:
         set_flags(&flags, l0045);
     }
     //     bcc c9115
-    if (!(flags & FLAG_C))
-        goto c9115;
-    //     clc
-    flags &= ~FLAG_C;
-    //     adc microspacing_flag
-    a = adc(&flags, a, microspacing_flag);
-    //     bcc c9115
     if ((flags & FLAG_C))
     {
-        ((uint8_t*)&tmp89)[1]++;
+        flags &= ~FLAG_C;
+        a = adc(&flags, a, microspacing_flag);
+        if ((flags & FLAG_C))
+        {
+            ((uint8_t*)&tmp89)[1]++;
+        }
     }
-c9115:
     //     dex
     x--;
     //     bne loop_c9107
@@ -2542,15 +2538,14 @@ static void print_loop(void)
         a = l0031;
         set_flags(&flags, a);
         //     beq c8f3b
-        if (flags & FLAG_Z)
-            goto c8f3b_l;
-        //     lda l0021
-        a = l0021;
-        if (!(a != 0))
+        if (!(flags & FLAG_Z))
         {
-            c9263();
+            a = l0021;
+            if (!(a != 0))
+            {
+                c9263();
+            }
         }
-    c8f3b_l:
         //     jsr sub_c9188
         sub_c9188();
         //     bcs c8f0a
@@ -3028,15 +3023,14 @@ static void render_header_or_footer(void)
     //     sbc l0081
     a = sbc(&flags, a, l0081);
     //     bcc c9355
-    if (!(flags & FLAG_C))
-        goto c9355;
-    //     sbc l0039
-    a = sbc(&flags, a, l0039);
-    //     bcc c9355
     if ((flags & FLAG_C))
     {
-        x = a;
-        sub_c941a();
+        a = sbc(&flags, a, l0039);
+        if ((flags & FLAG_C))
+        {
+            x = a;
+            sub_c941a();
+        }
     }
 c9355:
     //     jsr c937b
@@ -3636,14 +3630,13 @@ static void sub_c92f0(void)
     //     sbc bottom_margin
     a = sbc(&flags, a, bottom_margin);
     //     bcc c930d
-    if (!(flags & FLAG_C))
-        goto c930d;
-    //     sbc footer_margin
-    a = sbc(&flags, a, footer_margin);
-    //     bcc c930d
     if ((flags & FLAG_C))
     {
-        x = a;
+        a = sbc(&flags, a, footer_margin);
+        if ((flags & FLAG_C))
+        {
+            x = a;
+        }
     }
 c930d:
     //     stx l0021
@@ -3850,17 +3843,15 @@ static void sub_c9407(void)
     //     lda left_margin
     a = left_margin;
     //     bcc c9415
-    if (!(flags & FLAG_C))
-        goto c9415;
-    //     ldx two_sided_flag
-    x = two_sided_flag;
-    set_flags(&flags, x);
-    //     beq c9415
-    if (!(flags & FLAG_Z))
+    if ((flags & FLAG_C))
     {
-        a += rhs_extra_margin;
+        x = two_sided_flag;
+        set_flags(&flags, x);
+        if (!(flags & FLAG_Z))
+        {
+            a += rhs_extra_margin;
+        }
     }
-c9415:
     //     tax
     x = a;
     //     lda #0x20 ; ' '

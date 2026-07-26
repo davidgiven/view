@@ -324,21 +324,18 @@ void process_document_character(void)
     //     cmp #0x20 ; ' '
     cmp(&flags, a, 0x20);
     //     bcs ca5d1
-    if (flags & FLAG_C)
-        goto ca5d1;
-    //     sty l0084
-    l0084 = y;
-    //     ldy print_flags
-    y = print_flags;
-    //     bpl ca5cf
-    if ((y & 0x80))
+    if (!(flags & FLAG_C))
     {
-        a = sbc(&flags, a, 0x1b);
-        x = a;
-        a = highlight_code[x];
+        l0084 = y;
+        y = print_flags;
+        if ((y & 0x80))
+        {
+            a = sbc(&flags, a, 0x1b);
+            x = a;
+            a = highlight_code[x];
+        }
+        y = l0084;
     }
-    //     ldy l0084
-    y = l0084;
 ca5d1:
     //     ldx #1
     x = 1;
@@ -1042,21 +1039,17 @@ cac20:
     //     jsr check_for_command_prefix
     flags = check_for_command_prefix(a);
     //     bne cac3e
-    if (!(flags & FLAG_Z))
-        goto cac3e;
-    //     txa
-    a = x;
-    //     cpx #3
-    cmp(&flags, x, 3);
-    //     ldx #0
-    x = 0;
-    //     bcc cac3e
-    if ((flags & FLAG_C))
+    if ((flags & FLAG_Z))
     {
-        a -= 3;
-        x = a;
+        a = x;
+        cmp(&flags, x, 3);
+        x = 0;
+        if ((flags & FLAG_C))
+        {
+            a -= 3;
+            x = a;
+        }
     }
-cac3e:
     //     stx xpos
     xpos = x;
     //     rts

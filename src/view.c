@@ -911,15 +911,13 @@ c8a87:
     x = l0082;
     //     tay
     y = a;
-    if (y != 0)
-        goto c8aa3;
-    //     bne c8aa3
-    //     cpx input_buffer_offset+1
-    if (!(x < l0080))
+    if (!(y != 0))
     {
-        x = l0080;
+        if (!(x < l0080))
+        {
+            x = l0080;
+        }
     }
-c8aa3:
     // c8aa3:
     //     txa
     a = x;
@@ -1155,17 +1153,15 @@ c8b47:
         flags |= FLAG_C;
     }
     //     bcs c8b64
-    if (flags & FLAG_C)
-        goto c8b64;
-    //     ora #0x20 ; ' '
-    a |= 0x20;
-    //     ldy l0081
-    y = l0081;
-    //     beq c8b64
-    if (!(y == 0))
+    if (!(flags & FLAG_C))
     {
-        l0081--;
-        a &= 0xdf;
+        a |= 0x20;
+        y = l0081;
+        if (!(y == 0))
+        {
+            l0081--;
+            a &= 0xdf;
+        }
     }
 c8b64:
     // c8b64:
