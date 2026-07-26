@@ -257,28 +257,15 @@ void editor_loop_impl(void)
 
             //     bne c9b44
 
-            if (a != 0)
-                goto c9b44_;
-
-            //     pha
-
+            if (!(a != 0))
             {
-                uint8_t saved_a_ = a;
-
-                //     jsr sub_caa97
-
-                sub_caa97();
-
-                //     pla
-
-                a = saved_a_;
+                {
+                    uint8_t saved_a_ = a;
+                    sub_caa97();
+                    a = saved_a_;
+                }
+                edit_buffer_unpacked_flag = a;
             }
-
-            //     sta l006e
-
-            edit_buffer_unpacked_flag = a;
-
-        c9b44_:
 
             //     jsr sub_ca608
 
@@ -447,16 +434,10 @@ void editor_loop_impl(void)
 
         //     cmp current_tab_key
 
-        if (a != current_tab_key)
-            goto c9b9f;
-
-        //     bne c9b9f
-
-        //     lda #9
-
-        a = 9;
-
-    c9b9f:
+        if (!(a != current_tab_key))
+        {
+            a = 9;
+        }
 
         //     sta l0038
 
@@ -738,18 +719,10 @@ static void cf6_split_line_key(void)
 
     //     cpy xpos
 
-    if (y < xpos)
-        goto c9dbd;
-
-    //     bcc c9dbd
-
-    //     ldy xpos
-
-    y = xpos;
-
-    // c9dbd:
-
-c9dbd:
+    if (!(y < xpos))
+    {
+        y = xpos;
+    }
 
     //     inc l0079
 
@@ -777,24 +750,12 @@ c9dbd:
 
     //     bne c9dcd
 
-    if (!(flags & FLAG_Z))
-        goto c9dcd;
-
-    //     inx
-
-    x++;
-
-    //     inx
-
-    x++;
-
-    //     inx
-
-    x++;
-
-    // c9dcd:
-
-c9dcd:
+    if ((flags & FLAG_Z))
+    {
+        x++;
+        x++;
+        x++;
+    }
 
     //     ldy current_line_ptr+1
 
@@ -1006,24 +967,12 @@ static void cf8_mark_as_ruler_key(void)
 
     //     bmi c9f5f
 
-    if (a & 0x80)
-        goto c9f5f;
-
-    //     lda #0x80
-
-    a = 0x80;
-
-    //     sta l006e
-
-    edit_buffer_unpacked_flag = 0x80;
-
-    //     inc l006d
-
-    edit_buffer_dirty_flag++;
-
-    // c9f5f:
-
-c9f5f:
+    if (!(a & 0x80))
+    {
+        a = 0x80;
+        edit_buffer_unpacked_flag = 0x80;
+        edit_buffer_dirty_flag++;
+    }
 
     //     jmp caf5c
 
@@ -1182,16 +1131,10 @@ static void f0_format_block_key(void)
 
     //     bne ca051
 
-    if (!(flags & FLAG_Z))
-        goto ca051;
-
-    //     clc
-
-    flags &= ~FLAG_C;
-
-    // ca051:
-
-ca051:
+    if ((flags & FLAG_Z))
+    {
+        flags &= ~FLAG_C;
+    }
 
     //     pla
 
@@ -1207,20 +1150,11 @@ ca051:
 
     //     bcs return_59
 
-    if (flags & FLAG_C)
-        goto return_59;
-
-    //     stx l003d
-
-    l003d = x;
-
-    //     sta l0073
-
-    l0073 = a;
-
-    // return_59:
-
-return_59:
+    if (!(flags & FLAG_C))
+    {
+        l003d = x;
+        l0073 = a;
+    }
 
     //     rts
 }
@@ -1556,22 +1490,11 @@ static void f7_delete_line_key(void)
 
     a = ram[current_line_ptr + y];
 
-    if (a != 0)
-        goto c9e81;
-
-    //     bne c9e81
-
-    //     lda current_line_ptr
-
-    move_tmp01_to_previous_line(current_line_ptr);
-
-    //     lda ((uint8_t*)&tmp01)[0]
-
-    current_line_ptr = tmp01;
-
-    // c9e81:
-
-c9e81:
+    if (!(a != 0))
+    {
+        move_tmp01_to_previous_line(current_line_ptr);
+        current_line_ptr = tmp01;
+    }
 
     //     inc l0079
 
@@ -2701,16 +2624,10 @@ void return_key(void)
 
     //     bcc c9d98
 
-    if (!(flags & FLAG_C))
-        goto c9d98;
-
-    //     iny
-
-    y++;
-
-    // c9d98:
-
-c9d98:
+    if ((flags & FLAG_C))
+    {
+        y++;
+    }
 
     //     jsr sub_c9de1
 
@@ -2968,16 +2885,10 @@ c9fab:
 
     //     bcc c9fc3
 
-    if (!(flags & FLAG_C))
-        goto c9fc3;
-
-    //     inc current_line_ptr+1
-
-    current_line_ptr = (uint16_t)(current_line_ptr + 0x100);
-
-    // c9fc3:
-
-c9fc3:
+    if ((flags & FLAG_C))
+    {
+        current_line_ptr = (uint16_t)(current_line_ptr + 0x100);
+    }
 
     //     jsr sub_caa97
 
@@ -3810,14 +3721,11 @@ loop_caea5:
     //     tay
     y = a;
     //     cpy #0x84
-    if (y >= MAX_LINE_LENGTH)
-        goto caeb7;
-    //     bcs caeb7
-    //     lda (current_edit_line_ptr),y
-    a = ram[current_edit_line_ptr + y];
-    //     tax
-    x = a;
-    // caeb7:
+    if (!(y >= MAX_LINE_LENGTH))
+    {
+        a = ram[current_edit_line_ptr + y];
+        x = a;
+    }
 caeb7:
     //     ldy l0084
     y = l0084;
@@ -3862,11 +3770,10 @@ static void enter_printable_character(void)
         goto c9bf2;
     //     cpx #4
     //     bcs c9bf2
-    if (x >= 4)
-        goto c9bf2;
-    //     inc l0074
-    l0074++;
-    // c9bf2:
+    if (!(x >= 4))
+    {
+        l0074++;
+    }
 c9bf2:
     //     ldx insert_mode_flag
     x = insert_mode_flag;
@@ -3905,12 +3812,10 @@ c9c09:
     //     ldy l0074
     y = l0074;
     //     bne c9c14
-    if (y != 0)
-        goto c9c14;
-    //     jsr screen_putchar
-    screen_putchar(a);
-    // c9c14:
-c9c14:
+    if (!(y != 0))
+    {
+        screen_putchar(a);
+    }
     //     inc xpos
     xpos++;
     //     jsr ca684
@@ -3961,14 +3866,11 @@ c9c31:
     if (x == 0)
         goto c9c43;
     //     cpx ruler_left_stop
-    if (x < ruler_left_stop)
-        goto c9c43;
-    //     bcc c9c43
-    //     inx
-    x++;
-    //     txa
-    a = x;
-    // c9c43:
+    if (!(x < ruler_left_stop))
+    {
+        x++;
+        a = x;
+    }
 c9c43:
     //     sta l0039
     l0039 = a;
@@ -4068,14 +3970,14 @@ c9c56:
         xpos = y;
         goto c9ca2;
     }
-    if (flags & FLAG_C)
-        goto c9ca2;
+    if (!(flags & FLAG_C))
     {
-        y = input_buffer_offset;
-        y--;
-        xpos = y;
+        {
+            y = input_buffer_offset;
+            y--;
+            xpos = y;
+        }
     }
-    // c9ca2: (4219)
 c9ca2:
     //     lda input_buffer_ptr+1 (4220)
     a = input_buffer_offset;
@@ -4101,14 +4003,11 @@ c9ca2:
     a = ruler_left_stop;
     set_flags(&flags, a);
     //     beq c9cb9 (4231)
-    if (flags & FLAG_Z)
-        goto c9cb9;
-    //     inc top_margin (4232)
-    top_margin++;
-    //     iny (4233)
-    y++;
-    // c9cb9: (4234)
-c9cb9:
+    if (!(flags & FLAG_Z))
+    {
+        top_margin++;
+        y++;
+    }
     //     sty ((uint8_t*)&tmp67)[0] (4235)
     ((uint8_t*)&tmp67)[0] = y;
     //     lda current_line_ptr (4236)
@@ -4368,26 +4267,17 @@ static void reset_area_to_marks_1_2(void)
     if (flags & FLAG_C)
         return;
     //     beq cad45
-    if (flags & FLAG_Z)
-        goto cad45;
-    //     lda __begin_pointer_array,x
-    a = ((uint8_t*)markers_array)[x];
-    //     sta area_end_ptr
-    area_end_ptr = (uint16_t)((uint8_t*)markers_array)[x + 1] << 8 | a;
-    //     lda markers_array+1,x
-    //     sta area_end_ptr+1
-    //     ldx #doc_ptr1
-    x = ((uint8_t*)&doc_ptr1 - (uint8_t*)markers_array);
-    //     jsr set_marker_to_here
-    set_marker_to_here();
-    //     jsr sanitise_area
-    sanitise_area();
-    //     clc
-    flags &= ~FLAG_C;
-    //     bne return_76
     if (!(flags & FLAG_Z))
-        return;
-    // cad45:
+    {
+        a = ((uint8_t*)markers_array)[x];
+        area_end_ptr = (uint16_t)((uint8_t*)markers_array)[x + 1] << 8 | a;
+        x = ((uint8_t*)&doc_ptr1 - (uint8_t*)markers_array);
+        set_marker_to_here();
+        sanitise_area();
+        flags &= ~FLAG_C;
+        if (!(flags & FLAG_Z))
+            return;
+    }
 cad45:
     //     sec
     flags |= FLAG_C;
@@ -4925,12 +4815,10 @@ cae27:
     if (flags & FLAG_C)
         goto cae35;
     //     cmp #0x84
-    if (a >= MAX_LINE_LENGTH)
-        goto cae35;
-    //     bcs cae35
-    //     tax
-    x = a;
-    // cae35:
+    if (!(a >= MAX_LINE_LENGTH))
+    {
+        x = a;
+    }
 cae35:
     //     stx l0081
     l0081 = x;
@@ -4980,12 +4868,10 @@ cae52:
     //     ldy l0081
     y = l0081;
     //     beq cae5c
-    if (y == 0)
-        goto cae5c;
-    //     sta (current_edit_line_ptr),y
-    ram[current_edit_line_ptr + y] = a;
-    // cae5c:
-cae5c:
+    if (!(y == 0))
+    {
+        ram[current_edit_line_ptr + y] = a;
+    }
     //     ldy l0084
     y = l0084;
     //     cpy xpos
@@ -5016,16 +4902,12 @@ void set_marker_to_here(void)
     //     jsr check_for_command_prefix
     flags = check_for_command_prefix(a);
     //     bne cad5c
-    if (!(flags & FLAG_Z))
-        goto cad5c;
-    //     iny
-    y++;
-    //     iny
-    y++;
-    //     iny
-    y++;
-    // cad5c:
-cad5c:
+    if ((flags & FLAG_Z))
+    {
+        y++;
+        y++;
+        y++;
+    }
     //     tya
     a = y;
     // cad5d:
@@ -5070,16 +4952,12 @@ cac7b:
     //     jsr check_for_command_prefix
     flags = check_for_command_prefix(a);
     //     bne cac8d
-    if (!(flags & FLAG_Z))
-        goto cac8d;
-    //     inx
-    //     inx
-    //     inx
-    x++;
-    x++;
-    x++;
-    // cac8d:
-cac8d:
+    if ((flags & FLAG_Z))
+    {
+        x++;
+        x++;
+        x++;
+    }
     //     stx l0084
     l0084 = x;
     // cac8f:
@@ -5330,13 +5208,11 @@ static void advance_to_next_line(void)
     //     sta current_line_ptr
     current_line_ptr = (current_line_ptr & 0xff00) | a;
     //     bcc c9aa4
-    if (!(flags & FLAG_C))
-        goto c9aa4_;
-    //     inc current_line_ptr+1
-    current_line_ptr = (current_line_ptr & 0x00ff) |
-                       ((uint16_t)((current_line_ptr >> 8) + 1) << 8);
-    // c9aa4:
-c9aa4_:
+    if ((flags & FLAG_C))
+    {
+        current_line_ptr = (current_line_ptr & 0x00ff) |
+                           ((uint16_t)((current_line_ptr >> 8) + 1) << 8);
+    }
     //     clc
     flags &= ~FLAG_C;
     // c9aa5:
@@ -5525,12 +5401,10 @@ c8bbc:
         goto c8be3;
     //     beq c8be3
     //     cmp #2
-    if (a != 2)
-        goto c8bd7;
-    //     bne c8bd7
-    //     lda #0x20 ; ' '
-    a = 0x20;
-c8bd7:
+    if (!(a != 2))
+    {
+        a = 0x20;
+    }
     // c8bd7:
     //     cmp l0083
     if (a == l0083)
@@ -5567,14 +5441,11 @@ c8be3:
     //     ldx l0049
     x = l0049;
     //     cpx #0x14
-    if (x >= 0x14)
-        goto c8bf2;
-    //     bcs c8bf2
-    //     sta output_buffer,x
-    output_buffer[x] = a;
-    //     inc l0049
-    l0049++;
-c8bf2:
+    if (!(x >= 0x14))
+    {
+        output_buffer[x] = a;
+        l0049++;
+    }
     // c8bf2:
     //     ldx l0084
     x = l0084;
@@ -5695,19 +5566,14 @@ static void c9de3_insert_line(void)
     //     jsr make_space_for_insertion
     make_space_for_insertion();
     //     bcs c9dfd
-    if (flags & FLAG_C)
-        goto c9dfd;
-    //     lda #0x0d
-    a = 0x0d;
-    //     ldy #0
-    y = 0;
-    //     sta (((uint8_t*)&tmp45)[0]),y
-    ram[tmp45 + y] = a;
-    //     jmp ca741
-    ca741();
-    return;
-
-c9dfd:
+    if (!(flags & FLAG_C))
+    {
+        a = 0x0d;
+        y = 0;
+        ram[tmp45 + y] = a;
+        ca741();
+        return;
+    }
     //     jmp ca941
     memory_full();
     return;
@@ -6024,11 +5890,10 @@ static void draw_status_word(void)
     a &= 0xc0;
     flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     bne ca666
-    if (!(flags & FLAG_Z))
-        goto ca666;
-    //     ldx #0x20 ; ' '
-    x = 0x20;
-    // ca666:
+    if ((flags & FLAG_Z))
+    {
+        x = 0x20;
+    }
 ca666:
     //     txa
     a = x;
@@ -6040,12 +5905,10 @@ ca666:
     x = justifying_flag;
     flags = (flags & ~(FLAG_Z | FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
     //     beq ca672
-    if (flags & FLAG_Z)
-        goto ca672;
-    //     lda #0x20 ; ' '
-    a = 0x20;
-    // ca672:
-ca672:
+    if (!(flags & FLAG_Z))
+    {
+        a = 0x20;
+    }
     //     jsr screen_putchar
     screen_putchar(a);
     //     lda #0x49 ; 'I'
@@ -6113,13 +5976,10 @@ static void get_line_length(void)
         flags = saved_f;
     }
     //     bne return_69
-    if (!(flags & FLAG_Z))
-        goto return_69;
-    //     clc
-    //     adc #3
-    a += 3;
-    // return_69:
-return_69:
+    if ((flags & FLAG_Z))
+    {
+        a += 3;
+    }
     //     rts
     return;
 }
@@ -6286,18 +6146,13 @@ c9871:
     //     sbc #0x84
     a = sbc(&flags, a, MAX_LINE_LENGTH);
     //     bcc c988c
-    if (!(flags & FLAG_C))
-        goto c988c;
-    //     sta l0084
-    l0084 = a;
-    //     txa
-    a = x;
-    //     sbc l0084
-    a = sbc(&flags, a, l0084);
-    //     tax
-    x = a;
-    // c988c:
-c988c:
+    if ((flags & FLAG_C))
+    {
+        l0084 = a;
+        a = x;
+        a = sbc(&flags, a, l0084);
+        x = a;
+    }
     //     stx l0082
     l0082 = x;
     //     stx ((uint8_t*)&tmp89)[0]
@@ -6335,13 +6190,10 @@ loop_c98a2:
     //     iny
     y++;
     //     cpy l0046
-    if (y < l0046)
-        goto c98b2;
-    //     bcc c98b2
-    //     ldy #1
-    y = 1;
-    // c98b2:
-c98b2:
+    if (!(y < l0046))
+    {
+        y = 1;
+    }
     //     dey
     y--;
     //     ldx l0046
@@ -6352,14 +6204,11 @@ c98b5:
     a = l0045;
     set_flags(&flags, a);
     //     beq c98bd
-    if (flags & FLAG_Z)
-        goto c98bd;
-    //     lda #1
-    a = 1;
-    //     dec l0045
-    l0045--;
-    // c98bd:
-c98bd:
+    if (!(flags & FLAG_Z))
+    {
+        a = 1;
+        l0045--;
+    }
     //     clc
     flags &= ~FLAG_C;
     //     adc l0044
@@ -6382,12 +6231,10 @@ c98bd:
         //     cpy l0046
         cmp(&flags, y, l0046);
         //     bcc c98d3
-        if (!(flags & FLAG_C))
-            goto c98d3;
-        //     ldy #0
-        y = 0;
-        // c98d3:
-    c98d3:
+        if ((flags & FLAG_C))
+        {
+            y = 0;
+        }
         //     plp
         flags = saved_flags;
     }
@@ -6462,12 +6309,10 @@ c98fa:
     //     lda #0
     a = 0;
     //     bcs c9912
-    if (flags & FLAG_C)
-        goto c9912;
-    //     lda input_buffer,y
-    a = input_buffer[y];
-    // c9912:
-c9912:
+    if (!(flags & FLAG_C))
+    {
+        a = input_buffer[y];
+    }
     //     clc
     //     adc l0084
     a += l0084;
@@ -6633,12 +6478,10 @@ caa57:
     //     sbc ((uint8_t*)&tmp45)[1] (6484)
     a = sbc(&flags, a, ((uint8_t*)&tmp45)[1]);
     //     beq caa65 (6485)
-    if (flags & FLAG_Z)
-        goto caa65;
-    //     ldx #0xff (6486)
-    x = 0xff;
-    // caa65: (6487)
-caa65:
+    if (!(flags & FLAG_Z))
+    {
+        x = 0xff;
+    }
     //     txa (6488)
     a = x;
     //     tay (6489)
@@ -6763,14 +6606,11 @@ loop_ca629:
     if (!(flags & FLAG_C))
         goto loop_ca629;
     //     beq ca63b
-    if (flags & FLAG_Z)
-        goto ca63b;
-    //     lda l0039
-    a = l0039;
-    //     dey
-    y--;
-    // ca63b:
-ca63b:
+    if (!(flags & FLAG_Z))
+    {
+        a = l0039;
+        y--;
+    }
     //     sty xpos
     xpos = y;
     // ca63d:
@@ -6903,11 +6743,10 @@ ca2e6:
     if (y != (uint8_t)(ptr6 >> 8))
         goto ca2f1;
     //     cmp ptr6 (5274)
-    if (a != (uint8_t)(ptr6 & 0xff))
-        goto ca2f1;
-    //     stx l003d (5276)
-    l003d = x;
-    // ca2f1: (5277)
+    if (!(a != (uint8_t)(ptr6 & 0xff)))
+    {
+        l003d = x;
+    }
 ca2f1:
     //     cpy current_line_ptr+1 (5278)
     if (y != (uint8_t)(current_line_ptr >> 8))
@@ -6931,12 +6770,10 @@ ca2f9:
     //     adc ((uint8_t*)&tmp01)[0] (5288)
     a = adc(&flags, a, ((uint8_t*)&tmp01)[0]);
     //     bcc ca307 (5289)
-    if (!(flags & FLAG_C))
-        goto ca307;
-    //     iny (5290)
-    y++;
-    // ca307: (5291)
-ca307:
+    if ((flags & FLAG_C))
+    {
+        y++;
+    }
     //     cpx screen_height (5292)
     cmp(&flags, x, screen_maxrow);
     //     beq ca2e6 (5293)
@@ -7003,12 +6840,10 @@ loop_ca31f:
     //     sta l0011 (5324)
     top_of_screen_line_ptr = (top_of_screen_line_ptr & 0xff00) | a;
     //     bcc ca348 (5325)
-    if (!(flags & FLAG_C))
-        goto ca348;
-    //     inc l0012 (5326)
-    top_of_screen_line_ptr += 0x0100;
-    // ca348: (5327)
-ca348:
+    if ((flags & FLAG_C))
+    {
+        top_of_screen_line_ptr += 0x0100;
+    }
     //     ldy #SCREEN_SCROLLUP (5328) jsr SCREEN (5329)
     screen_scrollup();
     //     ldx #0 (5330) ldy screen_height (5331) jsr set_cursor_position (5332)
@@ -7077,12 +6912,10 @@ ca381:
     //     sbc l0083 (5362)
     a = sbc(&flags, a, l0083);
     //     bcs ca38a (5363)
-    if (flags & FLAG_C)
-        goto ca38a;
-    //     lda #0 (5364)
-    a = 0;
-    // ca38a: (5365)
-ca38a:
+    if (!(flags & FLAG_C))
+    {
+        a = 0;
+    }
     //     sta hscroll_pos (5366)
     hscroll_pos = a;
     //     lda #1 (5367)
@@ -7172,12 +7005,10 @@ loop_ca3c3:
     //     adc ((uint8_t*)&tmp01)[0] (5407)
     a = adc(&flags, a, ((uint8_t*)&tmp01)[0]);
     //     bcc ca3d8 (5408)
-    if (!(flags & FLAG_C))
-        goto ca3d8;
-    //     iny (5409)
-    y++;
-    // ca3d8: (5410)
-ca3d8:
+    if ((flags & FLAG_C))
+    {
+        y++;
+    }
     //     inc l0082 (5411)
     l0082++;
     //     dec l0081 (5412)
@@ -7207,26 +7038,19 @@ ca3e7:
     //     lda l0074 (5423)
     a = l0074;
     //     beq ca3ff (5424)
-    if (a == 0)
-        goto ca3ff;
-    //     lda ypos (5425)
-    a = ypos;
-    //     sta l0082 (5426)
-    l0082 = a;
-    //     lda current_format_line_ptr (5427) ldy current_format_line_ptr+1
-    //     (5428) jsr sub_ca486 (5429)
-    draw_line(current_format_line_ptr);
-    // ca3ff: (5430)
-ca3ff:
+    if (!(a == 0))
+    {
+        a = ypos;
+        l0082 = a;
+        draw_line(current_format_line_ptr);
+    }
     //     lda flags_need_redrawing_flag (5431)
     a = flags_need_redrawing_flag;
     //     beq ca406 (5432)
-    if (a == 0)
-        goto ca406;
-    //     jsr sub_ca651 (5433)
-    draw_status_word();
-    // ca406: (5434)
-ca406:
+    if (!(a == 0))
+    {
+        draw_status_word();
+    }
     //     lda l0072 (5435)
     a = l0072;
     //     sec (5436)
@@ -7367,29 +7191,26 @@ static void render_char(void)
         goto ca523;
     }
     //     bne ca514
-    if (x != 0)
-        goto ca514;
-    // Marker match at index < 4: render inverted
-    // ca50e:
-    a = STYLE_REVERSE;
-    screen_setstyle(a);
-    // ca514:
+    if (!(x != 0))
+    {
+        a = STYLE_REVERSE;
+        screen_setstyle(a);
+    }
 ca514:
     a = char_to_render;
     //     jsr check_for_control_code
     check_for_control_code(a);
-    if (!(flags & FLAG_Z))
-        goto ca522;
-    if (flags & FLAG_C)
+    if ((flags & FLAG_Z))
     {
-        a = 0x2d;
+        if (flags & FLAG_C)
+        {
+            a = 0x2d;
+        }
+        else
+        {
+            a = 0x2a;
+        }
     }
-    else
-    {
-        a = 0x2a;
-    }
-    // ca522:
-ca522:
     // ca523:
 ca523:
     //     cmp #0x0d
@@ -7402,13 +7223,11 @@ ca523:
     screen_putchar(a);
     //     txa  (use x directly for the style-reset decision)
     //     bne ca532
-    if (x != 0)
-        goto ca532;
-    a = 0;
-    screen_setstyle(a);
-    // ca532:
-    // ca533:
-ca532:
+    if (!(x != 0))
+    {
+        a = 0;
+        screen_setstyle(a);
+    }
     a = char_to_render;
     //     ldx l0084
     x = l0084;
@@ -7762,14 +7581,11 @@ c994a:
     if (flags & FLAG_Z)
         goto c995c;
     //     cpx ruler_left_stop
-    if (x < ruler_left_stop)
-        goto c995c;
-    //     bcc c995c
-    //     inx
-    x++;
-    //     txa
-    a = x;
-    // c995c:
+    if (!(x < ruler_left_stop))
+    {
+        x++;
+        a = x;
+    }
 c995c:
     //     sta l0039
     l0039 = a;
@@ -8037,15 +7853,11 @@ c99ee:
     //     ldx l0039
     x = l0039;
     //     cpx ruler_left_stop
-    if (x >= ruler_left_stop)
-        goto c9a0a;
-    //     bcs c9a0a
-    //     sta l0039
-    l0039 = a;
-    //     dec l0039
-    l0039--;
-    // c9a0a:
-c9a0a:
+    if (!(x >= ruler_left_stop))
+    {
+        l0039 = a;
+        l0039--;
+    }
     //     clc
     //     adc input_buffer_offset+1
     a += l0080;
@@ -8114,28 +7926,19 @@ c9a2e:
     //     cmp #0x20 ; ' '
     cmp(&flags, a, 0x20);
     //     bne c9a38
-    if (!(flags & FLAG_Z))
-        goto c9a38;
-    //     ror bottom_margin
-    bottom_margin = ror(&flags, bottom_margin);
-    // PROVISIONAL: Advance write position, check for control codes. If not a
-    // control code, PROVISIONAL: increment column counter l0039.
-    //  c9a38:
-c9a38:
+    if ((flags & FLAG_Z))
+    {
+        bottom_margin = ror(&flags, bottom_margin);
+    }
     //     iny
     y++;
     //     jsr check_for_control_code
     check_for_control_code(a);
     //     beq c9a40
-    if (flags & FLAG_Z)
-        goto c9a40;
-    //     inc l0039
-    l0039++;
-    // PROVISIONAL: Update l0046 (word-start state = x). If N bit of l0046 was
-    // set (word-start), PROVISIONAL: or character is space, or buffer index >=
-    // 0x85, or bottom_margin is zero, PROVISIONAL: or column >= line width
-    // (l0080), skip to c9a58 (clamp and loop back to c99b6).
-    //  c9a40:
+    if (!(flags & FLAG_Z))
+    {
+        l0039++;
+    }
 c9a40:
     //     bit l0046
     bit(&flags, a, l0046);
@@ -8168,13 +7971,10 @@ c9a40:
     //  c9a58:
 c9a58:
     //     cpy #0x86
-    if (y < 0x86)
-        goto c9a5d;
-    //     bcc c9a5d
-    //     dey
-    y--;
-    // c9a5d:
-c9a5d:
+    if (!(y < 0x86))
+    {
+        y--;
+    }
     //     jmp c99b6
     goto c99b6;
 
@@ -8494,11 +8294,10 @@ static void sub_ca44e(void)
     if (a & 0x80)
         goto ca461;
     //     beq ca461
-    if (a == 0)
-        goto ca461;
-    //     ldx ypos
-    x = ypos;
-    // ca461:
+    if (!(a == 0))
+    {
+        x = ypos;
+    }
 ca461:
     //     lda current_line_ptr
     a = (uint8_t)(current_line_ptr & 0xff);
@@ -8626,12 +8425,10 @@ static void sub_caa97(void)
     if (!(flags & FLAG_Z))
         goto caab7;
     //     bcs caab0
-    if (flags & FLAG_C)
-        goto caab0;
-    //     sta l006e
-    edit_buffer_unpacked_flag = a;
-    // caab0:
-caab0:
+    if (!(flags & FLAG_C))
+    {
+        edit_buffer_unpacked_flag = a;
+    }
     //     jsr caf5c
     caf5c();
     //     ldx ptr1
@@ -8738,12 +8535,10 @@ void sub_cac41(void)
         //     jsr sub_cab6e
         sub_cab6e();
         //     bne cac4c
-        if (!(flags & FLAG_Z))
-            goto cac4c;
-        //     jsr push_onto_ruler_stack
-        push_onto_ruler_index();
-        // cac4c:
-    cac4c:
+        if ((flags & FLAG_Z))
+        {
+            push_onto_ruler_index();
+        }
         //     pla
         //     tay
         //     pla
@@ -8981,12 +8776,10 @@ ca8ed:
     a = edit_buffer_dirty_flag;
     set_flags(&flags, a);
     //     beq ca8f8
-    if (flags & FLAG_Z)
-        goto ca8f8;
-    //     jsr ca741
-    ca741();
-
-    // ca8f8:
+    if (!(flags & FLAG_Z))
+    {
+        ca741();
+    }
 ca8f8:
     //     ldy #0
     y = 0;
@@ -9021,13 +8814,10 @@ ca911:
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
     //     cmp #0x10
-    if (a != 0x10)
-        goto ca919;
-    //     bne ca919
-    //     lda #0x20 ; ' '
-    a = 0x20;
-
-    // ca919:
+    if (!(a != 0x10))
+    {
+        a = 0x20;
+    }
 ca919:
     //     pha
     {

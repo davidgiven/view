@@ -557,12 +557,10 @@ c8389:
     //     lda (((uint8_t*)&tmp89)[0]),y
     a = ram[tmp89 + y];
     //     cmp #0x0d
-    if (a != 0x0d)
-        goto c8390;
-    //     bne c8390
-    //     inx
-    x++;
-c8390:
+    if (!(a != 0x0d))
+    {
+        x++;
+    }
     // c8390:
     //     inc ((uint8_t*)&tmp89)[0]
     tmp89++;
@@ -649,11 +647,10 @@ c83ca:
     //     ldx l007a
     x = l007a;
     //     bne c83d1
-    if (x != 0)
-        goto c83d1;
-    //     jsr sub_c8c5f
-    sub_c8c5f();
-c83d1:
+    if (!(x != 0))
+    {
+        sub_c8c5f();
+    }
     // c83d1:
     //     ldx l0083
     x = l0083;
@@ -685,17 +682,13 @@ void sub_c83f0(void)
     //     jsr sub_c8e33
     sub_c8e33();
     //     beq c8402
-    if (flags & FLAG_Z)
-        goto c8402;
-    //     ldy input_buffer_offset
-    y = input_buffer_offset;
-    //     iny
-    y++;
-    //     jsr expand_escaped_string
-    expand_escaped_string();
-    //     stx l004a
-    l004a = x;
-c8402:
+    if (!(flags & FLAG_Z))
+    {
+        y = input_buffer_offset;
+        y++;
+        expand_escaped_string();
+        l004a = x;
+    }
     // c8402:
     //     jsr parse_marks_from_command
     parse_marks_from_command();
@@ -704,12 +697,11 @@ c8402:
     //     sec
     flags |= FLAG_C;
     //     beq return_4
-    if (flags & FLAG_Z)
-        goto c8410;
-    //     jsr sub_c8c7c
-    sub_c8c7c();
-    //     lda #1
-    a = 1;
+    if (!(flags & FLAG_Z))
+    {
+        sub_c8c7c();
+        a = 1;
+    }
 c8410:
     // c8410:
     //     clc
@@ -923,11 +915,10 @@ c8a87:
         goto c8aa3;
     //     bne c8aa3
     //     cpx input_buffer_offset+1
-    if (x < l0080)
-        goto c8aa3;
-    //     bcc c8aa3
-    //     ldx input_buffer_offset+1
-    x = l0080;
+    if (!(x < l0080))
+    {
+        x = l0080;
+    }
 c8aa3:
     // c8aa3:
     //     txa
@@ -1139,11 +1130,10 @@ c8b38:
 c8b47:
     // c8b47:
     //     cmp #2
-    if (a != 2)
-        goto c8b4d;
-    //     lda #0x20 ; ' '
-    a = 0x20;
-c8b4d:
+    if (!(a != 2))
+    {
+        a = 0x20;
+    }
     // c8b4d:
     //     bit folding_flag
     bit(&flags, a, folding_flag);
@@ -1172,12 +1162,11 @@ c8b4d:
     //     ldy l0081
     y = l0081;
     //     beq c8b64
-    if (y == 0)
-        goto c8b64;
-    //     dec l0081
-    l0081--;
-    //     and #0xdf
-    a &= 0xdf;
+    if (!(y == 0))
+    {
+        l0081--;
+        a &= 0xdf;
+    }
 c8b64:
     // c8b64:
     //     ldy l0083
@@ -1433,15 +1422,12 @@ void check_continuous_editing(void)
 
     // check_continuous_editing:
     //     bit file_edit_flags
-    if ((file_edit_flags & 0x40))
-        goto c8e5d;
-    //     lda file_edit_flags
-    a = file_edit_flags;
-    //     ror
-    //     bcs return_20
-    if (a & 1)
-        return;
-c8e5d:
+    if (!((file_edit_flags & 0x40)))
+    {
+        a = file_edit_flags;
+        if (a & 1)
+            return;
+    }
     //     jsr display_document_file_state
     display_document_file_state();
 }

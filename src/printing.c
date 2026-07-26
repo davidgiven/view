@@ -318,12 +318,10 @@ c953e:
     //     jsr check_for_control_code
     check_for_control_code(a);
     //     bne c9548
-    if (!(flags & FLAG_Z))
-        goto c9548;
-    //     inc l0083
-    l0083++;
-    // c9548:
-c9548:
+    if ((flags & FLAG_Z))
+    {
+        l0083++;
+    }
     //     inx
     x++;
     //     cmp #0x0d
@@ -422,11 +420,10 @@ loop_c9589:
     if (a == 0x0d)
         goto c959c;
     //     cmp #0x1b
-    if (a >= 0x1b)
-        goto c9598;
-    //     lda #0x20 ; ' '
-    a = 0x20;
-c9598:
+    if (!(a >= 0x1b))
+    {
+        a = 0x20;
+    }
     //     cmp l0083
     if (a != l0083)
         goto c959e;
@@ -763,13 +760,10 @@ static void page_eject_fmt(void)
     // page_eject_fmt:
     //     lda l0031
     a = l0031;
-    if (a != 0)
-        goto c964c;
-    //     bne c964c
-    //     jsr render_new_page
-    render_new_page();
-    // c964c:
-c964c:
+    if (!(a != 0))
+    {
+        render_new_page();
+    }
     //     jmp c9263
     c9263();
     return;
@@ -907,12 +901,11 @@ c968f:
     //     sta last_macro_ptr
     last_macro_ptr = (last_macro_ptr & 0xff00) | a;
     //     bcc c96a2
-    if (!(flags & FLAG_C))
-        goto c96a2;
-    //     inc last_macro_ptr+1
-    last_macro_ptr = (last_macro_ptr & 0x00ff) |
-                     ((uint16_t)((last_macro_ptr >> 8) + 1) << 8);
-    // c96a2:
+    if ((flags & FLAG_C))
+    {
+        last_macro_ptr = (last_macro_ptr & 0x00ff) |
+                         ((uint16_t)((last_macro_ptr >> 8) + 1) << 8);
+    }
 c96a2:
     //     lda himem
     a = (uint8_t)(himem & 0xff);
@@ -930,15 +923,13 @@ c96a2:
     if (!(flags & FLAG_Z))
         goto c96b8;
     //     cpx #0x97
-    if (x >= 0x97)
-        goto c96b8;
-    //     jmp display_not_enough_memory
+    if (!(x >= 0x97))
     {
-        display_not_enough_memory();
-        return;
+        {
+            display_not_enough_memory();
+            return;
+        }
     }
-
-    // c96b8:
 c96b8:
     //     lda last_macro_ptr
     a = (uint8_t)(last_macro_ptr & 0xff);
@@ -960,13 +951,10 @@ c96b8:
     //     jsr sub_c9241
     sub_c9241();
     //     bcc c96ce
-    if (!(flags & FLAG_C))
-        goto c96ce;
-    //     rts
-    return;
-
-    // c96ce:
-c96ce:
+    if ((flags & FLAG_C))
+    {
+        return;
+    }
     //     ldy #0
     y = 0;
     //     lda (last_macro_ptr),y
@@ -1167,18 +1155,13 @@ loop_c973e:
     //     lda ((uint8_t*)&tmp23)[0]
     a = ((uint8_t*)&tmp23)[0];
     //     cmp commands_table,y
-    if (a != commands_table[y])
-        goto c974c;
-    //     lda ((uint8_t*)&tmp23)[1]
-    a = ((uint8_t*)&tmp23)[1];
-    //     cmp lb2a1,y                                                    ;
-    //     lb2a1 = commands_table+1
-    cmp(&flags, a, commands_table[y + 1]);
-    //     beq return_45
-    if (flags & FLAG_Z)
-        return;
-    // c974c:
-c974c:
+    if (!(a != commands_table[y]))
+    {
+        a = ((uint8_t*)&tmp23)[1];
+        cmp(&flags, a, commands_table[y + 1]);
+        if (flags & FLAG_Z)
+            return;
+    }
     //     inx
     x++;
     //     iny
@@ -1574,24 +1557,16 @@ void render_register(void)
     //     sty ((uint8_t*)&tmp89)[0]
     tmp89 = 0;
     //     bcs cada2
-    if (flags & FLAG_C)
-        goto cada2;
-    //     bit lada6
-    bit(&flags, a, lada6);
-    //     lda (((uint8_t*)&tmp67)[0]),y
-    a = ram[tmp67 + y];
-    //     sta ((uint8_t*)&tmp89)[0]
-    ((uint8_t*)&tmp89)[0] = a;
-    //     iny                                                               ;
-    //     Y=0x01
-    y++;
-    //     lda (((uint8_t*)&tmp67)[0]),y
-    a = ram[tmp67 + y];
-    //     sta ((uint8_t*)&tmp89)[1]
-    ((uint8_t*)&tmp89)[1] = a;
-    render_number_to_output_buffer(tmp89);
-    // cada2:
-cada2:
+    if (!(flags & FLAG_C))
+    {
+        bit(&flags, a, lada6);
+        a = ram[tmp67 + y];
+        ((uint8_t*)&tmp89)[0] = a;
+        y++;
+        a = ram[tmp67 + y];
+        ((uint8_t*)&tmp89)[1] = a;
+        render_number_to_output_buffer(tmp89);
+    }
     //     clv
     flags &= ~FLAG_V;
     //     ldy l0084
@@ -1642,12 +1617,10 @@ static void emit_to_output_buffer_callback(uint8_t digit)
         //     sta output_buffer,x
         output_buffer[x] = digit;
         //     cpx #MAX_LINE_LENGTH-2
-        if (x >= MAX_LINE_LENGTH - 2)
-            goto ca6ae;
-        //     inc l0082
-        l0082++;
-        // ca6ae:
-    ca6ae:
+        if (!(x >= MAX_LINE_LENGTH - 2))
+        {
+            l0082++;
+        }
         //     pla
         //     tax
         x = saved_x;
@@ -1743,16 +1716,12 @@ static void c9263(void)
     //     lda footers_enabled_flag
     a = footers_enabled_flag;
     //     beq c927c
-    if (a == 0)
-        goto c927c;
-    //     ldx #<(footer_text_maybe)
-    x = (uint8_t)((uintptr_t)footer_text_maybe & 0xff);
-    //     ldy #>(footer_text_maybe)
-    y = (uint8_t)((uintptr_t)footer_text_maybe >> 8);
-    //     jsr render_header_or_footer
-    render_header_or_footer();
-    // c927c:
-c927c:
+    if (!(a == 0))
+    {
+        x = (uint8_t)((uintptr_t)footer_text_maybe & 0xff);
+        y = (uint8_t)((uintptr_t)footer_text_maybe >> 8);
+        render_header_or_footer();
+    }
     //     jsr print_newline
     print_newline();
     //     ldx bottom_margin                                                 ;
@@ -1766,13 +1735,11 @@ c9284:
     ram[RAM_REGISTER_VALUE_P]++;
     set_flags(&flags, ram[RAM_REGISTER_VALUE_P]);
     //     bne c928c
-    if (!(flags & FLAG_Z))
-        goto c928c;
-    //     inc register_value_p+1
-    ram[RAM_REGISTER_VALUE_P + 1]++;
-    set_flags(&flags, ram[RAM_REGISTER_VALUE_P + 1]);
-    // c928c:
-c928c:
+    if ((flags & FLAG_Z))
+    {
+        ram[RAM_REGISTER_VALUE_P + 1]++;
+        set_flags(&flags, ram[RAM_REGISTER_VALUE_P + 1]);
+    }
     //     lda #1
     a = 1;
     //     sta register_value_l
@@ -2188,11 +2155,10 @@ loop_c9107:
     //     adc microspacing_flag
     a = adc(&flags, a, microspacing_flag);
     //     bcc c9115
-    if (!(flags & FLAG_C))
-        goto c9115;
-    //     inc ((uint8_t*)&tmp89)[1]
-    ((uint8_t*)&tmp89)[1]++;
-    // c9115:
+    if ((flags & FLAG_C))
+    {
+        ((uint8_t*)&tmp89)[1]++;
+    }
 c9115:
     //     dex
     x--;
@@ -2264,14 +2230,11 @@ c912b:
         //     lda l0045
         a = l0045;
         //     beq c9154
-        if (a == 0)
-            goto c9154;
-        //     inx
-        x++;
-        //     dec l0045
-        l0045--;
-    // c9154:
-    c9154:
+        if (!(a == 0))
+        {
+            x++;
+            l0045--;
+        }
         //     jsr sub_c9173
         sub_c9173();
         //     lda #0x20 ; ' '
@@ -2314,10 +2277,10 @@ c8fe6_inline:
     ram[RAM_REGISTER_VALUE_L]++;
     set_flags(&flags, ram[RAM_REGISTER_VALUE_L]);
     //     bne c8ffb_inline
-    if (!(flags & FLAG_Z))
-        goto c8ffb_inline;
-    //     inc register_value_l+1
-    ram[RAM_REGISTER_VALUE_L + 1]++;
+    if ((flags & FLAG_Z))
+    {
+        ram[RAM_REGISTER_VALUE_L + 1]++;
+    }
 c8ffb_inline:
     //     ldx line_spacing
     x = line_spacing;
@@ -2328,16 +2291,12 @@ c8ffb_inline:
     //     sbc line_spacing
     a = sbc(&flags, a, line_spacing);
     //     bcs c9009_inline
-    if (flags & FLAG_C)
-        goto c9009_inline;
-    //     lda #0
-    a = 0;
-    //     ldx l0021
-    x = l0021;
-    //     dex
-    x--;
-    // c9009_inline:
-c9009_inline:
+    if (!(flags & FLAG_C))
+    {
+        a = 0;
+        x = l0021;
+        x--;
+    }
     //     sta l0021
     l0021 = a;
     //     jsr print_vertical_space
@@ -2501,12 +2460,10 @@ void print_document(void)
     //     adc #0x8d
     a = adc(&flags, a, 0x8d);
     //     bcc c8edb
-    if (!(flags & FLAG_C))
-        goto c8edb;
-    //     iny
-    y++;
-    // c8edb:
-c8edb:
+    if ((flags & FLAG_C))
+    {
+        y++;
+    }
     //     sta first_macro_ptr
     first_macro_ptr = (first_macro_ptr & 0xff00) | a;
     //     sta last_macro_ptr
@@ -2589,12 +2546,10 @@ static void print_loop(void)
             goto c8f3b_l;
         //     lda l0021
         a = l0021;
-        if (a != 0)
-            goto c8f3b_l;
-        //     bne c8f3b
-        //     jsr c9263
-        c9263();
-        // c8f3b:
+        if (!(a != 0))
+        {
+            c9263();
+        }
     c8f3b_l:
         //     jsr sub_c9188
         sub_c9188();
@@ -2694,12 +2649,10 @@ static void print_loop(void)
             flags |= FLAG_C;
         }
         //     bcc c8f92
-        if (!(flags & FLAG_C))
-            goto c8f92_l;
-        //     lda #0x20 ; ' '
-        a = 0x20;
-        // c8f92:
-    c8f92_l:
+        if ((flags & FLAG_C))
+        {
+            a = 0x20;
+        }
         //     sta ((uint8_t*)&tmp89)[1]
         ((uint8_t*)&tmp89)[1] = a;
         // lookup_macro_name:
@@ -2784,13 +2737,10 @@ static void print_loop(void)
     c8fce_l:
         //     lda l0031
         a = l0031;
-        if (a != 0)
-            goto c8fd5_l;
-        //     bne c8fd5
-        //     jsr render_new_page
-        render_new_page();
-        // c8fd5:
-    c8fd5_l:
+        if (!(a != 0))
+        {
+            render_new_page();
+        }
         //     jsr sub_c9407
         sub_c9407();
         //     lda #0
@@ -2801,19 +2751,16 @@ static void print_loop(void)
         y = l0080;
         //     lda print_flags
         a = print_flags;
-        if (!((int8_t)a < 0))
-            goto c8fe6_l;
-        //     bpl c8fe6
-        //     lda microspacing_flag
-        a = microspacing_flag;
-        set_flags(&flags, a);
-        //     bne c9034
-        if (!(flags & FLAG_Z))
+        if (((int8_t)a < 0))
         {
-            microspace_word_processor();
-            continue;
+            a = microspacing_flag;
+            set_flags(&flags, a);
+            if (!(flags & FLAG_Z))
+            {
+                microspace_word_processor();
+                continue;
+            }
         }
-        // c8fe6:
     c8fe6_l:
         //     lda (((uint8_t*)&tmp01)[0]),y
         a = ram[tmp01 + y];
@@ -2830,12 +2777,10 @@ static void print_loop(void)
         ram[RAM_REGISTER_VALUE_L]++;
         set_flags(&flags, ram[RAM_REGISTER_VALUE_L]);
         //     bne c8ffb
-        if (!(flags & FLAG_Z))
-            goto c8ffb_l;
-        //     inc register_value_l+1
-        ram[RAM_REGISTER_VALUE_L + 1]++;
-    // c8ffb:
-    c8ffb_l:
+        if ((flags & FLAG_Z))
+        {
+            ram[RAM_REGISTER_VALUE_L + 1]++;
+        }
         //     ldx line_spacing
         x = line_spacing;
         //     lda l0021
@@ -2845,16 +2790,12 @@ static void print_loop(void)
         //     sbc line_spacing
         a = sbc(&flags, a, line_spacing);
         //     bcs c9009
-        if (flags & FLAG_C)
-            goto c9009_l;
-        //     lda #0
-        a = 0;
-        //     ldx l0021
-        x = l0021;
-        //     dex
-        x--;
-        // c9009:
-    c9009_l:
+        if (!(flags & FLAG_C))
+        {
+            a = 0;
+            x = l0021;
+            x--;
+        }
         //     sta l0021
         l0021 = a;
         //     jsr print_vertical_space
@@ -2958,18 +2899,15 @@ c8cc8:
     //     ldy l0083
     y = l0083;
     //     cpy #0x84
-    if (y != MAX_LINE_LENGTH)
-        goto c8cdb;
-    //     pha
+    if (!(y != MAX_LINE_LENGTH))
     {
-        uint8_t saved_a_ = a;
-        //     jsr write_cr_to_memory
-        write_cr_to_memory();
-        //     pla
-        a = saved_a_;
+        {
+            uint8_t saved_a_ = a;
+            write_cr_to_memory();
+            a = saved_a_;
+        }
+        x++;
     }
-    //     inx
-    x++;
 c8cdb:
     // c8cdb:
     //     inc l0083
@@ -3009,11 +2947,10 @@ c8cf2:
         //     lda l0084
         a = l0084;
         //     beq c8cfa
-        if (a == 0)
-            goto c8cfa;
-        //     jsr write_cr_to_memory
-        write_cr_to_memory();
-    c8cfa:
+        if (!(a == 0))
+        {
+            write_cr_to_memory();
+        }
         // c8cfa:
         //     plp
         flags = saved_flags_;
@@ -3054,12 +2991,10 @@ static void render_header_or_footer(void)
     //     jsr sub_c93fd
     sub_c93fd();
     //     bcs c932e
-    if (flags & FLAG_C)
-        goto c932e;
-    //     jsr sub_c93a1
-    sub_c93a1();
-    // c932e:
-c932e:
+    if (!(flags & FLAG_C))
+    {
+        sub_c93a1();
+    }
     //     jsr sub_c93c8
     sub_c93c8();
     //     jsr c937b
@@ -3098,13 +3033,11 @@ c932e:
     //     sbc l0039
     a = sbc(&flags, a, l0039);
     //     bcc c9355
-    if (!(flags & FLAG_C))
-        goto c9355;
-    //     tax
-    x = a;
-    //     jsr sub_c941a
-    sub_c941a();
-    // c9355:
+    if ((flags & FLAG_C))
+    {
+        x = a;
+        sub_c941a();
+    }
 c9355:
     //     jsr c937b
     c937b();
@@ -3113,12 +3046,10 @@ c9355:
     //     jsr sub_c93fd
     sub_c93fd();
     //     bcs c9363
-    if (flags & FLAG_C)
-        goto c9363;
-    //     jsr sub_c9393
-    sub_c9393();
-    // c9363:
-c9363:
+    if (!(flags & FLAG_C))
+    {
+        sub_c9393();
+    }
     //     jsr sub_c93c8
     sub_c93c8();
     //     jsr sub_c93be
@@ -3237,16 +3168,12 @@ c92d4:
     //     lda headers_enabled_flag
     a = headers_enabled_flag;
     //     beq c92e8
-    if (a == 0)
-        goto c92e8;
-    //     ldx #<(header_text_maybe)
-    x = (uint8_t)((uintptr_t)header_text_maybe & 0xff);
-    //     ldy #>(header_text_maybe)
-    y = (uint8_t)((uintptr_t)header_text_maybe >> 8);
-    //     jsr render_header_or_footer
-    render_header_or_footer();
-    // c92e8:
-c92e8:
+    if (!(a == 0))
+    {
+        x = (uint8_t)((uintptr_t)header_text_maybe & 0xff);
+        y = (uint8_t)((uintptr_t)header_text_maybe >> 8);
+        render_header_or_footer();
+    }
     //     jsr print_newline
     print_newline();
     //     ldx header_margin                                                 ;
@@ -3458,13 +3385,11 @@ c91c2:
     //     sta ptr3
     ptr3 = (ptr3 & 0xff00) | a;
     //     bcc c91cc
-    if (!(flags & FLAG_C))
-        goto c91cc;
-    //     inc ptr3+1
-    ptr3 =
-        (ptr3 & 0x00ff) | ((uint16_t)((uint8_t)((ptr3 >> 8) & 0xff) + 1) << 8);
-    // c91cc:
-c91cc:
+    if ((flags & FLAG_C))
+    {
+        ptr3 = (ptr3 & 0x00ff) |
+               ((uint16_t)((uint8_t)((ptr3 >> 8) & 0xff) + 1) << 8);
+    }
     //     lda ptr1
     a = (uint8_t)(ptr1 & 0xff);
     //     ldy ptr1+1
@@ -3595,34 +3520,23 @@ static void sub_c9228(void)
     // sub_c9228:
     //     cmp #0x3e ; '>'
     //     bne c9231
-    if (a != 0x3e)
-        goto c9231;
-    //     lda #0
-    a = 0;
-    //     sta l0082
-    l0082 = a;
-    set_flags(&flags, a);
-    //     rts
-    return;
-
-    // c9231:
-c9231:
+    if (!(a != 0x3e))
+    {
+        a = 0;
+        l0082 = a;
+        set_flags(&flags, a);
+        return;
+    }
     //     cmp #0x3c ; '<'
     //     bne c923c
-    if (a != 0x3c)
-        goto c923c;
-    //     lda #0x40 ; '@'
-    a = 0x40;
-    //     sta l0082
-    l0082 = a;
-    //     lda #0
-    a = 0;
-    set_flags(&flags, a);
-    //     rts
-    return;
-
-    // c923c:
-c923c:
+    if (!(a != 0x3c))
+    {
+        a = 0x40;
+        l0082 = a;
+        a = 0;
+        set_flags(&flags, a);
+        return;
+    }
     //     bit l0082
     bit(&flags, a, l0082);
     //     ora #0
@@ -3727,11 +3641,10 @@ static void sub_c92f0(void)
     //     sbc footer_margin
     a = sbc(&flags, a, footer_margin);
     //     bcc c930d
-    if (!(flags & FLAG_C))
-        goto c930d;
-    //     tax
-    x = a;
-    // c930d:
+    if ((flags & FLAG_C))
+    {
+        x = a;
+    }
 c930d:
     //     stx l0021
     l0021 = x;
@@ -3857,12 +3770,10 @@ c93ce:
     //     jsr check_for_control_code
     check_for_control_code(a);
     //     bne c93d9
-    if (!(flags & FLAG_Z))
-        goto c93d9;
-    //     inc l0081
-    l0081++;
-    // c93d9:
-c93d9:
+    if ((flags & FLAG_Z))
+    {
+        l0081++;
+    }
     //     iny
     y++;
     //     cmp #0x7c ; '|'
@@ -3881,18 +3792,12 @@ c93e6:
     l0084 = x;
     //     lda print_flags
     a = print_flags;
-    if (!((int8_t)a < 0))
-        goto return_30;
-    //     bpl return_30
-    //     txa
-    a = x;
-    //     sec
-    //     sbc l0081
-    a -= l0081;
-    //     tax
-    x = a;
-    // return_30:
-return_30:
+    if (((int8_t)a < 0))
+    {
+        a = x;
+        a -= l0081;
+        x = a;
+    }
     //     rts
     return;
 
@@ -3951,12 +3856,10 @@ static void sub_c9407(void)
     x = two_sided_flag;
     set_flags(&flags, x);
     //     beq c9415
-    if (flags & FLAG_Z)
-        goto c9415;
-    //     clc
-    //     adc rhs_extra_margin
-    a += rhs_extra_margin;
-    // c9415:
+    if (!(flags & FLAG_Z))
+    {
+        a += rhs_extra_margin;
+    }
 c9415:
     //     tax
     x = a;
@@ -4171,23 +4074,16 @@ void stop_printing(void)
     // stop_printing:
     //     lda print_flags
     a = print_flags;
-    if (!((int8_t)a < 0))
-        goto c8459;
-    //     bpl c8459
-    //     rol print_flags
-    a = rol(&flags, print_flags);
-    print_flags = a;
-    //     clc
-    flags &= ~FLAG_C;
-    //     ror print_flags
-    a = ror(&flags, print_flags);
-    print_flags = a;
-    //     lda #6
-    a = 6;
-    //     jsr call_printer_driver
-    call_printer_driver();
-    // c8459:
-c8459:
+    if (((int8_t)a < 0))
+    {
+        a = rol(&flags, print_flags);
+        print_flags = a;
+        flags &= ~FLAG_C;
+        a = ror(&flags, print_flags);
+        print_flags = a;
+        a = 6;
+        call_printer_driver();
+    }
     //     rts
     return;
 }

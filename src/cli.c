@@ -447,23 +447,18 @@ c8703:
     y = l0083;
     set_flags(&flags, y);
     //     beq c870d
-    if (flags & FLAG_Z)
-        goto c870d;
-    //     inc ((uint8_t*)&tmp89)[0]
-    tmp89++;
-    //     bne c870d
-    //     inc ((uint8_t*)&tmp89)[1]
-    // c870d:
+    if (!(flags & FLAG_Z))
+    {
+        tmp89++;
+    }
 c870d:
     //     stx l0083
     l0083 = x;
     //     cmp #0x0d
-    if (a != 0x0d)
-        goto c8715;
-    //     bne c8715
-    //     stx l0082
-    l0082 = x;
-    // c8715:
+    if (!(a != 0x0d))
+    {
+        l0082 = x;
+    }
 c8715:
     //     ora l0082
     a |= l0082;
@@ -557,18 +552,12 @@ static void field_cmd(void)
     //     lda ((uint8_t*)&tmp89)[0]
     a = ((uint8_t*)&tmp89)[0];
     //     cmp #0x1b
-    if (a != 0x1b)
-        goto c8699;
-    //     bne c8699
-    //     jsr print_inline_string
-    //     .ascii "Frump!"
-    //     .byte 0xff
-    cli_putstring("Frump!\n");
-    return_to_cli_prompt();
-    return;
-
-    // c8699:
-c8699:
+    if (!(a != 0x1b))
+    {
+        cli_putstring("Frump!\n");
+        return_to_cli_prompt();
+        return;
+    }
     //     sta current_tab_key
     current_tab_key = a;
     // c869b:
@@ -661,11 +650,10 @@ static void fold_cmd(void)
         goto c87b4;
     }
     //     cmp #'0'
-    if (a != '0')
-        goto c87b4;
-    //     false → folding_flag = 0x80
-    folding_flag = 0x80;
-    // c87b4:
+    if (!(a != '0'))
+    {
+        folding_flag = 0x80;
+    }
 c87b4:
     //     jsr print_inline_string
     //     .ascii "Folding "
@@ -674,18 +662,12 @@ c87b4:
 
     //     lda folding_flag
     a = folding_flag;
-    if (!((int8_t)a < 0))
-        goto c87cb;
-    //     bpl c87cb
-    //     jsr print_inline_string
-    //     .ascii "off"
-    //     .byte 0xff
-    cli_putstring("off\n");
-    return_to_cli_prompt();
-    return;
-
-    // c87cb:
-c87cb:
+    if (((int8_t)a < 0))
+    {
+        cli_putstring("off\n");
+        return_to_cli_prompt();
+        return;
+    }
     //     jsr print_inline_string
     //     .ascii "on"
     //     .byte 0xff
@@ -837,15 +819,12 @@ static void microspace_cmd(void)
     //     plp
     flags = saved_flags;
     //     beq c8608
-    if (flags & FLAG_Z)
-        goto c8608;
-    //     ldx ((uint8_t*)&tmp89)[0]
-    x = ((uint8_t*)&tmp89)[0];
-    //     beq return_7
-    if (x == 0)
-        return;
-    // c8608:
-c8608:
+    if (!(flags & FLAG_Z))
+    {
+        x = ((uint8_t*)&tmp89)[0];
+        if (x == 0)
+            return;
+    }
     //     ldy #0
     y = 0;
     //     lda #0x0c
@@ -858,16 +837,11 @@ c8608:
     a &= 1;
     set_flags(&flags, a);
     //     beq c8617
-    if (flags & FLAG_Z)
-        goto c8617;
-    //     stx microspacing_flag
-    microspacing_flag = x;
-    // return_7:
-    //     rts
-    return;
-
-    // c8617:
-c8617:
+    if (!(flags & FLAG_Z))
+    {
+        microspacing_flag = x;
+        return;
+    }
     //     jsr print_inline_string
     //     .ascii "Driver does not support microspacing"
     //     .byte 0xff
@@ -951,22 +925,17 @@ loop_c84c4:
     //     lda input_file_empty_flag
     a = input_file_empty_flag;
     //     bne c84e8
-    if (a != 0)
-        goto c84e8;
-    //     lda top
-    a = (uint8_t)(top & 0xff);
-    //     ldy top+1
-    y = (uint8_t)((top >> 8) & 0xff);
-    //     jsr read_next_chunk_from_input_file
-    read_next_chunk_from_input_file();
-    //     beq c84ab
-    if (flags & FLAG_Z)
+    if (!(a != 0))
     {
-        return_to_cli_prompt();
-        return;
+        a = (uint8_t)(top & 0xff);
+        y = (uint8_t)((top >> 8) & 0xff);
+        read_next_chunk_from_input_file();
+        if (flags & FLAG_Z)
+        {
+            return_to_cli_prompt();
+            return;
+        }
     }
-    // c84e8:
-c84e8:
     //     jmp cb05a
     cb05a();
 }
@@ -1655,15 +1624,10 @@ void run_cli(void)
     //     lda input_file_empty_flag
     a = input_file_empty_flag;
     //     bne c8163
-    if (a != 0)
-        goto c8163;
-    //     jsr print_inline_string
-    //     .ascii "not "
-    //     .byte 0
-    cli_putstring("not ");
-
-    // c8163:
-c8163:
+    if (!(a != 0))
+    {
+        cli_putstring("not ");
+    }
     //     jsr print_inline_string
     //     .ascii "empty\r"
     //     .byte 0
@@ -1704,15 +1668,10 @@ c816d:
     a = microspacing_flag;
     set_flags(&flags, a);
     //     beq c81b3
-    if (flags & FLAG_Z)
-        goto c81b3;
-    //     jsr print_inline_string
-    //     .ascii " (m)"
-    //     .byte 0
-    cli_putstring(" (m)");
-
-    // c81b3:
-c81b3:
+    if (!(flags & FLAG_Z))
+    {
+        cli_putstring(" (m)");
+    }
     //     jsr bdos_print_newline
     cli_putchar('\n');
     // c81b6:
@@ -1776,12 +1735,10 @@ c81e7:
         goto c81ba;
     //     tya
     //     beq c81f3
-    if (y == 0)
-        goto c81f3;
-    //     jsr bdos_print_newline
-    cli_putchar('\n');
-    // c81f3:
-c81f3:
+    if (!(y == 0))
+    {
+        cli_putchar('\n');
+    }
     //     jsr bdos_print_newline
     cli_putchar('\n');
     return_to_cli_prompt();
@@ -1879,15 +1836,11 @@ ca87e:
     //     lda (((uint8_t*)&tmp01)[0]),y
     a = input_buffer[y];
     //     cmp #0x30 ; '0'
-    if (a >= 0x30)
-        goto ca887;
-    //     bcs ca887
-    //     sta l007e
-    l007e = a;
-    //     iny
-    y++;
-    // ca887:
-ca887:
+    if (!(a >= 0x30))
+    {
+        l007e = a;
+        y++;
+    }
     //     sty input_buffer_offset
     input_buffer_offset = y;
     //     ldy l0082

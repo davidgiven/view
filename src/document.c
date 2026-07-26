@@ -30,14 +30,11 @@ void check_for_control_code(uint8_t a)
     //     cmp #0x1c
     cmp(&flags, a, 0x1c);
     //     beq return_63
-    if (flags & FLAG_Z)
-        goto return_63;
-    //     cmp #0x1d
-    cmp(&flags, a, 0x1d);
-    //     clc
-    flags &= ~FLAG_C;
-    // return_63:
-return_63:
+    if (!(flags & FLAG_Z))
+    {
+        cmp(&flags, a, 0x1d);
+        flags &= ~FLAG_C;
+    }
     //     rts
     return;
 }
@@ -196,19 +193,15 @@ loop_caba5:
     //     lda (current_ruler_ptr),y
     a = ram[current_ruler_ptr + y];
     //     cmp #0x3e ; '>'
-    if (a != 0x3e)
-        goto cabad;
-    //     sty ruler_left_stop
-    ruler_left_stop = y;
-    // cabad:
-cabad:
+    if (!(a != 0x3e))
+    {
+        ruler_left_stop = y;
+    }
     //     cmp #0x3c ; '<'
-    if (a != 0x3c)
-        goto cabb3;
-    //     sty ruler_right_stop
-    ruler_right_stop = y;
-    // cabb3:
-cabb3:
+    if (!(a != 0x3c))
+    {
+        ruler_right_stop = y;
+    }
     //     cmp #0x0d
     if (a == 0x0d)
         goto cabbc;
@@ -267,13 +260,11 @@ void print_char_just_to_screen(uint8_t a)
     // print_char_just_to_printer:
     //     bit print_flags
     //     bpl c9472
-    if (!(print_flags & 0x80))
-        goto c9472;
-    //     jmp (printer_driver_ptr)
-    printer_driver_ptr->print_char();
-    return;
-
-c9472:
+    if ((print_flags & 0x80))
+    {
+        printer_driver_ptr->print_char();
+        return;
+    }
     //     jsr check_for_control_code
     check_for_control_code(a);
     //     bne c9488
@@ -340,15 +331,12 @@ void process_document_character(void)
     //     ldy print_flags
     y = print_flags;
     //     bpl ca5cf
-    if (!(y & 0x80))
-        goto ca5cf;
-    //     sbc #0x1b
-    a = sbc(&flags, a, 0x1b);
-    //     tax
-    x = a;
-    //     lda highlight1_code,x
-    a = highlight_code[x];
-ca5cf:
+    if ((y & 0x80))
+    {
+        a = sbc(&flags, a, 0x1b);
+        x = a;
+        a = highlight_code[x];
+    }
     //     ldy l0084
     y = l0084;
 ca5d1:
@@ -448,12 +436,10 @@ read_char:
     //     clc
     flags &= ~FLAG_C;
     //     bne return_65
-    if (!(flags & FLAG_Z))
-        goto return_65;
-    //     sec
-    flags |= FLAG_C;
-    // return_65:
-return_65:
+    if ((flags & FLAG_Z))
+    {
+        flags |= FLAG_C;
+    }
     //     rts
     return;
 }
@@ -532,14 +518,11 @@ loop_cadf4:
     //     cmp l0046
     cmp(&flags, a, l0046);
     //     bcc cadff
-    if (!(flags & FLAG_C))
-        goto cadff;
-    //     sbc l0046
-    a = sbc(&flags, a, l0046);
-    //     inc ((uint8_t*)&tmp89)[0]
-    ((uint8_t*)&tmp89)[0]++;
-    // cadff:
-cadff:
+    if ((flags & FLAG_C))
+    {
+        a = sbc(&flags, a, l0046);
+        ((uint8_t*)&tmp89)[0]++;
+    }
     //     dex
     x--;
     //     bne loop_cadf4
@@ -1007,12 +990,10 @@ cabf9:
     //     adc ((uint8_t*)&tmp01)[0]
     a = adc(&flags, a, ((uint8_t*)&tmp01)[0]);
     //     bcc cac0b
-    if (!(flags & FLAG_C))
-        goto cac0b;
-    //     iny
-    y++;
-    // cac0b:
-cac0b:
+    if ((flags & FLAG_C))
+    {
+        y++;
+    }
     //     cpy ((uint8_t*)&tmp89)[1]
     cmp(&flags, y, ((uint8_t*)&tmp89)[1]);
     //     bcc cabf6
@@ -1070,14 +1051,11 @@ cac20:
     //     ldx #0
     x = 0;
     //     bcc cac3e
-    if (!(flags & FLAG_C))
-        goto cac3e;
-    //     sec
-    //     sbc #3
-    a -= 3;
-    //     tax
-    x = a;
-    // cac3e:
+    if ((flags & FLAG_C))
+    {
+        a -= 3;
+        x = a;
+    }
 cac3e:
     //     stx xpos
     xpos = x;
@@ -1159,12 +1137,10 @@ void move_tmp01_to_previous_line(uint16_t val)
     //     sta ((uint8_t*)&tmp01)[0]
     ((uint8_t*)&tmp01)[0] = a;
     //     bcs cab3f
-    if (flags & FLAG_C)
-        goto cab3f;
-    //     dey
-    y--;
-    // cab3f:
-cab3f:
+    if (!(flags & FLAG_C))
+    {
+        y--;
+    }
     //     sty ((uint8_t*)&tmp01)[1]
     ((uint8_t*)&tmp01)[1] = y;
     //     cpy page+1
@@ -1173,15 +1149,12 @@ cab3f:
     if (!(flags & FLAG_C))
         return;
     //     bne cab4b
-    if (!(flags & FLAG_Z))
-        goto cab4b;
-    //     cmp page
-    cmp(&flags, a, (uint8_t)(page & 0xff));
-    //     bcc return_71
-    if (!(flags & FLAG_C))
-        return;
-    // cab4b:
-cab4b:
+    if ((flags & FLAG_Z))
+    {
+        cmp(&flags, a, (uint8_t)(page & 0xff));
+        if (!(flags & FLAG_C))
+            return;
+    }
     // loop_cab4d:
 loop_cab4d:
     tmp01--;
@@ -1192,12 +1165,10 @@ loop_cab4d:
     //     jsr sub_cab6e
     sub_cab6e();
     //     bne cab6c
-    if (!(flags & FLAG_Z))
-        goto cab6c;
-    //     jsr pop_from_ruler_stack
-    pop_from_ruler_index();
-    // cab6c:
-cab6c:
+    if ((flags & FLAG_Z))
+    {
+        pop_from_ruler_index();
+    }
     //     sec
     flags |= FLAG_C;
     // return_71:
