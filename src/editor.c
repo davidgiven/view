@@ -737,15 +737,7 @@ static void cf5_default_ruler_key(void)
 
     //     lda current_edit_line_ptr
 
-    a = (uint8_t)(current_edit_line_ptr & 0xff);
-
-    //     ldy current_edit_line_ptr+1
-
-    y = (uint8_t)(current_edit_line_ptr >> 8);
-
-    //     jmp create_default_ruler
-
-    create_default_ruler();
+    create_default_ruler(current_edit_line_ptr);
 }
 
 static void cf6_split_line_key(void)
@@ -884,11 +876,7 @@ static void cf7_join_lines_key(void)
 
     //     sta ((uint8_t*)&tmp01)[1]
 
-    tmp01 = current_line_ptr;
-
-    //     jsr cab29
-
-    move_tmp01_to_next_line();
+    move_tmp01_to_next_line(current_line_ptr);
 
     //     beq c9eda
 
@@ -1374,15 +1362,7 @@ static void f15_up_key(void)
 
     //     lda current_line_ptr
 
-    a = (uint8_t)(current_line_ptr & 0xff);
-
-    //     ldy current_line_ptr+1
-
-    y = (uint8_t)(current_line_ptr >> 8);
-
-    //     jsr sub_cab37
-
-    move_tmp01_to_previous_line();
+    move_tmp01_to_previous_line(current_line_ptr);
 
     //     bcc return_53
 
@@ -1601,15 +1581,7 @@ static void f7_delete_line_key(void)
 
     //     lda current_line_ptr
 
-    a = (uint8_t)(current_line_ptr & 0xff);
-
-    //     ldy current_line_ptr+1
-
-    y = (uint8_t)(current_line_ptr >> 8);
-
-    //     jsr sub_cab37
-
-    move_tmp01_to_previous_line();
+    move_tmp01_to_previous_line(current_line_ptr);
 
     //     lda ((uint8_t*)&tmp01)[0]
 
@@ -2719,11 +2691,7 @@ void return_key(void)
 
     //     sta ((uint8_t*)&tmp01)[1]
 
-    tmp01 = current_line_ptr;
-
-    //     jsr cab29
-
-    move_tmp01_to_next_line();
+    move_tmp01_to_next_line(current_line_ptr);
 
     //     bne c9d9b
 
@@ -4510,11 +4478,7 @@ static void sub_c9f80(void)
     //     jsr write_line_back_to_document_safely
     write_line_back_to_document_safely();
     //     lda current_line_ptr
-    a = current_line_ptr;
-    //     ldy current_line_ptr+1
-    y = current_line_ptr >> 8;
-    //     jsr sub_cab37
-    move_tmp01_to_previous_line();
+    move_tmp01_to_previous_line(current_line_ptr);
     //     bcc return_56
     if (!(flags & FLAG_C))
         return;
@@ -4546,8 +4510,7 @@ static void sub_ca071(void)
     {
         //     sta ((uint8_t*)&tmp23)[0]
         tmp23 = (addr_t)(y) << 8 | a;
-        //     jsr sub_cab37
-        move_tmp01_to_previous_line();
+        move_tmp01_to_previous_line((addr_t)(y) << 8 | a);
         //     lda ((uint8_t*)&tmp01)[0]
         a = ((uint8_t*)&tmp01)[0];
         //     ldy ((uint8_t*)&tmp01)[1]
@@ -6916,7 +6879,7 @@ ca29c:
         goto ca30d;
     // ca2b2: (5239)
     //     jsr sub_cab37 (5240)
-    move_tmp01_to_previous_line();
+    move_tmp01_to_previous_line(top_of_screen_line_ptr);
     //     ldy ((uint8_t*)&tmp01)[1] (5241)
     y = ((uint8_t*)&tmp01)[1];
     //     cpy current_line_ptr+1 (5242)
@@ -8614,8 +8577,7 @@ loop_ca465:
         goto ca479;
     //     sta ((uint8_t*)&tmp23)[0]
     tmp23 = (addr_t)(y) << 8 | a;
-    //     jsr sub_cab37
-    move_tmp01_to_previous_line();
+    move_tmp01_to_previous_line((addr_t)(y) << 8 | a);
     //     lda ((uint8_t*)&tmp01)[0]
     a = ((uint8_t*)&tmp01)[0];
     //     ldy ((uint8_t*)&tmp01)[1]

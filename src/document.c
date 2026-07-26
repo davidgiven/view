@@ -657,8 +657,10 @@ void close_file(void)
     }
 }
 
-void create_default_ruler(void)
+void create_default_ruler(uint16_t ruler_addr)
 {
+    a = (uint8_t)(ruler_addr & 0xff);
+    y = (uint8_t)(ruler_addr >> 8);
     // create_default_ruler
     // Pseudocode: Creates a default ruler with tab stops every 6 columns
 
@@ -887,11 +889,7 @@ void initialise_document(void)
         (current_edit_line_ptr & 0x00ff) | ((uint16_t)a << 8);
     current_format_line_ptr = current_edit_line_ptr;
     //     lda #<(current_ruler_buffer)
-    a = (uint8_t)(RAM_CURRENT_RULER_BUF & 0xff);
-    //     ldy #>(current_ruler_buffer)
-    y = (uint8_t)(RAM_CURRENT_RULER_BUF >> 8);
-    //     jsr create_default_ruler
-    create_default_ruler();
+    create_default_ruler(RAM_CURRENT_RULER_BUF);
     //     iny
     y++;
     //     lda #0x0d
@@ -981,7 +979,7 @@ void move_cursor_to_address(void)
     // cabdf:
 cabdf:
     //     jsr sub_cab37
-    move_tmp01_to_previous_line();
+    move_tmp01_to_previous_line(current_line_ptr);
     //     lda ((uint8_t*)&tmp01)[0]
     a = ((uint8_t*)&tmp01)[0];
     //     ldy ((uint8_t*)&tmp01)[1]
@@ -1016,9 +1014,7 @@ cabf6:
     // cabf9:
 cabf9:
     //     sta ((uint8_t*)&tmp01)[0]
-    tmp01 = (addr_t)(y) << 8 | a;
-    //     jsr cab29
-    move_tmp01_to_next_line();
+    move_tmp01_to_next_line((addr_t)(y) << 8 | a);
     //     beq cac17
     if (flags & FLAG_Z)
         goto cac17;
@@ -1138,8 +1134,9 @@ void move_cursor_to_top_of_document(void)
     cab91();
 }
 
-void move_tmp01_to_next_line(void)
+void move_tmp01_to_next_line(uint16_t start)
 {
+    tmp01 = start;
     // move_tmp01_to_next_line
     // Pseudocode: Skips to next CR or zero terminator in memory
 
@@ -1171,8 +1168,10 @@ return_70:
     return;
 }
 
-void move_tmp01_to_previous_line(void)
+void move_tmp01_to_previous_line(uint16_t val)
 {
+    a = (uint8_t)(val & 0xff);
+    y = (uint8_t)(val >> 8);
     // move_tmp01_to_previous_line
     // sub_cab37:
     //     sec
@@ -1353,11 +1352,11 @@ void sub_cab1a(void)
     //     bne cab29
     if (!(flags & FLAG_Z))
     {
-        move_tmp01_to_next_line();
+        move_tmp01_to_next_line(tmp01);
         return;
     }
     //     jsr cab29
-    move_tmp01_to_next_line();
+    move_tmp01_to_next_line(tmp01);
     //     bne push_onto_ruler_stack
     if (!(flags & FLAG_Z))
     {

@@ -10,9 +10,9 @@ extern void return_key(void);
 extern void f13_right_key(void);
 
 // Functions in view.c called by editor key handlers
-extern void create_default_ruler(void);
-extern void move_tmp01_to_next_line(void);
-extern void move_tmp01_to_previous_line(void);
+extern void create_default_ruler(uint16_t ruler_addr);
+extern void move_tmp01_to_next_line(uint16_t start);
+extern void move_tmp01_to_previous_line(uint16_t val);
 extern void sub_cab1a(void);
 extern void run_cli(void);
 extern void move_cursor_to_address(void);
@@ -25,5 +25,5 @@ extern void insert_edit_buffer_bytes_at_xpos(void);
 extern void set_marker_to_here(void);
 extern void caf5c(void);
 extern void justify_edit_buffer(void);
-extern void create_default_ruler(void);
+extern void create_default_ruler(uint16_t ruler_addr);
 #endif

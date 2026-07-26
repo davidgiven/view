@@ -27,7 +27,7 @@ extern void cb05a(void);
 
 extern void close_file(void);
 
-extern void create_default_ruler(void);
+extern void create_default_ruler(uint16_t ruler_addr);
 
 extern void get_byte_from_file(void);
 
@@ -41,9 +41,9 @@ extern void move_cursor_to_address(void);
 
 extern void move_cursor_to_top_of_document(void);
 
-extern void move_tmp01_to_next_line(void);
+extern void move_tmp01_to_next_line(uint16_t start);
 
-extern void move_tmp01_to_previous_line(void);
+extern void move_tmp01_to_previous_line(uint16_t val);
 
 extern void open_input_file(void);
 

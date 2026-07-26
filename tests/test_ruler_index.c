@@ -23,7 +23,7 @@ extern uint8_t screen_maxcolumn;
 
 void push_onto_ruler_index(void);
 void pop_from_ruler_index(void);
-void create_default_ruler(void);
+void create_default_ruler(uint16_t ruler_addr);
 
 static int test_failures;
 
@@ -148,9 +148,7 @@ int main(void)
         screen_maxcolumn = 79;
 
         addr_t ruler_addr = 0x7200;
-        a = (uint8_t)(ruler_addr & 0xff);
-        y = (uint8_t)(ruler_addr >> 8);
-        create_default_ruler();
+        create_default_ruler(ruler_addr);
 
         tmp0 = (uint8_t)((ruler_addr - 3) & 0xff);
         tmp1 = (uint8_t)((ruler_addr - 3) >> 8);
