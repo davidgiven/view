@@ -3803,12 +3803,9 @@ loop_c9247:
     // c9254:
 c9254:
     //     inc tmp0
-    tmp0++;
+    tmp01++;
     //     bne c925a
-    if (tmp0 != 0)
-        goto c925a;
     //     inc tmp1
-    tmp1++;
     // c925a:
 c925a:
     //     cmp #0x0d
@@ -4253,11 +4250,9 @@ static void write_byte_to_memory(uint8_t a)
     //     sta (tmp0),y
     ram[tmp01] = a;
     //     inc tmp0
-    tmp0++;
+    tmp01++;
     //     bne c8d0a
     //     inc tmp1
-    if (tmp0 == 0)
-        tmp1++;
     // c8d0a:
     //     sta l0084
     l0084 = a;

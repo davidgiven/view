@@ -4778,12 +4778,8 @@ static void sub_ca1cc(void)
     while (1)
     {
         ram[tmp23] = ram[tmp89];
-        tmp2++;
-        if (tmp2 == 0)
-            tmp3++;
-        tmp8++;
-        if (tmp8 == 0)
-            tmp9++;
+        tmp23++;
+        tmp89++;
         if ((tmp89) == area_end_ptr)
             break;
     }
@@ -5830,12 +5826,9 @@ c8c23:
 loop_c8c2a:
     // loop_c8c2a:
     //     inc tmp8
-    tmp8++;
-    if (tmp8 != 0)
-        goto c8c30;
+    tmp89++;
     //     bne c8c30
     //     inc tmp9
-    tmp9++;
 c8c30:
     // c8c30:
     //     jmp c8b91
@@ -5850,12 +5843,9 @@ c8c33:
         goto loop_c8c2a;
     //     bcc loop_c8c2a
     //     inc tmp8
-    tmp8++;
-    if (tmp8 != 0)
-        goto c8c3e;
+    tmp89++;
     //     bne c8c3e
     //     inc tmp9
-    tmp9++;
 c8c3e:
     // c8c3e:
     //     lda doc_ptr2+0
@@ -8600,12 +8590,9 @@ c9ad5:
     // c9ae9:
 c9ae9:
     //     inc tmp8
-    tmp8++;
+    tmp89++;
     //     bne c9aef
-    if (tmp8 != 0)
-        goto c9aef;
     //     inc tmp9
-    tmp9++;
     // c9aef:
 c9aef:
     //     lda (tmp8),y

@@ -1231,12 +1231,9 @@ cab58:
     if (!(flags & FLAG_Z))
         goto loop_cab4d;
     //     inc tmp0
-    tmp0++;
-    if (tmp0 != 0)
-        goto cab64;
+    tmp01++;
     //     bne cab64
     //     inc tmp1
-    tmp1++;
     // cab64:
 cab64:
     //     jsr sub_cab6e

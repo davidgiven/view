@@ -576,14 +576,9 @@ c8389:
 c8390:
     // c8390:
     //     inc tmp8
-    tmp8++;
-    if (tmp8 != 0)
-        goto c837d;
+    tmp89++;
     //     bne c837d
     //     inc tmp9
-    tmp9++;
-    if (tmp9 != 0)
-        goto c837d;
     //     bne c837d
 c8398:
     // c8398:

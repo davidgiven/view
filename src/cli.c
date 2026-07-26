@@ -464,12 +464,9 @@ c8703:
     if (flags & FLAG_Z)
         goto c870d;
     //     inc tmp8
-    tmp8++;
-    if (tmp8 != 0)
-        goto c870d;
+    tmp89++;
     //     bne c870d
     //     inc tmp9
-    tmp9++;
     // c870d:
 c870d:
     //     stx l0083
