@@ -4302,6 +4302,38 @@ void call_printer_driver(void)
     }
 }
 
+void stop_printing(void)
+{
+    // stop_printing
+    // Pseudocode: Stops active printing by clearing print flags and calling
+    // printer driver cleanup
+
+    // ;
+    // ***************************************************************************************
+    // stop_printing:
+    //     lda print_flags
+    a = print_flags;
+    if (!((int8_t)a < 0))
+        goto c8459;
+    //     bpl c8459
+    //     rol print_flags
+    a = rol(&flags, print_flags);
+    print_flags = a;
+    //     clc
+    flags &= ~FLAG_C;
+    //     ror print_flags
+    a = ror(&flags, print_flags);
+    print_flags = a;
+    //     lda #6
+    a = 6;
+    //     jsr call_printer_driver
+    call_printer_driver();
+    // c8459:
+c8459:
+    //     rts
+    return;
+}
+
 void prepare_printer_driver(void)
 {
     // Pseudocode: Sets up printer driver pointer from name or default driver

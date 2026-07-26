@@ -7,5 +7,6 @@
 extern void execute_formatting_command(void);
 extern void prepare_printer_driver(void);
 extern void call_printer_driver(void);
+extern void stop_printing(void);
 
 #endif

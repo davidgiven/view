@@ -15,7 +15,7 @@ extern void print_char_just_to_screen(void);
 extern void process_document_character(void);
 extern void read_char(void);
 extern void return_to_cli_prompt(void);
-extern void stop_printing(void);
+
 extern void sub_c9445(void);
 extern void sub_cab6e(void);
 extern void sub_cadf0(void);
