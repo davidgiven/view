@@ -264,7 +264,11 @@ def detect_call(stripped):
     return None
 
 
-def get_local_info(lines, start, end):
+def get_local_info(lines, start, end, callee_live_out=None):
+    """Forward scan.  If callee_live_out is provided (a dict from callee name
+    to live_out set), use it instead of ALL_VARS when processing calls."""
+    if callee_live_out is None:
+        callee_live_out = {}
     local_defs = set()
     local_uses = set()
     local_live_in = set()
@@ -276,8 +280,6 @@ def get_local_info(lines, start, end):
             continue
         d, u = line_defs_uses(stripped, i)
         
-        # Any use of a variable that hasn't been defined yet on this path
-        # makes it live-in.
         for v in u:
             if v not in defined_so_far:
                 local_live_in.add(v)
@@ -290,13 +292,16 @@ def get_local_info(lines, start, end):
         if callee:
             if callee not in LIB_FUNCTIONS:
                 call_sites.append((i, callee))
-                # A non-library function call can define any register/flag/tmp.
-                # Conservatively mark everything as defined so the
-                # forward scan won't treat pre-call uses as live-in
-                # when they're satisfied by the call's (unknown) defs.
-                defined_so_far.update(ALL_VARS)
+                # Use the callee's actual live_out if known, else ALL_VARS.
+                clo = callee_live_out.get(callee)
+                if clo is None:
+                    # Also handle CORRUPTS here before falling back to ALL_VARS
+                    if callee in CORRUPTS:
+                        clo = CORRUPTS[callee]
+                    else:
+                        clo = ALL_VARS
+                defined_so_far.update(clo)
             elif callee in CORRUPTS:
-                # Known corruptions for library-like functions
                 defined_so_far.update(CORRUPTS[callee])
     return local_defs, local_uses, local_live_in, call_sites
 
@@ -316,7 +321,7 @@ def analyze_files(files):
             if name not in all_funcs:
                 all_funcs[name] = (filepath, start, end, lines)
     
-    # Compute local info
+    # Compute local info (initial pass: conservative ALL_VARS for calls)
     local_info = {}
     for name, (filepath, start, end, lines) in all_funcs.items():
         d, u, li, cs = get_local_info(lines, start, end)
@@ -349,78 +354,79 @@ def analyze_files(files):
                 info['cached_uses'] = all_uses
                 changed = True
     
-    # ── Backward interprocedural live-out propagation ──
-    # Phase 1: backward scan each function, recording what callers need
-    # from each callee at each call site.
-    backward_needs = {name: set() for name in all_funcs}  # callee -> required vars
-    for name in all_funcs:
-        lines = all_funcs[name][3]
-        start = all_funcs[name][1]
-        end = all_funcs[name][2]
-        live = set()
-        for i in range(end - 1, start - 1, -1):
-            stripped = lines[i].strip()
-            if stripped.startswith('//') or stripped == '':
-                continue
-            d, u = line_defs_uses(stripped, i)
-            callee = detect_call(stripped)
-            if stripped == 'return;':
-                live = set()
-            elif callee:
-                if callee in ALL_IN_OUT:
-                    # All registers are both input and output.
-                    backward_needs.setdefault(callee, set()).update(ALL_VARS)
-                    live = ALL_VARS
-                elif callee not in LIB_FUNCTIONS:
-                    # What the caller needs from the callee = variables live
-                    # after this call (before the call's corruption is applied).
-                    backward_needs.setdefault(callee, set()).update(live)
-                    if callee in CORRUPTS:
+    # ── Full interprocedural fixed-point iteration ──
+    # Iterate: backward scan → compute live_out → re-forward scan with
+    # refined live_out → recompute live_in → repeat until stable.
+    backward_needs = {name: set() for name in all_funcs}
+    fp_iter = 0
+    changed = True
+    while changed and fp_iter < 10:
+        fp_iter += 1
+        changed = False
+        
+        # ── Backward scan: compute what callers need from each callee ──
+        backward_needs.clear()
+        for name in all_funcs:
+            lines = all_funcs[name][3]
+            start = all_funcs[name][1]
+            end = all_funcs[name][2]
+            live = set()
+            for i in range(end - 1, start - 1, -1):
+                stripped = lines[i].strip()
+                if stripped.startswith('//') or stripped == '':
+                    continue
+                d, u = line_defs_uses(stripped, i)
+                callee = detect_call(stripped)
+                if stripped == 'return;':
+                    live = set()
+                elif callee:
+                    if callee in ALL_IN_OUT:
+                        backward_needs.setdefault(callee, set()).update(ALL_VARS)
+                        live = ALL_VARS
+                    elif callee not in LIB_FUNCTIONS:
+                        backward_needs.setdefault(callee, set()).update(live)
+                        if callee in CORRUPTS:
+                            corr = CORRUPTS[callee]
+                            live = (live - corr) | u
+                        else:
+                            live = (live - ALL_VARS) | u
+                    elif callee in CORRUPTS:
                         corr = CORRUPTS[callee]
                         live = (live - corr) | u
                     else:
-                        # Non-library, non-CORRUPTS call: defines all registers
-                        live = (live - ALL_VARS) | u
-                elif callee in CORRUPTS:
-                    corr = CORRUPTS[callee]
-                    live = (live - corr) | u
+                        live = live | u
                 else:
-                    live = live | u
-            else:
-                live = (live - d) | u
-    
-    # Phase 2: fixed-point — propagate through call graph
-    # A function's live_out is what callers need, limited to what the
-    # function actually defines (all_defs).
-    # But all_defs is a forward overcount; use whichever makes sense.
-    changed = True
-    iteration = 0
-    while changed and iteration < 20:
-        changed = False
-        iteration += 1
+                    live = (live - d) | u
+        
+        # ── Compute live_out from backward_needs ──
         for name in all_funcs:
             info = local_info[name]
             all_defs = info.get('cached_defs', info['defs'])
             required = backward_needs.get(name, set())
-            # Limit to what the function actually defines
             new_out = required & all_defs
             old_out = info.get('live_out')
             if new_out != old_out:
                 info['live_out'] = new_out
                 changed = True
-                # Update callers: for each call to this name, propagate
-                # the callee's definitions back to the caller's needs
-                for cname, cinfo in local_info.items():
-                    if cname == name:
-                        continue
-                    for _, callee in cinfo.get('call_sites', []):
-                        if callee == name:
-                            # The callee defines new_out variables.
-                            # In the caller's backward scan, after this call,
-                            # these variables are defined.
-                            # But the backward needs were already computed.
-                            # We just need to ensure consistency.
-                            pass
+        
+        # ── Re-forward scan with refined kill sets ──
+        # Use all_defs (everything the callee writes) as the kill set,
+        # so side-effect modifications to globals are properly tracked.
+        clo = {}
+        for cname, cinfo in local_info.items():
+            clo[cname] = cinfo.get('cached_defs', cinfo['defs'])
+        for name in ALL_IN_OUT:
+            clo[name] = ALL_VARS
+        for name in CORRUPTS:
+            if name not in local_info:
+                clo[name] = CORRUPTS[name]
+        
+        for name, (filepath, start, end, lines) in all_funcs.items():
+            d, u, li, cs = get_local_info(lines, start, end, clo)
+            old_li = local_info[name].get('live_in')
+            if li != old_li:
+                local_info[name]['live_in'] = li
+                changed = True
     
     # Build summaries
     summaries = {}
@@ -452,8 +458,8 @@ def analyze_files(files):
             if callee and callee not in INLINE_HELPERS:
                 d, u = line_defs_uses(sl, i)
                 passed_to_callees |= u
-                # Include variables the caller gets back from the callee
-                # (the callee's live-out, stored in backward_needs).
+                # Include everything the callee writes (all_defs), so
+                # side-effect modifications to globals are caught.
                 if callee in ALL_IN_OUT:
                     passed_to_callees |= ALL_VARS
                 else:
@@ -461,8 +467,9 @@ def analyze_files(files):
                     if callee_info:
                         callee_li = callee_info.get('live_in', set())
                         passed_to_callees |= callee_li
+                        callee_defs = callee_info.get('cached_defs', callee_info['defs'])
+                        passed_to_callees |= callee_defs
                     # Also include what this caller needs from the callee
-                    # (variables live after the call, i.e. backward_needs).
                     callee_needs = backward_needs.get(callee, set())
                     passed_to_callees |= callee_needs
         locals = ((local_defs & local_uses) - live_in - live_out - passed_to_callees)

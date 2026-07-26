@@ -535,6 +535,7 @@ void sub_c8371(void)
     //  Ptrs:   ptr2
     // sub_c8371:
     //     lda ptr2
+    uint8_t a;
     a = (uint8_t)(ptr2 & 0xff);
     //     sta tmp8
     tmp8 = a;

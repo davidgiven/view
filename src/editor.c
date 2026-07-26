@@ -690,6 +690,7 @@ static void cf1_next_match_key(void)
 static void cf2_format_mode_key(void)
 {
 
+    uint8_t a;
     a = format_mode_flag;
 
     a &= 0xbf;
@@ -1008,6 +1009,8 @@ static void cf8_mark_as_ruler_key(void)
 
     //     lda ptr1
 
+    uint8_t y;
+    uint8_t a;
     a = (uint8_t)(ptr1 & 0xff);
 
     //     sta current_format_line_ptr
@@ -1338,6 +1341,7 @@ void f13_right_key(void)
 
     //     ldy xpos
 
+    uint8_t y;
     y = xpos;
 
     //     cpy #MAX_LINE_LENGTH
@@ -3275,6 +3279,7 @@ static void sf1_swap_case_key(void)
 
     //     ldy xpos
 
+    uint8_t a;
     y = xpos;
 
     //     lda (current_edit_line_ptr),y
@@ -4826,6 +4831,7 @@ static void tab_highlight_common(void)
 }
 void enter_editor_mode(void)
 {
+    uint8_t x;
     screen_enter();
     // enter_editor_mode: Enters editor mode: clears screen, resets state
     // variables
@@ -5345,6 +5351,8 @@ cacad:
 void adjust_pointers(void)
 {
     // adjust_pointers
+    uint8_t y;
+    uint8_t x;
     uint8_t tmp2, tmp3, tmp8, tmp9;
     // adjust_pointers: (6372)
     //     lda tmp4 (6373)
@@ -5921,6 +5929,8 @@ static void ca684(void)
 
     // ca684:
     //     ldx ypos
+    uint8_t x;
+    uint8_t a;
     x = ypos;
     //     lda screen_width
     a = screen_maxcolumn;
@@ -5938,6 +5948,8 @@ void ca741(void)
     // current_line_ptr), l0073 = l003d = 0xff Uses: x, y
 
     //     ldx current_line_ptr
+    uint8_t y;
+    uint8_t x;
     x = (uint8_t)(current_line_ptr & 0xff);
     //     ldy current_line_ptr+1
     y = (uint8_t)(current_line_ptr >> 8);
@@ -6193,6 +6205,7 @@ static void draw_status_word(void)
 
     // sub_ca651:
     //     lda #0
+    uint8_t x;
     a = 0;
     //     sta flags_need_redrawing_flag
     flags_need_redrawing_flag = a;
@@ -6722,6 +6735,9 @@ return_48:
 
 void make_space_for_insertion(void)
 {
+    uint8_t y;
+    uint8_t x;
+    uint8_t a;
     uint8_t tmp2, tmp3, tmp8, tmp9;
     // make_space_for_insertion: Shifts content up to make space for insertion
     // (6437) On entry: tmp4:tmp5 = block base, tmp6:tmp7 = size, top = current
@@ -7698,6 +7714,9 @@ extern uint8_t parser_table[];
 void sanitise_area(void)
 {
     // sanitise_area
+    uint8_t y;
+    uint8_t x;
+    uint8_t a;
     uint8_t tmp6, tmp7;
     // sanitise_area:
     //     lda area_start_ptr
@@ -7770,6 +7789,8 @@ static void save_cursor_position(void)
     // save_cursor_position:
     //     ldy #SCREEN_GETCURSOR
     //     jsr SCREEN
+    uint8_t x;
+    uint8_t a;
     uint16_t cursor_ = screen_getcursor();
     a = (uint8_t)(cursor_ & 0xff);
     x = (uint8_t)(cursor_ >> 8);
@@ -7816,6 +7837,7 @@ void show_memory_full_error(void)
     // Uses: a, x, y, line_lengths
 
     //     jsr cursor_off
+    uint8_t y;
     cursor_off();
     //     ldx #3
     //     ldy #0
@@ -7937,6 +7959,7 @@ static void sub_c8c53(uint8_t a)
 {
     // sub_c8c53:
     //     ldx l0048
+    uint8_t x;
     x = l0048;
     //     cpx #MAX_LINE_LENGTH
     //     bcs return_13
@@ -9093,6 +9116,7 @@ static void sub_caec2(void)
     // sub_caec2: Finds left margin stop (0x0b) in edit line
 
     //     lda ruler_left_stop
+    uint8_t a;
     a = ruler_left_stop;
     set_flags(&flags, a);
     //     beq caed4

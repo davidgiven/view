@@ -244,6 +244,7 @@ void clear_cmd(void)
     // ***************************************************************************************
     // clear_cmd:
     //     ldx #0x0b
+    uint8_t x;
     x = 0x0b;
     //     lda #0
     uint8_t a = 0;
@@ -1385,6 +1386,7 @@ static void setup_cmd(void)
     // ***************************************************************************************
     // setup_cmd:
     //     ldx #1
+    uint8_t x;
     x = 1;
     //     stx tmp6
     tmp6 = x;
@@ -1545,6 +1547,7 @@ static void print_x_words_of_help(void)
     // ***************************************************************************************
     // print_x_words_of_help:
     //     ldy #0
+    uint8_t y;
     y = 0;
     //     beq ca832                                                         ;
     //     ALWAYS branch
@@ -1834,6 +1837,8 @@ static void parse_command(void)
     // ***************************************************************************************
     // parse_command:
     //     lda #0xff
+    uint8_t x;
+    uint8_t a;
     a = 0xff;
     //     sta l0082
     l0082 = a;
@@ -2050,6 +2055,8 @@ void set_document_name_to_filename_buffer(void)
 
     // set_document_name_to_filename_buffer:
     //     ldx #0
+    uint8_t x;
+    uint8_t a;
     x = 0;
     // loop_c88fa:
 loop_c88fa:
@@ -2079,6 +2086,8 @@ void zero_terminate_filename_buffer(void)
 {
     // zero_terminate_filename_buffer:
     //     ldx #0
+    uint8_t x;
+    uint8_t a;
     x = 0;
     //     lda #0x0d
     a = 0x0d;

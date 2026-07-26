@@ -100,6 +100,8 @@ static void c950f_impl(void)
     // c950f_impl
     // c950f:
     //     ldy #3
+    uint8_t y;
+    uint8_t x;
     y = 3;
     //     tax
     x = a;
@@ -388,6 +390,7 @@ static void sub_c95b2(uint8_t a)
     // sub_c95b2
     // sub_c95b2:
     //     ldy l0081
+    uint8_t y;
     y = l0081;
     //     sta (tmp2),y
     ram[tmp23 + y] = a;
@@ -1177,6 +1180,8 @@ void lookup_formatting_command(void)
     // ***************************************************************************************
     // lookup_formatting_command:
     //     ldy #2
+    uint8_t y;
+    uint8_t a;
     y = 2;
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
@@ -1900,6 +1905,7 @@ static void c93b8(void)
     //     iny
     //     lda (tmp4),y
     //     bpl c93b8
+    uint8_t a;
     do
     {
         y++;
@@ -3828,6 +3834,8 @@ static void sub_c92f0(void)
 
     // c92f0:
     //     ldx page_length
+    uint8_t x;
+    uint8_t a;
     x = page_length;
     //     lda l0038
     a = l0038;
@@ -4059,6 +4067,7 @@ static void sub_c93fd(void)
 
     // sub_c93fd:
     //     sec
+    uint8_t a;
     flags |= FLAG_C;
     //     lda two_sided_flag
     a = two_sided_flag;
@@ -4175,6 +4184,7 @@ static void sub_cb104(void)
 
     // sub_cb104:
     //     lda #0
+    uint8_t y;
     a = 0;
     //     ldx #0x33 ; '3'
     // loop_cb108:

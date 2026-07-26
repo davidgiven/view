@@ -51,6 +51,7 @@ void compute_bytes_free(void)
     // ***************************************************************************************
     // compute_bytes_free:
     //     lda himem
+    uint8_t a;
     a = (uint8_t)(himem & 0xff);
     //     sec
     flags |= FLAG_C;
@@ -95,6 +96,7 @@ uint8_t deref_and_check_for_command_prefix(uint8_t y)
 {
     // deref_and_check_for_command_prefix:
     //     lda (tmp0),y
+    uint8_t a;
     a = ram[tmp01 + y];
     return check_for_command_prefix(a);
 }
@@ -189,6 +191,7 @@ void find_margins_of_current_ruler_buffer(void)
     //     ldy #0
     //     sty ruler_right_stop
     //     sty ruler_left_stop
+    uint8_t a;
     uint8_t y = 0;
     ruler_right_stop = 0;
     ruler_left_stop = 0;
@@ -517,6 +520,7 @@ void sub_cab6e(void)
 
     // sub_cab6e:
     //     ldy #0
+    uint8_t a;
     uint8_t y = 0;
     //     lda (tmp0),y
     a = ram[tmp01 + y];
@@ -532,6 +536,7 @@ void sub_cadf0(void)
     // sub_cadf0: Performs 8-bit by 8-bit division for microspacing
 
     //     ldx #8
+    uint8_t x;
     x = 8;
     //     lda tmp9
     a = tmp9;
@@ -601,6 +606,8 @@ void cb05a(void)
     // cb05a: Ensures at least one CR at top of document
 
     //     ldy page+1
+    uint8_t y;
+    uint8_t a;
     y = (uint8_t)(page >> 8);
     //     cpy top+1
     cmp(&flags, y, (uint8_t)(top >> 8));
@@ -658,6 +665,7 @@ void create_default_ruler(void)
     // ***************************************************************************************
     // create_default_ruler:
     //     sta tmp0
+    uint8_t x;
     tmp01 = (addr_t)(y) << 8 | a;
 
     //     lda #0
@@ -916,6 +924,7 @@ void lookup_marker(void)
     // lookup_marker: Converts marker character '1'-'6' to index
 
     //     sec
+    uint8_t x;
     flags |= FLAG_C;
     //     sbc #0x31 ; '1'
     a = a - 0x31;
@@ -1135,6 +1144,7 @@ void move_tmp01_to_next_line(void)
 
     // cab29:
     //     ldy #0
+    uint8_t a;
     y = 0;
     // loop_cab2b:
 loop_cab2b:
