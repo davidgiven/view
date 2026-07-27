@@ -2709,28 +2709,14 @@ static void sf11_copy_key(void)
 
     // loop_ca0e7:
 
+    do
+    {
+        a = ram[current_ruler_ptr + y];
+        ram[current_edit_line_ptr + y] = a;
+        y++;
+        x--;
+    } while (x != 0);
 loop_ca0e7:
-
-    //     lda (current_ruler_ptr),y
-
-    a = ram[current_ruler_ptr + y];
-
-    //     sta (current_edit_line_ptr),y
-
-    ram[current_edit_line_ptr + y] = a;
-
-    //     iny
-
-    y++;
-
-    //     dex
-
-    x--;
-
-    //     bne loop_ca0e7
-
-    if (x != 0)
-        goto loop_ca0e7;
 
     // ca0ef:
 
@@ -3593,14 +3579,12 @@ static void clear_marks_1_2(void)
     //     ldx #3
     uint8_t x = 3;
     // loop_cad12:
+    do
+    {
+        ((uint8_t*)markers_array)[x] = a;
+        x--;
+    } while (!(x & 0x80));
 loop_cad12:
-    //     sta __begin_pointer_array,x
-    ((uint8_t*)markers_array)[x] = a;
-    //     dex
-    x--;
-    //     bpl loop_cad12
-    if (!(x & 0x80))
-        goto loop_cad12;
     //     rts
 }
 
@@ -3704,38 +3688,28 @@ cae98:
     //     ldy xpos
     y = xpos;
     // loop_caea5:
-loop_caea5:
-    //     sty l0084
-    l0084 = y;
-    //     ldx #0x10
-    x = 0x10;
-    //     tya
-    a = y;
-    //     clc
-    flags &= ~FLAG_C;
-    //     adc input_buffer_offset+1
-    a = adc(&flags, a, l0080);
-    //     bcs caeb7
-    if (!(flags & FLAG_C))
+    do
     {
-        y = a;
-        if (!(y >= MAX_LINE_LENGTH))
+        l0084 = y;
+        x = 0x10;
+        a = y;
+        flags &= ~FLAG_C;
+        a = adc(&flags, a, l0080);
+        if (!(flags & FLAG_C))
         {
-            a = ram[current_edit_line_ptr + y];
-            x = a;
+            y = a;
+            if (!(y >= MAX_LINE_LENGTH))
+            {
+                a = ram[current_edit_line_ptr + y];
+                x = a;
+            }
         }
-    }
-    //     ldy l0084
-    y = l0084;
-    //     txa
-    a = x;
-    //     sta (current_edit_line_ptr),y
-    ram[current_edit_line_ptr + y] = a;
-    //     iny
-    y++;
-    //     cpy #0x84
-    if (y < MAX_LINE_LENGTH)
-        goto loop_caea5;
+        y = l0084;
+        a = x;
+        ram[current_edit_line_ptr + y] = a;
+        y++;
+    } while (y < MAX_LINE_LENGTH);
+loop_caea5:
     //     bcc loop_caea5
     // return_78:
     //     rts
@@ -4566,14 +4540,12 @@ void enter_editor_mode(void)
     //     ldx screen_height
     x = screen_maxrow;
     // loop_cb0a8:
+    do
+    {
+        line_lengths[x] = a;
+        x--;
+    } while (!(x & 0x80));
 loop_cb0a8:
-    //     sta line_lengths,x
-    line_lengths[x] = a;
-    //     dex
-    x--;
-    //     bpl loop_cb0a8
-    if (!(x & 0x80))
-        goto loop_cb0a8;
     //     ldx #2
     x = 2;
     //     stx l0073
@@ -5660,15 +5632,13 @@ static void clear_to_eol(void)
     //     lda l0084
     a = l0084;
     // loop_ca5a2:
+    do
+    {
+        screen_putchar(a);
+        line_lengths[x]--;
+        set_flags(&flags, line_lengths[x]);
+    } while (!(flags & FLAG_Z));
 loop_ca5a2:
-    //     jsr screen_putchar
-    screen_putchar(a);
-    //     dec line_lengths,x
-    line_lengths[x]--;
-    set_flags(&flags, line_lengths[x]);
-    //     bne loop_ca5a2
-    if (!(flags & FLAG_Z))
-        goto loop_ca5a2;
     // return_62:
 return_62:
     //     rts
@@ -5757,14 +5727,12 @@ loop_ca4bf:
     //     jsr process_current_document_character
     process_current_document_character();
     // loop_ca4c2:
+    do
+    {
+        render_xchar();
+        x--;
+    } while (x != 0);
 loop_ca4c2:
-    //     jsr render_xchar
-    render_xchar();
-    //     dex
-    x--;
-    //     bne loop_ca4c2
-    if (x != 0)
-        goto loop_ca4c2;
     //     cmp #0x0d
     if (a != 0x0d)
         goto loop_ca4bf;
@@ -6162,15 +6130,13 @@ c9871:
     a = y;
     // loop_c98a2:
     //     sta input_buffer,y
+    do
+    {
+        input_buffer[y] = a;
+        y++;
+        x--;
+    } while (x != 0);
 loop_c98a2:
-    input_buffer[y] = a;
-    //     iny
-    y++;
-    //     dex
-    x--;
-    //     bne loop_c98a2
-    if (x != 0)
-        goto loop_c98a2;
     //     ldy print_xpos
     y = print_xpos;
     //     iny
@@ -6256,15 +6222,13 @@ c98d9:
     y = 0;
     // loop_c98ec:
     //     lda output_buffer,y
+    do
+    {
+        a = output_buffer[y];
+        ram[current_edit_line_ptr + y] = a;
+        y++;
+    } while (y != l0042);
 loop_c98ec:
-    a = output_buffer[y];
-    //     sta (current_edit_line_ptr),y
-    ram[current_edit_line_ptr + y] = a;
-    //     iny
-    y++;
-    //     cpy l0042
-    if (y != l0042)
-        goto loop_c98ec;
     //     bne loop_c98ec
     // c98f6:
 c98f6:
@@ -6338,17 +6302,15 @@ c9922:
     a = 0x10;
     // loop_c992c:
     //     cpy #0x84
+    while (1)
+    {
+        cmp(&flags, y, MAX_LINE_LENGTH);
+        if (flags & FLAG_C)
+            return;
+        ram[current_edit_line_ptr + y] = a;
+        y++;
+    }
 loop_c992c:
-    cmp(&flags, y, MAX_LINE_LENGTH);
-    //     bcs return_48
-    if (flags & FLAG_C)
-        return;
-    //     sta (current_edit_line_ptr),y
-    ram[current_edit_line_ptr + y] = a;
-    //     iny
-    y++;
-    //     bne loop_c992c
-    goto loop_c992c;
     // return_48:
     //     rts
     return;
@@ -6479,18 +6441,14 @@ caa57:
 caa75:
     tmp89 -= x;
     // caa82: (6506)
+    do
+    {
+        y--;
+        a = ram[tmp23 + y];
+        ram[tmp89 + y] = a;
+        a = y;
+    } while (a != 0);
 caa82:
-    //     dey (6507)
-    y--;
-    //     lda (((uint8_t*)&tmp23)[0]),y (6508)
-    a = ram[tmp23 + y];
-    //     sta (((uint8_t*)&tmp89)[0]),y (6509)
-    ram[tmp89 + y] = a;
-    //     tya (6510)
-    a = y;
-    //     bne caa82 (6511)
-    if (a != 0)
-        goto caa82;
     //     inx (6512)
     x++;
     //     beq caa57 (6513)
@@ -6576,21 +6534,15 @@ ca624:
     //     Y=0x00
     y = a;
     // loop_ca629:
+    do
+    {
+        l0039 = a;
+        process_current_document_character();
+        a = x;
+        a += l0039;
+        cmp(&flags, a, l0072);
+    } while (!(flags & FLAG_C));
 loop_ca629:
-    //     sta l0039
-    l0039 = a;
-    //     jsr process_current_document_character
-    process_current_document_character();
-    //     txa
-    a = x;
-    //     clc
-    //     adc l0039
-    a += l0039;
-    //     cmp l0072
-    cmp(&flags, a, l0072);
-    //     bcc loop_ca629
-    if (!(flags & FLAG_C))
-        goto loop_ca629;
     //     beq ca63b
     if (!(flags & FLAG_Z))
     {
@@ -6684,20 +6636,15 @@ ca29c:
     //     ldx screen_height (5249)
     x = screen_maxrow;
     // loop_ca2c7: (5250)
+    do
+    {
+        x--;
+        a = line_lengths[x];
+        x++;
+        line_lengths[x] = a;
+        x--;
+    } while (x != 0);
 loop_ca2c7:
-    //     dex (5251)
-    x--;
-    //     lda line_lengths,x (5252)
-    a = line_lengths[x];
-    //     inx (5253)
-    x++;
-    //     sta line_lengths,x (5254)
-    line_lengths[x] = a;
-    //     dex (5255)
-    x--;
-    //     bne loop_ca2c7 (5256)
-    if (x != 0)
-        goto loop_ca2c7;
     //     ldy #SCREEN_SCROLLDOWN (5257) jsr SCREEN (5258)
     screen_scrolldown();
     //     jsr home_cursor (5259)
@@ -6787,16 +6734,13 @@ ca313:
     //     ldx #0 (5305)
     x = 0;
     // loop_ca31f: (5306)
+    do
+    {
+        a = line_lengths[x + 1];
+        line_lengths[x] = a;
+        x++;
+    } while (x != screen_maxrow);
 loop_ca31f:
-    //     lda line_lengths+1,x (5307)
-    a = line_lengths[x + 1];
-    //     sta line_lengths,x (5308)
-    line_lengths[x] = a;
-    //     inx (5309)
-    x++;
-    //     cpx screen_height (5310)
-    if (x != screen_maxrow)
-        goto loop_ca31f;
     //     bne loop_ca31f (5311)
     //     dec l003d (5312)
     l003d--;
@@ -7083,28 +7027,19 @@ ca422:
     //     lda #0x2a ; '*' (5458)
     a = 0x2a;
     // loop_ca431: (5459)
+    do
+    {
+        l0082++;
+        screen_setcursor(0, l0082);
+        clear_to_eol();
+        a = l0083;
+        line_lengths[x] = a;
+        a = 0;
+        l0083 = a;
+        a = 0x20;
+        l0081--;
+    } while (l0081 != 0);
 loop_ca431:
-    //     inc l0082 (5460)
-    l0082++;
-    //     ldx #0 (5461) ldy l0082 (5462) jsr set_cursor_position (5463)
-    screen_setcursor(0, l0082);
-    //     jsr sub_ca597 (5464)
-    clear_to_eol();
-    //     lda l0083 (5465)
-    a = l0083;
-    //     sta line_lengths,x (5466)
-    line_lengths[x] = a;
-    //     lda #0 (5467)
-    a = 0;
-    //     sta l0083 (5468)
-    l0083 = a;
-    //     lda #0x20 ; ' ' (5469)
-    a = 0x20;
-    //     dec l0081 (5470)
-    l0081--;
-    //     bne loop_ca431 (5471)
-    if (l0081 != 0)
-        goto loop_ca431;
     //     beq ca3de (5472)
     goto ca3de;
 }
@@ -7428,14 +7363,12 @@ ca96e:
     //     lda #0x20 ; ' '
     a = 0x20;
     // loop_ca976:
+    do
+    {
+        screen_putchar(a);
+        y--;
+    } while (y != 0);
 loop_ca976:
-    //     jsr screen_putchar
-    screen_putchar(a);
-    //     dey
-    y--;
-    //     bne loop_ca976
-    if (y != 0)
-        goto loop_ca976;
     // ca97c:
 ca97c:
     //     lda #0
@@ -7445,14 +7378,12 @@ ca97c:
     //     jsr clear_cmd
     clear_cmd();
     // loop_ca983:
+    do
+    {
+        beep();
+        read_char();
+    } while (!(flags & FLAG_C));
 loop_ca983:
-    //     jsr beep
-    beep();
-    //     jsr flush_and_read_char
-    read_char();
-    //     bcc loop_ca983
-    if (!(flags & FLAG_C))
-        goto loop_ca983;
     //     jsr cursor_on
     cursor_on();
     //     lda #1
@@ -7975,34 +7906,26 @@ c9a60:
     //     inc l0047
     l0047++;
     // loop_c9a62:
+    do
+    {
+        l0047--;
+        y--;
+        set_flags(&flags, y);
+        if (flags & FLAG_Z)
+        {
+            advance_to_next_line();
+            return;
+        }
+        a = ram[current_edit_line_ptr + y];
+        set_flags(&flags, a);
+        {
+            uint8_t saved_a = a;
+            a = 0x10;
+            ram[current_edit_line_ptr + y] = a;
+            a = saved_a;
+        }
+    } while (a != 0x20);
 loop_c9a62:
-    //     dec l0047
-    l0047--;
-    //     dey
-    y--;
-    set_flags(&flags, y);
-    //     beq c9a8d
-    if (flags & FLAG_Z)
-    {
-        advance_to_next_line();
-        return;
-    }
-    //     lda (current_edit_line_ptr),y
-    a = ram[current_edit_line_ptr + y];
-    set_flags(&flags, a);
-    //     pha
-    {
-        uint8_t saved_a = a;
-        //     lda #0x10
-        a = 0x10;
-        //     sta (current_edit_line_ptr),y
-        ram[current_edit_line_ptr + y] = a;
-        //     pla
-        a = saved_a;
-    }
-    //     cmp #0x20 ; ' '
-    if (a != 0x20)
-        goto loop_c9a62;
     //     sec
     flags |= FLAG_C;
     //     ror input_buffer_offset

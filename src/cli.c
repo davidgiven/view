@@ -245,14 +245,12 @@ void clear_cmd(void)
     //     lda #0
     uint8_t a = 0;
     // loop_cb095:
+    do
+    {
+        ((uint8_t*)markers_array)[x] = a;
+        x--;
+    } while (!(x & 0x80));
 loop_cb095:
-    //     sta markers_array,x
-    ((uint8_t*)markers_array)[x] = a;
-    //     dex
-    x--;
-    //     bpl loop_cb095
-    if (!(x & 0x80))
-        goto loop_cb095;
     //     rts
     return;
 }
@@ -577,53 +575,37 @@ static void finish_cmd(void)
     //     jsr check_continuous_editing
     check_continuous_editing();
     // loop_c84ee:
+    while (1)
+    {
+        reset_area_to_entire_document();
+        sanitise_area();
+        x = 1;
+        select_file(x);
+        write_area_to_file();
+        if (!(flags & FLAG_Z))
+        {
+            return_to_cli_prompt();
+            return;
+        }
+        a = 0;
+        put_byte_to_file(a);
+        sub_c89d3();
+        move_cursor_to_top_of_document();
+        cb05a();
+        a = input_file_empty_flag;
+        if (a != 0)
+        {
+            close_input_output_files();
+            return;
+        }
+        read_first_chunk_from_input_file();
+        if (flags & FLAG_Z)
+        {
+            return_to_cli_prompt();
+            return;
+        }
+    }
 loop_c84ee:
-    //     jsr reset_area_to_entire_document
-    reset_area_to_entire_document();
-    //     jsr sanitise_area
-    sanitise_area();
-
-    //     jsr select_file
-    x = 1;
-    select_file(x);
-
-    //     jsr write_area_to_file
-    write_area_to_file();
-    //     bne c84ab
-    if (!(flags & FLAG_Z))
-    {
-        return_to_cli_prompt();
-        return;
-    }
-    //     lda #0
-    a = 0;
-    //     jsr put_byte_to_file                ; write terminator
-    put_byte_to_file(a);
-    //     jsr sub_c89d3
-    sub_c89d3();
-    //     jsr move_cursor_to_top_of_document
-    move_cursor_to_top_of_document();
-    //     jsr cb05a
-    cb05a();
-    //     lda input_file_empty_flag
-    a = input_file_empty_flag;
-    //     bne close_input_output_files
-    if (a != 0)
-    {
-        close_input_output_files();
-        return;
-    }
-    //     jsr read_first_chunk_from_input_file
-    read_first_chunk_from_input_file();
-    //     beq c84ab
-    if (flags & FLAG_Z)
-    {
-        return_to_cli_prompt();
-        return;
-    }
-    //     bne loop_c84ee                                                    ;
-    //     ALWAYS branch
-    goto loop_c84ee;
 }
 
 static void fold_cmd(void)
@@ -900,18 +882,14 @@ static void more_cmd(void)
     //     ldx l003a
     x = l003a;
     // loop_c84c4:
+    do
+    {
+        a = ram[current_ruler_ptr + y];
+        current_ruler_buffer[y] = a;
+        y++;
+        x--;
+    } while (x != 0);
 loop_c84c4:
-    //     lda (current_ruler_ptr),y
-    a = ram[current_ruler_ptr + y];
-    //     sta current_ruler_buffer,y
-    current_ruler_buffer[y] = a;
-    //     iny
-    y++;
-    //     dex
-    x--;
-    //     bne loop_c84c4
-    if (x != 0)
-        goto loop_c84c4;
     //     lda #0x0d
     a = 0x0d;
     //     sta current_ruler_buffer,y
@@ -1389,25 +1367,23 @@ c8672:
     //     ldx #2
     x = 2;
     // loop_c8674:
+    do
+    {
+        if (x == 0)
+            a = ((uint8_t*)&tmp67)[0];
+        else if (x == 1)
+            a = ((uint8_t*)&tmp67)[1];
+        else
+            a = ((uint8_t*)&tmp89)[0];
+        if (x == 0)
+            format_mode_flag = a;
+        else if (x == 1)
+            justifying_flag = a;
+        else
+            insert_mode_flag = a;
+        x--;
+    } while (!((int8_t)x < 0));
 loop_c8674:
-    //     lda ((uint8_t*)&tmp67)[0],x
-    if (x == 0)
-        a = ((uint8_t*)&tmp67)[0];
-    else if (x == 1)
-        a = ((uint8_t*)&tmp67)[1];
-    else
-        a = ((uint8_t*)&tmp89)[0];
-    //     sta format_mode_flag,x
-    if (x == 0)
-        format_mode_flag = a;
-    else if (x == 1)
-        justifying_flag = a;
-    else
-        insert_mode_flag = a;
-    //     dex
-    x--;
-    if (!((int8_t)x < 0))
-        goto loop_c8674;
     //     bpl loop_c8674
     //     bmi c869b                                                         ;
     //     ALWAYS branch
@@ -1965,16 +1941,13 @@ void set_document_name_to_filename_buffer(void)
     uint8_t a;
     x = 0;
     // loop_c88fa:
+    do
+    {
+        a = filename_buffer[x];
+        input_filename[x] = a;
+        x++;
+    } while (a >= 0x21);
 loop_c88fa:
-    //     lda filename_buffer,x
-    a = filename_buffer[x];
-    //     sta input_filename,x
-    input_filename[x] = a;
-    //     inx
-    x++;
-    //     cmp #0x21
-    if (a >= 0x21)
-        goto loop_c88fa;
     //     bge loop_c88fa
     // return_9:
     //     lda #0x0d

@@ -411,21 +411,17 @@ ca5fa:
 
 void read_char(void)
 {
-// read_char
-// Pseudocode: Reads a character from keyboard via SCREEN, returning escape
-// flag in carry flush_and_read_char / read_char (same entry point)
+    // read_char
+    // Pseudocode: Reads a character from keyboard via SCREEN, returning escape
+    // flag in carry flush_and_read_char / read_char (same entry point)
+    do
+    {
+        a = 0xff;
+        x = a;
+        flags &= ~FLAG_C;
+        a = screen_getchar();
+    } while (flags & FLAG_C);
 read_char:
-    //     lda #0xff
-    a = 0xff;
-    //     tax
-    x = a;
-    //     ldy #SCREEN_GETCHAR
-    //     jsr SCREEN
-    flags &= ~FLAG_C;
-    a = screen_getchar();
-    //     bcs read_char
-    if (flags & FLAG_C)
-        goto read_char;
 
     //     cmp #0x1b                                                         ;
     //     A=character read
@@ -463,14 +459,12 @@ void sub_c9445(void)
         //     lda #0x20 ; ' '
         a = 0x20;
         // loop_c944c:
+        do
+        {
+            print_char_just_to_screen(a);
+            print_xpos--;
+        } while (print_xpos != 0);
     loop_c944c:
-        //     jsr print_char_just_to_printer
-        print_char_just_to_screen(a);
-        //     dec print_xpos
-        print_xpos--;
-        //     bne loop_c944c
-        if (print_xpos != 0)
-            goto loop_c944c;
         // c9453:
     c9453:
         //     pla
@@ -507,24 +501,19 @@ void sub_cadf0(void)
     //     lda ((uint8_t*)&tmp89)[1]
     a = ((uint8_t*)&tmp89)[1];
     // loop_cadf4:
-loop_cadf4:
-    //     asl ((uint8_t*)&tmp89)[0]
-    ((uint8_t*)&tmp89)[0] = rol(&flags, ((uint8_t*)&tmp89)[0]);
-    //     rol
-    a = rol(&flags, a);
-    //     cmp l0046
-    cmp(&flags, a, l0046);
-    //     bcc cadff
-    if ((flags & FLAG_C))
+    do
     {
-        a = sbc(&flags, a, l0046);
-        ((uint8_t*)&tmp89)[0]++;
-    }
-    //     dex
-    x--;
-    //     bne loop_cadf4
-    if (x != 0)
-        goto loop_cadf4;
+        ((uint8_t*)&tmp89)[0] = rol(&flags, ((uint8_t*)&tmp89)[0]);
+        a = rol(&flags, a);
+        cmp(&flags, a, l0046);
+        if ((flags & FLAG_C))
+        {
+            a = sbc(&flags, a, l0046);
+            ((uint8_t*)&tmp89)[0]++;
+        }
+        x--;
+    } while (x != 0);
+loop_cadf4:
     //     rts
 }
 
@@ -1149,11 +1138,12 @@ void move_tmp01_to_previous_line(uint16_t val)
             return;
     }
     // loop_cab4d:
+    do
+    {
+        tmp01--;
+        a = ram[tmp01];
+    } while (a != 0x0d);
 loop_cab4d:
-    tmp01--;
-    a = ram[tmp01];
-    if (a != 0x0d)
-        goto loop_cab4d;
     tmp01++;
     //     jsr sub_cab6e
     sub_cab6e();

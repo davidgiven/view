@@ -111,17 +111,15 @@ static void c950f_impl(void)
         goto c951c;
     //     lda #0x20 ; ' '
     a = 0x20;
-// loop_c9516:
-//     sta (current_format_line_ptr),y
+    // loop_c9516:
+    //     sta (current_format_line_ptr),y
+    do
+    {
+        ram[current_format_line_ptr + y] = a;
+        y++;
+        x--;
+    } while (x != 0);
 loop_c9516:
-    ram[current_format_line_ptr + y] = a;
-    //     iny
-    y++;
-    //     dex
-    x--;
-    //     bne loop_c9516
-    if (x != 0)
-        goto loop_c9516;
 // c951c:
 c951c:
     //     lda output_buffer,x
@@ -1150,27 +1148,22 @@ void lookup_formatting_command(void)
     //     ldx #0
     x = 0;
     // loop_c973e:
-loop_c973e:
-    //     lda ((uint8_t*)&tmp23)[0]
-    a = ((uint8_t*)&tmp23)[0];
-    //     cmp commands_table,y
-    if (!(a != commands_table[y]))
+    do
     {
-        a = ((uint8_t*)&tmp23)[1];
-        cmp(&flags, a, commands_table[y + 1]);
-        if (flags & FLAG_Z)
-            return;
-    }
-    //     inx
-    x++;
-    //     iny
-    y++;
-    //     iny
-    y++;
-    //     lda commands_table,y
-    a = commands_table[y];
-    if (!((int8_t)a < 0))
-        goto loop_c973e;
+        a = ((uint8_t*)&tmp23)[0];
+        if (!(a != commands_table[y]))
+        {
+            a = ((uint8_t*)&tmp23)[1];
+            cmp(&flags, a, commands_table[y + 1]);
+            if (flags & FLAG_Z)
+                return;
+        }
+        x++;
+        y++;
+        y++;
+        a = commands_table[y];
+    } while (!((int8_t)a < 0));
+loop_c973e:
     //     bpl loop_c973e
     set_flags(&flags, a);
     // return_45:
@@ -1516,24 +1509,18 @@ c9821:
 static void get_current_fmt_cmd_byte(void)
 {
     // get_current_fmt_cmd_byte:
+    while (1)
+    {
+        a = ram[current_format_line_ptr + y];
+        cmp(&flags, a, 0x0d);
+        if (flags & FLAG_Z)
+            return;
+        cmp(&flags, a, 0x20);
+        if (!(flags & FLAG_Z))
+            return;
+        y++;
+    }
 loop:
-    //     lda (current_format_line_ptr),y
-    a = ram[current_format_line_ptr + y];
-    //     cmp #0x0d
-    cmp(&flags, a, 0x0d);
-    //     beq return_47
-    if (flags & FLAG_Z)
-        return;
-    //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20);
-    //     beq get_next_fmt_cmd_byte
-    if (!(flags & FLAG_Z))
-        return;
-    // get_next_fmt_cmd_byte:
-    //     iny
-    y++;
-    //     jmp get_current_fmt_cmd_byte
-    goto loop;
 }
 static void get_next_fmt_cmd_byte(void)
 {
@@ -1765,30 +1752,21 @@ static void c937b(void)
     if (x == 0)
         return;
     // loop_c9381:
-loop_c9381:
-    //     txa
-    a = x;
-    //     pha
+    do
     {
-        uint8_t saved_x = a;
-        //     lda output_buffer,y
-        a = output_buffer[y];
-        //     jsr sub_c9431
-        sub_c9431();
-        //     jsr print_char
-        print_char();
-        //     iny
-        y++;
-        //     pla
-        a = saved_x;
-    }
-    //     tax
-    x = a;
-    //     dex
-    x--;
-    //     bne loop_c9381
-    if (x != 0)
-        goto loop_c9381;
+        a = x;
+        {
+            uint8_t saved_x = a;
+            a = output_buffer[y];
+            sub_c9431();
+            print_char();
+            y++;
+            a = saved_x;
+        }
+        x = a;
+        x--;
+    } while (x != 0);
+loop_c9381:
     // return_28:
     //     rts
 }
@@ -2129,38 +2107,33 @@ c9101:
     //     ldx #8
     x = 8;
     // loop_c9107:
-loop_c9107:
-    //     asl
+    do
     {
-        uint8_t c = (a & 0x80) ? FLAG_C : 0;
-        a <<= 1;
-        flags = (flags & ~(FLAG_C | FLAG_Z | FLAG_N)) | c;
-        set_flags(&flags, a);
-    }
-    //     rol ((uint8_t*)&tmp89)[1]
-    ((uint8_t*)&tmp89)[1] = rol(&flags, ((uint8_t*)&tmp89)[1]);
-    //     asl l0045
-    {
-        uint8_t c = (l0045 & 0x80) ? FLAG_C : 0;
-        l0045 <<= 1;
-        flags = (flags & ~(FLAG_C | FLAG_Z | FLAG_N)) | c;
-        set_flags(&flags, l0045);
-    }
-    //     bcc c9115
-    if ((flags & FLAG_C))
-    {
-        flags &= ~FLAG_C;
-        a = adc(&flags, a, microspacing_flag);
+        {
+            uint8_t c = (a & 0x80) ? FLAG_C : 0;
+            a <<= 1;
+            flags = (flags & ~(FLAG_C | FLAG_Z | FLAG_N)) | c;
+            set_flags(&flags, a);
+        }
+        ((uint8_t*)&tmp89)[1] = rol(&flags, ((uint8_t*)&tmp89)[1]);
+        {
+            uint8_t c = (l0045 & 0x80) ? FLAG_C : 0;
+            l0045 <<= 1;
+            flags = (flags & ~(FLAG_C | FLAG_Z | FLAG_N)) | c;
+            set_flags(&flags, l0045);
+        }
         if ((flags & FLAG_C))
         {
-            ((uint8_t*)&tmp89)[1]++;
+            flags &= ~FLAG_C;
+            a = adc(&flags, a, microspacing_flag);
+            if ((flags & FLAG_C))
+            {
+                ((uint8_t*)&tmp89)[1]++;
+            }
         }
-    }
-    //     dex
-    x--;
-    //     bne loop_c9107
-    if (x != 0)
-        goto loop_c9107;
+        x--;
+    } while (x != 0);
+loop_c9107:
     //     sta ((uint8_t*)&tmp89)[0]
     ((uint8_t*)&tmp89)[0] = a;
     //     lda l0044
@@ -2410,13 +2383,12 @@ static void print_char_x_times(void)
     if (flags & FLAG_Z)
         goto return_32;
     // loop_c942a:
+    do
+    {
+        print_char();
+        x--;
+    } while (x != 0);
 loop_c942a:
-    //     jsr print_char
-    print_char();
-    //     dex
-    x--;
-    if (x != 0)
-        goto loop_c942a;
     //     bne loop_c942a
     // return_32:
 return_32:
@@ -2576,18 +2548,14 @@ static void print_loop(void)
         //     ldx #0
         x = 0;
         // loop_c8f5d:
+        do
+        {
+            a = ram[tmp01 + y];
+            current_ruler_buffer[x] = a;
+            y++;
+            x++;
+        } while (a != 0x0d);
     loop_c8f5d_l:
-        //     lda (((uint8_t*)&tmp01)[0]),y
-        a = ram[tmp01 + y];
-        //     sta current_ruler_buffer,x
-        current_ruler_buffer[x] = a;
-        //     iny
-        y++;
-        //     inx
-        x++;
-        //     cmp #0x0d
-        if (a != 0x0d)
-            goto loop_c8f5d_l;
         //     jsr find_margins_of_current_ruler_buffer
         find_margins_of_current_ruler_buffer();
         // c8f6b:
@@ -2756,18 +2724,14 @@ static void print_loop(void)
                 continue;
             }
         }
+        do
+        {
+            a = ram[tmp01 + y];
+            y++;
+            sub_c9431();
+            print_char_x_times();
+        } while (a != 0x0d);
     c8fe6_l:
-        //     lda (((uint8_t*)&tmp01)[0]),y
-        a = ram[tmp01 + y];
-        //     iny
-        y++;
-        //     jsr sub_c9431
-        sub_c9431();
-        //     jsr c9426
-        print_char_x_times();
-        //     cmp #0x0d
-        if (a != 0x0d)
-            goto c8fe6_l;
         //     inc register_value_l
         ram[RAM_REGISTER_VALUE_L]++;
         set_flags(&flags, ram[RAM_REGISTER_VALUE_L]);
@@ -3558,30 +3522,18 @@ static void sub_c9241(void)
     }
     //     ldy #0
     uint8_t y = 0;
-// loop_c9247:
+    // loop_c9247:
+    do
+    {
+        a = ram[ptr6 + y];
+        flags |= FLAG_C;
+        if (a == 0)
+            return;
+        ram[tmp01 + y] = a;
+        ptr6++;
+        tmp01++;
+    } while (a != 0x0d);
 loop_c9247:
-    //     lda (ptr6),y
-    a = ram[ptr6 + y];
-    //     sec
-    flags |= FLAG_C;
-    //     beq return_27
-    if (a == 0)
-        return;
-    //     sta (((uint8_t*)&tmp01)[0]),y
-    ram[tmp01 + y] = a;
-    //     inc ptr6
-    ptr6++;
-    //     bne c9254
-    //     inc ptr6+1
-    // c9254:
-    //     inc ((uint8_t*)&tmp01)[0]
-    tmp01++;
-    //     bne c925a
-    //     inc ((uint8_t*)&tmp01)[1]
-    // c925a:
-    //     cmp #0x0d
-    if (a != 0x0d)
-        goto loop_c9247;
     //     clc
     flags &= ~FLAG_C;
     // return_27:
