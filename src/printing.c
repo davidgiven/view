@@ -120,19 +120,14 @@ static void c950f_impl(void)
         x--;
     } while (x != 0);
 loop_c9516:
-// c951c:
 c951c:
-    //     lda output_buffer,x
-    a = output_buffer[x];
-    //     sta (current_format_line_ptr),y
-    ram[current_format_line_ptr + y] = a;
-    //     iny
-    y++;
-    //     inx
-    x++;
-    //     cmp #0x0d
-    if (a != 0x0d)
-        goto c951c;
+    do
+    {
+        a = output_buffer[x];
+        ram[current_format_line_ptr + y] = a;
+        y++;
+        x++;
+    } while (a != 0x0d);
     //     inc l0030
     l0030++;
     // c9529:
@@ -2231,17 +2226,13 @@ c912b:
     }
 
 c8fe6_inline:
-    //     lda (((uint8_t*)&tmp01)[0]),y
-    a = ram[tmp01 + y];
-    //     iny
-    y++;
-    //     jsr sub_c9431
-    sub_c9431();
-    //     jsr c9426
-    print_char_x_times();
-    //     cmp #0x0d
-    if (a != 0x0d)
-        goto c8fe6_inline;
+    do
+    {
+        a = ram[tmp01 + y];
+        y++;
+        sub_c9431();
+        print_char_x_times();
+    } while (a != 0x0d);
     //     inc register_value_l
     ram[RAM_REGISTER_VALUE_L]++;
     set_flags(&flags, ram[RAM_REGISTER_VALUE_L]);
@@ -2336,29 +2327,23 @@ void parse_optional_filename_from_command(void)
         return; // returns Z=1 → no filename
     //     ldx #0
     x = 0;
-    // loop_c8dfb:
-loop_c8dfb:
-    //     lda input_buffer,y
-    a = input_buffer[y];
-    //     cmp #0x0d
-    if (a == 0x0d)
-        goto c8e25;
-    //     iny
-    y++;
-    //     cmp l007e
-    if (a == l007e)
-        goto c8e25;
-    //     sta filename_buffer,x
-    filename_buffer[x] = a;
-    //     inx
-    x++;
-    //     cpx #MAX_COMMAND_LENGTH-1
-    //     bne loop_c8dfb
-    if (x != MAX_COMMAND_LENGTH - 1)
-        goto loop_c8dfb;
-    // buffer full → bad_filename_error (does not return)
-    bad_filename_error();
-    // c8e25:
+    while (1)
+    {
+        a = input_buffer[y];
+        if (a == 0x0d)
+            break;
+        y++;
+        if (a == l007e)
+            break;
+        filename_buffer[x] = a;
+        x++;
+        if (x == MAX_COMMAND_LENGTH - 1)
+        {
+            // buffer full → bad_filename_error (does not return)
+            bad_filename_error();
+            break;
+        }
+    }
 c8e25:
     //     lda #0x0d
     a = 0x0d;
