@@ -2657,22 +2657,8 @@ static void print_loop(void)
             nested_macro_error();
             return;
         }
-        //     lda ((uint8_t*)&tmp67)[0]
-        a = ((uint8_t*)&tmp67)[0];
-        //     clc
-        flags &= ~FLAG_C;
-        //     adc #4
-        a = adc(&flags, a, 4);
-        //     sta ptr3
-        ptr3 = (ptr3 & 0xff00) | a;
-        //     lda ((uint8_t*)&tmp67)[1]
-        a = ((uint8_t*)&tmp67)[1];
-        //     adc #0
-        a = adc(&flags, a, 0);
-        //     sta ptr3+1
-        ptr3 = (ptr3 & 0x00ff) | ((uint16_t)a << 8);
-        //     sta macro_executing_flag
-        macro_executing_flag = a;
+        ptr3 = tmp67 + 4;
+        macro_executing_flag = (uint8_t)(ptr3 >> 8);
         //     bne c900e
         set_flags(&flags, macro_executing_flag);
         if (!(flags & FLAG_Z))

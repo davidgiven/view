@@ -5015,24 +5015,8 @@ void adjust_pointers(void)
     uint8_t x;
     uint8_t tmp2, tmp3, tmp8, tmp9;
     // adjust_pointers: (6372)
-    //     lda ((uint8_t*)&tmp45)[0] (6373)
-    a = ((uint8_t*)&tmp45)[0];
-    //     sta ((uint8_t*)&tmp23)[0] (6374)
-    ((uint8_t*)&tmp23)[0] = a;
-    //     clc (6375)
-    flags &= ~FLAG_C;
-    //     adc ((uint8_t*)&tmp67)[0] (6376)
-    a = adc(&flags, a, ((uint8_t*)&tmp67)[0]);
-    //     sta ((uint8_t*)&tmp89)[0] (6377)
-    ((uint8_t*)&tmp89)[0] = a;
-    //     lda ((uint8_t*)&tmp45)[1] (6378)
-    a = ((uint8_t*)&tmp45)[1];
-    //     sta ((uint8_t*)&tmp23)[1] (6379)
-    ((uint8_t*)&tmp23)[1] = a;
-    //     adc ((uint8_t*)&tmp67)[1] (6380)
-    a = adc(&flags, a, ((uint8_t*)&tmp67)[1]);
-    //     sta ((uint8_t*)&tmp89)[1] (6381)
-    ((uint8_t*)&tmp89)[1] = a;
+    tmp23 = tmp45;
+    tmp89 = tmp45 + tmp67;
     //     ldx #0 (6382)
     x = 0;
     // ca9c3: (6383)
