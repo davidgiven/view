@@ -462,15 +462,8 @@ c8715:
     a |= l0082;
     //     sta l0082
     l0082 = a;
-    //     inc ((uint8_t*)&tmp01)[0]
-    ((uint8_t*)&tmp01)[0]++;
-    if (((uint8_t*)&tmp01)[0] != 0)
-        goto c871f;
-    //     bne c871f
-    // c871d:
+    tmp01++;
 c871d:
-    //     inc ((uint8_t*)&tmp01)[1]
-    ((uint8_t*)&tmp01)[1]++;
     // c871f:
 c871f:
     //     ldy ((uint8_t*)&tmp01)[1]

@@ -1266,15 +1266,7 @@ void write_area_to_file(void)
         a = ram[tmp89];
         //         jsr put_byte_to_file
         put_byte_to_file(a);
-        //         inc ((uint8_t*)&tmp89)[0]
-        ((uint8_t*)&tmp89)[0]++;
-        //         zif eq
-        if (((uint8_t*)&tmp89)[0] == 0)
-        {
-            //             inc ((uint8_t*)&tmp89)[1]
-            ((uint8_t*)&tmp89)[1]++;
-            //         zendif
-        }
+        tmp89++;
 
         //         lda ((uint8_t*)&tmp89)[1]
         a = ((uint8_t*)&tmp89)[1];
