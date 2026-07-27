@@ -714,15 +714,7 @@ c876d:
     //     ldy current_line_ptr+1
     y = (uint8_t)((current_line_ptr >> 8) & 0xff);
     //     cpy area_end_ptr+1
-    cmp(&flags, y, (uint8_t)(area_end_ptr >> 8));
-    //     bcc c876d
-    if (!(flags & FLAG_C))
-        goto c876d;
-    //     bne c8787
-    if (!(flags & FLAG_Z))
-        goto c8787;
-    //     cmp area_end_ptr
-    if (a < (uint8_t)(area_end_ptr & 0xff))
+    if (((uint16_t)y << 8 | a) < area_end_ptr)
         goto c876d;
     // c8787:
 c8787:

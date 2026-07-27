@@ -557,22 +557,10 @@ void cb05a(void)
     // cb05a
     // cb05a: Ensures at least one CR at top of document
 
-    //     ldy page+1
-    uint8_t y;
-    uint8_t a;
-    y = (uint8_t)(page >> 8);
-    //     cpy top+1
-    cmp(&flags, y, (uint8_t)(top >> 8));
-    //     bne return_85
-    if (!(flags & FLAG_Z))
+    if (page != top)
         return;
-    //     lda page
-    a = (uint8_t)(page & 0xff);
-    //     cmp top
-    cmp(&flags, a, (uint8_t)(top & 0xff));
-    //     bne return_85
-    if (!(flags & FLAG_Z))
-        return;
+    uint8_t y = (uint8_t)(page >> 8);
+    uint8_t a = (uint8_t)(page & 0xff);
     //     inc top
     top++;
     //     bne cb06c

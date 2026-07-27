@@ -5277,26 +5277,10 @@ c8b91:
     //     lda ((uint8_t*)&tmp89)[1]
     a = ((uint8_t*)&tmp89)[1];
     //     cmp doc_ptr3+1
-    cmp(&flags, a, (uint8_t)(doc_ptr3 >> 8));
-    //     bcc c8b9f
-    if (!(flags & FLAG_C))
+    if (((uint16_t)a << 8 | ((uint8_t*)&tmp89)[0]) < doc_ptr3)
         goto c8b9f;
-    //     bne c8b78
-    if (!(flags & FLAG_Z))
-    {
-        c8b78();
-        return;
-    }
-    //     lda ((uint8_t*)&tmp89)[0]
-    a = ((uint8_t*)&tmp89)[0];
-    //     cmp doc_ptr3+0
-    cmp(&flags, a, (uint8_t)(doc_ptr3 & 0xff));
-    //     bcs c8b78
-    if (flags & FLAG_C)
-    {
-        c8b78();
-        return;
-    }
+    c8b78();
+    return;
 c8b9f:
     // c8b9f:
     //     ldy #0
@@ -6352,17 +6336,7 @@ void make_space_for_insertion(void)
     //     tay (6448)
     y = a;
     //     cpy himem+1 (6449)
-    cmp(&flags, y, (uint8_t)(himem >> 8));
-    //     bcc caa32 (6450)
-    if (!(flags & FLAG_C))
-        goto caa32;
-    //     bne return_67 (6451)
-    if (!(flags & FLAG_Z))
-        goto return_67;
-    //     cpx himem (6452)
-    cmp(&flags, x, (uint8_t)(himem & 0xff));
-    //     bcs return_67 (6453)
-    if (flags & FLAG_C)
+    if (((uint16_t)y << 8 | x) >= himem)
         goto return_67;
     // caa32: (6454)
 caa32:

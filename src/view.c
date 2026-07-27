@@ -1268,21 +1268,7 @@ void write_area_to_file(void)
         put_byte_to_file(a);
         tmp89++;
 
-        //         lda ((uint8_t*)&tmp89)[1]
-        a = ((uint8_t*)&tmp89)[1];
-        //         cmp area_end_ptr+1
-        cmp(&flags, a, (uint8_t)(area_end_ptr >> 8));
-        //         zif eq
-        if (flags & FLAG_Z)
-        {
-            //             lda ((uint8_t*)&tmp89)[0]
-            a = ((uint8_t*)&tmp89)[0];
-            //             cmp area_end_ptr
-            cmp(&flags, a, (uint8_t)(area_end_ptr & 0xff));
-            //         zendif
-        }
-        //     zuntil eq
-    } while (!(flags & FLAG_Z));
+    } while (tmp89 != area_end_ptr);
     // return_17:
     //     rts
 }
