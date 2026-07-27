@@ -2449,12 +2449,8 @@ void print_document(void)
     //     inc printing_from_file_flag
     printing_from_file_flag++;
     ptr6 = page;
-    //     bne c8f30
-    if (a != 0)
-    {
-        print_loop();
-        goto c8f0d;
-    }
+    print_loop();
+    goto c8f0d;
     // c8f0a:
     // c8f0d:
 c8f0d:
