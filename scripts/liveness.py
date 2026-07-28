@@ -245,9 +245,14 @@ def get_local_info(lines, start, end, callee_live_out=None):
         for var in TRACKED_VARS:
             if var in local_decls:
                 continue  # local variable shadows global; don't track
-            # Skip byte-component writes: ((uint8_t*)&var)[N] = ...
-            if re.search(r'\(\(uint8_t\s*\*\)\s*&' + var + r'\)\s*\[', stripped):
-                continue  # this is a byte-component WRITE, not a read
+            # Skip byte-component WRITES (LHS of =): ((uint8_t*)&var)[N] = ...
+            # But NOT reads (RHS): a = ((uint8_t*)&var)[N] — those are USE.
+            bc_match = re.search(r'\(\(uint8_t\s*\*\)\s*&' + var + r'\)\s*\[', stripped)
+            if bc_match and '=' in stripped:
+                # Check if byte-component is on the LHS: appears before =, not after
+                before_eq = stripped[:stripped.index('=')]
+                if bc_match.start() < len(before_eq):
+                    continue  # byte-component is on LHS (WRITE), skip USE detection
             if re.search(r'(?<!\w)' + var + r'(?!\w)', stripped):
                 if not re.search(r'\b' + var + r'\s*=', stripped) or \
                    re.search(r'\b' + var + r'\s*[\+\-]=', stripped) or \
@@ -491,9 +496,15 @@ def analyze_files(files):
                     if re.search(r'\(\(uint8_t\s*\*\)\s*&' + var + r'\)\s*\[', stripped):
                         d.add(var)
                     if re.search(r'(?<!\w)' + var + r'(?!\w)', stripped):
-                        # Skip byte-component writes: ((uint8_t*)&var)[N] = ...
-                        if re.search(r'\(\(uint8_t\s*\*\)\s*&' + var + r'\)\s*\[', stripped):
-                            pass  # this is a byte-component WRITE, not a read
+                        # Skip byte-component WRITES (LHS): ((uint8_t*)&var)[N] = ...
+                        bc_match = re.search(r'\(\(uint8_t\s*\*\)\s*&' + var + r'\)\s*\[', stripped)
+                        is_bc_write = False
+                        if bc_match and '=' in stripped:
+                            before_eq = stripped[:stripped.index('=')]
+                            if bc_match.start() < len(before_eq):
+                                is_bc_write = True
+                        if is_bc_write:
+                            pass  # byte-component WRITE, not a read
                         elif not re.search(r'\b' + var + r'\s*=', stripped):
                             u.add(var)
                         elif re.search(r'\b' + var + r'\s*[\+\-]=', stripped) or \
@@ -619,8 +630,6 @@ def analyze_files(files):
                     callee_defs = callee_info.get('defs', set())
                     callee_locals = callee_info.get('local_decls', set())
                     passed_to_callees |= (callee_defs - callee_locals - callee_params)
-                callee_needs = backward_needs.get(callee, set())
-                passed_to_callees |= callee_needs
         
         # Variables that are pure locals (defined/used only in this function,
         # neither live-in nor live-out, not passed to callees).
