@@ -17,11 +17,11 @@ extern void read_char(void);
 extern void return_to_cli_prompt(void);
 
 extern void sub_c9445(void);
-extern void sub_cab6e(void);
+extern void sub_cab6e(addr_t tmp01);
 extern void sub_cadf0(void);
 extern void check_for_at_least_150_bytes_free(void);
 
-extern void cab91(void);
+extern void cab91(uint8_t y);
 
 extern void cb05a(void);
 
@@ -51,7 +51,7 @@ extern void open_output_file(void);
 
 extern void pop_from_ruler_index(void);
 
-extern void push_onto_ruler_index(void);
+extern void push_onto_ruler_index(uint8_t y);
 
 extern void put_byte_to_file(uint8_t a);
 
@@ -59,6 +59,6 @@ extern void reset_area_to_entire_document(void);
 
 extern void select_file(uint8_t x);
 
-extern void sub_cab1a(void);
+extern void sub_cab1a(uint8_t a);
 
 #endif

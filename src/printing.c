@@ -2500,7 +2500,7 @@ static void print_loop(void)
         //     sty input_buffer_ptr+1
         l0080 = y;
         //     jsr sub_cab6e
-        sub_cab6e();
+        sub_cab6e(tmp01);
         //     bne c8f6e
         if (!(flags & FLAG_Z))
             goto c8f6e_l;

@@ -2846,7 +2846,7 @@ c9fab:
 
     //     jsr sub_cab1a
 
-    sub_cab1a();
+    sub_cab1a(a);
 
     //     beq return_58
 
@@ -3549,7 +3549,7 @@ static void c9d9b_advance_ptr(void)
     //     jsr sub_cab1a
     a = (uint8_t)(current_line_ptr & 0xff);
     y = (uint8_t)(current_line_ptr >> 8);
-    sub_cab1a();
+    sub_cab1a(a);
     //     beq return_54
     if (flags & FLAG_Z)
         return;
@@ -4403,7 +4403,7 @@ static void sub_ca0af(void)
     while (1)
     {
         //     jsr sub_cab1a
-        sub_cab1a();
+        sub_cab1a(a);
         //     beq ca0d2
         if (flags & FLAG_Z)
         {
@@ -5144,7 +5144,7 @@ static void advance_to_next_line(void)
     //     ldy current_line_ptr+1
     y = (uint8_t)((current_line_ptr >> 8) & 0xff);
     //     jsr sub_cab1a
-    sub_cab1a();
+    sub_cab1a(a);
     //     sec
     flags |= FLAG_C;
     //     beq c9aa5
@@ -6647,7 +6647,7 @@ ca2e6:
     // ca2f9: (5282)
 ca2f9:
     //     jsr sub_cab1a (5283)
-    sub_cab1a();
+    sub_cab1a(a);
     //     beq ca313 (5284)
     if (flags & FLAG_Z)
         goto ca313;
@@ -6717,7 +6717,7 @@ loop_ca31f:
     //     lda l0011 (5319)
     a = (uint8_t)(top_of_screen_line_ptr & 0xff);
     //     jsr sub_cab1a (5320)
-    sub_cab1a();
+    sub_cab1a(a);
     //     tya (5321)
     a = y;
     //     clc (5322)
@@ -6762,7 +6762,7 @@ ca360:
     //     ldy l0034 (5343)
     y = l0034;
     //     jsr cab91 (5344)
-    cab91();
+    cab91(y);
     //     jsr unpack_line_into_buffer (5345)
     unpack_line_into_buffer();
     //     jsr sub_ca608 (5346)
@@ -6855,7 +6855,7 @@ ca3b2:
     //     ldy l0033 (5389)
     y = l0033;
     //     jsr cab91 (5390)
-    cab91();
+    cab91(y);
     //     lda #1 (5391)
     a = 1;
     //     sta l0082 (5392)
@@ -6879,7 +6879,7 @@ loop_ca3c3:
     //     ldy ((uint8_t*)&tmp01)[1] (5401)
     y = ((uint8_t*)&tmp01)[1];
     //     jsr sub_cab1a (5402)
-    sub_cab1a();
+    sub_cab1a(a);
     //     beq ca422 (5403)
     if (flags & FLAG_Z)
         goto ca422;
@@ -6913,7 +6913,7 @@ ca3de:
     //     ldy l0034 (5417)
     y = l0034;
     //     jsr cab91 (5418)
-    cab91();
+    cab91(y);
     // ca3e7: (5419)
 ca3e7:
     //     jsr unpack_line_into_buffer (5420)
@@ -8392,11 +8392,11 @@ void sub_cac41(void)
         uint8_t saved_a = a;
         uint8_t saved_y = y;
         //     jsr sub_cab6e
-        sub_cab6e();
+        sub_cab6e(tmp01);
         //     bne cac4c
         if ((flags & FLAG_Z))
         {
-            push_onto_ruler_index();
+            push_onto_ruler_index(y);
         }
         //     pla
         //     tay

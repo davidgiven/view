@@ -473,7 +473,7 @@ void sub_c9445(void)
     //     rts
 }
 
-void sub_cab6e(void)
+void sub_cab6e(addr_t tmp01)
 {
     // Pseudocode: Checks if byte at ((uint8_t*)&tmp01)[0] is a command prefix
     // (0x81)
@@ -517,7 +517,7 @@ loop_cadf4:
     //     rts
 }
 
-void cab91(void)
+void cab91(uint8_t y)
 {
     // cab91
 
@@ -1063,7 +1063,7 @@ void move_cursor_to_top_of_document(void)
     //     sty l0033
     l0033 = y;
     //     jmp cab91
-    cab91();
+    cab91(y);
 }
 
 void move_tmp01_to_next_line(uint16_t start)
@@ -1139,7 +1139,7 @@ void move_tmp01_to_previous_line(uint16_t val)
 loop_cab4d:
     tmp01++;
     //     jsr sub_cab6e
-    sub_cab6e();
+    sub_cab6e(tmp01);
     //     bne cab6c
     if ((flags & FLAG_Z))
     {
@@ -1191,10 +1191,10 @@ void pop_from_ruler_index(void)
     y++;
 
     // MULTIPLE ENTRY POINTS: pop_from_ruler_index, cab91
-    cab91();
+    cab91(y);
 }
 
-void push_onto_ruler_index(void)
+void push_onto_ruler_index(uint8_t y)
 {
     // push_onto_ruler_index
     // Pseudocode: Pushes current ruler position onto the ruler index
@@ -1221,7 +1221,7 @@ void push_onto_ruler_index(void)
         //     sta (oshwm),y
         ram[oshwm + y] = a;
         //     jsr cab91
-        cab91();
+        cab91(y);
         //     pla
         //     tay
         y = saved_y;
@@ -1263,7 +1263,7 @@ void select_file(uint8_t x)
     file_ptr = x ? output_fp : input_fp;
 }
 
-void sub_cab1a(void)
+void sub_cab1a(uint8_t a)
 {
     // Pseudocode: Finds next line in document, handling command prefix and
     // ruler stack
@@ -1272,7 +1272,7 @@ void sub_cab1a(void)
     //     sta ((uint8_t*)&tmp01)[0]
     tmp01 = (addr_t)(y) << 8 | a;
     //     jsr sub_cab6e
-    sub_cab6e();
+    sub_cab6e(tmp01);
     //     bne cab29
     if (!(flags & FLAG_Z))
     {
@@ -1284,7 +1284,7 @@ void sub_cab1a(void)
     //     bne push_onto_ruler_stack
     if (!(flags & FLAG_Z))
     {
-        push_onto_ruler_index();
+        push_onto_ruler_index(y);
         return;
     }
     //     rts

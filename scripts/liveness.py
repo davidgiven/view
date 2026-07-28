@@ -217,6 +217,12 @@ def get_local_info(lines, start, end, callee_live_out=None):
                 # Also define the paired combined/byte variable
                 if var in BYTE_TO_COMBINED:
                     d.add(BYTE_TO_COMBINED[var])
+            # Detect byte-component assignment: ((uint8_t*)&tmp01)[0] = a
+            if re.search(r'\(\(uint8_t\s*\*\)\s*&' + var + r'\)\s*\[', stripped):
+                d.add(var)
+                # Also define the paired combined/byte variable
+                if var in BYTE_TO_COMBINED:
+                    d.add(BYTE_TO_COMBINED[var])
             if re.search(r'\b' + var + r'\+{2}\b', stripped) or \
                re.search(r'\b' + var + r'--\b', stripped) or \
                re.search(r'\b' + var + r'\s*[\+\-]=', stripped):
@@ -234,10 +240,14 @@ def get_local_info(lines, start, end, callee_live_out=None):
             if combined in d:
                 d.add(byte_var)
         
-        # Variable reads (not LHS of assignment, not declaration)
+        # Variable reads (not LHS of assignment, not declaration,
+        # not byte-component LHS like ((uint8_t*)&tmp01)[0] = ...)
         for var in TRACKED_VARS:
             if var in local_decls:
                 continue  # local variable shadows global; don't track
+            # Skip byte-component writes: ((uint8_t*)&var)[N] = ...
+            if re.search(r'\(\(uint8_t\s*\*\)\s*&' + var + r'\)\s*\[', stripped):
+                continue  # this is a byte-component WRITE, not a read
             if re.search(r'(?<!\w)' + var + r'(?!\w)', stripped):
                 if not re.search(r'\b' + var + r'\s*=', stripped) or \
                    re.search(r'\b' + var + r'\s*[\+\-]=', stripped) or \
@@ -477,8 +487,14 @@ def analyze_files(files):
                         continue
                     if re.search(r'\b' + var + r'\s*=', stripped):
                         d.add(var)
+                    # Detect byte-component assignment in backward pass
+                    if re.search(r'\(\(uint8_t\s*\*\)\s*&' + var + r'\)\s*\[', stripped):
+                        d.add(var)
                     if re.search(r'(?<!\w)' + var + r'(?!\w)', stripped):
-                        if not re.search(r'\b' + var + r'\s*=', stripped):
+                        # Skip byte-component writes: ((uint8_t*)&var)[N] = ...
+                        if re.search(r'\(\(uint8_t\s*\*\)\s*&' + var + r'\)\s*\[', stripped):
+                            pass  # this is a byte-component WRITE, not a read
+                        elif not re.search(r'\b' + var + r'\s*=', stripped):
                             u.add(var)
                         elif re.search(r'\b' + var + r'\s*[\+\-]=', stripped) or \
                              re.search(r'\b' + var + r'\+{2}\b', stripped) or \
