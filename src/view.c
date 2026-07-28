@@ -1234,6 +1234,8 @@ void read_first_chunk_from_input_file(void)
 }
 void write_area_to_file(void)
 {
+    addr_t tmp89;
+
     // write_area_to_file
     // Pseudocode: Writes document area range to output file byte by byte
 

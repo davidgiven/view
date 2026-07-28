@@ -457,6 +457,8 @@ static void dh_fmt_cmd(void)
 }
 static void em_fmt_cmd(void)
 {
+    addr_t tmp01;
+
     // em_fmt_cmd
     // Pseudocode: Evaluates expression and stores result in a register
 
@@ -803,6 +805,8 @@ static void pb_fmt_cmd(void)
 }
 static void dm_fmt_cmd(void)
 {
+    addr_t tmp67;
+
     // dm_fmt_cmd
     // Pseudocode: Defines a macro: stores macro name and position in linked
     // list
@@ -1279,6 +1283,8 @@ static const uint8_t l97b0_data[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
 
 static void sub_c976c(void)
 {
+    addr_t tmp89;
+
     // sub_c976c
     // Pseudocode: Parses word-based flag (ON/OFF/YES/NO) from format command
 
@@ -1507,6 +1513,8 @@ static void get_next_fmt_cmd_byte(uint8_t y)
 
 void render_register(uint8_t a, uint8_t y)
 {
+    addr_t tmp89;
+
     // render_register
     // render_register:
     //     sty l0084
@@ -2265,6 +2273,8 @@ static void nested_macro_error(void)
 
 void parse_decimal_number(void)
 {
+    addr_t tmp89;
+
     // ca6fe - Parse decimal number from format command line
     // On entry: y = index into current_format_line_ptr
     // On exit:  ((uint8_t*)&tmp89)[0]:((uint8_t*)&tmp89)[1] = parsed value, a/x

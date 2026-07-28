@@ -4996,6 +4996,8 @@ cacad:
 
 void adjust_pointers(addr_t tmp45, addr_t tmp67)
 {
+    addr_t tmp23;
+
     // adjust_pointers
     uint8_t y;
     uint8_t x;
@@ -5217,6 +5219,8 @@ static void c8b78(void)
 
 void c8b7b(void)
 {
+    addr_t tmp89;
+
     // c8b7b
     // c8b7b:
     //     lda l007a
