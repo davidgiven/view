@@ -6931,15 +6931,14 @@ ca3e7:
     //     tax (5440)
     x = a;
     //     ldy #0 (5441)
-    y = 0;
     //     sty l0073 (5442)
-    l0073 = y;
+    l0073 = 0;
     //     sty l0074 (5443)
-    l0074 = y;
+    l0074 = 0;
     //     sty l006f (5444)
-    l006f = y;
+    l006f = 0;
     //     dey (5445)
-    y--;
+    y = -1;
     //     sty ptr6+1 (5446)
     ptr6 = (ptr6 & 0x00ff) | ((uint16_t)y << 8);
     //     ldy ypos (5447) jsr set_cursor_position (5448)

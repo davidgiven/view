@@ -835,18 +835,16 @@ void initialise_document(void)
     //     sta (((uint8_t*)&tmp01)[0]),y
     ram[tmp01 + y] = 0x0d;
     //     ldy #0xff
-    y = 0xff;
     //     lda #<(just_before_current_ruler_buffer)
     a = (uint8_t)(RAM_JUST_BEFORE_RULER_BUF & 0xff);
     //     sta (oshwm),y
-    ram[oshwm + y] = a;
+    ram[oshwm + 0xff] = a;
     //     dey                                                               ;
     //     Y=0xfe
-    y--;
     //     lda #>(just_before_current_ruler_buffer)
     a = (uint8_t)(RAM_JUST_BEFORE_RULER_BUF >> 8);
     //     sta (oshwm),y
-    ram[oshwm + y] = a;
+    ram[oshwm + 0xfe] = a;
     //     jsr move_cursor_to_top_of_document
     move_cursor_to_top_of_document();
     //     jsr clear_cmd

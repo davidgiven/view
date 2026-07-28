@@ -479,16 +479,14 @@ static void em_fmt_cmd(void)
     //     jsr evaluate_expression_from_fmt_cmd
     evaluate_expression_from_fmt_cmd();
     //     ldy #0
-    y = 0;
     //     sta (((uint8_t*)&tmp01)[0]),y
-    ram[tmp01 + y] = a;
+    ram[tmp01 + 0] = a;
     //     iny                                                               ;
     //     Y=0x01
-    y++;
     //     lda ((uint8_t*)&tmp89)[1]
     a = ((uint8_t*)&tmp89)[1];
     //     sta (((uint8_t*)&tmp01)[0]),y
-    ram[tmp01 + y] = a;
+    ram[tmp01 + 1] = a;
     // return_38:
     //     rts
     return;
