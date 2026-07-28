@@ -802,6 +802,8 @@ c8598:
 }
 void sub_c8a4f(addr_t ptr2)
 {
+    uint8_t x;
+
     // sub_c8a4f
     //  Ptrs:   ptr2
     // sub_c8a4f:

@@ -799,6 +799,8 @@ static void pb_fmt_cmd(void)
 }
 static void dm_fmt_cmd(void)
 {
+    uint8_t a;
+
     uint8_t y;
 
     addr_t tmp67;
@@ -1095,6 +1097,8 @@ static const uint8_t commands_table[] = {'C',
     0xff};
 void lookup_formatting_command(void)
 {
+    addr_t tmp23;
+
     // Pseudocode: Looks up two-letter formatting command in commands_table
 
     // ;

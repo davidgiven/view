@@ -978,6 +978,8 @@ static void cf8_mark_as_ruler_key(addr_t ptr1)
 
 static void delete_key(void)
 {
+    uint8_t x;
+
     // delete_key
 
     // delete_key:
@@ -4318,6 +4320,9 @@ static void sub_c9f80(void)
 
 static void sub_ca071(uint8_t x)
 {
+    uint8_t y;
+    addr_t tmp23;
+
     uint8_t a;
 
     // sub_ca071
@@ -4881,6 +4886,9 @@ cad5d:
 
 void cac78(addr_t tmp89)
 {
+    uint8_t a;
+    uint8_t y;
+
     uint8_t x;
 
     // cac78
@@ -5218,6 +5226,8 @@ static void c8b78(void)
 
 void c8b7b(void)
 {
+    uint8_t x;
+
     addr_t tmp89;
 
     // c8b7b
@@ -5706,6 +5716,8 @@ loop_ca4c2:
 
 void draw_prompt_characters(uint8_t x, uint8_t y)
 {
+    addr_t tmp23;
+
     // draw_prompt_characters: Draws two inverted prompt characters at top-left
     // On entry: x, y = prompt characters
     // Uses: ((uint8_t*)&tmp23)[0], ((uint8_t*)&tmp23)[1]
@@ -6268,6 +6280,9 @@ loop_c992c:
 
 void make_space_for_insertion(void)
 {
+    addr_t tmp89;
+    addr_t tmp23;
+
     uint8_t y;
     uint8_t x;
     uint8_t a;
@@ -7126,6 +7141,8 @@ static void restore_cursor_position(void)
 
 void sanitise_area(void)
 {
+    addr_t tmp67;
+
     // sanitise_area
     uint8_t y;
     uint8_t x;
@@ -7910,6 +7927,9 @@ c9aa5:
 
 static void sub_c9ac1(uint8_t y)
 {
+    addr_t tmp89;
+    addr_t tmp45;
+
     uint8_t a;
     uint8_t x;
 
@@ -8116,6 +8136,8 @@ static void sub_c9e9b(void)
 
 static void sub_ca44e(void)
 {
+    addr_t tmp23;
+
     // sub_ca44e
     // sub_ca44e: Computes starting line for display based on screen position
 
@@ -8196,6 +8218,8 @@ static void sub_ca4d7(void)
 
 static void sub_ca536(uint8_t y)
 {
+    addr_t tmp89;
+
     // sub_ca536
     // Pseudocode: Checks if a position in the edit line corresponds to a marker
 
