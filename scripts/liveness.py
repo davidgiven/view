@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Liveness analysis using libclang AST for forward scan,
+Liveness analysis using libclang AST for def/use detection,
 regex for flag ops, and full interprocedural fixed-point iteration.
 
 Usage:
@@ -29,9 +29,6 @@ ALL_VARS_SET = set(REGISTERS + TMP_VARS + BYTE_VARS + PTR_VARS +
                    [f'flags:{b}' for b in FLAG_BITS])
 
 TRACKED_VARS = set(REGISTERS + TMP_VARS + BYTE_VARS + PTR_VARS)
-
-def is_tracked(name):
-    return name in TRACKED_VARS
 
 # ─── Inline / lib helpers ─────────────────────────────────────────
 INLINE_HELPERS = {
@@ -82,6 +79,11 @@ BYTE_TO_COMBINED = {
     'tmp6': 'tmp67', 'tmp7': 'tmp67',
     'tmp8': 'tmp89', 'tmp9': 'tmp89',
 }
+COMBINED_TO_BYTES = {
+    'tmp01': ['tmp0', 'tmp1'], 'tmp23': ['tmp2', 'tmp3'],
+    'tmp45': ['tmp4', 'tmp5'], 'tmp67': ['tmp6', 'tmp7'],
+    'tmp89': ['tmp8', 'tmp9'],
+}
 
 # ─── CORRUPTS & ALL_IN_OUT ────────────────────────────────────────
 CORRUPTS = {
@@ -95,7 +97,6 @@ CORRUPTS = {
     'display_not_enough_memory': ALL_VARS_SET,
     'bad_filename_error': ALL_VARS_SET,
     'nested_macro_error': ALL_VARS_SET,
-    'cmd_err_no_target': ALL_VARS_SET,
 }
 
 ALL_IN_OUT = {
@@ -113,7 +114,7 @@ def parse_file(filepath):
         _parse_cache[filepath] = tu
     return _parse_cache[filepath]
 
-# ─── Flag ops from source text ────────────────────────────────────
+# ─── Flag ops from source text (kept: FLAG_X macros expand in AST) ─
 def get_flag_defs_uses(line_text):
     defs = set()
     uses = set()
@@ -128,173 +129,7 @@ def get_flag_defs_uses(line_text):
             uses.add(f'flags:{bit}')
     return defs, uses
 
-# ─── AST-based forward scan (replaces regex get_local_info) ───────
-def get_local_info(lines, start, end, callee_live_out=None):
-    """
-    Forward scan using libclang AST.
-    Returns (local_defs, local_uses, local_live_in, call_sites).
-    """
-    if callee_live_out is None:
-        callee_live_out = {}
-    
-    local_defs = set()
-    local_uses = set()
-    local_live_in = set()
-    defined_so_far = set()
-    call_sites = []
-    local_decls = set()
-    
-    # Add formal parameters (from function signature) to defined_so_far and local_decls
-    if start < len(lines):
-        sig = lines[start].strip()
-        for var in TRACKED_VARS:
-            if re.search(r'\b(?:uint8_t|uint16_t|addr_t)\s+' + var + r'\b', sig):
-                defined_so_far.add(var)
-                local_decls.add(var)
-    
-    for i in range(start, end):
-        stripped = lines[i].strip()
-        if stripped.startswith('//') or stripped == '':
-            continue
-        
-        # Track local variable declarations (all types, all tracked vars)
-        # Handles both `uint8_t var;` and `uint8_t var1, var2, var3;`
-        for var in TRACKED_VARS:
-            if re.search(r'\b(?:uint8_t|uint16_t|addr_t)\b(?:\s*\*?\s*\w+\s*,)*\s*' + var + r'\b', stripped):
-                local_decls.add(var)
-        
-        if stripped == 'return;':
-            # When processing linearly (forward scan), a `return;` on one
-            # path doesn't affect variables defined on the OTHER path.
-            # We don't reset defined_so_far here to avoid false live-in
-            # variables that are defined only on the non-return path.
-            # (However, this can cause false NEGATIVES — variables that
-            # ARE truly undefined on a non-return path will not be flagged
-            # as live-in.  A full control-flow analysis would fix this.)
-            continue
-        
-        d = set()
-        u = set()
-        
-        # ── Inline helper flag tracking ──
-        for helper in INLINE_HELPERS:
-            if helper + '(&flags' in stripped:
-                for b in helper_flag_defs(helper):
-                    d.add(f'flags:{b}')
-                for b in helper_flag_uses(helper):
-                    u.add(f'flags:{b}')
-                # a = adc(&flags, ...) defines a (but only if not a local)
-                if helper in ('adc', 'sbc', 'rol', 'ror'):
-                    if '= ' + helper in stripped:
-                        # Check if a is local
-                        m = re.match(r'(a|x|y)\s*=\s*' + helper + r'\(&flags', stripped)
-                        if m and m.group(1) not in local_decls:
-                            d.add(m.group(1))
-                # cmp/set_flags register argument is a use (skip if local)
-                if helper in ('cmp', 'set_flags'):
-                    m = re.match(r'(?:set_flags|cmp)\(&flags, (\w+)', stripped)
-                    if m and m.group(1) not in local_decls:
-                        u.add(m.group(1))
-                break
-        
-        # ── Flag bit-field ops (regex) ──
-        fd, fu = get_flag_defs_uses(stripped)
-        d |= fd
-        u |= fu
-        
-        # ── Track local C variable declarations (shadow globals) ──
-        for var in TRACKED_VARS:
-            if re.search(r'\buint8_t\s+' + var + r'\b', stripped):
-                local_decls.add(var)
-        
-        # ── Regular variable tracking (regex) ──
-        # Only track globals — skip variables that are shadowed by a local declaration
-        for var in TRACKED_VARS:
-            if var in local_decls:
-                continue  # local variable shadows global; don't track
-            if re.search(r'\b' + var + r'\s*=', stripped):
-                d.add(var)
-                # Also define the paired combined/byte variable
-                if var in BYTE_TO_COMBINED:
-                    d.add(BYTE_TO_COMBINED[var])
-            # Detect byte-component assignment: ((uint8_t*)&tmp01)[0] = a
-            if re.search(r'\(\(uint8_t\s*\*\)\s*&' + var + r'\)\s*\[', stripped):
-                d.add(var)
-                # Also define the paired combined/byte variable
-                if var in BYTE_TO_COMBINED:
-                    d.add(BYTE_TO_COMBINED[var])
-            if re.search(r'\b' + var + r'\+{2}\b', stripped) or \
-               re.search(r'\b' + var + r'--\b', stripped) or \
-               re.search(r'\b' + var + r'\s*[\+\-]=', stripped):
-                d.add(var)
-                u.add(var)
-                # Also define the paired combined/byte variable
-                if var in BYTE_TO_COMBINED:
-                    d.add(BYTE_TO_COMBINED[var])
-        
-        # When a combined variable is assigned, also define its byte components
-        for combined, byte_var in [(cv, bv) for cv, bv_list in 
-            [('tmp01', ['tmp0','tmp1']), ('tmp23', ['tmp2','tmp3']),
-             ('tmp45', ['tmp4','tmp5']), ('tmp67', ['tmp6','tmp7']),
-             ('tmp89', ['tmp8','tmp9'])] for bv in bv_list]:
-            if combined in d:
-                d.add(byte_var)
-        
-        # Variable reads (not LHS of assignment, not declaration,
-        # not byte-component LHS like ((uint8_t*)&tmp01)[0] = ...)
-        for var in TRACKED_VARS:
-            if var in local_decls:
-                continue  # local variable shadows global; don't track
-            # Skip byte-component WRITES (LHS of =): ((uint8_t*)&var)[N] = ...
-            # But NOT reads (RHS): a = ((uint8_t*)&var)[N] — those are USE.
-            bc_match = re.search(r'\(\(uint8_t\s*\*\)\s*&' + var + r'\)\s*\[', stripped)
-            if bc_match and '=' in stripped:
-                # Check if byte-component is on the LHS: appears before =, not after
-                before_eq = stripped[:stripped.index('=')]
-                if bc_match.start() < len(before_eq):
-                    continue  # byte-component is on LHS (WRITE), skip USE detection
-            if re.search(r'(?<!\w)' + var + r'(?!\w)', stripped):
-                if not re.search(r'\b' + var + r'\s*=', stripped) or \
-                   re.search(r'\b' + var + r'\s*[\+\-]=', stripped) or \
-                   re.search(r'\b' + var + r'\+{2}\b', stripped) or \
-                   re.search(r'\b' + var + r'--\b', stripped):
-                    u.add(var)
-        
-        # Update live_in
-        for v in u:
-            if v not in defined_so_far:
-                local_live_in.add(v)
-        
-        local_defs |= d
-        local_uses |= u
-        defined_so_far |= d
-        
-        # Detect calls
-        callee = detect_call(stripped)
-        if callee:
-            if callee not in LIB_FUNCTIONS:
-                call_sites.append((i, callee))
-                # Use callee's actual live_out if known
-                clo = callee_live_out.get(callee)
-                if clo is None:
-                    if callee in CORRUPTS:
-                        # CORRUPTS = ALL_VARS_SET means noreturn (longjmp).
-                        # Don't add to defined_so_far — code after is dead.
-                        pass
-                    elif callee in ALL_IN_OUT:
-                        clo = ALL_VARS_SET
-                    else:
-                        clo = ALL_VARS_SET
-                if clo is not None:
-                    defined_so_far.update(clo)
-            elif callee in CORRUPTS:
-                # CORRUPTS means noreturn — don't update defined_so_far
-                pass
-    
-    return local_defs, local_uses, local_live_in, call_sites
-
-
-# ─── detect_call (kept from old module) ───────────────────────────
+# ─── Call detection (regex on line text) ──────────────────────────
 CALL_RE = re.compile(r'\b(\w+)\s*\(')
 def detect_call(stripped):
     if stripped.startswith('//') or stripped == '':
@@ -311,53 +146,443 @@ def detect_call(stripped):
     return None
 
 
-# ─── Function parameter extraction ────────────────────────────────
-def get_func_params(lines, start):
-    sig = lines[start].strip()
-    m = re.match(r'(?:static\s+)?(?:\w+(?:\s*\*)?\s+)+\**(\w+)\s*\(([^)]*)\)', sig)
-    if not m:
-        return set()
-    params_str = m.group(2).strip()
-    if not params_str or params_str == 'void':
-        return set()
+# ─── AST-based def/use analysis ───────────────────────────────────
+def analyze_stmt(cursor, local_decls, context='use'):
+    """
+    Recursively walk an AST cursor to find defs/uses of tracked globals.
+
+    Args:
+        cursor: libclang cursor
+        local_decls: set of local var names (modified in-place for VarDecl/ParmDecl)
+        context: 'def' (LHS of =), 'use' (RHS), 'defuse' (compound/++/--)
+
+    Returns:
+        (defs_set, uses_set)
+    """
+    d, u = set(), set()
+    if cursor is None:
+        return d, u
+
+    ck = cursor.kind
+    name = cursor.spelling
+
+    # ── DeclRefExpr: variable reference ──
+    if ck == clang.cindex.CursorKind.DECL_REF_EXPR:
+        if name and name in TRACKED_VARS and name not in local_decls:
+            if context == 'def':
+                d.add(name)
+            elif context == 'defuse':
+                d.add(name); u.add(name)
+            else:
+                u.add(name)
+        return d, u
+
+    # ── VarDecl: local declaration ──
+    if ck == clang.cindex.CursorKind.VAR_DECL:
+        if name and name in TRACKED_VARS:
+            local_decls.add(name)
+        for child in cursor.get_children():
+            cd, cu = analyze_stmt(child, local_decls, 'use')
+            d.update(cd); u.update(cu)
+        return d, u
+
+    # ── ParmDecl: function parameter ──
+    if ck == clang.cindex.CursorKind.PARM_DECL:
+        if name and name in TRACKED_VARS:
+            local_decls.add(name)
+        return d, u
+
+    # ── Binary operators ──
+    if ck == clang.cindex.CursorKind.BINARY_OPERATOR:
+        op = cursor.spelling
+        children = list(cursor.get_children())
+        if op == '=':
+            if len(children) >= 2:
+                ld, lu = analyze_stmt(children[0], local_decls, 'def')
+                for ch in children[1:]:
+                    rd, ru = analyze_stmt(ch, local_decls, 'use')
+                    d.update(rd); u.update(ru)
+                d.update(ld); u.update(lu)
+        elif op in ('+=', '-=', '*=', '/=', '%=', '&=', '|=', '^=', '<<=', '>>='):
+            if len(children) >= 2:
+                ld, lu = analyze_stmt(children[0], local_decls, 'defuse')
+                for ch in children[1:]:
+                    rd, ru = analyze_stmt(ch, local_decls, 'use')
+                    d.update(rd); u.update(ru)
+                d.update(ld); u.update(lu)
+        else:
+            for child in children:
+                cd, cu = analyze_stmt(child, local_decls, 'use')
+                d.update(cd); u.update(cu)
+        return d, u
+
+    # ── Unary operators ──
+    if ck == clang.cindex.CursorKind.UNARY_OPERATOR:
+        children = list(cursor.get_children())
+        if not children:
+            return d, u
+        # Check source text for ++/-- (postfix operators)
+        try:
+            with open(cursor.location.file.name) as _sf:
+                _line = _sf.readlines()[cursor.location.line - 1]
+        except Exception:
+            _line = ''
+        stripped_line = _line.strip()
+        if '++' in stripped_line or '--' in stripped_line:
+            return analyze_stmt(children[0], local_decls, 'defuse')
+        # All other unary ops (!, &, *, -, ~) propagate context
+        return analyze_stmt(children[0], local_decls, context)
+
+    # ── ArraySubscriptExpr ──
+    if ck == clang.cindex.CursorKind.ARRAY_SUBSCRIPT_EXPR:
+        children = list(cursor.get_children())
+        if children:
+            cd, cu = analyze_stmt(children[0], local_decls, context)
+            d.update(cd); u.update(cu)
+            for child in children[1:]:
+                cd, cu = analyze_stmt(child, local_decls, 'use')
+                d.update(cd); u.update(cu)
+        return d, u
+
+    # ── Casts / parens: propagate context ──
+    if ck in (clang.cindex.CursorKind.CSTYLE_CAST_EXPR,
+              clang.cindex.CursorKind.PAREN_EXPR,
+              clang.cindex.CursorKind.UNEXPOSED_EXPR):
+        children = list(cursor.get_children())
+        if children:
+            return analyze_stmt(children[0], local_decls, context)
+        return d, u
+
+    # ── CallExpr ──
+    if ck == clang.cindex.CursorKind.CALL_EXPR:
+        children = list(cursor.get_children())
+        # First child is the callee expression
+        callee_name = None
+        start_idx = 0
+        if children and children[0].kind in (
+            clang.cindex.CursorKind.DECL_REF_EXPR,
+            clang.cindex.CursorKind.UNEXPOSED_EXPR,
+        ):
+            # Unwrap UNEXPOSED_EXPR to find the actual name
+            callee_cursor = children[0]
+            if callee_cursor.kind == clang.cindex.CursorKind.UNEXPOSED_EXPR:
+                gc = list(callee_cursor.get_children())
+                if gc and gc[0].kind == clang.cindex.CursorKind.DECL_REF_EXPR:
+                    callee_name = gc[0].spelling
+            else:
+                callee_name = callee_cursor.spelling
+            start_idx = 1
+
+        # Process arguments as uses
+        for child in children[start_idx:]:
+            cd, cu = analyze_stmt(child, local_decls, 'use')
+            d.update(cd); u.update(cu)
+
+        # Inline helper flag effects (detected by name, not AST)
+        if callee_name in INLINE_HELPERS:
+            for b in helper_flag_defs(callee_name):
+                d.add(f'flags:{b}')
+            for b in helper_flag_uses(callee_name):
+                u.add(f'flags:{b}')
+            # For cmp/set_flags, the second argument is a register read
+            if callee_name in ('cmp', 'set_flags') and len(children) >= 3:
+                cd, cu = analyze_stmt(children[2], local_decls, 'use')
+                d.update(cd); u.update(cu)
+
+        return d, u
+
+    # ── Control flow: conditions/values are uses ──
+    if ck in (clang.cindex.CursorKind.IF_STMT,
+              clang.cindex.CursorKind.WHILE_STMT,
+              clang.cindex.CursorKind.FOR_STMT,
+              clang.cindex.CursorKind.DO_STMT,
+              clang.cindex.CursorKind.SWITCH_STMT,
+              clang.cindex.CursorKind.RETURN_STMT):
+        for child in cursor.get_children():
+            cd, cu = analyze_stmt(child, local_decls, 'use')
+            d.update(cd); u.update(cu)
+        return d, u
+
+    # ── CompoundStmt: recurse ──
+    if ck == clang.cindex.CursorKind.COMPOUND_STMT:
+        for child in cursor.get_children():
+            cd, cu = analyze_stmt(child, local_decls, 'use')
+            d.update(cd); u.update(cu)
+        return d, u
+
+    # ── Labels: recurse ──
+    if ck in (clang.cindex.CursorKind.LABEL_STMT,
+              clang.cindex.CursorKind.CASE_STMT,
+              clang.cindex.CursorKind.DEFAULT_STMT):
+        for child in cursor.get_children():
+            cd, cu = analyze_stmt(child, local_decls, context)
+            d.update(cd); u.update(cu)
+        return d, u
+
+    # ── DeclStmt: group of declarations ──
+    if ck == clang.cindex.CursorKind.DECL_STMT:
+        for child in cursor.get_children():
+            cd, cu = analyze_stmt(child, local_decls, 'use')
+            d.update(cd); u.update(cu)
+        return d, u
+
+    # ── No-ops ──
+    if ck in (clang.cindex.CursorKind.GOTO_STMT,
+              clang.cindex.CursorKind.BREAK_STMT,
+              clang.cindex.CursorKind.CONTINUE_STMT,
+              clang.cindex.CursorKind.NULL_STMT):
+        return d, u
+
+    # ── Default: recurse into children ──
+    for child in cursor.get_children():
+        cd, cu = analyze_stmt(child, local_decls, context)
+        d.update(cd); u.update(cu)
+    return d, u
+
+
+# ─── Function body walker (returns list of (line, cursor) pairs) ──
+def _collect_top_stmts(body_cursor):
+    """
+    Collect top-level statements from a compound statement.
+    Returns a list of (line_number, cursor) pairs sorted by line.
+    """
+    result = []
+    _top_stmts_recurse(body_cursor, result)
+    # Deduplicate by line (keep first occurrence)
+    seen = set()
+    deduped = []
+    for line, c in result:
+        if line not in seen:
+            seen.add(line)
+            deduped.append((line, c))
+    deduped.sort(key=lambda x: x[0])
+    return deduped
+
+
+def _top_stmts_recurse(cursor, result):
+    """Walk compound stmt children, recurse into labels/decls, skip inner blocks."""
+    for child in cursor.get_children():
+        ck = child.kind
+        if ck in (clang.cindex.CursorKind.PARM_DECL,):
+            continue
+        if ck == clang.cindex.CursorKind.LABEL_STMT:
+            result.append((child.location.line, child))
+            for gc in child.get_children():
+                # If the labeled statement is a compound stmt, flatten it too
+                if gc.kind == clang.cindex.CursorKind.COMPOUND_STMT:
+                    _top_stmts_recurse(gc, result)
+                elif gc.kind == clang.cindex.CursorKind.LABEL_STMT:
+                    _top_stmts_recurse(gc, result)
+                else:
+                    result.append((gc.location.line, gc))
+        elif ck == clang.cindex.CursorKind.VAR_DECL:
+            result.append((child.location.line, child))
+        elif ck == clang.cindex.CursorKind.COMPOUND_STMT:
+            _top_stmts_recurse(child, result)
+        else:
+            result.append((child.location.line, child))
+
+
+def get_func_params_from_ast(func_cursor):
+    """Extract parameter names that are tracked variables."""
     params = set()
-    for p in params_str.split(','):
-        p = p.strip()
-        pm = re.match(r'(?:const\s+)?(?:\w+(?:\s*\*)?)\s+(\**\w+)', p)
-        if pm:
-            name = pm.group(1).lstrip('*')
-            if name in REGISTERS:
-                params.add(name)
+    for child in func_cursor.get_children():
+        if child.kind == clang.cindex.CursorKind.PARM_DECL:
+            if child.spelling in REGISTERS:
+                params.add(child.spelling)
     return params
 
 
-# ─── find_functions (from old module, using regex for line numbers) ──
-FUNC_START_RE = re.compile(
-    r'^(?:static\s+)?'
-    r'(?:void|uint8_t|uint16_t|addr_t|bool|int|char|long|unsigned|const|'
-    r'struct\s+\w+|uint8_t\s*\*|char\s*\*)'
-    r'\s+\**(\w+)\s*\('
-)
+# ─── AST-based forward scan ───────────────────────────────────────
+def get_local_info_ast(func_cursor, callee_live_out=None):
+    """
+    Forward scan using AST-based def/use analysis.
 
-def find_functions(lines):
-    funcs = []
-    for i, line in enumerate(lines):
-        stripped = line.strip()
-        if (not stripped or stripped.startswith('//') or stripped.startswith('/*')
-            or stripped.startswith('*') or stripped.startswith('#')
-            or stripped.endswith(';')):
+    Returns (local_defs, local_uses, local_live_in, call_sites).
+    """
+    if callee_live_out is None:
+        callee_live_out = {}
+
+    local_defs = set()
+    local_uses = set()
+    local_live_in = set()
+    defined_so_far = set()
+    call_sites = []
+    local_decls = set()
+
+    # Add parameters to local_decls and defined_so_far
+    for child in func_cursor.get_children():
+        if child.kind == clang.cindex.CursorKind.PARM_DECL:
+            if child.spelling in TRACKED_VARS:
+                local_decls.add(child.spelling)
+                defined_so_far.add(child.spelling)
+
+    # Get the function body (compound statement)
+    body_children = list(func_cursor.get_children())
+    body = None
+    for child in body_children:
+        if child.kind == clang.cindex.CursorKind.COMPOUND_STMT:
+            body = child
+            break
+
+    if body is None:
+        return local_defs, local_uses, local_live_in, call_sites
+
+    # Collect the source lines for this function for flag regex
+    try:
+        with open(func_cursor.location.file.name) as f:
+            source_lines = f.readlines()
+    except Exception:
+        source_lines = []
+
+    # Walk body statements
+    stmts = _collect_top_stmts(body)
+
+    for line_num, stmt in stmts:
+        if line_num > 0 and line_num <= len(source_lines):
+            stripped = source_lines[line_num - 1].strip()
+        else:
+            stripped = ''
+
+        if stripped.startswith('//') or stripped == '':
             continue
-        m = FUNC_START_RE.match(stripped)
-        if m and m.group(1) not in INLINE_HELPERS:
-            before_paren = stripped.split('(')[0]
-            kw = re.split(r'\W+', before_paren)[0]
-            if kw not in ('if', 'while', 'for', 'switch'):
-                funcs.append((m.group(1), i))
-    result = []
-    for idx, (name, start) in enumerate(funcs):
-        end = funcs[idx + 1][1] if idx + 1 < len(funcs) else len(lines)
-        result.append((name, start, end))
-    return result
+
+        d = set()
+        u = set()
+
+        # AST-based def/use analysis for tracked variables
+        cd, cu = analyze_stmt(stmt, local_decls, 'use')
+        d.update(cd)
+        u.update(cu)
+
+        # Byte/combined variable propagation
+        for bv, cv in BYTE_TO_COMBINED.items():
+            if bv in d: d.add(cv)
+            if bv in u: u.add(cv)
+        for cv, blist in COMBINED_TO_BYTES.items():
+            if cv in d:
+                for bv in blist: d.add(bv)
+            if cv in u:
+                for bv in blist: u.add(bv)
+
+        # Flag ops via regex (macros expand in AST)
+        fd, fu = get_flag_defs_uses(stripped)
+        d |= fd
+        u |= fu
+
+        # Update live_in
+        for v in u:
+            if v not in defined_so_far:
+                local_live_in.add(v)
+
+        local_defs |= d
+        local_uses |= u
+        defined_so_far |= d
+
+        # Detect calls via regex on source line (handles nested calls)
+        callee = detect_call(stripped)
+        if callee:
+            if callee not in LIB_FUNCTIONS:
+                call_sites.append((line_num, callee))
+                clo = callee_live_out.get(callee)
+                if clo is None:
+                    if callee in CORRUPTS:
+                        pass
+                    elif callee in ALL_IN_OUT:
+                        clo = ALL_VARS_SET
+                    else:
+                        clo = ALL_VARS_SET
+                if clo is not None:
+                    defined_so_far.update(clo)
+
+    return local_defs, local_uses, local_live_in, call_sites
+
+
+# ─── AST-based backward scan ──────────────────────────────────────
+def backward_scan_ast(func_cursor, backward_needs, local_info, func_params):
+    """
+    Backward scan using AST for a single function.
+    Modifies backward_needs in place.
+    """
+    local_decls = set()
+    for child in func_cursor.get_children():
+        if child.kind == clang.cindex.CursorKind.PARM_DECL:
+            if child.spelling in TRACKED_VARS:
+                local_decls.add(child.spelling)
+
+    try:
+        with open(func_cursor.location.file.name) as f:
+            source_lines = f.readlines()
+    except Exception:
+        source_lines = []
+
+    # Get body statements in order
+    body_children = list(func_cursor.get_children())
+    body = None
+    for child in body_children:
+        if child.kind == clang.cindex.CursorKind.COMPOUND_STMT:
+            body = child
+            break
+    if body is None:
+        return
+
+    stmts = _collect_top_stmts(body)
+    live = set()
+
+    # Walk backward through lines
+    for line_num, stmt in reversed(stmts):
+        if line_num > 0 and line_num <= len(source_lines):
+            stripped = source_lines[line_num - 1].strip()
+        else:
+            stripped = ''
+
+        if stripped.startswith('//') or stripped == '':
+            continue
+
+        d = set()
+        u = set()
+
+        # AST-based def/use
+        cd, cu = analyze_stmt(stmt, local_decls, 'use')
+        d.update(cd)
+        u.update(cu)
+
+        # Byte/combined propagation
+        for bv, cv in BYTE_TO_COMBINED.items():
+            if bv in d: d.add(cv)
+            if bv in u: u.add(cv)
+        for cv, blist in COMBINED_TO_BYTES.items():
+            if cv in d:
+                for bv in blist: d.add(bv)
+            if cv in u:
+                for bv in blist: u.add(bv)
+
+        # Flag ops via regex
+        fd, fu = get_flag_defs_uses(stripped)
+        d |= fd
+        u |= fu
+
+        callee_name = detect_call(stripped)
+
+        if stmt.kind == clang.cindex.CursorKind.RETURN_STMT:
+            live = set()
+        elif callee_name:
+            if callee_name in ALL_IN_OUT:
+                backward_needs.setdefault(callee_name, set()).update(ALL_VARS_SET)
+                live = ALL_VARS_SET
+            elif callee_name not in LIB_FUNCTIONS:
+                backward_needs.setdefault(callee_name, set()).update(live)
+                if callee_name in CORRUPTS:
+                    live = (live - CORRUPTS[callee_name]) | u
+                else:
+                    live = (live - ALL_VARS_SET) | u
+            elif callee_name in CORRUPTS:
+                corr = CORRUPTS[callee_name]
+                live = (live - corr) | u
+            else:
+                live = live | u
+        else:
+            live = (live - d) | u
 
 
 # ─── Formatting ────────────────────────────────────────────────────
@@ -383,46 +608,46 @@ def format_vars(var_set):
 
 # ─── Interprocedural analysis ─────────────────────────────────────
 def analyze_files(files):
-    # Collect all function definitions
-    all_funcs = {}
+    # Parse all files and collect function cursors
+    all_funcs = {}  # name -> (filepath, cursor)
     for filepath in files:
         try:
-            with open(filepath) as f:
-                lines = f.readlines()
-        except FileNotFoundError:
+            tu = parse_file(filepath)
+        except Exception:
             continue
-        for name, start, end in find_functions(lines):
-            if name not in all_funcs:
-                all_funcs[name] = (filepath, start, end, lines)
-    
+        for cursor in tu.cursor.get_children():
+            if cursor.kind == clang.cindex.CursorKind.FUNCTION_DECL and cursor.is_definition():
+                name = cursor.spelling
+                if name not in all_funcs:
+                    all_funcs[name] = (filepath, cursor)
+
     # Compute function params
     func_params = {}
-    for name, (filepath, start, end, lines) in all_funcs.items():
-        func_params[name] = get_func_params(lines, start)
-    
-    # Initial forward pass
+    for name, (filepath, cursor) in all_funcs.items():
+        func_params[name] = get_func_params_from_ast(cursor)
+
+    # Initial forward pass (using AST)
     local_info = {}
-    for name, (filepath, start, end, lines) in all_funcs.items():
-        d, u, li, cs = get_local_info(lines, start, end)
+    for name, (filepath, cursor) in all_funcs.items():
+        d, u, li, cs = get_local_info_ast(cursor)
+
         # Compute local declarations for this function
-        func_local_decls = set()
-        for i in range(start, end):
-            stripped = lines[i].strip()
-            for var in TRACKED_VARS:
-                if re.search(r'\b(?:uint8_t|uint16_t|addr_t)\b(?:\s*\*?\s*\w+\s*,)*\s*' + var + r'\b', stripped):
-                    func_local_decls.add(var)
-        # Also check function signature for parameters
-        sig = lines[start].strip()
-        for var in TRACKED_VARS:
-            if re.search(r'\b(?:uint8_t|uint16_t|addr_t)\b(?:\s*\*?\s*\w+\s*,)*\s*' + var + r'\b', sig):
-                func_local_decls.add(var)
-        
+        local_decls = set()
+        for child in cursor.get_children():
+            if child.kind == clang.cindex.CursorKind.PARM_DECL:
+                if child.spelling in TRACKED_VARS:
+                    local_decls.add(child.spelling)
+        # Walk the body for VarDecl
+        for child in cursor.get_children():
+            if child.kind == clang.cindex.CursorKind.COMPOUND_STMT:
+                _collect_vardecls(child, local_decls)
+
         local_info[name] = {
             'defs': d, 'uses': u, 'live_in': li,
             'call_sites': cs, 'file': filepath,
-            'local_decls': func_local_decls,
+            'local_decls': local_decls,
         }
-    
+
     # Propagate through call graph (cached_defs/cached_uses)
     changed = True
     iteration = 0
@@ -452,7 +677,7 @@ def analyze_files(files):
                 info['cached_defs'] = all_defs
                 info['cached_uses'] = all_uses
                 changed = True
-    
+
     # ── Full interprocedural fixed-point iteration ──
     backward_needs = {name: set() for name in all_funcs}
     fp_iter = 0
@@ -460,95 +685,29 @@ def analyze_files(files):
     while changed and fp_iter < 10:
         fp_iter += 1
         changed = False
-        
-        # Backward scan
+
+        # Backward scan using AST
         backward_needs.clear()
         for name in all_funcs:
-            lines = all_funcs[name][3]
-            start = all_funcs[name][1]
-            end = all_funcs[name][2]
-            live = set()
-            local_decls = set()
-            # First pass: collect local declarations
-            for i in range(start, end):
-                stripped = lines[i].strip()
-                for var in TRACKED_VARS:
-                    if re.search(r'\b(?:uint8_t|uint16_t|addr_t)\b(?:\s*\*?\s*\w+\s*,)*\s*' + var + r'\b', stripped):
-                        local_decls.add(var)
-            # Also add function parameters
-            sig = lines[start].strip()
-            for var in TRACKED_VARS:
-                if re.search(r'\b(?:uint8_t|uint16_t|addr_t)\s+' + var + r'\b', sig):
-                    local_decls.add(var)
-            
-            for i in range(end - 1, start - 1, -1):
-                stripped = lines[i].strip()
-                if stripped.startswith('//') or stripped == '':
-                    continue
-                d, u = get_flag_defs_uses(stripped)
-                # Also get var defs/uses via regex (skip locals)
-                for var in TRACKED_VARS:
-                    if var in local_decls:
-                        continue
-                    if re.search(r'\b' + var + r'\s*=', stripped):
-                        d.add(var)
-                    # Detect byte-component assignment in backward pass
-                    if re.search(r'\(\(uint8_t\s*\*\)\s*&' + var + r'\)\s*\[', stripped):
-                        d.add(var)
-                    if re.search(r'(?<!\w)' + var + r'(?!\w)', stripped):
-                        # Skip byte-component WRITES (LHS): ((uint8_t*)&var)[N] = ...
-                        bc_match = re.search(r'\(\(uint8_t\s*\*\)\s*&' + var + r'\)\s*\[', stripped)
-                        is_bc_write = False
-                        if bc_match and '=' in stripped:
-                            before_eq = stripped[:stripped.index('=')]
-                            if bc_match.start() < len(before_eq):
-                                is_bc_write = True
-                        if is_bc_write:
-                            pass  # byte-component WRITE, not a read
-                        elif not re.search(r'\b' + var + r'\s*=', stripped):
-                            u.add(var)
-                        elif re.search(r'\b' + var + r'\s*[\+\-]=', stripped) or \
-                             re.search(r'\b' + var + r'\+{2}\b', stripped) or \
-                             re.search(r'\b' + var + r'--\b', stripped):
-                            u.add(var)
-                
-                callee = detect_call(stripped)
-                if stripped == 'return;':
-                    live = set()
-                elif callee:
-                    if callee in ALL_IN_OUT:
-                        backward_needs.setdefault(callee, set()).update(ALL_VARS_SET)
-                        live = ALL_VARS_SET
-                    elif callee not in LIB_FUNCTIONS:
-                        backward_needs.setdefault(callee, set()).update(live)
-                        if callee in CORRUPTS:
-                            live = (live - CORRUPTS[callee]) | u
-                        else:
-                            live = (live - ALL_VARS_SET) | u
-                    elif callee in CORRUPTS:
-                        corr = CORRUPTS[callee]
-                        live = (live - corr) | u
-                    else:
-                        live = live | u
-                else:
-                    live = (live - d) | u
-        
+            info = local_info[name]
+            cursor = all_funcs[name][1]
+            backward_scan_ast(cursor, backward_needs, local_info, func_params)
+
         # Compute live_out
         for name in all_funcs:
             info = local_info[name]
             all_defs = info.get('cached_defs', info['defs'])
             required = backward_needs.get(name, set())
             new_out = required & all_defs
-            
-            # ALL_IN_OUT override
+
             if name in ALL_IN_OUT:
                 new_out = ALL_VARS_SET
-            
+
             old_out = info.get('live_out')
             if new_out != old_out:
                 info['live_out'] = new_out
                 changed = True
-        
+
         # Re-forward scan with refined kill sets
         clo = {}
         for cname, cinfo in local_info.items():
@@ -559,14 +718,14 @@ def analyze_files(files):
         for name in CORRUPTS:
             if name not in local_info:
                 clo[name] = CORRUPTS[name]
-        
-        for name, (filepath, start, end, lines) in all_funcs.items():
-            d, u, li, cs = get_local_info(lines, start, end, clo)
+
+        for name, (filepath, cursor) in all_funcs.items():
+            d, u, li, cs = get_local_info_ast(cursor, clo)
             old_li = local_info[name].get('live_in')
             if li != old_li:
                 local_info[name]['live_in'] = li
                 changed = True
-    
+
     # Build summaries
     summaries = {}
     for name in all_funcs:
@@ -575,89 +734,84 @@ def analyze_files(files):
         all_uses = info.get('cached_uses', info['uses'])
         live_in = info.get('live_in', set())
         live_out = info.get('live_out', set())
-        
+
         if name in ALL_IN_OUT:
             live_in = ALL_VARS_SET
             live_out = ALL_VARS_SET
-        
-        # Locals
+
         local_defs = info.get('defs', set())
         local_uses = info.get('uses', set())
-        
-        # Collect local declarations from the function body
-        func_lines = all_funcs[name][3]
-        body_start = all_funcs[name][1]
-        body_end = all_funcs[name][2]
-        local_decls_func = set()
-        for i in range(body_start, body_end):
-            stripped = func_lines[i].strip()
-            for var in TRACKED_VARS:
-                if re.search(r'\b(?:uint8_t|uint16_t|addr_t)\b(?:\s*\*?\s*\w+\s*,)*\s*' + re.escape(var) + r'\b', stripped):
-                    local_decls_func.add(var)
-        # Also check function signature for parameters
-        sig = func_lines[body_start].strip()
-        for var in TRACKED_VARS:
-            if re.search(r'\b(?:uint8_t|uint16_t|addr_t)\b(?:\s*\*?\s*\w+\s*,)*\s*' + re.escape(var) + r'\b', sig):
-                local_decls_func.add(var)
-        
+        local_decls_func = info.get('local_decls', set())
+
         # passed_to_callees
         passed_to_callees = set()
-        lines = all_funcs[name][3]
-        body_start = all_funcs[name][1]
-        body_end = all_funcs[name][2]
-        for i in range(body_start + 1, body_end):
-            sl = lines[i].strip()
+        cursor = all_funcs[name][1]
+        try:
+            with open(all_funcs[name][0]) as f:
+                flines = f.readlines()
+        except Exception:
+            flines = []
+
+        stmts = []
+        for child in cursor.get_children():
+            if child.kind == clang.cindex.CursorKind.COMPOUND_STMT:
+                stmts = _collect_top_stmts(child)
+                break
+
+        for line_num, stmt in stmts:
+            if line_num > 0 and line_num <= len(flines):
+                sl = flines[line_num - 1].strip()
+            else:
+                sl = ''
             if sl.startswith('//') or sl == '':
                 continue
-            callee = detect_call(sl)
-            if callee and callee not in INLINE_HELPERS:
-                d, u = get_flag_defs_uses(sl)
+
+            callee_name = None
+            if stmt.kind == clang.cindex.CursorKind.CALL_EXPR:
+                children = list(stmt.get_children())
+                if children and children[0].kind == clang.cindex.CursorKind.DECL_REF_EXPR:
+                    callee_name = children[0].spelling
+                elif children and children[0].kind == clang.cindex.CursorKind.UNEXPOSED_EXPR:
+                    gc = list(children[0].get_children())
+                    if gc and gc[0].kind == clang.cindex.CursorKind.DECL_REF_EXPR:
+                        callee_name = gc[0].spelling
+
+            if callee_name and callee_name not in INLINE_HELPERS:
+                # Variables passed as call arguments
                 for var in TRACKED_VARS:
+                    if var in local_decls_func:
+                        continue
                     if re.search(r'(?<!\w)' + var + r'(?!\w)', sl):
                         if not re.search(r'\b' + var + r'\s*=', sl):
                             passed_to_callees.add(var)
+
                 # Callee's defs and params
-                callee_params = func_params.get(callee, set())
+                callee_params = func_params.get(callee_name, set())
                 passed_to_callees |= callee_params
-                callee_info = local_info.get(callee)
+                callee_info = local_info.get(callee_name)
                 if callee_info:
-                    # Include variables the callee NEEDS as input (live_in).
                     passed_to_callees |= (callee_info.get('live_in', set()) - callee_params)
-                    # Also include variables the callee DEFINES (writes to) as a GLOBAL
-                    # (not shadowed by a local declaration). This catches cases where
-                    # a callee modifies the global register as a side effect even when
-                    # it doesn't need it as input.
                     callee_defs = callee_info.get('defs', set())
                     callee_locals = callee_info.get('local_decls', set())
                     passed_to_callees |= (callee_defs - callee_locals - callee_params)
-        
-        # Variables that are pure locals (defined/used only in this function,
-        # neither live-in nor live-out, not passed to callees).
-        # These exclude C local variables that shadow globals (already filtered out above).
-        # Subtract passed_to_callees (direct callee needs) — the consumed set
-        # (transitive) will be subtracted in the post-processing pass below.
+
         globals_used_locally = ((local_defs & local_uses) - live_in - live_out - passed_to_callees - local_decls_func)
-        # Also exclude flag bits from "locals" (they're always tracked separately)
         globals_used_locally = {v for v in globals_used_locally if not v.startswith('flags:')}
-        
-        consumed_here = set()
-        
+
         summaries[name] = {
             'defs': all_defs,
             'uses': all_uses,
             'live_in': live_in,
             'live_out': live_out,
             'locals': globals_used_locally,
-            'consumed': consumed_here,
+            'consumed': set(),
             'file': info['file'],
             'calls': [c for _, c in info['call_sites']],
             'passed_to_callees': passed_to_callees,
             'local_decls': local_decls_func,
         }
-    
+
     # ── Post-process: propagate consumed sets transitively ──
-    # After all summaries are built, propagate consumed_by_callees
-    # through the call graph until stable (fixed-point iteration).
     changed = True
     while changed:
         changed = False
@@ -666,41 +820,42 @@ def analyze_files(files):
             if not s:
                 continue
             consumed = set()
-            # Collect live_in from direct callees
             for callee in s['calls']:
                 cs = summaries.get(callee)
                 if cs:
                     consumed.update(cs.get('live_in', set()))
-                    # Also collect callee's OWN consumed (transitive)
                     consumed.update(cs.get('consumed', set()))
                 elif callee in CORRUPTS:
-                    # CORRUPTS functions corrupt everything
                     consumed.update(ALL_VARS_SET)
-            # Remove live_in/live_out (these are the function's own interface)
             consumed = consumed - s['live_in'] - s['live_out']
-            # Remove variables that have local C declarations (shadow globals)
             consumed = consumed - s.get('local_decls', set())
             if consumed != s['consumed']:
                 s['consumed'] = consumed
                 changed = True
-    
+
     # ── Recompute Scratch (locals) to subtract transitive consumed ──
     for name in all_funcs:
         s = summaries.get(name)
         if not s:
             continue
         consumed = s.get('consumed', set())
-        live_in = s.get('live_in', set())
-        live_out = s.get('live_out', set())
         local_decls = s.get('local_decls', set())
         old_locals = s.get('locals', set())
         new_locals = old_locals - consumed - local_decls
         if new_locals != old_locals:
             s['locals'] = new_locals
-    
+
     return summaries
-    
-    return summaries
+
+
+def _collect_vardecls(cursor, local_decls):
+    """Recursively collect VarDecl names from AST."""
+    for child in cursor.get_children():
+        if child.kind == clang.cindex.CursorKind.VAR_DECL:
+            if child.spelling in TRACKED_VARS:
+                local_decls.add(child.spelling)
+        elif child.kind == clang.cindex.CursorKind.COMPOUND_STMT:
+            _collect_vardecls(child, local_decls)
 
 
 # ─── Main ─────────────────────────────────────────────────────────
@@ -709,13 +864,13 @@ def main():
         'src/view.c', 'src/editor.c', 'src/printing.c',
         'src/document.c', 'src/cli.c'
     ]
-    
+
     summaries = analyze_files(files)
-    
+
     by_file = {}
     for name, s in summaries.items():
         by_file.setdefault(s['file'], []).append((name, s))
-    
+
     for filepath in sorted(by_file):
         funcs = by_file[filepath]
         print(f"\n{'='*70}")
