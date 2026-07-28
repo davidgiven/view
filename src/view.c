@@ -532,6 +532,8 @@ void sub_c8371(void)
     //  Ptrs:   ptr2
     // sub_c8371:
     //     lda ptr2
+    addr_t tmp89;
+    uint8_t x;
     uint8_t a;
     //     sta ((uint8_t*)&tmp89)[0]
     //     lda ptr2+1
@@ -1277,6 +1279,8 @@ static void compute_space_common(void)
     // compute_space_common
     // c8daf:
     //     sta ((uint8_t*)&tmp01)[0]
+    addr_t ptr5;
+    addr_t tmp67;
     tmp01 = (addr_t)(y) << 8 | a;
     //     jsr compute_bytes_free
     compute_bytes_free();

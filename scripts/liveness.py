@@ -147,8 +147,8 @@ def get_local_info(lines, start, end, callee_live_out=None):
     # Add formal parameters (from function signature) to defined_so_far and local_decls
     if start < len(lines):
         sig = lines[start].strip()
-        for var in REGISTERS:
-            if re.search(r'\buint8_t\s+' + var + r'\b', sig):
+        for var in TRACKED_VARS:
+            if re.search(r'\b(?:uint8_t|uint16_t|addr_t)\s+' + var + r'\b', sig):
                 defined_so_far.add(var)
                 local_decls.add(var)
     
@@ -157,9 +157,10 @@ def get_local_info(lines, start, end, callee_live_out=None):
         if stripped.startswith('//') or stripped == '':
             continue
         
-        # Track local variable declarations
-        for var in REGISTERS:
-            if re.search(r'\buint8_t\s+' + var + r'\b', stripped):
+        # Track local variable declarations (all types, all tracked vars)
+        # Handles both `uint8_t var;` and `uint8_t var1, var2, var3;`
+        for var in TRACKED_VARS:
+            if re.search(r'\b(?:uint8_t|uint16_t|addr_t)\b(?:\s*\*?\s*\w+\s*,)*\s*' + var + r'\b', stripped):
                 local_decls.add(var)
         
         if stripped == 'return;':
@@ -388,9 +389,23 @@ def analyze_files(files):
     local_info = {}
     for name, (filepath, start, end, lines) in all_funcs.items():
         d, u, li, cs = get_local_info(lines, start, end)
+        # Compute local declarations for this function
+        func_local_decls = set()
+        for i in range(start, end):
+            stripped = lines[i].strip()
+            for var in TRACKED_VARS:
+                if re.search(r'\b(?:uint8_t|uint16_t|addr_t)\b(?:\s*\*?\s*\w+\s*,)*\s*' + var + r'\b', stripped):
+                    func_local_decls.add(var)
+        # Also check function signature for parameters
+        sig = lines[start].strip()
+        for var in TRACKED_VARS:
+            if re.search(r'\b(?:uint8_t|uint16_t|addr_t)\b(?:\s*\*?\s*\w+\s*,)*\s*' + var + r'\b', sig):
+                func_local_decls.add(var)
+        
         local_info[name] = {
             'defs': d, 'uses': u, 'live_in': li,
             'call_sites': cs, 'file': filepath,
+            'local_decls': func_local_decls,
         }
     
     # Propagate through call graph (cached_defs/cached_uses)
@@ -443,12 +458,12 @@ def analyze_files(files):
             for i in range(start, end):
                 stripped = lines[i].strip()
                 for var in TRACKED_VARS:
-                    if re.search(r'\buint8_t\s+' + var + r'\b', stripped):
+                    if re.search(r'\b(?:uint8_t|uint16_t|addr_t)\b(?:\s*\*?\s*\w+\s*,)*\s*' + var + r'\b', stripped):
                         local_decls.add(var)
             # Also add function parameters
             sig = lines[start].strip()
-            for var in REGISTERS:
-                if re.search(r'\buint8_t\s+' + var + r'\b', sig):
+            for var in TRACKED_VARS:
+                if re.search(r'\b(?:uint8_t|uint16_t|addr_t)\s+' + var + r'\b', sig):
                     local_decls.add(var)
             
             for i in range(end - 1, start - 1, -1):
@@ -542,6 +557,22 @@ def analyze_files(files):
         local_defs = info.get('defs', set())
         local_uses = info.get('uses', set())
         
+        # Collect local declarations from the function body
+        func_lines = all_funcs[name][3]
+        body_start = all_funcs[name][1]
+        body_end = all_funcs[name][2]
+        local_decls_func = set()
+        for i in range(body_start, body_end):
+            stripped = func_lines[i].strip()
+            for var in TRACKED_VARS:
+                if re.search(r'\b(?:uint8_t|uint16_t|addr_t)\b(?:\s*\*?\s*\w+\s*,)*\s*' + re.escape(var) + r'\b', stripped):
+                    local_decls_func.add(var)
+        # Also check function signature for parameters
+        sig = func_lines[body_start].strip()
+        for var in TRACKED_VARS:
+            if re.search(r'\b(?:uint8_t|uint16_t|addr_t)\b(?:\s*\*?\s*\w+\s*,)*\s*' + re.escape(var) + r'\b', sig):
+                local_decls_func.add(var)
+        
         # passed_to_callees
         passed_to_callees = set()
         lines = all_funcs[name][3]
@@ -563,40 +594,28 @@ def analyze_files(files):
                 passed_to_callees |= callee_params
                 callee_info = local_info.get(callee)
                 if callee_info:
-                    # Only include variables the callee NEEDS as input (live_in),
-                    # not variables the callee defines internally (scratch).
+                    # Include variables the callee NEEDS as input (live_in).
                     passed_to_callees |= (callee_info.get('live_in', set()) - callee_params)
+                    # Also include variables the callee DEFINES (writes to) as a GLOBAL
+                    # (not shadowed by a local declaration). This catches cases where
+                    # a callee modifies the global register as a side effect even when
+                    # it doesn't need it as input.
+                    callee_defs = callee_info.get('defs', set())
+                    callee_locals = callee_info.get('local_decls', set())
+                    passed_to_callees |= (callee_defs - callee_locals - callee_params)
                 callee_needs = backward_needs.get(callee, set())
                 passed_to_callees |= callee_needs
         
         # Variables that are pure locals (defined/used only in this function,
-        # neither live-in nor live-out). These exclude C local variables that
-        # shadow globals (already filtered out above).
-        globals_used_locally = ((local_defs & local_uses) - live_in - live_out - passed_to_callees)
+        # neither live-in nor live-out, not passed to callees).
+        # These exclude C local variables that shadow globals (already filtered out above).
+        # Subtract passed_to_callees (direct callee needs) — the consumed set
+        # (transitive) will be subtracted in the post-processing pass below.
+        globals_used_locally = ((local_defs & local_uses) - live_in - live_out - passed_to_callees - local_decls_func)
         # Also exclude flag bits from "locals" (they're always tracked separately)
         globals_used_locally = {v for v in globals_used_locally if not v.startswith('flags:')}
         
-        # Variables consumed by called functions (passed as arguments or live-in
-        # to callees, anywhere in the call tree)
-        consumed_by_callees = set()
-        seen_callees = set()
-        def collect_consumed(callee_name):
-            if callee_name in seen_callees or callee_name not in all_funcs:
-                return
-            seen_callees.add(callee_name)
-            cinfo = local_info.get(callee_name)
-            if cinfo:
-                # Everything in the callee's live_in is "consumed" by the call
-                consumed_by_callees.update(cinfo.get('live_in', set()))
-                # Also recurse into callee's own callees
-                for _, callee2 in cinfo['call_sites']:
-                    collect_consumed(callee2)
-        
-        for _, callee in info['call_sites']:
-            collect_consumed(callee)
-        
-        # Remove variables that are already tracked as live_in/live_out
-        consumed_here = consumed_by_callees - live_in - live_out
+        consumed_here = set()
         
         summaries[name] = {
             'defs': all_defs,
@@ -607,7 +626,54 @@ def analyze_files(files):
             'consumed': consumed_here,
             'file': info['file'],
             'calls': [c for _, c in info['call_sites']],
+            'passed_to_callees': passed_to_callees,
+            'local_decls': local_decls_func,
         }
+    
+    # ── Post-process: propagate consumed sets transitively ──
+    # After all summaries are built, propagate consumed_by_callees
+    # through the call graph until stable (fixed-point iteration).
+    changed = True
+    while changed:
+        changed = False
+        for name in all_funcs:
+            s = summaries.get(name)
+            if not s:
+                continue
+            consumed = set()
+            # Collect live_in from direct callees
+            for callee in s['calls']:
+                cs = summaries.get(callee)
+                if cs:
+                    consumed.update(cs.get('live_in', set()))
+                    # Also collect callee's OWN consumed (transitive)
+                    consumed.update(cs.get('consumed', set()))
+                elif callee in CORRUPTS:
+                    # CORRUPTS functions corrupt everything
+                    consumed.update(ALL_VARS_SET)
+            # Remove live_in/live_out (these are the function's own interface)
+            consumed = consumed - s['live_in'] - s['live_out']
+            # Remove variables that have local C declarations (shadow globals)
+            consumed = consumed - s.get('local_decls', set())
+            if consumed != s['consumed']:
+                s['consumed'] = consumed
+                changed = True
+    
+    # ── Recompute Scratch (locals) to subtract transitive consumed ──
+    for name in all_funcs:
+        s = summaries.get(name)
+        if not s:
+            continue
+        consumed = s.get('consumed', set())
+        live_in = s.get('live_in', set())
+        live_out = s.get('live_out', set())
+        local_decls = s.get('local_decls', set())
+        old_locals = s.get('locals', set())
+        new_locals = old_locals - consumed - local_decls
+        if new_locals != old_locals:
+            s['locals'] = new_locals
+    
+    return summaries
     
     return summaries
 

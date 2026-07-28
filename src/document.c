@@ -525,6 +525,7 @@ void cab91(void)
 
     // cab91:
     //     sty ruler_stack_ptr
+    uint8_t a;
     ruler_index_ptr = y;
     //     iny
     y++;
@@ -598,6 +599,7 @@ void close_file(void)
 
 void create_default_ruler(uint16_t ruler_addr)
 {
+    uint8_t a;
     a = (uint8_t)(ruler_addr & 0xff);
     y = (uint8_t)(ruler_addr >> 8);
     // create_default_ruler
@@ -733,6 +735,7 @@ void initialise_document(void)
     // initialise_document
     // initialise_document:
     //     lda #0
+    addr_t tmp89;
     a = 0;
     //     sta printer_driver_name
     printer_driver_name[0] = a;
@@ -860,6 +863,7 @@ void lookup_marker(void)
     // lookup_marker: Converts marker character '1'-'6' to index
 
     //     sec
+    uint8_t a;
     uint8_t x;
     flags |= FLAG_C;
     //     sbc #0x31 ; '1'
@@ -1096,6 +1100,7 @@ return_70:
 
 void move_tmp01_to_previous_line(uint16_t val)
 {
+    uint8_t a;
     a = (uint8_t)(val & 0xff);
     y = (uint8_t)(val >> 8);
     // move_tmp01_to_previous_line
