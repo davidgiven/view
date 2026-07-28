@@ -951,7 +951,7 @@ cabdf:
     // cabf6:
 cabf6:
     //     jsr sub_cac41
-    sub_cac41();
+    sub_cac41(tmp01);
     // cabf9:
 cabf9:
     //     sta ((uint8_t*)&tmp01)[0]
@@ -999,7 +999,7 @@ cac17:
     // cac1d:
 cac1d:
     //     jsr sub_cac41
-    sub_cac41();
+    sub_cac41(tmp01);
     // cac20:
 cac20:
     //     sta current_line_ptr

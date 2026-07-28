@@ -14,20 +14,20 @@ static void advance_to_next_line(void);
 void beep(void);
 static void c8b78(void);
 void c8b7b(void);
-static void c9de3_insert_line(void);
+static void c9de3_insert_line(uint8_t a, uint8_t y);
 static void c9e94(void);
 static void ca684(void);
-void ca741(void);
+void ca741(addr_t ptr6);
 void clear_screen(void);
-static void clear_to_eol(void);
+static void clear_to_eol(uint8_t a);
 static void cursor_off(void);
 static void cursor_on(void);
 void draw_line(uint16_t addr);
-void draw_prompt_characters(void);
+void draw_prompt_characters(uint8_t x, uint8_t y);
 static void draw_ruler(void);
 static void draw_status_word(void);
 static void get_line_length(void);
-static void go_to_marker(void);
+static void go_to_marker(uint8_t x);
 static void go_to_marker_n(void);
 static void home_cursor(void);
 void justify_edit_buffer(void);
@@ -35,35 +35,35 @@ void make_space_for_insertion(void);
 static void memory_full(void);
 void process_current_document_character(void);
 static void recalculate_cursor_xpos(void);
-void redraw_editor(void);
+void redraw_editor(addr_t ptr6);
 static void render_char(void);
 static void render_xchar(void);
 static void restore_cursor_position(void);
 void sanitise_area(void);
 static void save_cursor_position(void);
 static void set_marker(void);
-static void set_marker_common(void);
+static void set_marker_common(uint8_t a);
 void show_memory_full_error(void);
-void sub_c89d3(void);
+void sub_c89d3(addr_t tmp67);
 static void sub_c8c51(void);
 static void sub_c8c53(uint8_t a);
 void sub_c8c5f(void);
 static void sub_c9936(void);
 void sub_c9977(void);
-static void sub_c9ac1(void);
-static void sub_c9e22(void);
+static void sub_c9ac1(uint8_t y);
+static void sub_c9e22(uint8_t a);
 static void sub_c9e9b(void);
 static void sub_ca44e(void);
 static void sub_ca4d7(void);
 static void sub_ca536(uint8_t y);
-static void sub_caa97(void);
+static void sub_caa97(addr_t ptr1);
 static void sub_caacb(void);
-void sub_cac41(void);
-static void sub_cac50(void);
+void sub_cac41(addr_t tmp01);
+static void sub_cac50(addr_t tmp89);
 static void sub_cae03(void);
 static void sub_caec2(void);
 static void sub_caed6(void);
-static void sub_caedd(void);
+static void sub_caedd(uint8_t y);
 static void unpack_line_into_buffer(void);
 void wipe_buffer(uint8_t a);
 static void write_line_back_to_document(void);
@@ -74,9 +74,9 @@ void sub_caf5f(void);
 void caf5c(void);
 void draw_previous_word(void);
 void sub_caef4(void);
-void insert_edit_buffer_bytes_at_xpos(void);
-void set_marker_to_here(void);
-void cac78(void);
+void insert_edit_buffer_bytes_at_xpos(uint8_t x);
+void set_marker_to_here(uint8_t x);
+void cac78(addr_t tmp89);
 
 // Editor-internal helper functions
 
@@ -86,7 +86,7 @@ static void clear_marks_1_2(void);
 
 static void control_key_to_ascii(void);
 
-static void delete_edit_buffer_bytes_at_xpos(void);
+static void delete_edit_buffer_bytes_at_xpos(uint8_t x);
 
 static void enter_printable_character(void);
 
@@ -122,9 +122,9 @@ static void sub_c9de1(void);
 
 static void sub_c9f80(void);
 
-static void sub_ca071(void);
+static void sub_ca071(uint8_t x);
 
-static void sub_ca0af(void);
+static void sub_ca0af(uint8_t x);
 
 static void sub_ca1cc(void);
 
@@ -148,7 +148,7 @@ static void cf6_split_line_key(void);
 
 static void cf7_join_lines_key(void);
 
-static void cf8_mark_as_ruler_key(void);
+static void cf8_mark_as_ruler_key(addr_t ptr1);
 
 static void delete_key(void);
 
@@ -200,7 +200,7 @@ static void sf15_up_key(void);
 
 static void sf1_swap_case_key(void);
 
-static void sf2_release_margins_key(void);
+static void sf2_release_margins_key(uint8_t y);
 
 static void sf3_delete_to_char_key(void);
 
@@ -212,7 +212,7 @@ static void sf6_go_to_marker_key(void);
 
 static void sf7_set_marker_key(void);
 
-static void sf8_edit_command_key(void);
+static void sf8_edit_command_key(addr_t ptr1);
 
 static void sf9_delete_command_key(void);
 
@@ -261,7 +261,7 @@ void editor_loop_impl(void)
             {
                 {
                     uint8_t saved_a_ = a;
-                    sub_caa97();
+                    sub_caa97(ptr1);
                     a = saved_a_;
                 }
                 edit_buffer_unpacked_flag = a;
@@ -425,7 +425,7 @@ void editor_loop_impl(void)
 
             //     jsr redraw_editor
 
-            redraw_editor();
+            redraw_editor(ptr6);
         }
 
         //     jsr read_char
@@ -620,9 +620,9 @@ static void cf0_delete_block_key(void)
 
     move_cursor_to_address();
 
-    ca741();
+    ca741(ptr6);
 
-    sub_c89d3();
+    sub_c89d3(tmp67);
 
     cb05a();
 
@@ -692,11 +692,11 @@ static void cf5_default_ruler_key(void)
 
     //     jsr sub_ca276
 
-    redraw_editor();
+    redraw_editor(ptr6);
 
     //     jsr cf8_mark_as_ruler_key
 
-    cf8_mark_as_ruler_key();
+    cf8_mark_as_ruler_key(ptr1);
 
     //     lda current_edit_line_ptr
 
@@ -778,7 +778,7 @@ static void cf6_split_line_key(void)
 
     if (!(flags & FLAG_C))
     {
-        c9de3_insert_line();
+        c9de3_insert_line(a, y);
         return;
     }
 
@@ -790,7 +790,7 @@ static void cf6_split_line_key(void)
 
     if (y != 0)
     {
-        c9de3_insert_line();
+        c9de3_insert_line(a, y);
         return;
     }
 
@@ -881,7 +881,7 @@ static void cf7_join_lines_key(void)
 
     //     jsr cac78
 
-    cac78();
+    cac78(tmp89);
 
     //     inc l0079
 
@@ -889,7 +889,7 @@ static void cf7_join_lines_key(void)
 
     //     jmp ca741
 
-    ca741();
+    ca741(ptr6);
     return;
 
     // c9eda:
@@ -897,7 +897,7 @@ static void cf7_join_lines_key(void)
     //     jmp beep
 }
 
-static void cf8_mark_as_ruler_key(void)
+static void cf8_mark_as_ruler_key(addr_t ptr1)
 {
     // cf8_mark_as_ruler_key
     //  Ptrs:   ptr1
@@ -1111,7 +1111,7 @@ static void f0_format_block_key(void)
 
     //     jsr ca741
 
-    ca741();
+    ca741(ptr6);
 
     //     jsr sub_c9977
 
@@ -1307,9 +1307,9 @@ static void f1_top_of_text_key(void)
 
     l006f = x;
 
-    sub_ca071();
+    sub_ca071(x);
 
-    sub_caa97();
+    sub_caa97(ptr1);
 }
 
 static void f2_bottom_of_text_key(void)
@@ -1333,11 +1333,11 @@ static void f2_bottom_of_text_key(void)
 
     //     jsr sub_ca0af
 
-    sub_ca0af();
+    sub_ca0af(x);
 
     //     jsr sub_caa97
 
-    sub_caa97();
+    sub_caa97(ptr1);
 
     //     jmp c9e9b
 
@@ -1371,7 +1371,7 @@ static void f3_delete_to_eol_key(void)
 
     //     jmp delete_edit_buffer_bytes_at_xpos
 
-    delete_edit_buffer_bytes_at_xpos();
+    delete_edit_buffer_bytes_at_xpos(x);
     return;
 }
 
@@ -1502,7 +1502,7 @@ static void f7_delete_line_key(void)
 
     //     jmp ca741
 
-    ca741();
+    ca741(ptr6);
     return;
 }
 
@@ -1519,7 +1519,7 @@ static void f8_insert_char_key(void)
 
     //     falls through to sub_c9e22
 
-    sub_c9e22();
+    sub_c9e22(a);
     return;
 }
 
@@ -1538,7 +1538,7 @@ static void f9_delete_char_key(void)
 
     //     jmp delete_edit_buffer_bytes_at_xpos
 
-    delete_edit_buffer_bytes_at_xpos();
+    delete_edit_buffer_bytes_at_xpos(x);
     return;
 }
 
@@ -1578,7 +1578,7 @@ static void k_command_key(void)
 
     y = 'K';
 
-    draw_prompt_characters();
+    draw_prompt_characters(x, y);
 
     flags_need_redrawing_flag++;
 
@@ -2412,7 +2412,7 @@ static void o_command_key(void)
 
     y = 'O';
 
-    draw_prompt_characters();
+    draw_prompt_characters(x, y);
 
     flags_need_redrawing_flag++;
 
@@ -2428,11 +2428,11 @@ static void o_command_key(void)
             return;
 
         case 'X':
-            sf2_release_margins_key();
+            sf2_release_margins_key(y);
             return;
 
         case 'C':
-            sf8_edit_command_key();
+            sf8_edit_command_key(ptr1);
             return;
 
         case 'D':
@@ -2444,7 +2444,7 @@ static void o_command_key(void)
             return;
 
         case 'M':
-            cf8_mark_as_ruler_key();
+            cf8_mark_as_ruler_key(ptr1);
             return;
 
         case 'R':
@@ -2503,7 +2503,7 @@ static void q_command_key(void)
 
     y = 'Q';
 
-    draw_prompt_characters();
+    draw_prompt_characters(x, y);
 
     flags_need_redrawing_flag++;
 
@@ -2667,7 +2667,7 @@ static void sf0_move_block_key(void)
 
     l006f = x;
 
-    sub_c89d3();
+    sub_c89d3(tmp67);
 
     cb05a();
 
@@ -2692,7 +2692,7 @@ static void sf11_copy_key(void)
 
     //     jsr sub_ca276
 
-    redraw_editor();
+    redraw_editor(ptr6);
 
     //     ldx l003a
 
@@ -2724,7 +2724,7 @@ ca0ef:
 
     //     jmp cf8_mark_as_ruler_key
 
-    cf8_mark_as_ruler_key();
+    cf8_mark_as_ruler_key(ptr1);
 }
 
 static void sf12_left_key(void)
@@ -2878,7 +2878,7 @@ c9fab:
 
     //     jsr sub_caa97
 
-    sub_caa97();
+    sub_caa97(ptr1);
 
     //     dec l006f
 
@@ -2981,7 +2981,7 @@ ca00f:
 
 static void set_marker(void);
 
-static void set_marker_common(void);
+static void set_marker_common(uint8_t a);
 
 // MULTIPLE ENTRY POINTS: sf7_set_marker_key, set_marker, set_marker_1..6
 
@@ -3002,7 +3002,7 @@ static void sf14_down_key(void)
 
     l006f++;
 
-    sub_ca0af();
+    sub_ca0af(x);
 }
 
 static void sf15_up_key(void)
@@ -3022,7 +3022,7 @@ static void sf15_up_key(void)
 
     l006f++;
 
-    sub_ca071();
+    sub_ca071(x);
 }
 
 static void sf1_swap_case_key(void)
@@ -3077,7 +3077,7 @@ static void sf1_swap_case_key(void)
     return;
 }
 
-static void sf2_release_margins_key(void)
+static void sf2_release_margins_key(uint8_t y)
 {
 
     // sf2_release_margins_key:
@@ -3119,7 +3119,7 @@ static void sf3_delete_to_char_key(void)
 
     y = 0x48;
 
-    draw_prompt_characters();
+    draw_prompt_characters(x, y);
 
     flags_need_redrawing_flag++;
 
@@ -3205,7 +3205,7 @@ loop_ca13d:
 
     x = y - start_x;
 
-    delete_edit_buffer_bytes_at_xpos();
+    delete_edit_buffer_bytes_at_xpos(x);
 }
 }
 
@@ -3264,7 +3264,7 @@ static void sf6_go_to_marker_key(void)
 
     // go_to_marker:
 
-    go_to_marker();
+    go_to_marker(x);
     return;
 }
 
@@ -3292,7 +3292,7 @@ static void sf7_set_marker_key(void)
     return;
 }
 
-static void sf8_edit_command_key(void)
+static void sf8_edit_command_key(addr_t ptr1)
 {
     // sf8_edit_command_key
     //  Ptrs:   ptr1
@@ -3306,7 +3306,7 @@ static void sf8_edit_command_key(void)
 
     //     jsr redraw_editor
 
-    redraw_editor();
+    redraw_editor(ptr6);
 
     //     inc l006d
 
@@ -3604,7 +3604,7 @@ static void control_key_to_ascii(void)
     return;
 }
 
-static void delete_edit_buffer_bytes_at_xpos(void)
+static void delete_edit_buffer_bytes_at_xpos(uint8_t x)
 {
     // delete_edit_buffer_bytes_at_xpos
     // delete_edit_buffer_bytes_at_xpos: Deletes N bytes at cursor position,
@@ -3767,7 +3767,7 @@ c9c00:
     //     ldx #1
     x = 1;
     //     jsr insert_edit_buffer_bytes_at_xpos
-    insert_edit_buffer_bytes_at_xpos();
+    insert_edit_buffer_bytes_at_xpos(x);
     //     bcs c9c7f
     if (flags & FLAG_C)
     {
@@ -4116,7 +4116,7 @@ c9d30:
     //     jsr ca93c
     write_line_back_to_document_safely();
     //     jsr ca741
-    ca741();
+    ca741(ptr6);
     //     jsr return_key
     return_key();
     //     lda top_margin
@@ -4186,7 +4186,7 @@ static void prompt_for_marker(void)
     x = 0x4d;
     y = 0x4b;
     //     jsr draw_prompt_characters
-    draw_prompt_characters();
+    draw_prompt_characters(x, y);
     //     inc flags_need_redrawing_flag
     flags_need_redrawing_flag++;
     //     jsr read_char
@@ -4242,7 +4242,7 @@ static void reset_area_to_marks_1_2(void)
         a = ((uint8_t*)markers_array)[x];
         area_end_ptr = (uint16_t)((uint8_t*)markers_array)[x + 1] << 8 | a;
         x = ((uint8_t*)&doc_ptr1 - (uint8_t*)markers_array);
-        set_marker_to_here();
+        set_marker_to_here(x);
         sanitise_area();
         flags &= ~FLAG_C;
         if (!(flags & FLAG_Z))
@@ -4259,7 +4259,7 @@ static void set_marker_1(void)
 {
     // set_marker_1:
     a = '1';
-    set_marker_common();
+    set_marker_common(a);
     return;
 }
 
@@ -4267,7 +4267,7 @@ static void set_marker_2(void)
 {
     // set_marker_2:
     a = '2';
-    set_marker_common();
+    set_marker_common(a);
     return;
 }
 
@@ -4275,7 +4275,7 @@ static void set_marker_3(void)
 {
     // set_marker_3:
     a = '3';
-    set_marker_common();
+    set_marker_common(a);
     return;
 }
 
@@ -4283,7 +4283,7 @@ static void set_marker_4(void)
 {
     // set_marker_4:
     a = '4';
-    set_marker_common();
+    set_marker_common(a);
     return;
 }
 
@@ -4291,7 +4291,7 @@ static void set_marker_5(void)
 {
     // set_marker_5:
     a = '5';
-    set_marker_common();
+    set_marker_common(a);
     return;
 }
 
@@ -4299,7 +4299,7 @@ static void set_marker_6(void)
 {
     // set_marker_6:
     a = '6';
-    set_marker_common();
+    set_marker_common(a);
     return;
 }
 
@@ -4309,7 +4309,7 @@ static void sub_c9de1(void)
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     falls through to c9de3
-    c9de3_insert_line();
+    c9de3_insert_line(a, y);
 }
 
 static void sub_c9f80(void)
@@ -4324,14 +4324,14 @@ static void sub_c9f80(void)
         return;
     current_line_ptr = tmp01;
     //     jsr sub_caa97
-    sub_caa97();
+    sub_caa97(ptr1);
     //     jsr c9e9b
     sub_c9e9b();
     //     dec l006f
     l006f--;
 }
 
-static void sub_ca071(void)
+static void sub_ca071(uint8_t x)
 {
     // sub_ca071
     // sub_ca071:
@@ -4385,7 +4385,7 @@ static void sub_ca071(void)
     //     rts
 }
 
-static void sub_ca0af(void)
+static void sub_ca0af(uint8_t x)
 {
     // sub_ca0af
     // sub_ca0af:
@@ -4487,10 +4487,10 @@ static void sub_ca1cc(void)
         a = (uint8_t)(adjusted & 0xff);
         y = (uint8_t)(adjusted >> 8);
     }
-    cac78();
+    cac78(tmp89);
     a = (uint8_t)(doc_ptr1 & 0xff);
     y = (uint8_t)(doc_ptr1 >> 8);
-    cac78();
+    cac78(tmp89);
     tmp67 = saved_tmp67;
     l0073 = 1;
     cursor_moved_flag = 1;
@@ -4512,7 +4512,7 @@ static void tab_highlight_common(void)
     if (flags & FLAG_C)
         return;
     //     jsr sub_c9e22
-    sub_c9e22();
+    sub_c9e22(a);
     //     bcs return_55
     if (flags & FLAG_C)
         return;
@@ -4702,7 +4702,7 @@ caf28:
     // caf2a:
 caf2a:
     //     jsr sub_caedd
-    sub_caedd();
+    sub_caedd(y);
     //     bcs return_79
     if (flags & FLAG_C)
     { /* return_79: */
@@ -4718,7 +4718,7 @@ caf31:
     //     rts
 }
 
-void insert_edit_buffer_bytes_at_xpos(void)
+void insert_edit_buffer_bytes_at_xpos(uint8_t x)
 {
     // insert_edit_buffer_bytes_at_xpos
     // insert_edit_buffer_bytes_at_xpos: Inserts bytes at cursor position,
@@ -4849,7 +4849,7 @@ cae52:
     //     rts
 }
 
-void set_marker_to_here(void)
+void set_marker_to_here(uint8_t x)
 {
     // set_marker_to_here
     // set_marker_to_here: Sets marker at current cursor position
@@ -4895,7 +4895,7 @@ cad5d:
     //     rts
 }
 
-void cac78(void)
+void cac78(addr_t tmp89)
 {
     // cac78
     // Pseudocode: Splits a line at the word wrap position, inserting CR for new
@@ -4903,7 +4903,7 @@ void cac78(void)
 
     // cac78:
     //     jsr sub_cac50
-    sub_cac50();
+    sub_cac50(tmp89);
     // cac7b:
 cac7b:
     //     lda #0
@@ -5482,7 +5482,7 @@ c8c3e:
     //     rts
 }
 
-static void c9de3_insert_line(void)
+static void c9de3_insert_line(uint8_t a, uint8_t y)
 {
     //     sta ((uint8_t*)&tmp45)[0]
     tmp45 = (addr_t)(y) << 8 | a;
@@ -5499,7 +5499,7 @@ static void c9de3_insert_line(void)
         a = 0x0d;
         y = 0;
         ram[tmp45 + y] = a;
-        ca741();
+        ca741(ptr6);
         return;
     }
     //     jmp ca941
@@ -5534,7 +5534,7 @@ static void ca684(void)
     return;
 }
 
-void ca741(void)
+void ca741(addr_t ptr6)
 {
     // ca741: Updates ptr6 to current_line_ptr if ptr6 is ahead, sets refresh
     // flags On entry: current_line_ptr, ptr6 On exit:  ptr6 = min(ptr6,
@@ -5582,7 +5582,7 @@ void clear_screen(void)
     return;
 }
 
-static void clear_to_eol(void)
+static void clear_to_eol(uint8_t a)
 {
     // Pseudocode: Fills remaining space on line with spaces to clear to end
 
@@ -5708,7 +5708,7 @@ loop_ca4c2:
     //     lda #0x20 ; ' '
     a = 0x20;
     //     jsr sub_ca597
-    clear_to_eol();
+    clear_to_eol(a);
     //     lda l0083
     a = l0083;
     //     sta line_lengths,x
@@ -5716,7 +5716,7 @@ loop_ca4c2:
     //     rts
 }
 
-void draw_prompt_characters(void)
+void draw_prompt_characters(uint8_t x, uint8_t y)
 {
     // draw_prompt_characters: Draws two inverted prompt characters at top-left
     // On entry: x, y = prompt characters
@@ -5906,7 +5906,7 @@ static void get_line_length(void)
     return;
 }
 
-static void go_to_marker(void)
+static void go_to_marker(uint8_t x)
 {
     // go_to_marker:
     //     lda markers_array,x
@@ -5936,7 +5936,7 @@ static void go_to_marker_n(void)
     //     jsr lookup_marker
     lookup_marker();
     //     jmp go_to_marker
-    go_to_marker();
+    go_to_marker(x);
     return;
 }
 
@@ -6518,7 +6518,7 @@ ca63d:
     return;
 }
 
-void redraw_editor(void)
+void redraw_editor(addr_t ptr6)
 {
     // redraw_editor
     //  Ptrs:   ptr6
@@ -6989,7 +6989,7 @@ ca422:
     {
         l0082++;
         screen_setcursor(0, l0082);
-        clear_to_eol();
+        clear_to_eol(a);
         a = l0083;
         line_lengths[x] = a;
         a = 0;
@@ -7234,17 +7234,17 @@ static void set_marker(void)
 {
     // set_marker:
     //     jsr set_marker_to_here
-    set_marker_to_here();
+    set_marker_to_here(x);
     //     jmp ca035
     uint8_t a = 1;
     l0073 = a;
     ca684();
     return;
 }
-void go_to_marker(void);
+void go_to_marker(uint8_t x);
 // MULTIPLE ENTRY POINTS: sf6_go_to_marker_key, go_to_marker, go_to_marker_1..6
 
-static void set_marker_common(void)
+static void set_marker_common(uint8_t a)
 {
     //     pha
     uint8_t saved_a = a;
@@ -7352,7 +7352,7 @@ loop_ca983:
     //     rts
 }
 
-void sub_c89d3(void)
+void sub_c89d3(addr_t tmp67)
 {
     // sub_c89d3:
     //     lda area_start_ptr
@@ -7367,7 +7367,7 @@ void sub_c89d3(void)
     //     ldy ((uint8_t*)&tmp45)[1]
     y = ((uint8_t*)&tmp45)[1];
     //     jmp cac78
-    cac78();
+    cac78(tmp89);
     return;
 }
 
@@ -7759,7 +7759,7 @@ c9a11:
         return;
     }
     //     jsr sub_c9ac1
-    sub_c9ac1();
+    sub_c9ac1(y);
     //     bcs c9a87
     if (flags & FLAG_C)
         goto c9a87;
@@ -7931,7 +7931,7 @@ c9aa5:
     return;
 }
 
-static void sub_c9ac1(void)
+static void sub_c9ac1(uint8_t y)
 {
     // sub_c9ac1
     // Pseudocode: Finds next word boundary for line wrapping, returns carry if
@@ -8097,7 +8097,7 @@ c9b31:
     return;
 }
 
-static void sub_c9e22(void)
+static void sub_c9e22(uint8_t a)
 {
     // sub_c9e22:
     //     pha
@@ -8106,7 +8106,7 @@ static void sub_c9e22(void)
         //     ldx #1
         x = 1;
         //     jsr insert_edit_buffer_bytes_at_xpos
-        insert_edit_buffer_bytes_at_xpos();
+        insert_edit_buffer_bytes_at_xpos(x);
         //     pla
         a = saved_a;
     }
@@ -8265,7 +8265,7 @@ ca558:
     return;
 }
 
-static void sub_caa97(void)
+static void sub_caa97(addr_t ptr1)
 {
     // sub_caa97
     // sub_caa97:
@@ -8380,7 +8380,7 @@ caae8:
     //     rts
 }
 
-void sub_cac41(void)
+void sub_cac41(addr_t tmp01)
 {
     // Pseudocode: Pushes ruler stack before entering a new ruler region
 
@@ -8408,7 +8408,7 @@ void sub_cac41(void)
     return;
 }
 
-static void sub_cac50(void)
+static void sub_cac50(addr_t tmp89)
 {
     // sub_cac50
     // Pseudocode: Finds the start of current line by scanning backward for CR
@@ -8491,13 +8491,13 @@ static void sub_caed6(void)
     {
         //     ldy #0
         y = 0;
-        sub_caedd();
+        sub_caedd(y);
     }
     // caed4:
     //     rts
 }
 
-static void sub_caedd(void)
+static void sub_caedd(uint8_t y)
 {
     // sub_caedd:
     //     lda xpos
@@ -8510,7 +8510,7 @@ static void sub_caedd(void)
         //     ldx #1
         x = 1;
         //     jsr insert_edit_buffer_bytes_at_xpos
-        insert_edit_buffer_bytes_at_xpos();
+        insert_edit_buffer_bytes_at_xpos(x);
         //     bcs caef0
         if (!(flags & FLAG_C))
         {
@@ -8542,7 +8542,7 @@ static void unpack_line_into_buffer(void)
     //     lda #1
     //     sta l006e
     edit_buffer_unpacked_flag = 1;
-    sub_caa97();
+    sub_caa97(ptr1);
 }
 
 void wipe_buffer(uint8_t a)
@@ -8634,7 +8634,7 @@ ca8ed:
         set_flags(&flags, a);
         if (!(flags & FLAG_Z))
         {
-            ca741();
+            ca741(ptr6);
         }
     }
     //     ldy #0

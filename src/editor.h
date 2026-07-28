@@ -20,9 +20,9 @@ extern void move_cursor_to_address(void);
 // Additional view.c functions called by moved editor helpers
 extern void lookup_marker(void);
 
-extern void cac78(void);
-extern void insert_edit_buffer_bytes_at_xpos(void);
-extern void set_marker_to_here(void);
+extern void cac78(addr_t tmp89);
+extern void insert_edit_buffer_bytes_at_xpos(uint8_t x);
+extern void set_marker_to_here(uint8_t x);
 extern void caf5c(void);
 extern void justify_edit_buffer(void);
 extern void create_default_ruler(uint16_t ruler_addr);

@@ -3,7 +3,7 @@
 #include "printing.h"
 #include "io.h"
 #include <stdlib.h>
-void parse_mark_from_command(void);
+void parse_mark_from_command(uint8_t x);
 
 // Forward declarations for CLI utilities
 void file_error(void);
@@ -20,7 +20,7 @@ static void cmd_err_no_target(void);
 static void cmd_err_no_string(void);
 static void search_cmd(void);
 static void change_cmd(void);
-static void replace_cmd(void);
+static void replace_cmd(addr_t ptr6);
 static void screen_cmd(void);
 static void sheets_cmd(void);
 static void print_cmd(void);
@@ -57,7 +57,7 @@ static void bye_cmd(void)
     exit(0);
 }
 
-void execute_cli_command(void)
+void execute_cli_command(uint8_t a)
 {
     // execute_cli_command
     // call_through_jumptable (y=2):
@@ -147,7 +147,7 @@ void execute_cli_command(void)
             edit_cmd();
             break;
         case 23:
-            replace_cmd();
+            replace_cmd(ptr6);
             break;
         case 24:
             load_cmd();
@@ -207,7 +207,7 @@ loop_c82b3:
     //     sta print_xpos
     print_xpos = a;
     //     jsr sub_c8a4f
-    sub_c8a4f();
+    sub_c8a4f(ptr2);
     //     bcs c830d
     if (flags & FLAG_C)
         goto c830d;
@@ -582,7 +582,7 @@ static void finish_cmd(void)
         }
         a = 0;
         put_byte_to_file(a);
-        sub_c89d3();
+        sub_c89d3(tmp67);
         move_cursor_to_top_of_document();
         cb05a();
         a = input_file_empty_flag;
@@ -880,7 +880,7 @@ loop_c84c4:
     //     sta current_ruler_buffer,y
     current_ruler_buffer[y] = a;
     //     jsr sub_c89d3
-    sub_c89d3();
+    sub_c89d3(tmp67);
     //     jsr move_cursor_to_top_of_document
     move_cursor_to_top_of_document();
     //     jsr check_for_at_least_150_bytes_free
@@ -1061,7 +1061,7 @@ static void read_cmd(void)
     return;
 }
 
-static void replace_cmd(void)
+static void replace_cmd(addr_t ptr6)
 {
     // replace_cmd
     // Pseudocode: Interactive search and replace prompting for each match
@@ -1093,13 +1093,13 @@ static void replace_cmd(void)
     // c832d:
 c832d:
     //     jsr sub_c8361
-    sub_c8361();
+    sub_c8361(ptr6);
     //     ldx #0x52 ; 'R'
     x = 0x52;
     //     ldy #0x50 ; 'P'
     y = 0x50;
     //     jsr draw_prompt_characters
-    draw_prompt_characters();
+    draw_prompt_characters(x, y);
     //     jsr flush_and_read_char
     read_char();
     //     bcs return_2
@@ -1125,9 +1125,9 @@ c8349:
     //     stx print_xpos
     print_xpos = x;
     //     jsr sub_c8371
-    sub_c8371();
+    sub_c8371(ptr2, ptr6);
     //     jsr sub_c8a4f
-    sub_c8a4f();
+    sub_c8a4f(ptr2);
     //     bcs c836b
     if (flags & FLAG_C)
     {
@@ -1136,7 +1136,7 @@ c8349:
         return;
     }
     //     jsr sub_c8361
-    sub_c8361();
+    sub_c8361(ptr6);
     // c8356:
 c8356:
     //     jsr c8b7b
@@ -1435,7 +1435,7 @@ void readline(void)
 
 const uint8_t la83d[] = "VIEW\0B3.0 for CP/M-65";
 
-static void print_x_words_of_help(void)
+static void print_x_words_of_help(uint8_t a, uint8_t x)
 {
     // print_x_words_of_help
     // Pseudocode: Prints X words of the help string showing VIEW and version
@@ -1504,7 +1504,7 @@ c826e:
     //     ldy #2
     y = 2;
     //     jsr call_through_jumptable
-    execute_cli_command();
+    execute_cli_command(a);
     //     jmp run_cli
     run_cli();
 }
@@ -1555,7 +1555,7 @@ void run_cli(void)
     //     ldx #1
     x = 1;
     //     jsr print_x_words_of_help
-    print_x_words_of_help();
+    print_x_words_of_help(a, x);
     //     jsr print_inline_string
     //     .ascii "\r\rBytes free "
     //     .byte 0
@@ -1879,7 +1879,7 @@ void parse_marks_from_command(void)
     //     jsr reset_area_to_entire_document
     reset_area_to_entire_document();
     //     jsr parse_mark_from_command
-    parse_mark_from_command();
+    parse_mark_from_command(x);
     //     beq return_11
     if (flags & FLAG_Z)
         return;
@@ -1888,7 +1888,7 @@ void parse_marks_from_command(void)
     //     sty area_start_ptr+1
     area_start_ptr = (area_start_ptr & 0x00ff) | ((uint16_t)y << 8);
     //     jsr parse_mark_from_command
-    parse_mark_from_command();
+    parse_mark_from_command(x);
     //     beq return_11
     if (flags & FLAG_Z)
         return;
@@ -1971,7 +1971,7 @@ zbreak:
     //     rts
 }
 
-void parse_mark_from_command(void)
+void parse_mark_from_command(uint8_t x)
 {
     // parse_mark_from_command
     // parse_mark_from_command:

@@ -27,7 +27,7 @@ static void microspace_word_processor(void);
 static void nested_macro_error(void);
 void parse_decimal_number(void);
 void parse_optional_filename_from_command(void);
-static void print_char_x_times(void);
+static void print_char_x_times(uint8_t x);
 void print_document(void);
 static void print_loop(void);
 static void print_newline(void);
@@ -39,7 +39,7 @@ void sub_c8e33(void);
 static void sub_c916a(void);
 static void sub_c9173(void);
 static void sub_c9188(void);
-static void sub_c9228(void);
+static void sub_c9228(uint8_t a);
 static void sub_c9241(void);
 static void sub_c92f0(void);
 static void sub_c9393(void);
@@ -60,22 +60,22 @@ static void write_cr_to_memory(void);
 
 // Forward declarations within printing.c
 static void expand_line(void);
-static void c950f_impl(void);
+static void c950f_impl(uint8_t a);
 static void sub_c976c(void);
 static void parse_boolean_from_fmt_cmd(void);
 static void page_eject_fmt(void);
 static void evaluate_expression_from_fmt_cmd(void);
 static void get_current_fmt_cmd_byte(void);
-static void get_next_fmt_cmd_byte(void);
+static void get_next_fmt_cmd_byte(uint8_t y);
 void lookup_formatting_command(void);
 static void sub_c95b2(uint8_t a);
-static void c9575(void);
-void render_register(void);
+static void c9575(uint8_t x, uint8_t y);
+void render_register(uint8_t a, uint8_t y);
 static void render_number_to_output_buffer(uint16_t value);
 static void emit_to_output_buffer_callback(uint8_t digit);
 static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t));
 static const uint8_t lada6 = 0x40;
-static void c950f_impl(void)
+static void c950f_impl(uint8_t a)
 {
     // c950f_impl
     // c950f:
@@ -134,7 +134,7 @@ static void lj_fmt_cmd(void)
     a = 0;
     //     beq c950f                                                         ;
     //     ALWAYS branch
-    c950f_impl();
+    c950f_impl(a);
 }
 static void ce_fmt_cmd(void)
 {
@@ -169,7 +169,7 @@ static void ce_fmt_cmd(void)
     //     beq c950f
     if (flags & FLAG_Z)
     {
-        c950f_impl();
+        c950f_impl(a);
         return;
     }
     //     sec
@@ -193,7 +193,7 @@ static void ce_fmt_cmd(void)
     //     bcs c950f
     if (flags & FLAG_C)
     {
-        c950f_impl();
+        c950f_impl(a);
         return;
     }
     //     lda #0
@@ -201,7 +201,7 @@ static void ce_fmt_cmd(void)
     set_flags(&flags, a);
     //     beq c950f                                                         ;
     //     ALWAYS branch
-    c950f_impl();
+    c950f_impl(a);
 }
 static void rj_fmt_cmd(void)
 {
@@ -239,7 +239,7 @@ static void rj_fmt_cmd(void)
     //     bcs c950f
     if (flags & FLAG_C)
     {
-        c950f_impl();
+        c950f_impl(a);
         return;
     }
     //     stx l0083
@@ -250,7 +250,7 @@ static void rj_fmt_cmd(void)
     //     sbc l0083
     a -= l0083;
     // c950f: fall-through to shared routine
-    c950f_impl();
+    c950f_impl(a);
     return;
 }
 static void expand_line(void)
@@ -340,7 +340,7 @@ c955e:
     //     iny
     y++;
     //     jsr render_register
-    render_register();
+    render_register(a, y);
     // advance x past the digits written by render_number_to_output_buffer
     if (l0082 > x)
         x = l0082;
@@ -361,7 +361,7 @@ static void sub_c95b2(uint8_t a)
     //     sty l0081
     l0081 = y;
 }
-static void c9575(void)
+static void c9575(uint8_t x, uint8_t y)
 {
     // c9575
     //     stx ((uint8_t*)&tmp23)[0]
@@ -438,7 +438,7 @@ static void df_fmt_cmd(void)
     //     ldy #>(footer_text_maybe)
     x = (uintptr_t)footer_text_maybe & 0xff;
     y = (uintptr_t)footer_text_maybe >> 8;
-    c9575();
+    c9575(x, y);
 }
 static void dh_fmt_cmd(void)
 {
@@ -453,7 +453,7 @@ static void dh_fmt_cmd(void)
     //     ALWAYS branch
     x = (uintptr_t)header_text_maybe & 0xff;
     y = (uintptr_t)header_text_maybe >> 8;
-    c9575();
+    c9575(x, y);
 }
 static void em_fmt_cmd(void)
 {
@@ -1145,7 +1145,7 @@ loop_c973e:
     //     rts
     return;
 }
-void execute_formatting_command(void)
+void execute_formatting_command(uint8_t x)
 {
     // Pseudocode: Executes a formatting command by index through the format
     // jump table
@@ -1399,14 +1399,14 @@ c97c0:
     if (a != 0x7c)
         goto c97d5;
     //     jsr get_next_fmt_cmd_byte
-    get_next_fmt_cmd_byte();
+    get_next_fmt_cmd_byte(y);
     //     beq c9821
     if (flags & FLAG_Z)
         goto c9821;
     //     iny
     y++;
     //     jsr render_register
-    render_register();
+    render_register(a, y);
     //     jmp c97dc
     goto c97dc;
 
@@ -1497,7 +1497,7 @@ static void get_current_fmt_cmd_byte(void)
     }
 loop:
 }
-static void get_next_fmt_cmd_byte(void)
+static void get_next_fmt_cmd_byte(uint8_t y)
 {
     // get_next_fmt_cmd_byte:
     //     iny
@@ -1505,7 +1505,7 @@ static void get_next_fmt_cmd_byte(void)
     get_current_fmt_cmd_byte();
 }
 
-void render_register(void)
+void render_register(uint8_t a, uint8_t y)
 {
     // render_register
     // render_register:
@@ -2153,7 +2153,7 @@ c912b:
         //     pla
         a = saved_a3;
         //     jsr c9426
-        print_char_x_times();
+        print_char_x_times(x);
         //     jmp c9163
         goto c9163;
 
@@ -2211,7 +2211,7 @@ c8fe6_inline:
         a = ram[tmp01 + y];
         y++;
         sub_c9431();
-        print_char_x_times();
+        print_char_x_times(x);
     } while (a != 0x0d);
     //     inc register_value_l
     ram[RAM_REGISTER_VALUE_L]++;
@@ -2336,7 +2336,7 @@ c8e25:
     //     rts
 }
 
-static void print_char_x_times(void)
+static void print_char_x_times(uint8_t x)
 {
     // c9426: Print character in A, X times. If X==0, return immediately.
     //     inx
@@ -2532,7 +2532,7 @@ static void print_loop(void)
         if (flags & FLAG_N)
             goto c8f7a_l;
         //     jsr execute_formatting_command
-        execute_formatting_command();
+        execute_formatting_command(x);
         //     beq c8f6b
         if (flags & FLAG_Z)
             goto c8f6b_l;
@@ -2676,7 +2676,7 @@ static void print_loop(void)
             a = ram[tmp01 + y];
             y++;
             sub_c9431();
-            print_char_x_times();
+            print_char_x_times(x);
         } while (a != 0x0d);
     c8fe6_l:
         //     inc register_value_l
@@ -2732,7 +2732,7 @@ static void print_vertical_space(void)
     // print_vertical_space:
     //     lda #0x0d
     a = 0x0d;
-    print_char_x_times();
+    print_char_x_times(x);
 }
 
 void read_block_from_file(void)
@@ -3360,7 +3360,7 @@ c91f5:
     if (a == 0x0d)
         goto c9223;
     //     jsr sub_c9228
-    sub_c9228();
+    sub_c9228(a);
     //     beq c91f5
     if (flags & FLAG_Z)
         goto c91f5;
@@ -3386,7 +3386,7 @@ c9209:
     if (a == 0x0d)
         goto c9223;
     //     jsr sub_c9228
-    sub_c9228();
+    sub_c9228(a);
     //     beq c9209
     if (flags & FLAG_Z)
         goto c9209;
@@ -3417,7 +3417,7 @@ c9225:
     goto c91a7;
 }
 
-static void sub_c9228(void)
+static void sub_c9228(uint8_t a)
 {
     // sub_c9228
     // Pseudocode: Parses register reference markers (<, >, =) in format line
@@ -3702,7 +3702,7 @@ c93f2:
     //     iny
     y++;
     //     jsr render_register
-    render_register();
+    render_register(a, y);
     //     jmp c93ce
     goto c93ce;
 }
@@ -3757,7 +3757,7 @@ static void sub_c9407(void)
     a = 0x20;
     //     bne c9426                                                         ;
     //     ALWAYS branch
-    print_char_x_times();
+    print_char_x_times(x);
 }
 
 static void sub_c941a(void)
@@ -3776,7 +3776,7 @@ static void sub_c941a(void)
     a = 0x20;
     //     bne c9426                                                         ;
     //     ALWAYS branch
-    print_char_x_times();
+    print_char_x_times(x);
 }
 
 static void sub_c9431(void)

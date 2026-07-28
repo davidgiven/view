@@ -61,9 +61,9 @@ uint8_t check_for_command_prefix(uint8_t ch);
 void sub_c8412(void);
 void sub_c8c7c(void);
 void sub_c83f0(void);
-void sub_c8a4f(void);
-void sub_c8361(void);
-void sub_c8371(void);
+void sub_c8a4f(addr_t ptr2);
+void sub_c8361(addr_t ptr6);
+void sub_c8371(addr_t ptr2, addr_t ptr6);
 void write_area_to_file(void);
 void run_editor(void);
 void read_first_chunk_from_input_file(void);
@@ -71,7 +71,7 @@ void read_first_chunk_from_input_file(void);
 // Output: a = character to render, x = screen width consumed, y preserved,
 // flags.C=0
 void read_next_chunk_from_input_file(void);
-static void sub_c8da2(void);
+static void sub_c8da2(uint8_t a, uint8_t y);
 static void compute_space_common(void);
 void check_for_control_code(uint8_t a);
 
@@ -504,7 +504,7 @@ static void sub_c8310(void)
     //     rts
     return;
 }
-void sub_c8361(void)
+void sub_c8361(addr_t ptr6)
 {
     // sub_c8361
     // sub_c8361:
@@ -513,7 +513,7 @@ void sub_c8361(void)
     //     sta l006e
     edit_buffer_unpacked_flag = a;
     //     jsr redraw_editor
-    redraw_editor();
+    redraw_editor(ptr6);
     //     jmp write_line_back_to_document_safely
     write_line_back_to_document_safely();
     return;
@@ -521,7 +521,7 @@ void sub_c8361(void)
     //     jsr sub_ca94a
     //     jmp esc_key
 }
-void sub_c8371(void)
+void sub_c8371(addr_t ptr2, addr_t ptr6)
 {
     // sub_c8371
     //  Ptrs:   ptr2
@@ -575,7 +575,7 @@ c8398:
     if (flags & FLAG_Z)
         return;
     //     jmp ca741
-    ca741();
+    ca741(ptr6);
     return;
 }
 static const uint8_t escaped_char_table[] = {
@@ -805,7 +805,7 @@ c8598:
     //     jsr adjust_pointers
     adjust_pointers(tmp45, tmp67);
 }
-void sub_c8a4f(void)
+void sub_c8a4f(addr_t ptr2)
 {
     // sub_c8a4f
     //  Ptrs:   ptr2
@@ -1183,7 +1183,7 @@ c8b6b:
     //     ldy ptr2+1
     y = (uint8_t)(ptr2 >> 8);
     //     jsr cac78
-    cac78();
+    cac78(tmp89);
     //     clc
     flags &= ~FLAG_C;
     //     rts
@@ -1200,7 +1200,7 @@ void read_next_chunk_from_input_file(void)
     // read_next_chunk_from_input_file
     // read_next_chunk_from_input_file:
     //     jsr sub_c8da2
-    sub_c8da2();
+    sub_c8da2(a, y);
     x = 0;
     select_file(x);
     //     jsr read_block_from_file
@@ -1330,7 +1330,7 @@ static void compute_space_common(void)
     // return_18:
     //     rts
 }
-static void sub_c8da2(void)
+static void sub_c8da2(uint8_t a, uint8_t y)
 {
     // sub_c8da2
     // sub_c8da2:
@@ -1376,7 +1376,7 @@ void parse_filename_from_command(void)
     // return_19:
     //     rts
 }
-static void sub_c8e2d(void)
+static void sub_c8e2d(uint8_t y)
 {
     // sub_c8e2d:
     //     lda #0x20 ; ' '
