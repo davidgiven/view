@@ -15,7 +15,7 @@ extern void move_tmp01_to_next_line(uint16_t start);
 extern void move_tmp01_to_previous_line(uint16_t val);
 extern void sub_cab1a(uint8_t a);
 extern void run_cli(void);
-extern void move_cursor_to_address(void);
+extern void move_cursor_to_address(uint16_t addr);
 
 // Additional view.c functions called by moved editor helpers
 extern void lookup_marker(void);

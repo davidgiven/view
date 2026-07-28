@@ -201,10 +201,8 @@ loop_c82b3:
     // c82b9:
     ptr3++;
     //     jsr move_cursor_to_address
-    move_cursor_to_address();
-    //     lda #0
+    move_cursor_to_address((uint16_t)(y) << 8 | a);
     a = 0;
-    //     sta print_xpos
     print_xpos = a;
     //     jsr sub_c8a4f
     sub_c8a4f(ptr2);
@@ -675,11 +673,8 @@ static void format_cmd(void)
     if (flags & FLAG_Z)
         goto c878b;
     //     lda area_start_ptr
-    a = (uint8_t)(area_start_ptr & 0xff);
-    //     ldy area_start_ptr+1
-    y = (uint8_t)((area_start_ptr >> 8) & 0xff);
     //     jsr move_cursor_to_address
-    move_cursor_to_address();
+    move_cursor_to_address(area_start_ptr);
     //     jsr sub_caf5f
     sub_caf5f();
     //     lda #0x10
@@ -843,12 +838,8 @@ static void more_cmd(void)
     check_continuous_editing();
     //     jsr parse_marks_from_command
     parse_marks_from_command();
-    //     lda area_start_ptr
-    a = (uint8_t)(area_start_ptr & 0xff);
-    //     ldy area_start_ptr+1
-    y = (uint8_t)((area_start_ptr >> 8) & 0xff);
     //     jsr move_cursor_to_address
-    move_cursor_to_address();
+    move_cursor_to_address(area_start_ptr);
 
     //     jsr select_file
     x = 1;
@@ -1087,7 +1078,7 @@ static void replace_cmd(addr_t ptr6)
         return;
     }
     //     jsr move_cursor_to_address
-    move_cursor_to_address();
+    move_cursor_to_address((uint16_t)(y) << 8 | a);
     //     jsr enter_editor_mode
     enter_editor_mode();
     // c832d:
@@ -1145,7 +1136,7 @@ c8356:
     if (!(flags & FLAG_Z))
         return;
     //     jsr move_cursor_to_address
-    move_cursor_to_address();
+    move_cursor_to_address((uint16_t)(y) << 8 | a);
     //     jmp c832d
     goto c832d;
 }
@@ -1267,7 +1258,7 @@ static void search_cmd(void)
         return;
     }
     //     jsr move_cursor_to_address
-    move_cursor_to_address();
+    move_cursor_to_address((uint16_t)(y) << 8 | a);
     //     jmp enter_editor_mode
     enter_editor_mode();
     longjmp(env, JMP_EDITOR);

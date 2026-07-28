@@ -614,11 +614,7 @@ static void cf0_delete_block_key(void)
         return;
     }
 
-    a = (uint8_t)(area_start_ptr & 0xff);
-
-    y = (uint8_t)(area_start_ptr >> 8);
-
-    move_cursor_to_address();
+    move_cursor_to_address(area_start_ptr);
 
     ca741(ptr6);
 
@@ -643,7 +639,7 @@ static void cf1_next_match_key(void)
         return;
     }
 
-    move_cursor_to_address();
+    move_cursor_to_address((uint16_t)(y) << 8 | a);
 }
 
 static void cf2_format_mode_key(void)
@@ -1175,11 +1171,7 @@ static void f11_copy_key(void)
 
     sub_ca1cc();
 
-    a = (uint8_t)(doc_ptr1 & 0xff);
-
-    y = (uint8_t)(doc_ptr1 >> 8);
-
-    move_cursor_to_address();
+    move_cursor_to_address(doc_ptr1);
 }
 
 static void f12_left_key(void)
@@ -2671,11 +2663,7 @@ static void sf0_move_block_key(void)
 
     cb05a();
 
-    a = (uint8_t)(doc_ptr1 & 0xff);
-
-    y = (uint8_t)(doc_ptr1 >> 8);
-
-    move_cursor_to_address();
+    move_cursor_to_address(doc_ptr1);
 
     clear_marks_1_2();
 }
@@ -4455,9 +4443,7 @@ static void sub_ca1cc(void)
         beep();
         return;
     }
-    a = (uint8_t)(area_start_ptr & 0xff);
-    y = (uint8_t)(area_start_ptr >> 8);
-    move_cursor_to_address();
+    move_cursor_to_address(area_start_ptr);
     {
         uint16_t diff = area_end_ptr - area_start_ptr;
         tmp67 = diff;
@@ -5914,7 +5900,7 @@ static void go_to_marker(uint8_t x)
     //     ldy markers_array+1,x
     y = ((uint8_t*)markers_array)[x + 1];
     //     jsr move_cursor_to_address
-    move_cursor_to_address();
+    move_cursor_to_address((uint16_t)(y) << 8 | a);
     // ca035:
     //     lda #1
     a = 1;

@@ -754,13 +754,10 @@ void read_into_document(void)
     open_input_file();
 
     //     lda area_start_ptr
-    a = (uint8_t)(area_start_ptr & 0xff);
-    //     ldy area_start_ptr+1
-    y = (uint8_t)((area_start_ptr >> 8) & 0xff);
     //     sta ((uint8_t*)&tmp45)[0]
-    tmp45 = (addr_t)(y) << 8 | a;
+    tmp45 = area_start_ptr;
     //     jsr move_cursor_to_address
-    move_cursor_to_address();
+    move_cursor_to_address(area_start_ptr);
     //     lda ((uint8_t*)&tmp45)[0]
     a = ((uint8_t*)&tmp45)[0];
     //     ldy ((uint8_t*)&tmp45)[1]

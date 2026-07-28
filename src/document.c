@@ -891,18 +891,16 @@ void lookup_marker(void)
     //     rts
 }
 
-void move_cursor_to_address(void)
+void move_cursor_to_address(uint16_t addr)
 {
     // move_cursor_to_address
     // move_cursor_to_address:
     //     sta ((uint8_t*)&tmp89)[0]
-    tmp89 = (addr_t)(y) << 8 | a;
-    //     lda current_line_ptr
-    a = (uint8_t)(current_line_ptr & 0xff);
-    //     ldy current_line_ptr+1
-    y = (uint8_t)(current_line_ptr >> 8);
+    addr_t tmp89 = addr;
+    uint8_t a = (uint8_t)(current_line_ptr & 0xff);
+    uint8_t yy = (uint8_t)(current_line_ptr >> 8);
     //     cpy ((uint8_t*)&tmp89)[1]
-    cmp(&flags, y, ((uint8_t*)&tmp89)[1]);
+    cmp(&flags, yy, ((uint8_t*)&tmp89)[1]);
     //     bcc cabf9
     if (!(flags & FLAG_C))
         goto cabf9;
@@ -924,12 +922,12 @@ cabdf:
     //     lda ((uint8_t*)&tmp01)[0]
     a = ((uint8_t*)&tmp01)[0];
     //     ldy ((uint8_t*)&tmp01)[1]
-    y = ((uint8_t*)&tmp01)[1];
+    yy = ((uint8_t*)&tmp01)[1];
     //     bcc cac20
     if (!(flags & FLAG_C))
         goto cac20;
     //     cpy ((uint8_t*)&tmp89)[1]
-    cmp(&flags, y, ((uint8_t*)&tmp89)[1]);
+    cmp(&flags, yy, ((uint8_t*)&tmp89)[1]);
     //     bcc cac20
     if (!(flags & FLAG_C))
         goto cac20;
@@ -955,14 +953,14 @@ cabf6:
     // cabf9:
 cabf9:
     //     sta ((uint8_t*)&tmp01)[0]
-    move_tmp01_to_next_line((addr_t)(y) << 8 | a);
+    move_tmp01_to_next_line((addr_t)(yy) << 8 | a);
     //     beq cac17
     if (flags & FLAG_Z)
         goto cac17;
     //     tya
     a = y;
     //     ldy ((uint8_t*)&tmp01)[1]
-    y = ((uint8_t*)&tmp01)[1];
+    yy = ((uint8_t*)&tmp01)[1];
     //     clc
     flags &= ~FLAG_C;
     //     adc ((uint8_t*)&tmp01)[0]
@@ -970,10 +968,10 @@ cabf9:
     //     bcc cac0b
     if ((flags & FLAG_C))
     {
-        y++;
+        yy++;
     }
     //     cpy ((uint8_t*)&tmp89)[1]
-    cmp(&flags, y, ((uint8_t*)&tmp89)[1]);
+    cmp(&flags, yy, ((uint8_t*)&tmp89)[1]);
     //     bcc cabf6
     if (!(flags & FLAG_C))
         goto cabf6;
@@ -993,7 +991,7 @@ cac17:
     //     lda ((uint8_t*)&tmp01)[0]
     a = ((uint8_t*)&tmp01)[0];
     //     ldy ((uint8_t*)&tmp01)[1]
-    y = ((uint8_t*)&tmp01)[1];
+    yy = ((uint8_t*)&tmp01)[1];
     //     bne cac20
     goto cac20;
     // cac1d:
@@ -1004,7 +1002,7 @@ cac1d:
 cac20:
     //     sta current_line_ptr
     //     sty current_line_ptr+1
-    current_line_ptr = ((uint16_t)y << 8) | a;
+    current_line_ptr = ((uint16_t)yy << 8) | a;
     //     lda ((uint8_t*)&tmp89)[0]
     a = ((uint8_t*)&tmp89)[0];
     //     sec
@@ -1014,9 +1012,9 @@ cac20:
     //     tax
     x = a;
     //     ldy #0
-    y = 0;
+    yy = 0;
     //     lda (current_line_ptr),y
-    a = ram[current_line_ptr + y];
+    a = ram[current_line_ptr + yy];
     //     jsr check_for_command_prefix
     flags = check_for_command_prefix(a);
     //     bne cac3e

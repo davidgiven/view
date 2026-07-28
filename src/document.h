@@ -37,7 +37,7 @@ extern void initialise_document(void);
 
 extern void lookup_marker(void);
 
-extern void move_cursor_to_address(void);
+extern void move_cursor_to_address(uint16_t addr);
 
 extern void move_cursor_to_top_of_document(void);
 
