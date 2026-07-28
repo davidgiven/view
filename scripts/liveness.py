@@ -144,14 +144,13 @@ def get_local_info(lines, start, end, callee_live_out=None):
     call_sites = []
     local_decls = set()
     
-    # Add formal parameters (from function signature) to defined_so_far
+    # Add formal parameters (from function signature) to defined_so_far and local_decls
     if start < len(lines):
         sig = lines[start].strip()
-        m = re.match(r'.*?\buint8_t\s+[a-z]\b', sig)
-        if m:
-            for var in REGISTERS:
-                if re.search(r'\buint8_t\s+' + var + r'\b', sig):
-                    defined_so_far.add(var)
+        for var in REGISTERS:
+            if re.search(r'\buint8_t\s+' + var + r'\b', sig):
+                defined_so_far.add(var)
+                local_decls.add(var)
     
     for i in range(start, end):
         stripped = lines[i].strip()
@@ -164,7 +163,13 @@ def get_local_info(lines, start, end, callee_live_out=None):
                 local_decls.add(var)
         
         if stripped == 'return;':
-            defined_so_far = set(local_decls)
+            # When processing linearly (forward scan), a `return;` on one
+            # path doesn't affect variables defined on the OTHER path.
+            # We don't reset defined_so_far here to avoid false live-in
+            # variables that are defined only on the non-return path.
+            # (However, this can cause false NEGATIVES — variables that
+            # ARE truly undefined on a non-return path will not be flagged
+            # as live-in.  A full control-flow analysis would fix this.)
             continue
         
         d = set()
@@ -177,14 +182,17 @@ def get_local_info(lines, start, end, callee_live_out=None):
                     d.add(f'flags:{b}')
                 for b in helper_flag_uses(helper):
                     u.add(f'flags:{b}')
-                # a = adc(&flags, ...) defines a
-                if helper in ('adc', 'sbc'):
-                    if '= adc' in stripped or '= sbc' in stripped:
-                        d.add('a')
-                # cmp/set_flags register argument is a use
+                # a = adc(&flags, ...) defines a (but only if not a local)
+                if helper in ('adc', 'sbc', 'rol', 'ror'):
+                    if '= ' + helper in stripped:
+                        # Check if a is local
+                        m = re.match(r'(a|x|y)\s*=\s*' + helper + r'\(&flags', stripped)
+                        if m and m.group(1) not in local_decls:
+                            d.add(m.group(1))
+                # cmp/set_flags register argument is a use (skip if local)
                 if helper in ('cmp', 'set_flags'):
                     m = re.match(r'(?:set_flags|cmp)\(&flags, (\w+)', stripped)
-                    if m:
+                    if m and m.group(1) not in local_decls:
                         u.add(m.group(1))
                 break
         
@@ -193,17 +201,21 @@ def get_local_info(lines, start, end, callee_live_out=None):
         d |= fd
         u |= fu
         
-        # ── Regular variable tracking (regex) ──
-        # Direct assignments
+        # ── Track local C variable declarations (shadow globals) ──
         for var in TRACKED_VARS:
+            if re.search(r'\buint8_t\s+' + var + r'\b', stripped):
+                local_decls.add(var)
+        
+        # ── Regular variable tracking (regex) ──
+        # Only track globals — skip variables that are shadowed by a local declaration
+        for var in TRACKED_VARS:
+            if var in local_decls:
+                continue  # local variable shadows global; don't track
             if re.search(r'\b' + var + r'\s*=', stripped):
                 d.add(var)
                 # Also define the paired combined/byte variable
                 if var in BYTE_TO_COMBINED:
                     d.add(BYTE_TO_COMBINED[var])
-            if re.search(r'\buint8_t\s+' + var + r'\b', stripped):
-                d.add(var)
-                local_decls.add(var)
             if re.search(r'\b' + var + r'\+{2}\b', stripped) or \
                re.search(r'\b' + var + r'--\b', stripped) or \
                re.search(r'\b' + var + r'\s*[\+\-]=', stripped):
@@ -223,8 +235,8 @@ def get_local_info(lines, start, end, callee_live_out=None):
         
         # Variable reads (not LHS of assignment, not declaration)
         for var in TRACKED_VARS:
-            if re.search(r'\buint8_t\s+' + var + r'\b', stripped):
-                continue  # skip declarations
+            if var in local_decls:
+                continue  # local variable shadows global; don't track
             if re.search(r'(?<!\w)' + var + r'(?!\w)', stripped):
                 if not re.search(r'\b' + var + r'\s*=', stripped) or \
                    re.search(r'\b' + var + r'\s*[\+\-]=', stripped) or \
@@ -250,14 +262,18 @@ def get_local_info(lines, start, end, callee_live_out=None):
                 clo = callee_live_out.get(callee)
                 if clo is None:
                     if callee in CORRUPTS:
-                        clo = CORRUPTS[callee]
+                        # CORRUPTS = ALL_VARS_SET means noreturn (longjmp).
+                        # Don't add to defined_so_far — code after is dead.
+                        pass
                     elif callee in ALL_IN_OUT:
                         clo = ALL_VARS_SET
                     else:
                         clo = ALL_VARS_SET
-                defined_so_far.update(clo)
+                if clo is not None:
+                    defined_so_far.update(clo)
             elif callee in CORRUPTS:
-                defined_so_far.update(CORRUPTS[callee])
+                # CORRUPTS means noreturn — don't update defined_so_far
+                pass
     
     return local_defs, local_uses, local_live_in, call_sites
 
@@ -422,13 +438,28 @@ def analyze_files(files):
             start = all_funcs[name][1]
             end = all_funcs[name][2]
             live = set()
+            local_decls = set()
+            # First pass: collect local declarations
+            for i in range(start, end):
+                stripped = lines[i].strip()
+                for var in TRACKED_VARS:
+                    if re.search(r'\buint8_t\s+' + var + r'\b', stripped):
+                        local_decls.add(var)
+            # Also add function parameters
+            sig = lines[start].strip()
+            for var in REGISTERS:
+                if re.search(r'\buint8_t\s+' + var + r'\b', sig):
+                    local_decls.add(var)
+            
             for i in range(end - 1, start - 1, -1):
                 stripped = lines[i].strip()
                 if stripped.startswith('//') or stripped == '':
                     continue
                 d, u = get_flag_defs_uses(stripped)
-                # Also get var defs/uses via regex
+                # Also get var defs/uses via regex (skip locals)
                 for var in TRACKED_VARS:
+                    if var in local_decls:
+                        continue
                     if re.search(r'\b' + var + r'\s*=', stripped):
                         d.add(var)
                     if re.search(r'(?<!\w)' + var + r'(?!\w)', stripped):
@@ -532,19 +563,48 @@ def analyze_files(files):
                 passed_to_callees |= callee_params
                 callee_info = local_info.get(callee)
                 if callee_info:
-                    passed_to_callees |= (callee_info.get('cached_defs', callee_info['defs']) - callee_params)
+                    # Only include variables the callee NEEDS as input (live_in),
+                    # not variables the callee defines internally (scratch).
                     passed_to_callees |= (callee_info.get('live_in', set()) - callee_params)
                 callee_needs = backward_needs.get(callee, set())
                 passed_to_callees |= callee_needs
         
-        locals_set = ((local_defs & local_uses) - live_in - live_out - passed_to_callees)
+        # Variables that are pure locals (defined/used only in this function,
+        # neither live-in nor live-out). These exclude C local variables that
+        # shadow globals (already filtered out above).
+        globals_used_locally = ((local_defs & local_uses) - live_in - live_out - passed_to_callees)
+        # Also exclude flag bits from "locals" (they're always tracked separately)
+        globals_used_locally = {v for v in globals_used_locally if not v.startswith('flags:')}
+        
+        # Variables consumed by called functions (passed as arguments or live-in
+        # to callees, anywhere in the call tree)
+        consumed_by_callees = set()
+        seen_callees = set()
+        def collect_consumed(callee_name):
+            if callee_name in seen_callees or callee_name not in all_funcs:
+                return
+            seen_callees.add(callee_name)
+            cinfo = local_info.get(callee_name)
+            if cinfo:
+                # Everything in the callee's live_in is "consumed" by the call
+                consumed_by_callees.update(cinfo.get('live_in', set()))
+                # Also recurse into callee's own callees
+                for _, callee2 in cinfo['call_sites']:
+                    collect_consumed(callee2)
+        
+        for _, callee in info['call_sites']:
+            collect_consumed(callee)
+        
+        # Remove variables that are already tracked as live_in/live_out
+        consumed_here = consumed_by_callees - live_in - live_out
         
         summaries[name] = {
             'defs': all_defs,
             'uses': all_uses,
             'live_in': live_in,
             'live_out': live_out,
-            'locals': locals_set,
+            'locals': globals_used_locally,
+            'consumed': consumed_here,
             'file': info['file'],
             'calls': [c for _, c in info['call_sites']],
         }
@@ -578,7 +638,9 @@ def main():
             print(f"    Live in:  {format_vars(s['live_in'])}")
             print(f"    Live out: {format_vars(s['live_out'])}")
             if s['locals']:
-                print(f"    Locals:   {format_vars(s['locals'])}")
+                print(f"    Scratch:  {format_vars(s['locals'])}")
+            if s['consumed']:
+                print(f"    ToCallee: {format_vars(s['consumed'])}")
             if s['calls']:
                 print(f"    Calls:    {calls_str}")
 
