@@ -240,7 +240,7 @@ extern void ca741(void);
 extern void sub_c8c5f(void);
 extern void sanitise_area(void);
 extern void make_space_for_insertion(void);
-extern void adjust_pointers(void);
+extern void adjust_pointers(addr_t tmp45, addr_t tmp67);
 extern void parse_decimal_number(void);
 extern void parse_optional_filename_from_command(void);
 extern void read_block_from_file(void);

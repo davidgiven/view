@@ -808,7 +808,7 @@ c8598:
     //     sta ((uint8_t*)&tmp67)[1]
     ((uint8_t*)&tmp67)[1] = a;
     //     jsr adjust_pointers
-    adjust_pointers();
+    adjust_pointers(tmp45, tmp67);
 }
 void sub_c8a4f(void)
 {
@@ -974,7 +974,7 @@ c8aca:
     //     (negate tmp67)
     tmp67 = -tmp67;
     //     jsr adjust_pointers
-    adjust_pointers();
+    adjust_pointers(tmp45, tmp67);
 c8ada:
     // c8ada:
     //     ldy #0

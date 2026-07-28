@@ -9,7 +9,7 @@
 #include "globals.h"
 
 // Editor-only functions
-void adjust_pointers(void);
+void adjust_pointers(addr_t tmp45, addr_t tmp67);
 static void advance_to_next_line(void);
 void beep(void);
 static void c8b78(void);
@@ -869,7 +869,7 @@ static void cf7_join_lines_key(void)
 
     //     jsr adjust_pointers
 
-    adjust_pointers();
+    adjust_pointers(tmp45, tmp67);
 
     //     lda current_line_ptr
 
@@ -1476,7 +1476,7 @@ static void f7_delete_line_key(void)
 
     //     jsr adjust_pointers
 
-    adjust_pointers();
+    adjust_pointers(tmp45, tmp67);
 
     //     jsr cb05a
 
@@ -5008,7 +5008,7 @@ cacad:
     return;
 }
 
-void adjust_pointers(void)
+void adjust_pointers(addr_t tmp45, addr_t tmp67)
 {
     // adjust_pointers
     uint8_t y;
@@ -7362,7 +7362,7 @@ void sub_c89d3(void)
     //     sta ((uint8_t*)&tmp45)[1]
     tmp45 = area_start_ptr;
     //     jsr adjust_pointers
-    adjust_pointers();
+    adjust_pointers(tmp45, tmp67);
     //     lda ((uint8_t*)&tmp45)[0]
     a = ((uint8_t*)&tmp45)[0];
     //     ldy ((uint8_t*)&tmp45)[1]
@@ -8604,7 +8604,7 @@ static void write_line_back_to_document(void)
     //     sta ((uint8_t*)&tmp67)[0]
     ((uint8_t*)&tmp67)[0] = a;
     //     jsr adjust_pointers
-    adjust_pointers();
+    adjust_pointers(tmp45, tmp67);
     //     jmp ca8ed
     goto ca8ed;
 

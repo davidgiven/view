@@ -64,7 +64,7 @@ extern void return_to_cli_prompt(void);
 extern void display_not_enough_memory(void);
 extern void get_register_address(uint8_t a);
 extern void write_cr_to_memory(void);
-extern void adjust_pointers(void);
+extern void adjust_pointers(addr_t tmp45, addr_t tmp67);
 extern void make_space_for_insertion(void);
 extern void compute_required_space_for_insertion(void);
 extern void move_cursor_to_address(void);
