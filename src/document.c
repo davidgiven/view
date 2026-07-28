@@ -102,6 +102,8 @@ uint8_t deref_and_check_for_command_prefix(uint8_t y)
 
 void display_document_file_state(void)
 {
+    uint8_t y;
+
     // display_document_file_state
     // display_document_file_state:
     //     jsr stop_printing
@@ -893,6 +895,8 @@ void lookup_marker(void)
 
 void move_cursor_to_address(uint16_t addr)
 {
+    uint8_t x;
+
     // move_cursor_to_address
     // move_cursor_to_address:
     //     sta ((uint8_t*)&tmp89)[0]
@@ -1098,6 +1102,8 @@ return_70:
 
 void move_tmp01_to_previous_line(uint16_t val)
 {
+    uint8_t y;
+
     uint8_t a;
     a = (uint8_t)(val & 0xff);
     y = (uint8_t)(val >> 8);
@@ -1194,6 +1200,8 @@ void pop_from_ruler_index(void)
 
 void push_onto_ruler_index(uint8_t y)
 {
+    uint8_t a;
+
     // push_onto_ruler_index
     // Pseudocode: Pushes current ruler position onto the ruler index
 

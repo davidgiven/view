@@ -854,7 +854,8 @@ def _collect_vardecls(cursor, local_decls):
         if child.kind == clang.cindex.CursorKind.VAR_DECL:
             if child.spelling in TRACKED_VARS:
                 local_decls.add(child.spelling)
-        elif child.kind == clang.cindex.CursorKind.COMPOUND_STMT:
+        elif child.kind in (clang.cindex.CursorKind.COMPOUND_STMT,
+                            clang.cindex.CursorKind.DECL_STMT):
             _collect_vardecls(child, local_decls)
 
 

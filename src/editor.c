@@ -701,6 +701,8 @@ static void cf5_default_ruler_key(void)
 
 static void cf6_split_line_key(void)
 {
+    uint8_t x;
+
     // cf6_split_line_key
 
     // cf6_split_line_key: Splits line at cursor position
@@ -1176,6 +1178,8 @@ static void f11_copy_key(void)
 
 static void f12_left_key(void)
 {
+    uint8_t y;
+
     // f12_left_key
 
     // f12_left_key: Moves cursor left by one position
@@ -1426,6 +1430,9 @@ static void f6_insert_line_key(void)
 
 static void f7_delete_line_key(void)
 {
+    uint8_t x;
+    uint8_t y;
+
     // f7_delete_line_key
 
     // f7_delete_line_key: Deletes current line and moves cursor up
@@ -3015,6 +3022,8 @@ static void sf15_up_key(void)
 
 static void sf1_swap_case_key(void)
 {
+    uint8_t y;
+
     // sf1_swap_case_key
 
     // sf1_swap_case_key:
@@ -3448,6 +3457,9 @@ finished_editing_command:
 
 static void sf9_delete_command_key(void)
 {
+    uint8_t a;
+    uint8_t y;
+
     // sf9_delete_command_key
 
     // sf9_delete_command_key: Deletes any formatting command prefix from
@@ -4321,6 +4333,8 @@ static void sub_c9f80(void)
 
 static void sub_ca071(uint8_t x)
 {
+    uint8_t a;
+
     // sub_ca071
     // sub_ca071:
     //     inc cursor_moved_flag
@@ -4883,6 +4897,8 @@ cad5d:
 
 void cac78(addr_t tmp89)
 {
+    uint8_t x;
+
     // cac78
     // Pseudocode: Splits a line at the word wrap position, inserting CR for new
     // line
@@ -7251,6 +7267,8 @@ static void set_marker_common(uint8_t a)
 
 void show_memory_full_error(void)
 {
+    uint8_t x;
+
     // show_memory_full_error
     // show_memory_full_error (sub_ca94a): Memory full error handler
     // On entry: (none)
@@ -7923,6 +7941,9 @@ c9aa5:
 
 static void sub_c9ac1(uint8_t y)
 {
+    uint8_t a;
+    uint8_t x;
+
     // sub_c9ac1
     // Pseudocode: Finds next word boundary for line wrapping, returns carry if
     // found
@@ -8257,6 +8278,9 @@ ca558:
 
 static void sub_caa97(addr_t ptr1)
 {
+    uint8_t x;
+    uint8_t y;
+
     // sub_caa97
     // sub_caa97:
     //     lda #0x10
@@ -8400,6 +8424,9 @@ void sub_cac41(addr_t tmp01)
 
 static void sub_cac50(addr_t tmp89)
 {
+    uint8_t a;
+    uint8_t y;
+
     // sub_cac50
     // Pseudocode: Finds the start of current line by scanning backward for CR
 

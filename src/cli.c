@@ -494,6 +494,8 @@ c871f:
 
 static void edit_cmd(void)
 {
+    uint8_t x;
+
     // edit_cmd
     check_not_continuous_editing();
     parse_filename_from_command();

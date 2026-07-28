@@ -805,6 +805,8 @@ static void pb_fmt_cmd(void)
 }
 static void dm_fmt_cmd(void)
 {
+    uint8_t y;
+
     addr_t tmp67;
 
     // dm_fmt_cmd
@@ -1151,6 +1153,8 @@ loop_c973e:
 }
 void execute_formatting_command(uint8_t x)
 {
+    uint8_t a;
+
     // Pseudocode: Executes a formatting command by index through the format
     // jump table
 
@@ -1725,6 +1729,9 @@ c9284:
 
 static void c937b(void)
 {
+    uint8_t x;
+    uint8_t y;
+
     // c937b
     // c937b:
     //     ldy #0
@@ -2747,6 +2754,8 @@ static void print_vertical_space(void)
 
 void read_block_from_file(void)
 {
+    uint8_t x;
+
     // read_block_from_file
     // read_block_from_file:
     //     lda #0
@@ -3208,6 +3217,9 @@ static void sub_c9173(void)
 
 static void sub_c9188(void)
 {
+    uint8_t x;
+    uint8_t y;
+
     // sub_c9188
     //  Ptrs:   ptr1, ptr3, ptr5
     // c9184:
@@ -3463,6 +3475,8 @@ static void sub_c9228(uint8_t a)
 
 static void sub_c9241(void)
 {
+    uint8_t a;
+
     // sub_c9241
     //  Ptrs:   ptr6
     // Pseudocode: Reads next line from file buffer or calls
@@ -3556,6 +3570,8 @@ c930d:
 
 static void sub_c9393(void)
 {
+    uint8_t a;
+
     // sub_c9393:
     //     jsr sub_c93b6
     sub_c93b6();
@@ -3579,6 +3595,8 @@ static void sub_c9393(void)
 
 static void sub_c939b(void)
 {
+    uint8_t a;
+
     // sub_c939b:
     //     jsr sub_c93b6
     sub_c93b6();
@@ -3603,6 +3621,8 @@ static void sub_c939b(void)
 
 static void sub_c93a1(void)
 {
+    uint8_t a;
+
     // sub_c93a1:
     //     jsr sub_c93b6
     sub_c93b6();
@@ -3830,6 +3850,8 @@ return_33:
 
 static void sub_cb104(void)
 {
+    uint8_t a;
+
     // sub_cb104
     // Pseudocode: Resets formatting registers and default print settings
 
@@ -3965,6 +3987,8 @@ void call_printer_driver(void)
 
 void stop_printing(void)
 {
+    uint8_t a;
+
     // stop_printing
     // Pseudocode: Stops active printing by clearing print flags and calling
     // printer driver cleanup
