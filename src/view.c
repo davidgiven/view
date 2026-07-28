@@ -17,11 +17,6 @@
 #include "io.h"
 
 // Functions defined in printing.c
-extern void execute_formatting_command(void);
-extern void render_register(void);
-extern void render_number_to_output_buffer(void);
-extern void lookup_formatting_command(void);
-extern void render_number_to_screen(uint16_t val);
 
 // #include "cpm65.inc"
 // #include "driver.inc"

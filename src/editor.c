@@ -7143,7 +7143,6 @@ static void restore_cursor_position(void)
     //     ldy ((uint8_t*)&tmp45)[1]
     screen_setcursor(((uint8_t*)&tmp45)[0], ((uint8_t*)&tmp45)[1]);
 }
-extern uint8_t parser_table[];
 
 void sanitise_area(void)
 {

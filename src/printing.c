@@ -6,9 +6,7 @@
 #include "io.h"
 #include "printing.h"
 #include "document.h"
-
-extern void start_printing(void);
-extern void prepare_printer_driver(void);
+#include "cli.h"
 
 // Forward decls for default printer driver
 static void default_print_char(void);
@@ -59,24 +57,6 @@ static void write_byte_to_memory(uint8_t a);
 static void write_cr_to_memory(void);
 
 // Functions from view.c used by printing code
-extern void cli_putstring(const char* s);
-extern void return_to_cli_prompt(void);
-extern void display_not_enough_memory(void);
-extern void get_register_address(uint8_t a);
-extern void write_cr_to_memory(void);
-extern void adjust_pointers(addr_t tmp45, addr_t tmp67);
-extern void make_space_for_insertion(void);
-extern void compute_required_space_for_insertion(void);
-extern void move_cursor_to_address(void);
-extern void parse_filename_from_command(void);
-extern void c8b7b(void);
-extern void c8b78(void);
-extern uint8_t check_for_command_prefix(uint8_t ch);
-extern void check_for_control_code(uint8_t a);
-extern void render_new_page(void);
-extern void c9263(void);
-extern void sub_c9241(void);
-extern void parse_decimal_number(void);
 
 // Forward declarations within printing.c
 static void expand_line(void);
