@@ -680,9 +680,8 @@ static void format_cmd(void)
     //     jsr sub_caf5f
     sub_caf5f();
     //     lda #0x10
-    a = 0x10;
     //     jsr wipe_buffer
-    wipe_buffer(a);
+    wipe_buffer(0x10);
     //     lda current_edit_line_ptr
     a = (uint8_t)(current_edit_line_ptr & 0xff);
     //     sta current_format_line_ptr
@@ -703,9 +702,8 @@ c876d:
     if (flags & FLAG_C)
         goto c8787;
     //     lda #0x2e ; '.'
-    a = 0x2e;
     //     jsr bdos_print_char
-    cli_putchar(a);
+    cli_putchar(0x2e);
     //     lda current_line_ptr
     a = (uint8_t)(current_line_ptr & 0xff);
     //     ldy current_line_ptr+1
@@ -869,9 +867,8 @@ static void more_cmd(void)
     } while (x != 0);
 loop_c84c4:
     //     lda #0x0d
-    a = 0x0d;
     //     sta current_ruler_buffer,y
-    current_ruler_buffer[y] = a;
+    current_ruler_buffer[y] = 0x0d;
     //     jsr sub_c89d3
     sub_c89d3(tmp67);
     //     jsr move_cursor_to_top_of_document
@@ -1198,9 +1195,8 @@ static void save_cmd_write_cmd(void)
     //     jsr write_area_to_file
     write_area_to_file();
     //     lda #0
-    a = 0;
     //     jsr put_byte_to_file
-    put_byte_to_file(a);
+    put_byte_to_file(0);
 
     //     jsr close_file
     close_file();

@@ -249,8 +249,13 @@ def analyze_stmt(cursor, local_decls, context='use'):
               clang.cindex.CursorKind.PAREN_EXPR,
               clang.cindex.CursorKind.UNEXPOSED_EXPR):
         children = list(cursor.get_children())
-        if children:
-            return analyze_stmt(children[0], local_decls, context)
+        if not children:
+            return d, u
+        # Skip TYPE_REF children (type references like `uint16_t` in casts)
+        for child in children:
+            if child.kind != clang.cindex.CursorKind.TYPE_REF:
+                cd, cu = analyze_stmt(child, local_decls, context)
+                d.update(cd); u.update(cu)
         return d, u
 
     # ── CallExpr ──

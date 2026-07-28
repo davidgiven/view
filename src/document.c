@@ -738,15 +738,14 @@ void initialise_document(void)
     // initialise_document:
     //     lda #0
     addr_t tmp89;
-    a = 0;
     //     sta printer_driver_name
-    printer_driver_name[0] = a;
+    printer_driver_name[0] = 0;
     //     sta format_mode_flag
-    format_mode_flag = a;
+    format_mode_flag = 0;
     //     sta justifying_flag
-    justifying_flag = a;
+    justifying_flag = 0;
     //     sta insert_mode_flag
-    insert_mode_flag = a;
+    insert_mode_flag = 0;
     //     ldx #(input_buffer_ptr+2 - print_flags)
     // loop_cafe9:
     //     sta print_flags,x
@@ -788,9 +787,8 @@ void initialise_document(void)
     //     sty xpos
     xpos = y;
     //     lda #0xaa
-    a = 0xaa;
     //     sta (oshwm),y
-    ram[oshwm + y] = a;
+    ram[oshwm + y] = 0xaa;
     //     lda page
     //     sec
     //     sbc #1
@@ -800,11 +798,10 @@ void initialise_document(void)
     //     sta ((uint8_t*)&tmp89)[1]
     tmp89 = page - 1;
     //     lda #0x0d
-    a = 0x0d;
     //     sta (((uint8_t*)&tmp89)[0]),y
-    ram[tmp89] = a;
+    ram[tmp89] = 0x0d;
     //     sta current_line_buffer + 0x89
-    current_line_buffer[MAX_LINE_LENGTH - 1] = a;
+    current_line_buffer[MAX_LINE_LENGTH - 1] = 0x0d;
     //     lda page / sta top / lda page+1 / sta top+1
     top = page;
     //     lda #<(current_line_buffer)
@@ -835,9 +832,8 @@ void initialise_document(void)
     //     iny
     y++;
     //     lda #0x0d
-    a = 0x0d;
     //     sta (((uint8_t*)&tmp01)[0]),y
-    ram[tmp01 + y] = a;
+    ram[tmp01 + y] = 0x0d;
     //     ldy #0xff
     y = 0xff;
     //     lda #<(just_before_current_ruler_buffer)
@@ -1057,15 +1053,14 @@ void move_cursor_to_top_of_document(void)
     //     sta xpos
     xpos = 0;
     //     ldy #0xfe
-    y = 0xfe;
     //     sty l0012
     top_of_screen_line_ptr = (addr_t)0xfe << 8;
     //     sty ruler_stack_ptr
-    ruler_index_ptr = y;
+    ruler_index_ptr = 0xfe;
     //     sty l0033
-    l0033 = y;
+    l0033 = 0xfe;
     //     jmp cab91
-    cab91(y);
+    cab91(0xfe);
 }
 
 void move_tmp01_to_next_line(uint16_t start)

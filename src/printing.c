@@ -131,10 +131,9 @@ static void lj_fmt_cmd(void)
     if (!(flags & FLAG_C))
         return;
     //     lda #0
-    a = 0;
     //     beq c950f                                                         ;
     //     ALWAYS branch
-    c950f_impl(a);
+    c950f_impl(0);
 }
 static void ce_fmt_cmd(void)
 {
@@ -197,11 +196,10 @@ static void ce_fmt_cmd(void)
         return;
     }
     //     lda #0
-    a = 0;
-    set_flags(&flags, a);
+    set_flags(&flags, 0);
     //     beq c950f                                                         ;
     //     ALWAYS branch
-    c950f_impl(a);
+    c950f_impl(0);
 }
 static void rj_fmt_cmd(void)
 {
@@ -367,11 +365,10 @@ static void c9575(uint8_t x, uint8_t y)
     //     stx ((uint8_t*)&tmp23)[0]
     tmp23 = (addr_t)(y) << 8 | x;
     //     lda #0
-    a = 0;
     //     sta l0081
-    l0081 = a;
+    l0081 = 0;
     //     sta l007a
-    l007a = a;
+    l007a = 0;
     //     ldy #3
     y = 3;
     //     sty input_buffer_offset+1
@@ -418,13 +415,12 @@ c959e:
         goto loop_c9589;
 c95aa:
     //     lda #0x80
-    a = 0x80;
     //     jsr sub_c95b2
-    sub_c95b2(a);
+    sub_c95b2(0x80);
     //     jsr sub_c95b2
-    sub_c95b2(a);
+    sub_c95b2(0x80);
     //     (fall through into sub_c95b2)
-    sub_c95b2(a);
+    sub_c95b2(0x80);
     // MULTIPLE ENTRY POINTS: dh_fmt_cmd, df_fmt_cmd
 }
 static void df_fmt_cmd(void)
@@ -948,20 +944,18 @@ c96a2:
     if (x != 5)
         goto c96f8;
     //     lda #4
-    a = 4;
     //     ldy #0
     y = 0;
     //     sta (last_macro_ptr),y
-    ram[last_macro_ptr + y] = a;
+    ram[last_macro_ptr + y] = 4;
     //     inc last_macro_ptr
     last_macro_ptr++;
     //     bne add_macro_to_linked_list
     //     inc last_macro_ptr+1
     // add_macro_to_linked_list:
     //     lda #0
-    a = 0;
     //     sta (last_macro_ptr),y
-    ram[last_macro_ptr + y] = a;
+    ram[last_macro_ptr + y] = 0;
     //     lda last_macro_ptr
     a = (uint8_t)(last_macro_ptr & 0xff);
     //     sta (((uint8_t*)&tmp67)[0]),y
@@ -1714,15 +1708,13 @@ c9284:
         set_flags(&flags, ram[RAM_REGISTER_VALUE_P + 1]);
     }
     //     lda #1
-    a = 1;
     //     sta register_value_l
-    ram[RAM_REGISTER_VALUE_L] = a;
+    ram[RAM_REGISTER_VALUE_L] = 1;
     //     lda #0
-    a = 0;
     //     sta register_value_l+1
-    ram[RAM_REGISTER_VALUE_L + 1] = a;
+    ram[RAM_REGISTER_VALUE_L + 1] = 0;
     //     sta l0031
-    l0031 = a;
+    l0031 = 0;
     //     rts
     return;
 }
@@ -1981,21 +1973,20 @@ c90a0:
         //     sta l0047
         l0047 = a;
         //     lda #0
-        a = 0;
         //     sta l0083
-        l0083 = a;
+        l0083 = 0;
         //     sta l0046
-        l0046 = a;
+        l0046 = 0;
         //     sta l0048
-        l0048 = a;
+        l0048 = 0;
         //     sta l0042
-        l0042 = a;
+        l0042 = 0;
         //     sta l0043
-        l0043 = a;
+        l0043 = 0;
         //     sta l0044
-        l0044 = a;
+        l0044 = 0;
         //     sta l0045
-        l0045 = a;
+        l0045 = 0;
         //     pla
         a = saved_a2;
     }
@@ -2343,10 +2334,9 @@ void parse_optional_filename_from_command(void)
     }
 c8e25:
     //     lda #0x0d
-    a = 0x0d;
-    set_flags(&flags, a);
+    set_flags(&flags, 0x0d);
     //     sta filename_buffer,x
-    filename_buffer[x] = a;
+    filename_buffer[x] = 0x0d;
     //     sty input_buffer_offset
     input_buffer_offset = y;
     // return_20:

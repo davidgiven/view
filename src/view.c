@@ -472,9 +472,8 @@ int main(int argc, char* argv[])
         return 0;
     }
     // Initial entry (val == 0)
-    x = 0xff;
     //     stx error_handling_mode
-    error_handling_mode = x;
+    error_handling_mode = 0xff;
     //     jsr system_init
     system_init();
     //     jsr initialise_document
@@ -509,9 +508,8 @@ void sub_c8361(addr_t ptr6)
     // sub_c8361
     // sub_c8361:
     //     lda #0
-    a = 0;
     //     sta l006e
-    edit_buffer_unpacked_flag = a;
+    edit_buffer_unpacked_flag = 0;
     //     jsr redraw_editor
     redraw_editor(ptr6);
     //     jmp write_line_back_to_document_safely
@@ -1014,9 +1012,8 @@ c8af3:
     {
         uint8_t saved_a_ = a;
         //     lda #0
-        a = 0;
         //     sta print_xpos
-        print_xpos = a;
+        print_xpos = 0;
         //     pla
         a = saved_a_;
     }
@@ -1061,15 +1058,13 @@ c8b0d:
 c8b11:
     // c8b11:
     //     ldx #0
-    x = 0;
     //     stx l0082
-    l0082 = x;
+    l0082 = 0;
     //     stx l0083
-    l0083 = x;
+    l0083 = 0;
     //     ldx #0x14
-    x = 0x14;
     //     stx input_buffer_offset+1
-    l0080 = x;
+    l0080 = 0x14;
     //     ldx l007a
     x = l007a;
     //     bne c8b6b
@@ -1212,12 +1207,10 @@ void read_next_chunk_from_input_file(void)
     }
     // c8d39:
     //     lda #0
-    a = 0;
     //     tay                                                               ;
     //     Y=0x00
-    y = 0;
     //     sta (((uint8_t*)&tmp01)[0]),y
-    ram[tmp01 + y] = a;
+    ram[tmp01 + 0] = 0;
     top = tmp01;
     //     plp
     //     rts
@@ -1379,9 +1372,8 @@ static void sub_c8e2d(uint8_t y)
 {
     // sub_c8e2d:
     //     lda #0x20 ; ' '
-    a = 0x20;
     //     sta l007e
-    l007e = a;
+    l007e = 0x20;
     //     sty input_buffer_offset
     input_buffer_offset = y;
     sub_c8e33();

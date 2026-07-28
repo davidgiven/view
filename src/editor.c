@@ -863,11 +863,9 @@ static void cf7_join_lines_key(void)
 
     //     sta ((uint8_t*)&tmp67)[0]
 
-    tmp67 = 1;
-
     //     jsr adjust_pointers
 
-    adjust_pointers(tmp45, tmp67);
+    adjust_pointers(tmp45, 1);
 
     //     lda current_line_ptr
 
@@ -1299,11 +1297,9 @@ static void f15_up_key(void)
 static void f1_top_of_text_key(void)
 {
 
-    x = 0xff;
+    l006f = 0xff;
 
-    l006f = x;
-
-    sub_ca071(x);
+    sub_ca071(0xff);
 
     sub_caa97(ptr1);
 }
@@ -1321,15 +1317,13 @@ static void f2_bottom_of_text_key(void)
 
     //     ldx #0xff
 
-    x = 0xff;
-
     //     stx l006f
 
-    l006f = x;
+    l006f = 0xff;
 
     //     jsr sub_ca0af
 
-    sub_ca0af(x);
+    sub_ca0af(0xff);
 
     //     jsr sub_caa97
 
@@ -1514,11 +1508,9 @@ static void f8_insert_char_key(void)
 
     //     lda #0x20 ; ' '
 
-    a = 0x20;
-
     //     falls through to sub_c9e22
 
-    sub_c9e22(a);
+    sub_c9e22(0x20);
     return;
 }
 
@@ -1529,15 +1521,13 @@ static void f9_delete_char_key(void)
 
     //     ldx #1
 
-    x = 1;
-
     //     inc l0074
 
     l0074++;
 
     //     jmp delete_edit_buffer_bytes_at_xpos
 
-    delete_edit_buffer_bytes_at_xpos(x);
+    delete_edit_buffer_bytes_at_xpos(1);
     return;
 }
 
@@ -3439,15 +3429,11 @@ finished_editing_command:
 
     //     ldy #0
 
-    y = 0;
-
     //     lda #0x80
-
-    a = 0x80;
 
     //     sta (current_format_line_ptr),y
 
-    ram[current_format_line_ptr + y] = a;
+    ram[current_format_line_ptr + 0] = 0x80;
 
     //     jmp caf5c
 
@@ -3915,9 +3901,8 @@ c9c56:
     //     sty l0083 (4204)
     l0083 = y;
     //     lda #0 (4205)
-    a = 0;
     //     sta top_margin (4206)
-    top_margin = a;
+    top_margin = 0;
     //     ldy xpos (4207)
     y = xpos;
     //     sty input_buffer_ptr+1 (4208)
@@ -4861,9 +4846,8 @@ void set_marker_to_here(uint8_t x)
         goto cad5d;
     //     bcc cad5d
     //     ldy #0
-    y = 0;
     //     lda (current_format_line_ptr),y
-    a = ram[current_format_line_ptr + y];
+    a = ram[current_format_line_ptr + 0];
     //     ldy xpos
     y = xpos;
     //     jsr check_for_command_prefix
@@ -5199,11 +5183,10 @@ static void advance_to_next_line(void)
     //     pla (pop sub_c9aa9's return address)
     //     pla (pop sub_c9977's return address — stack unwind)
     //     lda #0x40 ; '@'
-    a = 0x40;
     //     sta l0084
-    l0084 = a;
+    l0084 = 0x40;
     //     bit l0084   ; sets V
-    bit(&flags, a, l0084);
+    bit(&flags, 0x40, l0084);
     //     rts (return to sub_c9977's caller with V=1, bypassing sub_c9977's
     //     clv)
     return true;
@@ -5712,9 +5695,8 @@ loop_ca4c2:
         goto loop_ca4bf;
     //     bne loop_ca4bf
     //     lda #0x20 ; ' '
-    a = 0x20;
     //     jsr sub_ca597
-    clear_to_eol(a);
+    clear_to_eol(0x20);
     //     lda l0083
     a = l0083;
     //     sta line_lengths,x
@@ -5749,12 +5731,10 @@ void draw_prompt_characters(uint8_t x, uint8_t y)
     //     jsr screen_putchar
     screen_putchar(a);
     //     jsr set_normal_text_if_not_mode_7
-    a = 0;
-    screen_setstyle(a);
+    screen_setstyle(0);
     //     lda #0x20 ; ' '
-    a = 0x20;
     //     jsr screen_putchar
-    screen_putchar(a);
+    screen_putchar(0x20);
     //     jsr restore_cursor_position
     restore_cursor_position();
     // cursor_on:
@@ -5801,9 +5781,8 @@ static void draw_status_word(void)
     // sub_ca651:
     //     lda #0
     uint8_t x;
-    a = 0;
     //     sta flags_need_redrawing_flag
-    flags_need_redrawing_flag = a;
+    flags_need_redrawing_flag = 0;
     //     jsr home_cursor
     home_cursor();
     //     ldx #0x46 ; 'F'
@@ -5867,9 +5846,8 @@ static void get_line_length(void)
     // ***************************************************************************************
     // get_line_length:
     //     ldy #0
-    y = 0;
     //     lda (current_format_line_ptr),y
-    a = ram[current_format_line_ptr + y];
+    a = ram[current_format_line_ptr + 0];
     //     jsr check_for_command_prefix
     flags = check_for_command_prefix(a);
     //     php
@@ -5923,9 +5901,8 @@ static void go_to_marker(uint8_t x)
     move_cursor_to_address((uint16_t)(y) << 8 | a);
     // ca035:
     //     lda #1
-    a = 1;
     //     sta l0073
-    l0073 = a;
+    l0073 = 1;
     //     jmp ca684
     ca684();
     return;
@@ -6183,9 +6160,8 @@ c98d9:
     //     sty l0039
     l0039 = y;
     //     lda #0x1a
-    a = 0x1a;
     //     jsr wipe_buffer
-    wipe_buffer(a);
+    wipe_buffer(0x1a);
     //     lda l0042
     a = l0042;
     set_flags(&flags, a);
@@ -6863,9 +6839,8 @@ ca3b2:
     //     jsr cab91 (5390)
     cab91(y);
     //     lda #1 (5391)
-    a = 1;
     //     sta l0082 (5392)
-    l0082 = a;
+    l0082 = 1;
     //     lda l0011 (5393)
     a = (uint8_t)(top_of_screen_line_ptr & 0xff);
     //     ldy l0012 (5394)
@@ -7318,8 +7293,7 @@ ca965:;
     // ca96e:
 ca96e:
     //     jsr set_normal_text_if_not_mode_7
-    a = 0;
-    screen_setstyle(a);
+    screen_setstyle(0);
     //     tya
     a = y;
     //     beq ca97c
@@ -7352,11 +7326,10 @@ loop_ca983:
     //     jsr cursor_on
     cursor_on();
     //     lda #1
-    a = 1;
     //     sta status_line_needs_redrawing_flag
-    status_line_needs_redrawing_flag = a;
+    status_line_needs_redrawing_flag = 1;
     //     sta l0073
-    l0073 = a;
+    l0073 = 1;
     //     rts
 }
 
@@ -7383,8 +7356,7 @@ static void sub_c8c51(void)
 {
     // sub_c8c51:
     //     lda #0
-    a = 0;
-    sub_c8c53(a);
+    sub_c8c53(0);
 }
 
 static void sub_c8c53(uint8_t a)
@@ -7519,9 +7491,8 @@ void sub_c9977(void)
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     ldy #4
-    y = 4;
     //     sty print_xpos
-    print_xpos = y;
+    print_xpos = 4;
     //     ldy #0
     y = 0;
     //     sty input_buffer_offset
@@ -7585,9 +7556,8 @@ c998a:
     // PROVISIONAL: Wipe the edit buffer with 0x10 (soft spaces) and set up
     // ((uint8_t*)&tmp67)[0]/((uint8_t*)&tmp67)[1] = current_line_ptr.
     //      lda #0x10
-    a = 0x10;
     //     jsr wipe_buffer
-    wipe_buffer(a);
+    wipe_buffer(0x10);
     //     lda current_line_ptr
     a = (uint8_t)(current_line_ptr & 0xff);
     //     sta ((uint8_t*)&tmp67)[0]
@@ -8284,9 +8254,8 @@ static void sub_caa97(addr_t ptr1)
     // sub_caa97
     // sub_caa97:
     //     lda #0x10
-    a = 0x10;
     //     jsr wipe_buffer
-    wipe_buffer(a);
+    wipe_buffer(0x10);
     //     jsr sub_caf5f
     sub_caf5f();
     //     ldy #0
