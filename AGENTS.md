@@ -14,7 +14,9 @@ root has a `.clang-format` config.
 ## Code conventions
 
 - Global `uint8_t` registers `a`, `x`, `y`, `sp`, `flags` simulate the
-  6502 processor state.
+  6502 processor state.  Many functions now declare their own locals
+  (e.g. `uint8_t a, y;`) or take them as parameters.  Callers still
+  depend on the globals being set correctly by callees.
 - The `flags` variable packs processor status bits:
   `FLAG_C=0x01`, `FLAG_Z=0x02`, `FLAG_N=0x80`.
 - The `ram[65536]` array simulates the 64 KB address space.
@@ -127,5 +129,3 @@ the document (`sub_caa97`), edits in the working buffer, and copies back
 | `tests/interact.py` | Integration tests |
 | `FORMAT.md` | Document file format (.v) |
 | `CALLGRAPH.md` | Auto-generated call graph of `view.c` — update when editing call sites |
-
-
