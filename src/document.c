@@ -97,6 +97,7 @@ uint8_t deref_and_check_for_command_prefix(uint8_t y)
     a = ram[tmp01 + y];
     return check_for_command_prefix(a);
 }
+
 // Returns flags value: if ch is 0x80 (format command) → FLAG_Z|FLAG_C;
 // if ch is 0x81 (ruler line) → FLAG_Z; otherwise → 0.
 

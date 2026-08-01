@@ -449,6 +449,7 @@ FILE* input_fp; // PROVISIONAL: FILE* handle for currently open input/read file
 // X output_file:                    .fill FS__SIZE
 FILE*
     output_fp; // PROVISIONAL: FILE* handle for currently open output/write file
+
 int main(int argc, char* argv[])
 {
     // main
@@ -481,6 +482,7 @@ int main(int argc, char* argv[])
     run_cli();
     return 0;
 }
+
 // run_editor moved to editor.c
 static void sub_c8310(void)
 {
@@ -503,6 +505,7 @@ static void sub_c8310(void)
     //     rts
     return;
 }
+
 void sub_c8361(addr_t ptr6)
 {
     // sub_c8361
@@ -519,6 +522,7 @@ void sub_c8361(addr_t ptr6)
     //     jsr sub_ca94a
     //     jmp esc_key
 }
+
 void sub_c8371(addr_t ptr2, addr_t ptr6)
 {
     // sub_c8371
@@ -576,6 +580,7 @@ c8398:
     ca741(ptr6);
     return;
 }
+
 static const uint8_t escaped_char_table[] = {
     '?', 'T', 'C', 'S', 'L', 'Z', '-', '*', 0xff};
 static const uint8_t l83e0_table[] = {
@@ -665,6 +670,7 @@ c83da:
     // return_3:
     //     rts
 }
+
 void sub_c83f0(void)
 {
     // sub_c83f0
@@ -704,6 +710,7 @@ c8410:
     // return_4:
     //     rts
 }
+
 void sub_c8412(void)
 {
     // sub_c8412
@@ -730,6 +737,7 @@ void sub_c8412(void)
     // return_5:
     //     rts
 }
+
 void read_into_document(void)
 {
     // read_into_document
@@ -800,6 +808,7 @@ c8598:
     //     jsr adjust_pointers
     adjust_pointers(tmp45, tmp67);
 }
+
 void sub_c8a4f(addr_t ptr2)
 {
     uint8_t x;
@@ -1182,6 +1191,7 @@ c8b6b:
     flags &= ~FLAG_C;
     //     rts
 }
+
 void sub_c8c7c(void)
 {
     // sub_c8c7c:
@@ -1189,6 +1199,7 @@ void sub_c8c7c(void)
     doc_ptr3 = area_end_ptr;
     //     rts
 }
+
 void read_next_chunk_from_input_file(void)
 {
     // read_next_chunk_from_input_file
@@ -1217,6 +1228,7 @@ void read_next_chunk_from_input_file(void)
     //     plp
     //     rts
 }
+
 void read_first_chunk_from_input_file(void)
 {
     // read_first_chunk_from_input_file:
@@ -1227,6 +1239,7 @@ void read_first_chunk_from_input_file(void)
     //     jmp read_next_chunk_from_input_file
     read_next_chunk_from_input_file();
 }
+
 void write_area_to_file(void)
 {
     addr_t tmp89;
@@ -1263,6 +1276,7 @@ void write_area_to_file(void)
     // return_17:
     //     rts
 }
+
 static void compute_space_common(void)
 {
     // compute_space_common
@@ -1324,6 +1338,7 @@ static void compute_space_common(void)
     // return_18:
     //     rts
 }
+
 static void sub_c8da2(uint8_t a, uint8_t y)
 {
     // sub_c8da2
@@ -1346,6 +1361,7 @@ static void sub_c8da2(uint8_t a, uint8_t y)
     }
     compute_space_common();
 }
+
 static void compute_required_space_for_insertion(void)
 {
     // compute_required_space_for_insertion:
@@ -1357,6 +1373,7 @@ static void compute_required_space_for_insertion(void)
     //     ALWAYS branch
     compute_space_common();
 }
+
 void parse_filename_from_command(void)
 {
     // Pseudocode: Parses mandatory filename, calls bad_filename_error if
@@ -1370,6 +1387,7 @@ void parse_filename_from_command(void)
     // return_19:
     //     rts
 }
+
 static void sub_c8e2d(uint8_t y)
 {
     // sub_c8e2d:
@@ -1380,6 +1398,7 @@ static void sub_c8e2d(uint8_t y)
     input_buffer_offset = y;
     sub_c8e33();
 }
+
 void check_continuous_editing(void)
 {
     // check_continuous_editing
@@ -1397,6 +1416,7 @@ void check_continuous_editing(void)
     //     jsr display_document_file_state
     display_document_file_state();
 }
+
 static void display_no_text(void)
 {
     // display_no_text:
@@ -1406,6 +1426,7 @@ static void display_no_text(void)
     cli_putstring("No text\n");
     //     rts
 }
+
 static void display_nl_then_no_text(void)
 {
     // display_nl_then_no_text:
@@ -1413,6 +1434,7 @@ static void display_nl_then_no_text(void)
     cli_putchar('\n');
     display_no_text();
 }
+
 // prepare_printer_driver, default_printer_* moved to printing.c
 // parse_command moved to cli.c
 static void system_init(void)

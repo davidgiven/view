@@ -43,6 +43,7 @@ static void new_cmd(void);
 static void fold_cmd(void);
 static void printer_cmd(void);
 static void name_cmd(void);
+
 // check_for_at_least_150_bytes_free defined in document.c
 
 static void bye_cmd(void)

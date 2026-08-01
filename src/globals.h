@@ -38,12 +38,14 @@ static inline void set_flags(uint8_t* flags, uint8_t v)
     *flags =
         (*flags & ~(FLAG_Z | FLAG_N)) | (v == 0 ? FLAG_Z : 0) | (v & FLAG_N);
 }
+
 static inline void cmp(uint8_t* flags, uint8_t reg, uint8_t value)
 {
     uint16_t tmp_ = (uint16_t)reg - value;
     *flags = (*flags & ~(FLAG_Z | FLAG_N | FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) |
              ((uint8_t)tmp_ & FLAG_N) | ((uint16_t)reg >= value ? FLAG_C : 0);
 }
+
 static inline uint8_t adc(uint8_t* flags, uint8_t a, uint8_t value)
 {
     uint16_t tmp_ = (uint16_t)a + value + (*flags & FLAG_C ? 1 : 0);
@@ -52,6 +54,7 @@ static inline uint8_t adc(uint8_t* flags, uint8_t a, uint8_t value)
     set_flags(flags, a);
     return a;
 }
+
 static inline uint8_t sbc(uint8_t* flags, uint8_t a, uint8_t value)
 {
     uint16_t tmp_ = (uint16_t)a - value - (1 - (*flags & FLAG_C ? 1 : 0));
@@ -60,12 +63,14 @@ static inline uint8_t sbc(uint8_t* flags, uint8_t a, uint8_t value)
     set_flags(flags, a);
     return a;
 }
+
 static inline void bit(uint8_t* flags, uint8_t a, uint8_t value)
 {
     uint8_t tmp_ = a & value;
     *flags = (*flags & ~(FLAG_Z | FLAG_N | FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) |
              (value & (FLAG_N | FLAG_V));
 }
+
 static inline uint8_t rol(uint8_t* flags, uint8_t value)
 {
     uint8_t c_in = (*flags & FLAG_C) ? 1 : 0;
@@ -74,6 +79,7 @@ static inline uint8_t rol(uint8_t* flags, uint8_t value)
     set_flags(flags, value);
     return value;
 }
+
 static inline uint8_t ror(uint8_t* flags, uint8_t value)
 {
     uint8_t c_in = (*flags & FLAG_C) ? 0x80 : 0;
@@ -82,6 +88,7 @@ static inline uint8_t ror(uint8_t* flags, uint8_t value)
     set_flags(flags, value);
     return value;
 }
+
 static inline uint8_t asr(uint8_t* flags, uint8_t value)
 {
     *flags = (*flags & ~FLAG_C) | ((value & 0x01) ? FLAG_C : 0);

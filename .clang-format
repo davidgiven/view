@@ -41,4 +41,5 @@ SpaceBeforeCtorInitializerColon: 'false'
 SpaceBeforeInheritanceColon: 'true'
 SpaceBeforeParens: ControlStatements
 SpaceInEmptyParentheses: 'false'
+SeparateDefinitionBlocks: Always
 ...

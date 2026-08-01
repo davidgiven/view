@@ -4112,6 +4112,7 @@ c9d30:
     //     jmp editor_loop
     return;
 }
+
 // MULTIPLE ENTRY POINTS: sf1_swap_case_key, f13_right_key
 
 static void go_to_marker_1(void)
@@ -4510,6 +4511,7 @@ static void tab_highlight_common(void)
     f13_right_key();
     return;
 }
+
 void enter_editor_mode(void)
 {
     uint8_t x;
@@ -5611,6 +5613,7 @@ return_62:
     //     rts
     return;
 }
+
 // Input:  a = document character, y = line offset (for tab stop lookup)
 // Output: a = character to render, x = screen width consumed, y preserved,
 // flags.C=0
@@ -6428,6 +6431,7 @@ static void memory_full(void)
     //     jmp editor_loop
     longjmp(env, JMP_EDITOR);
 }
+
 // la995: "Memory full - Press ESCAPE"
 static const uint8_t la995_data[] = "Memory full - Press ESCAPE";
 
@@ -7238,7 +7242,9 @@ static void set_marker(void)
     ca684();
     return;
 }
+
 void go_to_marker(uint8_t x);
+
 // MULTIPLE ENTRY POINTS: sf6_go_to_marker_key, go_to_marker, go_to_marker_1..6
 
 static void set_marker_common(uint8_t a)
@@ -8121,6 +8127,7 @@ static void sub_c9e22(uint8_t a)
     //     rts
     return;
 }
+
 // MULTIPLE ENTRY POINTS: tab_key, sf4_highlight1_key, sf5_highlight2_key
 
 static void sub_c9e9b(void)
@@ -8746,6 +8753,7 @@ ca93a:
     //     rts
     return;
 }
+
 // MULTIPLE ENTRY POINTS: write_line_back_to_document_safely (via memory_full)
 
 void write_line_back_to_document_safely(void)

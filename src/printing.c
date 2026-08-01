@@ -75,6 +75,7 @@ static void render_number_to_output_buffer(uint16_t value);
 static void emit_to_output_buffer_callback(uint8_t digit);
 static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t));
 static const uint8_t lada6 = 0x40;
+
 static void c950f_impl(uint8_t a)
 {
     // c950f_impl
@@ -117,6 +118,7 @@ c951c:
     //     rts
     return;
 }
+
 static void lj_fmt_cmd(void)
 {
     // lj_fmt_cmd
@@ -135,6 +137,7 @@ static void lj_fmt_cmd(void)
     //     ALWAYS branch
     c950f_impl(0);
 }
+
 static void ce_fmt_cmd(void)
 {
     // ce_fmt_cmd
@@ -201,6 +204,7 @@ static void ce_fmt_cmd(void)
     //     ALWAYS branch
     c950f_impl(0);
 }
+
 static void rj_fmt_cmd(void)
 {
     // rj_fmt_cmd
@@ -251,6 +255,7 @@ static void rj_fmt_cmd(void)
     c950f_impl(a);
     return;
 }
+
 static void expand_line(void)
 {
     // expand_line
@@ -345,6 +350,7 @@ c955e:
     //     jmp c9537
     goto c9537;
 }
+
 static void sub_c95b2(uint8_t a)
 {
     // sub_c95b2
@@ -359,6 +365,7 @@ static void sub_c95b2(uint8_t a)
     //     sty l0081
     l0081 = y;
 }
+
 static void c9575(uint8_t x, uint8_t y)
 {
     // c9575
@@ -423,6 +430,7 @@ c95aa:
     sub_c95b2(0x80);
     // MULTIPLE ENTRY POINTS: dh_fmt_cmd, df_fmt_cmd
 }
+
 static void df_fmt_cmd(void)
 {
     // Pseudocode: Stores footer text (shared code with dh_fmt_cmd)
@@ -436,6 +444,7 @@ static void df_fmt_cmd(void)
     y = (uintptr_t)footer_text_maybe >> 8;
     c9575(x, y);
 }
+
 static void dh_fmt_cmd(void)
 {
     // Pseudocode: Stores header text (shared code with df_fmt_cmd)
@@ -451,6 +460,7 @@ static void dh_fmt_cmd(void)
     y = (uintptr_t)header_text_maybe >> 8;
     c9575(x, y);
 }
+
 static void em_fmt_cmd(void)
 {
     addr_t tmp01;
@@ -491,6 +501,7 @@ static void em_fmt_cmd(void)
     //     rts
     return;
 }
+
 static void pl_fmt_cmd(void)
 {
     // Pseudocode: Sets page_length from format command expression
@@ -507,6 +518,7 @@ static void pl_fmt_cmd(void)
     //     rts
     return;
 }
+
 static void ts_fmt_cmd(void)
 {
     // ts_fmt_cmd
@@ -532,6 +544,7 @@ static void ts_fmt_cmd(void)
     //     rts
     return;
 }
+
 static void tm_fmt_cmd(void)
 {
     // Pseudocode: Sets top_margin from format command expression
@@ -548,6 +561,7 @@ static void tm_fmt_cmd(void)
     //     rts
     return;
 }
+
 static void bm_fmt_cmd(void)
 {
     // Pseudocode: Sets bottom_margin from format command expression
@@ -564,6 +578,7 @@ static void bm_fmt_cmd(void)
     //     rts
     return;
 }
+
 static void hm_fmt_cmd(void)
 {
     // Pseudocode: Sets header_margin from format command expression
@@ -580,6 +595,7 @@ static void hm_fmt_cmd(void)
     //     rts
     return;
 }
+
 static void fm_fmt_cmd(void)
 {
     // Pseudocode: Sets footer_margin from format command expression
@@ -596,6 +612,7 @@ static void fm_fmt_cmd(void)
     //     rts
     return;
 }
+
 static void lm_fmt_cmd(void)
 {
     // Pseudocode: Sets left_margin from format command expression
@@ -612,6 +629,7 @@ static void lm_fmt_cmd(void)
     //     rts
     return;
 }
+
 static void ls_fmt_cmd(void)
 {
     // Pseudocode: Sets line_spacing from format command expression
@@ -628,6 +646,7 @@ static void ls_fmt_cmd(void)
     //     rts
     return;
 }
+
 static void pe_fmt_cmd(void)
 {
     // pe_fmt_cmd
@@ -667,6 +686,7 @@ static void pe_fmt_cmd(void)
     //     rts
     return;
 }
+
 static void c9642_tail(void)
 {
     // c9642:
@@ -697,6 +717,7 @@ static void op_fmt_cmd(void)
     c9642_tail();
     return;
 }
+
 static void ep_fmt_cmd(void)
 {
     // ep_fmt_cmd
@@ -717,6 +738,7 @@ static void ep_fmt_cmd(void)
     c9642_tail();
     return;
 }
+
 static void page_eject_fmt(void)
 {
     // page_eject_fmt
@@ -737,6 +759,7 @@ static void page_eject_fmt(void)
     c9263();
     return;
 }
+
 static void fo_fmt_cmd(void)
 {
     // Pseudocode: Sets footers_enabled_flag from boolean format argument
@@ -757,6 +780,7 @@ static void fo_fmt_cmd(void)
     //     rts
     return;
 }
+
 static void he_fmt_cmd(void)
 {
     // Pseudocode: Sets headers_enabled_flag from boolean format argument
@@ -777,6 +801,7 @@ static void he_fmt_cmd(void)
     //     rts
     return;
 }
+
 static void pb_fmt_cmd(void)
 {
     // Pseudocode: Sets page break flag l0038 from boolean format argument
@@ -797,6 +822,7 @@ static void pb_fmt_cmd(void)
     //     rts
     return;
 }
+
 static void dm_fmt_cmd(void)
 {
     uint8_t a;
@@ -976,6 +1002,7 @@ c96f8:
     //     ALWAYS branch
     goto c96a2;
 }
+
 static void ht_fmt_cmd(void)
 {
     // ht_fmt_cmd
@@ -1048,6 +1075,7 @@ c9725:
     //     rts
     return;
 }
+
 static const uint8_t commands_table[] = {'C',
     'E',
     'R',
@@ -1095,6 +1123,7 @@ static const uint8_t commands_table[] = {'C',
     'P',
     'B',
     0xff};
+
 void lookup_formatting_command(void)
 {
     addr_t tmp23;
@@ -1147,6 +1176,7 @@ loop_c973e:
     //     rts
     return;
 }
+
 void execute_formatting_command(uint8_t x)
 {
     uint8_t a;
@@ -1257,6 +1287,7 @@ void execute_formatting_command(uint8_t x)
     //     rts
     return;
 }
+
 static void parse_boolean_from_fmt_cmd(void)
 {
     // Pseudocode: Parses a boolean (ON/OFF/1/0) from format command argument
@@ -1279,6 +1310,7 @@ static void parse_boolean_from_fmt_cmd(void)
     // MULTIPLE ENTRY POINTS: parse_boolean_from_fmt_cmd, sub_c976c
     sub_c976c();
 }
+
 static const uint8_t l97b0_data[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
 
 static void sub_c976c(void)
@@ -1371,6 +1403,7 @@ c97ae:
 
     // MULTIPLE ENTRY POINTS: parse_boolean_from_fmt_cmd, sub_c976c
 }
+
 static void evaluate_expression_from_fmt_cmd(void)
 {
     // evaluate_expression_from_fmt_cmd
@@ -1487,6 +1520,7 @@ c9821:
     //     rts
     return;
 }
+
 static void get_current_fmt_cmd_byte(void)
 {
     // get_current_fmt_cmd_byte:
@@ -1503,6 +1537,7 @@ static void get_current_fmt_cmd_byte(void)
     }
 loop:
 }
+
 static void get_next_fmt_cmd_byte(uint8_t y)
 {
     // get_next_fmt_cmd_byte:
@@ -1566,6 +1601,7 @@ static void render_number_to_output_buffer(uint16_t value)
     //     rts
     return;
 }
+
 static void emit_to_output_buffer_callback(uint8_t digit)
 {
     // emit_to_output_buffer_callback
@@ -1599,10 +1635,12 @@ static void emit_to_output_buffer_callback(uint8_t digit)
     //     rts
     return;
 }
+
 void print_char_via_putchar(uint8_t a)
 {
     cli_putchar(a);
 }
+
 void render_number_to_screen(uint16_t val)
 {
     // Pseudocode: Renders a 16-bit number to screen via bdos_print_char
@@ -1623,6 +1661,7 @@ void render_number_to_screen(uint16_t val)
     // Fall through to render_number_to_callback in original 6502
     render_number_to_callback(tmp89, print_char_via_putchar);
 }
+
 static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t))
 {
     // Pseudocode: Render 16-bit number as decimal via callback
@@ -1636,6 +1675,7 @@ static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t))
         cb(a);
     }
 }
+
 void bad_filename_error(void)
 {
     // bad_filename_error:
@@ -3908,6 +3948,7 @@ static void sub_cb104(void)
     sub_c92f0();
     return;
 }
+
 // main is now the function above (inlined from main_)
 
 static void write_byte_to_memory(uint8_t a)
@@ -4028,6 +4069,7 @@ void prepare_printer_driver(void)
     // return_35:
     //     rts
 }
+
 static void default_print_char(void)
 {
     // c94c0:
