@@ -682,7 +682,6 @@ void get_byte_from_file(void)
         flags =
             (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     }
-    y = a;
 }
 
 void get_register_address(uint8_t a)
@@ -1041,14 +1040,11 @@ void move_cursor_to_top_of_document(void)
     // document
 
     //     lda page
-    a = (uint8_t)(page & 0xff);
     //     sta current_line_ptr
     current_line_ptr = page;
     //     lda page+1
-    a = (uint8_t)(page >> 8);
     //     sta current_line_ptr+1
     //     lda #0
-    a = 0;
     //     sta xpos
     xpos = 0;
     //     ldy #0xfe
@@ -1242,18 +1238,14 @@ void reset_area_to_entire_document(void)
     // page)
 
     //     lda top
-    a = (uint8_t)(top & 0xff);
     //     sta area_start_ptr
     area_start_ptr = top;
     //     lda top+1
-    a = (uint8_t)(top >> 8);
     //     sta area_start_ptr+1
     //     lda page
-    a = (uint8_t)(page & 0xff);
     //     sta area_end_ptr
     area_end_ptr = page;
     //     lda page+1
-    a = (uint8_t)(page >> 8);
     //     sta area_end_ptr+1
     //     rts
 }

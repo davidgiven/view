@@ -948,7 +948,6 @@ static void print_cmd(void)
     //     jsr start_printing
     // ;
     // ***************************************************************************************
-    a = 0x80;
     start_printing();
     // MULTIPLE ENTRY POINTS: print_cmd, print_to_screen
     print_to_screen();
@@ -1383,7 +1382,6 @@ static void sheets_cmd(void)
     // ***************************************************************************************
     // sheets_cmd:
     //     lda #0xc0
-    a = 0xc0;
     //     jsr start_printing
     start_printing();
     //     jsr print_document
@@ -1492,7 +1490,6 @@ c826e:
     //     lda input_buffer_offset+1
     a = l0080;
     //     ldy #2
-    y = 2;
     //     jsr call_through_jumptable
     execute_cli_command(a);
     //     jmp run_cli
@@ -1507,12 +1504,10 @@ void cli_handler_impl(void)
     //     jsr stop_printing
     stop_printing();
     //     ldx #0xff
-    x = 0xff;
     //     stx error_handling_mode
     error_handling_mode = 0xff;
     //     txs  (handled by setjmp/longjmp in main_)
     //     inx  ; X=0x00
-    x = 0;
     //     stx print_flags
     print_flags = 0;
     //     jsr print_inline_string ; .ascii "=>"

@@ -923,7 +923,6 @@ c8a87:
     }
     // c8aa3:
     //     txa
-    a = x;
     set_flags(&flags, x);
     //     clc; adc ptr2; sta ((uint8_t*)&tmp45)[0]; lda ptr2+1; adc #0; sta
     //     ((uint8_t*)&tmp45)[1]
@@ -1182,9 +1181,7 @@ c8b6b:
         goto c8b1f;
     //     bcc c8b1f
     //     lda ptr2
-    a = (uint8_t)(ptr2 & 0xff);
     //     ldy ptr2+1
-    y = (uint8_t)(ptr2 >> 8);
     //     jsr cac78
     cac78(tmp89);
     //     clc
@@ -1366,7 +1363,6 @@ static void compute_required_space_for_insertion(void)
 {
     // compute_required_space_for_insertion:
     //     ldx #0
-    x = 0;
     //     stx ((uint8_t*)&tmp89)[0]
     tmp89 = 0;
     //     beq c8daf                                                         ;

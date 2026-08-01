@@ -399,7 +399,7 @@ def get_func_params_from_ast(func_cursor):
 
 
 # ─── AST-based forward scan ───────────────────────────────────────
-def get_local_info_ast(func_cursor, callee_live_out=None):
+def get_local_info_ast(func_cursor, callee_live_out=None, callee_live_in=None):
     """
     Forward scan using AST-based def/use analysis.
 
@@ -407,6 +407,8 @@ def get_local_info_ast(func_cursor, callee_live_out=None):
     """
     if callee_live_out is None:
         callee_live_out = {}
+    if callee_live_in is None:
+        callee_live_in = {}
 
     local_defs = set()
     local_uses = set()
@@ -489,6 +491,20 @@ def get_local_info_ast(func_cursor, callee_live_out=None):
         if callee:
             if callee not in LIB_FUNCTIONS:
                 call_sites.append((line_num, callee))
+                # Variables the callee needs as INPUT must be live before the
+                # call.  Check against the caller's own definitions so far
+                # (NOT the callee's kill set, which masks inputs the callee
+                # also writes).
+                cli = callee_live_in.get(callee)
+                if cli is None and callee in ALL_IN_OUT:
+                    cli = ALL_VARS_SET
+                if cli is not None:
+                    for v in cli:
+                        if v not in defined_so_far:
+                            local_live_in.add(v)
+                            local_uses.add(v)
+                # The callee's live_out is a kill set: after the call those
+                # globals are redefined.
                 clo = callee_live_out.get(callee)
                 if clo is None:
                     if callee in CORRUPTS:
@@ -577,10 +593,13 @@ def backward_scan_ast(func_cursor, backward_needs, local_info, func_params):
                 live = ALL_VARS_SET
             elif callee_name not in LIB_FUNCTIONS:
                 backward_needs.setdefault(callee_name, set()).update(live)
+                callee_info = local_info.get(callee_name, {})
+                callee_defs = callee_info.get('cached_defs', callee_info.get('defs', set()))
+                callee_params = func_params.get(callee_name, set())
+                kill_set = callee_defs - callee_params
                 if callee_name in CORRUPTS:
-                    live = (live - CORRUPTS[callee_name]) | u
-                else:
-                    live = (live - ALL_VARS_SET) | u
+                    kill_set = kill_set | CORRUPTS[callee_name]
+                live = (live - kill_set) | u
             elif callee_name in CORRUPTS:
                 corr = CORRUPTS[callee_name]
                 live = (live - corr) | u
@@ -588,6 +607,35 @@ def backward_scan_ast(func_cursor, backward_needs, local_info, func_params):
                 live = live | u
         else:
             live = (live - d) | u
+
+
+# ─── Find functions (regex on source lines) ────────────────────────
+FUNC_START_RE = re.compile(
+    r'^(?:static\s+)?'
+    r'(?:void|uint8_t|uint16_t|addr_t|bool|int|char|long|unsigned|const|'
+    r'struct\s+\w+|uint8_t\s*\*|char\s*\*)'
+    r'\s+\**(\w+)\s*\('
+)
+
+def find_functions(lines):
+    funcs = []
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if (not stripped or stripped.startswith('//') or stripped.startswith('/*')
+            or stripped.startswith('*') or stripped.startswith('#')
+            or stripped.endswith(';')):
+            continue
+        m = FUNC_START_RE.match(stripped)
+        if m and m.group(1) not in INLINE_HELPERS:
+            before_paren = stripped.split('(')[0]
+            kw = re.split(r'\W+', before_paren)[0]
+            if kw not in ('if', 'while', 'for', 'switch'):
+                funcs.append((m.group(1), i))
+    result = []
+    for idx, (name, start) in enumerate(funcs):
+        end = funcs[idx + 1][1] if idx + 1 < len(funcs) else len(lines)
+        result.append((name, start, end))
+    return result
 
 
 # ─── Formatting ────────────────────────────────────────────────────
@@ -724,8 +772,14 @@ def analyze_files(files):
             if name not in local_info:
                 clo[name] = CORRUPTS[name]
 
+        cli = {}
+        for cname, cinfo in local_info.items():
+            cli[cname] = cinfo.get('live_in', set())
+        for name in ALL_IN_OUT:
+            cli[name] = ALL_VARS_SET
+
         for name, (filepath, cursor) in all_funcs.items():
-            d, u, li, cs = get_local_info_ast(cursor, clo)
+            d, u, li, cs = get_local_info_ast(cursor, clo, cli)
             old_li = local_info[name].get('live_in')
             if li != old_li:
                 local_info[name]['live_in'] = li

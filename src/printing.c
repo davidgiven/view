@@ -311,7 +311,6 @@ c953e:
     if (!(flags & FLAG_C))
         goto c9537;
     //     lda #0x0d
-    a = 0x0d;
     //     bne c953e                                                         ;
     //     ALWAYS branch
     goto c953e;
@@ -1023,12 +1022,10 @@ static void ht_fmt_cmd(void)
     //     tax
     x = a;
     //     lda #0
-    a = 0;
     //     cpx #0x2d ; '-'
     if (x == 0x2d)
         goto c9716;
     //     lda #1
-    a = 1;
     //     cpx #0x2a ; '*'
     if (x != 0x2a)
         goto c9719;
@@ -1190,7 +1187,6 @@ void execute_formatting_command(uint8_t x)
     //     txa
     a = x;
     //     ldy #0
-    y = 0;
     //     ldx #0
     x = 0;
     //     stx l0030
@@ -1327,7 +1323,6 @@ static void sub_c976c(void)
     //     tax
     x = a;
     //     lda #1
-    a = 1;
     //     cpx #0x31 ; '1'
     if (x == 0x31)
         goto c977f;
@@ -1387,7 +1382,6 @@ loop_c979d:
     if (a >= 0x20)
         goto loop_c979d;
     //     ldy l0084
-    y = l0084;
     //     lda l97b1,x
     a = l97b0_data[x + 1];
     if (!((int8_t)a < 0))
@@ -1597,7 +1591,6 @@ static void render_number_to_output_buffer(uint16_t value)
     //     jsr render_number_to_callback
     render_number_to_callback(value, emit_to_output_buffer_callback);
     //     ldx l0082
-    x = l0082;
     //     rts
     return;
 }
@@ -1657,7 +1650,6 @@ void render_number_to_screen(uint16_t val)
     //     lda #<(bdos_print_char)
     a = (uint8_t)((uintptr_t)&print_char_via_putchar & 0xff);
     //     ldy #>(bdos_print_char)
-    y = (uint8_t)((uintptr_t)&print_char_via_putchar >> 8);
     // Fall through to render_number_to_callback in original 6502
     render_number_to_callback(tmp89, print_char_via_putchar);
 }
@@ -2117,7 +2109,6 @@ c90f8:
     //     sta l0039
     l0039 = a;
     //     ldy input_buffer_offset+1
-    y = l0080;
     //     jmp c8fe6
     goto c8fe6_inline;
 
@@ -2804,7 +2795,6 @@ c8c95:
     if (flags & FLAG_Z)
         goto c8cf2;
     //     ldy #0
-    y = 0;
     //     cmp #0x7f
     if (a < 0x7f)
         goto c8caf;
@@ -2872,7 +2862,6 @@ c8cdb:
     //     jsr write_byte_to_memory
     write_byte_to_memory(a);
     //     txa
-    a = x;
     set_flags(&flags, x);
     //     beq c8c95
     if (flags & FLAG_Z)
@@ -3328,7 +3317,6 @@ loop_c91b2:
     if (x < 0x83)
         goto c91a7;
     //     lda #0x0d
-    a = 0x0d;
     //     bne loop_c91b2                                                    ;
     //     ALWAYS branch
     goto loop_c91b2;
@@ -4086,7 +4074,6 @@ static void default_printer_on(void)
 {
     // c94c7:
     //     lda #2
-    a = 2;
     //     jmp default_printer_off
     default_printer_off();
 }
@@ -4096,7 +4083,6 @@ static void default_printer_off(void)
 {
     // c94cb:
     //     lda #3
-    a = 3;
     // c94cd:
     //     jmp oswrch
     // PROBLEM: jmp oswrch (BBC Micro OS call - not available)
