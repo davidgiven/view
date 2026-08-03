@@ -4054,8 +4054,7 @@ void prepare_printer_driver(void)
     //     ldy l94b2
     //     lda #0
     //     sta microspacing_flag
-    uint8_t a = 0;
-    microspacing_flag = a;
+    microspacing_flag = 0;
     printer_driver_ptr = &default_printer_driver;
     // c949e:
     //     stx printer_driver_ptr

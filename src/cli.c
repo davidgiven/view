@@ -1884,9 +1884,8 @@ void reset_document_name_after_load(void)
 
     // reset_document_name_after_load:
     //     lda #0x40 ; '@'
-    uint8_t a = 0x40;
     //     sta file_edit_flags
-    file_edit_flags = a;
+    file_edit_flags = 0x40;
     // fall through to set_document_name_to_filename_buffer
     set_document_name_to_filename_buffer();
 

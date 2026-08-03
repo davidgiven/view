@@ -5509,9 +5509,8 @@ static void c9e94(void)
 {
     // c9e94:
     //     lda #0
-    uint8_t a = 0;
     //     sta xpos
-    xpos = a;
+    xpos = 0;
     //     rts
 }
 
@@ -7228,8 +7227,7 @@ static void set_marker(void)
     //     jsr set_marker_to_here
     set_marker_to_here(x);
     //     jmp ca035
-    uint8_t a = 1;
-    l0073 = a;
+    l0073 = 1;
     ca684();
     return;
 }
