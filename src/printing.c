@@ -20,21 +20,21 @@ void bad_filename_error(void);
 static void c8f29_sub(uint8_t a);
 static void c9263(void);
 static void c937b(void);
-static void c93b8(void);
+static uint8_t c93b8(void);
 void check_not_continuous_editing(void);
 void display_not_enough_memory(void);
 static void microspace_word_processor(void);
 static void nested_macro_error(void);
 void parse_decimal_number(void);
 void parse_optional_filename_from_command(void);
-static void print_char_x_times(uint8_t x);
+static uint8_t print_char_x_times(uint8_t x);
 void print_document(void);
 static void print_loop(void);
 static void print_newline(void);
 static void print_vertical_space(void);
 void read_block_from_file(void);
 static void render_header_or_footer(void);
-static void render_new_page(void);
+static uint8_t render_new_page(void);
 void sub_c8e33(void);
 static void sub_c916a(void);
 static void sub_c9173(void);
@@ -45,12 +45,12 @@ static void sub_c92f0(void);
 static void sub_c9393(void);
 static void sub_c939b(void);
 static void sub_c93a1(void);
-static void sub_c93b6(void);
-static void sub_c93be(void);
+static uint8_t sub_c93b6(void);
+static uint8_t sub_c93be(void);
 static void sub_c93c8(void);
 static void sub_c93fd(void);
 static void sub_c9407(void);
-static void sub_c941a(void);
+static uint8_t sub_c941a(void);
 static void sub_c9431(void);
 static void sub_cb104(void);
 static void write_byte_to_memory(uint8_t a);
@@ -69,7 +69,7 @@ static void get_current_fmt_cmd_byte(void);
 static void get_next_fmt_cmd_byte(uint8_t y);
 void lookup_formatting_command(void);
 static void sub_c95b2(uint8_t a);
-static void c9575(uint8_t x, uint8_t y);
+static uint8_t c9575(uint8_t x, uint8_t y);
 void render_register(uint8_t a, uint8_t y);
 static void render_number_to_output_buffer(uint16_t value);
 static void emit_to_output_buffer_callback(uint8_t digit);
@@ -119,7 +119,7 @@ c951c:
     return;
 }
 
-static void lj_fmt_cmd(void)
+static uint8_t lj_fmt_cmd(void)
 {
     // lj_fmt_cmd
     // Pseudocode: Left-justifies the current format line
@@ -131,14 +131,15 @@ static void lj_fmt_cmd(void)
     expand_line();
     //     bcc return_36
     if (!(flags & FLAG_C))
-        return;
+        return a;
     //     lda #0
     //     beq c950f                                                         ;
     //     ALWAYS branch
     c950f_impl(0);
+    return a;
 }
 
-static void ce_fmt_cmd(void)
+static uint8_t ce_fmt_cmd(void)
 {
     // ce_fmt_cmd
     // Pseudocode: Centers the current format line
@@ -150,13 +151,13 @@ static void ce_fmt_cmd(void)
     expand_line();
     //     bcc return_36
     if (!(flags & FLAG_C))
-        return;
+        return a;
     //     txa
     a = x;
     set_flags(&flags, a);
     //     beq return_36
     if (flags & FLAG_Z)
-        return;
+        return a;
     //     lsr
     {
         flags = (flags & ~(FLAG_C | FLAG_Z | FLAG_N)) | ((a & 1) ? FLAG_C : 0);
@@ -172,7 +173,7 @@ static void ce_fmt_cmd(void)
     if (flags & FLAG_Z)
     {
         c950f_impl(a);
-        return;
+        return a;
     }
     //     sec
     flags |= FLAG_C;
@@ -196,13 +197,14 @@ static void ce_fmt_cmd(void)
     if (flags & FLAG_C)
     {
         c950f_impl(a);
-        return;
+        return a;
     }
     //     lda #0
     set_flags(&flags, 0);
     //     beq c950f                                                         ;
     //     ALWAYS branch
     c950f_impl(0);
+    return a;
 }
 
 static void rj_fmt_cmd(void)
@@ -365,7 +367,7 @@ static void sub_c95b2(uint8_t a)
     l0081 = y;
 }
 
-static void c9575(uint8_t x, uint8_t y)
+static uint8_t c9575(uint8_t x, uint8_t y)
 {
     // c9575
     //     stx ((uint8_t*)&tmp23)[0]
@@ -427,6 +429,7 @@ c95aa:
     sub_c95b2(0x80);
     //     (fall through into sub_c95b2)
     sub_c95b2(0x80);
+    return a;
     // MULTIPLE ENTRY POINTS: dh_fmt_cmd, df_fmt_cmd
 }
 
@@ -444,7 +447,7 @@ static void df_fmt_cmd(void)
     //     ldy #>(footer_text_maybe)
     x = (uintptr_t)footer_text_maybe & 0xff;
     y = (uintptr_t)footer_text_maybe >> 8;
-    c9575(x, y);
+    a = c9575(x, y);
 }
 
 static void dh_fmt_cmd(void)
@@ -462,10 +465,10 @@ static void dh_fmt_cmd(void)
     //     ALWAYS branch
     x = (uintptr_t)header_text_maybe & 0xff;
     y = (uintptr_t)header_text_maybe >> 8;
-    c9575(x, y);
+    a = c9575(x, y);
 }
 
-static void em_fmt_cmd(void)
+static uint8_t em_fmt_cmd(void)
 {
     addr_t tmp01;
 
@@ -481,14 +484,14 @@ static void em_fmt_cmd(void)
     get_current_fmt_cmd_byte();
     //     beq return_38
     if (flags & FLAG_Z)
-        return;
+        return x;
     //     iny
     y++;
     //     jsr get_register_address
     get_register_address(a);
     //     bcs return_38
     if (flags & FLAG_C)
-        return;
+        return x;
     tmp01 = tmp67;
     //     jsr evaluate_expression_from_fmt_cmd
     evaluate_expression_from_fmt_cmd();
@@ -503,10 +506,10 @@ static void em_fmt_cmd(void)
     ram[tmp01 + 1] = a;
     // return_38:
     //     rts
-    return;
+    return x;
 }
 
-static void pl_fmt_cmd(void)
+static uint8_t pl_fmt_cmd(void)
 {
     // Pseudocode: Sets page_length from format command expression
 
@@ -520,10 +523,10 @@ static void pl_fmt_cmd(void)
     //     sta page_length
     page_length = a;
     //     rts
-    return;
+    return a;
 }
 
-static void ts_fmt_cmd(void)
+static uint8_t ts_fmt_cmd(void)
 {
     // ts_fmt_cmd
     // Pseudocode: Sets two_sided_flag and rhs_extra_margin from format command
@@ -537,7 +540,7 @@ static void ts_fmt_cmd(void)
     parse_boolean_from_fmt_cmd();
     //     bcs return_39
     if (flags & FLAG_C)
-        return;
+        return a;
     //     sta two_sided_flag
     two_sided_flag = a;
     //     jsr evaluate_expression_from_fmt_cmd
@@ -546,10 +549,10 @@ static void ts_fmt_cmd(void)
     rhs_extra_margin = a;
     // return_39:
     //     rts
-    return;
+    return a;
 }
 
-static void tm_fmt_cmd(void)
+static uint8_t tm_fmt_cmd(void)
 {
     // Pseudocode: Sets top_margin from format command expression
 
@@ -563,10 +566,10 @@ static void tm_fmt_cmd(void)
     //     sta top_margin
     top_margin = a;
     //     rts
-    return;
+    return x;
 }
 
-static void bm_fmt_cmd(void)
+static uint8_t bm_fmt_cmd(void)
 {
     // Pseudocode: Sets bottom_margin from format command expression
 
@@ -580,10 +583,10 @@ static void bm_fmt_cmd(void)
     //     sta bottom_margin
     bottom_margin = a;
     //     rts
-    return;
+    return x;
 }
 
-static void hm_fmt_cmd(void)
+static uint8_t hm_fmt_cmd(void)
 {
     // Pseudocode: Sets header_margin from format command expression
 
@@ -597,10 +600,10 @@ static void hm_fmt_cmd(void)
     //     sta header_margin
     header_margin = a;
     //     rts
-    return;
+    return x;
 }
 
-static void fm_fmt_cmd(void)
+static uint8_t fm_fmt_cmd(void)
 {
     // Pseudocode: Sets footer_margin from format command expression
 
@@ -614,10 +617,10 @@ static void fm_fmt_cmd(void)
     //     sta footer_margin
     footer_margin = a;
     //     rts
-    return;
+    return x;
 }
 
-static void lm_fmt_cmd(void)
+static uint8_t lm_fmt_cmd(void)
 {
     // Pseudocode: Sets left_margin from format command expression
 
@@ -631,7 +634,7 @@ static void lm_fmt_cmd(void)
     //     sta left_margin
     left_margin = a;
     //     rts
-    return;
+    return x;
 }
 
 static void ls_fmt_cmd(void)
@@ -651,7 +654,7 @@ static void ls_fmt_cmd(void)
     return;
 }
 
-static void pe_fmt_cmd(void)
+static uint8_t pe_fmt_cmd(void)
 {
     // pe_fmt_cmd
     // Pseudocode: Forces page eject if remaining lines are less than value
@@ -670,13 +673,13 @@ static void pe_fmt_cmd(void)
     if (flags & FLAG_Z)
     {
         page_eject_fmt();
-        return;
+        return x;
     }
     //     cmp l0021
     cmp(&flags, a, l0021);
     //     bcc return_40
     if (!(flags & FLAG_C))
-        return;
+        return x;
     //     lda l0031
     a = l0031;
     set_flags(&flags, a);
@@ -684,11 +687,11 @@ static void pe_fmt_cmd(void)
     if (!(flags & FLAG_Z))
     {
         page_eject_fmt();
-        return;
+        return x;
     }
     // return_40:
     //     rts
-    return;
+    return x;
 }
 
 static void c9642_tail(void)
@@ -722,7 +725,7 @@ static void op_fmt_cmd(void)
     return;
 }
 
-static void ep_fmt_cmd(void)
+static uint8_t ep_fmt_cmd(void)
 {
     // ep_fmt_cmd
     // ep_fmt_cmd:
@@ -736,11 +739,11 @@ static void ep_fmt_cmd(void)
     if (flags & FLAG_C)
     {
         page_eject_fmt();
-        return;
+        return a;
     }
     // c9642:
     c9642_tail();
-    return;
+    return a;
 }
 
 static void page_eject_fmt(void)
@@ -757,14 +760,14 @@ static void page_eject_fmt(void)
     a = l0031;
     if (!(a != 0))
     {
-        render_new_page();
+        x = render_new_page();
     }
     //     jmp c9263
     c9263();
     return;
 }
 
-static void fo_fmt_cmd(void)
+static uint8_t fo_fmt_cmd(void)
 {
     // Pseudocode: Sets footers_enabled_flag from boolean format argument
 
@@ -777,15 +780,15 @@ static void fo_fmt_cmd(void)
     parse_boolean_from_fmt_cmd();
     //     bcs return_41
     if (flags & FLAG_C)
-        return;
+        return a;
     //     sta footers_enabled_flag
     footers_enabled_flag = a;
     // return_41:
     //     rts
-    return;
+    return a;
 }
 
-static void he_fmt_cmd(void)
+static uint8_t he_fmt_cmd(void)
 {
     // Pseudocode: Sets headers_enabled_flag from boolean format argument
 
@@ -798,12 +801,12 @@ static void he_fmt_cmd(void)
     parse_boolean_from_fmt_cmd();
     //     bcs return_42
     if (flags & FLAG_C)
-        return;
+        return a;
     //     sta headers_enabled_flag
     headers_enabled_flag = a;
     // return_42:
     //     rts
-    return;
+    return a;
 }
 
 static void pb_fmt_cmd(void)
@@ -1007,7 +1010,7 @@ c96f8:
     goto c96a2;
 }
 
-static void ht_fmt_cmd(void)
+static uint8_t ht_fmt_cmd(void)
 {
     // ht_fmt_cmd
     // Pseudocode: Sets highlight codes (highlight1_code, highlight2_code) from
@@ -1023,7 +1026,7 @@ static void ht_fmt_cmd(void)
     get_current_fmt_cmd_byte();
     //     beq return_44
     if (flags & FLAG_Z)
-        return;
+        return x;
     //     tax
     x = a;
     //     lda #0
@@ -1050,12 +1053,12 @@ c9719:
     a = sbc(&flags, a, 1);
     //     bcc return_44
     if (!(flags & FLAG_C))
-        return;
+        return x;
     //     cmp #2
     cmp(&flags, a, 2);
     //     bcs return_44
     if (flags & FLAG_C)
-        return;
+        return x;
     // c9725:
 c9725:
     //     pha
@@ -1075,7 +1078,7 @@ c9725:
     highlight_code[x] = a;
     // return_44:
     //     rts
-    return;
+    return x;
 }
 
 static const uint8_t commands_table[] = {'C',
@@ -1231,16 +1234,16 @@ void execute_formatting_command(uint8_t x)
         case 5:
             break; // return_34 (no-op slot)
         case 6:
-            em_fmt_cmd();
+            x = em_fmt_cmd();
             break;
         case 7:
-            pe_fmt_cmd();
+            x = pe_fmt_cmd();
             break;
         case 8:
-            tm_fmt_cmd();
+            x = tm_fmt_cmd();
             break;
         case 9:
-            bm_fmt_cmd();
+            x = bm_fmt_cmd();
             break;
         case 10:
             pl_fmt_cmd();
@@ -1255,16 +1258,16 @@ void execute_formatting_command(uint8_t x)
             he_fmt_cmd();
             break;
         case 14:
-            ht_fmt_cmd();
+            x = ht_fmt_cmd();
             break;
         case 15:
-            hm_fmt_cmd();
+            x = hm_fmt_cmd();
             break;
         case 16:
-            fm_fmt_cmd();
+            x = fm_fmt_cmd();
             break;
         case 17:
-            lm_fmt_cmd();
+            x = lm_fmt_cmd();
             break;
         case 18:
             ls_fmt_cmd();
@@ -1792,7 +1795,7 @@ loop_c9381:
     //     rts
 }
 
-static void c93b8(void)
+static uint8_t c93b8(void)
 {
     // c93b8:
     //     iny
@@ -1804,6 +1807,7 @@ static void c93b8(void)
         y++;
         a = ram[tmp45 + y];
     } while ((int8_t)a >= 0);
+    return y;
     //     rts
 }
 
@@ -2160,7 +2164,7 @@ loop_c9107:
     //     sta l0046
     l0046 = a;
     //     jsr sub_cadf0
-    sub_cadf0();
+    a = sub_cadf0();
     //     sta l0045
     l0045 = a;
     //     lda ((uint8_t*)&tmp89)[0]
@@ -2197,7 +2201,7 @@ c912b:
         //     pla
         a = saved_a3;
         //     jsr c9426
-        print_char_x_times(x);
+        a = print_char_x_times(x);
         //     jmp c9163
         goto c9163;
 
@@ -2255,7 +2259,7 @@ c8fe6_inline:
         a = ram[tmp01 + y];
         y++;
         sub_c9431();
-        print_char_x_times(x);
+        a = print_char_x_times(x);
     } while (a != 0x0d);
     //     inc register_value_l
     ram[RAM_REGISTER_VALUE_L]++;
@@ -2381,7 +2385,7 @@ c8e25:
     //     rts
 }
 
-static void print_char_x_times(uint8_t x)
+static uint8_t print_char_x_times(uint8_t x)
 {
     // c9426: Print character in A, X times. If X==0, return immediately.
     //     inx
@@ -2403,7 +2407,7 @@ loop_c942a:
     // return_32:
 return_32:
     //     rts
-    return;
+    return a;
 }
 
 void print_document(void)
@@ -2777,7 +2781,7 @@ static void print_vertical_space(void)
     // print_vertical_space:
     //     lda #0x0d
     a = 0x0d;
-    print_char_x_times(x);
+    a = print_char_x_times(x);
 }
 
 void read_block_from_file(void)
@@ -2797,7 +2801,7 @@ void read_block_from_file(void)
 c8c95:
     // c8c95:
     //     jsr get_byte_from_file
-    get_byte_from_file();
+    a = get_byte_from_file();
     //     beq c8cf2
     if (flags & FLAG_Z)
         goto c8cf2;
@@ -2970,7 +2974,7 @@ static void render_header_or_footer(void)
     //     sta l0081
     l0081 = a;
     //     jsr sub_c93be
-    sub_c93be();
+    a = sub_c93be();
     //     beq c9355
     if (flags & FLAG_Z)
         goto c9355;
@@ -2987,7 +2991,7 @@ static void render_header_or_footer(void)
         if ((flags & FLAG_C))
         {
             x = a;
-            sub_c941a();
+            a = sub_c941a();
         }
     }
 c9355:
@@ -3005,7 +3009,7 @@ c9355:
     //     jsr sub_c93c8
     sub_c93c8();
     //     jsr sub_c93be
-    sub_c93be();
+    a = sub_c93be();
     //     beq c937b
     if (flags & FLAG_Z)
     {
@@ -3037,11 +3041,11 @@ c9355:
     //     inx
     x++;
     //     jsr sub_c941a
-    sub_c941a();
+    a = sub_c941a();
     c937b();
 }
 
-static void render_new_page(void)
+static uint8_t render_new_page(void)
 {
     // render_new_page
     // Pseudocode: Renders a new page with headers, margins, page number prompt
@@ -3094,7 +3098,7 @@ c92cc:
     stop_printing();
     cli_putchar('\n');
     return_to_cli_prompt();
-    return;
+    return x;
 
     // c92cf:
 c92cf:
@@ -3110,7 +3114,7 @@ c92d4:
     if (a == 0)
     {
         sub_c92f0();
-        return;
+        return x;
     }
     //     ldx top_margin                                                    ;
     //     X=number of lines
@@ -3135,7 +3139,7 @@ c92d4:
     print_vertical_space();
     // c92f0: fall-through to shared routine
     sub_c92f0();
-    return;
+    return x;
 }
 
 void sub_c8e33(void)
@@ -3603,7 +3607,7 @@ static void sub_c9393(void)
 
     // sub_c9393:
     //     jsr sub_c93b6
-    sub_c93b6();
+    y = sub_c93b6();
     //     lda #0
     a = 0;
     //     jmp c93aa
@@ -3628,7 +3632,7 @@ static void sub_c939b(void)
 
     // sub_c939b:
     //     jsr sub_c93b6
-    sub_c93b6();
+    y = sub_c93b6();
     //     jmp c93a7
     // c93a7:
     //     iny
@@ -3654,9 +3658,9 @@ static void sub_c93a1(void)
 
     // sub_c93a1:
     //     jsr sub_c93b6
-    sub_c93b6();
+    y = sub_c93b6();
     //     jsr c93b8
-    c93b8();
+    y = c93b8();
     // c93a7:
     y++;
     a = y;
@@ -3672,15 +3676,16 @@ static void sub_c93a1(void)
     }
 }
 
-static void sub_c93b6(void)
+static uint8_t sub_c93b6(void)
 {
     // sub_c93b6:
     //     ldy #0xff
     y = 0xff;
-    c93b8();
+    y = c93b8();
+    return y;
 }
 
-static void sub_c93be(void)
+static uint8_t sub_c93be(void)
 {
     // Pseudocode: Returns ruler_right_stop or l003a-1 as the line width
 
@@ -3697,6 +3702,7 @@ static void sub_c93be(void)
     a -= 1;
     // return_29:
 return_29:; // fallthrough to rts
+    return a;
 }
 
 static void sub_c93c8(void)
@@ -3816,10 +3822,10 @@ static void sub_c9407(void)
     a = 0x20;
     //     bne c9426                                                         ;
     //     ALWAYS branch
-    print_char_x_times(x);
+    a = print_char_x_times(x);
 }
 
-static void sub_c941a(void)
+static uint8_t sub_c941a(void)
 {
     // Pseudocode: Adds extra spaces to x position for centering/justification
 
@@ -3835,7 +3841,8 @@ static void sub_c941a(void)
     a = 0x20;
     //     bne c9426                                                         ;
     //     ALWAYS branch
-    print_char_x_times(x);
+    a = print_char_x_times(x);
+    return a;
 }
 
 static void sub_c9431(void)

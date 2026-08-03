@@ -478,7 +478,7 @@ int main(int argc, char* argv[])
     //     jsr system_init
     system_init();
     //     jsr initialise_document
-    initialise_document();
+    a = initialise_document();
     run_cli();
     return 0;
 }
@@ -586,7 +586,7 @@ static const uint8_t escaped_char_table[] = {
 static const uint8_t l83e0_table[] = {
     1, 9, 0x0d, 2, 0x0b, 0x1a, 0x1c, 0x1d, 0xff};
 
-static void expand_escaped_string(void)
+static uint8_t expand_escaped_string(void)
 {
     // expand_escaped_string
     // expand_escaped_string:
@@ -649,7 +649,7 @@ c83ca:
     //     bne c83d1
     if (!(x != 0))
     {
-        sub_c8c5f();
+        a = sub_c8c5f();
     }
     // c83d1:
     //     ldx l0083
@@ -667,6 +667,7 @@ c83da:
     x = l0083;
     //     sty input_buffer_offset
     input_buffer_offset = y;
+    return x;
     // return_3:
     //     rts
 }
@@ -687,7 +688,7 @@ void sub_c83f0(void)
     {
         y = input_buffer_offset;
         y++;
-        expand_escaped_string();
+        x = expand_escaped_string();
         l004a = x;
     }
     // c8402:
@@ -729,7 +730,7 @@ void sub_c8412(void)
     //     ldx #0
     x = 0;
     //     jsr expand_escaped_string
-    expand_escaped_string();
+    x = expand_escaped_string();
     //     stx l007a
     l007a = x;
     //     cpx #0
@@ -738,7 +739,7 @@ void sub_c8412(void)
     //     rts
 }
 
-void read_into_document(void)
+uint8_t read_into_document(void)
 {
     // read_into_document
     //  Ptrs:   ptr5
@@ -807,6 +808,7 @@ c8598:
     ((uint8_t*)&tmp67)[1] = a;
     //     jsr adjust_pointers
     adjust_pointers(tmp45, tmp67);
+    return a;
 }
 
 void sub_c8a4f(addr_t ptr2)

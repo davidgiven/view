@@ -18,7 +18,7 @@ extern void return_to_cli_prompt(void);
 
 extern void sub_c9445(void);
 extern void sub_cab6e(addr_t tmp01);
-extern void sub_cadf0(void);
+extern uint8_t sub_cadf0(void);
 extern void check_for_at_least_150_bytes_free(void);
 
 extern void cab91(uint8_t y);
@@ -27,13 +27,13 @@ extern void cb05a(void);
 
 extern void close_file(void);
 
-extern void create_default_ruler(uint16_t ruler_addr);
+extern uint8_t create_default_ruler(uint16_t ruler_addr);
 
-extern void get_byte_from_file(void);
+extern uint8_t get_byte_from_file(void);
 
 extern void get_register_address(uint8_t a);
 
-extern void initialise_document(void);
+extern uint8_t initialise_document(void);
 
 extern void lookup_marker(void);
 

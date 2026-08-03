@@ -493,7 +493,7 @@ void sub_cab6e(addr_t tmp01)
     return;
 }
 
-void sub_cadf0(void)
+uint8_t sub_cadf0(void)
 {
     // sub_cadf0
     // sub_cadf0: Performs 8-bit by 8-bit division for microspacing
@@ -517,6 +517,7 @@ void sub_cadf0(void)
         x--;
     } while (x != 0);
 loop_cadf4:
+    return a;
     //     rts
 }
 
@@ -600,7 +601,7 @@ void close_file(void)
     }
 }
 
-void create_default_ruler(uint16_t ruler_addr)
+uint8_t create_default_ruler(uint16_t ruler_addr)
 {
     uint8_t a;
     a = (uint8_t)(ruler_addr & 0xff);
@@ -662,10 +663,10 @@ cb0ff:
     //     sta (((uint8_t*)&tmp01)[0]),y
     ram[tmp01 + y] = a;
     //     rts
-    return;
+    return y;
 }
 
-void get_byte_from_file(void)
+uint8_t get_byte_from_file(void)
 {
     // get_byte_from_file
     int c = fgetc(file_ptr);
@@ -682,6 +683,7 @@ void get_byte_from_file(void)
         flags =
             (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     }
+    return a;
 }
 
 void get_register_address(uint8_t a)
@@ -732,7 +734,7 @@ void get_register_address(uint8_t a)
     //     rts
 }
 
-void initialise_document(void)
+uint8_t initialise_document(void)
 {
     // initialise_document
     // initialise_document:
@@ -828,7 +830,7 @@ void initialise_document(void)
         (current_edit_line_ptr & 0x00ff) | ((uint16_t)a << 8);
     current_format_line_ptr = current_edit_line_ptr;
     //     lda #<(current_ruler_buffer)
-    create_default_ruler(RAM_CURRENT_RULER_BUF);
+    y = create_default_ruler(RAM_CURRENT_RULER_BUF);
     //     iny
     y++;
     //     lda #0x0d
@@ -851,6 +853,7 @@ void initialise_document(void)
     clear_cmd();
     //     (falls through to cb05a)
     cb05a();
+    return a;
 }
 
 void lookup_marker(void)

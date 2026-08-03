@@ -31,7 +31,7 @@ static void finish_cmd(void);
 static void quit_cmd(void);
 static void close_input_output_files(void);
 static void save_cmd_write_cmd(void);
-static void load_cmd(void);
+static uint8_t load_cmd(void);
 static void read_cmd(void);
 static void mode_cmd(void);
 static void microspace_cmd(void);
@@ -39,7 +39,7 @@ static void setup_cmd(void);
 static void field_cmd(void);
 static void count_cmd(void);
 static void format_cmd(void);
-static void new_cmd(void);
+static uint8_t new_cmd(void);
 static void fold_cmd(void);
 static void printer_cmd(void);
 static void name_cmd(void);
@@ -58,7 +58,7 @@ static void bye_cmd(void)
     exit(0);
 }
 
-void execute_cli_command(uint8_t a)
+uint8_t execute_cli_command(uint8_t a)
 {
     // execute_cli_command
     // call_through_jumptable (y=2):
@@ -82,7 +82,7 @@ void execute_cli_command(uint8_t a)
             quit_cmd();
             break;
         case 1:
-            new_cmd();
+            x = new_cmd();
             break;
         case 2:
             format_cmd();
@@ -151,12 +151,13 @@ void execute_cli_command(uint8_t a)
             replace_cmd(ptr6);
             break;
         case 24:
-            load_cmd();
+            a = load_cmd();
             break;
         case 25:
             bye_cmd();
             break;
     }
+    return a;
 }
 
 static void change_cmd(void)
@@ -512,7 +513,7 @@ static void edit_cmd(void)
         output_filename[x] = a;
         x++;
     } while (a != 0x0d);
-    initialise_document();
+    a = initialise_document();
     read_first_chunk_from_input_file();
     if (flags & FLAG_Z)
     {
@@ -579,7 +580,7 @@ static void finish_cmd(void)
             return;
         }
         put_byte_to_file(0);
-        sub_c89d3(tmp67);
+        a = sub_c89d3(tmp67);
         move_cursor_to_top_of_document();
         cb05a();
         a = input_file_empty_flag;
@@ -732,7 +733,7 @@ c8791:
     return;
 }
 
-static void load_cmd(void)
+static uint8_t load_cmd(void)
 {
     // load_cmd
     // load_cmd:
@@ -741,13 +742,13 @@ static void load_cmd(void)
     //     jsr parse_filename_from_command
     parse_filename_from_command();
     //     jsr initialise_document
-    initialise_document();
+    a = initialise_document();
     top = page; // WORKAROUND: cb05a bumped top past the initial CR; need to
                 // load at page, not page+1
     //     jsr reset_area_to_entire_document
     reset_area_to_entire_document();
     //     jsr 1f
-    read_into_document();
+    a = read_into_document();
     top = (addr_t)((uint16_t)((uint8_t*)&tmp01)[1] << 8) |
           ((uint8_t*)&tmp01)[0]; // WORKAROUND: adjust_pointers adds stale bytes
                                  // from end of ram[]; fix top
@@ -757,6 +758,7 @@ static void load_cmd(void)
     clear_cmd();
     //     jmp move_cursor_to_top_of_document
     move_cursor_to_top_of_document();
+    return a;
 }
 
 static void microspace_cmd(void)
@@ -866,7 +868,7 @@ loop_c84c4:
     //     sta current_ruler_buffer,y
     current_ruler_buffer[y] = 0x0d;
     //     jsr sub_c89d3
-    sub_c89d3(tmp67);
+    a = sub_c89d3(tmp67);
     //     jsr move_cursor_to_top_of_document
     move_cursor_to_top_of_document();
     //     jsr check_for_at_least_150_bytes_free
@@ -917,7 +919,7 @@ static void name_cmd(void)
     reset_document_name_after_load();
 }
 
-static void new_cmd(void)
+static uint8_t new_cmd(void)
 {
     // Pseudocode: Creates a new empty document after checking continuous
     // editing state
@@ -928,8 +930,8 @@ static void new_cmd(void)
     //     jsr check_not_continuous_editing
     check_not_continuous_editing();
     //     jmp initialise_document
-    initialise_document();
-    return;
+    a = initialise_document();
+    return x;
 }
 
 static void print_cmd(void)
@@ -1040,7 +1042,7 @@ static void read_cmd(void)
     //     jsr parse_marks_from_command
     parse_marks_from_command();
     // 1:
-    read_into_document();
+    a = read_into_document();
     //     jmp return_to_cli_prompt
     return_to_cli_prompt();
     return;
@@ -1084,7 +1086,7 @@ c832d:
     //     ldy #0x50 ; 'P'
     y = 0x50;
     //     jsr draw_prompt_characters
-    draw_prompt_characters(x, y);
+    a = draw_prompt_characters(x, y);
     //     jsr flush_and_read_char
     read_char();
     //     bcs return_2
@@ -1486,7 +1488,7 @@ c826e:
     a = l0080;
     //     ldy #2
     //     jsr call_through_jumptable
-    execute_cli_command(a);
+    a = execute_cli_command(a);
     //     jmp run_cli
     run_cli();
 }

@@ -14,7 +14,7 @@ static void advance_to_next_line(void);
 void beep(void);
 static void c8b78(void);
 void c8b7b(void);
-static void c9de3_insert_line(uint8_t a, uint8_t y);
+static uint8_t c9de3_insert_line(uint8_t a, uint8_t y);
 static void ca684(void);
 void ca741(addr_t ptr6);
 void clear_screen(void);
@@ -22,7 +22,7 @@ static void clear_to_eol(uint8_t a);
 static void cursor_off(void);
 static void cursor_on(void);
 void draw_line(uint16_t addr);
-void draw_prompt_characters(uint8_t x, uint8_t y);
+uint8_t draw_prompt_characters(uint8_t x, uint8_t y);
 static void draw_ruler(void);
 static void draw_status_word(void);
 static void get_line_length(void);
@@ -43,25 +43,25 @@ static void save_cursor_position(void);
 static void set_marker(void);
 static void set_marker_common(uint8_t a);
 void show_memory_full_error(void);
-void sub_c89d3(addr_t tmp67);
+uint8_t sub_c89d3(addr_t tmp67);
 static void sub_c8c51(void);
 static void sub_c8c53(uint8_t a);
-void sub_c8c5f(void);
+uint8_t sub_c8c5f(void);
 static void sub_c9936(void);
 void sub_c9977(void);
 static void sub_c9ac1(uint8_t y);
 static void sub_c9e22(uint8_t a);
 static void sub_c9e9b(void);
-static void sub_ca44e(void);
+static uint8_t sub_ca44e(void);
 static void sub_ca4d7(void);
 static void sub_ca536(uint8_t y);
 static void sub_caa97(addr_t ptr1);
 static void sub_caacb(void);
-void sub_cac41(addr_t tmp01);
+uint8_t sub_cac41(addr_t tmp01);
 static void sub_cac50(addr_t tmp89);
 static void sub_cae03(void);
 static void sub_caec2(void);
-static void sub_caed6(void);
+static uint8_t sub_caed6(void);
 static void sub_caedd(uint8_t y);
 static void unpack_line_into_buffer(void);
 void wipe_buffer(uint8_t a);
@@ -83,11 +83,11 @@ static void c9d9b_advance_ptr(void);
 
 static void clear_marks_1_2(void);
 
-static void control_key_to_ascii(void);
+static uint8_t control_key_to_ascii(void);
 
 static void delete_edit_buffer_bytes_at_xpos(uint8_t x);
 
-static void enter_printable_character(void);
+static uint8_t enter_printable_character(void);
 
 static void go_to_marker_1(void);
 
@@ -117,7 +117,7 @@ static void set_marker_5(void);
 
 static void set_marker_6(void);
 
-static void sub_c9de1(void);
+static uint8_t sub_c9de1(void);
 
 static void sub_c9f80(void);
 
@@ -465,7 +465,7 @@ void editor_loop_impl(void)
 
         if (!(flags & FLAG_C))
         {
-            enter_printable_character();
+            a = enter_printable_character();
             goto editor_loop;
         }
 
@@ -479,7 +479,7 @@ void editor_loop_impl(void)
                 goto editor_loop;
 
             case CTRL('M'):
-                return_key();
+                x = return_key();
                 goto editor_loop;
 
             case 0x7f:
@@ -617,7 +617,7 @@ static void cf0_delete_block_key(void)
 
     ca741(ptr6);
 
-    sub_c89d3(tmp67);
+    a = sub_c89d3(tmp67);
 
     cb05a();
 
@@ -695,7 +695,7 @@ static void cf5_default_ruler_key(void)
 
     //     lda current_edit_line_ptr
 
-    create_default_ruler(current_edit_line_ptr);
+    y = create_default_ruler(current_edit_line_ptr);
 }
 
 static void cf6_split_line_key(void)
@@ -1252,7 +1252,7 @@ static void f14_down_key(void)
 
     //     jsr return_key
 
-    return_key();
+    x = return_key();
 }
 
 static void f15_up_key(void)
@@ -1416,7 +1416,7 @@ static void f6_insert_line_key(void)
 
     //     falls through to sub_c9de1
 
-    sub_c9de1();
+    x = sub_c9de1();
 }
 
 static void f7_delete_line_key(void)
@@ -1563,13 +1563,13 @@ static void k_command_key(void)
 
     x = '^';
 
-    draw_prompt_characters(x, 'K');
+    a = draw_prompt_characters(x, 'K');
 
     flags_need_redrawing_flag++;
 
     read_char();
 
-    control_key_to_ascii();
+    a = control_key_to_ascii();
 
     switch (a)
     {
@@ -2397,13 +2397,13 @@ static void o_command_key(void)
 
     y = 'O';
 
-    draw_prompt_characters(x, y);
+    a = draw_prompt_characters(x, y);
 
     flags_need_redrawing_flag++;
 
     read_char();
 
-    control_key_to_ascii();
+    a = control_key_to_ascii();
 
     switch (a)
     {
@@ -2486,13 +2486,13 @@ static void q_command_key(void)
 
     x = '^';
 
-    draw_prompt_characters(x, 'Q');
+    a = draw_prompt_characters(x, 'Q');
 
     flags_need_redrawing_flag++;
 
     read_char();
 
-    control_key_to_ascii();
+    a = control_key_to_ascii();
 
     switch (a)
     {
@@ -2553,7 +2553,7 @@ static void q_command_key(void)
     return;
 }
 
-void return_key(void)
+uint8_t return_key(void)
 {
     // return_key
 
@@ -2584,7 +2584,7 @@ void return_key(void)
     if (!(flags & FLAG_Z))
     {
         c9d9b_advance_ptr();
-        return;
+        return x;
     }
 
     //     tya
@@ -2612,11 +2612,12 @@ void return_key(void)
 
     //     jsr sub_c9de1
 
-    sub_c9de1();
+    x = sub_c9de1();
 
     //     // falls through to c9d9b
 
     c9d9b_advance_ptr();
+    return x;
 }
 
 // c9de3: Insert-line entry point used by cf6_split_line_key.
@@ -2648,7 +2649,7 @@ static void sf0_move_block_key(void)
 
     l006f = x;
 
-    sub_c89d3(tmp67);
+    a = sub_c89d3(tmp67);
 
     cb05a();
 
@@ -3100,7 +3101,7 @@ static void sf3_delete_to_char_key(void)
 
     x = 0x43;
 
-    draw_prompt_characters(x, 0x48);
+    a = draw_prompt_characters(x, 0x48);
 
     flags_need_redrawing_flag++;
 
@@ -3566,7 +3567,7 @@ loop_cad12:
     //     rts
 }
 
-static void control_key_to_ascii(void)
+static uint8_t control_key_to_ascii(void)
 {
     // Pseudocode: Converts control key code to ASCII letter by ORing with 0x40
     // zproc control_key_to_ascii
@@ -3579,7 +3580,7 @@ static void control_key_to_ascii(void)
     if (a < 0x20)
         a |= 0x40;
     a = toupper(a);
-    return;
+    return a;
 }
 
 static void delete_edit_buffer_bytes_at_xpos(uint8_t x)
@@ -3694,7 +3695,7 @@ loop_caea5:
     //     rts
 }
 
-static void enter_printable_character(void)
+static uint8_t enter_printable_character(void)
 {
     // enter_printable_character
     // enter_printable_character:
@@ -3702,14 +3703,14 @@ static void enter_printable_character(void)
     y = xpos;
     //     cpy #0x84
     if (y >= MAX_LINE_LENGTH)
-        return;
+        return a;
     //     inc l006d
     edit_buffer_dirty_flag++;
     //     jsr sub_caef4
     sub_caef4();
     //     bcs c9bca
     if (flags & FLAG_C)
-        return;
+        return a;
     //     lda current_edit_line_ptr
     tmp67 = current_edit_line_ptr;
     //     ldy xpos
@@ -3750,7 +3751,7 @@ c9c00:
     //     bcs c9c7f
     if (flags & FLAG_C)
     {
-        return;
+        return a;
     }
     // c9c09:
 c9c09:
@@ -3863,7 +3864,7 @@ c9c56:
     //     cmp #0x20 ; ' '
     //     beq c9c7f
     if (a == 0x20)
-        return;
+        return a;
     //     lda ruler_right_stop
     //     beq c9c7f
     if (ruler_right_stop == 0)
@@ -3874,20 +3875,20 @@ c9c56:
     //     lda format_mode_flag
     //     bne c9c7f
     if (format_mode_flag != 0)
-        return;
+        return a;
     //     lda #0
     //     sta ((uint8_t*)&tmp67)[1]
     ((uint8_t*)&tmp67)[1] = 0;
     //     tya
     //     beq c9c7f
     if (y == 0)
-        return;
+        return a;
     //     dey
     y--;
     //     cpy ruler_right_stop
     //     bcs c9c82
     if (y < ruler_right_stop)
-        return;
+        return a;
     // c9c82: (4202)
     //     jsr get_line_length (4203)
     get_line_length();
@@ -4096,12 +4097,12 @@ c9d30:
     //     jsr ca741
     ca741(ptr6);
     //     jsr return_key
-    return_key();
+    x = return_key();
     //     lda top_margin
     //     sta xpos
     xpos = top_margin;
     //     jmp editor_loop
-    return;
+    return a;
 }
 
 // MULTIPLE ENTRY POINTS: sf1_swap_case_key, f13_right_key
@@ -4165,7 +4166,7 @@ static void prompt_for_marker(void)
     //     ldy #0x4b ; 'K'
     x = 0x4d;
     //     jsr draw_prompt_characters
-    draw_prompt_characters(x, 0x4b);
+    a = draw_prompt_characters(x, 0x4b);
     //     inc flags_need_redrawing_flag
     flags_need_redrawing_flag++;
     //     jsr read_char
@@ -4282,13 +4283,14 @@ static void set_marker_6(void)
     return;
 }
 
-static void sub_c9de1(void)
+static uint8_t sub_c9de1(void)
 {
     // sub_c9de1:
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     falls through to c9de3
-    c9de3_insert_line(a, y);
+    x = c9de3_insert_line(a, y);
+    return x;
 }
 
 static void sub_c9f80(void)
@@ -5296,7 +5298,7 @@ c8b9f:
 c8bb7:
     // c8bb7:
     //     jsr sub_c8c5f
-    sub_c8c5f();
+    a = sub_c8c5f();
     //     sta l0083
     l0083 = a;
 c8bbc:
@@ -5476,7 +5478,7 @@ c8c3e:
     //     rts
 }
 
-static void c9de3_insert_line(uint8_t a, uint8_t y)
+static uint8_t c9de3_insert_line(uint8_t a, uint8_t y)
 {
     //     sta ((uint8_t*)&tmp45)[0]
     tmp45 = (addr_t)(y) << 8 | a;
@@ -5494,11 +5496,11 @@ static void c9de3_insert_line(uint8_t a, uint8_t y)
         y = 0;
         ram[tmp45 + y] = a;
         ca741(ptr6);
-        return;
+        return x;
     }
     //     jmp ca941
     memory_full();
-    return;
+    return x;
 }
 
 static void ca684(void)
@@ -5700,7 +5702,7 @@ loop_ca4c2:
     //     rts
 }
 
-void draw_prompt_characters(uint8_t x, uint8_t y)
+uint8_t draw_prompt_characters(uint8_t x, uint8_t y)
 {
     addr_t tmp23;
 
@@ -5735,6 +5737,7 @@ void draw_prompt_characters(uint8_t x, uint8_t y)
     screen_putchar(0x20);
     //     jsr restore_cursor_position
     restore_cursor_position();
+    return a;
     // cursor_on:
     // cursor_off:
     //     rts
@@ -6060,7 +6063,7 @@ c9871:
     //     sta ((uint8_t*)&tmp89)[1]
     tmp89 = x;
     //     jsr sub_cadf0
-    sub_cadf0();
+    a = sub_cadf0();
     //     sta l0045
     l0045 = a;
     //     lda ((uint8_t*)&tmp89)[0]
@@ -6655,7 +6658,7 @@ ca2f9:
     // ca30d: (5295)
 ca30d:
     //     jsr sub_ca44e (5296)
-    sub_ca44e();
+    x = sub_ca44e();
     //     jmp ca2e0 (5297)
     goto ca2e0;
 
@@ -7332,7 +7335,7 @@ loop_ca983:
     //     rts
 }
 
-void sub_c89d3(addr_t tmp67)
+uint8_t sub_c89d3(addr_t tmp67)
 {
     // sub_c89d3:
     //     lda area_start_ptr
@@ -7346,7 +7349,7 @@ void sub_c89d3(addr_t tmp67)
     //     ldy ((uint8_t*)&tmp45)[1]
     //     jmp cac78
     cac78(tmp89);
-    return;
+    return a;
 }
 
 static void sub_c8c51(void)
@@ -7374,15 +7377,15 @@ static void sub_c8c53(uint8_t a)
     //     rts
 }
 
-void sub_c8c5f(void)
+uint8_t sub_c8c5f(void)
 {
     // sub_c8c5f: converts to uppercase only if folding flag is clear
     //     bit folding_flag
     if (folding_flag & FLAG_N)
-        return;
+        return a;
     //     falls through to to_uppercase
     a = toupper(a);
-    return;
+    return a;
 }
 
 static void sub_c9936(void)
@@ -7862,7 +7865,7 @@ loop_c9a62:
     //     ror input_buffer_offset
     input_buffer_offset = ror(&flags, input_buffer_offset);
     //     jsr sub_caed6
-    sub_caed6();
+    x = sub_caed6();
     //     jsr justify_edit_buffer
     justify_edit_buffer();
     //     jsr sub_c9aa9
@@ -7883,7 +7886,7 @@ loop_c9a62:
     // (returns to sub_c9977's caller).
 c9a87:
     //     jsr sub_caed6
-    sub_caed6();
+    x = sub_caed6();
     //     jsr sub_c9aa9
     if (sub_c9aa9())
         return;
@@ -8115,7 +8118,7 @@ static void sub_c9e9b(void)
     //     rts
 }
 
-static void sub_ca44e(void)
+static uint8_t sub_ca44e(void)
 {
     addr_t tmp23;
 
@@ -8184,6 +8187,7 @@ ca479:
     a = l0034;
     //     sta ruler_stack_ptr
     ruler_index_ptr = a;
+    return x;
     //     rts
 }
 
@@ -8372,7 +8376,7 @@ caae8:
     //     rts
 }
 
-void sub_cac41(addr_t tmp01)
+uint8_t sub_cac41(addr_t tmp01)
 {
     // Pseudocode: Pushes ruler stack before entering a new ruler region
 
@@ -8397,7 +8401,7 @@ void sub_cac41(addr_t tmp01)
         a = saved_a;
     }
     //     rts
-    return;
+    return a;
 }
 
 static void sub_cac50(addr_t tmp89)
@@ -8476,7 +8480,7 @@ caed4:
     //     rts
 }
 
-static void sub_caed6(void)
+static uint8_t sub_caed6(void)
 {
     // sub_caed6:
     //     jsr sub_caec2
@@ -8487,6 +8491,7 @@ static void sub_caed6(void)
         //     ldy #0
         sub_caedd(0);
     }
+    return x;
     // caed4:
     //     rts
 }
