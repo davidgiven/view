@@ -135,6 +135,12 @@ extern void parse_filename_from_command(void);
 extern void set_document_name_to_filename_buffer(void);
 extern void read_first_chunk_from_input_file(void);
 extern void check_continuous_editing(void);
+typedef enum {
+    AREA_NOT_EMPTY,
+    AREA_EMPTY
+} area_status_t;
+
+extern area_status_t sanitise_area(void);
 extern void parse_marks_from_command(void);
 extern void write_area_to_file(void);
 extern void read_next_chunk_from_input_file(void);
@@ -245,7 +251,7 @@ extern void redraw_editor(addr_t ptr6);
 extern void write_line_back_to_document_safely(void);
 extern void ca741(addr_t ptr6);
 extern uint8_t sub_c8c5f(void);
-extern void sanitise_area(void);
+extern area_status_t sanitise_area(void);
 extern void make_space_for_insertion(void);
 extern void adjust_pointers(addr_t tmp45, addr_t tmp67);
 extern void parse_decimal_number(void);
@@ -284,5 +290,5 @@ extern uint8_t draw_prompt_characters(uint8_t x, uint8_t y);
 extern void show_memory_full_error(void);
 extern void bad_filename_error(void);
 extern void clear_screen(void);
-extern void parse_mark_from_command(uint8_t x);
+extern addr_t parse_mark_from_command(uint8_t x);
 #endif

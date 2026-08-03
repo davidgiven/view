@@ -3,7 +3,7 @@
 #include "printing.h"
 #include "io.h"
 #include <stdlib.h>
-void parse_mark_from_command(uint8_t x);
+addr_t parse_mark_from_command(uint8_t x);
 
 // Forward declarations for CLI utilities
 void file_error(void);
@@ -318,9 +318,7 @@ static void count_cmd(void)
     //     jsr parse_marks_from_command
     parse_marks_from_command();
     //     jsr sanitise_area
-    sanitise_area();
-    //     beq c869b
-    if (flags & FLAG_Z)
+    if (sanitise_area() == AREA_EMPTY)
     {
         return_to_cli_prompt();
         return;
@@ -668,9 +666,7 @@ static void format_cmd(void)
     //     jsr parse_marks_from_command
     parse_marks_from_command();
     //     jsr sanitise_area
-    sanitise_area();
-    //     beq c878b
-    if (flags & FLAG_Z)
+    if (sanitise_area() == AREA_EMPTY)
         goto c878b;
     //     lda area_start_ptr
     //     jsr move_cursor_to_address
@@ -1182,9 +1178,7 @@ static void save_cmd_write_cmd(void)
     //     jsr parse_marks_from_command
     parse_marks_from_command();
     //     jsr sanitise_area
-    sanitise_area();
-    //     beq return_6
-    if (flags & FLAG_Z)
+    if (sanitise_area() == AREA_EMPTY)
         return;
 
     //     jsr open_output_file
@@ -1235,9 +1229,7 @@ static void search_cmd(void)
     //     jsr parse_marks_from_command
     parse_marks_from_command();
     //     jsr sanitise_area
-    sanitise_area();
-    //     beq c82fa
-    if (flags & FLAG_Z)
+    if (sanitise_area() == AREA_EMPTY)
     {
         cmd_err_no_string();
         return;
@@ -1859,20 +1851,20 @@ void parse_marks_from_command(void)
     //     jsr reset_area_to_entire_document
     reset_area_to_entire_document();
     //     jsr parse_mark_from_command
-    parse_mark_from_command(x);
+    addr_t start_mark = parse_mark_from_command(x);
     //     beq return_11
-    if (flags & FLAG_Z)
+    if (start_mark == 0)
         return;
     //     sta area_start_ptr
-    area_start_ptr = (addr_t)(y) << 8 | a;
+    area_start_ptr = start_mark;
     //     sty area_start_ptr+1
     //     jsr parse_mark_from_command
-    parse_mark_from_command(x);
+    addr_t end_mark = parse_mark_from_command(x);
     //     beq return_11
-    if (flags & FLAG_Z)
+    if (end_mark == 0)
         return;
     //     sta area_end_ptr
-    area_end_ptr = (addr_t)(y) << 8 | a;
+    area_end_ptr = end_mark;
     //     sty area_end_ptr+1
     // return_11:
     //     rts
@@ -1950,7 +1942,7 @@ zbreak:
     //     rts
 }
 
-void parse_mark_from_command(uint8_t x)
+addr_t parse_mark_from_command(uint8_t x)
 {
     // parse_mark_from_command
     // parse_mark_from_command:
@@ -1958,7 +1950,7 @@ void parse_mark_from_command(uint8_t x)
     sub_c8e33();
     //     beq return_12
     if (flags & FLAG_Z)
-        return;
+        return 0;
     //     iny
     y++;
     //     sty input_buffer_offset
@@ -1971,7 +1963,7 @@ void parse_mark_from_command(uint8_t x)
     {
         cli_putstring("Bad marker\n");
         return_to_cli_prompt();
-        return;
+        return 0;
     }
     //     beq c89c1 / c89c1: jsr print_inline_string ; .ascii "Marker not set"
     //     ; .byte 0xff
@@ -1979,13 +1971,13 @@ void parse_mark_from_command(uint8_t x)
     {
         cli_putstring("Marker not set\n");
         return_to_cli_prompt();
-        return;
+        return 0;
     }
     //     lda markers_array,x
     a = (uint8_t)(markers_array[x] & 0xff);
     //     ldy markers_array+1,x
     y = (uint8_t)(markers_array[x] >> 8);
-    set_flags(&flags, y);
     // return_12:
     //     rts
+    return (addr_t)(y) << 8 | a;
 }

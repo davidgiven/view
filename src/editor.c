@@ -38,7 +38,7 @@ void redraw_editor(addr_t ptr6);
 static void render_char(void);
 static void render_xchar(void);
 static void restore_cursor_position(void);
-void sanitise_area(void);
+area_status_t sanitise_area(void);
 static void save_cursor_position(void);
 static void set_marker(void);
 static void set_marker_common(uint8_t a);
@@ -4223,9 +4223,9 @@ static void reset_area_to_marks_1_2(void)
         area_end_ptr = (uint16_t)((uint8_t*)markers_array)[x + 1] << 8 | a;
         x = ((uint8_t*)&doc_ptr1 - (uint8_t*)markers_array);
         set_marker_to_here(x);
-        sanitise_area();
+        area_status_t status = sanitise_area();
         flags &= ~FLAG_C;
-        if (!(flags & FLAG_Z))
+        if (status == AREA_NOT_EMPTY)
             return;
     }
 cad45:
@@ -7126,7 +7126,7 @@ static void restore_cursor_position(void)
     screen_setcursor(((uint8_t*)&tmp45)[0], ((uint8_t*)&tmp45)[1]);
 }
 
-void sanitise_area(void)
+area_status_t sanitise_area(void)
 {
     addr_t tmp67;
 
@@ -7186,13 +7186,14 @@ c8977:
     if (a != 0)
     {
         set_flags(&flags, a);
-        return;
+        return AREA_NOT_EMPTY;
     }
     //     lda ((uint8_t*)&tmp67)[0]
     a = ((uint8_t*)&tmp67)[0];
     set_flags(&flags, a);
     // return_10:
     //     rts
+    return a != 0 ? AREA_NOT_EMPTY : AREA_EMPTY;
 }
 
 static void save_cursor_position(void)

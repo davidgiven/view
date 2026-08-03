@@ -695,11 +695,11 @@ void sub_c83f0(void)
     //     jsr parse_marks_from_command
     parse_marks_from_command();
     //     jsr sanitise_area
-    sanitise_area();
+    area_status_t status = sanitise_area();
     //     sec
     flags |= FLAG_C;
     //     beq return_4
-    if (!(flags & FLAG_Z))
+    if (status == AREA_NOT_EMPTY)
     {
         sub_c8c7c();
         a = 1;
@@ -1253,9 +1253,7 @@ void write_area_to_file(void)
     // ; Does not include trailing zero!
     // write_area_to_file:
     //     jsr sanitise_area
-    sanitise_area();
-    //     beq return_17
-    if (flags & FLAG_Z)
+    if (sanitise_area() == AREA_EMPTY)
         return;
 
     //     lda area_start_ptr
