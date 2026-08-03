@@ -1862,18 +1862,16 @@ void parse_marks_from_command(void)
     if (flags & FLAG_Z)
         return;
     //     sta area_start_ptr
-    area_start_ptr = (area_start_ptr & 0xff00) | a;
+    area_start_ptr = (addr_t)(y) << 8 | a;
     //     sty area_start_ptr+1
-    area_start_ptr = (area_start_ptr & 0x00ff) | ((uint16_t)y << 8);
     //     jsr parse_mark_from_command
     parse_mark_from_command(x);
     //     beq return_11
     if (flags & FLAG_Z)
         return;
     //     sta area_end_ptr
-    area_end_ptr = (area_end_ptr & 0xff00) | a;
+    area_end_ptr = (addr_t)(y) << 8 | a;
     //     sty area_end_ptr+1
-    area_end_ptr = (area_end_ptr & 0x00ff) | ((uint16_t)y << 8);
     // return_11:
     //     rts
 }

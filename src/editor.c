@@ -4363,9 +4363,8 @@ static void sub_ca071(uint8_t x)
     }
     // ca097:
     //     sta current_line_ptr
-    current_line_ptr = (current_line_ptr & 0xff00) | a;
+    current_line_ptr = (addr_t)(y) << 8 | a;
     //     sty current_line_ptr+1
-    current_line_ptr = (current_line_ptr & 0x00ff) | ((uint16_t)y << 8);
     //     rts
 }
 
@@ -4427,9 +4426,8 @@ static void sub_ca0af(uint8_t x)
     }
     // ca0d6:
     //     sta current_line_ptr
-    current_line_ptr = (current_line_ptr & 0xff00) | a;
+    current_line_ptr = (addr_t)(y) << 8 | a;
     //     sty current_line_ptr+1
-    current_line_ptr = (current_line_ptr & 0x00ff) | ((uint16_t)y << 8);
     //     rts
 }
 
@@ -5470,9 +5468,8 @@ c8c3e:
     //     stx doc_ptr2+1
     doc_ptr2 = (doc_ptr2 & 0x00ff) | ((uint16_t)x << 8);
     //     sta ptr2
-    ptr2 = (ptr2 & 0xff00) | a;
+    ptr2 = (addr_t)(y) << 8 | a;
     //     sty ptr2+1
-    ptr2 = (ptr2 & 0x00ff) | ((uint16_t)y << 8);
     //     ldx #0
     x = 0;
     set_flags(&flags, 0);
