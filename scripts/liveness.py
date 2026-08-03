@@ -548,6 +548,159 @@ def get_local_info_ast(func_cursor, callee_live_out=None, callee_live_in=None):
 
 
 # ─── AST-based backward scan ──────────────────────────────────────
+def _backward_stmt(cur, live, backward_needs, local_info, func_params,
+                   local_decls, source_lines, func_live_out):
+    """Recursive branch-aware backward dataflow.
+
+    Returns the live set that must hold BEFORE `cur` executes, given that
+    `live` must hold AFTER it.  `if`/`switch` branches are analysed separately
+    and merged, so a variable needed on one branch does not leak into a sibling
+    branch (the previous linear scan leaked, e.g. switch cases).
+    """
+    ck = cur.kind
+
+    # Compound statement: process children in reverse order.
+    if ck == clang.cindex.CursorKind.COMPOUND_STMT:
+        for ch in reversed(list(cur.get_children())):
+            live = _backward_stmt(ch, live, backward_needs, local_info,
+                                  func_params, local_decls, source_lines,
+                                  func_live_out)
+        return live
+
+    # if / else: merge the two branches at the condition.
+    if ck == clang.cindex.CursorKind.IF_STMT:
+        children = list(cur.get_children())
+        branches = children[1:]
+        merged = set(live)
+        for b in branches:
+            merged |= _backward_stmt(b, set(live), backward_needs, local_info,
+                                     func_params, local_decls, source_lines,
+                                     func_live_out)
+        d, u = _analyze_stmt_effect(cur, local_decls, source_lines)
+        return (merged - d) | u
+
+    # switch: each case is an independent branch.
+    if ck == clang.cindex.CursorKind.SWITCH_STMT:
+        children = list(cur.get_children())
+        merged = set(live)
+        for ch in children:
+            if ch.kind == clang.cindex.CursorKind.COMPOUND_STMT:
+                # process each case independently (do NOT thread linearly)
+                for case in ch.get_children():
+                    merged |= _backward_stmt(case, set(live), backward_needs,
+                                             local_info, func_params,
+                                             local_decls, source_lines,
+                                             func_live_out)
+            elif ch.kind in (clang.cindex.CursorKind.CASE_STMT,
+                             clang.cindex.CursorKind.DEFAULT_STMT):
+                merged |= _backward_stmt(ch, set(live), backward_needs,
+                                         local_info, func_params, local_decls,
+                                         source_lines, func_live_out)
+        d, u = _analyze_stmt_effect(cur, local_decls, source_lines)
+        return (merged - d) | u
+
+    # case / default labels: treat as straight-line.
+    if ck in (clang.cindex.CursorKind.CASE_STMT,
+              clang.cindex.CursorKind.DEFAULT_STMT,
+              clang.cindex.CursorKind.LABEL_STMT):
+        for ch in cur.get_children():
+            live = _backward_stmt(ch, live, backward_needs, local_info,
+                                  func_params, local_decls, source_lines,
+                                  func_live_out)
+        return live
+
+    # Loops: iterate body + condition to a fixed point (back-edge).
+    if ck in (clang.cindex.CursorKind.WHILE_STMT,
+              clang.cindex.CursorKind.FOR_STMT,
+              clang.cindex.CursorKind.DO_STMT):
+        prev = None
+        result = set(live)
+        # body runs, then (for while/for) the condition gates re-entry.
+        for _ in range(20):
+            body_in = set(live)
+            for ch in cur.get_children():
+                if ch.kind == clang.cindex.CursorKind.COMPOUND_STMT:
+                    body_in = _backward_stmt(ch, body_in, backward_needs,
+                                             local_info, func_params,
+                                             local_decls, source_lines,
+                                             func_live_out)
+            d, u = _analyze_stmt_effect(cur, local_decls, source_lines)
+            candidate = (body_in - d) | u
+            candidate |= live
+            if candidate == prev:
+                break
+            prev = candidate
+            live = candidate
+        return result | (prev if prev is not None else set())
+
+    # return: exit resets to the function's live-out.
+    if ck == clang.cindex.CursorKind.RETURN_STMT:
+        return set(func_live_out)
+
+    return _backward_plain(cur, live, backward_needs, local_info, func_params,
+                           local_decls, source_lines, func_live_out)
+
+
+def _analyze_stmt_effect(cur, local_decls, source_lines):
+    """defs/uses of a statement (with byte/flag propagation)."""
+    d, u = analyze_stmt(cur, set(local_decls), 'use')
+    for bv, cv in BYTE_TO_COMBINED.items():
+        if bv in d:
+            d.add(cv)
+        if bv in u:
+            u.add(cv)
+    for cv, blist in COMBINED_TO_BYTES.items():
+        if cv in d:
+            for bv in blist:
+                d.add(bv)
+        if cv in u:
+            for bv in blist:
+                u.add(bv)
+    if cur.location.line > 0 and cur.location.line <= len(source_lines):
+        fd, fu = get_flag_defs_uses(source_lines[cur.location.line - 1])
+        d |= fd
+        u |= fu
+    return d, u
+
+
+def _backward_plain(cur, live, backward_needs, local_info, func_params,
+                    local_decls, source_lines, func_live_out):
+    """Backward handling for a straight-line (leaf) statement."""
+    line_num = cur.location.line
+    if 0 < line_num <= len(source_lines):
+        stripped = source_lines[line_num - 1].strip()
+    else:
+        stripped = ''
+
+    callee_name = detect_call(stripped)
+    if callee_name:
+        if callee_name in ALL_IN_OUT:
+            backward_needs.setdefault(callee_name, set()).update(ALL_VARS_SET)
+            return ALL_VARS_SET
+        if callee_name not in LIB_FUNCTIONS:
+            backward_needs.setdefault(callee_name, set()).update(live)
+            callee_info = local_info.get(callee_name, {})
+            callee_defs = callee_info.get('cached_defs', callee_info.get('defs', set()))
+            callee_params = func_params.get(callee_name, set())
+            kill_set = callee_defs - callee_params
+            if callee_name in CORRUPTS:
+                kill_set = kill_set | CORRUPTS[callee_name]
+            d, u = _analyze_stmt_effect(cur, local_decls, source_lines)
+            live = (live - kill_set) | u
+            cli = callee_info.get('live_in', set()) - callee_params
+            live |= cli
+            return live
+        if callee_name in CORRUPTS:
+            corr = CORRUPTS[callee_name]
+            d, u = _analyze_stmt_effect(cur, local_decls, source_lines)
+            return (live - corr) | u
+        d, u = _analyze_stmt_effect(cur, local_decls, source_lines)
+        return live | u
+
+    d, u = _analyze_stmt_effect(cur, local_decls, source_lines)
+    return (live - d) | u
+
+
 def backward_scan_ast(func_cursor, backward_needs, local_info, func_params, live_out_start=None):
     """
     Backward scan using AST for a single function.
@@ -577,71 +730,9 @@ def backward_scan_ast(func_cursor, backward_needs, local_info, func_params, live
     if body is None:
         return
 
-    stmts = _collect_top_stmts(body)
-    live = set(live_out_start)
-
-    # Walk backward through lines
-    for line_num, stmt in reversed(stmts):
-        if line_num > 0 and line_num <= len(source_lines):
-            stripped = source_lines[line_num - 1].strip()
-        else:
-            stripped = ''
-
-        if stripped.startswith('//') or stripped == '':
-            continue
-
-        d = set()
-        u = set()
-
-        # AST-based def/use
-        cd, cu = analyze_stmt(stmt, local_decls, 'use')
-        d.update(cd)
-        u.update(cu)
-
-        # Byte/combined propagation
-        for bv, cv in BYTE_TO_COMBINED.items():
-            if bv in d: d.add(cv)
-            if bv in u: u.add(cv)
-        for cv, blist in COMBINED_TO_BYTES.items():
-            if cv in d:
-                for bv in blist: d.add(bv)
-            if cv in u:
-                for bv in blist: u.add(bv)
-
-        # Flag ops via regex
-        fd, fu = get_flag_defs_uses(stripped)
-        d |= fd
-        u |= fu
-
-        callee_name = detect_call(stripped)
-
-        if stmt.kind == clang.cindex.CursorKind.RETURN_STMT:
-            live = set()
-        elif callee_name:
-            if callee_name in ALL_IN_OUT:
-                backward_needs.setdefault(callee_name, set()).update(ALL_VARS_SET)
-                live = ALL_VARS_SET
-            elif callee_name not in LIB_FUNCTIONS:
-                backward_needs.setdefault(callee_name, set()).update(live)
-                callee_info = local_info.get(callee_name, {})
-                callee_defs = callee_info.get('cached_defs', callee_info.get('defs', set()))
-                callee_params = func_params.get(callee_name, set())
-                kill_set = callee_defs - callee_params
-                if callee_name in CORRUPTS:
-                    kill_set = kill_set | CORRUPTS[callee_name]
-                live = (live - kill_set) | u
-                # The callee's register-convention inputs (its live_in, minus
-                # its explicit parameters) must be live before the call so they
-                # flow from the caller.
-                cli = callee_info.get('live_in', set()) - callee_params
-                live |= cli
-            elif callee_name in CORRUPTS:
-                corr = CORRUPTS[callee_name]
-                live = (live - corr) | u
-            else:
-                live = live | u
-        else:
-            live = (live - d) | u
+    func_live_out = set(live_out_start)
+    _backward_stmt(body, set(func_live_out), backward_needs, local_info,
+                   func_params, local_decls, source_lines, func_live_out)
 
 
 # ─── Find functions (regex on source lines) ────────────────────────
@@ -921,14 +1012,14 @@ def analyze_files(files):
             for callee, args in s['calls']:
                 cs = summaries.get(callee)
                 if cs:
-                    contrib = set(cs.get('live_in', set()))
-                    contrib.update(cs.get('consumed', set()))
-                    if args:
-                        # Callee takes explicit (tracked) parameters: only the
-                        # variables actually passed across this call boundary
-                        # are consumed by the caller.
-                        contrib &= args
-                    consumed.update(contrib)
+                    # Propagate the callee's live_in and transitive consumed in
+                    # full.  A callee's own explicit parameters never appear in
+                    # its live_in/consumed (they are local_decls there), so this
+                    # carries only genuine register-convention GLOBAL reads --
+                    # both direct and transitive (e.g. print_char() reading the
+                    # global a through print_char_x_times()).
+                    consumed.update(cs.get('live_in', set()))
+                    consumed.update(cs.get('consumed', set()))
                 elif callee in CORRUPTS:
                     consumed.update(ALL_VARS_SET)
             consumed = consumed - s['live_in'] - s['live_out']

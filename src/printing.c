@@ -3805,6 +3805,8 @@ return_31:; // fallthrough to rts
 
 static void sub_c9407(void)
 {
+    uint8_t x;
+
     // Pseudocode: Outputs left margin spaces, adjusting for two-sided printing
 
     // sub_c9407:
