@@ -15,7 +15,6 @@ void beep(void);
 static void c8b78(void);
 void c8b7b(void);
 static void c9de3_insert_line(uint8_t a, uint8_t y);
-static void c9e94(void);
 static void ca684(void);
 void ca741(addr_t ptr6);
 void clear_screen(void);
@@ -1374,7 +1373,7 @@ static void f4_beginning_of_line_key(void)
 
     //     jmp c9e94
 
-    c9e94();
+    xpos = 0;
     return;
 }
 
@@ -2864,7 +2863,7 @@ c9fab:
 
     //     jsr c9e94
 
-    c9e94();
+    xpos = 0;
 
     //     jsr get_line_length
 
@@ -3068,7 +3067,7 @@ static void sf2_release_margins_key(uint8_t y)
 
     if (!(format_mode_flag & FLAG_V))
     {
-        c9e94();
+        xpos = 0;
         return;
     }
 
@@ -3284,7 +3283,7 @@ static void sf8_edit_command_key(addr_t ptr1)
 
     //     jsr c9e94
 
-    c9e94();
+    xpos = 0;
 
     //     jsr redraw_editor
 
@@ -5133,7 +5132,7 @@ static void advance_to_next_line(void)
     // Sets Z from l007e on return (like c9aa5 does)
 
     //     jsr c9e94
-    c9e94();
+    xpos = 0;
     //     lda current_line_ptr
     a = (uint8_t)(current_line_ptr & 0xff);
     //     ldy current_line_ptr+1
@@ -5503,15 +5502,6 @@ static void c9de3_insert_line(uint8_t a, uint8_t y)
     //     jmp ca941
     memory_full();
     return;
-}
-
-static void c9e94(void)
-{
-    // c9e94:
-    //     lda #0
-    //     sta xpos
-    xpos = 0;
-    //     rts
 }
 
 static void ca684(void)
