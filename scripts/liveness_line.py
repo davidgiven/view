@@ -239,7 +239,10 @@ def analyze_function(lines, func_name, func_start, func_end, callee_live_out,
             live_after[i] = set(live)
 
             if sl == 'return;':
-                live = set(callee_live_out.get(func_name, set()))
+                # A `return;` may be conditional (e.g. an if-body on its own
+                # line), so the fall-through path's liveness must survive.
+                # Merging with live_out is conservative: never under-approximates.
+                live = live | set(callee_live_out.get(func_name, set()))
                 live_before[i] = set(live)
                 continue
 

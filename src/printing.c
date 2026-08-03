@@ -3489,8 +3489,7 @@ static void sub_c9228(uint8_t a)
     {
         a = 0x40;
         l0082 = a;
-        a = 0;
-        set_flags(&flags, a);
+        set_flags(&flags, 0);
         return;
     }
     //     bit l0082
@@ -3978,9 +3977,7 @@ static void write_cr_to_memory(void)
 {
     // write_cr_to_memory:
     //     lda #0x0d
-    uint8_t a;
-    a = 0x0d;
-    write_byte_to_memory(a);
+    write_byte_to_memory(0x0d);
 }
 
 // Printer driver setup (called from cli.c)

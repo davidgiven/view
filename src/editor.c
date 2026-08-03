@@ -1564,9 +1564,7 @@ static void k_command_key(void)
 
     x = '^';
 
-    y = 'K';
-
-    draw_prompt_characters(x, y);
+    draw_prompt_characters(x, 'K');
 
     flags_need_redrawing_flag++;
 
@@ -2489,9 +2487,7 @@ static void q_command_key(void)
 
     x = '^';
 
-    y = 'Q';
-
-    draw_prompt_characters(x, y);
+    draw_prompt_characters(x, 'Q');
 
     flags_need_redrawing_flag++;
 
@@ -3105,9 +3101,7 @@ static void sf3_delete_to_char_key(void)
 
     x = 0x43;
 
-    y = 0x48;
-
-    draw_prompt_characters(x, y);
+    draw_prompt_characters(x, 0x48);
 
     flags_need_redrawing_flag++;
 
@@ -4164,7 +4158,6 @@ static void go_to_marker_6(void)
 
 static void prompt_for_marker(void)
 {
-    uint8_t y;
 
     // Pseudocode: Prompts for a marker character and looks it up
 
@@ -4172,9 +4165,8 @@ static void prompt_for_marker(void)
     //     ldx #0x4d ; 'M'
     //     ldy #0x4b ; 'K'
     x = 0x4d;
-    y = 0x4b;
     //     jsr draw_prompt_characters
-    draw_prompt_characters(x, y);
+    draw_prompt_characters(x, 0x4b);
     //     inc flags_need_redrawing_flag
     flags_need_redrawing_flag++;
     //     jsr read_char
@@ -4245,61 +4237,49 @@ cad45:
 
 static void set_marker_1(void)
 {
-    uint8_t a;
 
     // set_marker_1:
-    a = '1';
-    set_marker_common(a);
+    set_marker_common('1');
     return;
 }
 
 static void set_marker_2(void)
 {
-    uint8_t a;
 
     // set_marker_2:
-    a = '2';
-    set_marker_common(a);
+    set_marker_common('2');
     return;
 }
 
 static void set_marker_3(void)
 {
-    uint8_t a;
 
     // set_marker_3:
-    a = '3';
-    set_marker_common(a);
+    set_marker_common('3');
     return;
 }
 
 static void set_marker_4(void)
 {
-    uint8_t a;
 
     // set_marker_4:
-    a = '4';
-    set_marker_common(a);
+    set_marker_common('4');
     return;
 }
 
 static void set_marker_5(void)
 {
-    uint8_t a;
 
     // set_marker_5:
-    a = '5';
-    set_marker_common(a);
+    set_marker_common('5');
     return;
 }
 
 static void set_marker_6(void)
 {
-    uint8_t a;
 
     // set_marker_6:
-    a = '6';
-    set_marker_common(a);
+    set_marker_common('6');
     return;
 }
 
@@ -7114,8 +7094,7 @@ ca523:
     //     bne ca532
     if (!(x != 0))
     {
-        a = 0;
-        screen_setstyle(a);
+        screen_setstyle(0);
     }
     a = char_to_render;
     //     ldx l0084
@@ -8114,16 +8093,14 @@ c9b31:
 
 static void sub_c9e22(uint8_t a)
 {
-    uint8_t x;
 
     // sub_c9e22:
     //     pha
     {
         uint8_t saved_a = a;
         //     ldx #1
-        x = 1;
         //     jsr insert_edit_buffer_bytes_at_xpos
-        insert_edit_buffer_bytes_at_xpos(x);
+        insert_edit_buffer_bytes_at_xpos(1);
         //     pla
         a = saved_a;
     }
@@ -8521,8 +8498,7 @@ static void sub_caed6(void)
     if (flags & FLAG_C)
     {
         //     ldy #0
-        y = 0;
-        sub_caedd(y);
+        sub_caedd(0);
     }
     // caed4:
     //     rts

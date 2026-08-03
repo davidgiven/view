@@ -261,7 +261,6 @@ static void close_input_output_files(void)
 
     // close_input_output_files:
     //     lda #0
-    uint8_t x;
     uint8_t a = 0;
     //     sta input_file_empty_flag
     input_file_empty_flag = a;
@@ -269,8 +268,7 @@ static void close_input_output_files(void)
     file_edit_flags = a;
 
     //     jsr select_file
-    x = 1;
-    select_file(x);
+    select_file(1);
     //     jsr close_file
     close_file();
     //     jmp return_to_cli_prompt
@@ -573,16 +571,14 @@ static void finish_cmd(void)
     {
         reset_area_to_entire_document();
         sanitise_area();
-        x = 1;
-        select_file(x);
+        select_file(1);
         write_area_to_file();
         if (!(flags & FLAG_Z))
         {
             return_to_cli_prompt();
             return;
         }
-        a = 0;
-        put_byte_to_file(a);
+        put_byte_to_file(0);
         sub_c89d3(tmp67);
         move_cursor_to_top_of_document();
         cb05a();
@@ -843,8 +839,7 @@ static void more_cmd(void)
     move_cursor_to_address(area_start_ptr);
 
     //     jsr select_file
-    x = 1;
-    select_file(x);
+    select_file(1);
     //     jsr write_area_to_file
     write_area_to_file();
     //     bne c84ab
@@ -1538,9 +1533,8 @@ void run_cli(void)
     //     jsr clear_screen
     clear_screen();
     //     ldx #1
-    x = 1;
     //     jsr print_x_words_of_help
-    print_x_words_of_help(a, x);
+    print_x_words_of_help(a, 1);
     //     jsr print_inline_string
     //     .ascii "\r\rBytes free "
     //     .byte 0
@@ -1646,9 +1640,8 @@ c81ba:
     // c81db:
 c81db:
     //     lda #0x2c ; ','
-    a = 0x2c;
     //     jsr screen_putchar
-    screen_putchar(a);
+    screen_putchar(0x2c);
     // c81e0:
 c81e0:
     //     txa
