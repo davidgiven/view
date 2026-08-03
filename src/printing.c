@@ -432,6 +432,9 @@ c95aa:
 
 static void df_fmt_cmd(void)
 {
+    uint8_t x;
+    uint8_t y;
+
     // Pseudocode: Stores footer text (shared code with dh_fmt_cmd)
 
     // ;
@@ -446,6 +449,8 @@ static void df_fmt_cmd(void)
 
 static void dh_fmt_cmd(void)
 {
+    uint8_t x;
+
     // Pseudocode: Stores header text (shared code with df_fmt_cmd)
 
     // ;
@@ -2777,6 +2782,8 @@ static void print_vertical_space(void)
 
 void read_block_from_file(void)
 {
+    uint8_t y;
+
     uint8_t x;
 
     // read_block_from_file
@@ -3238,6 +3245,8 @@ static void sub_c9173(void)
 
 static void sub_c9188(void)
 {
+    uint8_t a;
+
     uint8_t x;
     uint8_t y;
 

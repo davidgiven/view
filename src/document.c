@@ -1172,6 +1172,8 @@ void open_output_file(void)
 
 void pop_from_ruler_index(void)
 {
+    uint8_t y;
+
     // Pseudocode: Pops ruler position from the ruler index
 
     // pop_from_ruler_stack:

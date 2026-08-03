@@ -811,6 +811,8 @@ c8598:
 
 void sub_c8a4f(addr_t ptr2)
 {
+    uint8_t y;
+
     uint8_t x;
 
     // sub_c8a4f
@@ -1199,6 +1201,8 @@ void sub_c8c7c(void)
 
 void read_next_chunk_from_input_file(void)
 {
+    uint8_t x;
+
     // read_next_chunk_from_input_file
     // read_next_chunk_from_input_file:
     //     jsr sub_c8da2

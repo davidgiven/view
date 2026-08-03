@@ -365,27 +365,48 @@ def _collect_top_stmts(body_cursor):
 
 
 def _top_stmts_recurse(cursor, result):
-    """Walk compound stmt children, recurse into labels/decls, skip inner blocks."""
-    for child in cursor.get_children():
-        ck = child.kind
-        if ck in (clang.cindex.CursorKind.PARM_DECL,):
-            continue
-        if ck == clang.cindex.CursorKind.LABEL_STMT:
-            result.append((child.location.line, child))
-            for gc in child.get_children():
-                # If the labeled statement is a compound stmt, flatten it too
-                if gc.kind == clang.cindex.CursorKind.COMPOUND_STMT:
-                    _top_stmts_recurse(gc, result)
-                elif gc.kind == clang.cindex.CursorKind.LABEL_STMT:
-                    _top_stmts_recurse(gc, result)
-                else:
-                    result.append((gc.location.line, gc))
-        elif ck == clang.cindex.CursorKind.VAR_DECL:
-            result.append((child.location.line, child))
-        elif ck == clang.cindex.CursorKind.COMPOUND_STMT:
-            _top_stmts_recurse(child, result)
-        else:
-            result.append((child.location.line, child))
+    """Recursively collect all statement-level cursors with their start lines."""
+    ck = cursor.kind
+    if ck == clang.cindex.CursorKind.PARM_DECL:
+        return
+    if ck == clang.cindex.CursorKind.VAR_DECL:
+        result.append((cursor.location.line, cursor))
+        return
+    if ck == clang.cindex.CursorKind.DECL_STMT:
+        for ch in cursor.get_children():
+            _top_stmts_recurse(ch, result)
+        return
+    if ck == clang.cindex.CursorKind.LABEL_STMT:
+        result.append((cursor.location.line, cursor))
+        for ch in cursor.get_children():
+            _top_stmts_recurse(ch, result)
+        return
+    if ck in (clang.cindex.CursorKind.GOTO_STMT,
+              clang.cindex.CursorKind.BREAK_STMT,
+              clang.cindex.CursorKind.CONTINUE_STMT,
+              clang.cindex.CursorKind.NULL_STMT,
+              clang.cindex.CursorKind.RETURN_STMT):
+        result.append((cursor.location.line, cursor))
+        return
+    if ck == clang.cindex.CursorKind.COMPOUND_STMT:
+        for ch in cursor.get_children():
+            _top_stmts_recurse(ch, result)
+        return
+    if ck in (clang.cindex.CursorKind.IF_STMT,
+              clang.cindex.CursorKind.WHILE_STMT,
+              clang.cindex.CursorKind.FOR_STMT,
+              clang.cindex.CursorKind.DO_STMT,
+              clang.cindex.CursorKind.SWITCH_STMT,
+              clang.cindex.CursorKind.CASE_STMT,
+              clang.cindex.CursorKind.DEFAULT_STMT):
+        result.append((cursor.location.line, cursor))
+        for ch in cursor.get_children():
+            _top_stmts_recurse(ch, result)
+        return
+    # Expression statements: collect, then recurse into children
+    result.append((cursor.location.line, cursor))
+    for ch in cursor.get_children():
+        _top_stmts_recurse(ch, result)
 
 
 def get_func_params_from_ast(func_cursor):
@@ -521,11 +542,13 @@ def get_local_info_ast(func_cursor, callee_live_out=None, callee_live_in=None):
 
 
 # ─── AST-based backward scan ──────────────────────────────────────
-def backward_scan_ast(func_cursor, backward_needs, local_info, func_params):
+def backward_scan_ast(func_cursor, backward_needs, local_info, func_params, live_out_start=None):
     """
     Backward scan using AST for a single function.
     Modifies backward_needs in place.
     """
+    if live_out_start is None:
+        live_out_start = set()
     local_decls = set()
     for child in func_cursor.get_children():
         if child.kind == clang.cindex.CursorKind.PARM_DECL:
@@ -549,7 +572,7 @@ def backward_scan_ast(func_cursor, backward_needs, local_info, func_params):
         return
 
     stmts = _collect_top_stmts(body)
-    live = set()
+    live = set(live_out_start)
 
     # Walk backward through lines
     for line_num, stmt in reversed(stmts):
@@ -601,6 +624,11 @@ def backward_scan_ast(func_cursor, backward_needs, local_info, func_params):
                 if callee_name in CORRUPTS:
                     kill_set = kill_set | CORRUPTS[callee_name]
                 live = (live - kill_set) | u
+                # The callee's register-convention inputs (its live_in, minus
+                # its explicit parameters) must be live before the call so they
+                # flow from the caller.
+                cli = callee_info.get('live_in', set()) - callee_params
+                live |= cli
             elif callee_name in CORRUPTS:
                 corr = CORRUPTS[callee_name]
                 live = (live - corr) | u
@@ -745,7 +773,8 @@ def analyze_files(files):
         for name in all_funcs:
             info = local_info[name]
             cursor = all_funcs[name][1]
-            backward_scan_ast(cursor, backward_needs, local_info, func_params)
+            backward_scan_ast(cursor, backward_needs, local_info, func_params,
+                              info.get('live_out', set()))
 
         # Compute live_out
         for name in all_funcs:

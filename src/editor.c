@@ -1332,6 +1332,8 @@ static void f2_bottom_of_text_key(void)
 
 static void f3_delete_to_eol_key(void)
 {
+    uint8_t x;
+
     // f3_delete_to_eol_key
 
     // f3_delete_to_eol_key: Deletes from cursor to end of line
@@ -1420,6 +1422,9 @@ static void f6_insert_line_key(void)
 
 static void f7_delete_line_key(void)
 {
+    addr_t tmp45;
+    addr_t tmp67;
+
     uint8_t x;
     uint8_t y;
 
@@ -2964,6 +2969,7 @@ static void set_marker_common(uint8_t a);
 
 static void sf14_down_key(void)
 {
+    uint8_t x;
 
     // sf14_down_key:
 
@@ -2984,6 +2990,7 @@ static void sf14_down_key(void)
 
 static void sf15_up_key(void)
 {
+    uint8_t x;
 
     // sf15_up_key:
 
@@ -3092,6 +3099,8 @@ static void sf2_release_margins_key(uint8_t y)
 
 static void sf3_delete_to_char_key(void)
 {
+    uint8_t y;
+
     // sf3_delete_to_char_key
 
     x = 0x43;
@@ -3516,6 +3525,8 @@ static void tab_key(void)
 
 static void c9d9b_advance_ptr(void)
 {
+    uint8_t a;
+
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     lda current_line_ptr
@@ -3580,6 +3591,8 @@ static void control_key_to_ascii(void)
 
 static void delete_edit_buffer_bytes_at_xpos(uint8_t x)
 {
+    uint8_t y;
+
     // delete_edit_buffer_bytes_at_xpos
     // delete_edit_buffer_bytes_at_xpos: Deletes N bytes at cursor position,
     // shifting existing content left
@@ -4151,6 +4164,8 @@ static void go_to_marker_6(void)
 
 static void prompt_for_marker(void)
 {
+    uint8_t y;
+
     // Pseudocode: Prompts for a marker character and looks it up
 
     // prompt_for_marker:
@@ -4230,6 +4245,8 @@ cad45:
 
 static void set_marker_1(void)
 {
+    uint8_t a;
+
     // set_marker_1:
     a = '1';
     set_marker_common(a);
@@ -4238,6 +4255,8 @@ static void set_marker_1(void)
 
 static void set_marker_2(void)
 {
+    uint8_t a;
+
     // set_marker_2:
     a = '2';
     set_marker_common(a);
@@ -4246,6 +4265,8 @@ static void set_marker_2(void)
 
 static void set_marker_3(void)
 {
+    uint8_t a;
+
     // set_marker_3:
     a = '3';
     set_marker_common(a);
@@ -4254,6 +4275,8 @@ static void set_marker_3(void)
 
 static void set_marker_4(void)
 {
+    uint8_t a;
+
     // set_marker_4:
     a = '4';
     set_marker_common(a);
@@ -4262,6 +4285,8 @@ static void set_marker_4(void)
 
 static void set_marker_5(void)
 {
+    uint8_t a;
+
     // set_marker_5:
     a = '5';
     set_marker_common(a);
@@ -4270,6 +4295,8 @@ static void set_marker_5(void)
 
 static void set_marker_6(void)
 {
+    uint8_t a;
+
     // set_marker_6:
     a = '6';
     set_marker_common(a);
@@ -4365,6 +4392,8 @@ static void sub_ca071(uint8_t x)
 
 static void sub_ca0af(uint8_t x)
 {
+    uint8_t a;
+
     // sub_ca0af
     // sub_ca0af:
     //     inc cursor_moved_flag
@@ -4427,6 +4456,9 @@ static void sub_ca0af(uint8_t x)
 
 static void sub_ca1cc(void)
 {
+    addr_t tmp23;
+    addr_t tmp89;
+
     // sub_ca1cc
     if (doc_ptr1 >= area_start_ptr && doc_ptr1 < area_end_ptr)
     {
@@ -5114,6 +5146,8 @@ caa08:
 
 static void advance_to_next_line(void)
 {
+    uint8_t a;
+
     // advance_to_next_line
     // c9a8d: Advance to next line in document
     // Sets Z from l007e on return (like c9aa5 does)
@@ -8080,6 +8114,8 @@ c9b31:
 
 static void sub_c9e22(uint8_t a)
 {
+    uint8_t x;
+
     // sub_c9e22:
     //     pha
     {
@@ -8253,6 +8289,8 @@ ca558:
 
 static void sub_caa97(addr_t ptr1)
 {
+    uint8_t a;
+
     uint8_t x;
     uint8_t y;
 
@@ -8316,6 +8354,8 @@ caac8:
 
 static void sub_caacb(void)
 {
+    uint8_t y;
+
     // sub_caacb: Updates marker positions to point into format buffer instead
     // of document buffer
 
