@@ -369,6 +369,8 @@ static void sub_c95b2(uint8_t a)
 
 static uint8_t c9575(uint8_t x, uint8_t y)
 {
+    uint8_t a;
+
     // c9575
     //     stx ((uint8_t*)&tmp23)[0]
     tmp23 = (addr_t)(y) << 8 | x;
@@ -452,6 +454,8 @@ static void df_fmt_cmd(void)
 
 static void dh_fmt_cmd(void)
 {
+    uint8_t y;
+
     uint8_t x;
 
     // Pseudocode: Stores header text (shared code with df_fmt_cmd)

@@ -1257,6 +1257,9 @@ static void search_cmd(void)
 
 static void setup_cmd(void)
 {
+    addr_t tmp67;
+    addr_t tmp89;
+
     // setup_cmd
     // Pseudocode: Parses flag letters and sets format_mode_flag,
     // justifying_flag, insert_mode_flag
