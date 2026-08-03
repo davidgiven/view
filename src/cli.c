@@ -1899,6 +1899,7 @@ void set_document_name_to_filename_buffer(void)
     //     ldx #0
     uint8_t x;
     uint8_t a;
+    uint8_t a2;
     x = 0;
     // loop_c88fa:
     do
@@ -1911,9 +1912,9 @@ loop_c88fa:
     //     bge loop_c88fa
     // return_9:
     //     lda #0x0d
-    a = 0x0d;
+    a2 = 0x0d;
     //     sta input_filename-1, x
-    input_filename[x - 1] = a;
+    input_filename[x - 1] = a2;
     //     rts
     return;
 
@@ -1926,6 +1927,7 @@ void zero_terminate_filename_buffer(void)
     //     ldx #0
     uint8_t x;
     uint8_t a;
+    uint8_t a2;
     x = 0;
     //     lda #0x0d
     a = 0x0d;
@@ -1940,9 +1942,9 @@ zloop:
     goto zloop;
 zbreak:
     //     lda #0
-    a = 0;
+    a2 = 0;
     //     sta filename_buffer, x
-    filename_buffer[x] = a;
+    filename_buffer[x] = a2;
     //     rts
 }
 

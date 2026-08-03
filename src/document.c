@@ -1193,6 +1193,7 @@ void pop_from_ruler_index(void)
 void push_onto_ruler_index(uint8_t y)
 {
     uint8_t a;
+    uint8_t a2;
 
     // push_onto_ruler_index
     // Pseudocode: Pushes current ruler position onto the ruler index
@@ -1215,9 +1216,9 @@ void push_onto_ruler_index(uint8_t y)
         //     dey
         y--;
         //     lda ((uint8_t*)&tmp01)[1]
-        a = ((uint8_t*)&tmp01)[1];
+        a2 = ((uint8_t*)&tmp01)[1];
         //     sta (oshwm),y
-        ram[oshwm + y] = a;
+        ram[oshwm + y] = a2;
         //     jsr cab91
         cab91(y);
         //     pla

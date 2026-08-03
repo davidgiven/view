@@ -5527,6 +5527,7 @@ void ca741(addr_t ptr6)
     //     ldx current_line_ptr
     uint8_t y;
     uint8_t x;
+    uint8_t x2;
     x = (uint8_t)(current_line_ptr & 0xff);
     //     ldy current_line_ptr+1
     y = (uint8_t)(current_line_ptr >> 8);
@@ -5545,11 +5546,11 @@ void ca741(addr_t ptr6)
     }
     // ca753:
     //     ldx #0xff
-    x = 0xff;
+    x2 = 0xff;
     //     stx l0073
-    l0073 = x;
+    l0073 = x2;
     //     stx l003d
-    l003d = x;
+    l003d = x2;
     //     rts
 }
 
@@ -8252,6 +8253,7 @@ ca558:
 static void sub_caa97(addr_t ptr1)
 {
     uint8_t a;
+    uint8_t a2;
 
     uint8_t x;
     uint8_t y;
@@ -8294,13 +8296,13 @@ static void sub_caa97(addr_t ptr1)
     // loop_caabd:
 loop_caabd:
     //     lda (current_line_ptr),y
-    a = ram[current_line_ptr + y];
+    a2 = ram[current_line_ptr + y];
     //     cmp #0x0d
-    if (a == 0x0d)
+    if (a2 == 0x0d)
         goto caac8;
     //     beq caac8
     //     sta (current_format_line_ptr),y
-    ram[current_format_line_ptr + y] = a;
+    ram[current_format_line_ptr + y] = a2;
     //     iny
     y++;
     //     bne loop_caabd

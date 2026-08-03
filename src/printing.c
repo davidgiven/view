@@ -3504,6 +3504,7 @@ static void sub_c9228(uint8_t a)
 static void sub_c9241(void)
 {
     uint8_t a;
+    uint8_t a2;
 
     // sub_c9241
     //  Ptrs:   ptr6
@@ -3524,14 +3525,14 @@ static void sub_c9241(void)
     // loop_c9247:
     do
     {
-        a = ram[ptr6 + y];
+        a2 = ram[ptr6 + y];
         flags |= FLAG_C;
-        if (a == 0)
+        if (a2 == 0)
             return;
-        ram[tmp01 + y] = a;
+        ram[tmp01 + y] = a2;
         ptr6++;
         tmp01++;
-    } while (a != 0x0d);
+    } while (a2 != 0x0d);
 loop_c9247:
     //     clc
     flags &= ~FLAG_C;
