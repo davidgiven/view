@@ -2786,6 +2786,8 @@ static void print_vertical_space(void)
 
 void read_block_from_file(void)
 {
+    uint8_t a;
+
     uint8_t y;
 
     uint8_t x;
@@ -3628,6 +3630,8 @@ static void sub_c9393(void)
 
 static void sub_c939b(void)
 {
+    uint8_t y;
+
     uint8_t a;
 
     // sub_c939b:
@@ -3707,6 +3711,8 @@ return_29:; // fallthrough to rts
 
 static void sub_c93c8(void)
 {
+    uint8_t a;
+
     // sub_c93c8
     // Pseudocode: Copies header/footer text to output_buffer, expanding
     // register references

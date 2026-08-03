@@ -4285,6 +4285,8 @@ static void set_marker_6(void)
 
 static uint8_t sub_c9de1(void)
 {
+    uint8_t x;
+
     // sub_c9de1:
     //     inc cursor_moved_flag
     cursor_moved_flag++;
@@ -8498,6 +8500,8 @@ static uint8_t sub_caed6(void)
 
 static void sub_caedd(uint8_t y)
 {
+    uint8_t x;
+
     // sub_caedd:
     //     lda xpos
     a = xpos;

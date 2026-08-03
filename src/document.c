@@ -736,6 +736,8 @@ void get_register_address(uint8_t a)
 
 uint8_t initialise_document(void)
 {
+    uint8_t y;
+
     // initialise_document
     // initialise_document:
     //     lda #0

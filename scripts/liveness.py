@@ -303,7 +303,13 @@ def analyze_stmt(cursor, local_decls, context='use'):
               clang.cindex.CursorKind.DO_STMT,
               clang.cindex.CursorKind.SWITCH_STMT,
               clang.cindex.CursorKind.RETURN_STMT):
+        # Body compound statements are collected as separate statements by the
+        # line walker, so attributing their defs/uses to the control-flow line
+        # breaks ordering (a use inside an else-branch would look live-in).
+        # Only process the condition/value expressions and non-compound bodies.
         for child in cursor.get_children():
+            if child.kind == clang.cindex.CursorKind.COMPOUND_STMT:
+                continue
             cd, cu = analyze_stmt(child, local_decls, 'use')
             d.update(cd); u.update(cu)
         return d, u

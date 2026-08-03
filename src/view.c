@@ -1243,6 +1243,8 @@ void read_first_chunk_from_input_file(void)
 
 void write_area_to_file(void)
 {
+    uint8_t a;
+
     addr_t tmp89;
 
     // write_area_to_file
