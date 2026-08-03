@@ -9,10 +9,11 @@
 #include "cli.h"
 
 // Forward decls for default printer driver
-static void default_print_char(void);
+static void default_print_char(uint8_t a);
 static void default_printer_on(void);
 static void default_printer_off(void);
-static void default_printer_entry3(void);
+static void default_printer_microspace(void);
+static void default_printer_getflags(void);
 static const struct printer_driver default_printer_driver;
 
 // Printing-only functions
@@ -3212,9 +3213,7 @@ static void sub_c916a(void)
         //     stx l0043
         l0043 = x;
         //     lda #9
-        a = 9;
-        //     jsr call_printer_driver
-        call_printer_driver();
+        printer_driver_ptr->printer_microspace();
         //     pla
         a = saved_a;
     }
@@ -3242,9 +3241,7 @@ static void sub_c9173(void)
         //     stx l0043
         l0043 = x;
         //     lda #9
-        a = 9;
-        //     jsr call_printer_driver
-        call_printer_driver();
+        printer_driver_ptr->printer_microspace();
         //     pla
         a = saved_a;
     }
@@ -4001,37 +3998,6 @@ static void write_cr_to_memory(void)
 }
 
 // Printer driver setup (called from cli.c)
-void call_printer_driver(void)
-{
-    // Pseudocode: Calls a numbered entry point in the printer driver via struct
-    // function pointer
-
-    // ;
-    // ***************************************************************************************
-    // call_printer_driver:
-    //     clc
-    //     adc printer_driver_ptr          ; A = byte offset into jump table
-    //     (0,3,6,9) sta ((uint8_t*)&tmp89)[0] lda printer_driver_ptr+1 adc #0
-    //     sta ((uint8_t*)&tmp89)[1] jmp
-    //     (((uint8_t*)&tmp89)[0])
-    // Replaced with struct dispatch: convert byte offset to entry index
-    switch (a)
-    {
-        case 0:
-            printer_driver_ptr->print_char();
-            break;
-        case 3:
-            printer_driver_ptr->printer_on();
-            break;
-        case 6:
-            printer_driver_ptr->printer_off();
-            break;
-        case 9:
-            printer_driver_ptr->entry3();
-            break;
-    }
-}
-
 void stop_printing(void)
 {
     uint8_t a;
@@ -4052,8 +4018,7 @@ void stop_printing(void)
         flags &= ~FLAG_C;
         a = ror(&flags, print_flags);
         print_flags = a;
-        a = 6;
-        call_printer_driver();
+        printer_driver_ptr->printer_off();
     }
     //     rts
     return;
@@ -4083,7 +4048,7 @@ void prepare_printer_driver(void)
     //     rts
 }
 
-static void default_print_char(void)
+static void default_print_char(uint8_t a)
 {
     // c94c0:
     //     cmp #0x80
@@ -4114,11 +4079,19 @@ static void default_printer_off(void)
 }
 
 // Default printer driver entry 3: no-op
-static void default_printer_entry3(void) {}
+static void default_printer_microspace(void) {}
+
+// Default printer_getflags: sets x and y to zero (original view-cpm.S entry)
+static void default_printer_getflags(void)
+{
+    x = 0;
+    y = 0;
+}
 
 static const struct printer_driver default_printer_driver = {
     .print_char = default_print_char,
     .printer_on = default_printer_on,
     .printer_off = default_printer_off,
-    .entry3 = default_printer_entry3,
+    .printer_microspace = default_printer_microspace,
+    .printer_getflags = default_printer_getflags,
 };

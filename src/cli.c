@@ -785,9 +785,8 @@ static void microspace_cmd(void)
     //     ldy #0
     y = 0;
     //     lda #0x0c
-    a = 0x0c;
     //     jsr call_printer_driver
-    call_printer_driver();
+    printer_driver_ptr->printer_getflags();
     //     tya
     a = y;
     //     and #1

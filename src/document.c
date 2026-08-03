@@ -265,7 +265,7 @@ void print_char_just_to_screen(uint8_t a)
     //     bpl c9472
     if ((print_flags & 0x80))
     {
-        printer_driver_ptr->print_char();
+        printer_driver_ptr->print_char(a);
         return;
     }
     //     jsr check_for_control_code

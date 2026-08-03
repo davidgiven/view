@@ -26,10 +26,11 @@ extern uint8_t ram[65536];
 // Printer driver struct
 struct printer_driver
 {
-    void (*print_char)(void);
+    void (*print_char)(uint8_t a);
     void (*printer_on)(void);
     void (*printer_off)(void);
-    void (*entry3)(void);
+    void (*printer_microspace)(void);
+    void (*printer_getflags)(void);
 };
 
 // Inline helpers
