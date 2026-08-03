@@ -156,10 +156,18 @@ def build_ast_line_info(filepath, func_name, source_lines):
 LABEL_RE = re.compile(r'^(\w+):\s*(?://.*)?$')
 
 def find_labels_and_gotos(lines, func_start, func_end):
-    """Find all labels and goto targets within a function body."""
+    """Find all labels and goto targets within a function body.
+
+    Returns (labels, gotos, branches, label_lines):
+        labels: set of label names
+        gotos: dict line_index -> target_label
+        branches: dict line_index -> target_label (for conditional gotos)
+        label_lines: dict label_name -> line_index
+    """
     labels = set()
     gotos = {}  # line_index -> target_label
     branches = {}  # line_index -> target_label (for conditional gotos)
+    label_lines = {}
 
     for i in range(func_start, func_end):
         sl = lines[i].strip()
@@ -168,6 +176,7 @@ def find_labels_and_gotos(lines, func_start, func_end):
         m = LABEL_RE.match(sl)
         if m:
             labels.add(m.group(1))
+            label_lines[m.group(1)] = i
             continue
         m = re.match(r'goto\s+(\w+);', sl)
         if m:
@@ -178,7 +187,7 @@ def find_labels_and_gotos(lines, func_start, func_end):
             branches[i] = m.group(1)
             continue
 
-    return labels, gotos, branches
+    return labels, gotos, branches, label_lines
 
 
 # ─── Per-function backward analysis ──────────────────────────────────
@@ -199,11 +208,14 @@ def analyze_function(lines, func_name, func_start, func_end, callee_live_out,
     """
     if callee_live_in is None:
         callee_live_in = {}
-    labels, gotos, branches = find_labels_and_gotos(lines, func_start, func_end)
+    labels, gotos, branches, label_lines = find_labels_and_gotos(lines, func_start, func_end)
     targeted_labels = set(gotos.values()) | set(branches.values())
 
     live_after = {i: set() for i in range(func_start, func_end)}
     live_before = {i: set() for i in range(func_start, func_end)}
+    # Live sets contributed by goto/branch predecessors, per label.
+    # Accumulated across iterations (monotone: liveness only grows).
+    goto_live = {}
 
     changed = True
     max_iter = 50
@@ -235,12 +247,22 @@ def analyze_function(lines, func_name, func_start, func_end, callee_live_out,
             if m:
                 label = m.group(1)
                 old_live = live_before.get(i, set())
-                new_live = old_live | live
+                new_live = old_live | live | goto_live.get(label, set())
                 if new_live != old_live:
                     changed = True
                 live = new_live
                 live_before[i] = set(live)
                 continue
+
+            # goto / conditional-goto: record live set as a predecessor of
+            # the target label (handles loop back-edges).
+            gm = re.match(r'goto\s+(\w+);', sl)
+            if gm:
+                goto_live.setdefault(gm.group(1), set()).update(live)
+            else:
+                bm = re.match(r'if\s*\(.*\)\s*goto\s+(\w+);', sl)
+                if bm:
+                    goto_live.setdefault(bm.group(1), set()).update(live)
 
             # Get defs and uses (AST if available, else regex fallback)
             # line_info keys are 1-based line numbers; i is 0-based.
@@ -255,7 +277,9 @@ def analyze_function(lines, func_name, func_start, func_end, callee_live_out,
             if callee_name and callee_name not in INLINE_HELPERS and \
                callee_name not in ('if', 'while', 'for', 'switch', 'sizeof'):
                 if callee_name in LIB_FUNCTIONS:
-                    pass
+                    # Library functions read their arguments (e.g.
+                    # screen_setstyle(a) passes a). Add uses but kill nothing.
+                    live = live | u
                 elif callee_name in CORRUPTS:
                     corr = CORRUPTS[callee_name]
                     live = (live - corr) | u
@@ -264,7 +288,10 @@ def analyze_function(lines, func_name, func_start, func_end, callee_live_out,
                     cli = callee_live_in.get(callee_name, set())
                     live = (live - clo) | cli | u
                 else:
-                    live = u
+                    # Not a known function: likely a macro (e.g. CTRL(x)),
+                    # which expands in the AST and has no runtime effect on
+                    # the simulated registers. Treat as a plain statement.
+                    live = (live - d) | u
             else:
                 live = (live - d) | u
 

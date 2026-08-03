@@ -845,8 +845,6 @@ static void cf7_join_lines_key(void)
 
     //     tya
 
-    a = y;
-
     //     clc
 
     flags &= ~FLAG_C;
@@ -869,11 +867,7 @@ static void cf7_join_lines_key(void)
 
     //     lda current_line_ptr
 
-    a = (uint8_t)(current_line_ptr & 0xff);
-
     //     ldy current_line_ptr+1
-
-    y = (uint8_t)(current_line_ptr >> 8);
 
     //     jsr cac78
 
@@ -1462,8 +1456,6 @@ static void f7_delete_line_key(void)
     //     stx ((uint8_t*)&tmp67)[0]
 
     //     lda #0
-
-    a = 0;
 
     //     sta ((uint8_t*)&tmp67)[1]
 
@@ -2573,8 +2565,6 @@ void return_key(void)
 
     //     lda #0
 
-    a = 0;
-
     //     sta xpos
 
     xpos = 0;
@@ -3417,15 +3407,11 @@ finished_editing_command:
 
     //     lda ptr1
 
-    a = (uint8_t)(ptr1 & 0xff);
-
     //     sta current_format_line_ptr
 
     current_format_line_ptr = ptr1;
 
     //     lda ptr1+1
-
-    a = (uint8_t)(ptr1 >> 8);
 
     //     sta current_format_line_ptr+1
 
@@ -3623,7 +3609,6 @@ cae78:
     if (!(flags & FLAG_Z))
         goto cae98;
     //     lda #0
-    a = 0;
     //     cpy l0084
     cmp(&flags, y, l0084);
     //     bcc cae91
@@ -4479,8 +4464,6 @@ static void sub_ca1cc(void)
         y = (uint8_t)(adjusted >> 8);
     }
     cac78(tmp89);
-    a = (uint8_t)(doc_ptr1 & 0xff);
-    y = (uint8_t)(doc_ptr1 >> 8);
     cac78(tmp89);
     tmp67 = saved_tmp67;
     l0073 = 1;
@@ -5663,7 +5646,6 @@ void draw_line(uint16_t addr)
     if (!(flags & FLAG_Z))
         goto ca4b4;
     //     ldy #3
-    y = 3;
     //     lda hscroll_pos
     a = hscroll_pos;
     if (a != 0)
@@ -5834,7 +5816,6 @@ static void draw_status_word(void)
     //     jsr screen_putchar
     screen_putchar(a);
     //     lda #0x49 ; 'I'
-    a = 0x49;
     //     ldx insert_mode_flag
     x = insert_mode_flag;
     flags = (flags & ~(FLAG_Z | FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
@@ -5845,7 +5826,6 @@ static void draw_status_word(void)
         return;
     }
     //     lda #0x20 ; ' '
-    a = 0x20;
     //     bne ca681                                                         ;
     //     ALWAYS branch
     home_cursor();
@@ -5930,7 +5910,6 @@ static void go_to_marker_n(void)
     //     jsr ca93c
     write_line_back_to_document_safely();
     //     pla
-    a = saved_a;
     //     jsr lookup_marker
     lookup_marker();
     //     jmp go_to_marker
@@ -6222,7 +6201,6 @@ c98fa:
     //     cpy l0046
     cmp(&flags, y, l0046);
     //     lda #0
-    a = 0;
     //     bcs c9912
     if (!(flags & FLAG_C))
     {
@@ -7366,9 +7344,7 @@ void sub_c89d3(addr_t tmp67)
     //     jsr adjust_pointers
     adjust_pointers(tmp45, tmp67);
     //     lda ((uint8_t*)&tmp45)[0]
-    a = ((uint8_t*)&tmp45)[0];
     //     ldy ((uint8_t*)&tmp45)[1]
-    y = ((uint8_t*)&tmp45)[1];
     //     jmp cac78
     cac78(tmp89);
     return;
@@ -7686,7 +7662,6 @@ c99e4:
         goto c99c9;
     //     bne c99c9
     //     ldx #0xff
-    x = 0xff;
     //     lda #0x20 ; ' '
     a = 0x20;
     //     bne c9a2e                                                         ;
