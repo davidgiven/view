@@ -367,8 +367,12 @@ def fmt_live_set(s):
 
 
 # ─── Main ───────────────────────────────────────────────────────────
-def annotate_file(filepath, callee_live_out=None):
-    """Annotate a single file with per-line liveness info."""
+def annotate_file(filepath, callee_live_out=None, write_to_file=False):
+    """Annotate a single file with per-line liveness info.
+
+    When write_to_file is False, the annotated output is printed to stdout and
+    the file is left untouched.
+    """
     if callee_live_out is None:
         callee_live_out = {}
 
@@ -420,22 +424,31 @@ def annotate_file(filepath, callee_live_out=None):
 
         lines[func_start:func_end] = new_lines
 
-    with open(filepath, 'w') as f:
-        f.writelines(lines)
+    if write_to_file:
+        with open(filepath, 'w') as f:
+            f.writelines(lines)
+    else:
+        sys.stdout.writelines(lines)
 
     return True
 
 
 def main():
-    files = sys.argv[1:] if len(sys.argv) > 1 else [
+    write = '--write' in sys.argv
+    args = [a for a in sys.argv[1:] if a != '--write']
+    files = args if args else [
         'src/view.c', 'src/editor.c', 'src/printing.c',
         'src/document.c', 'src/cli.c'
     ]
 
+    if not write:
+        print("Dry run: annotations would be added but files are NOT modified.")
+        print("Re-run with --write to write annotations into the source files.\n")
+
     for filepath in files:
         print(f"Annotating {filepath}...")
         try:
-            annotate_file(filepath)
+            annotate_file(filepath, write_to_file=write)
             print(f"  Done.")
         except Exception as e:
             print(f"  Error: {e}")

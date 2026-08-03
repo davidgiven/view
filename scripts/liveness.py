@@ -490,7 +490,8 @@ def get_local_info_ast(func_cursor, callee_live_out=None, callee_live_in=None):
         callee = detect_call(stripped)
         if callee:
             if callee not in LIB_FUNCTIONS:
-                call_sites.append((line_num, callee))
+                args = {v for v in u if v in TRACKED_VARS and not v.startswith('flags:')}
+                call_sites.append((line_num, callee, args))
                 # Variables the callee needs as INPUT must be live before the
                 # call.  Check against the caller's own definitions so far
                 # (NOT the callee's kill set, which masks inputs the callee
@@ -711,7 +712,7 @@ def analyze_files(files):
             info = local_info[name]
             all_defs = set(info['defs'])
             all_uses = set(info['uses'])
-            for _, callee in info['call_sites']:
+            for _, callee, _ in info['call_sites']:
                 if callee in LIB_FUNCTIONS:
                     continue
                 callee_info = local_info.get(callee)
@@ -836,17 +837,20 @@ def analyze_files(files):
                         callee_name = gc[0].spelling
 
             if callee_name and callee_name not in INLINE_HELPERS:
-                # Variables passed as call arguments
+                callee_params = func_params.get(callee_name, set())
+                # Variables passed as call arguments.  Arguments matching the
+                # callee's explicit parameters are copied by value into the
+                # callee's own locals, so the caller's global is just a scratch
+                # temporary, not consumed by the callee.  Only non-parameter
+                # arguments (register-convention globals) are consumed here.
                 for var in TRACKED_VARS:
-                    if var in local_decls_func:
+                    if var in local_decls_func or var in callee_params:
                         continue
                     if re.search(r'(?<!\w)' + var + r'(?!\w)', sl):
                         if not re.search(r'\b' + var + r'\s*=', sl):
                             passed_to_callees.add(var)
 
                 # Callee's defs and params
-                callee_params = func_params.get(callee_name, set())
-                passed_to_callees |= callee_params
                 callee_info = local_info.get(callee_name)
                 if callee_info:
                     passed_to_callees |= (callee_info.get('live_in', set()) - callee_params)
@@ -865,7 +869,7 @@ def analyze_files(files):
             'locals': globals_used_locally,
             'consumed': set(),
             'file': info['file'],
-            'calls': [c for _, c in info['call_sites']],
+            'calls': [(c, a) for _, c, a in info['call_sites']],
             'passed_to_callees': passed_to_callees,
             'local_decls': local_decls_func,
         }
@@ -878,12 +882,18 @@ def analyze_files(files):
             s = summaries.get(name)
             if not s:
                 continue
-            consumed = set()
-            for callee in s['calls']:
+            consumed = set(s.get('passed_to_callees', set()))
+            for callee, args in s['calls']:
                 cs = summaries.get(callee)
                 if cs:
-                    consumed.update(cs.get('live_in', set()))
-                    consumed.update(cs.get('consumed', set()))
+                    contrib = set(cs.get('live_in', set()))
+                    contrib.update(cs.get('consumed', set()))
+                    if args:
+                        # Callee takes explicit (tracked) parameters: only the
+                        # variables actually passed across this call boundary
+                        # are consumed by the caller.
+                        contrib &= args
+                    consumed.update(contrib)
                 elif callee in CORRUPTS:
                     consumed.update(ALL_VARS_SET)
             consumed = consumed - s['live_in'] - s['live_out']
@@ -937,7 +947,7 @@ def main():
         print(f"  {filepath}")
         print(f"{'='*70}")
         for name, s in sorted(funcs, key=lambda x: x[0]):
-            calls_str = ', '.join(s['calls'][:5])
+            calls_str = ', '.join(c for c, _ in s['calls'][:5])
             if len(s['calls']) > 5:
                 calls_str += f' … ({len(s["calls"])} total)'
             print(f"\n  {name}")
