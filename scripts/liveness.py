@@ -102,6 +102,11 @@ CORRUPTS = {
 ALL_IN_OUT = {
 }
 
+# Functions that never return (longjmp wrappers / process exit).  Grown by
+# the fixpoint in analyze_files to include functions whose only exits are
+# calls to other noreturn functions.
+NORETURN = {'exit', 'return_to_cli_prompt', 'return_to_editor_loop', 'run_editor'}
+
 # ─── AST parsing (cached) ─────────────────────────────────────────
 _parse_cache = {}
 def parse_file(filepath):
@@ -748,6 +753,14 @@ def _backward_plain(cur, live, backward_needs, local_info, func_params,
         if callee_name in ALL_IN_OUT:
             backward_needs.setdefault(callee_name, set()).update(ALL_VARS_SET)
             return ALL_VARS_SET
+        if callee_name in NORETURN:
+            # The callee never returns, so nothing is live after the call;
+            # only its inputs are needed before it.
+            callee_info = local_info.get(callee_name, {})
+            callee_params = func_params.get(callee_name, set())
+            d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
+            cli = callee_info.get('live_in', set()) - callee_params
+            return cli | u
         if callee_name not in LIB_FUNCTIONS:
             backward_needs.setdefault(callee_name, set()).update(live)
             callee_info = local_info.get(callee_name, {})
@@ -770,6 +783,85 @@ def _backward_plain(cur, live, backward_needs, local_info, func_params,
 
     d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
     return (live - d) | u
+
+
+def _callee_name_from_cursor(call_cursor):
+    """Return the callee name of a CALL_EXPR cursor, or None."""
+    children = list(call_cursor.get_children())
+    if not children:
+        return None
+    c0 = children[0]
+    if c0.kind == clang.cindex.CursorKind.DECL_REF_EXPR:
+        return c0.spelling
+    if c0.kind == clang.cindex.CursorKind.UNEXPOSED_EXPR:
+        g = list(c0.get_children())
+        if g and g[0].kind == clang.cindex.CursorKind.DECL_REF_EXPR:
+            return g[0].spelling
+    return None
+
+
+def _stmt_never_completes(cur, noreturn):
+    """True if `cur` definitely never falls through to the next statement
+    (always exits via a return, a noreturn call, or an infinite loop)."""
+    ck = cur.kind
+    if ck == clang.cindex.CursorKind.RETURN_STMT:
+        return True
+    if ck == clang.cindex.CursorKind.CALL_EXPR:
+        return _callee_name_from_cursor(cur) in noreturn
+    if ck == clang.cindex.CursorKind.COMPOUND_STMT:
+        last = None
+        for ch in cur.get_children():
+            if ch.kind not in (clang.cindex.CursorKind.CASE_STMT,
+                               clang.cindex.CursorKind.DEFAULT_STMT,
+                               clang.cindex.CursorKind.LABEL_STMT):
+                last = ch
+        if last is None:
+            return False
+        return _stmt_never_completes(last, noreturn)
+    if ck == clang.cindex.CursorKind.IF_STMT:
+        children = list(cur.get_children())
+        if len(children) < 3:
+            return False  # no else: the false path falls through
+        return (_stmt_never_completes(children[1], noreturn) and
+                _stmt_never_completes(children[2], noreturn))
+    return False
+
+
+def _returns_without_noreturn_guard(cur, noreturn):
+    """True if `cur`'s subtree contains a return statement that is not
+    immediately preceded (in its enclosing compound) by a noreturn call.
+    Such a return is potentially reachable, so the function can return."""
+    ck = cur.kind
+    if ck == clang.cindex.CursorKind.RETURN_STMT:
+        return True
+    if ck == clang.cindex.CursorKind.COMPOUND_STMT:
+        children = [ch for ch in cur.get_children()
+                    if ch.kind not in (clang.cindex.CursorKind.CASE_STMT,
+                                       clang.cindex.CursorKind.DEFAULT_STMT,
+                                       clang.cindex.CursorKind.LABEL_STMT)]
+        for idx, ch in enumerate(children):
+            if ch.kind == clang.cindex.CursorKind.RETURN_STMT:
+                # Dead if the preceding statement is a noreturn call.
+                if not (idx > 0 and children[idx - 1].kind ==
+                        clang.cindex.CursorKind.CALL_EXPR and
+                        _callee_name_from_cursor(children[idx - 1]) in noreturn):
+                    return True
+            else:
+                if _returns_without_noreturn_guard(ch, noreturn):
+                    return True
+        return False
+    for ch in cur.get_children():
+        if _returns_without_noreturn_guard(ch, noreturn):
+            return True
+    return False
+
+
+def _is_noreturn_body(body, noreturn):
+    """True if the function body never returns normally: it never falls
+    through the end and contains no reachable return."""
+    if _returns_without_noreturn_guard(body, noreturn):
+        return False
+    return _stmt_never_completes(body, noreturn)
 
 
 def backward_scan_ast(func_cursor, backward_needs, local_info, func_params, live_out_start=None):
@@ -875,6 +967,26 @@ def analyze_files(files):
     func_params = {}
     for name, (filepath, cursor) in all_funcs.items():
         func_params[name] = get_func_params_from_ast(cursor)
+
+    # Grow the noreturn set: a function that never falls through the end and
+    # has no reachable return is itself noreturn.
+    global NORETURN
+    NORETURN = {'exit', 'return_to_cli_prompt', 'return_to_editor_loop',
+                'run_editor'}
+    changed = True
+    while changed:
+        changed = False
+        for name, (filepath, cursor) in all_funcs.items():
+            if name in NORETURN:
+                continue
+            body = None
+            for ch in cursor.get_children():
+                if ch.kind == clang.cindex.CursorKind.COMPOUND_STMT:
+                    body = ch
+                    break
+            if body is not None and _is_noreturn_body(body, NORETURN):
+                NORETURN.add(name)
+                changed = True
 
     # Initial forward pass (using AST)
     local_info = {}

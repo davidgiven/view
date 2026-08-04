@@ -3,7 +3,7 @@
 #include "printing.h"
 #include "io.h"
 #include <stdlib.h>
-addr_t parse_mark_from_command(uint8_t x);
+addr_t parse_mark_from_command(void);
 
 // Forward declarations for CLI utilities
 void file_error(void);
@@ -1857,7 +1857,7 @@ void parse_marks_from_command(void)
     //     jsr reset_area_to_entire_document
     reset_area_to_entire_document();
     //     jsr parse_mark_from_command
-    addr_t start_mark = parse_mark_from_command(x);
+    addr_t start_mark = parse_mark_from_command();
     //     beq return_11
     if (start_mark == 0)
         return;
@@ -1865,7 +1865,7 @@ void parse_marks_from_command(void)
     area_start_ptr = start_mark;
     //     sty area_start_ptr+1
     //     jsr parse_mark_from_command
-    addr_t end_mark = parse_mark_from_command(x);
+    addr_t end_mark = parse_mark_from_command();
     //     beq return_11
     if (end_mark == 0)
         return;
@@ -1948,7 +1948,7 @@ zbreak:
     //     rts
 }
 
-addr_t parse_mark_from_command(uint8_t x)
+addr_t parse_mark_from_command(void)
 {
     // parse_mark_from_command
     // parse_mark_from_command:
