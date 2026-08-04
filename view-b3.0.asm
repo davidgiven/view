@@ -5003,7 +5003,7 @@ l94b2 = default_printer_driver_ptr+1
     lda line_buffer_needs_unpacking_flag                              ; 9b39: a5 6e       .n
     bne c9b44                                                         ; 9b3b: d0 07       ..
     pha                                                               ; 9b3d: 48          H
-    jsr sub_caa97                                                     ; 9b3e: 20 97 aa     ..
+    jsr unpack_line                                                   ; 9b3e: 20 97 aa     ..
     pla                                                               ; 9b41: 68          h
     sta line_buffer_needs_unpacking_flag                              ; 9b42: 85 6e       .n
 ; &9b44 referenced 1 time by &9b3b
@@ -5756,7 +5756,7 @@ l94b2 = default_printer_driver_ptr+1
     sta current_line_ptr                                              ; 9f8e: 85 08       ..
     lda tmp1                                                          ; 9f90: a5 86       ..
     sta current_line_ptr+1                                            ; 9f92: 85 09       ..
-    jsr sub_caa97                                                     ; 9f94: 20 97 aa     ..
+    jsr unpack_line                                                   ; 9f94: 20 97 aa     ..
     jsr c9e9b                                                         ; 9f97: 20 9b 9e     ..
     dec l006f                                                         ; 9f9a: c6 6f       .o
     rts                                                               ; 9f9c: 60          `
@@ -5789,7 +5789,7 @@ l94b2 = default_printer_driver_ptr+1
     inc current_line_ptr+1                                            ; 9fc1: e6 09       ..
 ; &9fc3 referenced 1 time by &9fbf
 .c9fc3
-    jsr sub_caa97                                                     ; 9fc3: 20 97 aa     ..
+    jsr unpack_line                                                   ; 9fc3: 20 97 aa     ..
     dec l006f                                                         ; 9fc6: c6 6f       .o
     jsr c9e94                                                         ; 9fc8: 20 94 9e     ..
     jsr get_line_length                                               ; 9fcb: 20 f1 aa     ..
@@ -5897,7 +5897,7 @@ l94b2 = default_printer_driver_ptr+1
     ldx #&ff                                                          ; a05e: a2 ff       ..
     stx l006f                                                         ; a060: 86 6f       .o
     jsr sub_ca071                                                     ; a062: 20 71 a0     q.
-    jsr sub_caa97                                                     ; a065: 20 97 aa     ..
+    jsr unpack_line                                                   ; a065: 20 97 aa     ..
     jmp c9e94                                                         ; a068: 4c 94 9e    L..
 
 ; ***************************************************************************************
@@ -5941,7 +5941,7 @@ l94b2 = default_printer_driver_ptr+1
     ldx #&ff                                                          ; a09c: a2 ff       ..
     stx l006f                                                         ; a09e: 86 6f       .o
     jsr sub_ca0af                                                     ; a0a0: 20 af a0     ..
-    jsr sub_caa97                                                     ; a0a3: 20 97 aa     ..
+    jsr unpack_line                                                   ; a0a3: 20 97 aa     ..
     jmp c9e9b                                                         ; a0a6: 4c 9b 9e    L..
 
 ; ***************************************************************************************
@@ -7806,8 +7806,9 @@ la8a5 = ca8a4+1
     bne return_68                                                     ; aa91: d0 37       .7
     lda #1                                                            ; aa93: a9 01       ..
     sta line_buffer_needs_unpacking_flag                              ; aa95: 85 6e       .n
+; ***************************************************************************************
 ; &aa97 referenced 5 times by &9b3e, &9f94, &9fc3, &a065, &a0a3
-.sub_caa97
+.unpack_line
     lda #&10                                                          ; aa97: a9 10       ..
     jsr wipe_buffer                                                   ; aa99: 20 0f ab     ..
     jsr sub_caf5f                                                     ; aa9c: 20 5f af     _.
@@ -9895,7 +9896,7 @@ save pydis_start, pydis_end
 ;     ptr5+1:                                 5
 ;     recalculate_cursor_xpos:                5
 ;     sub_ca276:                              5
-;     sub_caa97:                              5
+;     unpack_line:                            5
 ;     acknowledge_escape:                     4
 ;     advance_to_next_line:                   4
 ;     c84ab:                                  4

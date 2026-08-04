@@ -136,7 +136,9 @@ extern void parse_filename_from_command(void);
 extern void set_document_name_to_filename_buffer(void);
 extern void read_first_chunk_from_input_file(void);
 extern void check_continuous_editing(void);
-typedef enum {
+
+typedef enum
+{
     AREA_NOT_EMPTY,
     AREA_EMPTY
 } area_status_t;
@@ -163,7 +165,6 @@ extern uint8_t input_filename[];
 extern uint8_t output_filename[];
 extern uint8_t file_edit_flags;
 extern addr_t current_ruler_ptr;
-extern addr_t current_edit_line_ptr;
 extern addr_t current_line_ptr;
 extern addr_t top_of_screen_line_ptr;
 extern uint8_t l003a;
@@ -233,6 +234,7 @@ extern uint8_t ruler_index_ptr;
 extern addr_t oshwm;
 extern uint8_t l0076;
 #define RAM_CURRENT_LINE_BUF 0x0545
+#define RAM_EDIT_BUFFER 0x0548
 #define RAM_JUST_BEFORE_RULER_BUF 0x05CC
 extern uint8_t screen_maxcolumn;
 extern FILE* file_ptr;
@@ -244,8 +246,6 @@ extern void sub_caf5f(void);
 extern void zero_terminate_filename_buffer(void);
 extern void file_not_found_error(void);
 extern void file_error(void);
-
-#define current_line_buffer (&ram[RAM_CURRENT_LINE_BUF])
 
 // Functions moved to editor.c still called from view.c/other modules
 extern void redraw_editor(addr_t ptr6);

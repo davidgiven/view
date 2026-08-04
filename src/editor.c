@@ -55,7 +55,7 @@ static void sub_c9e9b(void);
 static uint8_t sub_ca44e(void);
 static void sub_ca4d7(void);
 static void sub_ca536(uint8_t y);
-static void sub_caa97(addr_t ptr1);
+static void unpack_line(addr_t ptr1);
 static void sub_caacb(void);
 uint8_t sub_cac41(addr_t tmp01);
 static void sub_cac50(addr_t tmp89);
@@ -259,7 +259,7 @@ void editor_loop_impl(void)
             {
                 {
                     uint8_t saved_a_ = a;
-                    sub_caa97(ptr1);
+                    unpack_line(ptr1);
                     a = saved_a_;
                 }
                 edit_buffer_unpacked_flag = a;
@@ -695,7 +695,7 @@ static void cf5_default_ruler_key(void)
 
     //     lda current_edit_line_ptr
 
-    y = create_default_ruler(current_edit_line_ptr);
+    y = create_default_ruler(RAM_EDIT_BUFFER);
 }
 
 static void cf6_split_line_key(void)
@@ -1001,7 +1001,7 @@ static void delete_key(void)
 
     //     lda (current_edit_line_ptr),y
 
-    a = ram[current_edit_line_ptr + y];
+    a = ram[RAM_EDIT_BUFFER + y];
 
     //     pha
 
@@ -1299,7 +1299,7 @@ static void f1_top_of_text_key(void)
 
     sub_ca071(0xff);
 
-    sub_caa97(ptr1);
+    unpack_line(ptr1);
 }
 
 static void f2_bottom_of_text_key(void)
@@ -1323,9 +1323,9 @@ static void f2_bottom_of_text_key(void)
 
     sub_ca0af(0xff);
 
-    //     jsr sub_caa97
+    //     jsr unpack_line
 
-    sub_caa97(ptr1);
+    unpack_line(ptr1);
 
     //     jmp c9e9b
 
@@ -2685,7 +2685,7 @@ static void sf11_copy_key(void)
     do
     {
         a = ram[current_ruler_ptr + y];
-        ram[current_edit_line_ptr + y] = a;
+        ram[RAM_EDIT_BUFFER + y] = a;
         y++;
         x--;
     } while (x != 0);
@@ -2767,7 +2767,7 @@ entry:
 
     //     sta ((uint8_t*)&tmp01)[1]
 
-    tmp01 = current_edit_line_ptr;
+    tmp01 = RAM_EDIT_BUFFER;
 
     //     jsr get_line_length
 
@@ -2849,9 +2849,9 @@ c9fab:
         current_line_ptr = (uint16_t)(current_line_ptr + 0x100);
     }
 
-    //     jsr sub_caa97
+    //     jsr unpack_line
 
-    sub_caa97(ptr1);
+    unpack_line(ptr1);
 
     //     dec l006f
 
@@ -2874,7 +2874,7 @@ c9fab:
 
     //     sta ((uint8_t*)&tmp01)[0]
 
-    tmp01 = current_edit_line_ptr;
+    tmp01 = RAM_EDIT_BUFFER;
 
     //     ldy xpos
 
@@ -3015,7 +3015,7 @@ static void sf1_swap_case_key(void)
 
     //     lda (current_edit_line_ptr),y
 
-    a = ram[current_edit_line_ptr + y];
+    a = ram[RAM_EDIT_BUFFER + y];
 
     //     jsr is_uppercase
 
@@ -3046,7 +3046,7 @@ static void sf1_swap_case_key(void)
 
     //     sta (current_edit_line_ptr),y
 
-    ram[current_edit_line_ptr + y] = a;
+    ram[RAM_EDIT_BUFFER + y] = a;
 
     //     falls through to f13_right_key
 
@@ -3153,7 +3153,7 @@ ca12a:
     while (y < MAX_LINE_LENGTH)
     {
 
-        a = ram[current_edit_line_ptr + y];
+        a = ram[RAM_EDIT_BUFFER + y];
 
         y++;
 
@@ -3171,7 +3171,7 @@ loop_ca13d:
     while (y < MAX_LINE_LENGTH)
     {
 
-        a = ram[current_edit_line_ptr + y];
+        a = ram[RAM_EDIT_BUFFER + y];
 
         y++;
 
@@ -3465,15 +3465,15 @@ static void sf9_delete_command_key(void)
 
     //     lda current_edit_line_ptr
 
-    a = (uint8_t)(current_edit_line_ptr & 0xff);
+    a = (uint8_t)(RAM_EDIT_BUFFER & 0xff);
 
     //     sta current_format_line_ptr
 
-    current_format_line_ptr = current_edit_line_ptr;
+    current_format_line_ptr = RAM_EDIT_BUFFER;
 
     //     lda current_edit_line_ptr+1
 
-    a = (uint8_t)(current_edit_line_ptr >> 8);
+    a = (uint8_t)(RAM_EDIT_BUFFER >> 8);
 
     //     sta current_format_line_ptr+1
 
@@ -3595,7 +3595,7 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t x)
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda current_edit_line_ptr+1
     //     sta ((uint8_t*)&tmp67)[1]
-    tmp67 = current_edit_line_ptr;
+    tmp67 = RAM_EDIT_BUFFER;
     //     ldy xpos
     y = xpos;
     //     tya
@@ -3624,11 +3624,11 @@ cae78:
     //     clc
     flags &= ~FLAG_C;
     //     adc current_edit_line_ptr
-    a = adc(&flags, a, (uint8_t)(current_edit_line_ptr & 0xff)); // C live
+    a = adc(&flags, a, (uint8_t)(RAM_EDIT_BUFFER & 0xff)); // C live
     //     sta markers_array,x
     ((uint8_t*)markers_array)[x] = a;
     //     lda current_edit_line_ptr+1
-    a = (uint8_t)(current_edit_line_ptr >> 8);
+    a = (uint8_t)(RAM_EDIT_BUFFER >> 8);
     //     adc #0
     a = adc(&flags, a, 0); // Z, C live
     //     bne cae93
@@ -3676,13 +3676,13 @@ cae98:
             y = a;
             if (!(y >= MAX_LINE_LENGTH))
             {
-                a = ram[current_edit_line_ptr + y];
+                a = ram[RAM_EDIT_BUFFER + y];
                 x = a;
             }
         }
         y = l0084;
         a = x;
-        ram[current_edit_line_ptr + y] = a;
+        ram[RAM_EDIT_BUFFER + y] = a;
         y++;
     } while (y < MAX_LINE_LENGTH);
 loop_caea5:
@@ -3708,7 +3708,7 @@ static uint8_t enter_printable_character(void)
     if (flags & FLAG_C)
         return a;
     //     lda current_edit_line_ptr
-    tmp67 = current_edit_line_ptr;
+    tmp67 = RAM_EDIT_BUFFER;
     //     ldy xpos
     y = xpos;
     //     jsr sub_ca536
@@ -3727,7 +3727,7 @@ static uint8_t enter_printable_character(void)
     if (x != 0)
         goto c9c00;
     //     lda (current_edit_line_ptr),y
-    a = ram[current_edit_line_ptr + y];
+    a = ram[RAM_EDIT_BUFFER + y];
     //     cmp #9
     //     beq c9c00
     if (a == 9)
@@ -3754,7 +3754,7 @@ c9c09:
     //     lda l0038
     a = l0038;
     //     sta (current_edit_line_ptr),y
-    ram[current_edit_line_ptr + y] = a;
+    ram[RAM_EDIT_BUFFER + y] = a;
     //     ldy l0074
     y = l0074;
     //     bne c9c14
@@ -3773,7 +3773,7 @@ c9c09:
     // c9c1d:
 c9c1d:
     //     lda (current_edit_line_ptr),y
-    a = ram[current_edit_line_ptr + y];
+    a = ram[RAM_EDIT_BUFFER + y];
     //     iny
     y++;
     //     cpy xpos
@@ -3997,20 +3997,20 @@ c9cd0:
     //     sty l0081
     l0081 = y;
     //     lda current_edit_line_ptr
-    tmp67 = current_edit_line_ptr;
+    tmp67 = RAM_EDIT_BUFFER;
     //     ldy xpos
     y = xpos;
     //     dey
     y--;
     //     lda (current_edit_line_ptr),y
-    a = ram[current_edit_line_ptr + y];
+    a = ram[RAM_EDIT_BUFFER + y];
     //     cmp #0x20 ; ' '
     //     bne c9cf2
     if (a == 0x20)
     {
         //     lda #0x10
         //     sta (current_edit_line_ptr),y
-        ram[current_edit_line_ptr + y] = 0x10;
+        ram[RAM_EDIT_BUFFER + y] = 0x10;
     }
     // c9cf2:
     //     iny
@@ -4062,13 +4062,13 @@ c9d0d:
     // c9d28:
 c9d28:
     //     lda (current_edit_line_ptr),y
-    a = ram[current_edit_line_ptr + y];
+    a = ram[RAM_EDIT_BUFFER + y];
     //     pha
     {
         uint8_t saved = a;
         //     lda #0x10
         //     sta (current_edit_line_ptr),y
-        ram[current_edit_line_ptr + y] = 0x10;
+        ram[RAM_EDIT_BUFFER + y] = 0x10;
         //     pla
         a = saved;
     }
@@ -4303,8 +4303,8 @@ static void sub_c9f80(void)
     if (!(flags & FLAG_C))
         return;
     current_line_ptr = tmp01;
-    //     jsr sub_caa97
-    sub_caa97(ptr1);
+    //     jsr unpack_line
+    unpack_line(ptr1);
     //     jsr c9e9b
     sub_c9e9b();
     //     dec l006f
@@ -4572,7 +4572,7 @@ void draw_previous_word(void)
     //     sta ((uint8_t*)&tmp01)[0]
     //     lda current_edit_line_ptr+1
     //     sta ((uint8_t*)&tmp01)[1]
-    tmp01 = current_edit_line_ptr;
+    tmp01 = RAM_EDIT_BUFFER;
     //     ldy xpos
     y = xpos;
     //     beq caf55
@@ -4748,7 +4748,7 @@ void insert_edit_buffer_bytes_at_xpos(uint8_t x)
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda current_edit_line_ptr+1
     //     sta ((uint8_t*)&tmp67)[1]
-    tmp67 = current_edit_line_ptr;
+    tmp67 = RAM_EDIT_BUFFER;
     //     ldy #0x84
     y = MAX_LINE_LENGTH;
     set_flags(&flags, y); // Z live
@@ -4791,11 +4791,11 @@ loop_cae37:
     //     clc
     flags &= ~FLAG_C;
     //     adc current_edit_line_ptr
-    a = adc(&flags, a, (uint8_t)(current_edit_line_ptr & 0xff)); // C live
+    a = adc(&flags, a, (uint8_t)(RAM_EDIT_BUFFER & 0xff)); // C live
     //     sta markers_array,x
     ((uint8_t*)markers_array)[x] = a;
     //     lda current_edit_line_ptr+1
-    a = (uint8_t)(current_edit_line_ptr >> 8);
+    a = (uint8_t)(RAM_EDIT_BUFFER >> 8);
     //     adc #0
     a = adc(&flags, a, 0); // Z, V live
     //     bne cae4d
@@ -4815,7 +4815,7 @@ cae4d:
     // cae52:
 cae52:
     //     lda (current_edit_line_ptr),y
-    a = ram[current_edit_line_ptr + y];
+    a = ram[RAM_EDIT_BUFFER + y];
     set_flags(&flags, a); // none live
     //     sty l0084
     l0084 = y;
@@ -4825,7 +4825,7 @@ cae52:
     //     beq cae5c
     if (!(y == 0))
     {
-        ram[current_edit_line_ptr + y] = a;
+        ram[RAM_EDIT_BUFFER + y] = a;
     }
     //     ldy l0084
     y = l0084;
@@ -5872,7 +5872,7 @@ static void get_line_length(void)
         //     dey
         y--;
         //     lda (current_edit_line_ptr),y
-        a = ram[current_edit_line_ptr + y];
+        a = ram[RAM_EDIT_BUFFER + y];
         //     cmp #0x10
         if (a != 0x10)
             goto cab06;
@@ -6191,7 +6191,7 @@ c98d9:
     do
     {
         a = output_buffer[y];
-        ram[current_edit_line_ptr + y] = a;
+        ram[RAM_EDIT_BUFFER + y] = a;
         y++;
     } while (y != l0042);
 loop_c98ec:
@@ -6254,7 +6254,7 @@ c9920:
     // c9922:
 c9922:
     //     sta (current_edit_line_ptr),y
-    ram[current_edit_line_ptr + y] = a;
+    ram[RAM_EDIT_BUFFER + y] = a;
     //     iny
     y++;
     //     inx
@@ -6272,7 +6272,7 @@ c9922:
         cmp(&flags, y, MAX_LINE_LENGTH); // Z, C live
         if (flags & FLAG_C)
             return;
-        ram[current_edit_line_ptr + y] = a;
+        ram[RAM_EDIT_BUFFER + y] = a;
         y++;
     }
 loop_c992c:
@@ -6456,7 +6456,7 @@ static void recalculate_cursor_xpos(void)
     //     sta ((uint8_t*)&tmp01)[0]
     //     lda current_edit_line_ptr+1
     //     sta ((uint8_t*)&tmp01)[1]
-    tmp01 = current_edit_line_ptr;
+    tmp01 = RAM_EDIT_BUFFER;
     //     lda l0079
     a = l0079;
     if (a != 0)
@@ -7417,7 +7417,7 @@ static void sub_c9936(void)
     //     ror l0083
     l0083 = ror(&flags, l0083); // none live
     //     lda (current_edit_line_ptr),y
-    a = ram[current_edit_line_ptr + y];
+    a = ram[RAM_EDIT_BUFFER + y];
     //     sta output_buffer,y
     output_buffer[y] = a;
     //     cmp #9
@@ -7795,7 +7795,7 @@ c9a2e:
     //     ldy l0048
     y = l0048;
     //     sta (current_edit_line_ptr),y
-    ram[current_edit_line_ptr + y] = a;
+    ram[RAM_EDIT_BUFFER + y] = a;
     //     cmp #0x20 ; ' '
     cmp(&flags, a, 0x20); // Z, C live
     //     bne c9a38
@@ -7874,12 +7874,12 @@ c9a60:
             advance_to_next_line();
             return;
         }
-        a = ram[current_edit_line_ptr + y];
+        a = ram[RAM_EDIT_BUFFER + y];
         set_flags(&flags, a); // none live
         {
             uint8_t saved_a = a;
             a = 0x10;
-            ram[current_edit_line_ptr + y] = a;
+            ram[RAM_EDIT_BUFFER + y] = a;
             a = saved_a;
         }
     } while (a != 0x20);
@@ -8122,7 +8122,7 @@ static void sub_c9e22(uint8_t a)
     if (flags & FLAG_C)
         return;
     //     sta (current_edit_line_ptr),y
-    ram[current_edit_line_ptr + y] = a;
+    ram[RAM_EDIT_BUFFER + y] = a;
     //     inc l0074
     l0074++;
     // return_55:
@@ -8280,7 +8280,7 @@ ca558:
     return;
 }
 
-static void sub_caa97(addr_t ptr1)
+static void unpack_line(addr_t ptr1)
 {
     uint8_t a;
     uint8_t a2;
@@ -8288,8 +8288,8 @@ static void sub_caa97(addr_t ptr1)
     uint8_t x;
     uint8_t y;
 
-    // sub_caa97
-    // sub_caa97:
+    // unpack_line
+    // unpack_line:
     //     lda #0x10
     //     jsr wipe_buffer
     wipe_buffer(0x10);
@@ -8300,9 +8300,9 @@ static void sub_caa97(addr_t ptr1)
     //     lda (current_line_ptr),y
     a = ram[current_line_ptr + y];
     //     ldx current_edit_line_ptr
-    x = (uint8_t)(current_edit_line_ptr & 0xff);
+    x = (uint8_t)(RAM_EDIT_BUFFER & 0xff);
     //     ldy current_edit_line_ptr+1
-    y = (uint8_t)((current_edit_line_ptr >> 8) & 0xff);
+    y = (uint8_t)((RAM_EDIT_BUFFER >> 8) & 0xff);
     //     jsr check_for_command_prefix
     flags = check_for_command_prefix(a);
     //     bne caab7
@@ -8483,7 +8483,7 @@ static int find_left_margin_stop(void)
     do
     {
         //     lda (current_edit_line_ptr),y
-        a = ram[current_edit_line_ptr + y];
+        a = ram[RAM_EDIT_BUFFER + y];
         //     iny
         y++;
         //     cmp #0x0b
@@ -8542,7 +8542,7 @@ static void sub_caedd(uint8_t y)
             a = 0x0b;
             set_flags(&flags, a); // Z live
             //     sta (current_edit_line_ptr),y
-            ram[current_edit_line_ptr + y] = a;
+            ram[RAM_EDIT_BUFFER + y] = a;
             //     iny
             y++;
         }
@@ -8565,7 +8565,7 @@ static void unpack_line_into_buffer(void)
     //     lda #1
     //     sta l006e
     edit_buffer_unpacked_flag = 1;
-    sub_caa97(ptr1);
+    unpack_line(ptr1);
 }
 
 void wipe_buffer(uint8_t a)

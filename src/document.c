@@ -812,7 +812,7 @@ uint8_t initialise_document(void)
     //     sta (((uint8_t*)&tmp89)[0]),y
     ram[tmp89] = 0x0d;
     //     sta current_line_buffer + 0x89
-    current_line_buffer[MAX_LINE_LENGTH - 1] = 0x0d;
+    ram[RAM_CURRENT_LINE_BUF + MAX_LINE_LENGTH - 1] = 0x0d;
     //     lda page / sta top / lda page+1 / sta top+1
     top = page;
     //     lda #<(current_line_buffer)
@@ -820,24 +820,17 @@ uint8_t initialise_document(void)
     //     sta ptr1
     ptr1 = (ptr1 & 0xff00) | a;
     //     clc
-    flags &= ~FLAG_C;
     //     adc #3
-    a = adc(&flags, a, 3); // C live
     //     sta current_edit_line_ptr
     //     sta current_format_line_ptr
-    current_edit_line_ptr = (current_edit_line_ptr & 0xff00) | a;
-    current_format_line_ptr = current_edit_line_ptr;
     //     lda #>(current_line_buffer)
     a = (uint8_t)(RAM_CURRENT_LINE_BUF >> 8);
     //     sta ptr1+1
     ptr1 = (ptr1 & 0x00ff) | ((uint16_t)a << 8);
     //     adc #0
-    a = adc(&flags, a, 0); // none live
     //     sta current_edit_line_ptr+1
     //     sta current_format_line_ptr+1
-    current_edit_line_ptr =
-        (current_edit_line_ptr & 0x00ff) | ((uint16_t)a << 8);
-    current_format_line_ptr = current_edit_line_ptr;
+    current_format_line_ptr = RAM_EDIT_BUFFER;
     //     lda #<(current_ruler_buffer)
     y = create_default_ruler(RAM_CURRENT_RULER_BUF);
     //     iny

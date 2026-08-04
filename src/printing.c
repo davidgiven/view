@@ -3342,7 +3342,7 @@ c91a7:
     // loop_c91b2:
 loop_c91b2:
     //     sta current_line_buffer,x
-    current_line_buffer[x] = a;
+    ram[RAM_CURRENT_LINE_BUF + x] = a;
     //     inx
     x++;
     //     cmp #0x0d
@@ -3479,7 +3479,7 @@ c9209:
     // c921b:
 c921b:
     //     sta current_line_buffer,x
-    current_line_buffer[x] = a;
+    ram[RAM_CURRENT_LINE_BUF + x] = a;
     //     inx
     x++;
     //     cpx #0x82

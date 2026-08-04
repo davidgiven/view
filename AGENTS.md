@@ -74,7 +74,7 @@ The 64 KB address space is split into fixed working buffers (below `oshwm` =
 
 | Address range | Contents |
 |---|---|
-| `0x0545`–`0x05CB` | **`current_line_buffer`** (135 bytes). Working edit buffer. `ptr1` points here; `current_edit_line_ptr` / `current_format_line_ptr` point at offset +3 (`0x0548`). |
+| `0x0545`–`0x05CB` | **`current_line_buffer`** (135 bytes). Working edit buffer. `ptr1` points here; `RAM_EDIT_BUFFER` (`0x0548`) / `current_format_line_ptr` point at offset +3. |
 | `0x05CC`–`0x05CE` | Pad bytes before ruler buffer. |
 | `0x05CF`–`0x0653` | **`current_ruler_buffer`** (133 bytes). Current ruler definition. |
 | `0x0798`–`0x07CB` | Register value array (26 × 2 bytes for A–Z). |
@@ -92,7 +92,7 @@ Document heap (current_line_ptr)
     │  Copies bytes from *current_line_ptr → *current_format_line_ptr
     ▼
 current_line_buffer  (ptr1 = 0x0545)
-  current_edit_line_ptr = &current_line_buffer[3]  (0x0548)
+  RAM_EDIT_BUFFER = &current_line_buffer[3]  (0x0548)
   current_format_line_ptr = &current_line_buffer[3] (aliased during editing)
     │
     │  (edit operations modify the buffer)
@@ -113,9 +113,9 @@ the document (`sub_caa97`), edits in the working buffer, and copies back
 | Variable | Points to |
 |---|---|
 | `current_line_ptr` | Walking cursor into the document heap (`page`..`top`) |
-| `current_edit_line_ptr` | `current_line_buffer + 3` — working copy of the current document line |
-| `current_format_line_ptr` | Aliased to `current_edit_line_ptr` during editing; may differ during printing |
-| `ptr1` | `current_line_buffer` (base, 3 bytes before `current_edit_line_ptr`) |
+| `RAM_EDIT_BUFFER` | Constant `0x0548` (`current_line_buffer + 3`) — the working copy of the current document line |
+| `current_format_line_ptr` | Aliased to `RAM_EDIT_BUFFER` during editing; may differ during printing |
+| `ptr1` | `current_line_buffer` (base, 3 bytes before `RAM_EDIT_BUFFER`) |
 | `ptr2`–`ptr6` | Various working pointers into the document heap |
 | `current_ruler_ptr` | Pointer into `current_ruler_buffer` (set from ruler stack) |
 | `page` / `top` | Document heap bounds |

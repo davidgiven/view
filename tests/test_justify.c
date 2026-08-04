@@ -16,7 +16,6 @@ extern uint8_t l0039, l0042, l0043, l0044, l0045, l0046;
 extern uint8_t l0081, l0082, l0083, l0084;
 extern uint8_t print_xpos;
 extern uint8_t input_buffer_offset;
-extern addr_t current_edit_line_ptr;
 extern addr_t current_format_line_ptr;
 extern addr_t current_line_ptr;
 extern addr_t ptr1;
@@ -28,7 +27,7 @@ extern uint8_t input_buffer[68];
 
 void justify_edit_buffer(void);
 
-#define BUFFER_ADDR 0x8000
+#define BUFFER_ADDR 0x0548 /* RAM_EDIT_BUFFER */
 
 static int test_failures;
 
@@ -55,7 +54,6 @@ static void setup_edit_buffer(const char* text)
 static void init_globals(const char* text, uint8_t jf, uint8_t rstop)
 {
     setup_edit_buffer(text);
-    current_edit_line_ptr = BUFFER_ADDR;
     current_format_line_ptr = BUFFER_ADDR;
     current_line_ptr = BUFFER_ADDR;
     ptr1 = BUFFER_ADDR;

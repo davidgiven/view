@@ -97,8 +97,6 @@ uint8_t ram[65536];
 addr_t ptr1; // PROVISIONAL: working copy of current_format_line_ptr, used for
              // editing/unpacking lines
 // X current_edit_line_ptr: .fill 2
-addr_t current_edit_line_ptr; // PROVISIONAL: points to editor's working line
-                              // buffer (current_line_buffer+3) for editing
 // X current_format_line_ptr: .fill 2
 addr_t current_format_line_ptr; // PROVISIONAL: points to line being
                                 // formatted/printed; aliased to
@@ -396,7 +394,6 @@ uint8_t input_buffer[MAX_COMMAND_LENGTH]; // PROVISIONAL: CLI command-line input
 
 // X current_line_buffer:            .fill 135
 #define RAM_CURRENT_LINE_BUF 0x0545
-#define current_line_buffer (&ram[RAM_CURRENT_LINE_BUF])
 // X just_before_current_ruler_buffer: .fill 3 ; ??? something to do with
 // rulers?
 #define RAM_JUST_BEFORE_RULER_BUF 0x05CC

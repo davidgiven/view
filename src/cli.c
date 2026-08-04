@@ -683,11 +683,11 @@ static void format_cmd(void)
     //     jsr wipe_buffer
     wipe_buffer(0x10);
     //     lda current_edit_line_ptr
-    a = (uint8_t)(current_edit_line_ptr & 0xff);
+    a = (uint8_t)(RAM_EDIT_BUFFER & 0xff);
     //     sta current_format_line_ptr
     current_format_line_ptr = (current_format_line_ptr & 0xff00) | a;
     //     lda current_edit_line_ptr+1
-    a = (uint8_t)((current_edit_line_ptr >> 8) & 0xff);
+    a = (uint8_t)((RAM_EDIT_BUFFER >> 8) & 0xff);
     //     sta current_format_line_ptr+1
     current_format_line_ptr =
         (current_format_line_ptr & 0x00ff) | ((uint16_t)a << 8);
