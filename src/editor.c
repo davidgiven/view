@@ -59,7 +59,6 @@ static void sub_caa97(addr_t ptr1);
 static void sub_caacb(void);
 uint8_t sub_cac41(addr_t tmp01);
 static void sub_cac50(addr_t tmp89);
-static void sub_cae03(void);
 static int find_left_margin_stop(void);
 static uint8_t sub_caed6(void);
 static void sub_caedd(uint8_t y);
@@ -4716,7 +4715,7 @@ void insert_edit_buffer_bytes_at_xpos(uint8_t x)
     //     bcs cae03
     if (flags & FLAG_C)
     {
-        sub_cae03();
+        beep();
         return;
     }
     //     stx input_buffer_offset+1
@@ -4732,7 +4731,7 @@ void insert_edit_buffer_bytes_at_xpos(uint8_t x)
     //     bcs cae03
     if (flags & FLAG_C)
     {
-        sub_cae03();
+        beep();
         return;
     }
     //     cmp #0x85
@@ -4740,7 +4739,7 @@ void insert_edit_buffer_bytes_at_xpos(uint8_t x)
     //     bcs cae03
     if (flags & FLAG_C)
     {
-        sub_cae03();
+        beep();
         return;
     }
     //     inc l006d
@@ -8461,13 +8460,6 @@ cac6f:
     // return_73:
     //     rts
     return;
-}
-
-static void sub_cae03(void)
-{
-    // cae03:
-    //     jmp beep
-    beep();
 }
 
 /**

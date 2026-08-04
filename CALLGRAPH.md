@@ -248,8 +248,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **reset_area_to_marks_1_2** → lookup_marker, sanitise_area, set_marker_to_here [a, area_end_ptr, area_start_ptr, doc_ptr1, flags, markers_array, x]
 - **set_marker_to_here** → check_for_command_prefix, get_line_length [a, current_format_line_ptr, current_line_ptr, flags, markers_array, ram, x, xpos, y]
 - **get_register_address** [a, flags, tmp6, tmp7]
-- **sub_cae03** → beep
-- **insert_edit_buffer_bytes_at_xpos** → get_line_length, sub_ca536, sub_cae03 [a, current_edit_line_ptr, edit_buffer_dirty_flag, flags, l0080, l0081, l0084, markers_array, ram, tmp6, tmp7, x, xpos, y]
+- **insert_edit_buffer_bytes_at_xpos** → get_line_length, sub_ca536 [a, current_edit_line_ptr, edit_buffer_dirty_flag, flags, l0080, l0081, l0084, markers_array, ram, tmp6, tmp7, x, xpos, y]
 - **delete_edit_buffer_bytes_at_xpos** → sub_ca536 [a, current_edit_line_ptr, edit_buffer_dirty_flag, flags, l0080, l0084, markers_array, ram, tmp6, tmp7, x, xpos, y]
 - **find_left_margin_stop** [a, current_edit_line_ptr, ram, ruler_left_stop, y]
 - **sub_caedd** → insert_edit_buffer_bytes_at_xpos [a, current_edit_line_ptr, flags, ram, x, xpos, y]
