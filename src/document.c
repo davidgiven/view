@@ -858,13 +858,12 @@ uint8_t initialise_document(void)
     return a;
 }
 
-void lookup_marker(void)
+void lookup_marker(uint8_t a)
 {
     // lookup_marker
     // lookup_marker: Converts marker character '1'-'6' to index
 
     //     sec
-    uint8_t a;
     uint8_t x;
     flags |= FLAG_C;
     //     sbc #0x31 ; '1'

@@ -18,7 +18,7 @@ extern void run_cli(void);
 extern void move_cursor_to_address(uint16_t addr);
 
 // Additional view.c functions called by moved editor helpers
-extern void lookup_marker(void);
+extern void lookup_marker(uint8_t a);
 
 extern void cac78(addr_t tmp89);
 extern void insert_edit_buffer_bytes_at_xpos(uint8_t x);

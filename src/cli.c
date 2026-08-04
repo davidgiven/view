@@ -1958,7 +1958,7 @@ addr_t parse_mark_from_command(uint8_t x)
     //     sty input_buffer_offset
     input_buffer_offset = y;
     //     jsr lookup_marker
-    lookup_marker();
+    lookup_marker(a);
     //     bcs c89b3 / c89b3: jsr print_inline_string ; .ascii "Bad marker" ;
     //     .byte 0xff
     if (flags & FLAG_C)

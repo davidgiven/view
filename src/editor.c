@@ -4172,7 +4172,7 @@ static void prompt_for_marker(void)
     //     jsr read_char
     read_char();
     //     jsr lookup_marker
-    lookup_marker();
+    lookup_marker(a);
     //     bcc return_74
     if (!(flags & FLAG_C))
         return;
@@ -4196,7 +4196,7 @@ static void reset_area_to_marks_1_2(void)
     //     lda #0x31 ; '1'
     a = 0x31;
     //     jsr lookup_marker
-    lookup_marker();
+    lookup_marker(a);
     //     bcs return_76
     if (flags & FLAG_C)
         return;
@@ -4212,7 +4212,7 @@ static void reset_area_to_marks_1_2(void)
     //     lda #0x32 ; '2'
     a = 0x32;
     //     jsr lookup_marker
-    lookup_marker();
+    lookup_marker(a);
     //     bcs return_76
     if (flags & FLAG_C)
         return;
@@ -5916,8 +5916,9 @@ static void go_to_marker_n(void)
     //     jsr ca93c
     write_line_back_to_document_safely();
     //     pla
+    a = saved_a;
     //     jsr lookup_marker
-    lookup_marker();
+    lookup_marker(a);
     //     jmp go_to_marker
     go_to_marker(x);
     return;
@@ -7239,7 +7240,7 @@ static void set_marker_common(uint8_t a)
     //     pla
     a = saved_a;
     //     jsr lookup_marker
-    lookup_marker();
+    lookup_marker(a);
     //     jmp set_marker
     set_marker();
     return;
