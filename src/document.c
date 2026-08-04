@@ -32,7 +32,7 @@ void check_for_control_code(uint8_t a)
     //     beq return_63
     if (!(flags & FLAG_Z))
     {
-        cmp(&flags, a, 0x1d); // Z, C live
+        cmp(&flags, a, 0x1d); // Z live
         flags &= ~FLAG_C;
     }
     //     rts
@@ -247,7 +247,6 @@ void print_char(void)
 c9462:
     //     lda #0
     a = 0;
-    set_flags(&flags, a); // none live
     //     sta print_xpos
     print_xpos = 0;
     //     lda #0x0d
@@ -343,7 +342,6 @@ void process_document_character(void)
 ca5d1:
     //     ldx #1
     x = 1;
-    set_flags(&flags, x); // none live
     //     clc
     flags &= ~FLAG_C;
     //     rts
@@ -358,7 +356,6 @@ ca5d5:
 ca5d9:
     //     lda ruler_left_stop
     a = ruler_left_stop;
-    set_flags(&flags, a); // Z live
     set_flags(&flags, a); // Z live
     //     beq ca5d5
     if (flags & FLAG_Z)
@@ -395,7 +392,6 @@ ca5f1:
     a = sbc(&flags, a, l0039); // C, V live
     //     tax
     x = a;
-    set_flags(&flags, x); // none live
     //     beq ca5f8
     if (x == 0)
         goto ca5f8;
@@ -405,14 +401,11 @@ ca5f1:
 ca5f8:
     //     ldx #1
     x = 1;
-    set_flags(&flags, x); // none live
 ca5fa:
     //     lda #0x20 ; ' '
     a = 0x20;
-    set_flags(&flags, a); // none live
     //     ldy l0084
     y = l0084;
-    set_flags(&flags, y); // none live
     //     sec
     flags |= FLAG_C;
     //     rts
@@ -512,8 +505,8 @@ uint8_t sub_cadf0(void)
     // loop_cadf4:
     do
     {
-        ((uint8_t*)&tmp89)[0] = rol(&flags, ((uint8_t*)&tmp89)[0]); // none live
-        a = rol(&flags, a);                                         // C live
+        ((uint8_t*)&tmp89)[0] = rol(&flags, ((uint8_t*)&tmp89)[0]); // C live
+        a = rol(&flags, a);                                         // none live
         cmp(&flags, a, l0046);                                      // C live
         if ((flags & FLAG_C))
         {
@@ -722,8 +715,9 @@ void get_register_address(uint8_t a)
         a <<= 1;
         //     adc #<register_value_array
         flags &= ~FLAG_C;
-        a = adc(
-            &flags, a, (uint8_t)(RAM_REGISTER_VALUE_ARRAY & 0xff)); // C live
+        a = adc(&flags,
+            a,
+            (uint8_t)(RAM_REGISTER_VALUE_ARRAY & 0xff)); // C live
         //     sta ((uint8_t*)&tmp67)[0]
         ((uint8_t*)&tmp67)[0] = a;
         //     lda #>register_value_array
@@ -866,7 +860,7 @@ void lookup_marker(uint8_t a)
     //     sec
     flags |= FLAG_C;
     //     sbc #0x31 ; '1'
-    a = sbc(&flags, a, 0x31);
+    a = sbc(&flags, a, 0x31); // Z, C live
     //     bcc loop_caced
     if (!(flags & FLAG_C))
     {

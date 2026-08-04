@@ -156,7 +156,6 @@ static uint8_t ce_fmt_cmd(void)
     //     txa
     a = x;
     set_flags(&flags, a); // Z live
-    set_flags(&flags, a); // Z live
     //     beq return_36
     if (flags & FLAG_Z)
         return a;
@@ -170,7 +169,6 @@ static uint8_t ce_fmt_cmd(void)
     l0084 = a;
     //     lda ruler_right_stop
     a = ruler_right_stop;
-    set_flags(&flags, a); // Z live
     set_flags(&flags, a); // Z live
     //     beq c950f
     if (flags & FLAG_Z)
@@ -203,7 +201,6 @@ static uint8_t ce_fmt_cmd(void)
         return a;
     }
     //     lda #0
-    set_flags(&flags, 0); // none live
     //     beq c950f                                                         ;
     //     ALWAYS branch
     c950f_impl(0);
@@ -228,7 +225,6 @@ static void rj_fmt_cmd(void)
     }
     //     txa
     a = x;
-    set_flags(&flags, a); // Z live
     set_flags(&flags, a); // Z live
     //     beq c9529
     if (flags & FLAG_Z)
@@ -677,7 +673,6 @@ static uint8_t pe_fmt_cmd(void)
     //     tax
     x = a;
     set_flags(&flags, x); // Z live
-    set_flags(&flags, x); // Z live
     //     beq page_eject_fmt
     if (flags & FLAG_Z)
     {
@@ -691,7 +686,6 @@ static uint8_t pe_fmt_cmd(void)
         return x;
     //     lda l0031
     a = l0031;
-    set_flags(&flags, a); // Z live
     set_flags(&flags, a); // Z live
     //     bne page_eject_fmt
     if (!(flags & FLAG_Z))
@@ -1081,7 +1075,6 @@ c9725:
     }
     //     tax
     x = a;
-    set_flags(&flags, x); // none live
     //     lda ((uint8_t*)&tmp89)[0]
     a = ((uint8_t*)&tmp89)[0];
     //     sta highlight1_code,x
@@ -1175,7 +1168,7 @@ void lookup_formatting_command(void)
         if (!(a != commands_table[y]))
         {
             a = ((uint8_t*)&tmp23)[1];
-            cmp(&flags, a, commands_table[y + 1]); // N, C live
+            cmp(&flags, a, commands_table[y + 1]); // Z, N, C live
             if (flags & FLAG_Z)
                 return;
         }
@@ -1473,7 +1466,6 @@ c97dc:
     //     ldx input_buffer_offset+1
     x = l0080;
     set_flags(&flags, x); // Z live
-    set_flags(&flags, x); // Z live
     //     beq c9804
     if (flags & FLAG_Z)
         goto c9804;
@@ -1762,7 +1754,6 @@ c9284:
     if ((flags & FLAG_Z))
     {
         ram[RAM_REGISTER_VALUE_P + 1]++;
-        set_flags(&flags, ram[RAM_REGISTER_VALUE_P + 1]); // none live
     }
     //     lda #1
     //     sta register_value_l
@@ -1968,7 +1959,6 @@ c906f:
     //     lda l0042
     a = l0042;
     set_flags(&flags, a); // Z, N live
-    set_flags(&flags, a); // Z, N live
     //     beq c908a
     if (flags & FLAG_Z)
         goto c908a;
@@ -2102,13 +2092,11 @@ c90e2:
     //     lda l0045
     a = l0045;
     set_flags(&flags, a); // Z live
-    set_flags(&flags, a); // Z live
     //     beq c90f8
     if (flags & FLAG_Z)
         goto c90f8;
     //     lda ruler_right_stop
     a = ruler_right_stop;
-    set_flags(&flags, a); // Z live
     set_flags(&flags, a); // Z live
     //     beq c90f8
     if (flags & FLAG_Z)
@@ -2156,14 +2144,12 @@ c9101:
             uint8_t c = (a & 0x80) ? FLAG_C : 0;
             a <<= 1;
             flags = (flags & ~(FLAG_C | FLAG_Z | FLAG_N)) | c;
-            set_flags(&flags, a); // none live
         }
         ((uint8_t*)&tmp89)[1] = rol(&flags, ((uint8_t*)&tmp89)[1]); // none live
         {
             uint8_t c = (l0045 & 0x80) ? FLAG_C : 0;
             l0045 <<= 1;
             flags = (flags & ~(FLAG_C | FLAG_Z | FLAG_N)) | c;
-            set_flags(&flags, l0045); // none live
         }
         if ((flags & FLAG_C))
         {
@@ -2539,7 +2525,6 @@ static void print_loop(void)
         //     lda l0031
         a = l0031;
         set_flags(&flags, a); // Z live
-        set_flags(&flags, a); // Z live
         //     beq c8f3b
         if (!(flags & FLAG_Z))
         {
@@ -2657,7 +2642,6 @@ static void print_loop(void)
         //     lda (((uint8_t*)&tmp67)[0]),y
         a = ram[tmp67 + y];
         set_flags(&flags, a); // Z live
-        set_flags(&flags, a); // Z live
         //     beq c8f6b
         if (flags & FLAG_Z)
             goto c8f6b_l;
@@ -2703,7 +2687,6 @@ static void print_loop(void)
         //     lda macro_executing_flag
         a = macro_executing_flag;
         set_flags(&flags, a); // Z live
-        set_flags(&flags, a); // Z live
         //     bne nested_macro_error
         if (!(flags & FLAG_Z))
         {
@@ -2713,7 +2696,7 @@ static void print_loop(void)
         ptr3 = tmp67 + 4;
         macro_executing_flag = (uint8_t)(ptr3 >> 8);
         //     bne c900e
-        set_flags(&flags, macro_executing_flag); // none live
+        set_flags(&flags, macro_executing_flag); // Z live
         if (!(flags & FLAG_Z))
             continue;
         // c8fce:
@@ -2737,7 +2720,7 @@ static void print_loop(void)
         if (((int8_t)a < 0))
         {
             a = microspacing_flag;
-            set_flags(&flags, a); // none live
+            set_flags(&flags, a); // Z live
             if (!(flags & FLAG_Z))
             {
                 microspace_word_processor();
@@ -3013,7 +2996,7 @@ static void render_header_or_footer(void)
     //     bcc c9355
     if ((flags & FLAG_C))
     {
-        a = sbc(&flags, a, l0039); // none live
+        a = sbc(&flags, a, l0039); // C live
         if ((flags & FLAG_C))
         {
             x = a;
@@ -3508,7 +3491,7 @@ static void sub_c9228(uint8_t a)
     {
         a = 0;
         l0082 = a;
-        set_flags(&flags, a); // none live
+        set_flags(&flags, a); // Z live
         return;
     }
     //     cmp #0x3c ; '<'
@@ -3517,7 +3500,7 @@ static void sub_c9228(uint8_t a)
     {
         a = 0x40;
         l0082 = a;
-        set_flags(&flags, 0); // none live
+        set_flags(&flags, 0); // Z live
         return;
     }
     //     bit l0082
@@ -3612,7 +3595,7 @@ static void sub_c92f0(void)
     //     bcc c930d
     if ((flags & FLAG_C))
     {
-        a = sbc(&flags, a, footer_margin); // none live
+        a = sbc(&flags, a, footer_margin); // C live
         if ((flags & FLAG_C))
         {
             x = a;
@@ -3821,7 +3804,6 @@ static void sub_c93fd(void)
     //     lsr
     flags = (flags & ~FLAG_C) | (a & 1);
     a >>= 1;
-    set_flags(&flags, a); // none live
     // return_31:
 return_31:; // fallthrough to rts
 }
@@ -3841,7 +3823,7 @@ static void sub_c9407(void)
     if ((flags & FLAG_C))
     {
         x = two_sided_flag;
-        set_flags(&flags, x); // none live
+        set_flags(&flags, x); // Z live
         if (!(flags & FLAG_Z))
         {
             a += rhs_extra_margin;

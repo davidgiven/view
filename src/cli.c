@@ -332,7 +332,6 @@ static void count_cmd(void)
     tmp01 = area_start_ptr;
     //     lda #0
     a = 0;
-    set_flags(&flags, a); // none live
     //     sta ((uint8_t*)&tmp89)[0]
     //     sta ((uint8_t*)&tmp89)[1]
     tmp89 = 0;
@@ -372,7 +371,6 @@ loop_c86c2:
 c86d1:
     //     lda l8749,x
     a = l8747_data[x + 2];
-    set_flags(&flags, a); // Z live
     set_flags(&flags, a); // Z live
     //     beq c86db
     if (flags & FLAG_Z)
@@ -444,7 +442,6 @@ c86ff:
 c8703:
     //     ldy l0083
     y = l0083;
-    set_flags(&flags, y); // Z live
     set_flags(&flags, y); // Z live
     //     beq c870d
     if (!(flags & FLAG_Z))
@@ -1570,7 +1567,6 @@ c816d:
     //     lda printer_driver_name
     a = printer_driver_name[0];
     set_flags(&flags, a); // Z live
-    set_flags(&flags, a); // Z live
     //     beq c81b6
     if (flags & FLAG_Z)
         goto c81b6;
@@ -1617,7 +1613,6 @@ c81b6:
 c81ba:
     //     lda markers_array+1,x
     a = ((uint8_t*)markers_array)[x + 1];
-    set_flags(&flags, a); // Z live
     set_flags(&flags, a); // Z live
     //     beq c81e7
     if (flags & FLAG_Z)
@@ -1986,10 +1981,8 @@ addr_t parse_mark_from_command(uint8_t x)
     }
     //     lda markers_array,x
     a = (uint8_t)(markers_array[x] & 0xff);
-    set_flags(&flags, a); // none live
     //     ldy markers_array+1,x
     y = (uint8_t)(markers_array[x] >> 8);
-    set_flags(&flags, y); // none live
     // return_12:
     //     rts
     return (addr_t)(y) << 8 | a;

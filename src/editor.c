@@ -728,7 +728,6 @@ static void cf6_split_line_key(void)
     //     tya
 
     a = y;
-    set_flags(&flags, a); // none live
 
     //     tax
 
@@ -737,7 +736,6 @@ static void cf6_split_line_key(void)
     //     ldy #0
 
     y = 0;
-    set_flags(&flags, y); // none live
 
     //     lda (current_format_line_ptr),y
 
@@ -3670,7 +3668,7 @@ cae98:
         x = 0x10;
         a = y;
         flags &= ~FLAG_C;
-        a = adc(&flags, a, l0080); // none live
+        a = adc(&flags, a, l0080); // C live
         if (!(flags & FLAG_C))
         {
             y = a;
@@ -3802,7 +3800,6 @@ c9c31:
         goto c9c4a;
     //     lda ruler_left_stop
     a = ruler_left_stop;
-    set_flags(&flags, a); // Z live
     set_flags(&flags, a); // Z live
     //     beq c9c48
     if (flags & FLAG_Z)
@@ -3947,7 +3944,6 @@ c9ca2:
     y++;
     //     lda ruler_left_stop (4230)
     a = ruler_left_stop;
-    set_flags(&flags, a); // Z live
     set_flags(&flags, a); // Z live
     //     beq c9cb9 (4231)
     if (!(flags & FLAG_Z))
@@ -4711,7 +4707,7 @@ void insert_edit_buffer_bytes_at_xpos(uint8_t x)
     //     lda xpos
     a = xpos;
     //     cmp #MAX_LINE_LENGTH
-    cmp(&flags, a, MAX_LINE_LENGTH); // Z, C live
+    cmp(&flags, a, MAX_LINE_LENGTH); // C live
     //     bcs cae03
     if (flags & FLAG_C)
     {
@@ -4727,7 +4723,7 @@ void insert_edit_buffer_bytes_at_xpos(uint8_t x)
     //     clc
     flags &= ~FLAG_C;
     //     adc input_buffer_offset+1
-    a = adc(&flags, a, l0080); // Z, C, V live
+    a = adc(&flags, a, l0080); // C live
     //     bcs cae03
     if (flags & FLAG_C)
     {
@@ -4735,7 +4731,7 @@ void insert_edit_buffer_bytes_at_xpos(uint8_t x)
         return;
     }
     //     cmp #0x85
-    cmp(&flags, a, MAX_LINE_LENGTH + 1); // Z, C live
+    cmp(&flags, a, MAX_LINE_LENGTH + 1); // C live
     //     bcs cae03
     if (flags & FLAG_C)
     {
@@ -4751,7 +4747,6 @@ void insert_edit_buffer_bytes_at_xpos(uint8_t x)
     tmp67 = RAM_EDIT_BUFFER;
     //     ldy #0x84
     y = MAX_LINE_LENGTH;
-    set_flags(&flags, y); // Z live
     // cae27:
 cae27:
     //     dey
@@ -4763,7 +4758,7 @@ cae27:
     //     clc
     flags &= ~FLAG_C;
     //     adc input_buffer_offset+1
-    a = adc(&flags, a, l0080); // C, V live
+    a = adc(&flags, a, l0080); // C live
     //     bcs cae35
     if (!(flags & FLAG_C))
     {
@@ -4784,7 +4779,6 @@ loop_cae37:
     //     lda l0081
     a = l0081;
     set_flags(&flags, a); // Z live
-    set_flags(&flags, a); // Z live
     //     beq cae4b
     if (flags & FLAG_Z)
         goto cae4b;
@@ -4797,7 +4791,7 @@ loop_cae37:
     //     lda current_edit_line_ptr+1
     a = (uint8_t)(RAM_EDIT_BUFFER >> 8);
     //     adc #0
-    a = adc(&flags, a, 0); // Z, V live
+    a = adc(&flags, a, 0); // Z live
     //     bne cae4d
     if (!(flags & FLAG_Z))
         goto cae4d;
@@ -4816,12 +4810,10 @@ cae4d:
 cae52:
     //     lda (current_edit_line_ptr),y
     a = ram[RAM_EDIT_BUFFER + y];
-    set_flags(&flags, a); // none live
     //     sty l0084
     l0084 = y;
     //     ldy l0081
     y = l0081;
-    set_flags(&flags, y); // none live
     //     beq cae5c
     if (!(y == 0))
     {
@@ -4829,7 +4821,6 @@ cae52:
     }
     //     ldy l0084
     y = l0084;
-    set_flags(&flags, y); // Z live
     //     cpy xpos
     if (y != xpos)
         goto cae27;
@@ -4866,7 +4857,6 @@ void set_marker_to_here(uint8_t x)
     }
     //     tya
     a = y;
-    set_flags(&flags, a); // none live
     // cad5d:
 cad5d:
     //     clc
@@ -5122,7 +5112,7 @@ caa08:
     //     lda ((uint8_t*)&tmp23)[1] (6432)
     a = ((uint8_t*)&tmp23)[1];
     //     adc #0 (6433)
-    a = adc(&flags, a, 0); // C, V live
+    a = adc(&flags, a, 0); // V live
     //     sta top+1 (6434)
     top = (top & 0x00ff) | ((uint16_t)a << 8);
     //     rts (6435)
@@ -5164,7 +5154,6 @@ static void advance_to_next_line(void)
     flags &= ~FLAG_V;
     //     lda l007e
     a = l007e;
-    set_flags(&flags, a); // none live
 }
 
 [[nodiscard]] static bool sub_c9aa9(void)
@@ -5392,7 +5381,6 @@ c8bf7:
     l0084 = x;
     //     lda l0083
     a = l0083;
-    set_flags(&flags, a); // none live
     //     cmp #0x20 ; ' '
     if (a == 0x20)
         goto c8c23;
@@ -5802,7 +5790,6 @@ static void draw_status_word(void)
     x = 0x46;
     //     lda format_mode_flag
     a = format_mode_flag;
-    set_flags(&flags, a); // Z live
     flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq ca666
     if (!(flags & FLAG_Z))
@@ -5967,7 +5954,6 @@ void justify_edit_buffer(void)
     //     lda ruler_right_stop
     a = ruler_right_stop;
     set_flags(&flags, a); // Z live
-    set_flags(&flags, a); // Z live
     //     beq return_47
     if (flags & FLAG_Z)
         return;
@@ -6032,7 +6018,7 @@ c9861:
 c986d:
     //     dec l0046
     l0046--;
-    set_flags(&flags, l0046); // Z, N live
+    set_flags(&flags, l0046); // N live
     //     bmi return_47
     if (flags & FLAG_N)
         return;
@@ -6040,7 +6026,6 @@ c986d:
 c9871:
     //     lda l0046
     a = l0046;
-    set_flags(&flags, a); // Z live
     set_flags(&flags, a); // Z live
     //     beq return_47
     if (flags & FLAG_Z)
@@ -6050,7 +6035,7 @@ c9871:
     //     sec
     flags |= FLAG_C;
     //     sbc l0084
-    a = sbc(&flags, a, l0084); // Z, C, V live
+    a = sbc(&flags, a, l0084); // C live
     //     bcc return_47
     if (!(flags & FLAG_C))
         return;
@@ -6069,7 +6054,7 @@ c9871:
     {
         l0084 = a;
         a = x;
-        a = sbc(&flags, a, l0084); // C, V live
+        a = sbc(&flags, a, l0084); // C live
         x = a;
     }
     //     stx l0082
@@ -6119,7 +6104,6 @@ loop_c98a2:
 c98b5:
     //     lda l0045
     a = l0045;
-    set_flags(&flags, a); // Z live
     set_flags(&flags, a); // Z live
     //     beq c98bd
     if (!(flags & FLAG_Z))
@@ -6179,7 +6163,6 @@ c98d9:
     wipe_buffer(0x1a);
     //     lda l0042
     a = l0042;
-    set_flags(&flags, a); // Z live
     set_flags(&flags, a); // Z live
     //     beq c98f6
     if (flags & FLAG_Z)
@@ -6269,7 +6252,7 @@ c9922:
     //     cpy #0x84
     while (1)
     {
-        cmp(&flags, y, MAX_LINE_LENGTH); // Z, C live
+        cmp(&flags, y, MAX_LINE_LENGTH); // C live
         if (flags & FLAG_C)
             return;
         ram[RAM_EDIT_BUFFER + y] = a;
@@ -7201,12 +7184,10 @@ c8977:
     //     bne return_10
     if (a != 0)
     {
-        set_flags(&flags, a); // none live
         return AREA_NOT_EMPTY;
     }
     //     lda ((uint8_t*)&tmp67)[0]
     a = ((uint8_t*)&tmp67)[0];
-    set_flags(&flags, a); // none live
     // return_10:
     //     rts
     return a != 0 ? AREA_NOT_EMPTY : AREA_EMPTY;
@@ -7430,7 +7411,7 @@ static void sub_c9936(void)
     a = x;
     //     clc
     //     adc l0039
-    a = adc(&flags, a, l0039);
+    a = adc(&flags, a, l0039); // Z live
     //     bne c995c
     if (!(flags & FLAG_Z))
         goto c995c;
@@ -7448,7 +7429,6 @@ c994a:
         goto c9967;
     //     ldx l0039
     x = l0039;
-    set_flags(&flags, x); // Z live
     set_flags(&flags, x); // Z live
     //     beq c995c
     if (!(flags & FLAG_Z))
@@ -7551,7 +7531,6 @@ c998a:
     }
     //     lda ruler_right_stop
     a = ruler_right_stop;
-    set_flags(&flags, a); // Z live
     set_flags(&flags, a); // Z live
     //     beq c9974
     if (flags & FLAG_Z)
@@ -7719,7 +7698,6 @@ c99ee:
     //     lda ruler_left_stop
     a = ruler_left_stop;
     set_flags(&flags, a); // Z live
-    set_flags(&flags, a); // Z live
     //     beq c99c9
     if (flags & FLAG_Z)
         goto c99c9;
@@ -7830,7 +7808,6 @@ c9a40:
     //     lda bottom_margin
     a = bottom_margin;
     set_flags(&flags, a); // Z live
-    set_flags(&flags, a); // Z live
     //     beq c9a58
     if (flags & FLAG_Z)
         goto c9a58;
@@ -7868,14 +7845,13 @@ c9a60:
     {
         l0047--;
         y--;
-        set_flags(&flags, y); // none live
+        set_flags(&flags, y); // Z live
         if (flags & FLAG_Z)
         {
             advance_to_next_line();
             return;
         }
         a = ram[RAM_EDIT_BUFFER + y];
-        set_flags(&flags, a); // none live
         {
             uint8_t saved_a = a;
             a = 0x10;
@@ -7887,7 +7863,7 @@ loop_c9a62:
     //     sec
     flags |= FLAG_C;
     //     ror input_buffer_offset
-    input_buffer_offset = ror(&flags, input_buffer_offset); // none live
+    input_buffer_offset = ror(&flags, input_buffer_offset); // Z, C live
     //     jsr sub_caed6
     sub_caed6();
     //     jsr justify_edit_buffer
@@ -7928,7 +7904,6 @@ c9aa5:
     //     lda l007e
     a = l007e;
     set_flags(&flags, a); // Z live
-    set_flags(&flags, a); // Z live
     //     rts
     return;
 }
@@ -7959,7 +7934,7 @@ static void sub_c9ac1(uint8_t y)
     //     lda current_line_ptr+1
     a = (uint8_t)(current_line_ptr >> 8);
     //     adc #0
-    a = adc(&flags, a, 0); // Z, C, V live
+    a = adc(&flags, a, 0); // Z, C live
     //     sta ((uint8_t*)&tmp89)[1]
     ((uint8_t*)&tmp89)[1] = a;
     //     sta ((uint8_t*)&tmp45)[1]
@@ -8273,7 +8248,6 @@ ca550:
 ca558:
     //     lda #0
     a = 0;
-    set_flags(&flags, a); // Z live
     set_flags(&flags, 0); // Z live
     // return_61:
     //     rts
@@ -8540,7 +8514,6 @@ static void sub_caedd(uint8_t y)
             y = xpos;
             //     lda #0x0b
             a = 0x0b;
-            set_flags(&flags, a); // Z live
             //     sta (current_edit_line_ptr),y
             ram[RAM_EDIT_BUFFER + y] = a;
             //     iny
@@ -8597,7 +8570,7 @@ static void write_line_back_to_document(void)
     //     lda l006e
     //     beq ca93a
     a = edit_buffer_unpacked_flag;
-    set_flags(&flags, a); // none live
+    set_flags(&flags, a); // Z live
     if (flags & FLAG_Z)
         goto ca93a;
     //     lda current_line_ptr
@@ -8655,7 +8628,7 @@ ca8ed:
     if (((int8_t)a < 0))
     {
         a = edit_buffer_dirty_flag;
-        set_flags(&flags, a); // none live
+        set_flags(&flags, a); // Z live
         if (!(flags & FLAG_Z))
         {
             ca741(ptr6);

@@ -868,7 +868,6 @@ loop_c8a74:
         uint8_t saved_flags_ = flags;
         //     iny
         y++;
-        set_flags(&flags, y); // none live
         //     plp
         flags = saved_flags_;
     }
@@ -924,7 +923,6 @@ c8a87:
     }
     // c8aa3:
     //     txa
-    set_flags(&flags, x); // none live
     //     clc; adc ptr2; sta ((uint8_t*)&tmp45)[0]; lda ptr2+1; adc #0; sta
     //     ((uint8_t*)&tmp45)[1]
     tmp45 = ptr2 + x;
