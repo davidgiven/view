@@ -495,12 +495,12 @@ static void sub_c8310(void)
     //     sta l0084
     l0084 = a;
     //     cmp l007e
-    cmp(&flags, a, l007e);
+    cmp(&flags, a, l007e); // Z live
     //     beq return_2
     if (flags & FLAG_Z)
         return;
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d);
+    cmp(&flags, a, 0x0d); // Z live
     // return_2:
     //     rts
     return;
@@ -572,7 +572,7 @@ c8398:
     l0074++;
     //     txa
     a = x;
-    set_flags(&flags, x);
+    set_flags(&flags, x); // Z live
     //     beq return_3
     if (flags & FLAG_Z)
         return;
@@ -734,7 +734,7 @@ void sub_c8412(void)
     //     stx l007a
     l007a = x;
     //     cpx #0
-    cmp(&flags, x, 0);
+    cmp(&flags, x, 0); // Z live
     // return_5:
     //     rts
 }
@@ -797,13 +797,13 @@ c8598:
     //     sec
     flags |= FLAG_C;
     //     sbc ((uint8_t*)&tmp01)[0]
-    a = sbc(&flags, a, (uint8_t)(((uint8_t*)&tmp01)[0] & 0xff));
+    a = sbc(&flags, a, (uint8_t)(((uint8_t*)&tmp01)[0] & 0xff)); // C live
     //     sta ((uint8_t*)&tmp67)[0]
     ((uint8_t*)&tmp67)[0] = a;
     //     lda ptr5+1
     a = (uint8_t)((ptr5 >> 8) & 0xff);
     //     sbc ((uint8_t*)&tmp01)[1]
-    a = sbc(&flags, a, (uint8_t)(((uint8_t*)&tmp01)[1] & 0xff));
+    a = sbc(&flags, a, (uint8_t)(((uint8_t*)&tmp01)[1] & 0xff)); // none live
     //     sta ((uint8_t*)&tmp67)[1]
     ((uint8_t*)&tmp67)[1] = a;
     //     jsr adjust_pointers
@@ -871,7 +871,7 @@ loop_c8a74:
         uint8_t saved_flags_ = flags;
         //     iny
         y++;
-        set_flags(&flags, y);
+        set_flags(&flags, y); // none live
         //     plp
         flags = saved_flags_;
     }
@@ -905,13 +905,13 @@ c8a87:
     flags |= FLAG_C;
     //     sbc ptr2
     flags |= FLAG_C;
-    a = sbc(&flags, a, (uint8_t)(ptr2 & 0xff));
+    a = sbc(&flags, a, (uint8_t)(ptr2 & 0xff)); // C live
     //     sta input_buffer_offset+1
     l0080 = a;
     //     lda doc_ptr2+1
     a = (uint8_t)(doc_ptr2 >> 8);
     //     sbc ptr2+1
-    a = sbc(&flags, a, (uint8_t)(ptr2 >> 8));
+    a = sbc(&flags, a, (uint8_t)(ptr2 >> 8)); // none live
     //     sta l0081
     l0081 = a;
     //     ldx l0082
@@ -927,7 +927,7 @@ c8a87:
     }
     // c8aa3:
     //     txa
-    set_flags(&flags, x);
+    set_flags(&flags, x); // none live
     //     clc; adc ptr2; sta ((uint8_t*)&tmp45)[0]; lda ptr2+1; adc #0; sta
     //     ((uint8_t*)&tmp45)[1]
     tmp45 = ptr2 + x;
@@ -956,7 +956,7 @@ c8a87:
         goto c8aca;
     //     ora ((uint8_t*)&tmp67)[0]
     a |= ((uint8_t*)&tmp67)[0];
-    set_flags(&flags, a);
+    set_flags(&flags, a); // Z live
     //     beq c8ada
     if (flags & FLAG_Z)
         goto c8ada;
@@ -986,7 +986,7 @@ c8ada:
     //     sty l0081
     l0081 = y;
     //     bit print_xpos
-    bit(&flags, a, print_xpos);
+    bit(&flags, a, print_xpos); // N, V live
     //     bmi c8b11
     if (flags & FLAG_N)
         goto c8b11;
@@ -1011,7 +1011,7 @@ loop_c8ae4:
     if (!(flags & FLAG_C))
         goto c8af3;
     //     ror print_xpos
-    print_xpos = ror(&flags, print_xpos);
+    print_xpos = ror(&flags, print_xpos); // C live
     //     dex
     x--;
     if (x != 0)
@@ -1040,7 +1040,7 @@ c8af3:
     l0081++;
     //     dex
     x--;
-    set_flags(&flags, x);
+    set_flags(&flags, x); // Z live
     //     beq c8b0d
     if (flags & FLAG_Z)
         goto c8b0d;
@@ -1137,7 +1137,7 @@ c8b47:
     }
     // c8b4d:
     //     bit folding_flag
-    bit(&flags, a, folding_flag);
+    bit(&flags, a, folding_flag); // N, V live
     //     bmi c8b64
     if (flags & FLAG_N)
         goto c8b64;
@@ -1313,12 +1313,12 @@ static void compute_space_common(void)
     //     lda ((uint8_t*)&tmp67)[0]; sbc ((uint8_t*)&tmp89)[0]; sta
     //     ((uint8_t*)&tmp67)[0]
     a = ((uint8_t*)&tmp67)[0];
-    a = sbc(&flags, a, ((uint8_t*)&tmp89)[0]);
+    a = sbc(&flags, a, ((uint8_t*)&tmp89)[0]); // C live
     ((uint8_t*)&tmp67)[0] = a;
     //     lda ((uint8_t*)&tmp67)[1]; sbc ((uint8_t*)&tmp89)[1]; sta
     //     ((uint8_t*)&tmp67)[1]
     a = ((uint8_t*)&tmp67)[1];
-    a = sbc(&flags, a, ((uint8_t*)&tmp89)[1]);
+    a = sbc(&flags, a, ((uint8_t*)&tmp89)[1]); // C live
     ((uint8_t*)&tmp67)[1] = a;
     //     lda ((uint8_t*)&tmp01)[0]; clc; adc ((uint8_t*)&tmp67)[0]; sta ptr5;
     //     pha lda ((uint8_t*)&tmp01)[1]; adc ((uint8_t*)&tmp67)[1]; sta ptr5+1;
@@ -1327,7 +1327,7 @@ static void compute_space_common(void)
     l0081 = (uint8_t)(ptr5 >> 8);
     a = (uint8_t)ptr5;
     //     sbc #0x8b
-    a = sbc(&flags, a, 0x8b);
+    a = sbc(&flags, a, 0x8b); // C live
     //     sta input_buffer_offset+1
     l0080 = a;
     //     bcs return_18

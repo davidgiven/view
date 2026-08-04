@@ -124,6 +124,12 @@ def get_flag_defs_uses(line_text):
             defs.add(f'flags:{bit}'); uses.add(f'flags:{bit}')
         elif re.search(r'if\s*\(.*flags\s*&\s*FLAG_' + bit, line_text):
             uses.add(f'flags:{bit}')
+    # A plain assignment `flags = expr` defines all flag bits (unless it is a
+    # read-modify of flags, handled above).
+    if re.search(r'\bflags\s*=\s*[^&|=]', line_text) and \
+       not re.search(r'flags\s*=\s*flags', line_text):
+        for bit in FLAG_BITS:
+            defs.add(f'flags:{bit}')
     return defs, uses
 
 # ─── Call detection (regex on line text) ──────────────────────────

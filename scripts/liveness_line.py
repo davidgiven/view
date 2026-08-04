@@ -38,6 +38,12 @@ def get_flag_defs_uses(text):
             defs.add(f'flags:{bit}'); uses.add(f'flags:{bit}')
         elif re.search(r'if\s*\(.*flags\s*&\s*FLAG_' + bit, text):
             uses.add(f'flags:{bit}')
+    # A plain assignment `flags = expr` defines all flag bits (unless it is a
+    # read-modify of flags, handled above).
+    if re.search(r'\bflags\s*=\s*[^&|=]', text) and \
+       not re.search(r'flags\s*=\s*flags', text):
+        for bit in liveness.FLAG_BITS:
+            defs.add(f'flags:{bit}')
     return defs, uses
 
 

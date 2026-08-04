@@ -332,6 +332,7 @@ static void count_cmd(void)
     tmp01 = area_start_ptr;
     //     lda #0
     a = 0;
+    set_flags(&flags, a); // none live
     //     sta ((uint8_t*)&tmp89)[0]
     //     sta ((uint8_t*)&tmp89)[1]
     tmp89 = 0;
@@ -343,6 +344,7 @@ static void count_cmd(void)
 c86b8:
     //     ldy #0
     y = 0;
+    set_flags(&flags, y); // Z live
     //     jsr deref_and_check_for_command_prefix
     flags = deref_and_check_for_command_prefix(y);
     //     bne c86ea
@@ -370,7 +372,8 @@ loop_c86c2:
 c86d1:
     //     lda l8749,x
     a = l8747_data[x + 2];
-    set_flags(&flags, a);
+    set_flags(&flags, a); // Z live
+    set_flags(&flags, a); // Z live
     //     beq c86db
     if (flags & FLAG_Z)
         goto c86db;
@@ -398,7 +401,7 @@ c86df:
     //     clc
     flags &= ~FLAG_C;
     //     adc #3
-    a = adc(&flags, a, 3);
+    a = adc(&flags, a, 3); // C live
     //     sta ((uint8_t*)&tmp01)[0]
     ((uint8_t*)&tmp01)[0] = a;
     //     bcs c871d
@@ -441,7 +444,8 @@ c86ff:
 c8703:
     //     ldy l0083
     y = l0083;
-    set_flags(&flags, y);
+    set_flags(&flags, y); // Z live
+    set_flags(&flags, y); // Z live
     //     beq c870d
     if (!(flags & FLAG_Z))
     {
@@ -615,7 +619,7 @@ static void fold_cmd(void)
     //     lda input_buffer,y
     a = input_buffer[y];
     //     cmp #'1'
-    cmp(&flags, a, '1');
+    cmp(&flags, a, '1'); // Z live
     //     beq c87b2 (true → folding_flag = 0)
     if (flags & FLAG_Z)
     {
@@ -793,7 +797,7 @@ static void microspace_cmd(void)
     a = y;
     //     and #1
     a &= 1;
-    set_flags(&flags, a);
+    set_flags(&flags, a); // Z live
     //     beq c8617
     if (!(flags & FLAG_Z))
     {
@@ -1149,7 +1153,7 @@ static void save_cmd_write_cmd(void)
     if (flags & FLAG_Z)
     {
         //         bit file_edit_flags
-        bit(&flags, a, file_edit_flags);
+        bit(&flags, a, file_edit_flags); // V live
         //         zif vc
         if (!(flags & FLAG_V))
         {
@@ -1171,7 +1175,7 @@ static void save_cmd_write_cmd(void)
             //             inx
             x++;
             //             cmp #0x0d
-            cmp(&flags, a, 0x0d);
+            cmp(&flags, a, 0x0d); // none live
             //         zuntil eq
         } while (!(flags & FLAG_Z));
         //     zendif
@@ -1565,7 +1569,8 @@ void run_cli(void)
 c816d:
     //     lda printer_driver_name
     a = printer_driver_name[0];
-    set_flags(&flags, a);
+    set_flags(&flags, a); // Z live
+    set_flags(&flags, a); // Z live
     //     beq c81b6
     if (flags & FLAG_Z)
         goto c81b6;
@@ -1594,7 +1599,7 @@ c816d:
     // c81a7:
     //     lda microspacing_flag
     a = microspacing_flag;
-    set_flags(&flags, a);
+    set_flags(&flags, a); // Z live
     //     beq c81b3
     if (!(flags & FLAG_Z))
     {
@@ -1612,7 +1617,8 @@ c81b6:
 c81ba:
     //     lda markers_array+1,x
     a = ((uint8_t*)markers_array)[x + 1];
-    set_flags(&flags, a);
+    set_flags(&flags, a); // Z live
+    set_flags(&flags, a); // Z live
     //     beq c81e7
     if (flags & FLAG_Z)
         goto c81e7;
@@ -1645,9 +1651,9 @@ c81e0:
     //     txa
     a = x;
     //     lsr
-    a = asr(&flags, a);
+    a = asr(&flags, a); // C live
     //     adc #0x31 ; '1'
-    a = adc(&flags, a, 0x31);
+    a = adc(&flags, a, 0x31); // none live
     //     jsr screen_putchar
     screen_putchar(a);
     // c81e7:
@@ -1714,7 +1720,7 @@ loop_ca851:
     l0084 = a;
     //     lda parser_table,x
     a = parser_table[x];
-    set_flags(&flags, a);
+    set_flags(&flags, a); // Z, N live
     //     beq ca890
     if (flags & FLAG_Z)
         goto ca890;
@@ -1737,7 +1743,7 @@ loop_ca86a:
     x++;
     //     lda parser_table,x
     a = parser_table[x];
-    set_flags(&flags, a);
+    set_flags(&flags, a); // Z, N live
     //     beq ca890
     if (flags & FLAG_Z)
         goto ca890;
@@ -1772,6 +1778,7 @@ ca87e:
     input_buffer_offset = y;
     //     ldy l0082
     y = l0082;
+    set_flags(&flags, y); // N live
     //     lda parser_table,x
     a = parser_table[x];
     //     clc
@@ -1979,8 +1986,10 @@ addr_t parse_mark_from_command(uint8_t x)
     }
     //     lda markers_array,x
     a = (uint8_t)(markers_array[x] & 0xff);
+    set_flags(&flags, a); // none live
     //     ldy markers_array+1,x
     y = (uint8_t)(markers_array[x] >> 8);
+    set_flags(&flags, y); // none live
     // return_12:
     //     rts
     return (addr_t)(y) << 8 | a;
