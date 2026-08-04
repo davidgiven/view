@@ -1564,9 +1564,7 @@ static void k_command_key(void)
 
     // zendproc
 
-    x = '^';
-
-    a = draw_prompt_characters(x, 'K');
+    a = draw_prompt_characters('^', 'K');
 
     flags_need_redrawing_flag++;
 
@@ -2396,11 +2394,9 @@ static void o_command_key(void)
 
     // zendproc
 
-    x = '^';
-
     y = 'O';
 
-    a = draw_prompt_characters(x, y);
+    a = draw_prompt_characters('^', 'O');
 
     flags_need_redrawing_flag++;
 
@@ -2487,9 +2483,7 @@ static void q_command_key(void)
 
     // zendproc
 
-    x = '^';
-
-    a = draw_prompt_characters(x, 'Q');
+    a = draw_prompt_characters('^', 'Q');
 
     flags_need_redrawing_flag++;
 
@@ -3104,7 +3098,7 @@ static void sf3_delete_to_char_key(void)
 
     x = 0x43;
 
-    a = draw_prompt_characters(x, 0x48);
+    a = draw_prompt_characters('C', 'H');
 
     flags_need_redrawing_flag++;
 
@@ -4169,9 +4163,8 @@ static void prompt_for_marker(void)
     // prompt_for_marker:
     //     ldx #0x4d ; 'M'
     //     ldy #0x4b ; 'K'
-    x = 0x4d;
     //     jsr draw_prompt_characters
-    a = draw_prompt_characters(x, 0x4b);
+    a = draw_prompt_characters('M', 'K');
     //     inc flags_need_redrawing_flag
     flags_need_redrawing_flag++;
     //     jsr read_char

@@ -1087,7 +1087,7 @@ c832d:
     //     ldy #0x50 ; 'P'
     y = 0x50;
     //     jsr draw_prompt_characters
-    a = draw_prompt_characters(x, y);
+    a = draw_prompt_characters('R', 'P');
     //     jsr flush_and_read_char
     read_char();
     //     bcs return_2
