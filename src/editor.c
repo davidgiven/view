@@ -7437,10 +7437,9 @@ static void sub_c9936(void)
     process_document_character();
     //     txa
     a = x;
-    set_flags(&flags, a); // Z live
     //     clc
     //     adc l0039
-    a += l0039;
+    a = adc(&flags, a, l0039);
     //     bne c995c
     if (!(flags & FLAG_Z))
         goto c995c;

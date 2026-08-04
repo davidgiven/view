@@ -875,7 +875,7 @@ void lookup_marker(uint8_t a)
     uint8_t x;
     flags |= FLAG_C;
     //     sbc #0x31 ; '1'
-    a = a - 0x31;
+    a = sbc(&flags, a, 0x31);
     //     bcc loop_caced
     if (!(flags & FLAG_C))
     {
