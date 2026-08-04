@@ -60,7 +60,7 @@ static void sub_caacb(void);
 uint8_t sub_cac41(addr_t tmp01);
 static void sub_cac50(addr_t tmp89);
 static int find_left_margin_stop(void);
-static uint8_t sub_caed6(void);
+static void sub_caed6(void);
 static void sub_caedd(uint8_t y);
 static void unpack_line_into_buffer(void);
 void wipe_buffer(uint8_t a);
@@ -7889,7 +7889,7 @@ loop_c9a62:
     //     ror input_buffer_offset
     input_buffer_offset = ror(&flags, input_buffer_offset); // none live
     //     jsr sub_caed6
-    x = sub_caed6();
+    sub_caed6();
     //     jsr justify_edit_buffer
     justify_edit_buffer();
     //     jsr sub_c9aa9
@@ -7910,7 +7910,7 @@ loop_c9a62:
     // (returns to sub_c9977's caller).
 c9a87:
     //     jsr sub_caed6
-    x = sub_caed6();
+    sub_caed6();
     //     jsr sub_c9aa9
     if (sub_c9aa9())
         return;
@@ -8502,7 +8502,7 @@ caed4:
     return y;
 }
 
-static uint8_t sub_caed6(void)
+static void sub_caed6(void)
 {
     // sub_caed6:
     //     jsr find_left_margin_stop
@@ -8512,9 +8512,9 @@ static uint8_t sub_caed6(void)
         //     ldy #0
         sub_caedd(0);
     }
-    return x;
     // caed4:
     //     rts
+    return;
 }
 
 static void sub_caedd(uint8_t y)

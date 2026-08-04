@@ -252,7 +252,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **delete_edit_buffer_bytes_at_xpos** → sub_ca536 [a, current_edit_line_ptr, edit_buffer_dirty_flag, flags, l0080, l0084, markers_array, ram, tmp6, tmp7, x, xpos, y]
 - **find_left_margin_stop** [a, current_edit_line_ptr, ram, ruler_left_stop, y]
 - **sub_caedd** → insert_edit_buffer_bytes_at_xpos [a, current_edit_line_ptr, flags, ram, x, xpos, y]
-- **sub_caed6** → find_left_margin_stop, sub_caedd [x, y]
+- **sub_caed6** → find_left_margin_stop, sub_caedd [y]
 - **sub_caef4** → get_line_length, recalculate_cursor_xpos, find_left_margin_stop, sub_caedd [a, flags, format_mode_flag, l0072, l0074, l0083, ruler_left_stop, xpos, y]
 - **draw_previous_word** → process_current_document_character [a, current_edit_line_ptr, flags, tmp0, tmp1, xpos, y]
 - **caf5c** [flags_need_redrawing_flag, format_mode_flag]
