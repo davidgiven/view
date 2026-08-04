@@ -579,7 +579,7 @@ def _backward_stmt(cur, live, backward_needs, local_info, func_params,
             merged |= _backward_stmt(b, set(live), backward_needs, local_info,
                                      func_params, local_decls, source_lines,
                                      func_live_out)
-        d, u = _analyze_stmt_effect(cur, local_decls, source_lines)
+        d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
         return (merged - d) | u
 
     # switch: each case is an independent branch.
@@ -599,7 +599,7 @@ def _backward_stmt(cur, live, backward_needs, local_info, func_params,
                 merged |= _backward_stmt(ch, set(live), backward_needs,
                                          local_info, func_params, local_decls,
                                          source_lines, func_live_out)
-        d, u = _analyze_stmt_effect(cur, local_decls, source_lines)
+        d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
         return (merged - d) | u
 
     # case / default labels: treat as straight-line.
@@ -632,7 +632,7 @@ def _backward_stmt(cur, live, backward_needs, local_info, func_params,
             prev = None
             cand = set(exit_live)
             for _ in range(20):
-                d, u = _analyze_stmt_effect(cur, local_decls, source_lines)
+                d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
                 before_cond = ((cand | exit_live) - d) | u
                 if body_stmt is None:
                     new_head = set(before_cond)
@@ -658,7 +658,7 @@ def _backward_stmt(cur, live, backward_needs, local_info, func_params,
                                          local_info, func_params,
                                          local_decls, source_lines,
                                          func_live_out)
-            d, u = _analyze_stmt_effect(cur, local_decls, source_lines)
+            d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
             candidate = (body_in - d) | u
             candidate |= live
             if candidate == prev:
@@ -675,7 +675,31 @@ def _backward_stmt(cur, live, backward_needs, local_info, func_params,
                            local_decls, source_lines, func_live_out)
 
 
-def _analyze_stmt_effect(cur, local_decls, source_lines):
+def _find_call_expr_callees(cur):
+    """Yield callee names of call expressions in `cur`'s subtree, skipping
+    compound-statement bodies (which are analysed as separate statements)."""
+    if cur is None:
+        return
+    ck = cur.kind
+    if ck == clang.cindex.CursorKind.COMPOUND_STMT:
+        return
+    if ck == clang.cindex.CursorKind.CALL_EXPR:
+        children = list(cur.get_children())
+        if children:
+            c0 = children[0]
+            if c0.kind == clang.cindex.CursorKind.DECL_REF_EXPR:
+                yield c0.spelling
+            elif c0.kind == clang.cindex.CursorKind.UNEXPOSED_EXPR:
+                g = list(c0.get_children())
+                if g and g[0].kind == clang.cindex.CursorKind.DECL_REF_EXPR:
+                    yield g[0].spelling
+        return
+    for ch in cur.get_children():
+        yield from _find_call_expr_callees(ch)
+
+
+def _analyze_stmt_effect(cur, local_decls, source_lines, local_info=None,
+                         func_params=None):
     """defs/uses of a statement (with byte/flag propagation)."""
     d, u = analyze_stmt(cur, set(local_decls), 'use')
     for bv, cv in BYTE_TO_COMBINED.items():
@@ -694,6 +718,19 @@ def _analyze_stmt_effect(cur, local_decls, source_lines):
         fd, fu = get_flag_defs_uses(source_lines[cur.location.line - 1])
         d |= fd
         u |= fu
+    # Calls in control-flow conditions (e.g. `if (sub_c9aa9()) return;`)
+    # define the callee's outputs; model them so a branch's flag need is
+    # satisfied at the condition instead of leaking back to the statement's
+    # predecessor.
+    if local_info is not None:
+        for callee in _find_call_expr_callees(cur):
+            ci = local_info.get(callee)
+            if ci is None:
+                continue
+            cp = set()
+            if func_params is not None:
+                cp = func_params.get(callee, set())
+            d |= ci.get('cached_defs', ci.get('defs', set())) - cp
     return d, u
 
 
@@ -719,19 +756,19 @@ def _backward_plain(cur, live, backward_needs, local_info, func_params,
             kill_set = callee_defs - callee_params
             if callee_name in CORRUPTS:
                 kill_set = kill_set | CORRUPTS[callee_name]
-            d, u = _analyze_stmt_effect(cur, local_decls, source_lines)
+            d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
             live = (live - kill_set) | u
             cli = callee_info.get('live_in', set()) - callee_params
             live |= cli
             return live
         if callee_name in CORRUPTS:
             corr = CORRUPTS[callee_name]
-            d, u = _analyze_stmt_effect(cur, local_decls, source_lines)
+            d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
             return (live - corr) | u
-        d, u = _analyze_stmt_effect(cur, local_decls, source_lines)
+        d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
         return live | u
 
-    d, u = _analyze_stmt_effect(cur, local_decls, source_lines)
+    d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
     return (live - d) | u
 
 
