@@ -5038,7 +5038,7 @@ l94b2 = default_printer_driver_ptr+1
     lda format_mode_flag                                              ; 9b73: a5 4f       .O
     and #&bf                                                          ; 9b75: 29 bf       ).
     pha                                                               ; 9b77: 48          H
-    jsr sub_caec2                                                     ; 9b78: 20 c2 ae     ..
+    jsr find_left_margin_stop                                         ; 9b78: 20 c2 ae     ..
     pla                                                               ; 9b7b: 68          h
     bcs c9b86                                                         ; 9b7c: b0 08       ..
     cpy xpos                                                          ; 9b7e: c4 40       .@
@@ -5585,7 +5585,7 @@ l94b2 = default_printer_driver_ptr+1
 .sf2_release_margins_key
     bit format_mode_flag                                              ; 9e86: 24 4f       $O
     bvc c9e94                                                         ; 9e88: 50 0a       P.
-    jsr sub_caec2                                                     ; 9e8a: 20 c2 ae     ..
+    jsr find_left_margin_stop                                         ; 9e8a: 20 c2 ae     ..
     bcs f4_beginning_of_line_key                                      ; 9e8d: b0 03       ..
     sty xpos                                                          ; 9e8f: 84 40       .@
     rts                                                               ; 9e91: 60          `
@@ -8653,8 +8653,9 @@ la8a5 = ca8a4+1
 .return_78
     rts                                                               ; aec1: 60          `
 
+; ***************************************************************************************
 ; &aec2 referenced 4 times by &9b78, &9e8a, &aed6, &aefa
-.sub_caec2
+.find_left_margin_stop
     lda ruler_left_stop                                               ; aec2: a5 3f       .?
     beq caed4                                                         ; aec4: f0 0e       ..
     ldy #0                                                            ; aec6: a0 00       ..
@@ -8675,7 +8676,7 @@ la8a5 = ca8a4+1
 
 ; &aed6 referenced 2 times by &9a76, &9a87
 .sub_caed6
-    jsr sub_caec2                                                     ; aed6: 20 c2 ae     ..
+    jsr find_left_margin_stop                                         ; aed6: 20 c2 ae     ..
     bcc caed4                                                         ; aed9: 90 f9       ..
     ldy #0                                                            ; aedb: a0 00       ..
 ; &aedd referenced 1 time by &af2a
@@ -8701,7 +8702,7 @@ la8a5 = ca8a4+1
     lda format_mode_flag                                              ; aef4: a5 4f       .O
     and #&81                                                          ; aef6: 29 81       ).
     bne caf31                                                         ; aef8: d0 37       .7
-    jsr sub_caec2                                                     ; aefa: 20 c2 ae     ..
+    jsr find_left_margin_stop                                         ; aefa: 20 c2 ae     ..
     bcc caf31                                                         ; aefd: 90 32       .2
     jsr get_line_length                                               ; aeff: 20 f1 aa     ..
     lda xpos                                                          ; af02: a5 40       .@
@@ -9912,6 +9913,7 @@ save pydis_start, pydis_end
 ;     call_through_jumptable:                 4
 ;     compute_bytes_free:                     4
 ;     edit_command_loop:                      4
+;     find_left_margin_stop:                  4
 ;     folding_flag:                           4
 ;     footer_margin:                          4
 ;     header_margin:                          4
@@ -9934,7 +9936,6 @@ save pydis_start, pydis_end
 ;     sub_c9431:                              4
 ;     sub_ca5ae:                              4
 ;     sub_cab6e:                              4
-;     sub_caec2:                              4
 ;     two_sided_flag:                         4
 ;     wipe_buffer:                            4
 ;     c80f3:                                  3

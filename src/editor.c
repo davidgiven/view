@@ -60,7 +60,7 @@ static void sub_caacb(void);
 uint8_t sub_cac41(addr_t tmp01);
 static void sub_cac50(addr_t tmp89);
 static void sub_cae03(void);
-static uint8_t sub_caec2(void);
+static uint8_t find_left_margin_stop(void);
 static uint8_t sub_caed6(void);
 static void sub_caedd(uint8_t y);
 static void unpack_line_into_buffer(void);
@@ -366,9 +366,9 @@ void editor_loop_impl(void)
                 uint8_t y;
                 uint8_t saved_mod = a;
 
-                //     jsr sub_caec2
+                //     jsr find_left_margin_stop
 
-                y = sub_caec2();
+                y = find_left_margin_stop();
 
                 //     pla
 
@@ -3069,9 +3069,9 @@ static void sf2_release_margins_key(void)
         return;
     }
 
-    //     jsr sub_caec2
+    //     jsr find_left_margin_stop
 
-    y = sub_caec2();
+    y = find_left_margin_stop();
 
     //     bcs f4_beginning_of_line_key
 
@@ -4633,8 +4633,8 @@ void sub_caef4(void)
     if (a != 0)
         goto caf31;
     //     bne caf31
-    //     jsr sub_caec2
-    sub_caec2();
+    //     jsr find_left_margin_stop
+    find_left_margin_stop();
     //     bcc caf31
     if (!(flags & FLAG_C))
         goto caf31;
@@ -8471,9 +8471,9 @@ static void sub_cae03(void)
     beep();
 }
 
-static uint8_t sub_caec2(void)
+static uint8_t find_left_margin_stop(void)
 {
-    // sub_caec2: Finds left margin stop (0x0b) in edit line
+    // find_left_margin_stop: Finds left margin stop (0x0b) in edit line
 
     //     lda ruler_left_stop
     uint8_t a;
@@ -8515,8 +8515,8 @@ caed4:
 static uint8_t sub_caed6(void)
 {
     // sub_caed6:
-    //     jsr sub_caec2
-    sub_caec2();
+    //     jsr find_left_margin_stop
+    find_left_margin_stop();
     //     bcc caed4
     if (flags & FLAG_C)
     {

@@ -349,6 +349,7 @@ subroutine(
 subroutine(0xADA7, "render_date_time_to_output_buffer")
 subroutine(0xAE06, "insert_edit_buffer_bytes_at_xpos")
 subroutine(0xAE64, "delete_edit_buffer_bytes_at_xpos")
+subroutine(0xAEC2, "find_left_margin_stop")
 subroutine(0xAF33, "draw_previous_word")
 subroutine(0xAF6F, "deref_and_check_for_command_prefix")
 subroutine(0xAF71, "check_for_command_prefix")
