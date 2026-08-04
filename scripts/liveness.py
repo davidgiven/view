@@ -100,9 +100,6 @@ CORRUPTS = {
 }
 
 ALL_IN_OUT = {
-    'call_printer_driver',
-    'reset_area_to_marks_1_2',
-    'sub_caef4',
 }
 
 # ─── AST parsing (cached) ─────────────────────────────────────────

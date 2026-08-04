@@ -1413,6 +1413,8 @@ c97ae:
 
 static void evaluate_expression_from_fmt_cmd(void)
 {
+    addr_t tmp45;
+
     // evaluate_expression_from_fmt_cmd
     // Pseudocode: Evaluates arithmetic expression with +, - and register
     // references
@@ -1649,6 +1651,8 @@ void print_char_via_putchar(uint8_t a)
 
 void render_number_to_screen(uint16_t val)
 {
+    addr_t tmp89;
+
     // Pseudocode: Renders a 16-bit number to screen via bdos_print_char
 
     // ;
@@ -3190,6 +3194,8 @@ void sub_c8e33(void)
 
 static void sub_c916a(void)
 {
+    uint8_t x;
+
     // Pseudocode: Checks if printer is active and starts microspacing if
     // supported
 

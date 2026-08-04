@@ -307,6 +307,8 @@ static void cmd_err_no_target(void)
 
 static void count_cmd(void)
 {
+    addr_t tmp89;
+
     // count_cmd
     // Pseudocode: Counts words in document area handling command prefixes and
     // punctuation
