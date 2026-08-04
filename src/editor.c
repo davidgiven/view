@@ -60,7 +60,7 @@ static void sub_caacb(void);
 uint8_t sub_cac41(addr_t tmp01);
 static void sub_cac50(addr_t tmp89);
 static void sub_cae03(void);
-static uint8_t find_left_margin_stop(void);
+static int find_left_margin_stop(void);
 static uint8_t sub_caed6(void);
 static void sub_caedd(uint8_t y);
 static void unpack_line_into_buffer(void);
@@ -363,7 +363,7 @@ void editor_loop_impl(void)
             //     pha
 
             {
-                uint8_t y;
+                int y;
                 uint8_t saved_mod = a;
 
                 //     jsr find_left_margin_stop
@@ -376,7 +376,7 @@ void editor_loop_impl(void)
 
                 //     bcs c9b86
 
-                if (flags & FLAG_C)
+                if (y < 0)
                     goto c9b86_;
 
                 //     cpy xpos
@@ -3057,7 +3057,7 @@ static void sf1_swap_case_key(void)
 
 static void sf2_release_margins_key(void)
 {
-    uint8_t y;
+    int y;
 
     // sf2_release_margins_key:
 
@@ -3075,7 +3075,7 @@ static void sf2_release_margins_key(void)
 
     //     bcs f4_beginning_of_line_key
 
-    if (flags & FLAG_C)
+    if (y < 0)
     {
         f4_beginning_of_line_key();
         return;
@@ -3083,7 +3083,7 @@ static void sf2_release_margins_key(void)
 
     //     sty xpos
 
-    xpos = y;
+    xpos = (uint8_t)y;
 
     //     rts
 
@@ -4634,9 +4634,8 @@ void sub_caef4(void)
         goto caf31;
     //     bne caf31
     //     jsr find_left_margin_stop
-    find_left_margin_stop();
     //     bcc caf31
-    if (!(flags & FLAG_C))
+    if (find_left_margin_stop() >= 0)
         goto caf31;
     //     jsr get_line_length
     get_line_length();
@@ -8471,44 +8470,43 @@ static void sub_cae03(void)
     beep();
 }
 
-static uint8_t find_left_margin_stop(void)
+/**
+ * find_left_margin_stop: Finds the left margin stop (0x0b) in the edit line.
+ *
+ * @return the position after the 0x0b in the edit line, or -1 if no margin
+ *         stop was found.
+ */
+static int find_left_margin_stop(void)
 {
-    // find_left_margin_stop: Finds left margin stop (0x0b) in edit line
-
     //     lda ruler_left_stop
     uint8_t a;
     uint8_t y;
     a = ruler_left_stop;
-    set_flags(&flags, a); // Z live
     //     beq caed4
-    if (flags & FLAG_Z)
+    if (a == 0)
         goto caed4;
     //     ldy #0
     y = 0;
     // loop_caec8:
-loop_caec8:
-    //     lda (current_edit_line_ptr),y
-    a = ram[current_edit_line_ptr + y];
-    //     iny
-    y++;
-    //     cmp #0x0b
-    if (a == 0x0b)
-        goto caed4;
-    //     beq caed4
-    //     cpy #0x84
-    if (y < MAX_LINE_LENGTH)
-        goto loop_caec8;
-    //     bcc loop_caec8
+    do
+    {
+        //     lda (current_edit_line_ptr),y
+        a = ram[current_edit_line_ptr + y];
+        //     iny
+        y++;
+        //     cmp #0x0b
+        //     beq caed4
+        if (a == 0x0b)
+            goto caed4;
+        //     cpy #0x84
+        //     bcc loop_caec8
+    } while (y < MAX_LINE_LENGTH);
     //     cpy #0x84 set carry when Y >= MAX_LINE_LENGTH
-    flags |= FLAG_C; // C live
-    //     rts
-    return y;
+    return -1;
 
     // caed4:
 caed4:
     //     clc
-    flags &= ~FLAG_C;
-    //     rts
     return y;
 }
 
@@ -8516,9 +8514,8 @@ static uint8_t sub_caed6(void)
 {
     // sub_caed6:
     //     jsr find_left_margin_stop
-    find_left_margin_stop();
     //     bcc caed4
-    if (flags & FLAG_C)
+    if (find_left_margin_stop() < 0)
     {
         //     ldy #0
         sub_caedd(0);

@@ -13,6 +13,8 @@ root has a `.clang-format` config.
 
 ## Code conventions
 
+- Use Javadoc-style (`/** ... */`) comments above functions, with `@param`
+  / `@return` tags where relevant.
 - Global `uint8_t` registers `a`, `x`, `y`, `sp`, `flags` simulate the
   6502 processor state.  Many functions now declare their own locals
   (e.g. `uint8_t a, y;`) or take them as parameters.  Callers still
