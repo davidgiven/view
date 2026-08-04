@@ -60,7 +60,7 @@ static void sub_caacb(void);
 uint8_t sub_cac41(addr_t tmp01);
 static void sub_cac50(addr_t tmp89);
 static void sub_cae03(void);
-static void sub_caec2(void);
+static uint8_t sub_caec2(void);
 static uint8_t sub_caed6(void);
 static void sub_caedd(uint8_t y);
 static void unpack_line_into_buffer(void);
@@ -199,7 +199,7 @@ static void sf15_up_key(void);
 
 static void sf1_swap_case_key(void);
 
-static void sf2_release_margins_key(uint8_t y);
+static void sf2_release_margins_key(void);
 
 static void sf3_delete_to_char_key(void);
 
@@ -363,26 +363,27 @@ void editor_loop_impl(void)
             //     pha
 
             {
+                uint8_t y;
                 uint8_t saved_mod = a;
 
                 //     jsr sub_caec2
 
-                sub_caec2();
+                y = sub_caec2();
 
                 //     pla
 
                 a = saved_mod;
+
+                //     bcs c9b86
+
+                if (flags & FLAG_C)
+                    goto c9b86_;
+
+                //     cpy xpos
+
+                if (y <= xpos)
+                    goto c9b86_;
             }
-
-            //     bcs c9b86
-
-            if (flags & FLAG_C)
-                goto c9b86_;
-
-            //     cpy xpos
-
-            if (y <= xpos)
-                goto c9b86_;
 
             //     ora #0x40 ; '@'
 
@@ -2394,8 +2395,6 @@ static void o_command_key(void)
 
     // zendproc
 
-    y = 'O';
-
     a = draw_prompt_characters('^', 'O');
 
     flags_need_redrawing_flag++;
@@ -2412,7 +2411,7 @@ static void o_command_key(void)
             return;
 
         case 'X':
-            sf2_release_margins_key(y);
+            sf2_release_margins_key();
             return;
 
         case 'C':
@@ -3056,8 +3055,9 @@ static void sf1_swap_case_key(void)
     return;
 }
 
-static void sf2_release_margins_key(uint8_t y)
+static void sf2_release_margins_key(void)
 {
+    uint8_t y;
 
     // sf2_release_margins_key:
 
@@ -3071,7 +3071,7 @@ static void sf2_release_margins_key(uint8_t y)
 
     //     jsr sub_caec2
 
-    sub_caec2();
+    y = sub_caec2();
 
     //     bcs f4_beginning_of_line_key
 
@@ -8471,19 +8471,20 @@ static void sub_cae03(void)
     beep();
 }
 
-static void sub_caec2(void)
+static uint8_t sub_caec2(void)
 {
     // sub_caec2: Finds left margin stop (0x0b) in edit line
 
     //     lda ruler_left_stop
     uint8_t a;
+    uint8_t y;
     a = ruler_left_stop;
     set_flags(&flags, a); // Z live
     //     beq caed4
     if (flags & FLAG_Z)
         goto caed4;
     //     ldy #0
-    uint8_t y = 0;
+    y = 0;
     // loop_caec8:
 loop_caec8:
     //     lda (current_edit_line_ptr),y
@@ -8498,14 +8499,17 @@ loop_caec8:
     if (y < MAX_LINE_LENGTH)
         goto loop_caec8;
     //     bcc loop_caec8
+    //     cpy #0x84 set carry when Y >= MAX_LINE_LENGTH
+    flags |= FLAG_C; // C live
     //     rts
-    return;
+    return y;
 
     // caed4:
 caed4:
     //     clc
     flags &= ~FLAG_C;
     //     rts
+    return y;
 }
 
 static uint8_t sub_caed6(void)
