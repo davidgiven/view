@@ -616,17 +616,48 @@ def _backward_stmt(cur, live, backward_needs, local_info, func_params,
     if ck in (clang.cindex.CursorKind.WHILE_STMT,
               clang.cindex.CursorKind.FOR_STMT,
               clang.cindex.CursorKind.DO_STMT):
+        body_stmt = None
+        for ch in cur.get_children():
+            if ch.kind == clang.cindex.CursorKind.COMPOUND_STMT:
+                body_stmt = ch
+                break
+        exit_live = set(live)
+
+        if ck == clang.cindex.CursorKind.DO_STMT:
+            # do { body } while (cond): the body always runs at least once, so
+            # the loop-exit live set is provided by the body and must NOT be
+            # required at the loop head (unlike while/for, where the body may
+            # never run).  Fixed point over the head:
+            #   head = cond_effect(body_effect(head | exit_live))
+            prev = None
+            cand = set(exit_live)
+            for _ in range(20):
+                d, u = _analyze_stmt_effect(cur, local_decls, source_lines)
+                before_cond = ((cand | exit_live) - d) | u
+                if body_stmt is None:
+                    new_head = set(before_cond)
+                else:
+                    new_head = _backward_stmt(body_stmt, before_cond,
+                                              backward_needs, local_info,
+                                              func_params, local_decls,
+                                              source_lines, func_live_out)
+                if new_head == prev:
+                    break
+                prev = new_head
+                cand = new_head
+            return prev if prev is not None else set(exit_live)
+
+        # while/for: the condition may be false before the body ever runs, so
+        # the loop-exit live set must also hold at the loop head.
         prev = None
         result = set(live)
-        # body runs, then (for while/for) the condition gates re-entry.
         for _ in range(20):
             body_in = set(live)
-            for ch in cur.get_children():
-                if ch.kind == clang.cindex.CursorKind.COMPOUND_STMT:
-                    body_in = _backward_stmt(ch, body_in, backward_needs,
-                                             local_info, func_params,
-                                             local_decls, source_lines,
-                                             func_live_out)
+            if body_stmt is not None:
+                body_in = _backward_stmt(body_stmt, body_in, backward_needs,
+                                         local_info, func_params,
+                                         local_decls, source_lines,
+                                         func_live_out)
             d, u = _analyze_stmt_effect(cur, local_decls, source_lines)
             candidate = (body_in - d) | u
             candidate |= live

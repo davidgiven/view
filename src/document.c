@@ -427,7 +427,6 @@ void read_char(void)
     do
     {
         a = 0xff;
-        x = a;
         flags &= ~FLAG_C;
         a = screen_getchar();
     } while (flags & FLAG_C);
@@ -872,7 +871,6 @@ void lookup_marker(uint8_t a)
     // lookup_marker: Converts marker character '1'-'6' to index
 
     //     sec
-    uint8_t x;
     flags |= FLAG_C;
     //     sbc #0x31 ; '1'
     a = sbc(&flags, a, 0x31);
