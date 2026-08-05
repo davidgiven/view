@@ -5648,7 +5648,6 @@ void draw_line(struct render_state* rs, uint16_t addr)
     //     sta ((uint8_t*)&tmp01)[0]
     rs->line_ptr = addr;
     tmp01 = rs->line_ptr;
-    tmp67 = addr;
     //     ldx #0
     //     ldy l0082
     screen_setcursor(0, rs->line);
@@ -5661,9 +5660,9 @@ void draw_line(struct render_state* rs, uint16_t addr)
     //     sty l0039
     rs->char_width = 0;
     //     jsr deref_and_check_for_command_prefix
-    flags = deref_and_check_for_command_prefix(0);
+    uint8_t f = deref_and_check_for_command_prefix(0);
     //     bne ca4b4
-    if (!(flags & FLAG_Z))
+    if (!(f & FLAG_Z))
         goto ca4b4;
     //     ldy #3
     //     lda hscroll_pos
@@ -7070,10 +7069,10 @@ static void render_char(struct render_state* rs)
 ca514:
     a = char_to_render;
     //     jsr check_for_control_code
-    check_for_control_code(a);
-    if ((flags & FLAG_Z))
+    uint8_t f = check_for_control_code(a);
+    if ((f & FLAG_Z))
     {
-        if (flags & FLAG_C)
+        if (f & FLAG_C)
         {
             a = 0x2d;
         }
@@ -7105,6 +7104,7 @@ ca523:
 static void render_xchar(struct render_state* rs)
 {
     uint8_t x;
+    uint8_t f;
 
     // render_xchar: Renders a character to screen with style/attribute handling
 
@@ -7116,9 +7116,9 @@ static void render_xchar(struct render_state* rs)
     //     inc input_buffer_offset+1
     rs->buf_off++;
     //     cpx hscroll_pos
-    cmp(&flags, x, hscroll_pos); // C live
+    cmp(&f, x, hscroll_pos); // C live
     //     bcc ca533
-    if (!(flags & FLAG_C))
+    if (!(f & FLAG_C))
         return;
     //     jmp ca4e9
     render_char(rs);

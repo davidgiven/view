@@ -73,7 +73,7 @@ void read_first_chunk_from_input_file(void);
 void read_next_chunk_from_input_file(void);
 static void sub_c8da2(uint8_t a, uint8_t y);
 static void compute_space_common(void);
-void check_for_control_code(uint8_t a);
+uint8_t check_for_control_code(uint8_t a);
 
 static void system_init(void);
 

@@ -22,9 +22,12 @@ uint8_t check_for_command_prefix(uint8_t ch)
     return 0;
 }
 
-void check_for_control_code(uint8_t a)
+uint8_t check_for_control_code(uint8_t a)
 {
     // Pseudocode: Checks if character is a control code (0x1c or 0x1d)
+    // Returns the processor status (still stored in the global flags, so
+    // callers that read it after the call keep working): Z set if a is 0x1c
+    // or 0x1d, C set if a is 0x1c
 
     // check_for_control_code:
     //     cmp #0x1c
@@ -36,7 +39,7 @@ void check_for_control_code(uint8_t a)
         flags &= ~FLAG_C;
     }
     //     rts
-    return;
+    return flags;
 }
 
 void compute_bytes_free(void)
