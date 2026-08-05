@@ -3365,10 +3365,8 @@ c91c2:
 c91d0:
     tmp01 = (addr_t)(y) << 8 | a;
     //     sta current_format_line_ptr
-    current_format_line_ptr = (current_format_line_ptr & 0xff00) | a;
     //     sty current_format_line_ptr+1
-    current_format_line_ptr =
-        (current_format_line_ptr & 0x00ff) | ((uint16_t)y << 8);
+    current_format_line_ptr = tmp01;
     //     clc
     flags &= ~FLAG_C;
     // return_26:

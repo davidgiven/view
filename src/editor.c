@@ -4967,21 +4967,15 @@ cac9c:
     // cacad:
 cacad:
     //     clc
-    flags &= ~FLAG_C;
     //     adc ((uint8_t*)&tmp89)[0]
-    a = adc(&flags, a, ((uint8_t*)&tmp89)[0]); // C live
     //     sta ((uint8_t*)&tmp45)[0]
     //     sta ((uint8_t*)&tmp89)[0]
-    ((uint8_t*)&tmp45)[0] = a;
-    ((uint8_t*)&tmp89)[0] = a;
     //     lda ((uint8_t*)&tmp89)[1]
     //     adc #0
     //     sta ((uint8_t*)&tmp45)[1]
     //     sta ((uint8_t*)&tmp89)[1]
-    a = ((uint8_t*)&tmp89)[1];
-    a = adc(&flags, a, 0); // none live
-    ((uint8_t*)&tmp45)[1] = a;
-    ((uint8_t*)&tmp89)[1] = a;
+    tmp45 = tmp89 + a;
+    tmp89 = tmp45;
     //     lda #1
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda #0
@@ -5148,15 +5142,17 @@ static void advance_to_next_line(void)
     //     beq c9aa5
     if (!(flags & FLAG_Z))
     {
-        a = y;
-        flags &= ~FLAG_C;
-        a = adc(&flags, a, ((uint8_t*)&tmp01)[0]); // C live
-        current_line_ptr = (current_line_ptr & 0xff00) | a;
-        if ((flags & FLAG_C))
-        {
-            current_line_ptr = (current_line_ptr & 0x00ff) |
-                               ((uint16_t)((current_line_ptr >> 8) + 1) << 8);
-        }
+        //     tya
+        //     clc
+        //     adc tmp0
+        //     sta current_line_ptr
+        //     bcc c9aa4
+        //     inc current_line_ptr+1
+        // (sub_cab1a leaves y = offset of the CR terminator and tmp01 = the
+        //  line address, so the next line starts at tmp01 + y)
+        current_line_ptr = tmp01 + y;
+        // c9aa4:
+        //     clc
         flags &= ~FLAG_C;
     }
     //     clv
@@ -8262,7 +8258,6 @@ static void unpack_line(addr_t ptr1)
     uint8_t a;
     uint8_t a2;
 
-    uint8_t x;
     uint8_t y;
 
     // unpack_line
@@ -8277,9 +8272,7 @@ static void unpack_line(addr_t ptr1)
     //     lda (current_line_ptr),y
     a = ram[current_line_ptr + y];
     //     ldx current_edit_line_ptr
-    x = (uint8_t)(RAM_EDIT_BUFFER & 0xff);
     //     ldy current_edit_line_ptr+1
-    y = (uint8_t)((RAM_EDIT_BUFFER >> 8) & 0xff);
     //     jsr check_for_command_prefix
     flags = check_for_command_prefix(a);
     //     bne caab7
@@ -8290,14 +8283,10 @@ static void unpack_line(addr_t ptr1)
             edit_buffer_unpacked_flag = a;
         }
         caf5c();
-        x = (uint8_t)(ptr1 & 0xff);
-        y = (uint8_t)((ptr1 >> 8) & 0xff);
     }
     //     stx current_format_line_ptr
-    current_format_line_ptr = (current_format_line_ptr & 0xff00) | x;
     //     sty current_format_line_ptr+1
-    current_format_line_ptr =
-        (current_format_line_ptr & 0x00ff) | ((uint16_t)y << 8);
+    current_format_line_ptr = ((flags & FLAG_Z)) ? ptr1 : RAM_EDIT_BUFFER;
     //     ldy #0
     y = 0;
     // loop_caabd:

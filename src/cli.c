@@ -680,14 +680,10 @@ static void format_cmd(void)
     //     jsr wipe_buffer
     wipe_buffer(0x10);
     //     lda current_edit_line_ptr
-    a = (uint8_t)(RAM_EDIT_BUFFER & 0xff);
     //     sta current_format_line_ptr
-    current_format_line_ptr = (current_format_line_ptr & 0xff00) | a;
     //     lda current_edit_line_ptr+1
-    a = (uint8_t)((RAM_EDIT_BUFFER >> 8) & 0xff);
     //     sta current_format_line_ptr+1
-    current_format_line_ptr =
-        (current_format_line_ptr & 0x00ff) | ((uint16_t)a << 8);
+    current_format_line_ptr = RAM_EDIT_BUFFER;
     // c876d:
 c876d:
     //     jsr sub_c9977
@@ -1837,14 +1833,10 @@ void parse_integer_from_command(void)
     // ***************************************************************************************
     // parse_integer_from_command:
     //     lda #<(input_buffer)
-    a = (uint8_t)((uintptr_t)input_buffer & 0xff);
     //     sta current_format_line_ptr
-    current_format_line_ptr = (current_format_line_ptr & 0xff00) | a;
     //     lda #>(input_buffer)
-    a = (uint8_t)(((uintptr_t)input_buffer >> 8) & 0xff);
     //     sta current_format_line_ptr+1
-    current_format_line_ptr =
-        (current_format_line_ptr & 0x00ff) | ((uint16_t)a << 8);
+    current_format_line_ptr = (addr_t)(uintptr_t)input_buffer;
     //     jsr sub_c8e33
     sub_c8e33();
     //     beq return_8
