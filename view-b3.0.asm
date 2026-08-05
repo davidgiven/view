@@ -6616,8 +6616,8 @@ l94b2 = default_printer_driver_ptr+1
     lda hscroll_pos                                                   ; a4a4: a5 71       .q
     bne ca4b4                                                         ; a4a6: d0 0c       ..
     ldy #1                                                            ; a4a8: a0 01       ..
-    jsr sub_ca4d7                                                     ; a4aa: 20 d7 a4     ..
-    jsr sub_ca4d7                                                     ; a4ad: 20 d7 a4     ..
+    jsr advance_to_next_char_and_render                               ; a4aa: 20 d7 a4     ..
+    jsr advance_to_next_char_and_render                               ; a4ad: 20 d7 a4     ..
     lda #&20 ; ' '                                                    ; a4b0: a9 20       .
     bne ca4bc                                                         ; a4b2: d0 08       ..             ; ALWAYS branch
 
@@ -6645,8 +6645,9 @@ l94b2 = default_printer_driver_ptr+1
     sta line_lengths,x                                                ; a4d3: 9d cc 07    ...
     rts                                                               ; a4d6: 60          `
 
+; ***************************************************************************************
 ; &a4d7 referenced 2 times by &a4aa, &a4ad
-.sub_ca4d7
+.advance_to_next_char_and_render
     jsr sub_ca5ab                                                     ; a4d7: 20 ab a5     ..
     jmp process_current_document_character                            ; a4da: 4c e9 a4    L..
 
@@ -10031,6 +10032,7 @@ save pydis_start, pydis_end
 ;     sub_c95b2:                              3
 ;     sub_caf5f:                              3
 ;     zp_initialisation_canary:               3
+;     advance_to_next_char_and_render:        2
 ;     bad_filename_error:                     2
 ;     c816d:                                  2
 ;     c827c:                                  2
@@ -10272,7 +10274,6 @@ save pydis_start, pydis_end
 ;     sub_c9977:                              2
 ;     sub_c9aa9:                              2
 ;     sub_ca1cc:                              2
-;     sub_ca4d7:                              2
 ;     sub_ca94a:                              2
 ;     sub_cac41:                              2
 ;     sub_cadf0:                              2

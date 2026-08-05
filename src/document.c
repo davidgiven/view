@@ -327,17 +327,16 @@ void process_document_character(void)
     //     cmp #0x20 ; ' '
     cmp(&flags, a, 0x20); // C live
     //     bcs ca5d1
+    // (The 6502 saves/restores y via l0084 around this block; the C reads
+    //  print_flags directly, so the register is never clobbered.)
     if (!(flags & FLAG_C))
     {
-        l0084 = y;
-        y = print_flags;
-        if ((y & 0x80))
+        if ((print_flags & 0x80))
         {
             a = sbc(&flags, a, 0x1b); // C, V live
             x = a;
             a = highlight_code[x];
         }
-        y = l0084;
     }
 ca5d1:
     //     ldx #1
@@ -361,32 +360,34 @@ ca5d9:
     if (flags & FLAG_Z)
         goto ca5d5;
     //     sty l0084
-    l0084 = y;
     //     bne ca5f1
     goto ca5f1;
 
 ca5e1:
     //     sty l0084
-    l0084 = y;
     //     ldy l0039
-    y = l0039;
-loop_ca5e5:
-    //     iny
-    y++;
-    //     cpy l003a
-    cmp(&flags, y, l003a); // C live
-    //     bcs ca5f8
-    if (flags & FLAG_C)
-        goto ca5f8;
-    //     lda (current_ruler_ptr),y
-    a = ram[current_ruler_ptr + y];
-    //     cmp #0x2a ; '*'
-    cmp(&flags, a, 0x2a); // Z, C live
-    //     bne loop_ca5e5
-    if (!(flags & FLAG_Z))
-        goto loop_ca5e5;
-    //     tya
-    a = y;
+    // (The 6502 uses y as the tab counter with y saved in l0084; the C uses a
+    //  local so y is never touched.)
+    {
+        uint8_t tab_pos = l0039;
+    loop_ca5e5:
+        //     iny
+        tab_pos++;
+        //     cpy l003a
+        cmp(&flags, tab_pos, l003a); // C live
+        //     bcs ca5f8
+        if (flags & FLAG_C)
+            goto ca5f8;
+        //     lda (current_ruler_ptr),y
+        a = ram[current_ruler_ptr + tab_pos];
+        //     cmp #0x2a ; '*'
+        cmp(&flags, a, 0x2a); // Z, C live
+        //     bne loop_ca5e5
+        if (!(flags & FLAG_Z))
+            goto loop_ca5e5;
+        //     tya
+        a = tab_pos;
+    }
 ca5f1:
     //     sbc l0039
     a = sbc(&flags, a, l0039); // C, V live
@@ -405,7 +406,6 @@ ca5fa:
     //     lda #0x20 ; ' '
     a = 0x20;
     //     ldy l0084
-    y = l0084;
     //     sec
     flags |= FLAG_C;
     //     rts

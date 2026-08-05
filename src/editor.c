@@ -8,6 +8,22 @@
 
 #include "globals.h"
 
+// Render pipeline state.  The line-rendering routines (draw_line, render_char,
+// render_xchar, advance_to_next_char_and_render) used to keep their working
+// state in the simulated registers; it now lives in this struct, threaded
+// through the pipeline.
+struct render_state
+{
+    addr_t line_ptr;    // tmp01: pointer into the current edit line
+    uint8_t pos;        // y: position in the edit line
+    uint8_t col;        // l0083: current screen column
+    uint8_t line;       // l0082: screen line number
+    uint8_t width;      // l0084: character width / render counter
+    uint8_t buf_off;    // l0080: input buffer offset
+    uint8_t char_width; // l0039: width accumulator
+    uint8_t ch;         // a: current character
+};
+
 // Editor-only functions
 void adjust_pointers(addr_t tmp45, addr_t tmp67);
 static void advance_to_next_line(void);
@@ -21,7 +37,7 @@ void clear_screen(void);
 static void clear_to_eol(uint8_t a);
 static void cursor_off(void);
 static void cursor_on(void);
-void draw_line(uint16_t addr);
+void draw_line(struct render_state* rs, uint16_t addr);
 uint8_t draw_prompt_characters(uint8_t x, uint8_t y);
 static void draw_ruler(void);
 static void draw_status_word(void);
@@ -35,8 +51,9 @@ static void memory_full(void);
 void process_current_document_character(void);
 static void recalculate_cursor_xpos(void);
 void redraw_editor(addr_t ptr6);
-static void render_char(void);
-static void render_xchar(void);
+static void render_char(struct render_state* rs);
+static void advance_to_next_char(struct render_state* rs);
+static void render_xchar(struct render_state* rs);
 static void restore_cursor_position(void);
 area_status_t sanitise_area(void);
 static void save_cursor_position(void);
@@ -53,8 +70,8 @@ static void sub_c9ac1(uint8_t y);
 static void sub_c9e22(uint8_t a);
 static void sub_c9e9b(void);
 static uint8_t sub_ca44e(void);
-static void sub_ca4d7(void);
-static void sub_ca536(uint8_t y);
+static void advance_to_next_char_and_render(struct render_state* rs);
+static uint8_t sub_ca536(uint8_t y);
 static void unpack_line(addr_t ptr1);
 static void sub_caacb(void);
 uint8_t sub_cac41(addr_t tmp01);
@@ -3605,9 +3622,8 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t x)
     // cae78:
 cae78:
     //     jsr sub_ca536
-    sub_ca536(y);
     //     bne cae98
-    if (!(flags & FLAG_Z))
+    if (sub_ca536(y) == 0x0c)
         goto cae98;
     //     lda #0
     //     cpy l0084
@@ -3710,11 +3726,11 @@ static uint8_t enter_printable_character(void)
     //     ldy xpos
     y = xpos;
     //     jsr sub_ca536
-    sub_ca536(y);
     //     bne c9bf2
-    if ((flags & FLAG_Z))
+    uint8_t idx = sub_ca536(y);
+    if (idx != 0x0c)
     {
-        if (!(x >= 4))
+        if (idx < 4)
         {
             l0074++;
         }
@@ -4022,9 +4038,9 @@ c9cf5:
     // loop_c9cf9:
 loop_c9cf9:
     //     jsr sub_ca536
-    sub_ca536(y);
     //     bne c9d0d
-    if (!(flags & FLAG_Z))
+    uint8_t marker_index = sub_ca536(y);
+    if (marker_index == 0x0c)
         goto c9d0d;
     //     lda l0081
     a = l0081;
@@ -4033,13 +4049,13 @@ loop_c9cf9:
     //     adc ((uint8_t*)&tmp45)[0]
     a = adc(&flags, a, ((uint8_t*)&tmp45)[0]); // C live
     //     sta markers_array,x
-    ((uint8_t*)markers_array)[x] = a;
+    ((uint8_t*)markers_array)[marker_index] = a;
     //     lda ((uint8_t*)&tmp45)[1]
     a = ((uint8_t*)&tmp45)[1];
     //     adc #0
     a = adc(&flags, a, 0); // C live
     //     sta markers_array+1,x
-    ((uint8_t*)markers_array)[x + 1] = a;
+    ((uint8_t*)markers_array)[marker_index + 1] = a;
     //     bcc loop_c9cf9
     if (!(flags & FLAG_C))
         goto loop_c9cf9;
@@ -4152,7 +4168,6 @@ static void go_to_marker_6(void)
 
 static void prompt_for_marker(void)
 {
-
     // Pseudocode: Prompts for a marker character and looks it up
 
     // prompt_for_marker:
@@ -4772,9 +4787,9 @@ cae27:
     // loop_cae37:
 loop_cae37:
     //     jsr sub_ca536
-    sub_ca536(y);
     //     bne cae52
-    if (!(flags & FLAG_Z))
+    uint8_t idx = sub_ca536(y);
+    if (idx == 0x0c)
         goto cae52;
     //     lda l0081
     a = l0081;
@@ -4787,7 +4802,7 @@ loop_cae37:
     //     adc current_edit_line_ptr
     a = adc(&flags, a, (uint8_t)(RAM_EDIT_BUFFER & 0xff)); // C live
     //     sta markers_array,x
-    ((uint8_t*)markers_array)[x] = a;
+    ((uint8_t*)markers_array)[idx] = a;
     //     lda current_edit_line_ptr+1
     a = (uint8_t)(RAM_EDIT_BUFFER >> 8);
     //     adc #0
@@ -4798,11 +4813,11 @@ loop_cae37:
     // cae4b:
 cae4b:
     //     sta markers_array,x
-    ((uint8_t*)markers_array)[x] = a;
+    ((uint8_t*)markers_array)[idx] = a;
     // cae4d:
 cae4d:
     //     sta markers_array+1,x
-    ((uint8_t*)markers_array)[x + 1] = a;
+    ((uint8_t*)markers_array)[idx + 1] = a;
     //     jmp loop_cae37
     goto loop_cae37;
 
@@ -5623,82 +5638,84 @@ static void cursor_on(void)
     screen_enablecursor(1);
 }
 
-void draw_line(uint16_t addr)
+void draw_line(struct render_state* rs, uint16_t addr)
 {
     // draw_line
     // draw_line: Renders a single document line to the screen
+    // On entry:  rs->line = screen line number, addr = address of the
+    // document line (also stored in rs->line_ptr)
 
     //     sta ((uint8_t*)&tmp01)[0]
-    tmp01 = addr;
+    rs->line_ptr = addr;
+    tmp01 = rs->line_ptr;
     tmp67 = addr;
     //     ldx #0
     //     ldy l0082
-    screen_setcursor(0, l0082);
+    screen_setcursor(0, rs->line);
     //     ldy #0
-    y = 0;
-    set_flags(&flags, y); // Z live
+    rs->pos = 0;
     //     sty l0083
-    l0083 = 0;
+    rs->col = 0;
     //     sty input_buffer_offset+1
-    l0080 = 0;
+    rs->buf_off = 0;
     //     sty l0039
-    l0039 = 0;
+    rs->char_width = 0;
     //     jsr deref_and_check_for_command_prefix
-    flags = deref_and_check_for_command_prefix(y);
+    flags = deref_and_check_for_command_prefix(0);
     //     bne ca4b4
     if (!(flags & FLAG_Z))
         goto ca4b4;
     //     ldy #3
     //     lda hscroll_pos
-    a = hscroll_pos;
-    if (a != 0)
+    if (hscroll_pos != 0)
         goto ca4b4;
     //     bne ca4b4
     //     ldy #1
-    y = 1;
+    rs->pos = 1;
     //     jsr sub_ca4d7
-    sub_ca4d7();
+    advance_to_next_char_and_render(rs);
     //     jsr sub_ca4d7
-    sub_ca4d7();
+    advance_to_next_char_and_render(rs);
     //     lda #0x20 ; ' '
-    a = 0x20;
+    rs->ch = 0x20;
     //     bne ca4bc
     goto ca4bc;
 
     // ca4b4:
 ca4b4:
     //     lda #0x20 ; ' '
-    a = 0x20;
+    rs->ch = 0x20;
     //     jsr ca4e9
-    render_char();
+    render_char(rs);
     //     jsr ca4e9
-    render_char();
+    render_char(rs);
 // ca4bc:
 ca4bc:
     //     jsr ca4e9
-    render_char();
+    render_char(rs);
 // loop_ca4bf:
 loop_ca4bf:
     //     jsr process_current_document_character
-    process_current_document_character();
+    advance_to_next_char(rs);
     // loop_ca4c2:
     do
     {
-        render_xchar();
-        x--;
-    } while (x != 0);
+        render_xchar(rs);
+        rs->width--;
+    } while (rs->width != 0);
 loop_ca4c2:
     //     cmp #0x0d
-    if (a != 0x0d)
+    if (rs->ch != 0x0d)
         goto loop_ca4bf;
     //     bne loop_ca4bf
     //     lda #0x20 ; ' '
     //     jsr sub_ca597
+    l0082 = rs->line;
     clear_to_eol(0x20);
     //     lda l0083
-    a = l0083;
     //     sta line_lengths,x
-    line_lengths[x] = a;
+    line_lengths[rs->line] = rs->col;
+
     //     rts
 }
 
@@ -5762,8 +5779,8 @@ static void draw_ruler(void)
     status_line_needs_redrawing_flag = y;
 
     //     sty l0082
-    l0082 = y;
-    draw_line(current_ruler_ptr);
+    struct render_state rs = {.line = y};
+    draw_line(&rs, current_ruler_ptr);
     // The 6502 never sets flags_need_redrawing_flag in the scroll/redraw path,
     // so draw_status_word is not called after draw_ruler.  This would leave
     // three spaces at columns 0-2 (draw_line writes a 3-byte prefix for
@@ -6504,6 +6521,8 @@ ca63d:
 
 void redraw_editor(addr_t ptr6)
 {
+    {
+    }
     // redraw_editor
     //  Ptrs:   ptr6
     // Pseudocode: Main screen update routine: scrolls, redraws lines, updates
@@ -6856,7 +6875,8 @@ ca3c1:
     // loop_ca3c3: (5398)
 loop_ca3c3:
     //     jsr sub_ca486 (5399)
-    draw_line(((uint16_t)y << 8) | a);
+    struct render_state rs = {.line = l0082};
+    draw_line(&rs, ((uint16_t)y << 8) | a);
     //     lda ((uint8_t*)&tmp01)[0] (5400)
     a = ((uint8_t*)&tmp01)[0];
     //     ldy ((uint8_t*)&tmp01)[1] (5401)
@@ -6912,7 +6932,8 @@ ca3e7:
     {
         a = ypos;
         l0082 = a;
-        draw_line(current_format_line_ptr);
+        struct render_state rs = {.line = l0082};
+        draw_line(&rs, current_format_line_ptr);
     }
     //     lda flags_need_redrawing_flag (5431)
     a = flags_need_redrawing_flag;
@@ -6984,31 +7005,24 @@ loop_ca431:
     goto ca3de;
 }
 
-static void render_char(void)
+static void render_char(struct render_state* rs)
 {
     // render_char
     // ca4e9: Renders character to screen with attribute handling.
-    //
-    // Input:
-    //   a     = character to render
-    //   y     = position in edit buffer (for marker check)
-    //   x     = l0083 (screen column), l0082 (line number)
-    //
-    // Output:
-    //   a     = char_to_render (for caller's CR line-terminator detection)
-    //   x     = l0084 (restored by caller), y unchanged
     //
     // Marker handling:
     //   Highlight toggles 0x1c/0x1d are replaced with '-'/'*' and
     //   displayed inverted.  Markers at index 0 (match via sub_ca536)
     //   enable REVERSE style for the character.  After output, style
-    //   is reset to NORMAL if the current position matched a marker
-    //   (marker_idx == 0).  CR and NUL are replaced with space.
-    uint8_t char_to_render = a;
-    uint8_t marker_idx = 0;
+    //   is reset to NORMAL if x (the marker index / screen column, as
+    //   left by the flow above) is zero.  CR and NUL are replaced with
+    //   space.
+    uint8_t a;
+    uint8_t x;
+    uint8_t char_to_render = rs->ch;
 
     //     ldx l0082
-    x = l0082;
+    x = rs->line;
     //     lda line_lengths,x
     if (line_lengths[x] != 0)
     {
@@ -7017,45 +7031,42 @@ static void render_char(void)
     }
     // ca4f4:
     //     ldx l0083
-    x = l0083;
+    x = rs->col;
     //     cpx screen_width
     if (x >= screen_maxcolumn)
     {
-        a = char_to_render;
-        x = l0084;
+        rs->ch = char_to_render;
         return;
     }
     //     inc l0083
-    l0083++;
+    rs->col++;
     //     tya
-    a = y;
+    a = rs->pos;
     //     beq ca514
     if (a == 0)
         goto ca514;
     //     dey
-    y--;
     //     jsr sub_ca536
-    sub_ca536(y);
+    tmp67 = rs->line_ptr;
+    x = sub_ca536(rs->pos - 1);
     //     iny
-    y++;
     //     cpx #4
     if (x >= 4)
         goto ca514;
     //     tax
-    marker_idx = a;
-    x = marker_idx;
+    x = 0;
     //     bmi ca523
     if (x & 0x80)
     {
-        a = char_to_render;
+        rs->ch = char_to_render;
         goto ca523;
     }
     //     bne ca514
-    if (!(x != 0))
-    {
-        a = STYLE_REVERSE;
-        screen_setstyle(a);
-    }
+    if (x != 0)
+        goto ca514;
+    //     pla
+    a = STYLE_REVERSE;
+    screen_setstyle(a);
 ca514:
     a = char_to_render;
     //     jsr check_for_control_code
@@ -7081,40 +7092,36 @@ ca523:
     // ca529:
     //     jsr screen_putchar
     screen_putchar(a);
-    //     txa  (use x directly for the style-reset decision)
+    //     txa  (use x for the style-reset decision)
     //     bne ca532
-    if (!(x != 0))
+    if (x == 0)
     {
         screen_setstyle(0);
     }
-    a = char_to_render;
-    //     ldx l0084
-    x = l0084;
+    rs->ch = char_to_render;
     //     rts
 }
 
-static void render_xchar(void)
+static void render_xchar(struct render_state* rs)
 {
+    uint8_t x;
+
     // render_xchar: Renders a character to screen with style/attribute handling
 
     //     inc l0039
-    l0039++;
+    rs->char_width++;
     //     stx l0084
-    l0084 = x;
     //     ldx input_buffer_offset+1
-    x = l0080;
+    x = rs->buf_off;
     //     inc input_buffer_offset+1
-    l0080++;
+    rs->buf_off++;
     //     cpx hscroll_pos
     cmp(&flags, x, hscroll_pos); // C live
     //     bcc ca533
     if (!(flags & FLAG_C))
-    {
-        x = l0084;
         return;
-    }
     //     jmp ca4e9
-    render_char();
+    render_char(rs);
 }
 
 static void restore_cursor_position(void)
@@ -7595,14 +7602,14 @@ c99b6:
     // loop_c99ba:
 loop_c99ba:
     //     jsr sub_ca536
-    sub_ca536(y);
     //     bne c99c7
-    if (!(flags & FLAG_Z))
+    uint8_t idx = sub_ca536(y);
+    if (idx == 0x0c)
         goto c99c7;
     //     lda #0
     a = 0;
     //     sta markers_array+1,x
-    markers_array[1 + x] = a;
+    markers_array[1 + idx] = a;
     //     inc l007e
     l007e++;
     //     bne loop_c99ba
@@ -8191,22 +8198,43 @@ ca479:
     //     rts
 }
 
-static void sub_ca4d7(void)
+static void advance_to_next_char(struct render_state* rs)
 {
-    // sub_ca4d7: Draws a character and advances x position
-
+    // Advance to the next document character.  The shared
+    // process_current_document_character() reads/writes the simulated
+    // registers, so synchronise the render state around the call.
     //     jsr process_current_document_character
+    tmp01 = rs->line_ptr;
+    y = rs->pos;
+    l0039 = rs->char_width;
     process_current_document_character();
-    //     jmp ca4e9
-    render_char();
+    rs->ch = a;
+    rs->pos = y;
+    rs->width = x;
+    rs->char_width = l0039;
 }
 
-static void sub_ca536(uint8_t y)
+static void advance_to_next_char_and_render(struct render_state* rs)
+{
+    // advance_to_next_char_and_render: Draws a character and advances x
+    // position
+
+    //     jsr process_current_document_character
+    advance_to_next_char(rs);
+    //     jmp ca4e9
+    render_char(rs);
+}
+
+static uint8_t sub_ca536(uint8_t y)
 {
     addr_t tmp89;
+    uint8_t x;
+    uint8_t a;
 
     // sub_ca536
     // Pseudocode: Checks if a position in the edit line corresponds to a marker
+    // On exit:  return value is the marker array index (0,2,...,10) if the
+    // position matches a marker, or 0x0c if it does not
 
     // sub_ca536:
     tmp89 = tmp67 + y;
@@ -8239,19 +8267,14 @@ ca550:
         goto loop_ca544;
     //     bne loop_ca544
     //     txa
-    a = x;
-    set_flags(&flags, a); // Z live
     //     rts
-    return;
+    return 0x0c;
 
     // ca558:
 ca558:
     //     lda #0
-    a = 0;
-    set_flags(&flags, 0); // Z live
-    // return_61:
     //     rts
-    return;
+    return x;
 }
 
 static void unpack_line(addr_t ptr1)
@@ -8337,9 +8360,9 @@ static void sub_caacb(void)
     // caad5:
 caad5:
     //     jsr sub_ca536
-    sub_ca536(y);
     //     bne caae8
-    if (!(flags & FLAG_Z))
+    uint8_t idx = sub_ca536(y);
+    if (idx == 0x0c)
         goto caae8;
     //     tya
     a = y;
@@ -8348,13 +8371,13 @@ caad5:
     //     adc current_format_line_ptr
     a = adc(&flags, a, (uint8_t)(current_format_line_ptr & 0xff)); // C live
     //     sta __begin_pointer_array,x
-    ((uint8_t*)markers_array)[x] = a;
+    ((uint8_t*)markers_array)[idx] = a;
     //     lda current_format_line_ptr+1
     a = (uint8_t)(current_format_line_ptr >> 8);
     //     adc #0
     a = adc(&flags, a, 0); // Z live
     //     sta markers_array+1,x
-    ((uint8_t*)markers_array)[x + 1] = a;
+    ((uint8_t*)markers_array)[idx + 1] = a;
     //     bne caad5
     if (!(flags & FLAG_Z))
         goto caad5;
@@ -8684,9 +8707,9 @@ ca919:
             // loop_ca91c:
         loop_ca91c:
             //     jsr sub_ca536
-            sub_ca536(y);
             //     bne ca92f
-            if (a != 0)
+            uint8_t idx = sub_ca536(y);
+            if (idx == 0x0c)
                 goto ca92f;
             //     tya
             a = y;
@@ -8695,13 +8718,13 @@ ca919:
             //     adc current_line_ptr
             a = adc(&flags, a, (uint8_t)(current_line_ptr & 0xff)); // C live
             //     sta markers_array,x
-            ((uint8_t*)markers_array)[x] = a;
+            ((uint8_t*)markers_array)[idx] = a;
             //     lda current_line_ptr+1
             a = (uint8_t)(current_line_ptr >> 8);
             //     adc #0
             a = adc(&flags, a, 0); // V live
             //     sta markers_array+1,x
-            ((uint8_t*)markers_array)[x + 1] = a;
+            ((uint8_t*)markers_array)[idx + 1] = a;
             //     bne loop_ca91c
             if (a != 0)
                 goto loop_ca91c;

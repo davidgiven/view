@@ -1404,7 +1404,11 @@ void start_printing(void)
     return;
 }
 
-void readline(void)
+// C translation of the 6502 "readline" subroutine (view-cpm.S:7939).  Renamed
+// from "readline" to avoid colliding with GNU readline's readline(3), whose
+// symbol the executable would otherwise interpose over (causing infinite
+// recursion in cli_readstring).
+void read_command_line(void)
 {
     input_buffer_offset = 0;
     if (cli_readstring((char*)input_buffer, MAX_COMMAND_LENGTH))
@@ -1507,7 +1511,7 @@ void cli_handler_impl(void)
     //     jsr print_inline_string ; .ascii "=>"
     cli_putstring("=>");
     //     jsr readline
-    readline();
+    read_command_line();
     //     lda #<input_buffer
     //     sta ((uint8_t*)&tmp01)[0]
     //     ldx #>input_buffer

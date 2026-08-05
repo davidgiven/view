@@ -7,7 +7,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **main_** → cli_handler_impl, editor_loop_impl, initialise_document, run_cli, system_init [error_handling_mode, x]
 - **run_cli** → clear_screen, compute_bytes_free, display_document_file_state, print_x_words_of_help, render_number_to_screen, return_to_cli_prompt [a, file_edit_flags, flags, input_file_empty_flag, l0083, markers_array, microspacing_flag, printer_driver_name, x, y]
 - **run_editor** → enter_editor_mode
-- **cli_handler_impl** → input_line_not_escaped, readline, run_editor, stop_printing [error_handling_mode, flags, print_flags, x]
+- **cli_handler_impl** → input_line_not_escaped, read_command_line, run_editor, stop_printing [error_handling_mode, flags, print_flags, x]
 - **return_to_editor_loop**
 - **esc_key** → run_cli, write_line_back_to_document_safely
 - **input_line_not_escaped** → call_through_jumptable_2, parse_command, run_cli [a, flags, l0080, y]
@@ -196,13 +196,14 @@ Functions defined in the source files and their callees (only calls to other fun
 - **cf1_next_match_key** → c8b7b, esc_key, move_cursor_to_address, write_line_back_to_document_safely [flags]
 - **redraw_editor** → cab91, clear_to_eol, cursor_off, cursor_on, draw_line, draw_ruler, draw_status_word, move_tmp01_to_previous_line, recalculate_cursor_xpos, sub_ca44e, sub_caacb, sub_cab1a, unpack_line_into_buffer, write_line_back_to_document_safely [a, current_format_line_ptr, current_line_ptr, edit_buffer_unpacked_flag, flags, flags_need_redrawing_flag, hscroll_pos, l0033, l0034, l003d, l006f, l0072, l0073, l0074, l0081, l0082, l0083, line_lengths, ptr6, ruler_index_ptr, screen_maxcolumn, screen_maxrow, status_line_needs_redrawing_flag, tmp0, tmp1, top, top_of_screen_line_ptr, x, y, ypos]
 - **sub_ca44e** → move_tmp01_to_previous_line [a, current_line_ptr, flags, l0033, l0034, l006f, l0073, ruler_index_ptr, screen_maxrow, tmp0, tmp1, tmp2, tmp3, top_of_screen_line_ptr, x, y, ypos]
-- **draw_line** → clear_to_eol, deref_and_check_for_command_prefix, process_current_document_character, render_char, render_xchar, sub_ca4d7 [a, flags, hscroll_pos, l0039, l0080, l0082, l0083, line_lengths, tmp0, tmp1, tmp6, tmp7, x, y]
-- **sub_ca4d7** → process_current_document_character, render_char
+- **draw_line** → advance_to_next_char, advance_to_next_char_and_render, clear_to_eol, deref_and_check_for_command_prefix, render_char, render_xchar [a, flags, hscroll_pos, l0039, l0080, l0082, l0083, line_lengths, tmp0, tmp1, tmp6, tmp7, x, y]
+- **advance_to_next_char_and_render** → advance_to_next_char, render_char
 - **render_char** → check_for_control_code, sub_ca536 [a, flags, l0082, l0083, l0084, line_lengths, screen_maxcolumn, x, y]
 - **render_xchar** → render_char [flags, hscroll_pos, l0039, l0080, l0084, x]
 - **sub_ca536** [a, flags, markers_array, tmp6, tmp7, tmp8, tmp9, x, y]
 - **clear_to_eol** [a, flags, l0082, l0084, line_lengths, x]
 - **process_current_document_character** → process_document_character [a, ram, tmp0, tmp1, y]
+- **advance_to_next_char** → process_current_document_character [a, l0039, tmp01, x, y]
 - **recalculate_cursor_xpos** → process_current_document_character [a, flags, l0039, l0072, l0079, tmp0, tmp1, x, xpos, y]
 - **draw_ruler** → draw_line [a, current_ruler_ptr, flags, flags_need_redrawing_flag, l0082, status_line_needs_redrawing_flag, y]
 - **home_cursor**
@@ -269,7 +270,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **q_command_key** → cf6_split_line_key, control_key_to_ascii, draw_prompt_characters, f1_top_of_text_key, f2_bottom_of_text_key, f3_delete_to_eol_key, f4_beginning_of_line_key, f5_end_of_line_key, go_to_marker_1, go_to_marker_2, go_to_marker_3, go_to_marker_4, go_to_marker_5, go_to_marker_6, read_char, sf6_go_to_marker_key [a, flags_need_redrawing_flag, x, y]
 - **o_command_key** → cf2_format_mode_key, cf3_justify_mode_key, cf5_default_ruler_key, cf8_mark_as_ruler_key, control_key_to_ascii, draw_prompt_characters, read_char, sf11_copy_key, sf2_release_margins_key, sf4_highlight1_key, sf5_highlight2_key, sf8_edit_command_key, sf9_delete_command_key [a, flags_need_redrawing_flag, x, y]
 - **k_command_key** → cf0_delete_block_key, control_key_to_ascii, draw_prompt_characters, f11_copy_key, read_char, set_marker_1, set_marker_2, set_marker_3, set_marker_4, set_marker_5, set_marker_6, sf0_move_block_key, sf7_set_marker_key [a, flags_need_redrawing_flag, parser_table, x, y]
-- **readline** [flags, input_buffer, input_buffer_offset]
+- **read_command_line** [flags, input_buffer, input_buffer_offset]
 - **select_file** [input_fp, output_fp, x]
 - **open_input_file** → file_not_found_error, zero_terminate_filename_buffer [filename_buffer, input_fp]
 - **open_output_file** → file_error, zero_terminate_filename_buffer [filename_buffer, output_fp]
