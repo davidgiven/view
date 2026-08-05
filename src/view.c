@@ -1282,9 +1282,8 @@ static void compute_space_common(void)
     addr_t tmp67;
     tmp01 = (addr_t)(y) << 8 | a;
     //     jsr compute_bytes_free
-    compute_bytes_free();
     //     stx ((uint8_t*)&tmp67)[0]
-    tmp67 = (addr_t)(y) << 8 | x;
+    tmp67 = (addr_t)compute_bytes_free();
     //     lsr ((uint8_t*)&tmp89)[1]; ror ((uint8_t*)&tmp89)[0]; lsr
     //     ((uint8_t*)&tmp89)[1]; ror ((uint8_t*)&tmp89)[0]
     {
@@ -1342,19 +1341,12 @@ static void sub_c8da2(uint8_t a, uint8_t y)
     //     pha
     //     tya
     //     pha
-    {
-        uint8_t saved_a = a;
-        uint8_t saved_y = y;
-        //     jsr compute_bytes_free
-        compute_bytes_free();
-        //     stx ((uint8_t*)&tmp89)[0]
-        tmp89 = (addr_t)(y) << 8 | x;
-        //     pla
-        //     tay
-        y = saved_y;
-        //     pla
-        a = saved_a;
-    }
+    //     jsr compute_bytes_free
+    //     stx ((uint8_t*)&tmp89)[0]
+    //     pla
+    //     tay
+    //     pla
+    tmp89 = (addr_t)compute_bytes_free();
     compute_space_common();
 }
 

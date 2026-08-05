@@ -42,33 +42,25 @@ uint8_t check_for_control_code(uint8_t a)
     return flags;
 }
 
-void compute_bytes_free(void)
+int compute_bytes_free(void)
 {
     // compute_bytes_free
     // Pseudocode: Computes number of free bytes between top and himem
+    // Returns the 16-bit difference himem - top.  (The 6502 returns it in YX;
+    // callers used to read the global y/x registers and now use the return
+    // value.)
 
-    // ;
-    // ***************************************************************************************
     // compute_bytes_free:
     //     lda himem
-    uint8_t a;
-    a = (uint8_t)(himem & 0xff);
     //     sec
-    flags |= FLAG_C;
     //     sbc top
-    flags |= FLAG_C;
-    a = sbc(&flags, a, (uint8_t)(top & 0xff)); // C live
     //     tax
-    x = a;
     //     lda himem+1
-    a = (uint8_t)(himem >> 8);
     //     sbc top+1
-    a = sbc(&flags, a, (uint8_t)(top >> 8)); // C live
     //     tay
-    y = a;
     // return_84:
     //     rts
-    return;
+    return (int)himem - (int)top;
 }
 
 void check_for_at_least_150_bytes_free(void)
@@ -77,14 +69,11 @@ void check_for_at_least_150_bytes_free(void)
 
     // check_for_at_least_150_bytes_free:
     //     jsr compute_bytes_free
-    compute_bytes_free();
     //     tya
     //     bne return_6
-    if (y != 0)
-        return;
     //     cpx #0x96
     //     bcs return_6
-    if (x >= 0x96)
+    if (compute_bytes_free() >= 0x96)
         return;
 
     // MULTIPLE ENTRY POINTS: check_for_at_least_150_bytes_free,
@@ -713,22 +702,13 @@ void get_register_address(uint8_t a)
     {
         uint8_t saved_a = a;
         //     sbc #0x40 ; '@'
-        a = sbc(&flags, a, 0x40); // none live
         //     asl
-        a <<= 1;
         //     adc #<register_value_array
-        flags &= ~FLAG_C;
-        a = adc(&flags,
-            a,
-            (uint8_t)(RAM_REGISTER_VALUE_ARRAY & 0xff)); // C live
         //     sta ((uint8_t*)&tmp67)[0]
-        ((uint8_t*)&tmp67)[0] = a;
         //     lda #>register_value_array
-        a = (uint8_t)(RAM_REGISTER_VALUE_ARRAY >> 8);
         //     adc #0
-        a = adc(&flags, a, 0); // Z, V live
         //     sta ((uint8_t*)&tmp67)[1]
-        ((uint8_t*)&tmp67)[1] = a;
+        tmp67 = RAM_REGISTER_VALUE_ARRAY + ((a - 0x41) << 1);
         //     pla
         a = saved_a;
     }
@@ -1096,23 +1076,16 @@ void move_tmp01_to_previous_line(uint16_t val)
     uint8_t y;
 
     uint8_t a;
-    a = (uint8_t)(val & 0xff);
-    y = (uint8_t)(val >> 8);
     // move_tmp01_to_previous_line
     // sub_cab37:
     //     sec
-    flags |= FLAG_C;
     //     sbc #1
-    a = sbc(&flags, a, 1); // C live
     //     sta ((uint8_t*)&tmp01)[0]
-    ((uint8_t*)&tmp01)[0] = a;
     //     bcs cab3f
-    if (!(flags & FLAG_C))
-    {
-        y--;
-    }
     //     sty ((uint8_t*)&tmp01)[1]
-    ((uint8_t*)&tmp01)[1] = y;
+    tmp01 = val - 1;
+    a = (uint8_t)tmp01;
+    y = (uint8_t)(tmp01 >> 8);
     //     cpy page+1
     cmp(&flags, y, (uint8_t)(page >> 8)); // Z, C live
     //     bcc return_71

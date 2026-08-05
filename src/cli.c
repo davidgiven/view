@@ -1544,8 +1544,8 @@ void run_cli(void)
     cli_putstring("\n\nBytes free ");
 
     //     jsr compute_bytes_free
-    compute_bytes_free();
-    render_number_to_screen((addr_t)(y) << 8 | x);
+    int free_bytes = compute_bytes_free();
+    render_number_to_screen((addr_t)free_bytes);
     //     jsr bdos_print_newline
     cli_putchar('\n');
     //     jsr display_document_file_state

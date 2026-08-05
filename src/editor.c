@@ -3970,19 +3970,13 @@ c9ca2:
     //     sty ((uint8_t*)&tmp67)[0] (4235)
     ((uint8_t*)&tmp67)[0] = y;
     //     lda current_line_ptr (4236)
-    a = (uint8_t)(current_line_ptr & 0xff);
     //     sec (4237)
-    flags |= FLAG_C;
     //     adc l003b (4238)
-    a = adc(&flags, a, l003b); // C live
     //     sta ((uint8_t*)&tmp45)[0] (4239)
-    ((uint8_t*)&tmp45)[0] = a;
     //     lda current_line_ptr+1 (4240)
-    a = (uint8_t)(current_line_ptr >> 8);
     //     adc #0 (4241)
-    a = adc(&flags, a, 0); // none live
     //     sta ((uint8_t*)&tmp45)[1] (4242)
-    ((uint8_t*)&tmp45)[1] = a;
+    tmp45 = current_line_ptr + l003b + 1;
     //     jsr make_space_for_insertion (4243)
     make_space_for_insertion();
     //     bcc c9cd0 (4244)
@@ -7140,7 +7134,6 @@ area_status_t sanitise_area(void)
     uint8_t y;
     uint8_t x;
     uint8_t a;
-    uint8_t tmp6, tmp7;
     // sanitise_area:
     //     lda area_start_ptr
     a = (uint8_t)(area_start_ptr & 0xff);
@@ -7160,44 +7153,34 @@ area_status_t sanitise_area(void)
 c896b:
     // c896b:
     //     ldy area_end_ptr
-    y = (uint8_t)(area_end_ptr & 0xff);
     //     sty area_start_ptr
-    area_start_ptr = (area_start_ptr & 0xff00) | y;
     //     ldy area_end_ptr+1
-    y = (uint8_t)(area_end_ptr >> 8);
     //     sty area_start_ptr+1
-    area_start_ptr = (area_start_ptr & 0x00ff) | ((uint16_t)y << 8);
     //     stx area_end_ptr+1
-    area_end_ptr = (area_end_ptr & 0x00ff) | ((uint16_t)x << 8);
     //     sta area_end_ptr
-    area_end_ptr = (area_end_ptr & 0xff00) | a;
+    {
+        addr_t tmp = area_start_ptr;
+        area_start_ptr = area_end_ptr;
+        area_end_ptr = tmp;
+    }
 c8977:
     // c8977:
     //     lda area_end_ptr
-    a = (uint8_t)(area_end_ptr & 0xff);
     //     sec
-    flags |= FLAG_C;
     //     sbc area_start_ptr
-    flags |= FLAG_C;
-    a = sbc(&flags, a, (uint8_t)(area_start_ptr & 0xff)); // C live
     //     sta ((uint8_t*)&tmp67)[0]
-    ((uint8_t*)&tmp67)[0] = a;
     //     lda area_end_ptr+1
-    a = (uint8_t)(area_end_ptr >> 8);
     //     sbc area_start_ptr+1
-    a = sbc(&flags, a, (uint8_t)(area_start_ptr >> 8)); // none live
     //     sta ((uint8_t*)&tmp67)[1]
-    ((uint8_t*)&tmp67)[1] = a;
+    tmp67 = area_end_ptr - area_start_ptr;
     //     bne return_10
-    if (a != 0)
+    if (tmp67 != 0)
     {
         return AREA_NOT_EMPTY;
     }
-    //     lda ((uint8_t*)&tmp67)[0]
-    a = ((uint8_t*)&tmp67)[0];
     // return_10:
     //     rts
-    return a != 0 ? AREA_NOT_EMPTY : AREA_EMPTY;
+    return AREA_EMPTY;
 }
 
 static void save_cursor_position(void)
@@ -7567,13 +7550,10 @@ c998a:
     //     jsr wipe_buffer
     wipe_buffer(0x10);
     //     lda current_line_ptr
-    a = (uint8_t)(current_line_ptr & 0xff);
     //     sta ((uint8_t*)&tmp67)[0]
-    ((uint8_t*)&tmp67)[0] = a;
     //     lda current_line_ptr+1
-    a = (uint8_t)((current_line_ptr >> 8) & 0xff);
     //     sta ((uint8_t*)&tmp67)[1]
-    ((uint8_t*)&tmp67)[1] = a;
+    tmp67 = current_line_ptr;
     // PROVISIONAL: Zero working variables: l0047 (character index), l0039
     // (column counter), PROVISIONAL: l0038 (soft-hyphen/break flag), l0046
     // (word-start flag), bottom_margin.

@@ -6,7 +6,7 @@
 
 extern uint8_t check_for_command_prefix(uint8_t ch);
 extern uint8_t check_for_control_code(uint8_t a);
-extern void compute_bytes_free(void);
+extern int compute_bytes_free(void);
 extern uint8_t deref_and_check_for_command_prefix(uint8_t y);
 extern void display_document_file_state(void);
 extern void find_margins_of_current_ruler_buffer(void);
