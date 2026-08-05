@@ -1350,6 +1350,7 @@ static void f2_bottom_of_text_key(void)
 static void f3_delete_to_eol_key(void)
 {
     uint8_t x;
+    uint8_t a;
 
     // f3_delete_to_eol_key
 
@@ -2727,8 +2728,7 @@ static void sf12_left_key(void)
     // sf12_left_key:
 
     //     ldy xpos
-
-    y = xpos;
+    uint8_t y = xpos;
 
     //     beq c9f80
 
@@ -3544,18 +3544,13 @@ static void c9d9b_advance_ptr(void)
     if (flags & FLAG_Z)
         return;
     //     tya
-    a = y;
     //     clc
-    flags &= ~FLAG_C;
     //     adc current_line_ptr
-    a = adc(&flags, a, (uint8_t)(current_line_ptr & 0xff)); // C live
     //     sta current_line_ptr
-    current_line_ptr = (uint16_t)((current_line_ptr & 0xff00) | a);
     //     bcc return_54
-    if (!(flags & FLAG_C))
-        return;
     //     inc current_line_ptr+1
-    current_line_ptr = (uint16_t)(current_line_ptr + 0x100);
+    // (sub_cab1a leaves y = offset of the CR terminator)
+    current_line_ptr += y;
     // return_54:
     //     rts
 }
@@ -5711,6 +5706,7 @@ loop_ca4c2:
 uint8_t draw_prompt_characters(uint8_t x, uint8_t y)
 {
     addr_t tmp23;
+    uint8_t a;
 
     // draw_prompt_characters: Draws two inverted prompt characters at top-left
     // On entry: x, y = prompt characters
@@ -5757,7 +5753,7 @@ static void draw_ruler(void)
     // ;
     // ***************************************************************************************
     // draw_ruler:
-    a = status_line_needs_redrawing_flag;
+    uint8_t a = status_line_needs_redrawing_flag;
     flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq return_64
     if (flags & FLAG_Z)
@@ -5788,6 +5784,7 @@ static void draw_status_word(void)
     // sub_ca651:
     //     lda #0
     uint8_t x;
+    uint8_t a;
     //     sta flags_need_redrawing_flag
     flags_need_redrawing_flag = 0;
     //     jsr home_cursor
@@ -5899,9 +5896,9 @@ static void go_to_marker(uint8_t x)
 {
     // go_to_marker:
     //     lda markers_array,x
-    a = ((uint8_t*)markers_array)[x];
+    uint8_t a = ((uint8_t*)markers_array)[x];
     //     ldy markers_array+1,x
-    y = ((uint8_t*)markers_array)[x + 1];
+    uint8_t y = ((uint8_t*)markers_array)[x + 1];
     //     jsr move_cursor_to_address
     move_cursor_to_address((uint16_t)(y) << 8 | a);
     // ca035:
