@@ -3,7 +3,7 @@
 
 #include "globals.h"
 
-extern uint8_t execute_cli_command(uint8_t a);
+extern void execute_cli_command(uint8_t a);
 extern void start_printing(void);
 extern void clear_cmd(void);
 extern void run_cli(void);

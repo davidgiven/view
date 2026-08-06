@@ -18,7 +18,6 @@ extern void return_to_cli_prompt(void);
 
 extern void print_alignment_spaces(void);
 extern void is_embedded_ruler(addr_t tmp01);
-extern uint8_t divide_for_microspacing(void);
 extern void check_for_at_least_150_bytes_free(void);
 
 extern void load_current_ruler(uint8_t y);

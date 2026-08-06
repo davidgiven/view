@@ -58,7 +58,7 @@ static void bye_cmd(void)
     exit(0);
 }
 
-uint8_t execute_cli_command(uint8_t a)
+void execute_cli_command(uint8_t a)
 {
     // execute_cli_command
     // call_through_jumptable (y=2):
@@ -151,13 +151,12 @@ uint8_t execute_cli_command(uint8_t a)
             replace_cmd(ptr6);
             break;
         case 24:
-            a = load_cmd();
+            load_cmd();
             break;
         case 25:
             bye_cmd();
             break;
     }
-    return a;
 }
 
 static void change_cmd(void)
@@ -1486,7 +1485,7 @@ c826e:
     a = l0080;
     //     ldy #2
     //     jsr call_through_jumptable
-    a = execute_cli_command(a);
+    execute_cli_command(a);
     //     jmp run_cli
     run_cli();
 }

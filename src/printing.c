@@ -2171,8 +2171,9 @@ loop_c9107:
     //     sta l0046
     l0046 = a;
     //     jsr sub_cadf0
-    a = divide_for_microspacing();
     //     sta l0045
+    a = tmp89 % l0046;
+    tmp89 = tmp89 / l0046;
     l0045 = a;
     //     lda ((uint8_t*)&tmp89)[0]
     a = ((uint8_t*)&tmp89)[0];
@@ -4013,11 +4014,12 @@ void stop_printing(void)
     a = print_flags;
     if (((int8_t)a < 0))
     {
-        a = rol(&flags, print_flags); // none live
-        print_flags = a;
-        flags &= ~FLAG_C;
-        a = ror(&flags, print_flags); // none live
-        print_flags = a;
+        // (The 6502 clears bit 7 by rolling left into C, clearing C, and
+        //  rolling right again; the input C value is irrelevant.)
+        //     rol print_flags
+        //     clc
+        //     ror print_flags
+        print_flags &= 0x7f;
         printer_driver_ptr->printer_off();
     }
     //     rts

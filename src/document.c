@@ -484,34 +484,6 @@ void is_embedded_ruler(addr_t tmp01)
     return;
 }
 
-uint8_t divide_for_microspacing(void)
-{
-    // sub_cadf0
-    // sub_cadf0: Performs 8-bit by 8-bit division for microspacing
-
-    //     ldx #8
-    uint8_t x;
-    x = 8;
-    //     lda ((uint8_t*)&tmp89)[1]
-    a = ((uint8_t*)&tmp89)[1];
-    // loop_cadf4:
-    do
-    {
-        ((uint8_t*)&tmp89)[0] = rol(&flags, ((uint8_t*)&tmp89)[0]); // C live
-        a = rol(&flags, a);                                         // none live
-        cmp(&flags, a, l0046);                                      // C live
-        if ((flags & FLAG_C))
-        {
-            a = sbc(&flags, a, l0046); // none live
-            ((uint8_t*)&tmp89)[0]++;
-        }
-        x--;
-    } while (x != 0);
-loop_cadf4:
-    return a;
-    //     rts
-}
-
 void load_current_ruler(uint8_t y)
 {
     // cab91

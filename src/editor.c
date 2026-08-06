@@ -6060,8 +6060,9 @@ c9871:
     //     sta ((uint8_t*)&tmp89)[1]
     tmp89 = x;
     //     jsr sub_cadf0
-    a = divide_for_microspacing();
     //     sta l0045
+    a = tmp89 % l0046;
+    tmp89 = tmp89 / l0046;
     l0045 = a;
     //     lda ((uint8_t*)&tmp89)[0]
     a = ((uint8_t*)&tmp89)[0];
@@ -7971,11 +7972,11 @@ c9aef:
     if (!(flags & FLAG_Z))
         goto c9ae9;
     //     rol l0084
-    l0084 = rol(&flags, l0084); // none live
     //     sec
-    flags |= FLAG_C;
     //     ror l0084
-    l0084 = ror(&flags, l0084); // C live
+    // (The 6502 sets bit 7 by rolling left, setting C, and rolling right
+    //  again; the carry is preserved from the preceding cmp.)
+    l0084 |= 0x80;
     //     bcs c9ae9
     if (flags & FLAG_C)
         goto c9ae9;
