@@ -245,7 +245,7 @@ c9462:
     a = 0x0d;
 c9468:
     //     jsr sub_c9445
-    sub_c9445();
+    print_alignment_spaces();
     print_char_just_to_screen(a);
 }
 
@@ -436,7 +436,7 @@ void return_to_cli_prompt(void)
     longjmp(env, JMP_CLI);
 }
 
-void sub_c9445(void)
+void print_alignment_spaces(void)
 {
     // sub_c9445
     // Pseudocode: Outputs print_xpos number of spaces to align printer
@@ -467,7 +467,7 @@ void sub_c9445(void)
     //     rts
 }
 
-void sub_cab6e(addr_t tmp01)
+void is_embedded_ruler(addr_t tmp01)
 {
     // Pseudocode: Checks if byte at ((uint8_t*)&tmp01)[0] is a command prefix
     // (0x81)
@@ -484,7 +484,7 @@ void sub_cab6e(addr_t tmp01)
     return;
 }
 
-uint8_t sub_cadf0(void)
+uint8_t divide_for_microspacing(void)
 {
     // sub_cadf0
     // sub_cadf0: Performs 8-bit by 8-bit division for microspacing
@@ -512,7 +512,7 @@ loop_cadf4:
     //     rts
 }
 
-void cab91(uint8_t y)
+void load_current_ruler(uint8_t y)
 {
     // cab91
 
@@ -548,7 +548,7 @@ void cab91(uint8_t y)
     find_margins_of_current_ruler_buffer();
 }
 
-void cb05a(void)
+void ensure_cr_at_document_top(void)
 {
     // cb05a
     // cb05a: Ensures at least one CR at top of document
@@ -828,7 +828,7 @@ uint8_t initialise_document(void)
     //     jsr clear_cmd
     clear_cmd();
     //     (falls through to cb05a)
-    cb05a();
+    ensure_cr_at_document_top();
     return a;
 }
 
@@ -925,7 +925,7 @@ cabdf:
     // cabf6:
 cabf6:
     //     jsr sub_cac41
-    sub_cac41(tmp01);
+    check_for_embedded_ruler(tmp01);
     // cabf9:
 cabf9:
     //     sta ((uint8_t*)&tmp01)[0]
@@ -973,7 +973,7 @@ cac17:
     // cac1d:
 cac1d:
     //     jsr sub_cac41
-    sub_cac41(tmp01);
+    check_for_embedded_ruler(tmp01);
     // cac20:
 cac20:
     //     sta current_line_ptr
@@ -1033,7 +1033,7 @@ void move_cursor_to_top_of_document(void)
     //     sty l0033
     l0033 = 0xfe;
     //     jmp cab91
-    cab91(0xfe);
+    load_current_ruler(0xfe);
 }
 
 void move_tmp01_to_next_line(uint16_t start)
@@ -1104,7 +1104,7 @@ void move_tmp01_to_previous_line(uint16_t val)
 loop_cab4d:
     tmp01++;
     //     jsr sub_cab6e
-    sub_cab6e(tmp01);
+    is_embedded_ruler(tmp01);
     //     bne cab6c
     if ((flags & FLAG_Z))
     {
@@ -1158,7 +1158,7 @@ void pop_from_ruler_index(void)
     y++;
 
     // MULTIPLE ENTRY POINTS: pop_from_ruler_index, cab91
-    cab91(y);
+    load_current_ruler(y);
 }
 
 void push_onto_ruler_index(uint8_t y)
@@ -1191,7 +1191,7 @@ void push_onto_ruler_index(uint8_t y)
         //     sta (oshwm),y
         ram[oshwm + y] = a2;
         //     jsr cab91
-        cab91(y);
+        load_current_ruler(y);
         //     pla
         //     tay
         y = saved_y;
@@ -1229,7 +1229,7 @@ void select_file(uint8_t x)
     file_ptr = x ? output_fp : input_fp;
 }
 
-void sub_cab1a(uint8_t a)
+void find_next_line(uint8_t a)
 {
     // Pseudocode: Finds next line in document, handling command prefix and
     // ruler stack
@@ -1238,7 +1238,7 @@ void sub_cab1a(uint8_t a)
     //     sta ((uint8_t*)&tmp01)[0]
     tmp01 = (addr_t)(y) << 8 | a;
     //     jsr sub_cab6e
-    sub_cab6e(tmp01);
+    is_embedded_ruler(tmp01);
     //     bne cab29
     if (!(flags & FLAG_Z))
     {

@@ -16,14 +16,14 @@ extern void process_document_character(void);
 extern void read_char(void);
 extern void return_to_cli_prompt(void);
 
-extern void sub_c9445(void);
-extern void sub_cab6e(addr_t tmp01);
-extern uint8_t sub_cadf0(void);
+extern void print_alignment_spaces(void);
+extern void is_embedded_ruler(addr_t tmp01);
+extern uint8_t divide_for_microspacing(void);
 extern void check_for_at_least_150_bytes_free(void);
 
-extern void cab91(uint8_t y);
+extern void load_current_ruler(uint8_t y);
 
-extern void cb05a(void);
+extern void ensure_cr_at_document_top(void);
 
 extern void close_file(void);
 
@@ -59,6 +59,6 @@ extern void reset_area_to_entire_document(void);
 
 extern void select_file(uint8_t x);
 
-extern void sub_cab1a(uint8_t a);
+extern void find_next_line(uint8_t a);
 
 #endif

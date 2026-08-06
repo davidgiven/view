@@ -168,7 +168,7 @@ static void change_cmd(void)
 
     // change_cmd:
     //     jsr sub_c83f0
-    sub_c83f0();
+    process_cli_command();
     //     bcs c82fa
     if (flags & FLAG_C)
     {
@@ -182,7 +182,7 @@ static void change_cmd(void)
         return;
     }
     //     jsr c8b7b
-    c8b7b();
+    scan_document_for_next_line();
     //     bne c82fa
     if (!(flags & FLAG_Z))
     {
@@ -207,12 +207,12 @@ loop_c82b3:
     a = 0;
     print_xpos = a;
     //     jsr sub_c8a4f
-    sub_c8a4f(ptr2);
+    check_area_memory(ptr2);
     //     bcs c830d
     if (flags & FLAG_C)
         goto c830d;
     //     jsr c8b7b
-    c8b7b();
+    scan_document_for_next_line();
     //     beq loop_c82b3
     if (flags & FLAG_Z)
         goto loop_c82b3;
@@ -581,9 +581,9 @@ static void finish_cmd(void)
             return;
         }
         put_byte_to_file(0);
-        a = sub_c89d3(tmp67);
+        a = adjust_area_pointers(tmp67);
         move_cursor_to_top_of_document();
-        cb05a();
+        ensure_cr_at_document_top();
         a = input_file_empty_flag;
         if (a != 0)
         {
@@ -609,7 +609,7 @@ static void fold_cmd(void)
     // ***************************************************************************************
     // fold_cmd:
     //     jsr sub_c8e33
-    sub_c8e33();
+    scan_input_buffer();
     //     beq c87b4
     if (flags & FLAG_Z)
         goto c87b4;
@@ -675,7 +675,7 @@ static void format_cmd(void)
     //     jsr move_cursor_to_address
     move_cursor_to_address(area_start_ptr);
     //     jsr sub_caf5f
-    sub_caf5f();
+    clear_format_mode_bit7();
     //     lda #0x10
     //     jsr wipe_buffer
     wipe_buffer(0x10);
@@ -687,7 +687,7 @@ static void format_cmd(void)
     // c876d:
 c876d:
     //     jsr sub_c9977
-    sub_c9977();
+    format_paragraph();
     //     bvs c8791
     if (flags & FLAG_V)
         goto c8791;
@@ -738,8 +738,8 @@ static uint8_t load_cmd(void)
     parse_filename_from_command();
     //     jsr initialise_document
     a = initialise_document();
-    top = page; // WORKAROUND: cb05a bumped top past the initial CR; need to
-                // load at page, not page+1
+    top = page; // WORKAROUND: ensure_cr_at_document_top bumped top past the
+                // initial CR; need to load at page, not page+1
     //     jsr reset_area_to_entire_document
     reset_area_to_entire_document();
     //     jsr 1f
@@ -862,7 +862,7 @@ loop_c84c4:
     //     sta current_ruler_buffer,y
     current_ruler_buffer[y] = 0x0d;
     //     jsr sub_c89d3
-    a = sub_c89d3(tmp67);
+    a = adjust_area_pointers(tmp67);
     //     jsr move_cursor_to_top_of_document
     move_cursor_to_top_of_document();
     //     jsr check_for_at_least_150_bytes_free
@@ -882,7 +882,7 @@ loop_c84c4:
         }
     }
     //     jmp cb05a
-    cb05a();
+    ensure_cr_at_document_top();
 }
 
 static void name_cmd(void)
@@ -1052,7 +1052,7 @@ static void replace_cmd(addr_t ptr6)
     // ***************************************************************************************
     // replace_cmd:
     //     jsr sub_c83f0
-    sub_c83f0();
+    process_cli_command();
     //     beq c82e7
     if (flags & FLAG_Z)
     {
@@ -1060,7 +1060,7 @@ static void replace_cmd(addr_t ptr6)
         return;
     }
     //     jsr c8b7b
-    c8b7b();
+    scan_document_for_next_line();
     //     bne c82fa
     if (!(flags & FLAG_Z))
     {
@@ -1074,7 +1074,7 @@ static void replace_cmd(addr_t ptr6)
     // c832d:
 c832d:
     //     jsr sub_c8361
-    sub_c8361(ptr6);
+    redraw_and_write_back(ptr6);
     //     ldx #0x52 ; 'R'
     x = 0x52;
     //     ldy #0x50 ; 'P'
@@ -1106,9 +1106,9 @@ c8349:
     //     stx print_xpos
     print_xpos = x;
     //     jsr sub_c8371
-    sub_c8371(ptr2, ptr6);
+    setup_area_pointers(ptr2, ptr6);
     //     jsr sub_c8a4f
-    sub_c8a4f(ptr2);
+    check_area_memory(ptr2);
     //     bcs c836b
     if (flags & FLAG_C)
     {
@@ -1117,11 +1117,11 @@ c8349:
         return;
     }
     //     jsr sub_c8361
-    sub_c8361(ptr6);
+    redraw_and_write_back(ptr6);
     // c8356:
 c8356:
     //     jsr c8b7b
-    c8b7b();
+    scan_document_for_next_line();
     //     bne return_2
     if (!(flags & FLAG_Z))
         return;
@@ -1217,7 +1217,7 @@ static void search_cmd(void)
     // ***************************************************************************************
     // search_cmd:
     //     jsr sub_c8412
-    sub_c8412();
+    reset_command_parse_state();
     //     beq c82e7
     if (flags & FLAG_Z)
     {
@@ -1233,9 +1233,9 @@ static void search_cmd(void)
         return;
     }
     //     jsr sub_c8c7c
-    sub_c8c7c();
+    init_document_pointers();
     //     jsr c8b7b
-    c8b7b();
+    scan_document_for_next_line();
     //     bne c82fa
     if (!(flags & FLAG_Z))
     {
@@ -1283,7 +1283,7 @@ static void setup_cmd(void)
     // c8649:
 c8649:
     //     jsr sub_c8e33
-    sub_c8e33();
+    scan_input_buffer();
     //     beq c8672
     if (flags & FLAG_Z)
         goto c8672;
@@ -1838,7 +1838,7 @@ void parse_integer_from_command(void)
     //     sta current_format_line_ptr+1
     current_format_line_ptr = (addr_t)(uintptr_t)input_buffer;
     //     jsr sub_c8e33
-    sub_c8e33();
+    scan_input_buffer();
     //     beq return_8
     if (flags & FLAG_Z)
         return;
@@ -1949,7 +1949,7 @@ addr_t parse_mark_from_command(void)
     // parse_mark_from_command
     // parse_mark_from_command:
     //     jsr sub_c8e33
-    sub_c8e33();
+    scan_input_buffer();
     //     beq return_12
     if (flags & FLAG_Z)
         return 0;
