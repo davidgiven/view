@@ -541,7 +541,7 @@ static void field_cmd(void)
         return;
     }
     //     lda ((uint8_t*)&tmp89)[0]
-    a = ((uint8_t*)&tmp89)[0];
+    uint8_t a = ((uint8_t*)&tmp89)[0];
     //     cmp #0x1b
     if (!(a != 0x1b))
     {

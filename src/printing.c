@@ -449,7 +449,7 @@ static void df_fmt_cmd(void)
     //     ldy #>(footer_text_maybe)
     x = (uintptr_t)footer_text_maybe & 0xff;
     y = (uintptr_t)footer_text_maybe >> 8;
-    a = process_header_footer_line(x, y);
+    process_header_footer_line(x, y);
 }
 
 static void dh_fmt_cmd(void)
@@ -469,7 +469,7 @@ static void dh_fmt_cmd(void)
     //     ALWAYS branch
     x = (uintptr_t)header_text_maybe & 0xff;
     y = (uintptr_t)header_text_maybe >> 8;
-    a = process_header_footer_line(x, y);
+    process_header_footer_line(x, y);
 }
 
 static uint8_t em_fmt_cmd(void)
@@ -712,7 +712,7 @@ static void op_fmt_cmd(void)
     // op_fmt_cmd
     // op_fmt_cmd:
     //     lda register_value_p
-    a = ram[RAM_REGISTER_VALUE_P];
+    uint8_t a = ram[RAM_REGISTER_VALUE_P];
     //     lsr
     flags = (flags & ~(FLAG_C | FLAG_Z | FLAG_N)) | ((a & 1) ? FLAG_C : 0);
     a >>= 1;
@@ -761,10 +761,11 @@ static void page_eject_fmt(void)
     // ***************************************************************************************
     // page_eject_fmt:
     //     lda l0031
-    a = l0031;
-    if (!(a != 0))
+    //     bne c964c
+    if (l0031 == 0)
     {
-        x = render_new_page();
+        //     jsr render_new_page
+        render_new_page();
     }
     //     jmp c9263
     process_page_footer();
@@ -1289,8 +1290,7 @@ void execute_formatting_command(uint8_t x)
             break;
     }
     //     ldx l0030
-    x = l0030;
-    set_flags(&flags, x); // Z live
+    set_flags(&flags, l0030); // Z live
     //     rts
     return;
 }

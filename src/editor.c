@@ -42,7 +42,7 @@ static void draw_ruler(void);
 static void draw_status_word(void);
 static void get_line_length(void);
 static void go_to_marker(uint8_t x);
-static void go_to_marker_n(void);
+static void go_to_marker_n(uint8_t marker);
 static void home_cursor(void);
 void justify_edit_buffer(void);
 void make_space_for_insertion(void);
@@ -633,7 +633,7 @@ static void cf0_delete_block_key(void)
 
     clamp_ptr6_to_document(ptr6);
 
-    a = adjust_area_pointers(tmp67);
+    adjust_area_pointers(tmp67);
 
     ensure_cr_at_document_top();
 
@@ -716,6 +716,7 @@ static void cf5_default_ruler_key(void)
 
 static void cf6_split_line_key(void)
 {
+    uint8_t a;
     uint8_t x;
 
     // cf6_split_line_key
@@ -988,6 +989,7 @@ static void cf8_mark_as_ruler_key(addr_t ptr1)
 
 static void delete_key(void)
 {
+    uint8_t a;
     uint8_t x;
 
     // delete_key
@@ -1142,11 +1144,11 @@ static void f0_format_block_key(void)
 
     //     pla
 
-    a = saved_l003d;
+    uint8_t a = saved_l003d;
 
     //     tax
 
-    x = a;
+    uint8_t x = a;
 
     //     pla
 
@@ -1575,7 +1577,7 @@ static void k_command_key(void)
 
     // zendproc
 
-    a = draw_prompt_characters('^', 'K');
+    draw_prompt_characters('^', 'K');
 
     flags_need_redrawing_flag++;
 
@@ -2375,6 +2377,7 @@ uint8_t parser_table[] = {
 
 static void o_command_key(void)
 {
+    uint8_t a;
     // o_command_key
 
     // Pseudocode: O-command handler: prompts for O-key, looks up in o_key_table
@@ -2405,7 +2408,7 @@ static void o_command_key(void)
 
     // zendproc
 
-    a = draw_prompt_characters('^', 'O');
+    draw_prompt_characters('^', 'O');
 
     flags_need_redrawing_flag++;
 
@@ -4105,40 +4108,35 @@ c9d30:
 static void go_to_marker_1(void)
 {
     // go_to_marker_1:
-    a = '1';
-    go_to_marker_n();
+    go_to_marker_n('1');
     return;
 }
 
 static void go_to_marker_2(void)
 {
     // go_to_marker_2:
-    a = '2';
-    go_to_marker_n();
+    go_to_marker_n('2');
     return;
 }
 
 static void go_to_marker_3(void)
 {
     // go_to_marker_3:
-    a = '3';
-    go_to_marker_n();
+    go_to_marker_n('3');
     return;
 }
 
 static void go_to_marker_4(void)
 {
     // go_to_marker_4:
-    a = '4';
-    go_to_marker_n();
+    go_to_marker_n('4');
     return;
 }
 
 static void go_to_marker_5(void)
 {
     // go_to_marker_5:
-    a = '5';
-    go_to_marker_n();
+    go_to_marker_n('5');
     return;
 }
 
@@ -4146,8 +4144,7 @@ static void go_to_marker_6(void)
 {
     // go_to_marker_6
     // go_to_marker_6:
-    a = '6';
-    go_to_marker_n();
+    go_to_marker_n('6');
     return;
 }
 
@@ -4159,7 +4156,7 @@ static void prompt_for_marker(void)
     //     ldx #0x4d ; 'M'
     //     ldy #0x4b ; 'K'
     //     jsr draw_prompt_characters
-    a = draw_prompt_characters('M', 'K');
+    draw_prompt_characters('M', 'K');
     //     inc flags_need_redrawing_flag
     flags_need_redrawing_flag++;
     //     jsr read_char
@@ -5903,16 +5900,14 @@ static void go_to_marker(uint8_t x)
     return;
 }
 
-static void go_to_marker_n(void)
+static void go_to_marker_n(uint8_t marker)
 {
     //     pha
-    uint8_t saved_a = a;
     //     jsr ca93c
     write_line_back_to_document_safely();
     //     pla
-    a = saved_a;
     //     jsr lookup_marker
-    lookup_marker(a);
+    lookup_marker(marker);
     //     jmp go_to_marker
     go_to_marker(x);
     return;
