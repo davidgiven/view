@@ -5,7 +5,7 @@ Functions defined in the source files and their callees (only calls to other fun
 ## view
 
 - **main_** → cli_handler_impl, editor_loop_impl, initialise_document, run_cli, system_init [error_handling_mode, x]
-- **run_cli** → clear_screen, compute_bytes_free, display_document_file_state, print_x_words_of_help, render_number_to_screen, return_to_cli_prompt [a, file_edit_flags, flags, input_file_empty_flag, l0083, markers_array, microspacing_flag, printer_driver_name, x, y]
+- **run_cli** → clear_screen, compute_bytes_free, display_document_file_state, print_x_words_of_help, render_number_to_screen, return_to_cli_prompt [file_edit_flags, flags, input_file_empty_flag, l0083, markers_array, microspacing_flag, printer_driver_name]
 - **run_editor** → enter_editor_mode
 - **cli_handler_impl** → input_line_not_escaped, read_command_line, run_editor, stop_printing [error_handling_mode, flags, print_flags, x]
 - **return_to_editor_loop**
@@ -21,16 +21,16 @@ Functions defined in the source files and their callees (only calls to other fun
 - **redraw_and_write_back** → redraw_editor, write_line_back_to_document_safely [a, edit_buffer_unpacked_flag]
 - **setup_area_pointers** → clamp_ptr6_to_document [a, doc_ptr2, flags, l0074, ptr2, ram, tmp8, tmp9, x, y]
 - **expand_escaped_string** → read_next_command_byte, upper_case_unless_folding [a, flags, header_text_maybe, input_buffer_offset, l007a, l0082, l0083, l0084, x, y]
-- **process_cli_command** → expand_escaped_string, parse_marks_from_command, sanitise_area, reset_command_parse_state, init_document_pointers, scan_input_buffer [a, flags, input_buffer_offset, l004a, x, y]
+- **process_cli_command** → expand_escaped_string, parse_marks_from_command, sanitise_area, reset_command_parse_state, init_document_pointers, scan_input_buffer [flags, input_buffer_offset, l004a, x, y]
 - **reset_command_parse_state** → expand_escaped_string, scan_input_buffer [flags, l004a, l007a, x]
 - **screen_cmd** → print_to_screen
 - **sheets_cmd** → print_document, return_to_cli_prompt, start_printing, stop_printing [a]
 - **print_cmd** → print_to_screen, start_printing [a]
 - **print_to_screen** → print_document, return_to_cli_prompt
 - **start_printing** → return_to_cli_prompt
-- **edit_cmd** → check_not_continuous_editing, close_input_output_files, initialise_document, open_input_file, open_output_file, parse_filename_from_command, read_first_chunk_from_input_file, return_to_cli_prompt, set_document_name_to_filename_buffer [a, file_edit_flags, filename_buffer, flags, input_file_empty_flag, output_filename, x]
-- **more_cmd** → ensure_cr_at_document_top, check_continuous_editing, check_for_at_least_150_bytes_free, move_cursor_to_address, move_cursor_to_top_of_document, parse_marks_from_command, read_next_chunk_from_input_file, return_to_cli_prompt, select_file, adjust_area_pointers, write_area_to_file [a, area_start_ptr, current_ruler_buffer, current_ruler_ptr, flags, input_file_empty_flag, l003a, ram, top, x, y]
-- **finish_cmd** → ensure_cr_at_document_top, check_continuous_editing, close_input_output_files, move_cursor_to_top_of_document, put_byte_to_file, read_first_chunk_from_input_file, reset_area_to_entire_document, return_to_cli_prompt, sanitise_area, select_file, adjust_area_pointers, write_area_to_file [a, flags, input_file_empty_flag, x]
+- **edit_cmd** → check_not_continuous_editing, close_input_output_files, initialise_document, open_input_file, open_output_file, parse_filename_from_command, read_first_chunk_from_input_file, return_to_cli_prompt, set_document_name_to_filename_buffer [file_edit_flags, filename_buffer, flags, input_file_empty_flag, output_filename, x]
+- **more_cmd** → ensure_cr_at_document_top, check_continuous_editing, check_for_at_least_150_bytes_free, move_cursor_to_address, move_cursor_to_top_of_document, parse_marks_from_command, read_next_chunk_from_input_file, return_to_cli_prompt, select_file, adjust_area_pointers, write_area_to_file [a, area_start_ptr, current_ruler_buffer, current_ruler_ptr, flags, input_file_empty_flag, l003a, ram, top, y]
+- **finish_cmd** → ensure_cr_at_document_top, check_continuous_editing, close_input_output_files, move_cursor_to_top_of_document, put_byte_to_file, read_first_chunk_from_input_file, reset_area_to_entire_document, return_to_cli_prompt, sanitise_area, select_file, adjust_area_pointers, write_area_to_file [flags, input_file_empty_flag, x]
 - **quit_cmd** → check_continuous_editing, close_input_output_files
 - **close_input_output_files** → close_file, return_to_cli_prompt, select_file [a, file_edit_flags, input_file_empty_flag, x]
 - **save_cmd_write_cmd** → bad_filename_error, close_file, open_output_file, parse_marks_from_command, parse_optional_filename_from_command, put_byte_to_file, return_to_cli_prompt, sanitise_area, write_area_to_file [a, file_edit_flags, filename_buffer, flags, input_filename, x]
@@ -40,7 +40,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **load_cmd** → check_not_continuous_editing, clear_cmd, initialise_document, move_cursor_to_top_of_document, parse_filename_from_command, read_into_document, reset_area_to_entire_document, reset_document_name_after_load [page, tmp0, tmp1, top]
 - **read_cmd** → parse_filename_from_command, parse_marks_from_command, read_into_document, return_to_cli_prompt
 - **mode_cmd** → return_to_cli_prompt
-- **microspace_cmd** → call_printer_driver, parse_integer_from_command, prepare_printer_driver, return_to_cli_prompt [a, flags, microspacing_flag, tmp8, x, y]
+- **microspace_cmd** → call_printer_driver, parse_integer_from_command, prepare_printer_driver, return_to_cli_prompt [flags, microspacing_flag, tmp8, y]
 - **setup_cmd** → return_to_cli_prompt, scan_input_buffer [a, flags, format_mode_flag, input_buffer_offset, insert_mode_flag, justifying_flag, tmp6, tmp7, tmp8, x, y]
 - **field_cmd** → parse_integer_from_command, return_to_cli_prompt [current_tab_key, flags, tmp8]
 - **count_cmd** → deref_and_check_for_command_prefix, parse_marks_from_command, process_current_document_character, render_number_to_screen, return_to_cli_prompt, sanitise_area [a, area_end_ptr, area_start_ptr, flags, l0082, l0083, ram, tmp0, tmp1, tmp8, tmp9, x, y]
@@ -50,7 +50,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **printer_cmd** → print_cmd
 - **parse_integer_from_command** → parse_decimal_number, scan_input_buffer [a, current_format_line_ptr, flags, input_buffer]
 - **file_not_found_error** → return_to_cli_prompt, stop_printing
-- **name_cmd** → check_not_continuous_editing, parse_optional_filename_from_command, reset_document_name_after_load [a, file_edit_flags, flags]
+- **name_cmd** → check_not_continuous_editing, parse_optional_filename_from_command, reset_document_name_after_load [file_edit_flags, flags]
 - **reset_document_name_after_load** → set_document_name_to_filename_buffer [a, file_edit_flags]
 - **set_document_name_to_filename_buffer** [a, filename_buffer, flags, input_filename, x]
 - **file_error** → return_to_cli_prompt
@@ -81,7 +81,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **scan_input_buffer** [a, flags, input_buffer, input_buffer_offset, l007e, y]
 - **verify_continuous_editing** → scan_input_buffer [a, input_buffer_offset, l007e, y]
 - **check_not_continuous_editing** → display_document_file_state [a, file_edit_flags, flags]
-- **check_continuous_editing** → display_document_file_state [a, file_edit_flags, flags]
+- **check_continuous_editing** → display_document_file_state [file_edit_flags, flags]
 - **display_no_text**
 - **display_nl_then_no_text** → display_no_text
 - **c8f29_sub** [a, rw_file_handle]
@@ -94,7 +94,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **prepare_output_line** → parse_register_reference, read_next_output_line [a, current_format_line_ptr, flags, l0080, l0081, l0082, l0083, l0084, macro_executing_flag, ptr1, ptr3, ptr5, ram, tmp0, tmp1, x, y]
 - **parse_register_reference** [a, flags, l0082]
 - **read_next_output_line** → read_block_from_file [a, flags, printing_from_file_flag, ptr6, ram, tmp0, tmp1, y]
-- **process_page_footer** → print_newline, print_vertical_space, render_header_or_footer [a, bottom_margin, flags, footer_margin, footer_text_maybe, footers_enabled_flag, l0021, l0031, l0038, ram, x, y]
+- **process_page_footer** → print_newline, print_vertical_space, render_header_or_footer [bottom_margin, flags, footer_margin, footer_text_maybe, footers_enabled_flag, l0021, l0031, l0038, ram, x, y]
 - **render_new_page** → print_newline, print_vertical_space, read_char, render_header_or_footer, render_number_to_screen, return_to_cli_prompt, start_printing, stop_printing, compute_lines_remaining_on_page [a, flags, header_margin, header_text_maybe, headers_enabled_flag, l0031, l0038, print_flags, ram, top_margin, x, y]
 - **compute_lines_remaining_on_page** [a, bottom_margin, flags, footer_margin, header_margin, l0021, l0038, page_length, top_margin, x]
 - **print_output_buffer** → print_char, convert_char_for_printing [a, l0084, output_buffer, x, y]
@@ -159,13 +159,13 @@ Functions defined in the source files and their callees (only calls to other fun
 - **sf12_left_key** → draw_previous_word, move_to_previous_line [a, flags, xpos, y]
 - **sf13_right_key** → c9e94, get_line_length, process_current_document_character, set_marker, set_marker_common, unpack_line, find_next_line, write_line_back_to_document_safely [a, current_line_ptr, flags, l006f, tmp0, tmp1, xpos, y]
 - **sf7_set_marker_key** → prompt_for_marker, set_marker, write_line_back_to_document_safely [flags]
-- **set_marker_1** → set_marker_common [a]
-- **set_marker_2** → set_marker_common [a]
-- **set_marker_3** → set_marker_common [a]
-- **set_marker_4** → set_marker_common [a]
-- **set_marker_5** → set_marker_common [a]
-- **set_marker_6** → set_marker_common [a]
-- **set_marker_common** → lookup_marker, set_marker, write_line_back_to_document_safely [a]
+- **set_marker_1** → set_marker_common
+- **set_marker_2** → set_marker_common
+- **set_marker_3** → set_marker_common
+- **set_marker_4** → set_marker_common
+- **set_marker_5** → set_marker_common
+- **set_marker_6** → set_marker_common
+- **set_marker_common** → lookup_marker, set_marker, write_line_back_to_document_safely
 - **set_marker** → update_line_length, go_to_marker, set_marker_to_here [a, l0073]
 - **sf6_go_to_marker_key** → go_to_marker, prompt_for_marker, write_line_back_to_document_safely [flags]
 - **go_to_marker_1** → go_to_marker_n
@@ -183,7 +183,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **f2_bottom_of_text_key** → set_xpos_to_line_length, move_cursor_down, unpack_line [l006f, x]
 - **move_cursor_down** → find_next_line, write_line_back_to_document_safely [a, current_line_ptr, cursor_moved_flag, flags, l0080, tmp0, tmp1, x, y]
 - **sf14_down_key** → move_cursor_down [l006f, l0079, screen_maxrow, x]
-- **sf11_copy_key** → cf8_mark_as_ruler_key, f6_insert_line_key, redraw_editor [a, current_ruler_ptr, l003a, ram, x, y]
+- **sf11_copy_key** → cf8_mark_as_ruler_key, f6_insert_line_key, redraw_editor [current_ruler_ptr, l003a, ram]
 - **cf5_default_ruler_key** → cf8_mark_as_ruler_key, create_default_ruler, f6_insert_line_key, redraw_editor
 - **sf3_delete_to_char_key** → beep, delete_edit_buffer_bytes_at_xpos, draw_prompt_characters, read_char [a, flags_need_redrawing_flag, l0074, ram, x, xpos, y]
 - **cf2_format_mode_key** [a, flags_need_redrawing_flag, format_mode_flag]
@@ -217,7 +217,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **cursor_off**
 - **save_cursor_position** [a, tmp4, tmp5, x]
 - **restore_cursor_position** [la83d, tmp4, tmp5]
-- **print_x_words_of_help** [a, la83d, parser_table, x, y]
+- **print_x_words_of_help** [la83d, x]
 - **parse_command** [a, flags, input_buffer, input_buffer_offset, l007e, l0082, l0083, l0084, parser_table, x, y]
 - **call_through_jumptable_2** → bye_cmd, change_cmd, clear_cmd, count_cmd, edit_cmd, field_cmd, finish_cmd, fold_cmd, format_cmd, load_cmd, microspace_cmd, mode_cmd, more_cmd, name_cmd, new_cmd, print_cmd, printer_cmd, quit_cmd, read_cmd, replace_cmd, save_cmd_write_cmd, screen_cmd, search_cmd, setup_cmd, sheets_cmd [a]
 - **write_line_back_to_document** → adjust_pointers, clamp_ptr6_to_document, get_line_length, make_space_for_insertion, find_marker_at_position [a, current_format_line_ptr, current_line_ptr, edit_buffer_dirty_flag, edit_buffer_unpacked_flag, flags, l003b, l0083, l0084, markers_array, ram, tmp4, tmp5, tmp6, tmp7, x, y]
@@ -252,7 +252,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **insert_edit_buffer_bytes_at_xpos** → get_line_length, find_marker_at_position [a, edit_buffer_dirty_flag, flags, l0080, l0081, l0084, markers_array, ram, tmp6, tmp7, x, xpos, y]
 - **delete_edit_buffer_bytes_at_xpos** → find_marker_at_position [a, edit_buffer_dirty_flag, flags, l0080, l0084, markers_array, ram, tmp6, tmp7, x, xpos, y]
 - **find_left_margin_stop** [a, ram, ruler_left_stop, y]
-- **insert_byte_at_xpos** → insert_edit_buffer_bytes_at_xpos [a, flags, ram, x, xpos, y]
+- **insert_byte_at_xpos** → insert_edit_buffer_bytes_at_xpos [flags, ram, x, xpos, y]
 - **insert_at_left_margin** → find_left_margin_stop, insert_byte_at_xpos [y]
 - **adjust_margins_at_left_margin** → get_line_length, recalculate_cursor_xpos, find_left_margin_stop, insert_byte_at_xpos [a, flags, format_mode_flag, l0072, l0074, l0083, ruler_left_stop, xpos, y]
 - **draw_previous_word** → process_current_document_character [a, flags, tmp0, tmp1, xpos, y]
@@ -330,7 +330,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **check_for_control_code** [a, flags]
 - **compute_bytes_free** [a, flags, himem, top, x, y]
 - **deref_and_check_for_command_prefix** → check_for_command_prefix [a, ram, tmp0, tmp1, y]
-- **display_document_file_state** → stop_printing [a, file_edit_flags, flags, input_filename, output_filename, y]
+- **display_document_file_state** → stop_printing [file_edit_flags, flags, input_filename, output_filename, y]
 - **find_margins_of_current_ruler_buffer** → sub_cabc4 [a, current_ruler_ptr, flags, l003a, ram, ruler_left_stop, ruler_right_stop, y]
 - **print_char** → print_char_just_to_screen, print_alignment_spaces [a, print_xpos]
 - **print_char_just_to_screen** → check_for_control_code, print_char [a, flags, print_flags, printer_driver_ptr]

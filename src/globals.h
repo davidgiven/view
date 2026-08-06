@@ -147,7 +147,7 @@ extern area_status_t sanitise_area(void);
 extern void parse_marks_from_command(void);
 extern void write_area_to_file(void);
 extern void read_next_chunk_from_input_file(void);
-extern uint8_t read_into_document(void);
+extern void read_into_document(void);
 extern void reset_document_name_after_load(void);
 extern void parse_integer_from_command(void);
 extern uint8_t l0021, l0031, l0038, l007a;

@@ -35,7 +35,7 @@ static void print_newline(void);
 static void print_vertical_space(void);
 void read_block_from_file(void);
 static void render_header_or_footer(void);
-static uint8_t render_new_page(void);
+static void render_new_page(void);
 void scan_input_buffer(void);
 static void start_microspacing_if_active(void);
 static void emit_microspacing_spaces(void);
@@ -1715,7 +1715,7 @@ static void process_page_footer(void)
 
     // c9263:
     //     lda l0038
-    a = l0038;
+    uint8_t a = l0038;
     //     beq c9284
     if (a == 0)
         goto c9284;
@@ -3056,7 +3056,7 @@ c9355:
     print_output_buffer();
 }
 
-static uint8_t render_new_page(void)
+static void render_new_page(void)
 {
     // render_new_page
     // Pseudocode: Renders a new page with headers, margins, page number prompt
@@ -3109,7 +3109,7 @@ c92cc:
     stop_printing();
     cli_putchar('\n');
     return_to_cli_prompt();
-    return x;
+    return;
 
     // c92cf:
 c92cf:
@@ -3125,7 +3125,7 @@ c92d4:
     if (a == 0)
     {
         compute_lines_remaining_on_page();
-        return x;
+        return;
     }
     //     ldx top_margin                                                    ;
     //     X=number of lines
@@ -3150,7 +3150,7 @@ c92d4:
     print_vertical_space();
     // c92f0: fall-through to shared routine
     compute_lines_remaining_on_page();
-    return x;
+    return;
 }
 
 void scan_input_buffer(void)

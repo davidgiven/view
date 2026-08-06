@@ -31,7 +31,7 @@ static void finish_cmd(void);
 static void quit_cmd(void);
 static void close_input_output_files(void);
 static void save_cmd_write_cmd(void);
-static uint8_t load_cmd(void);
+static void load_cmd(void);
 static void read_cmd(void);
 static void mode_cmd(void);
 static void microspace_cmd(void);
@@ -39,7 +39,7 @@ static void setup_cmd(void);
 static void field_cmd(void);
 static void count_cmd(void);
 static void format_cmd(void);
-static uint8_t new_cmd(void);
+static void new_cmd(void);
 static void fold_cmd(void);
 static void printer_cmd(void);
 static void name_cmd(void);
@@ -82,7 +82,7 @@ void execute_cli_command(uint8_t a)
             quit_cmd();
             break;
         case 1:
-            x = new_cmd();
+            new_cmd();
             break;
         case 2:
             format_cmd();
@@ -494,6 +494,7 @@ c871f:
 
 static void edit_cmd(void)
 {
+    uint8_t a;
     uint8_t x;
 
     // edit_cmd
@@ -513,7 +514,7 @@ static void edit_cmd(void)
         output_filename[x] = a;
         x++;
     } while (a != 0x0d);
-    a = initialise_document();
+    initialise_document();
     read_first_chunk_from_input_file();
     if (flags & FLAG_Z)
     {
@@ -559,6 +560,7 @@ static void field_cmd(void)
 
 static void finish_cmd(void)
 {
+    uint8_t a;
     // finish_cmd
     // Pseudocode: Writes remaining document content to output file in chunks
 
@@ -580,7 +582,7 @@ static void finish_cmd(void)
             return;
         }
         put_byte_to_file(0);
-        a = adjust_area_pointers(tmp67);
+        adjust_area_pointers(tmp67);
         move_cursor_to_top_of_document();
         ensure_cr_at_document_top();
         a = input_file_empty_flag;
@@ -728,7 +730,7 @@ c8791:
     return;
 }
 
-static uint8_t load_cmd(void)
+static void load_cmd(void)
 {
     // load_cmd
     // load_cmd:
@@ -737,13 +739,13 @@ static uint8_t load_cmd(void)
     //     jsr parse_filename_from_command
     parse_filename_from_command();
     //     jsr initialise_document
-    a = initialise_document();
+    initialise_document();
     top = page; // WORKAROUND: ensure_cr_at_document_top bumped top past the
                 // initial CR; need to load at page, not page+1
     //     jsr reset_area_to_entire_document
     reset_area_to_entire_document();
     //     jsr 1f
-    a = read_into_document();
+    read_into_document();
     top = (addr_t)((uint16_t)((uint8_t*)&tmp01)[1] << 8) |
           ((uint8_t*)&tmp01)[0]; // WORKAROUND: adjust_pointers adds stale bytes
                                  // from end of ram[]; fix top
@@ -753,7 +755,7 @@ static uint8_t load_cmd(void)
     clear_cmd();
     //     jmp move_cursor_to_top_of_document
     move_cursor_to_top_of_document();
-    return a;
+    return;
 }
 
 static void microspace_cmd(void)
@@ -820,6 +822,7 @@ static void mode_cmd(void)
 
 static void more_cmd(void)
 {
+    uint8_t x;
     // more_cmd
     // Pseudocode: Appends more text from input file into document at current
     // cursor position
@@ -862,7 +865,7 @@ loop_c84c4:
     //     sta current_ruler_buffer,y
     current_ruler_buffer[y] = 0x0d;
     //     jsr sub_c89d3
-    a = adjust_area_pointers(tmp67);
+    adjust_area_pointers(tmp67);
     //     jsr move_cursor_to_top_of_document
     move_cursor_to_top_of_document();
     //     jsr check_for_at_least_150_bytes_free
@@ -900,9 +903,8 @@ static void name_cmd(void)
     //     php
     uint8_t saved_flags = flags;
     //     lda #0
-    a = 0;
     //     sta file_edit_flags
-    file_edit_flags = a;
+    file_edit_flags = 0;
     //     plp
     flags = saved_flags;
     //     beq return_9
@@ -913,7 +915,7 @@ static void name_cmd(void)
     reset_document_name_after_load();
 }
 
-static uint8_t new_cmd(void)
+static void new_cmd(void)
 {
     // Pseudocode: Creates a new empty document after checking continuous
     // editing state
@@ -924,8 +926,8 @@ static uint8_t new_cmd(void)
     //     jsr check_not_continuous_editing
     check_not_continuous_editing();
     //     jmp initialise_document
-    a = initialise_document();
-    return x;
+    initialise_document();
+    return;
 }
 
 static void print_cmd(void)
@@ -1036,7 +1038,7 @@ static void read_cmd(void)
     //     jsr parse_marks_from_command
     parse_marks_from_command();
     // 1:
-    a = read_into_document();
+    read_into_document();
     //     jmp return_to_cli_prompt
     return_to_cli_prompt();
     return;
@@ -1415,7 +1417,7 @@ void read_command_line(void)
 
 const uint8_t la83d[] = "VIEW\0B3.0 for CP/M-65";
 
-static void print_x_words_of_help(uint8_t a, uint8_t x)
+static void print_x_words_of_help(uint8_t x)
 {
     // print_x_words_of_help
     // Pseudocode: Prints X words of the help string showing VIEW and version
@@ -1425,6 +1427,7 @@ static void print_x_words_of_help(uint8_t a, uint8_t x)
     // print_x_words_of_help:
     //     ldy #0
     uint8_t y;
+    uint8_t a;
     y = 0;
     //     beq ca832                                                         ;
     //     ALWAYS branch
@@ -1524,6 +1527,10 @@ void cli_handler_impl(void)
 
 void run_cli(void)
 {
+    uint8_t a;
+    uint8_t x;
+    uint8_t y;
+
     // run_cli
     screen_leave();
     // run_cli:
@@ -1531,7 +1538,7 @@ void run_cli(void)
     clear_screen();
     //     ldx #1
     //     jsr print_x_words_of_help
-    print_x_words_of_help(a, 1);
+    print_x_words_of_help(1);
     //     jsr print_inline_string
     //     .ascii "\r\rBytes free "
     //     .byte 0

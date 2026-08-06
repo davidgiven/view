@@ -699,7 +699,6 @@ void process_cli_command(void)
     if (status == AREA_NOT_EMPTY)
     {
         init_document_pointers();
-        a = 1;
     }
 c8410:
     // c8410:
@@ -736,7 +735,7 @@ void reset_command_parse_state(void)
     //     rts
 }
 
-uint8_t read_into_document(void)
+void read_into_document(void)
 {
     // read_into_document
     //  Ptrs:   ptr5
@@ -805,7 +804,7 @@ c8598:
     ((uint8_t*)&tmp67)[1] = a;
     //     jsr adjust_pointers
     adjust_pointers(tmp45, tmp67);
-    return a;
+    return;
 }
 
 void check_area_memory(addr_t ptr2)
@@ -1398,7 +1397,7 @@ void check_continuous_editing(void)
     //     bit file_edit_flags
     if (!((file_edit_flags & 0x40)))
     {
-        a = file_edit_flags;
+        uint8_t a = file_edit_flags;
         if (a & 1)
             return;
     }

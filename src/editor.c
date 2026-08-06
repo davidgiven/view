@@ -1432,7 +1432,7 @@ static void f6_insert_line_key(void)
 
     //     falls through to sub_c9de1
 
-    x = insert_line_at_cursor();
+    insert_line_at_cursor();
 }
 
 static void f7_delete_line_key(void)
@@ -2684,7 +2684,7 @@ static void sf11_copy_key(void)
 
     //     ldx l003a
 
-    x = l003a;
+    uint8_t x = l003a;
 
     //     beq ca0ef
 
@@ -2693,13 +2693,13 @@ static void sf11_copy_key(void)
 
     //     ldy #0
 
-    y = 0;
+    uint8_t y = 0;
 
     // loop_ca0e7:
 
     do
     {
-        a = ram[current_ruler_ptr + y];
+        uint8_t a = ram[current_ruler_ptr + y];
         ram[RAM_EDIT_BUFFER + y] = a;
         y++;
         x--;
@@ -7201,11 +7201,9 @@ void go_to_marker(uint8_t x);
 static void set_marker_common(uint8_t a)
 {
     //     pha
-    uint8_t saved_a = a;
     //     jsr write_line_back_to_document_safely
     write_line_back_to_document_safely();
     //     pla
-    a = saved_a;
     //     jsr lookup_marker
     lookup_marker(a);
     //     jmp set_marker
@@ -8472,6 +8470,7 @@ static void insert_at_left_margin(void)
 static void insert_byte_at_xpos(uint8_t y)
 {
     uint8_t x;
+    uint8_t a;
 
     // sub_caedd:
     //     lda xpos
