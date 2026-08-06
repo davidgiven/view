@@ -1076,11 +1076,9 @@ c832d:
     //     jsr sub_c8361
     redraw_and_write_back(ptr6);
     //     ldx #0x52 ; 'R'
-    x = 0x52;
     //     ldy #0x50 ; 'P'
-    y = 0x50;
     //     jsr draw_prompt_characters
-    a = draw_prompt_characters('R', 'P');
+    draw_prompt_characters('R', 'P');
     //     jsr flush_and_read_char
     read_char();
     //     bcs return_2

@@ -120,7 +120,7 @@ c951c:
     return;
 }
 
-static uint8_t lj_fmt_cmd(void)
+static void lj_fmt_cmd(void)
 {
     // lj_fmt_cmd
     // Pseudocode: Left-justifies the current format line
@@ -132,15 +132,15 @@ static uint8_t lj_fmt_cmd(void)
     expand_line();
     //     bcc return_36
     if (!(flags & FLAG_C))
-        return a;
+        return;
     //     lda #0
     //     beq c950f                                                         ;
     //     ALWAYS branch
     c950f_impl(0);
-    return a;
+    return;
 }
 
-static uint8_t ce_fmt_cmd(void)
+static void ce_fmt_cmd(void)
 {
     // ce_fmt_cmd
     // Pseudocode: Centers the current format line
@@ -152,13 +152,13 @@ static uint8_t ce_fmt_cmd(void)
     expand_line();
     //     bcc return_36
     if (!(flags & FLAG_C))
-        return a;
+        return;
     //     txa
     a = x;
     set_flags(&flags, a); // Z live
     //     beq return_36
     if (flags & FLAG_Z)
-        return a;
+        return;
     //     lsr
     {
         flags = (flags & ~(FLAG_C | FLAG_Z | FLAG_N)) | ((a & 1) ? FLAG_C : 0);
@@ -174,7 +174,7 @@ static uint8_t ce_fmt_cmd(void)
     if (flags & FLAG_Z)
     {
         c950f_impl(a);
-        return a;
+        return;
     }
     //     sec
     flags |= FLAG_C;
@@ -198,13 +198,13 @@ static uint8_t ce_fmt_cmd(void)
     if (flags & FLAG_C)
     {
         c950f_impl(a);
-        return a;
+        return;
     }
     //     lda #0
     //     beq c950f                                                         ;
     //     ALWAYS branch
     c950f_impl(0);
-    return a;
+    return;
 }
 
 static void rj_fmt_cmd(void)
@@ -472,7 +472,7 @@ static void dh_fmt_cmd(void)
     process_header_footer_line(x, y);
 }
 
-static uint8_t em_fmt_cmd(void)
+static void em_fmt_cmd(void)
 {
     addr_t tmp01;
 
@@ -488,14 +488,14 @@ static uint8_t em_fmt_cmd(void)
     get_current_fmt_cmd_byte();
     //     beq return_38
     if (flags & FLAG_Z)
-        return x;
+        return;
     //     iny
     y++;
     //     jsr get_register_address
     get_register_address(a);
     //     bcs return_38
     if (flags & FLAG_C)
-        return x;
+        return;
     tmp01 = tmp67;
     //     jsr evaluate_expression_from_fmt_cmd
     evaluate_expression_from_fmt_cmd();
@@ -510,10 +510,10 @@ static uint8_t em_fmt_cmd(void)
     ram[tmp01 + 1] = a;
     // return_38:
     //     rts
-    return x;
+    return;
 }
 
-static uint8_t pl_fmt_cmd(void)
+static void pl_fmt_cmd(void)
 {
     // Pseudocode: Sets page_length from format command expression
 
@@ -527,10 +527,10 @@ static uint8_t pl_fmt_cmd(void)
     //     sta page_length
     page_length = a;
     //     rts
-    return a;
+    return;
 }
 
-static uint8_t ts_fmt_cmd(void)
+static void ts_fmt_cmd(void)
 {
     // ts_fmt_cmd
     // Pseudocode: Sets two_sided_flag and rhs_extra_margin from format command
@@ -544,7 +544,7 @@ static uint8_t ts_fmt_cmd(void)
     parse_boolean_from_fmt_cmd();
     //     bcs return_39
     if (flags & FLAG_C)
-        return a;
+        return;
     //     sta two_sided_flag
     two_sided_flag = a;
     //     jsr evaluate_expression_from_fmt_cmd
@@ -553,10 +553,10 @@ static uint8_t ts_fmt_cmd(void)
     rhs_extra_margin = a;
     // return_39:
     //     rts
-    return a;
+    return;
 }
 
-static uint8_t tm_fmt_cmd(void)
+static void tm_fmt_cmd(void)
 {
     // Pseudocode: Sets top_margin from format command expression
 
@@ -570,10 +570,10 @@ static uint8_t tm_fmt_cmd(void)
     //     sta top_margin
     top_margin = a;
     //     rts
-    return x;
+    return;
 }
 
-static uint8_t bm_fmt_cmd(void)
+static void bm_fmt_cmd(void)
 {
     // Pseudocode: Sets bottom_margin from format command expression
 
@@ -587,10 +587,10 @@ static uint8_t bm_fmt_cmd(void)
     //     sta bottom_margin
     bottom_margin = a;
     //     rts
-    return x;
+    return;
 }
 
-static uint8_t hm_fmt_cmd(void)
+static void hm_fmt_cmd(void)
 {
     // Pseudocode: Sets header_margin from format command expression
 
@@ -604,10 +604,10 @@ static uint8_t hm_fmt_cmd(void)
     //     sta header_margin
     header_margin = a;
     //     rts
-    return x;
+    return;
 }
 
-static uint8_t fm_fmt_cmd(void)
+static void fm_fmt_cmd(void)
 {
     // Pseudocode: Sets footer_margin from format command expression
 
@@ -621,10 +621,10 @@ static uint8_t fm_fmt_cmd(void)
     //     sta footer_margin
     footer_margin = a;
     //     rts
-    return x;
+    return;
 }
 
-static uint8_t lm_fmt_cmd(void)
+static void lm_fmt_cmd(void)
 {
     // Pseudocode: Sets left_margin from format command expression
 
@@ -638,7 +638,7 @@ static uint8_t lm_fmt_cmd(void)
     //     sta left_margin
     left_margin = a;
     //     rts
-    return x;
+    return;
 }
 
 static void ls_fmt_cmd(void)
@@ -658,7 +658,7 @@ static void ls_fmt_cmd(void)
     return;
 }
 
-static uint8_t pe_fmt_cmd(void)
+static void pe_fmt_cmd(void)
 {
     // pe_fmt_cmd
     // Pseudocode: Forces page eject if remaining lines are less than value
@@ -677,13 +677,13 @@ static uint8_t pe_fmt_cmd(void)
     if (flags & FLAG_Z)
     {
         page_eject_fmt();
-        return x;
+        return;
     }
     //     cmp l0021
     cmp(&flags, a, l0021); // C live
     //     bcc return_40
     if (!(flags & FLAG_C))
-        return x;
+        return;
     //     lda l0031
     a = l0031;
     set_flags(&flags, a); // Z live
@@ -691,11 +691,11 @@ static uint8_t pe_fmt_cmd(void)
     if (!(flags & FLAG_Z))
     {
         page_eject_fmt();
-        return x;
+        return;
     }
     // return_40:
     //     rts
-    return x;
+    return;
 }
 
 static void c9642_tail(void)
@@ -729,12 +729,12 @@ static void op_fmt_cmd(void)
     return;
 }
 
-static uint8_t ep_fmt_cmd(void)
+static void ep_fmt_cmd(void)
 {
     // ep_fmt_cmd
     // ep_fmt_cmd:
     //     lda register_value_p
-    a = ram[RAM_REGISTER_VALUE_P];
+    uint8_t a = ram[RAM_REGISTER_VALUE_P];
     //     lsr
     flags = (flags & ~(FLAG_C | FLAG_Z | FLAG_N)) | ((a & 1) ? FLAG_C : 0);
     a >>= 1;
@@ -743,11 +743,11 @@ static uint8_t ep_fmt_cmd(void)
     if (flags & FLAG_C)
     {
         page_eject_fmt();
-        return a;
+        return;
     }
     // c9642:
     c9642_tail();
-    return a;
+    return;
 }
 
 static void page_eject_fmt(void)
@@ -772,7 +772,7 @@ static void page_eject_fmt(void)
     return;
 }
 
-static uint8_t fo_fmt_cmd(void)
+static void fo_fmt_cmd(void)
 {
     // Pseudocode: Sets footers_enabled_flag from boolean format argument
 
@@ -785,15 +785,15 @@ static uint8_t fo_fmt_cmd(void)
     parse_boolean_from_fmt_cmd();
     //     bcs return_41
     if (flags & FLAG_C)
-        return a;
+        return;
     //     sta footers_enabled_flag
     footers_enabled_flag = a;
     // return_41:
     //     rts
-    return a;
+    return;
 }
 
-static uint8_t he_fmt_cmd(void)
+static void he_fmt_cmd(void)
 {
     // Pseudocode: Sets headers_enabled_flag from boolean format argument
 
@@ -806,12 +806,12 @@ static uint8_t he_fmt_cmd(void)
     parse_boolean_from_fmt_cmd();
     //     bcs return_42
     if (flags & FLAG_C)
-        return a;
+        return;
     //     sta headers_enabled_flag
     headers_enabled_flag = a;
     // return_42:
     //     rts
-    return a;
+    return;
 }
 
 static void pb_fmt_cmd(void)
@@ -1015,7 +1015,7 @@ c96f8:
     goto c96a2;
 }
 
-static uint8_t ht_fmt_cmd(void)
+static void ht_fmt_cmd(void)
 {
     // ht_fmt_cmd
     // Pseudocode: Sets highlight codes (highlight1_code, highlight2_code) from
@@ -1031,7 +1031,7 @@ static uint8_t ht_fmt_cmd(void)
     get_current_fmt_cmd_byte();
     //     beq return_44
     if (flags & FLAG_Z)
-        return x;
+        return;
     //     tax
     x = a;
     //     lda #0
@@ -1058,12 +1058,12 @@ c9719:
     a = sbc(&flags, a, 1); // C live
     //     bcc return_44
     if (!(flags & FLAG_C))
-        return x;
+        return;
     //     cmp #2
     cmp(&flags, a, 2); // C live
     //     bcs return_44
     if (flags & FLAG_C)
-        return x;
+        return;
     // c9725:
 c9725:
     //     pha
@@ -1082,7 +1082,7 @@ c9725:
     highlight_code[x] = a;
     // return_44:
     //     rts
-    return x;
+    return;
 }
 
 static const uint8_t commands_table[] = {'C',
@@ -1238,16 +1238,16 @@ void execute_formatting_command(uint8_t x)
         case 5:
             break; // return_34 (no-op slot)
         case 6:
-            x = em_fmt_cmd();
+            em_fmt_cmd();
             break;
         case 7:
-            x = pe_fmt_cmd();
+            pe_fmt_cmd();
             break;
         case 8:
-            x = tm_fmt_cmd();
+            tm_fmt_cmd();
             break;
         case 9:
-            x = bm_fmt_cmd();
+            bm_fmt_cmd();
             break;
         case 10:
             pl_fmt_cmd();
@@ -1262,16 +1262,16 @@ void execute_formatting_command(uint8_t x)
             he_fmt_cmd();
             break;
         case 14:
-            x = ht_fmt_cmd();
+            ht_fmt_cmd();
             break;
         case 15:
-            x = hm_fmt_cmd();
+            hm_fmt_cmd();
             break;
         case 16:
-            x = fm_fmt_cmd();
+            fm_fmt_cmd();
             break;
         case 17:
-            x = lm_fmt_cmd();
+            lm_fmt_cmd();
             break;
         case 18:
             ls_fmt_cmd();

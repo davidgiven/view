@@ -711,7 +711,7 @@ static void cf5_default_ruler_key(void)
 
     //     lda current_edit_line_ptr
 
-    y = create_default_ruler(RAM_EDIT_BUFFER);
+    create_default_ruler(RAM_EDIT_BUFFER);
 }
 
 static void cf6_split_line_key(void)
@@ -1267,7 +1267,7 @@ static void f14_down_key(void)
 
     //     jsr return_key
 
-    x = return_key();
+    return_key();
 }
 
 static void f15_up_key(void)
@@ -2465,6 +2465,7 @@ static void o_command_key(void)
 
 static void q_command_key(void)
 {
+    uint8_t a;
     // q_command_key
 
     // Pseudocode: Q-command handler: prompts for Q-key, looks up in q_key_table
@@ -2495,7 +2496,7 @@ static void q_command_key(void)
 
     // zendproc
 
-    a = draw_prompt_characters('^', 'Q');
+    draw_prompt_characters('^', 'Q');
 
     flags_need_redrawing_flag++;
 
@@ -3108,9 +3109,7 @@ static void sf3_delete_to_char_key(void)
 
     // sf3_delete_to_char_key
 
-    x = 0x43;
-
-    a = draw_prompt_characters('C', 'H');
+    draw_prompt_characters('C', 'H');
 
     flags_need_redrawing_flag++;
 
