@@ -845,6 +845,7 @@ void lookup_marker(uint8_t a)
     if (!(flags & FLAG_C))
     {
         beep();
+        flags |= FLAG_C; // set C explicitly: invalid marker
         return;
     }
     //     asl

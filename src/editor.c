@@ -28,7 +28,6 @@ struct render_state
 void adjust_pointers(addr_t tmp45, addr_t tmp67);
 static void advance_to_next_line(void);
 void beep(void);
-static void signal_no_more_document(void);
 void scan_document_for_next_line(void);
 static uint8_t c9de3_insert_line(uint8_t a, uint8_t y);
 static void update_line_length(void);
@@ -5194,7 +5193,8 @@ static void advance_to_next_line(void)
 
 void beep(void)
 {
-    // beep: Emits a beep (returns with carry set as flag)
+    // beep: Emits a beep.  The 6502 leaves carry set; callers that rely on
+    // that set C themselves, so the C translation does not.
 
     //     lda #7
     uint8_t a = 7;
@@ -5202,17 +5202,7 @@ void beep(void)
     cli_putchar(a);
     // loop_caced:
     //     sec
-    flags |= FLAG_C;
     // return_74:
-    //     rts
-}
-
-static void signal_no_more_document(void)
-{
-    // c8b78:
-    //     lda #0xff
-    uint8_t a = 0xff;
-    set_flags(&flags, a); // Z live
     //     rts
 }
 
@@ -5227,9 +5217,12 @@ void scan_document_for_next_line(void)
     //     lda l007a
     a = l007a;
     //     beq c8b78
+    // c8b78:
+    //     lda #0xff
     if (a == 0)
     {
-        signal_no_more_document();
+        a = 0xff;
+        set_flags(&flags, a); // Z live
         return;
     }
     //     lda #0x14
@@ -5255,7 +5248,10 @@ c8b91:
     //     cmp doc_ptr3+1
     if (((uint16_t)a << 8 | ((uint8_t*)&tmp89)[0]) < doc_ptr3)
         goto c8b9f;
-    signal_no_more_document();
+    // c8b78:
+    //     lda #0xff
+    a = 0xff;
+    set_flags(&flags, a); // Z live
     return;
 c8b9f:
     // c8b9f:
