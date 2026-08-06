@@ -1,6 +1,6 @@
 LLVM = /opt/pkg/llvm-mos/bin
 CC = cc
-CFLAGS = -g -O0 -Wall -Wextra -Isrc
+CFLAGS = -g -Os -Wall -Wextra -Isrc
 LDFLAGS = -lncurses
 OBJ_DIR = .obj
 DEPFLAGS = -MMD -MP
