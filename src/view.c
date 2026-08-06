@@ -810,6 +810,8 @@ c8598:
 
 void check_area_memory(addr_t ptr2)
 {
+    uint8_t a;
+
     uint8_t y;
 
     uint8_t x;

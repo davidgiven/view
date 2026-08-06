@@ -1103,19 +1103,15 @@ static void f0_format_block_key(void)
 
     //     lda l0073
 
-    a = l0073;
-
     //     pha
 
-    uint8_t saved_l0073 = a;
+    uint8_t saved_l0073 = l0073;
 
     //     lda l003d
 
-    a = l003d;
-
     //     pha
 
-    uint8_t saved_l003d = a;
+    uint8_t saved_l003d = l003d;
 
     //     jsr ca741
 
@@ -2652,14 +2648,14 @@ static void sf0_move_block_key(void)
 
     check_pointer_in_area();
 
-    x = 0xff;
+    uint8_t x = 0xff;
 
     top_of_screen_line_ptr =
         (top_of_screen_line_ptr & 0x00ff) | ((addr_t)x << 8);
 
     l006f = x;
 
-    a = adjust_area_pointers(tmp67);
+    adjust_area_pointers(tmp67);
 
     ensure_cr_at_document_top();
 
@@ -3590,6 +3586,7 @@ static uint8_t control_key_to_ascii(void)
 
 static void delete_edit_buffer_bytes_at_xpos(uint8_t x)
 {
+    uint8_t a;
     uint8_t y;
 
     // delete_edit_buffer_bytes_at_xpos
@@ -7223,6 +7220,7 @@ static void set_marker_common(uint8_t a)
 
 void show_memory_full_error(void)
 {
+    uint8_t a;
     uint8_t x;
 
     // show_memory_full_error

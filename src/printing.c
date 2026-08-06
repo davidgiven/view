@@ -21,7 +21,7 @@ void bad_filename_error(void);
 static void c8f29_sub(uint8_t a);
 static void process_page_footer(void);
 static void print_output_buffer(void);
-static uint8_t scan_string_length(void);
+static uint8_t scan_string_length(uint8_t y_start);
 void check_not_continuous_editing(void);
 void display_not_enough_memory(void);
 static void microspace_word_processor(void);
@@ -1801,13 +1801,14 @@ loop_c9381:
     //     rts
 }
 
-static uint8_t scan_string_length(void)
+static uint8_t scan_string_length(uint8_t y_start)
 {
     // c93b8:
     //     iny
     //     lda (((uint8_t*)&tmp45)[0]),y
     //     bpl c93b8
     uint8_t a;
+    uint8_t y = y_start;
     do
     {
         y++;
@@ -1828,7 +1829,7 @@ void check_not_continuous_editing(void)
     if ((file_edit_flags & 0x40))
         return;
     //     lda file_edit_flags
-    a = file_edit_flags;
+    uint8_t a = file_edit_flags;
     //     ror
     //     bcc return_20
     if (!(a & 1))
@@ -3612,7 +3613,7 @@ static void compute_header_left_section(void)
 
     // sub_c9393:
     //     jsr sub_c93b6
-    y = get_line_width();
+    get_line_width();
     //     lda #0
     a = 0;
     //     jmp c93aa
@@ -3665,10 +3666,9 @@ static void compute_header_odd_page_section(void)
 
     // sub_c93a1:
     //     jsr sub_c93b6
-    y = get_line_width();
     //     jsr c93b8
-    y = scan_string_length();
     // c93a7:
+    uint8_t y = scan_string_length(get_line_width());
     y++;
     a = y;
     y--;
@@ -3687,9 +3687,7 @@ static uint8_t get_line_width(void)
 {
     // sub_c93b6:
     //     ldy #0xff
-    y = 0xff;
-    y = scan_string_length();
-    return y;
+    return scan_string_length(0xff);
 }
 
 static uint8_t get_right_margin(void)

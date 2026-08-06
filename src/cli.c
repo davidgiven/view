@@ -602,6 +602,7 @@ loop_c84ee:
 
 static void fold_cmd(void)
 {
+    uint8_t a;
     // fold_cmd
     // Pseudocode: Toggles folding on/off and displays current folding status
 
