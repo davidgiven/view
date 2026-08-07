@@ -189,11 +189,9 @@ static void change_cmd(void)
         return;
     }
     //     ldx #0
-    x = 0;
     //     stx ptr3
-    ptr3 = (ptr3 & 0xff00) | x;
     //     stx ptr3+1
-    ptr3 = (ptr3 & 0x00ff) | ((uint16_t)x << 8);
+    ptr3 = 0;
     // loop_c82b3:
 loop_c82b3:
     //     inc ptr3
@@ -203,8 +201,9 @@ loop_c82b3:
     ptr3++;
     //     jsr move_cursor_to_address
     move_cursor_to_address((uint16_t)(y) << 8 | a);
-    a = 0;
-    print_xpos = a;
+    //     lda #0
+    //     sta print_xpos
+    print_xpos = 0;
     //     jsr sub_c8a4f
     check_area_memory(ptr2);
     //     bcs c830d
@@ -329,19 +328,17 @@ static void count_cmd(void)
     //     sta ((uint8_t*)&tmp01)[1]
     tmp01 = area_start_ptr;
     //     lda #0
-    a = 0;
     //     sta ((uint8_t*)&tmp89)[0]
     //     sta ((uint8_t*)&tmp89)[1]
     tmp89 = 0;
     //     sta l0083
-    l0083 = a;
     //     sta l0082
-    l0082 = a;
+    l0083 = 0;
+    l0082 = 0;
     // c86b8:
 c86b8:
     //     ldy #0
     y = 0;
-    set_flags(&flags, y); // Z live
     //     jsr deref_and_check_for_command_prefix
     flags = deref_and_check_for_command_prefix(y);
     //     bne c86ea
@@ -703,10 +700,10 @@ c876d:
     // c8787:
 c8787:
     //     lda #0xff
-    a = 0xff;
+    //     lda #0xff
     //     sta l0012
     top_of_screen_line_ptr =
-        (top_of_screen_line_ptr & 0x00ff) | ((addr_t)a << 8);
+        (top_of_screen_line_ptr & 0x00ff) | ((addr_t)0xff << 8);
     // c878b:
 c878b:
     //     jsr bdos_print_newline

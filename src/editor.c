@@ -34,7 +34,7 @@ static uint8_t c9de3_insert_line(uint8_t a, uint8_t y);
 static void update_line_length(void);
 void clamp_ptr6_to_document(void);
 void clear_screen(void);
-static void clear_to_eol(uint8_t a);
+static void clear_to_eol(uint8_t a, uint8_t line);
 static void cursor_off(void);
 static void cursor_on(void);
 void draw_line(struct render_state* rs, uint16_t addr);
@@ -5557,29 +5557,26 @@ void clear_screen(void)
     return;
 }
 
-static void clear_to_eol(uint8_t a)
+static void clear_to_eol(uint8_t a, uint8_t line)
 {
     // Pseudocode: Fills remaining space on line with spaces to clear to end
 
     // sub_ca597:
     //     ldx l0082
-    x = l0082;
     //     sta l0084
-    l0084 = a;
     //     lda line_lengths,x
-    a = line_lengths[x];
+    uint8_t line_len = line_lengths[line];
 
     //     beq return_62
-    if (a == 0)
+    if (line_len == 0)
         goto return_62;
     //     lda l0084
-    a = l0084;
     // loop_ca5a2:
     do
     {
         screen_putchar(a);
-        line_lengths[x]--;
-    } while (line_lengths[x] != 0);
+        line_lengths[line]--;
+    } while (line_lengths[line] != 0);
     // return_62:
 return_62:
     //     rts
@@ -5680,8 +5677,7 @@ loop_ca4bf:
     //     bne loop_ca4bf
     //     lda #0x20 ; ' '
     //     jsr sub_ca597
-    l0082 = rs->line;
-    clear_to_eol(0x20);
+    clear_to_eol(0x20, rs->line);
     //     lda l0083
     //     sta line_lengths,x
     line_lengths[rs->line] = rs->col;
@@ -6949,9 +6945,9 @@ ca422:
     {
         l0082++;
         screen_setcursor(0, l0082);
-        clear_to_eol(a);
+        clear_to_eol(a, l0082);
         a = l0083;
-        line_lengths[x] = a;
+        line_lengths[l0082] = a;
         a = 0;
         l0083 = a;
         a = 0x20;
