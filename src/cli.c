@@ -249,7 +249,6 @@ void clear_cmd(void)
         ((uint8_t*)markers_array)[x] = a;
         x--;
     } while (!(x & 0x80));
-loop_cb095:
     //     rts
     return;
 }
@@ -370,9 +369,9 @@ loop_c86c2:
 c86d1:
     //     lda l8749,x
     a = l8747_data[x + 2];
-    set_flags(&flags, a); // Z live
+
     //     beq c86db
-    if (flags & FLAG_Z)
+    if (a == 0)
         goto c86db;
     //     dey
     y--;
@@ -441,9 +440,9 @@ c86ff:
 c8703:
     //     ldy l0083
     y = l0083;
-    set_flags(&flags, y); // Z live
+
     //     beq c870d
-    if (!(flags & FLAG_Z))
+    if (y != 0)
     {
         tmp89++;
     }
@@ -595,7 +594,6 @@ static void finish_cmd(void)
             return;
         }
     }
-loop_c84ee:
 }
 
 static void fold_cmd(void)
@@ -788,9 +786,9 @@ static void microspace_cmd(void)
     a = y;
     //     and #1
     a &= 1;
-    set_flags(&flags, a); // Z live
+
     //     beq c8617
-    if (!(flags & FLAG_Z))
+    if (a != 0)
     {
         microspacing_flag = x;
         return;
@@ -856,7 +854,6 @@ static void more_cmd(void)
         y++;
         x--;
     } while (x != 0);
-loop_c84c4:
     //     lda #0x0d
     //     sta current_ruler_buffer,y
     current_ruler_buffer[y] = 0x0d;
@@ -1102,7 +1099,7 @@ c8349:
     //     stx print_xpos
     print_xpos = x;
     //     jsr sub_c8371
-    setup_area_pointers(ptr2, ptr6);
+    setup_area_pointers(ptr2);
     //     jsr sub_c8a4f
     check_area_memory(ptr2);
     //     bcs c836b
@@ -1164,9 +1161,8 @@ static void save_cmd_write_cmd(void)
             //             inx
             x++;
             //             cmp #0x0d
-            cmp(&flags, a, 0x0d); // none live
             //         zuntil eq
-        } while (!(flags & FLAG_Z));
+        } while (a != 0x0d);
         //     zendif
     }
     //     jsr parse_marks_from_command
@@ -1343,7 +1339,6 @@ c8672:
             insert_mode_flag = a;
         x--;
     } while (!((int8_t)x < 0));
-loop_c8674:
     //     bpl loop_c8674
     //     bmi c869b                                                         ;
     //     ALWAYS branch
@@ -1495,8 +1490,6 @@ void cli_handler_impl(void)
     //     jsr stop_printing
     stop_printing();
     //     ldx #0xff
-    //     stx error_handling_mode
-    error_handling_mode = 0xff;
     //     txs  (handled by setjmp/longjmp in main_)
     //     inx  ; X=0x00
     //     stx print_flags
@@ -1567,9 +1560,9 @@ void run_cli(void)
 c816d:
     //     lda printer_driver_name
     a = printer_driver_name[0];
-    set_flags(&flags, a); // Z live
+
     //     beq c81b6
-    if (flags & FLAG_Z)
+    if (a == 0)
         goto c81b6;
     //     jsr print_inline_string
     //     .ascii "Printer "
@@ -1596,9 +1589,9 @@ c816d:
     // c81a7:
     //     lda microspacing_flag
     a = microspacing_flag;
-    set_flags(&flags, a); // Z live
+
     //     beq c81b3
-    if (!(flags & FLAG_Z))
+    if (a != 0)
     {
         cli_putstring(" (m)");
     }
@@ -1614,9 +1607,9 @@ c81b6:
 c81ba:
     //     lda markers_array+1,x
     a = ((uint8_t*)markers_array)[x + 1];
-    set_flags(&flags, a); // Z live
+
     //     beq c81e7
-    if (flags & FLAG_Z)
+    if (a == 0)
         goto c81e7;
     //     tya
     //     bne c81db
@@ -1905,7 +1898,6 @@ void set_document_name_to_filename_buffer(void)
         input_filename[x] = a;
         x++;
     } while (a >= 0x21);
-loop_c88fa:
     //     bge loop_c88fa
     // return_9:
     //     lda #0x0d

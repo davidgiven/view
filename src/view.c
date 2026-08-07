@@ -63,7 +63,7 @@ void init_document_pointers(void);
 void process_cli_command(void);
 void check_area_memory(addr_t ptr2);
 void redraw_and_write_back(addr_t ptr6);
-void setup_area_pointers(addr_t ptr2, addr_t ptr6);
+void setup_area_pointers(addr_t ptr2);
 void write_area_to_file(void);
 void run_editor(void);
 void read_first_chunk_from_input_file(void);
@@ -71,7 +71,7 @@ void read_first_chunk_from_input_file(void);
 // Output: a = character to render, x = screen width consumed, y preserved,
 // flags.C=0
 void read_next_chunk_from_input_file(void);
-static void compute_space_available(uint8_t a, uint8_t y);
+static void compute_space_available(void);
 static void compute_space_common(void);
 uint8_t check_for_control_code(uint8_t a);
 
@@ -208,11 +208,8 @@ uint8_t l004a; // PROVISIONAL: upper-bound loop limit in header/footer rendering
 addr_t ptr2; // PROVISIONAL: working pointer into document body — used as
              // source/dest in search/replace/convert
 // X rw_file_handle: .fill 1
-uint8_t
-    rw_file_handle; // PROVISIONAL: raw OS file handle returned by open_file()
-// X error_handling_mode: .fill 1
-uint8_t error_handling_mode; // PROVISIONAL: 0xff = CLI-style errors; 0 = return
-                             // to editor on error
+uint8_t rw_file_handle; // PROVISIONAL: raw OS file handle returned by
+                        // open_file() to editor on error
 // X print_flags: .fill 1
 uint8_t print_flags; // PROVISIONAL: controls printer output routing and state
                      // (bit7 selects printer-driver vs screen output)
@@ -449,6 +446,8 @@ FILE*
 
 int main(int argc, char* argv[])
 {
+    (void)argc;
+    (void)argv;
     // main
     // Pseudocode: Program entry point with longjmp buffer for stack reset (txs
     // equivalent)
@@ -470,8 +469,6 @@ int main(int argc, char* argv[])
         return 0;
     }
     // Initial entry (val == 0)
-    //     stx error_handling_mode
-    error_handling_mode = 0xff;
     //     jsr system_init
     system_init();
     //     jsr initialise_document
@@ -520,7 +517,7 @@ void redraw_and_write_back(addr_t ptr6)
     //     jmp esc_key
 }
 
-void setup_area_pointers(addr_t ptr2, addr_t ptr6)
+void setup_area_pointers(addr_t ptr2)
 {
     // sub_c8371
     //  Ptrs:   ptr2
@@ -545,7 +542,6 @@ void setup_area_pointers(addr_t ptr2, addr_t ptr6)
     // (16-bit equality consolidated)
     if (tmp89 == doc_ptr2)
         goto c8398;
-c8389:
     // c8389:
     //     lda (((uint8_t*)&tmp89)[0]),y
     a = ram[tmp89 + y];
@@ -566,9 +562,9 @@ c8398:
     l0074++;
     //     txa
     a = x;
-    set_flags(&flags, x); // Z live
+
     //     beq return_3
-    if (flags & FLAG_Z)
+    if (x == 0)
         return;
     //     jmp ca741
     clamp_ptr6_to_document();
@@ -956,9 +952,9 @@ c8a87:
         goto c8aca;
     //     ora ((uint8_t*)&tmp67)[0]
     a |= ((uint8_t*)&tmp67)[0];
-    set_flags(&flags, a); // Z live
+
     //     beq c8ada
-    if (flags & FLAG_Z)
+    if (a == 0)
         goto c8ada;
     //     sta ((uint8_t*)&tmp67)[0]
     ((uint8_t*)&tmp67)[0] = a;
@@ -1040,9 +1036,9 @@ c8af3:
     l0081++;
     //     dex
     x--;
-    set_flags(&flags, x); // Z live
+
     //     beq c8b0d
-    if (flags & FLAG_Z)
+    if (x == 0)
         goto c8b0d;
     //     lda (ptr2),y
     a = ram[ptr2 + y];
@@ -1207,7 +1203,7 @@ void read_next_chunk_from_input_file(void)
     // read_next_chunk_from_input_file
     // read_next_chunk_from_input_file:
     //     jsr sub_c8da2
-    compute_space_available(a, y);
+    compute_space_available();
     select_file(0);
     //     jsr read_block_from_file
     read_block_from_file();
@@ -1339,7 +1335,7 @@ static void compute_space_common(void)
     //     rts
 }
 
-static void compute_space_available(uint8_t a, uint8_t y)
+static void compute_space_available(void)
 {
     // sub_c8da2
     // sub_c8da2:
@@ -1380,17 +1376,6 @@ void parse_filename_from_command(void)
     //     rts
 }
 
-static void verify_continuous_editing(uint8_t y)
-{
-    // sub_c8e2d:
-    //     lda #0x20 ; ' '
-    //     sta l007e
-    l007e = 0x20;
-    //     sty input_buffer_offset
-    input_buffer_offset = y;
-    scan_input_buffer();
-}
-
 void check_continuous_editing(void)
 {
     // check_continuous_editing
@@ -1407,24 +1392,6 @@ void check_continuous_editing(void)
     }
     //     jsr display_document_file_state
     display_document_file_state();
-}
-
-static void display_no_text(void)
-{
-    // display_no_text:
-    //     jsr print_inline_string
-    //     .ascii "No text\r"
-    //     .byte 0
-    cli_putstring("No text\n");
-    //     rts
-}
-
-static void display_nl_then_no_text(void)
-{
-    // display_nl_then_no_text:
-    //     jsr bdos_print_newline
-    cli_putchar('\n');
-    display_no_text();
 }
 
 // prepare_printer_driver, default_printer_* moved to printing.c

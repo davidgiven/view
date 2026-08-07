@@ -130,7 +130,7 @@ extern void init_document_pointers(void);
 extern void process_cli_command(void);
 extern void check_area_memory(addr_t ptr2);
 extern void redraw_and_write_back(addr_t ptr6);
-extern void setup_area_pointers(addr_t ptr2, addr_t ptr6);
+extern void setup_area_pointers(addr_t ptr2);
 extern void esc_key(void);
 extern void parse_filename_from_command(void);
 extern void set_document_name_to_filename_buffer(void);
@@ -199,7 +199,6 @@ extern struct pointer_array_t pointer_array;
 #define RAM_CURRENT_RULER_BUF 0x05CF
 #define current_ruler_buffer (&ram[RAM_CURRENT_RULER_BUF])
 
-extern uint8_t error_handling_mode;
 extern uint8_t printer_driver_name[];
 extern void run_editor(void);
 

@@ -87,9 +87,9 @@ static void c950f_impl(uint8_t a)
     y = 3;
     //     tax
     x = a;
-    set_flags(&flags, x); // Z live
+
     //     beq c951c
-    if (flags & FLAG_Z)
+    if (x == 0)
         goto c951c;
     //     lda #0x20 ; ' '
     a = 0x20;
@@ -101,7 +101,6 @@ static void c950f_impl(uint8_t a)
         y++;
         x--;
     } while (x != 0);
-loop_c9516:
 c951c:
     do
     {
@@ -155,9 +154,9 @@ static void ce_fmt_cmd(void)
         return;
     //     txa
     a = x;
-    set_flags(&flags, a); // Z live
+
     //     beq return_36
-    if (flags & FLAG_Z)
+    if (a == 0)
         return;
     //     lsr
     {
@@ -169,9 +168,9 @@ static void ce_fmt_cmd(void)
     l0084 = a;
     //     lda ruler_right_stop
     a = ruler_right_stop;
-    set_flags(&flags, a); // Z live
+
     //     beq c950f
-    if (flags & FLAG_Z)
+    if (a == 0)
     {
         c950f_impl(a);
         return;
@@ -225,9 +224,9 @@ static void rj_fmt_cmd(void)
     }
     //     txa
     a = x;
-    set_flags(&flags, a); // Z live
+
     //     beq c9529
-    if (flags & FLAG_Z)
+    if (a == 0)
     {
         flags |= FLAG_C;
         return;
@@ -672,9 +671,9 @@ static void pe_fmt_cmd(void)
     evaluate_expression_from_fmt_cmd();
     //     tax
     x = a;
-    set_flags(&flags, x); // Z live
+
     //     beq page_eject_fmt
-    if (flags & FLAG_Z)
+    if (x == 0)
     {
         page_eject_fmt();
         return;
@@ -686,9 +685,9 @@ static void pe_fmt_cmd(void)
         return;
     //     lda l0031
     a = l0031;
-    set_flags(&flags, a); // Z live
+
     //     bne page_eject_fmt
-    if (!(flags & FLAG_Z))
+    if (a != 0)
     {
         page_eject_fmt();
         return;
@@ -1178,7 +1177,6 @@ void lookup_formatting_command(void)
         y++;
         a = commands_table[y];
     } while (!((int8_t)a < 0));
-loop_c973e:
     //     bpl loop_c973e
     set_flags(&flags, a); // N live
     // return_45:
@@ -1411,7 +1409,7 @@ c97ae:
 
 static void evaluate_expression_from_fmt_cmd(void)
 {
-    addr_t tmp45;
+    addr_t tmp45 = 0;
 
     // evaluate_expression_from_fmt_cmd
     // Pseudocode: Evaluates arithmetic expression with +, - and register
@@ -1465,9 +1463,9 @@ c97d5:
 c97dc:
     //     ldx input_buffer_offset+1
     x = l0080;
-    set_flags(&flags, x); // Z live
+
     //     beq c9804
-    if (flags & FLAG_Z)
+    if (x == 0)
         goto c9804;
     //     lda #0
     a = 0;
@@ -1475,9 +1473,9 @@ c97dc:
     l0080 = a;
     //     dex
     x--;
-    set_flags(&flags, x); // Z live
+
     //     beq c97f7
-    if (flags & FLAG_Z)
+    if (x == 0)
         goto c97f7;
     //     lda ((uint8_t*)&tmp45)[0]
     a = ((uint8_t*)&tmp45)[0];
@@ -1542,7 +1540,6 @@ static void get_current_fmt_cmd_byte(void)
             return;
         y++;
     }
-loop:
 }
 
 static void get_next_fmt_cmd_byte(uint8_t y)
@@ -1796,7 +1793,6 @@ static void print_output_buffer(void)
         x = a;
         x--;
     } while (x != 0);
-loop_c9381:
     // return_28:
     //     rts
 }
@@ -2092,15 +2088,15 @@ c90b6:
 c90e2:
     //     lda l0045
     a = l0045;
-    set_flags(&flags, a); // Z live
+
     //     beq c90f8
-    if (flags & FLAG_Z)
+    if (a == 0)
         goto c90f8;
     //     lda ruler_right_stop
     a = ruler_right_stop;
-    set_flags(&flags, a); // Z live
+
     //     beq c90f8
-    if (flags & FLAG_Z)
+    if (a == 0)
         goto c90f8;
     //     sec
     flags |= FLAG_C;
@@ -2163,7 +2159,6 @@ c9101:
         }
         x--;
     } while (x != 0);
-loop_c9107:
     //     sta ((uint8_t*)&tmp89)[0]
     ((uint8_t*)&tmp89)[0] = a;
     //     lda l0044
@@ -2382,7 +2377,6 @@ void parse_optional_filename_from_command(void)
             break;
         }
     }
-c8e25:
     //     lda #0x0d
     set_flags(&flags, 0x0d); // Z live
     //     sta filename_buffer,x
@@ -2400,9 +2394,9 @@ static uint8_t print_char_x_times(uint8_t x)
     x++;
     //     dex
     x--;
-    set_flags(&flags, x); // Z live
+
     //     beq return_32
-    if (flags & FLAG_Z)
+    if (x == 0)
         goto return_32;
     // loop_c942a:
     do
@@ -2410,7 +2404,6 @@ static uint8_t print_char_x_times(uint8_t x)
         print_char();
         x--;
     } while (x != 0);
-loop_c942a:
     //     bne loop_c942a
     // return_32:
 return_32:
@@ -2526,9 +2519,9 @@ static void print_loop(void)
     {
         //     lda l0031
         a = l0031;
-        set_flags(&flags, a); // Z live
+
         //     beq c8f3b
-        if (!(flags & FLAG_Z))
+        if (a != 0)
         {
             a = l0021;
             if (!(a != 0))
@@ -2574,7 +2567,6 @@ static void print_loop(void)
             y++;
             x++;
         } while (a != 0x0d);
-    loop_c8f5d_l:
         //     jsr find_margins_of_current_ruler_buffer
         find_margins_of_current_ruler_buffer();
         // c8f6b:
@@ -2643,9 +2635,9 @@ static void print_loop(void)
         y = 0;
         //     lda (((uint8_t*)&tmp67)[0]),y
         a = ram[tmp67 + y];
-        set_flags(&flags, a); // Z live
+
         //     beq c8f6b
-        if (flags & FLAG_Z)
+        if (a == 0)
             goto c8f6b_l;
         //     ldy #2
         y = 2;
@@ -2688,9 +2680,9 @@ static void print_loop(void)
     c8fb9_l:
         //     lda macro_executing_flag
         a = macro_executing_flag;
-        set_flags(&flags, a); // Z live
+
         //     bne nested_macro_error
-        if (!(flags & FLAG_Z))
+        if (a != 0)
         {
             nested_macro_error();
             return;
@@ -2698,8 +2690,8 @@ static void print_loop(void)
         ptr3 = tmp67 + 4;
         macro_executing_flag = (uint8_t)(ptr3 >> 8);
         //     bne c900e
-        set_flags(&flags, macro_executing_flag); // Z live
-        if (!(flags & FLAG_Z))
+
+        if (macro_executing_flag != 0)
             continue;
         // c8fce:
     c8fce_l:
@@ -2722,8 +2714,8 @@ static void print_loop(void)
         if (((int8_t)a < 0))
         {
             a = microspacing_flag;
-            set_flags(&flags, a); // Z live
-            if (!(flags & FLAG_Z))
+
+            if (a != 0)
             {
                 microspace_word_processor();
                 continue;
@@ -2736,7 +2728,6 @@ static void print_loop(void)
             convert_char_for_printing();
             print_char_x_times(x);
         } while (a != 0x0d);
-    c8fe6_l:
         //     inc register_value_l
         ram[RAM_REGISTER_VALUE_L]++;
         set_flags(&flags, ram[RAM_REGISTER_VALUE_L]); // Z live
@@ -2884,9 +2875,9 @@ c8cdb:
     //     jsr write_byte_to_memory
     write_byte_to_memory(a);
     //     txa
-    set_flags(&flags, x); // Z live
+
     //     beq c8c95
-    if (flags & FLAG_Z)
+    if (x == 0)
         goto c8c95;
     //     lda ((uint8_t*)&tmp01)[1]
     a = ((uint8_t*)&tmp01)[1];
@@ -3544,7 +3535,6 @@ static void read_next_output_line(void)
         ptr6++;
         tmp01++;
     } while (a2 != 0x0d);
-loop_c9247:
     //     clc
     flags &= ~FLAG_C;
     // return_27:
@@ -3568,9 +3558,9 @@ static void compute_lines_remaining_on_page(void)
     x = page_length;
     //     lda l0038
     a = l0038;
-    set_flags(&flags, a); // Z live
+
     //     beq c930d
-    if (flags & FLAG_Z)
+    if (a == 0)
         goto c930d;
     //     ldx #1
     x = 1;
@@ -3792,9 +3782,9 @@ static void get_page_parity(void)
     flags |= FLAG_C;
     //     lda two_sided_flag
     a = two_sided_flag;
-    set_flags(&flags, a); // Z live
+
     //     beq return_31
-    if (flags & FLAG_Z)
+    if (a == 0)
         goto return_31;
     //     lda register_value_p
     a = ram[RAM_REGISTER_VALUE_P];
@@ -3820,8 +3810,8 @@ static void output_left_margin(void)
     if ((flags & FLAG_C))
     {
         x = two_sided_flag;
-        set_flags(&flags, x); // Z live
-        if (!(flags & FLAG_Z))
+
+        if (x != 0)
         {
             a += rhs_extra_margin;
         }
@@ -3867,10 +3857,10 @@ static void convert_char_for_printing(void)
         goto c943c;
     //     ora #0
     a |= 0;
-    set_flags(&flags, a); // N live
+
     //     bmi return_33                                                     ;
     //     ALWAYS branch
-    if (flags & FLAG_N)
+    if (a & 0x80)
         goto return_33;
 
     // c943c:

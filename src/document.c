@@ -347,9 +347,9 @@ ca5d5:
 ca5d9:
     //     lda ruler_left_stop
     a = ruler_left_stop;
-    set_flags(&flags, a); // Z live
+
     //     beq ca5d5
-    if (flags & FLAG_Z)
+    if (a == 0)
         goto ca5d5;
     //     sty l0084
     //     bne ca5f1
@@ -415,7 +415,6 @@ void read_char(void)
         flags &= ~FLAG_C;
         a = screen_getchar();
     } while (flags & FLAG_C);
-read_char:
 
     //     cmp #0x1b                                                         ;
     //     A=character read
@@ -458,7 +457,6 @@ void print_alignment_spaces(void)
             print_char_just_to_screen(a);
             print_xpos--;
         } while (print_xpos != 0);
-    loop_c944c:
         // c9453:
     c9453:
         //     pla
@@ -1023,9 +1021,9 @@ void move_tmp01_to_next_line(uint16_t start)
 loop_cab2b:
     //     lda (((uint8_t*)&tmp01)[0]),y
     a = ram[tmp01 + y];
-    set_flags(&flags, a); // Z live
+
     //     beq return_70
-    if (flags & FLAG_Z)
+    if (a == 0)
         goto return_70;
     //     iny
     y++;
@@ -1074,7 +1072,6 @@ void move_tmp01_to_previous_line(uint16_t val)
         tmp01--;
         a = ram[tmp01];
     } while (a != 0x0d);
-loop_cab4d:
     tmp01++;
     //     jsr sub_cab6e
     is_embedded_ruler(tmp01);
