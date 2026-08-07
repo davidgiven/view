@@ -1443,6 +1443,7 @@ static void f7_delete_line_key(void)
 
     uint8_t x;
     uint8_t y;
+    uint8_t a;
 
     // f7_delete_line_key
 
@@ -4706,6 +4707,8 @@ caf31:
 
 void insert_edit_buffer_bytes_at_xpos(uint8_t x)
 {
+    uint8_t a;
+
     // insert_edit_buffer_bytes_at_xpos
     // insert_edit_buffer_bytes_at_xpos: Inserts bytes at cursor position,
     // shifting existing content right
@@ -4725,7 +4728,7 @@ void insert_edit_buffer_bytes_at_xpos(uint8_t x)
     //     jsr get_line_length
     get_line_length();
     //     tya
-    a = y;
+    a = y; // global y: line length (local y not yet declared)
     //     clc
     flags &= ~FLAG_C;
     //     adc input_buffer_offset+1
@@ -5002,7 +5005,6 @@ void adjust_pointers(addr_t tmp45, addr_t tmp67)
     // adjust_pointers
     uint8_t y;
     uint8_t x;
-    uint8_t tmp2, tmp3, tmp8, tmp9;
     // adjust_pointers: (6372)
     tmp23 = tmp45;
     tmp89 = tmp45 + tmp67;
@@ -6268,7 +6270,6 @@ void make_space_for_insertion(void)
     uint8_t y;
     uint8_t x;
     uint8_t a;
-    uint8_t tmp2, tmp3, tmp8, tmp9;
     // make_space_for_insertion: Shifts content up to make space for insertion
     // (6437) On entry: ((uint8_t*)&tmp45)[0]:((uint8_t*)&tmp45)[1] = block
     // base, ((uint8_t*)&tmp67)[0]:((uint8_t*)&tmp67)[1] = size, top = current
@@ -8288,6 +8289,7 @@ caac8:
 static void update_markers_to_format_buffer(void)
 {
     uint8_t y;
+    uint8_t a;
 
     // sub_caacb: Updates marker positions to point into format buffer instead
     // of document buffer

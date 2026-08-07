@@ -697,11 +697,10 @@ c876d:
     //     jsr bdos_print_char
     cli_putchar(0x2e);
     //     lda current_line_ptr
-    a = (uint8_t)(current_line_ptr & 0xff);
     //     ldy current_line_ptr+1
-    y = (uint8_t)((current_line_ptr >> 8) & 0xff);
     //     cpy area_end_ptr+1
-    if (((uint16_t)y << 8 | a) < area_end_ptr)
+    // (16-bit comparison consolidated)
+    if (current_line_ptr < area_end_ptr)
         goto c876d;
     // c8787:
 c8787:

@@ -44,7 +44,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **setup_cmd** → return_to_cli_prompt, scan_input_buffer [a, flags, format_mode_flag, input_buffer_offset, insert_mode_flag, justifying_flag, tmp6, tmp7, tmp8, x, y]
 - **field_cmd** → parse_integer_from_command, return_to_cli_prompt [current_tab_key, flags, tmp8]
 - **count_cmd** → deref_and_check_for_command_prefix, parse_marks_from_command, process_current_document_character, render_number_to_screen, return_to_cli_prompt, sanitise_area [a, area_end_ptr, area_start_ptr, flags, l0082, l0083, ram, tmp0, tmp1, tmp8, tmp9, x, y]
-- **format_cmd** → display_not_enough_memory, move_cursor_to_address, parse_marks_from_command, return_to_cli_prompt, sanitise_area, format_paragraph, clear_format_mode_bit7, wipe_buffer [a, area_end_ptr, area_start_ptr, current_format_line_ptr, current_line_ptr, flags, top_of_screen_line_ptr, y]
+- **format_cmd** → display_not_enough_memory, move_cursor_to_address, parse_marks_from_command, return_to_cli_prompt, sanitise_area, format_paragraph, clear_format_mode_bit7, wipe_buffer [a, area_end_ptr, area_start_ptr, current_format_line_ptr, current_line_ptr, flags, top_of_screen_line_ptr]
 - **new_cmd** → check_not_continuous_editing, initialise_document
 - **fold_cmd** → return_to_cli_prompt, scan_input_buffer [a, flags, folding_flag, input_buffer, y]
 - **printer_cmd** → print_cmd
@@ -144,7 +144,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **sf5_highlight2_key** → tab_highlight_common [a]
 - **tab_highlight_common** → f13_right_key, insert_character_into_edit_buffer, adjust_margins_at_left_margin [a, flags]
 - **f9_delete_char_key** → delete_edit_buffer_bytes_at_xpos [l0074, x]
-- **f7_delete_line_key** → adjust_pointers, clamp_ptr6_to_document, ensure_cr_at_document_top, move_tmp01_to_previous_line, write_line_back_to_document_safely [a, current_line_ptr, cursor_moved_flag, flags, l003b, l0079, ram, tmp0, tmp1, tmp4, tmp5, tmp6, tmp7, x, y]
+- **f7_delete_line_key** → adjust_pointers, clamp_ptr6_to_document, ensure_cr_at_document_top, move_tmp01_to_previous_line, write_line_back_to_document_safely [current_line_ptr, cursor_moved_flag, flags, l003b, l0079, ram, tmp0, tmp1, tmp4, tmp5, tmp6, tmp7, x, y]
 - **sf2_release_margins_key** → c9e94, f4_beginning_of_line_key, find_left_margin_stop [format_mode_flag, xpos, y]
 - **c9e94** [a, xpos]
 - **f4_beginning_of_line_key** → c9e94 [cursor_moved_flag]
@@ -228,7 +228,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **make_space_for_insertion** [a, flags, himem, pointer_array, ram, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8, tmp9, top, x, y]
 - **unpack_line** → set_format_mode_bit7, check_for_command_prefix, clear_format_mode_bit7, wipe_buffer [a, current_format_line_ptr, current_line_ptr, edit_buffer_unpacked_flag, flags, l003b, ptr1, ram, x, y]
 - **unpack_line_into_buffer** → unpack_line [edit_buffer_unpacked_flag]
-- **update_markers_to_format_buffer** → find_marker_at_position [a, current_format_line_ptr, current_line_ptr, flags, markers_array, ram, tmp6, tmp7, x, y]
+- **update_markers_to_format_buffer** → find_marker_at_position [current_format_line_ptr, current_line_ptr, flags, markers_array, ram, tmp6, tmp7, x, y]
 - **get_line_length** → check_for_command_prefix [a, current_format_line_ptr, flags, ram, y]
 - **wipe_buffer** [a, ptr1, ram, x, y]
 - **find_next_line** → move_tmp01_to_next_line, push_onto_ruler_index, is_embedded_ruler [a, flags, tmp0, tmp1, y]
