@@ -3753,9 +3753,8 @@ c9c00:
     //     inc l0074
     l0074++;
     //     ldx #1
-    x = 1;
     //     jsr insert_edit_buffer_bytes_at_xpos
-    insert_edit_buffer_bytes_at_xpos(x);
+    insert_edit_buffer_bytes_at_xpos(1);
     //     bcs c9c7f
     if (flags & FLAG_C)
     {
@@ -6716,9 +6715,8 @@ ca35e:
     // ca360: (5342)
 ca360:
     //     ldy l0034 (5343)
-    y = l0034;
     //     jsr cab91 (5344)
-    load_current_ruler(y);
+    load_current_ruler(l0034);
     //     jsr unpack_line_into_buffer (5345)
     unpack_line_into_buffer();
     //     jsr sub_ca608 (5346)
@@ -6809,9 +6807,8 @@ ca395:
     // ca3b2: (5388)
 ca3b2:
     //     ldy l0033 (5389)
-    y = l0033;
     //     jsr cab91 (5390)
-    load_current_ruler(y);
+    load_current_ruler(l0033);
     //     lda #1 (5391)
     //     sta l0082 (5392)
     l0082 = 1;
@@ -6867,9 +6864,8 @@ ca3de:
     //     sta l0074 (5416)
     l0074 = a;
     //     ldy l0034 (5417)
-    y = l0034;
     //     jsr cab91 (5418)
-    load_current_ruler(y);
+    load_current_ruler(l0034);
     // ca3e7: (5419)
 ca3e7:
     //     jsr unpack_line_into_buffer (5420)
@@ -8433,7 +8429,6 @@ static void insert_at_left_margin(void)
 
 static void insert_byte_at_xpos(uint8_t y)
 {
-    uint8_t x;
     uint8_t a;
 
     // sub_caedd:
@@ -8445,9 +8440,8 @@ static void insert_byte_at_xpos(uint8_t y)
         //     sty xpos
         xpos = y;
         //     ldx #1
-        x = 1;
         //     jsr insert_edit_buffer_bytes_at_xpos
-        insert_edit_buffer_bytes_at_xpos(x);
+        insert_edit_buffer_bytes_at_xpos(1);
         //     bcs caef0
         if (!(flags & FLAG_C))
         {

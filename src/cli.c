@@ -1471,10 +1471,9 @@ c8263:
     // c826e:
 c826e:
     //     lda input_buffer_offset+1
-    a = l0080;
     //     ldy #2
     //     jsr call_through_jumptable
-    execute_cli_command(a);
+    execute_cli_command(l0080);
     //     jmp run_cli
     run_cli();
 }
