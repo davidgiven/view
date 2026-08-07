@@ -6356,53 +6356,51 @@ caa51:
     if (x != sizeof(pointer_array))
         goto loop_caa38;
     // caa57: (6478)
-caa57:
     //     lda ((uint8_t*)&tmp23)[0] (6479)
-    a = ((uint8_t*)&tmp23)[0];
     //     sec (6480)
-    flags |= FLAG_C;
     //     sbc ((uint8_t*)&tmp45)[0] (6481)
-    a = sbc(&flags, a, ((uint8_t*)&tmp45)[0]); // C live
     //     tax (6482)
-    x = a;
     //     lda ((uint8_t*)&tmp23)[1] (6483)
-    a = ((uint8_t*)&tmp23)[1];
     //     sbc ((uint8_t*)&tmp45)[1] (6484)
-    a = sbc(&flags, a, ((uint8_t*)&tmp45)[1]); // Z, V live
     //     beq caa65 (6485)
-    if (!(flags & FLAG_Z))
-    {
-        x = 0xff;
-    }
-    //     txa (6488)
-    a = x;
-    //     tay (6489)
-    y = a;
-    //     iny (6490)
-    y++;
-    tmp23 -= x;
-    // caa75: (6498)
-caa75:
-    tmp89 -= x;
-    // caa82: (6506)
-    do
-    {
-        y--;
-        a = ram[tmp23 + y];
-        ram[tmp89 + y] = a;
-        a = y;
-    } while (a != 0);
-caa82:
-    //     inx (6512)
-    x++;
-    //     beq caa57 (6513)
-    if (x == 0)
-        goto caa57;
-    //     clc (6514)
+    //     ldx #0xff (6487)
+    // caa65: (6488)
+    //     txa (6489)
+    //     tay (6490)
+    //     iny (6491)
+    //     lda ((uint8_t*)&tmp23)[0] (6492)
+    //     stx ((uint8_t*)&tmp23)[0] (6493)
+    //     sec (6494)
+    //     sbc ((uint8_t*)&tmp23)[0] (6495)
+    //     sta ((uint8_t*)&tmp23)[0] (6496)
+    //     bcs caa75 (6497)
+    //     dec ((uint8_t*)&tmp23)[1] (6498)
+    // caa75: (6499)
+    //     lda ((uint8_t*)&tmp89)[0] (6500)
+    //     stx ((uint8_t*)&tmp89)[0] (6501)
+    //     sec (6502)
+    //     sbc ((uint8_t*)&tmp89)[0] (6503)
+    //     sta ((uint8_t*)&tmp89)[0] (6504)
+    //     bcs caa82 (6505)
+    //     dec ((uint8_t*)&tmp89)[1] (6506)
+    // caa82: (6507)
+    //     dey (6508)
+    //     lda (tmp23),y (6509)
+    //     sta (tmp89),y (6510)
+    //     tya (6511)
+    //     bne caa82 (6512)
+    //     inx (6513)
+    //     beq caa57 (6514)
+    // (byte shift consolidated into a single memmove: copies [tmp45, tmp23]
+    //  inclusive, i.e. (top - base) + 1 bytes, to [tmp45 + tmp67, tmp89])
+    addr_t old_top = tmp23;
+    size_t copy_len = (size_t)(old_top - tmp45) + 1;
+    memmove(&ram[tmp45 + tmp67], &ram[tmp45], copy_len);
+    //     clc (6515)
     flags &= ~FLAG_C;
-    // return_67: (6515)
+    // return_67: (6516)
 return_67:
-    //     rts (6516)
+    //     rts (6517)
 }
 
 static void memory_full(void)
