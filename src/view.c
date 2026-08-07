@@ -546,7 +546,7 @@ void setup_area_pointers(addr_t ptr2)
     //     lda (((uint8_t*)&tmp89)[0]),y
     a = ram[tmp89 + y];
     //     cmp #0x0d
-    if (!(a != 0x0d))
+    if (a == 0x0d)
     {
         x++;
     }
@@ -637,7 +637,7 @@ c83ca:
     //     ldx l007a
     x = l007a;
     //     bne c83d1
-    if (!(x != 0))
+    if (x == 0)
     {
         a = upper_case_unless_folding();
     }
@@ -915,9 +915,9 @@ c8a87:
     x = l0082;
     //     tay
     y = a;
-    if (!(y != 0))
+    if (y == 0)
     {
-        if (!(x < l0080))
+        if (x >= l0080)
         {
             x = l0080;
         }
@@ -1127,7 +1127,7 @@ c8b38:
 c8b47:
     // c8b47:
     //     cmp #2
-    if (!(a != 2))
+    if (a == 2)
     {
         a = 0x20;
     }
@@ -1156,7 +1156,7 @@ c8b47:
     {
         a |= 0x20;
         y = l0081;
-        if (!(y == 0))
+        if (y != 0)
         {
             l0081--;
             a &= 0xdf;

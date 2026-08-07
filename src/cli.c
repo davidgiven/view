@@ -447,7 +447,7 @@ c870d:
     //     stx l0083
     l0083 = x;
     //     cmp #0x0d
-    if (!(a != 0x0d))
+    if (a == 0x0d)
     {
         l0082 = x;
     }
@@ -537,7 +537,7 @@ static void field_cmd(void)
     //     lda ((uint8_t*)&tmp89)[0]
     uint8_t a = ((uint8_t*)&tmp89)[0];
     //     cmp #0x1b
-    if (!(a != 0x1b))
+    if (a == 0x1b)
     {
         cli_putstring("Frump!\n");
         return_to_cli_prompt();
@@ -618,7 +618,7 @@ static void fold_cmd(void)
         goto c87b4;
     }
     //     cmp #'0'
-    if (!(a != '0'))
+    if (a == '0')
     {
         folding_flag = 0x80;
     }
@@ -863,7 +863,7 @@ static void more_cmd(void)
     //     lda input_file_empty_flag
     a = input_file_empty_flag;
     //     bne c84e8
-    if (!(a != 0))
+    if (a == 0)
     {
         a = (uint8_t)(top & 0xff);
         y = (uint8_t)((top >> 8) & 0xff);
@@ -1417,30 +1417,28 @@ static void print_x_words_of_help(uint8_t x)
     uint8_t y;
     uint8_t a;
     y = 0;
-    //     beq ca832                                                         ;
-    //     ALWAYS branch
-    goto ca832;
-
     // ca82e:
-ca82e:
     //     jsr bdos_print_char
-    cli_putchar(a);
     //     iny
-    y++;
     // ca832:
-ca832:
     //     lda la83d,y
-    a = la83d[y];
     //     bne ca82e
-    if (a != 0)
-        goto ca82e;
     //     lda #0x20 ; ' '
-    a = 0x20;
     //     dex
-    x--;
     //     bpl ca82e
-    if ((int8_t)x >= 0)
-        goto ca82e;
+    for (;;)
+    {
+        a = la83d[y];
+        if (a == 0)
+        {
+            a = 0x20;
+            x--;
+            if ((int8_t)x < 0)
+                break;
+        }
+        cli_putchar(a);
+        y++;
+    }
     //     rts
     return;
 }
@@ -1458,21 +1456,17 @@ void input_line_not_escaped(void)
     //     sty input_buffer_offset+1
     l0080 = y;
     //     bcs c8263
-    if (flags & FLAG_C)
-        goto c8263;
     //     cpy #(jumptable4_cli_end-jumptable4_cli)/2
-    if (y < 48)
-        goto c826e;
     //     bcc c826e
     // c8263:
-c8263:
     //     jsr print_inline_string ; .ascii "Mistake\n"
-    cli_putstring("Mistake\n");
     // c826e:
-c826e:
     //     lda input_buffer_offset+1
     //     ldy #2
     //     jsr call_through_jumptable
+    // (branch restructured: Mistake is printed when C is set or y >= 48)
+    if ((flags & FLAG_C) || y >= 48)
+        cli_putstring("Mistake\n");
     execute_cli_command(l0080);
     //     jmp run_cli
     run_cli();
@@ -1547,7 +1541,7 @@ void run_cli(void)
     {
         cli_putstring("Input file is ");
         a = input_file_empty_flag;
-        if (!(a != 0))
+        if (a == 0)
         {
             cli_putstring("not ");
         }
@@ -1653,7 +1647,7 @@ c81e7:
         goto c81ba;
     //     tya
     //     beq c81f3
-    if (!(y == 0))
+    if (y != 0)
     {
         cli_putchar('\n');
     }
@@ -1754,7 +1748,7 @@ ca87e:
     //     lda (((uint8_t*)&tmp01)[0]),y
     a = input_buffer[y];
     //     cmp #0x30 ; '0'
-    if (!(a >= 0x30))
+    if (a < 0x30)
     {
         l007e = a;
         y++;
@@ -1910,27 +1904,19 @@ void zero_terminate_filename_buffer(void)
 {
     // zero_terminate_filename_buffer:
     //     ldx #0
-    uint8_t x;
-    uint8_t a;
-    uint8_t a2;
-    x = 0;
     //     lda #0x0d
-    a = 0x0d;
     // zloop:
-zloop:
     //     cmp filename_buffer, x
-    if (a == filename_buffer[x])
-        goto zbreak;
     //     inx
-    x++;
     //     bne zloop
-    goto zloop;
-zbreak:
     //     lda #0
-    a2 = 0;
     //     sta filename_buffer, x
-    filename_buffer[x] = a2;
     //     rts
+    uint8_t x = 0;
+    while (filename_buffer[x] != 0x0d)
+        x++;
+    filename_buffer[x] = 0;
+    return;
 }
 
 addr_t parse_mark_from_command(void)

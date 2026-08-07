@@ -320,7 +320,7 @@ c953e:
 c9555:
     //     lda print_flags
     a = print_flags;
-    if (!((int8_t)a < 0))
+    if ((int8_t)a >= 0)
         return;
     //     bpl return_37
     //     txa
@@ -396,21 +396,22 @@ loop_c9589:
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
     //     cmp #0x0d
-    if (a == 0x0d)
-        goto c959c;
     //     cmp #0x1b
-    if (!(a >= 0x1b))
-    {
-        a = 0x20;
-    }
     //     cmp l0083
-    if (a != l0083)
-        goto c959e;
-c959c:
+    // c959c:
     //     ora #0x80
-    a |= 0x80;
-c959e:
+    // c959e:
     //     jsr sub_c95b2
+    // (branch restructured: |= 0x80 when a is 0x0d, or equals l0083)
+    if (a == 0x0d)
+        a |= 0x80;
+    else
+    {
+        if (a < 0x1b)
+            a = 0x20;
+        if (a == l0083)
+            a |= 0x80;
+    }
     store_to_output_buffer(a);
     //     cmp #0x8d
     if (a == 0x8d)
@@ -934,7 +935,7 @@ c96a2:
     //     bne c96b8
     if ((flags & FLAG_Z))
     {
-        if (!(x >= 0x97))
+        if (x < 0x97)
         {
             {
                 display_not_enough_memory();
@@ -1165,7 +1166,7 @@ void lookup_formatting_command(void)
     do
     {
         a = ((uint8_t*)&tmp23)[0];
-        if (!(a != commands_table[y]))
+        if (a == commands_table[y])
         {
             a = ((uint8_t*)&tmp23)[1];
             cmp(&flags, a, commands_table[y + 1]); // Z, N, C live
@@ -1393,7 +1394,7 @@ loop_c979d:
     //     ldy l0084
     //     lda l97b1,x
     a = l97b0_data[x + 1];
-    if (!((int8_t)a < 0))
+    if ((int8_t)a >= 0)
         goto c9788;
     //     bpl c9788
     // c97ae:
@@ -1625,7 +1626,7 @@ static void emit_to_output_buffer_callback(uint8_t digit)
         //     sta output_buffer,x
         output_buffer[x] = digit;
         //     cpx #MAX_LINE_LENGTH-2
-        if (!(x >= MAX_LINE_LENGTH - 2))
+        if (x < MAX_LINE_LENGTH - 2)
         {
             l0082++;
         }
@@ -1729,7 +1730,7 @@ static void process_page_footer(void)
     //     lda footers_enabled_flag
     a = footers_enabled_flag;
     //     beq c927c
-    if (!(a == 0))
+    if (a != 0)
     {
         x = (uint8_t)((uintptr_t)footer_text_maybe & 0xff);
         y = (uint8_t)((uintptr_t)footer_text_maybe >> 8);
@@ -2225,7 +2226,7 @@ c912b:
         //     lda l0045
         a = l0045;
         //     beq c9154
-        if (!(a == 0))
+        if (a != 0)
         {
             x++;
             l0045--;
@@ -2495,7 +2496,7 @@ c8f0d:
     }
     //     lda l0031
     a = l0031;
-    if (!((int8_t)a < 0))
+    if ((int8_t)a >= 0)
         return;
     //     bpl return_23
     //     jmp c9263
@@ -2524,7 +2525,7 @@ static void print_loop(void)
         if (a != 0)
         {
             a = l0021;
-            if (!(a != 0))
+            if (a == 0)
             {
                 process_page_footer();
             }
@@ -2697,7 +2698,7 @@ static void print_loop(void)
     c8fce_l:
         //     lda l0031
         a = l0031;
-        if (!(a != 0))
+        if (a == 0)
         {
             render_new_page();
         }
@@ -2859,7 +2860,7 @@ c8cc8:
     //     ldy l0083
     y = l0083;
     //     cpy #0x84
-    if (!(y != MAX_LINE_LENGTH))
+    if (y == MAX_LINE_LENGTH)
     {
         {
             uint8_t saved_a_ = a;
@@ -2906,7 +2907,7 @@ c8cf2:
         //     lda l0084
         a = l0084;
         //     beq c8cfa
-        if (!(a == 0))
+        if (a != 0)
         {
             write_cr_to_memory();
         }
@@ -3126,7 +3127,7 @@ c92d4:
     //     lda headers_enabled_flag
     a = headers_enabled_flag;
     //     beq c92e8
-    if (!(a == 0))
+    if (a != 0)
     {
         x = (uint8_t)((uintptr_t)header_text_maybe & 0xff);
         y = (uint8_t)((uintptr_t)header_text_maybe >> 8);
@@ -3478,7 +3479,7 @@ static void parse_register_reference(uint8_t a)
     // sub_c9228:
     //     cmp #0x3e ; '>'
     //     bne c9231
-    if (!(a != 0x3e))
+    if (a == 0x3e)
     {
         a = 0;
         l0082 = a;
@@ -3487,7 +3488,7 @@ static void parse_register_reference(uint8_t a)
     }
     //     cmp #0x3c ; '<'
     //     bne c923c
-    if (!(a != 0x3c))
+    if (a == 0x3c)
     {
         a = 0x40;
         l0082 = a;

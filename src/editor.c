@@ -272,7 +272,7 @@ void editor_loop_impl(void)
 
             //     bne c9b44
 
-            if (!(a != 0))
+            if (a == 0)
             {
                 {
                     uint8_t saved_a_ = a;
@@ -450,7 +450,7 @@ void editor_loop_impl(void)
 
         //     cmp current_tab_key
 
-        if (!(a != current_tab_key))
+        if (a == current_tab_key)
         {
             a = 9;
         }
@@ -734,7 +734,7 @@ static void cf6_split_line_key(void)
 
     //     cpy xpos
 
-    if (!(y < xpos))
+    if (y >= xpos)
     {
         y = xpos;
     }
@@ -1497,7 +1497,7 @@ static void f7_delete_line_key(void)
 
     a = ram[current_line_ptr + y];
 
-    if (!(a != 0))
+    if (a == 0)
     {
         move_tmp01_to_previous_line(current_line_ptr);
         current_line_ptr = tmp01;
@@ -3114,88 +3114,70 @@ static void sf3_delete_to_char_key(void)
 
     read_char();
 
-    if (a == 9)
-        goto ca12a;
-
-    if (a != 0xa0)
-        goto ca11a;
-
-    a = 0x1c;
-
-    goto ca12a;
-
-ca11a:
-
-    if (a != 0xa1)
-        goto ca122;
-
-    a = 0x1d;
-
-    goto ca12a;
-
-ca122:
-
-    if (a < 0x20)
+    // (branch restructured: 0xa0 -> 0x1c, 0xa1 -> 0x1d, control/high -> beep)
+    if (a == 9 || a == 0xa0 || a == 0xa1)
     {
+        if (a == 0xa0)
+            a = 0x1c;
+        else if (a == 0xa1)
+            a = 0x1d;
+    }
+    else
+    {
+        if (a < 0x20 || a >= 0x7f)
+        {
+            beep();
+            return;
+        }
+    }
+
+    {
+
+        uint8_t search_char = a;
+
+        l0074++;
+
+        y = xpos;
+
+        uint8_t start_x = y;
+
+        // loop_ca132: scan forward to find matching char
+
+        while (y < MAX_LINE_LENGTH)
+        {
+
+            a = ram[RAM_EDIT_BUFFER + y];
+
+            y++;
+
+            if (a == search_char)
+                goto loop_ca13d;
+        }
+
         beep();
         return;
+
+    loop_ca13d:
+
+        // loop_ca13d: scan forward to find end of matching sequence
+
+        while (y < MAX_LINE_LENGTH)
+        {
+
+            a = ram[RAM_EDIT_BUFFER + y];
+
+            y++;
+
+            if (a != search_char)
+                break;
+        }
+
+        y--;
+
+        x = y - start_x;
+
+        delete_edit_buffer_bytes_at_xpos(x);
     }
-
-    if (a >= 0x7f)
-    {
-        beep();
-        return;
-    }
-
-ca12a:
-
-{
-
-    uint8_t search_char = a;
-
-    l0074++;
-
-    y = xpos;
-
-    uint8_t start_x = y;
-
-    // loop_ca132: scan forward to find matching char
-
-    while (y < MAX_LINE_LENGTH)
-    {
-
-        a = ram[RAM_EDIT_BUFFER + y];
-
-        y++;
-
-        if (a == search_char)
-            goto loop_ca13d;
-    }
-
-    beep();
-    return;
-
-loop_ca13d:
-
-    // loop_ca13d: scan forward to find end of matching sequence
-
-    while (y < MAX_LINE_LENGTH)
-    {
-
-        a = ram[RAM_EDIT_BUFFER + y];
-
-        y++;
-
-        if (a != search_char)
-            break;
-    }
-
-    y--;
-
-    x = y - start_x;
-
-    delete_edit_buffer_bytes_at_xpos(x);
-}
 }
 
 static void sf4_highlight1_key(void)
@@ -3769,7 +3751,7 @@ c9c09:
     //     ldy l0074
     y = l0074;
     //     bne c9c14
-    if (!(y != 0))
+    if (y == 0)
     {
         screen_putchar(a);
     }
@@ -3820,9 +3802,9 @@ c9c31:
     //     ldx l0039
     x = l0039;
     //     beq c9c43
-    if (!(x == 0))
+    if (x != 0)
     {
-        if (!(x < ruler_left_stop))
+        if (x >= ruler_left_stop)
         {
             x++;
             a = x;
@@ -4763,7 +4745,7 @@ cae27:
     //     bcs cae35
     if (!(flags & FLAG_C))
     {
-        if (!(a >= MAX_LINE_LENGTH))
+        if (a < MAX_LINE_LENGTH)
         {
             x = a;
         }
@@ -5319,7 +5301,7 @@ c8bbc:
         goto c8be3;
     //     beq c8be3
     //     cmp #2
-    if (!(a != 2))
+    if (a == 2)
     {
         a = 0x20;
     }
@@ -5359,7 +5341,7 @@ c8be3:
     //     ldx l0049
     x = l0049;
     //     cpx #0x14
-    if (!(x >= 0x14))
+    if (x < 0x14)
     {
         output_buffer[x] = a;
         l0049++;
@@ -5660,22 +5642,26 @@ ca4b4:
 ca4bc:
     //     jsr ca4e9
     render_char(rs);
-// loop_ca4bf:
-loop_ca4bf:
+    // loop_ca4bf:
     //     jsr process_current_document_character
-    advance_to_next_char(rs);
     // loop_ca4c2:
-    do
-    {
-        render_xchar(rs);
-        rs->width--;
-    } while (rs->width != 0);
     //     cmp #0x0d
-    if (rs->ch != 0x0d)
-        goto loop_ca4bf;
     //     bne loop_ca4bf
     //     lda #0x20 ; ' '
     //     jsr sub_ca597
+    // (loop restructured)
+    while (1)
+    {
+        advance_to_next_char(rs);
+        do
+        {
+            render_xchar(rs);
+            rs->width--;
+        } while (rs->width != 0);
+        if (rs->ch == 0x0d)
+            break;
+    }
+    clear_to_eol(0x20, rs->line);
     clear_to_eol(0x20, rs->line);
     //     lda l0083
     //     sta line_lengths,x
@@ -6074,7 +6060,7 @@ c9871:
     //     iny
     y++;
     //     cpy l0046
-    if (!(y < l0046))
+    if (y >= l0046)
     {
         y = 1;
     }
@@ -6587,9 +6573,9 @@ ca2e6:
     //     inx (5271)
     x++;
     //     cpy ptr6+1 (5272)
-    if (!(y != (uint8_t)(ptr6 >> 8)))
+    if (y == (uint8_t)(ptr6 >> 8))
     {
-        if (!(a != (uint8_t)(ptr6 & 0xff)))
+        if (a == (uint8_t)(ptr6 & 0xff))
         {
             l003d = x;
         }
@@ -6779,7 +6765,7 @@ ca395:
     if (a == 0)
         goto ca3e7;
     //     bpl ca3b2 (5376)
-    if (!((int8_t)a < 0))
+    if ((int8_t)a >= 0)
         goto ca3b2;
     //     lda l003d (5377)
     a = l003d;
@@ -6877,7 +6863,7 @@ ca3e7:
     //     lda l0074 (5423)
     a = l0074;
     //     beq ca3ff (5424)
-    if (!(a == 0))
+    if (a != 0)
     {
         a = ypos;
         l0082 = a;
@@ -6887,7 +6873,7 @@ ca3e7:
     //     lda flags_need_redrawing_flag (5431)
     a = flags_need_redrawing_flag;
     //     beq ca406 (5432)
-    if (!(a == 0))
+    if (a != 0)
     {
         draw_status_word();
     }
@@ -7203,30 +7189,29 @@ void show_memory_full_error(void)
     //     dey
     y--;
     //     ldx #0
-    x = 0;
     //     beq ca965
-    goto ca965;
-
     // loop_ca962:
-loop_ca962:
     //     jsr screen_putchar
-    screen_putchar(a);
     // ca965:
-ca965:;
     //     lda la995,x
-    a = la995_data[x];
     //     beq ca96e
-    if (a == 0)
-        goto ca96e;
     //     inx
-    x++;
     //     dey
-    y--;
     //     bne loop_ca962
-    if (y != 0)
-        goto loop_ca962;
+    // (loop restructured)
+    x = 0;
+    for (;;)
+    {
+        a = la995_data[x];
+        if (a == 0)
+            break;
+        x++;
+        y--;
+        if (y == 0)
+            break;
+        screen_putchar(a);
+    }
     // ca96e:
-ca96e:
     //     jsr set_normal_text_if_not_mode_7
     screen_setstyle(0);
     //     tya
@@ -7364,7 +7349,7 @@ c994a:
     //     beq c995c
     if (x != 0)
     {
-        if (!(x < ruler_left_stop))
+        if (x >= ruler_left_stop)
         {
             x++;
             a = x;
@@ -7632,7 +7617,7 @@ c99ee:
     //     ldx l0039
     x = l0039;
     //     cpx ruler_left_stop
-    if (!(x >= ruler_left_stop))
+    if (x < ruler_left_stop)
     {
         l0039 = a;
         l0039--;
@@ -7750,7 +7735,7 @@ c9a40:
     //  c9a58:
 c9a58:
     //     cpy #0x86
-    if (!(y < 0x86))
+    if (y >= 0x86)
     {
         y--;
     }
@@ -8071,7 +8056,7 @@ static uint8_t compute_display_start_line(void)
     //     bmi ca461
     if (!(a & 0x80))
     {
-        if (!(a == 0))
+        if (a != 0)
         {
             x = ypos;
         }
@@ -8353,20 +8338,21 @@ static void find_line_start(addr_t tmp89)
     //     ldy #0
     y = 0;
     // cac5c:
-cac5c:
     //     lda (((uint8_t*)&tmp89)[0]),y
-    a = ram[tmp89 + y];
     //     cmp #0x0d
-    if (a == 0x0d)
-        goto cac6f;
+    //     bne cac5c
+    // (loop restructured)
+    while (1)
     {
+        a = ram[tmp89 + y];
+        if (a == 0x0d)
+            break;
         uint8_t old_low = (uint8_t)(tmp89 & 0xff);
         tmp89--;
-        if (old_low > 0 || (uint8_t)(tmp89 >> 8) != 0)
-            goto cac5c;
+        if (!(old_low > 0 || (uint8_t)(tmp89 >> 8) != 0))
+            break;
     }
     // cac6f:
-cac6f:
     tmp67 = tmp89;
     // return_73:
     //     rts
@@ -8602,7 +8588,7 @@ ca911:
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
     //     cmp #0x10
-    if (!(a != 0x10))
+    if (a == 0x10)
     {
         a = 0x20;
     }

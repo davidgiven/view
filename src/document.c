@@ -113,21 +113,21 @@ void display_document_file_state(void)
         goto c8a21;
     //     ldy #0
     y = 0;
-loop_c89fa:
     // loop_c89fa:
     //     lda input_filename,y
-    a = input_filename[y];
     //     cmp #0x0d
-    if (a == 0x0d)
-        goto c8a07;
     //     jsr bdos_print_char
-    cli_putchar(a);
     //     iny
-    y++;
     //     bne loop_c89fa
-    if (y != 0)
-        goto loop_c89fa;
-c8a07:
+    // (loop restructured)
+    for (;;)
+    {
+        a = input_filename[y];
+        if (a == 0x0d)
+            break;
+        cli_putchar(a);
+        y++;
+    }
     // c8a07:
     //     bit file_edit_flags
     if ((file_edit_flags & 0x40))
@@ -139,21 +139,24 @@ c8a07:
 
     //     ldy #0
     y = 0;
-loop_c8a15:
     // loop_c8a15:
     //     lda output_filename,y
-    a = output_filename[y];
     //     iny
-    y++;
-c8a19:
-    // c8a19:
     //     jsr bdos_print_char
-    cli_putchar(a);
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d); // Z live
     //     bne loop_c8a15
-    if (!(flags & FLAG_Z))
-        goto loop_c8a15;
+    // (loop restructured)
+    for (;;)
+    {
+        a = output_filename[y];
+        y++;
+    c8a19:
+        // c8a19:
+        //     jsr bdos_print_char
+        cli_putchar(a);
+        if (a == 0x0d)
+            break;
+    }
     //     rts
     return;
 
@@ -188,12 +191,12 @@ loop_caba5:
     //     lda (current_ruler_ptr),y
     a = ram[current_ruler_ptr + y];
     //     cmp #0x3e ; '>'
-    if (!(a != 0x3e))
+    if (a == 0x3e)
     {
         ruler_left_stop = y;
     }
     //     cmp #0x3c ; '<'
-    if (!(a != 0x3c))
+    if (a == 0x3c)
     {
         ruler_right_stop = y;
     }
@@ -1018,23 +1021,24 @@ void move_tmp01_to_next_line(uint16_t start)
     uint8_t a;
     y = 0;
     // loop_cab2b:
-loop_cab2b:
     //     lda (((uint8_t*)&tmp01)[0]),y
-    a = ram[tmp01 + y];
-
     //     beq return_70
-    if (a == 0)
-        goto return_70;
     //     iny
-    y++;
     //     cmp #0x0d
-    if (a != 0x0d)
-        goto loop_cab2b;
+    //     bne loop_cab2b
     //     lda (((uint8_t*)&tmp01)[0]),y
+    for (;;)
+    {
+        a = ram[tmp01 + y];
+        if (a == 0)
+            return;
+        y++;
+        if (a == 0x0d)
+            break;
+    }
     a = ram[tmp01 + y];
     set_flags(&flags, a); // Z live
     // return_70:
-return_70:
     //     rts
     return;
 }
