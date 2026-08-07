@@ -222,7 +222,7 @@ cabbc:
     ruler_left_stop = 0;
 }
 
-void print_char(void)
+void print_char(uint8_t a)
 {
     // print_char
     // print_char:
@@ -241,14 +241,12 @@ void print_char(void)
 
 c9462:
     //     lda #0
-    a = 0;
     //     sta print_xpos
     print_xpos = 0;
     //     lda #0x0d
-    a = 0x0d;
 c9468:
     //     jsr sub_c9445
-    print_alignment_spaces();
+    print_alignment_spaces(a);
     print_char_just_to_screen(a);
 }
 
@@ -438,34 +436,31 @@ void return_to_cli_prompt(void)
     longjmp(env, JMP_CLI);
 }
 
-void print_alignment_spaces(void)
+void print_alignment_spaces(uint8_t a)
 {
     // sub_c9445
     // Pseudocode: Outputs print_xpos number of spaces to align printer
 
     // sub_c9445:
     //     pha
+    //     lda print_xpos
+    a = print_xpos;
+    //     beq c9453
+    if (a == 0)
+        goto c9453;
+    //     lda #0x20 ; ' '
+    a = 0x20;
+    // loop_c944c:
+    do
     {
-        uint8_t saved_a = a;
-        //     lda print_xpos
-        a = print_xpos;
-        //     beq c9453
-        if (a == 0)
-            goto c9453;
-        //     lda #0x20 ; ' '
-        a = 0x20;
-        // loop_c944c:
-        do
-        {
-            print_char_just_to_screen(a);
-            print_xpos--;
-        } while (print_xpos != 0);
-        // c9453:
-    c9453:
-        //     pla
-        a = saved_a;
-    }
+        print_char_just_to_screen(a);
+        print_xpos--;
+    } while (print_xpos != 0);
+    // c9453:
+c9453:
+    //     pla
     //     rts
+    return;
 }
 
 void is_embedded_ruler(addr_t tmp01)

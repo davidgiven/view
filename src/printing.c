@@ -28,7 +28,7 @@ static void microspace_word_processor(void);
 static void nested_macro_error(void);
 void parse_decimal_number(void);
 void parse_optional_filename_from_command(void);
-static uint8_t print_char_x_times(uint8_t x);
+static void print_char_x_times(uint8_t a, uint8_t x);
 void print_document(void);
 static void print_loop(void);
 static void print_newline(void);
@@ -1786,7 +1786,7 @@ static void print_output_buffer(void)
             uint8_t saved_x = a;
             a = output_buffer[y];
             convert_char_for_printing();
-            print_char();
+            print_char(a);
             y++;
             a = saved_x;
         }
@@ -2206,7 +2206,7 @@ c912b:
         //     pla
         a = saved_a3;
         //     jsr c9426
-        a = print_char_x_times(x);
+        print_char_x_times(a, x);
         //     jmp c9163
         goto c9163;
 
@@ -2248,7 +2248,7 @@ c912b:
         // c9160:
     c9160:
         //     jsr print_char
-        print_char();
+        print_char(a);
         // c9163:
     c9163:
         //     cmp #0x0d
@@ -2264,7 +2264,7 @@ c8fe6_inline:
         a = ram[tmp01 + y];
         y++;
         convert_char_for_printing();
-        a = print_char_x_times(x);
+        print_char_x_times(a, x);
     } while (a != 0x0d);
     //     inc register_value_l
     ram[RAM_REGISTER_VALUE_L]++;
@@ -2389,28 +2389,23 @@ void parse_optional_filename_from_command(void)
     //     rts
 }
 
-static uint8_t print_char_x_times(uint8_t x)
+static void print_char_x_times(uint8_t a, uint8_t x)
 {
     // c9426: Print character in A, X times. If X==0, return immediately.
-    //     inx
-    x++;
-    //     dex
-    x--;
-
     //     beq return_32
     if (x == 0)
         goto return_32;
     // loop_c942a:
     do
     {
-        print_char();
+        print_char(a);
         x--;
     } while (x != 0);
     //     bne loop_c942a
     // return_32:
 return_32:
     //     rts
-    return a;
+    return;
 }
 
 void print_document(void)
@@ -2731,7 +2726,7 @@ static void print_loop(void)
             a = ram[tmp01 + y];
             y++;
             convert_char_for_printing();
-            print_char_x_times(x);
+            print_char_x_times(a, x);
         } while (a != 0x0d);
         //     inc register_value_l
         ram[RAM_REGISTER_VALUE_L]++;
@@ -2769,8 +2764,8 @@ static void print_newline(void)
 {
     // print_newline:
     //     lda #0x0d
-    a = 0x0d;
-    print_char();
+    uint8_t a = 0x0d;
+    print_char(a);
 }
 
 static void print_vertical_space(void)
@@ -2786,7 +2781,7 @@ static void print_vertical_space(void)
     // print_vertical_space:
     //     lda #0x0d
     a = 0x0d;
-    a = print_char_x_times(x);
+    print_char_x_times(a, x);
 }
 
 void read_block_from_file(void)
@@ -3208,7 +3203,7 @@ static void start_microspacing_if_active(void)
         return;
     // c9177:
     //     jsr sub_c9445
-    print_alignment_spaces();
+    print_alignment_spaces(a);
     //     pha
     {
         uint8_t saved_a = a;
@@ -3236,7 +3231,7 @@ static void emit_microspacing_spaces(void)
         return;
     // c9177:
     //     jsr sub_c9445
-    print_alignment_spaces();
+    print_alignment_spaces(a);
     //     pha
     {
         uint8_t saved_a = a;
@@ -3827,7 +3822,7 @@ static void output_left_margin(void)
     a = 0x20;
     //     bne c9426                                                         ;
     //     ALWAYS branch
-    a = print_char_x_times(x);
+    print_char_x_times(a, x);
 }
 
 static uint8_t add_justification_spaces(void)
@@ -3846,7 +3841,7 @@ static uint8_t add_justification_spaces(void)
     a = 0x20;
     //     bne c9426                                                         ;
     //     ALWAYS branch
-    a = print_char_x_times(x);
+    print_char_x_times(a, x);
     return a;
 }
 
