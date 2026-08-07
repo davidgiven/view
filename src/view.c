@@ -539,14 +539,11 @@ void setup_area_pointers(addr_t ptr2, addr_t ptr6)
     x = 0;
     // c837d:
     //     lda ((uint8_t*)&tmp89)[1]
-    a = ((uint8_t*)&tmp89)[1];
     //     cmp doc_ptr2+1
-    if (a != (uint8_t)(doc_ptr2 >> 8))
-        goto c8389;
     //     lda ((uint8_t*)&tmp89)[0]
-    a = ((uint8_t*)&tmp89)[0];
     //     cmp doc_ptr2+0
-    if (a == (uint8_t)(doc_ptr2 & 0xff))
+    // (16-bit equality consolidated)
+    if (tmp89 == doc_ptr2)
         goto c8398;
 c8389:
     // c8389:
@@ -574,7 +571,7 @@ c8398:
     if (flags & FLAG_Z)
         return;
     //     jmp ca741
-    clamp_ptr6_to_document(ptr6);
+    clamp_ptr6_to_document();
     return;
 }
 
@@ -696,16 +693,23 @@ void process_cli_command(void)
     //     sec
     flags |= FLAG_C;
     //     beq return_4
-    if (status == AREA_NOT_EMPTY)
+    if (status == AREA_EMPTY)
     {
-        init_document_pointers();
+        //     (Z set by beq; C stays set)
+        set_flags(&flags, 0);
+        return;
     }
+    //     jsr sub_c8c7c
+    init_document_pointers();
+    //     lda #1
+    set_flags(&flags, 1);
 c8410:
     // c8410:
     //     clc
     flags &= ~FLAG_C;
     // return_4:
     //     rts
+    return;
 }
 
 void reset_command_parse_state(void)

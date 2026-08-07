@@ -55,7 +55,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **set_document_name_to_filename_buffer** [a, filename_buffer, flags, input_filename, x]
 - **file_error** → return_to_cli_prompt
 - **zero_terminate_filename_buffer** [a, filename_buffer, flags, x]
-- **sanitise_area** [a, area_end_ptr, area_start_ptr, flags, tmp6, tmp7, x, y]
+- **sanitise_area** [area_end_ptr, area_start_ptr, flags, tmp6, tmp7]
 - **parse_marks_from_command** → parse_mark_from_command, reset_area_to_entire_document [a, area_end_ptr, area_start_ptr, flags, y]
 - **parse_mark_from_command** → lookup_marker, return_to_cli_prompt, scan_input_buffer [a, flags, input_buffer_offset, markers_array, x, y]
 - **adjust_area_pointers** → adjust_pointers, split_line_at_wrap [a, area_start_ptr, tmp4, tmp5, y]
@@ -210,7 +210,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **draw_status_word** → home_cursor [a, flags, flags_need_redrawing_flag, format_mode_flag, insert_mode_flag, justifying_flag, x]
 - **update_line_length** [a, line_lengths, number_callback, screen_maxcolumn, x, ypos]
 - **parse_decimal_number** [a, current_format_line_ptr, ram, tmp8, tmp9, x, y]
-- **clamp_ptr6_to_document** [current_line_ptr, l003d, l0073, ptr6, x, y]
+- **clamp_ptr6_to_document** [current_line_ptr, l003d, l0073, ptr6]
 - **clear_screen**
 - **draw_prompt_characters** → cursor_off, home_cursor, restore_cursor_position, save_cursor_position [a, tmp2, tmp3, x, y]
 - **cursor_on**

@@ -465,14 +465,11 @@ c871d:
     // c871f:
 c871f:
     //     ldy ((uint8_t*)&tmp01)[1]
-    y = ((uint8_t*)&tmp01)[1];
     //     cpy area_end_ptr+1
-    if (y != (uint8_t)(area_end_ptr >> 8))
-        goto c86b8;
     //     ldy ((uint8_t*)&tmp01)[0]
-    y = ((uint8_t*)&tmp01)[0];
     //     cpy area_end_ptr
-    if (y != (uint8_t)(area_end_ptr & 0xff))
+    // (16-bit equality consolidated)
+    if (tmp01 != area_end_ptr)
         goto c86b8;
     //     ldx ((uint8_t*)&tmp89)[0]
     render_number_to_screen(tmp89);

@@ -250,7 +250,7 @@ extern void file_error(void);
 // Functions moved to editor.c still called from view.c/other modules
 extern void redraw_editor(addr_t ptr6);
 extern void write_line_back_to_document_safely(void);
-extern void clamp_ptr6_to_document(addr_t ptr6);
+extern void clamp_ptr6_to_document(void);
 extern uint8_t upper_case_unless_folding(void);
 extern area_status_t sanitise_area(void);
 extern void make_space_for_insertion(void);

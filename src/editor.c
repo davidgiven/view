@@ -32,7 +32,7 @@ void beep(void);
 void scan_document_for_next_line(void);
 static uint8_t c9de3_insert_line(uint8_t a, uint8_t y);
 static void update_line_length(void);
-void clamp_ptr6_to_document(addr_t ptr6);
+void clamp_ptr6_to_document(void);
 void clear_screen(void);
 static void clear_to_eol(uint8_t a);
 static void cursor_off(void);
@@ -632,7 +632,7 @@ static void cf0_delete_block_key(void)
 
     move_cursor_to_address(area_start_ptr);
 
-    clamp_ptr6_to_document(ptr6);
+    clamp_ptr6_to_document();
 
     adjust_area_pointers(tmp67);
 
@@ -897,7 +897,7 @@ static void cf7_join_lines_key(void)
 
     //     jmp ca741
 
-    clamp_ptr6_to_document(ptr6);
+    clamp_ptr6_to_document();
     return;
 
     // c9eda:
@@ -1118,7 +1118,7 @@ static void f0_format_block_key(void)
 
     //     jsr ca741
 
-    clamp_ptr6_to_document(ptr6);
+    clamp_ptr6_to_document();
 
     //     jsr sub_c9977
 
@@ -1510,7 +1510,7 @@ static void f7_delete_line_key(void)
 
     //     jmp ca741
 
-    clamp_ptr6_to_document(ptr6);
+    clamp_ptr6_to_document();
     return;
 }
 
@@ -4102,7 +4102,7 @@ c9d30:
     //     jsr ca93c
     write_line_back_to_document_safely();
     //     jsr ca741
-    clamp_ptr6_to_document(ptr6);
+    clamp_ptr6_to_document();
     //     jsr return_key
     x = return_key();
     //     lda top_margin
@@ -5495,7 +5495,7 @@ static uint8_t c9de3_insert_line(uint8_t a, uint8_t y)
         a = 0x0d;
         y = 0;
         ram[tmp45 + y] = a;
-        clamp_ptr6_to_document(ptr6);
+        clamp_ptr6_to_document();
         return x;
     }
     //     jmp ca941
@@ -5520,26 +5520,20 @@ static void update_line_length(void)
     return;
 }
 
-void clamp_ptr6_to_document(addr_t ptr6)
+void clamp_ptr6_to_document(void)
 {
     // ca741: Updates ptr6 to current_line_ptr if ptr6 is ahead, sets refresh
     // flags On entry: current_line_ptr, ptr6 On exit:  ptr6 = min(ptr6,
-    // current_line_ptr), l0073 = l003d = 0xff Uses: x, y
+    // current_line_ptr), l0073 = l003d = 0xff
 
     //     ldx current_line_ptr
-    uint8_t y;
-    uint8_t x;
-    uint8_t x2;
-    x = (uint8_t)(current_line_ptr & 0xff);
     //     ldy current_line_ptr+1
-    y = (uint8_t)(current_line_ptr >> 8);
     //     cpy ptr6+1
     //     bcc ca74f
     //     bne ca753
     //     cpx ptr6
     //     bcs ca753
-    if (y < (uint8_t)(ptr6 >> 8) ||
-        (y == (uint8_t)(ptr6 >> 8) && x < (uint8_t)(ptr6 & 0xff)))
+    if (current_line_ptr < ptr6)
     {
         // ca74f:
         //     stx ptr6
@@ -5548,11 +5542,10 @@ void clamp_ptr6_to_document(addr_t ptr6)
     }
     // ca753:
     //     ldx #0xff
-    x2 = 0xff;
+    l0073 = 0xff;
     //     stx l0073
-    l0073 = x2;
     //     stx l003d
-    l003d = x2;
+    l003d = 0xff;
     //     rts
 }
 
@@ -6567,17 +6560,14 @@ ca29c:
     //     jsr sub_cab37 (5240)
     move_tmp01_to_previous_line(top_of_screen_line_ptr);
     //     ldy ((uint8_t*)&tmp01)[1] (5241)
-    y = ((uint8_t*)&tmp01)[1];
     //     cpy current_line_ptr+1 (5242)
-    if (y != (uint8_t)(current_line_ptr >> 8))
-        goto ca30d;
     //     lda ((uint8_t*)&tmp01)[0] (5244)
-    a = ((uint8_t*)&tmp01)[0];
     //     cmp current_line_ptr (5245)
-    if (a != (uint8_t)(current_line_ptr & 0xff))
+    // (16-bit equality consolidated)
+    if (tmp01 != current_line_ptr)
         goto ca30d;
     //     sty l0012 (5247) sta l0011 (5248)
-    top_of_screen_line_ptr = ((addr_t)y << 8) | a;
+    top_of_screen_line_ptr = tmp01;
     //     ldx screen_height (5249)
     x = screen_maxrow;
     // loop_ca2c7: (5250)
@@ -7122,39 +7112,28 @@ area_status_t sanitise_area(void)
     addr_t tmp67;
 
     // sanitise_area
-    uint8_t y;
-    uint8_t x;
-    uint8_t a;
     // sanitise_area:
     //     lda area_start_ptr
-    a = (uint8_t)(area_start_ptr & 0xff);
     //     ldx area_start_ptr+1
-    x = (uint8_t)(area_start_ptr >> 8);
     //     cpx area_end_ptr+1
-    cmp(&flags, x, (uint8_t)(area_end_ptr >> 8)); // Z, C live
     //     bcc c8977
-    if (!(flags & FLAG_C))
-        goto c8977;
     //     bne c896b
-    if (!(flags & FLAG_Z))
-        goto c896b;
     //     cmp area_end_ptr
-    if (a < (uint8_t)(area_end_ptr & 0xff))
-        goto c8977;
-c896b:
-    // c896b:
-    //     ldy area_end_ptr
-    //     sty area_start_ptr
-    //     ldy area_end_ptr+1
-    //     sty area_start_ptr+1
-    //     stx area_end_ptr+1
-    //     sta area_end_ptr
+    //     bcc c8977
+    // (16-bit comparison consolidated: swap if area_start_ptr >= area_end_ptr)
+    if (area_start_ptr >= area_end_ptr)
     {
+        // c896b:
+        //     ldy area_end_ptr
+        //     sty area_start_ptr
+        //     ldy area_end_ptr+1
+        //     sty area_start_ptr+1
+        //     stx area_end_ptr+1
+        //     sta area_end_ptr
         addr_t tmp = area_start_ptr;
         area_start_ptr = area_end_ptr;
         area_end_ptr = tmp;
     }
-c8977:
     // c8977:
     //     lda area_end_ptr
     //     sec
@@ -8618,7 +8597,7 @@ ca8ed:
         set_flags(&flags, a); // Z live
         if (!(flags & FLAG_Z))
         {
-            clamp_ptr6_to_document(ptr6);
+            clamp_ptr6_to_document();
         }
     }
     //     ldy #0
