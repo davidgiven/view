@@ -5,6 +5,7 @@
 #include "io.h"
 
 #include <ctype.h>
+#include <string.h>
 
 #include "globals.h"
 
@@ -3669,33 +3670,42 @@ cae98:
         return;
     }
     //     ldy xpos
-    y = xpos;
     // loop_caea5:
-    do
-    {
-        l0084 = y;
-        x = 0x10;
-        a = y;
-        flags &= ~FLAG_C;
-        a = adc(&flags, a, l0080); // C live
-        if (!(flags & FLAG_C))
-        {
-            y = a;
-            if (!(y >= MAX_LINE_LENGTH))
-            {
-                a = ram[RAM_EDIT_BUFFER + y];
-                x = a;
-            }
-        }
-        y = l0084;
-        a = x;
-        ram[RAM_EDIT_BUFFER + y] = a;
-        y++;
-    } while (y < MAX_LINE_LENGTH);
-loop_caea5:
+    //     sty l0084
+    //     ldx #0x10
+    //     tya
+    //     clc
+    //     adc input_buffer_ptr+1
+    //     bcs caeb7
+    //     tay
+    //     cpy #0x84
+    //     bcs caeb7
+    //     lda (current_edit_line_ptr),y
+    //     tax
+    // caeb7:
+    //     ldy l0084
+    //     txa
+    //     sta (current_edit_line_ptr),y
+    //     iny
+    //     cpy #0x84
     //     bcc loop_caea5
     // return_78:
     //     rts
+    int copy_len = MAX_LINE_LENGTH - (int)xpos - (int)l0080;
+    if (copy_len > 0)
+    {
+        memmove(&ram[RAM_EDIT_BUFFER + xpos],
+            &ram[RAM_EDIT_BUFFER + xpos + l0080],
+            (size_t)copy_len);
+        memset(&ram[RAM_EDIT_BUFFER + xpos + copy_len],
+            0x10,
+            MAX_LINE_LENGTH - xpos - copy_len);
+    }
+    else
+    {
+        memset(&ram[RAM_EDIT_BUFFER + xpos], 0x10, MAX_LINE_LENGTH - xpos);
+    }
+    return;
 }
 
 static uint8_t enter_printable_character(void)
@@ -4803,26 +4813,28 @@ cae4d:
     goto loop_cae37;
 
     // cae52:
-cae52:
     //     lda (current_edit_line_ptr),y
-    a = ram[RAM_EDIT_BUFFER + y];
     //     sty l0084
-    l0084 = y;
     //     ldy l0081
-    y = l0081;
     //     beq cae5c
-    if (!(y == 0))
-    {
-        ram[RAM_EDIT_BUFFER + y] = a;
-    }
+    //     sta (current_edit_line_ptr),y
+    // cae5c:
     //     ldy l0084
-    y = l0084;
     //     cpy xpos
+    //     bne cae27
+    // (byte shift consolidated into a single memmove)
+cae52:
     if (y != xpos)
         goto cae27;
+    int copy_len = MAX_LINE_LENGTH - (int)xpos - (int)l0080;
+    if (copy_len > 0)
+        memmove(&ram[RAM_EDIT_BUFFER + xpos + l0080],
+            &ram[RAM_EDIT_BUFFER + xpos],
+            (size_t)copy_len);
     //     clc
     flags &= ~FLAG_C;
     //     rts
+    return;
 }
 
 void set_marker_to_here(uint8_t x)
