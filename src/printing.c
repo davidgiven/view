@@ -2515,6 +2515,9 @@ c8f0d:
 
 static void print_loop(void)
 {
+    addr_t tmp67;
+    addr_t tmp89;
+
     // print_loop
     // c8f30:
     while (1)
