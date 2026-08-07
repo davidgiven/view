@@ -1661,7 +1661,6 @@ void render_number_to_screen(uint16_t val)
     //     stx ((uint8_t*)&tmp89)[0]
     tmp89 = val;
     //     lda #<(bdos_print_char)
-    a = (uint8_t)((uintptr_t)&print_char_via_putchar & 0xff);
     //     ldy #>(bdos_print_char)
     // Fall through to render_number_to_callback in original 6502
     render_number_to_callback(tmp89, print_char_via_putchar);
@@ -3705,6 +3704,7 @@ return_29:; // fallthrough to rts
 static void copy_header_footer_text(void)
 {
     uint8_t a;
+    uint8_t y = 0;
 
     // sub_c93c8
     // Pseudocode: Copies header/footer text to output_buffer, expanding
@@ -3714,7 +3714,6 @@ static void copy_header_footer_text(void)
     //     ldx #0
     x = 0;
     //     ldy #0
-    y = 0;
     set_flags(&flags, y); // Z live
     //     sty l0081
     l0081 = y;

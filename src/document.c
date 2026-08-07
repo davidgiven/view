@@ -787,7 +787,7 @@ uint8_t initialise_document(void)
     ram[tmp01 + y] = 0x0d;
     //     ldy #0xff
     //     lda #<(just_before_current_ruler_buffer)
-    a = (uint8_t)(RAM_JUST_BEFORE_RULER_BUF & 0xff);
+    uint8_t a = (uint8_t)(RAM_JUST_BEFORE_RULER_BUF & 0xff);
     //     sta (oshwm),y
     ram[oshwm + 0xff] = a;
     //     dey                                                               ;

@@ -1031,8 +1031,12 @@ def analyze_files(files):
                 else:
                     cd = callee_info.get('cached_defs', callee_info['defs'])
                     cu = callee_info.get('cached_uses', callee_info['uses'])
-                    all_defs.update(cd - callee_params)
-                    all_uses.update(cu - callee_params)
+                    callee_locals = callee_info.get('local_decls', set())
+                    # Callee locals/params shadow the globals; they must not
+                    # count as the callee's global defs/uses (and hence must
+                    # not appear in the callee's live_out seen by callers).
+                    all_defs.update(cd - callee_params - callee_locals)
+                    all_uses.update(cu - callee_params - callee_locals)
             old_d = info.get('cached_defs')
             old_u = info.get('cached_uses')
             if all_defs != old_d or all_uses != old_u:
@@ -1165,7 +1169,13 @@ def analyze_files(files):
                     passed_to_callees |= (callee_info.get('live_in', set()) - callee_params)
                     callee_defs = callee_info.get('defs', set())
                     callee_locals = callee_info.get('local_decls', set())
-                    passed_to_callees |= (callee_defs - callee_locals - callee_params)
+                    callee_live_out = callee_info.get('live_out', set())
+                    # The callee's live_out is an interface produced by the
+                    # callee (possibly transitively through its own callees).
+                    # Such registers must not be reported as scratch of the
+                    # caller.  Unioning with direct defs keeps dead-but-defined
+                    # registers out of scratch too.
+                    passed_to_callees |= ((callee_defs | callee_live_out) - callee_locals - callee_params)
 
         globals_used_locally = ((local_defs & local_uses) - live_in - live_out - passed_to_callees - local_decls_func)
         globals_used_locally = {v for v in globals_used_locally if not v.startswith('flags:')}

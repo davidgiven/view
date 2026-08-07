@@ -3174,7 +3174,7 @@ static void sf3_delete_to_char_key(void)
 
         y--;
 
-        x = y - start_x;
+        uint8_t x = y - start_x;
 
         delete_edit_buffer_bytes_at_xpos(x);
     }
@@ -4169,9 +4169,8 @@ static void reset_area_to_marks_1_2(void)
     // doc_ptr1
 
     //     lda #0x31 ; '1'
-    a = 0x31;
     //     jsr lookup_marker
-    lookup_marker(a);
+    lookup_marker(0x31);
     //     bcs return_76
     if (flags & FLAG_C)
         return;
@@ -4179,15 +4178,14 @@ static void reset_area_to_marks_1_2(void)
     if (flags & FLAG_Z)
         goto cad45;
     //     lda __begin_pointer_array,x
-    a = ((uint8_t*)markers_array)[x];
+    uint8_t a = ((uint8_t*)markers_array)[x];
     //     sta area_start_ptr
     area_start_ptr = (uint16_t)((uint8_t*)markers_array)[x + 1] << 8 | a;
     //     lda markers_array+1,x
     //     sta area_start_ptr+1
     //     lda #0x32 ; '2'
-    a = 0x32;
     //     jsr lookup_marker
-    lookup_marker(a);
+    lookup_marker(0x32);
     //     bcs return_76
     if (flags & FLAG_C)
         return;
@@ -8567,7 +8565,7 @@ ca8ed:
     //     sta ((uint8_t*)&tmp67)[1]
     tmp67 = current_format_line_ptr;
     //     ldx l0083
-    x = l0083;
+    uint8_t x = l0083;
     //     stx l003b
     l003b = x;
 
