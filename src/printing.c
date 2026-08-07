@@ -1858,6 +1858,8 @@ void display_not_enough_memory(void)
 
 static void microspace_word_processor(void)
 {
+    addr_t tmp89;
+
     // microspace_word_processor
     // Pseudocode: Processes words for microspaced justification during printing
 
@@ -2359,7 +2361,7 @@ void parse_optional_filename_from_command(void)
     if (flags & FLAG_Z)
         return; // returns Z=1 → no filename
     //     ldx #0
-    x = 0;
+    uint8_t x = 0;
     while (1)
     {
         a = input_buffer[y];

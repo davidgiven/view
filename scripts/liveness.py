@@ -1125,57 +1125,69 @@ def analyze_files(files):
         except Exception:
             flines = []
 
+        def _process_callee(callee_name, line_num):
+            """Add a callee's register-convention inputs/outputs to
+            passed_to_callees."""
+            nonlocal passed_to_callees
+            if not callee_name or callee_name in INLINE_HELPERS:
+                return
+            if line_num > 0 and line_num <= len(flines):
+                sl = flines[line_num - 1].strip()
+            else:
+                sl = ''
+            if sl.startswith('//') or sl == '':
+                sl = ''
+            callee_params = func_params.get(callee_name, set())
+            # Variables passed as call arguments.  Arguments matching the
+            # callee's explicit parameters are copied by value into the
+            # callee's own locals, so the caller's global is just a scratch
+            # temporary, not consumed by the callee.  Only non-parameter
+            # arguments (register-convention globals) are consumed here.
+            for var in TRACKED_VARS:
+                if var in local_decls_func or var in callee_params:
+                    continue
+                if re.search(r'(?<!\w)' + var + r'(?!\w)', sl):
+                    if not re.search(r'\b' + var + r'\s*=', sl):
+                        passed_to_callees.add(var)
+            # Callee's defs, live_in and live_out
+            callee_info = local_info.get(callee_name)
+            if callee_info:
+                passed_to_callees |= (callee_info.get('live_in', set()) - callee_params)
+                callee_defs = callee_info.get('defs', set())
+                callee_locals = callee_info.get('local_decls', set())
+                callee_live_out = callee_info.get('live_out', set())
+                # The callee's live_out is an interface produced by the
+                # callee (possibly transitively through its own callees).
+                # Such registers must not be reported as scratch of the
+                # caller.  Unioning with direct defs keeps dead-but-defined
+                # registers out of scratch too.
+                passed_to_callees |= ((callee_defs | callee_live_out) - callee_locals - callee_params)
+
         stmts = []
         for child in cursor.get_children():
             if child.kind == clang.cindex.CursorKind.COMPOUND_STMT:
                 stmts = _collect_top_stmts(child)
                 break
 
+        # Top-level CALL_EXPR statements (catches calls in if/while/for
+        # conditions, which the line-based detect_call skips).
         for line_num, stmt in stmts:
-            if line_num > 0 and line_num <= len(flines):
-                sl = flines[line_num - 1].strip()
-            else:
-                sl = ''
-            if sl.startswith('//') or sl == '':
+            if stmt.kind != clang.cindex.CursorKind.CALL_EXPR:
                 continue
-
+            children = list(stmt.get_children())
             callee_name = None
-            if stmt.kind == clang.cindex.CursorKind.CALL_EXPR:
-                children = list(stmt.get_children())
-                if children and children[0].kind == clang.cindex.CursorKind.DECL_REF_EXPR:
-                    callee_name = children[0].spelling
-                elif children and children[0].kind == clang.cindex.CursorKind.UNEXPOSED_EXPR:
-                    gc = list(children[0].get_children())
-                    if gc and gc[0].kind == clang.cindex.CursorKind.DECL_REF_EXPR:
-                        callee_name = gc[0].spelling
+            if children and children[0].kind == clang.cindex.CursorKind.DECL_REF_EXPR:
+                callee_name = children[0].spelling
+            elif children and children[0].kind == clang.cindex.CursorKind.UNEXPOSED_EXPR:
+                gc = list(children[0].get_children())
+                if gc and gc[0].kind == clang.cindex.CursorKind.DECL_REF_EXPR:
+                    callee_name = gc[0].spelling
+            _process_callee(callee_name, line_num)
 
-            if callee_name and callee_name not in INLINE_HELPERS:
-                callee_params = func_params.get(callee_name, set())
-                # Variables passed as call arguments.  Arguments matching the
-                # callee's explicit parameters are copied by value into the
-                # callee's own locals, so the caller's global is just a scratch
-                # temporary, not consumed by the callee.  Only non-parameter
-                # arguments (register-convention globals) are consumed here.
-                for var in TRACKED_VARS:
-                    if var in local_decls_func or var in callee_params:
-                        continue
-                    if re.search(r'(?<!\w)' + var + r'(?!\w)', sl):
-                        if not re.search(r'\b' + var + r'\s*=', sl):
-                            passed_to_callees.add(var)
-
-                # Callee's defs and params
-                callee_info = local_info.get(callee_name)
-                if callee_info:
-                    passed_to_callees |= (callee_info.get('live_in', set()) - callee_params)
-                    callee_defs = callee_info.get('defs', set())
-                    callee_locals = callee_info.get('local_decls', set())
-                    callee_live_out = callee_info.get('live_out', set())
-                    # The callee's live_out is an interface produced by the
-                    # callee (possibly transitively through its own callees).
-                    # Such registers must not be reported as scratch of the
-                    # caller.  Unioning with direct defs keeps dead-but-defined
-                    # registers out of scratch too.
-                    passed_to_callees |= ((callee_defs | callee_live_out) - callee_locals - callee_params)
+        # Line-based call sites (catches calls nested in initializers and
+        # larger expressions that are not top-level CALL_EXPR statements).
+        for line_num, callee_name, _args in info['call_sites']:
+            _process_callee(callee_name, line_num)
 
         globals_used_locally = ((local_defs & local_uses) - live_in - live_out - passed_to_callees - local_decls_func)
         globals_used_locally = {v for v in globals_used_locally if not v.startswith('flags:')}

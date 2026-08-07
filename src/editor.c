@@ -5902,6 +5902,8 @@ static void home_cursor(void)
 
 void justify_edit_buffer(void)
 {
+    addr_t tmp89;
+
     // Pseudocode: Word-spacing justification: distributes extra spaces between
     // words
 
