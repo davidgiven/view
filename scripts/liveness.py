@@ -116,6 +116,33 @@ def parse_file(filepath):
         _parse_cache[filepath] = tu
     return _parse_cache[filepath]
 
+# Source file line cache: the source files never change during an analysis,
+# so read each once (avoids per-statement open()/readlines()).
+_line_cache = {}
+def get_source_lines(filepath):
+    if filepath not in _line_cache:
+        with open(filepath) as f:
+            _line_cache[filepath] = f.readlines()
+    return _line_cache[filepath]
+
+# Per-statement analysis caches (stable across fixpoint iterations):
+#   _stmts_cache[(file, funcname)] -> list of (line, cursor)
+#   _analyze_cache[(file, funcname, line)] -> (defs, uses)
+_stmts_cache = {}
+_analyze_cache = {}
+
+# Children cache: the parse tree is stable (kept alive by _parse_cache), so the
+# children of a node are the same across the repeated backward/forward walks.
+# Cursor.__hash__ is the underlying libclang pointer, stable per node.
+_children_cache = {}
+def _get_children(cursor):
+    key = hash(cursor)
+    children = _children_cache.get(key)
+    if children is None:
+        children = list(cursor.get_children())
+        _children_cache[key] = children
+    return children
+
 # ─── Flag ops from source text (kept: FLAG_X macros expand in AST) ─
 def get_flag_defs_uses(line_text):
     defs = set()
@@ -189,7 +216,7 @@ def analyze_stmt(cursor, local_decls, context='use'):
     if ck == clang.cindex.CursorKind.VAR_DECL:
         if name and name in TRACKED_VARS:
             local_decls.add(name)
-        for child in cursor.get_children():
+        for child in _get_children(cursor):
             cd, cu = analyze_stmt(child, local_decls, 'use')
             d.update(cd); u.update(cu)
         return d, u
@@ -203,7 +230,7 @@ def analyze_stmt(cursor, local_decls, context='use'):
     # ── Binary operators ──
     if ck == clang.cindex.CursorKind.BINARY_OPERATOR:
         op = cursor.spelling
-        children = list(cursor.get_children())
+        children = list(_get_children(cursor))
         if op == '=':
             if len(children) >= 2:
                 ld, lu = analyze_stmt(children[0], local_decls, 'def')
@@ -226,13 +253,12 @@ def analyze_stmt(cursor, local_decls, context='use'):
 
     # ── Unary operators ──
     if ck == clang.cindex.CursorKind.UNARY_OPERATOR:
-        children = list(cursor.get_children())
+        children = list(_get_children(cursor))
         if not children:
             return d, u
         # Check source text for ++/-- (postfix operators)
         try:
-            with open(cursor.location.file.name) as _sf:
-                _line = _sf.readlines()[cursor.location.line - 1]
+            _line = get_source_lines(cursor.location.file.name)[cursor.location.line - 1]
         except Exception:
             _line = ''
         stripped_line = _line.strip()
@@ -243,7 +269,7 @@ def analyze_stmt(cursor, local_decls, context='use'):
 
     # ── ArraySubscriptExpr ──
     if ck == clang.cindex.CursorKind.ARRAY_SUBSCRIPT_EXPR:
-        children = list(cursor.get_children())
+        children = list(_get_children(cursor))
         if children:
             cd, cu = analyze_stmt(children[0], local_decls, context)
             d.update(cd); u.update(cu)
@@ -256,7 +282,7 @@ def analyze_stmt(cursor, local_decls, context='use'):
     if ck in (clang.cindex.CursorKind.CSTYLE_CAST_EXPR,
               clang.cindex.CursorKind.PAREN_EXPR,
               clang.cindex.CursorKind.UNEXPOSED_EXPR):
-        children = list(cursor.get_children())
+        children = list(_get_children(cursor))
         if not children:
             return d, u
         # Skip TYPE_REF children (type references like `uint16_t` in casts)
@@ -268,7 +294,7 @@ def analyze_stmt(cursor, local_decls, context='use'):
 
     # ── CallExpr ──
     if ck == clang.cindex.CursorKind.CALL_EXPR:
-        children = list(cursor.get_children())
+        children = list(_get_children(cursor))
         # First child is the callee expression
         callee_name = None
         start_idx = 0
@@ -279,7 +305,7 @@ def analyze_stmt(cursor, local_decls, context='use'):
             # Unwrap UNEXPOSED_EXPR to find the actual name
             callee_cursor = children[0]
             if callee_cursor.kind == clang.cindex.CursorKind.UNEXPOSED_EXPR:
-                gc = list(callee_cursor.get_children())
+                gc = list(_get_children(callee_cursor))
                 if gc and gc[0].kind == clang.cindex.CursorKind.DECL_REF_EXPR:
                     callee_name = gc[0].spelling
             else:
@@ -315,7 +341,7 @@ def analyze_stmt(cursor, local_decls, context='use'):
         # line walker, so attributing their defs/uses to the control-flow line
         # breaks ordering (a use inside an else-branch would look live-in).
         # Only process the condition/value expressions and non-compound bodies.
-        for child in cursor.get_children():
+        for child in _get_children(cursor):
             if child.kind == clang.cindex.CursorKind.COMPOUND_STMT:
                 continue
             cd, cu = analyze_stmt(child, local_decls, 'use')
@@ -324,7 +350,7 @@ def analyze_stmt(cursor, local_decls, context='use'):
 
     # ── CompoundStmt: recurse ──
     if ck == clang.cindex.CursorKind.COMPOUND_STMT:
-        for child in cursor.get_children():
+        for child in _get_children(cursor):
             cd, cu = analyze_stmt(child, local_decls, 'use')
             d.update(cd); u.update(cu)
         return d, u
@@ -333,14 +359,14 @@ def analyze_stmt(cursor, local_decls, context='use'):
     if ck in (clang.cindex.CursorKind.LABEL_STMT,
               clang.cindex.CursorKind.CASE_STMT,
               clang.cindex.CursorKind.DEFAULT_STMT):
-        for child in cursor.get_children():
+        for child in _get_children(cursor):
             cd, cu = analyze_stmt(child, local_decls, context)
             d.update(cd); u.update(cu)
         return d, u
 
     # ── DeclStmt: group of declarations ──
     if ck == clang.cindex.CursorKind.DECL_STMT:
-        for child in cursor.get_children():
+        for child in _get_children(cursor):
             cd, cu = analyze_stmt(child, local_decls, 'use')
             d.update(cd); u.update(cu)
         return d, u
@@ -353,7 +379,7 @@ def analyze_stmt(cursor, local_decls, context='use'):
         return d, u
 
     # ── Default: recurse into children ──
-    for child in cursor.get_children():
+    for child in _get_children(cursor):
         cd, cu = analyze_stmt(child, local_decls, context)
         d.update(cd); u.update(cu)
     return d, u
@@ -387,12 +413,12 @@ def _top_stmts_recurse(cursor, result):
         result.append((cursor.location.line, cursor))
         return
     if ck == clang.cindex.CursorKind.DECL_STMT:
-        for ch in cursor.get_children():
+        for ch in _get_children(cursor):
             _top_stmts_recurse(ch, result)
         return
     if ck == clang.cindex.CursorKind.LABEL_STMT:
         result.append((cursor.location.line, cursor))
-        for ch in cursor.get_children():
+        for ch in _get_children(cursor):
             _top_stmts_recurse(ch, result)
         return
     if ck in (clang.cindex.CursorKind.GOTO_STMT,
@@ -403,7 +429,7 @@ def _top_stmts_recurse(cursor, result):
         result.append((cursor.location.line, cursor))
         return
     if ck == clang.cindex.CursorKind.COMPOUND_STMT:
-        for ch in cursor.get_children():
+        for ch in _get_children(cursor):
             _top_stmts_recurse(ch, result)
         return
     if ck in (clang.cindex.CursorKind.IF_STMT,
@@ -414,19 +440,19 @@ def _top_stmts_recurse(cursor, result):
               clang.cindex.CursorKind.CASE_STMT,
               clang.cindex.CursorKind.DEFAULT_STMT):
         result.append((cursor.location.line, cursor))
-        for ch in cursor.get_children():
+        for ch in _get_children(cursor):
             _top_stmts_recurse(ch, result)
         return
     # Expression statements: collect, then recurse into children
     result.append((cursor.location.line, cursor))
-    for ch in cursor.get_children():
+    for ch in _get_children(cursor):
         _top_stmts_recurse(ch, result)
 
 
 def get_func_params_from_ast(func_cursor):
     """Extract parameter names that are tracked variables."""
     params = set()
-    for child in func_cursor.get_children():
+    for child in _get_children(func_cursor):
         if child.kind == clang.cindex.CursorKind.PARM_DECL:
             if child.spelling in REGISTERS:
                 params.add(child.spelling)
@@ -453,14 +479,14 @@ def get_local_info_ast(func_cursor, callee_live_out=None, callee_live_in=None):
     local_decls = set()
 
     # Add parameters to local_decls and defined_so_far
-    for child in func_cursor.get_children():
+    for child in _get_children(func_cursor):
         if child.kind == clang.cindex.CursorKind.PARM_DECL:
             if child.spelling in TRACKED_VARS:
                 local_decls.add(child.spelling)
                 defined_so_far.add(child.spelling)
 
     # Get the function body (compound statement)
-    body_children = list(func_cursor.get_children())
+    body_children = list(_get_children(func_cursor))
     body = None
     for child in body_children:
         if child.kind == clang.cindex.CursorKind.COMPOUND_STMT:
@@ -472,13 +498,26 @@ def get_local_info_ast(func_cursor, callee_live_out=None, callee_live_in=None):
 
     # Collect the source lines for this function for flag regex
     try:
-        with open(func_cursor.location.file.name) as f:
-            source_lines = f.readlines()
+        source_lines = get_source_lines(func_cursor.location.file.name)
     except Exception:
         source_lines = []
 
     # Walk body statements
-    stmts = _collect_top_stmts(body)
+    # The AST is walked repeatedly across fixpoint iterations, but each
+    # statement's defs/uses are deterministic given (function, line).  Cache
+    # the per-statement analysis and the per-function statement list.
+    funcname = func_cursor.spelling
+    try:
+        filename = func_cursor.location.file.name
+    except Exception:
+        filename = ''
+    stmts_key = (filename, funcname)
+    cached_stmts = _stmts_cache.get(stmts_key)
+    if cached_stmts is not None:
+        stmts = cached_stmts
+    else:
+        stmts = _collect_top_stmts(body)
+        _stmts_cache[stmts_key] = stmts
 
     for line_num, stmt in stmts:
         if line_num > 0 and line_num <= len(source_lines):
@@ -493,7 +532,13 @@ def get_local_info_ast(func_cursor, callee_live_out=None, callee_live_in=None):
         u = set()
 
         # AST-based def/use analysis for tracked variables
-        cd, cu = analyze_stmt(stmt, local_decls, 'use')
+        akey = (filename, funcname, line_num)
+        cached = _analyze_cache.get(akey)
+        if cached is not None:
+            cd, cu = cached
+        else:
+            cd, cu = analyze_stmt(stmt, local_decls, 'use')
+            _analyze_cache[akey] = (cd, cu)
         d.update(cd)
         u.update(cu)
 
@@ -569,7 +614,7 @@ def _backward_stmt(cur, live, backward_needs, local_info, func_params,
 
     # Compound statement: process children in reverse order.
     if ck == clang.cindex.CursorKind.COMPOUND_STMT:
-        for ch in reversed(list(cur.get_children())):
+        for ch in reversed(list(_get_children(cur))):
             live = _backward_stmt(ch, live, backward_needs, local_info,
                                   func_params, local_decls, source_lines,
                                   func_live_out)
@@ -577,7 +622,7 @@ def _backward_stmt(cur, live, backward_needs, local_info, func_params,
 
     # if / else: merge the two branches at the condition.
     if ck == clang.cindex.CursorKind.IF_STMT:
-        children = list(cur.get_children())
+        children = list(_get_children(cur))
         branches = children[1:]
         merged = set(live)
         for b in branches:
@@ -589,12 +634,12 @@ def _backward_stmt(cur, live, backward_needs, local_info, func_params,
 
     # switch: each case is an independent branch.
     if ck == clang.cindex.CursorKind.SWITCH_STMT:
-        children = list(cur.get_children())
+        children = list(_get_children(cur))
         merged = set(live)
         for ch in children:
             if ch.kind == clang.cindex.CursorKind.COMPOUND_STMT:
                 # process each case independently (do NOT thread linearly)
-                for case in ch.get_children():
+                for case in _get_children(ch):
                     merged |= _backward_stmt(case, set(live), backward_needs,
                                              local_info, func_params,
                                              local_decls, source_lines,
@@ -611,7 +656,7 @@ def _backward_stmt(cur, live, backward_needs, local_info, func_params,
     if ck in (clang.cindex.CursorKind.CASE_STMT,
               clang.cindex.CursorKind.DEFAULT_STMT,
               clang.cindex.CursorKind.LABEL_STMT):
-        for ch in cur.get_children():
+        for ch in _get_children(cur):
             live = _backward_stmt(ch, live, backward_needs, local_info,
                                   func_params, local_decls, source_lines,
                                   func_live_out)
@@ -622,7 +667,7 @@ def _backward_stmt(cur, live, backward_needs, local_info, func_params,
               clang.cindex.CursorKind.FOR_STMT,
               clang.cindex.CursorKind.DO_STMT):
         body_stmt = None
-        for ch in cur.get_children():
+        for ch in _get_children(cur):
             if ch.kind == clang.cindex.CursorKind.COMPOUND_STMT:
                 body_stmt = ch
                 break
@@ -689,17 +734,17 @@ def _find_call_expr_callees(cur):
     if ck == clang.cindex.CursorKind.COMPOUND_STMT:
         return
     if ck == clang.cindex.CursorKind.CALL_EXPR:
-        children = list(cur.get_children())
+        children = list(_get_children(cur))
         if children:
             c0 = children[0]
             if c0.kind == clang.cindex.CursorKind.DECL_REF_EXPR:
                 yield c0.spelling
             elif c0.kind == clang.cindex.CursorKind.UNEXPOSED_EXPR:
-                g = list(c0.get_children())
+                g = list(_get_children(c0))
                 if g and g[0].kind == clang.cindex.CursorKind.DECL_REF_EXPR:
                     yield g[0].spelling
         return
-    for ch in cur.get_children():
+    for ch in _get_children(cur):
         yield from _find_call_expr_callees(ch)
 
 
@@ -787,14 +832,14 @@ def _backward_plain(cur, live, backward_needs, local_info, func_params,
 
 def _callee_name_from_cursor(call_cursor):
     """Return the callee name of a CALL_EXPR cursor, or None."""
-    children = list(call_cursor.get_children())
+    children = list(_get_children(call_cursor))
     if not children:
         return None
     c0 = children[0]
     if c0.kind == clang.cindex.CursorKind.DECL_REF_EXPR:
         return c0.spelling
     if c0.kind == clang.cindex.CursorKind.UNEXPOSED_EXPR:
-        g = list(c0.get_children())
+        g = list(_get_children(c0))
         if g and g[0].kind == clang.cindex.CursorKind.DECL_REF_EXPR:
             return g[0].spelling
     return None
@@ -810,7 +855,7 @@ def _stmt_never_completes(cur, noreturn):
         return _callee_name_from_cursor(cur) in noreturn
     if ck == clang.cindex.CursorKind.COMPOUND_STMT:
         last = None
-        for ch in cur.get_children():
+        for ch in _get_children(cur):
             if ch.kind not in (clang.cindex.CursorKind.CASE_STMT,
                                clang.cindex.CursorKind.DEFAULT_STMT,
                                clang.cindex.CursorKind.LABEL_STMT):
@@ -819,7 +864,7 @@ def _stmt_never_completes(cur, noreturn):
             return False
         return _stmt_never_completes(last, noreturn)
     if ck == clang.cindex.CursorKind.IF_STMT:
-        children = list(cur.get_children())
+        children = list(_get_children(cur))
         if len(children) < 3:
             return False  # no else: the false path falls through
         return (_stmt_never_completes(children[1], noreturn) and
@@ -835,7 +880,7 @@ def _returns_without_noreturn_guard(cur, noreturn):
     if ck == clang.cindex.CursorKind.RETURN_STMT:
         return True
     if ck == clang.cindex.CursorKind.COMPOUND_STMT:
-        children = [ch for ch in cur.get_children()
+        children = [ch for ch in _get_children(cur)
                     if ch.kind not in (clang.cindex.CursorKind.CASE_STMT,
                                        clang.cindex.CursorKind.DEFAULT_STMT,
                                        clang.cindex.CursorKind.LABEL_STMT)]
@@ -850,7 +895,7 @@ def _returns_without_noreturn_guard(cur, noreturn):
                 if _returns_without_noreturn_guard(ch, noreturn):
                     return True
         return False
-    for ch in cur.get_children():
+    for ch in _get_children(cur):
         if _returns_without_noreturn_guard(ch, noreturn):
             return True
     return False
@@ -872,19 +917,18 @@ def backward_scan_ast(func_cursor, backward_needs, local_info, func_params, live
     if live_out_start is None:
         live_out_start = set()
     local_decls = set()
-    for child in func_cursor.get_children():
+    for child in _get_children(func_cursor):
         if child.kind == clang.cindex.CursorKind.PARM_DECL:
             if child.spelling in TRACKED_VARS:
                 local_decls.add(child.spelling)
 
     try:
-        with open(func_cursor.location.file.name) as f:
-            source_lines = f.readlines()
+        source_lines = get_source_lines(func_cursor.location.file.name)
     except Exception:
         source_lines = []
 
     # Get body statements in order
-    body_children = list(func_cursor.get_children())
+    body_children = list(_get_children(func_cursor))
     body = None
     for child in body_children:
         if child.kind == clang.cindex.CursorKind.COMPOUND_STMT:
@@ -957,7 +1001,7 @@ def analyze_files(files):
             tu = parse_file(filepath)
         except Exception:
             continue
-        for cursor in tu.cursor.get_children():
+        for cursor in _get_children(tu.cursor):
             if cursor.kind == clang.cindex.CursorKind.FUNCTION_DECL and cursor.is_definition():
                 name = cursor.spelling
                 if name not in all_funcs:
@@ -980,7 +1024,7 @@ def analyze_files(files):
             if name in NORETURN:
                 continue
             body = None
-            for ch in cursor.get_children():
+            for ch in _get_children(cursor):
                 if ch.kind == clang.cindex.CursorKind.COMPOUND_STMT:
                     body = ch
                     break
@@ -995,12 +1039,12 @@ def analyze_files(files):
 
         # Compute local declarations for this function
         local_decls = set()
-        for child in cursor.get_children():
+        for child in _get_children(cursor):
             if child.kind == clang.cindex.CursorKind.PARM_DECL:
                 if child.spelling in TRACKED_VARS:
                     local_decls.add(child.spelling)
         # Walk the body for VarDecl
-        for child in cursor.get_children():
+        for child in _get_children(cursor):
             if child.kind == clang.cindex.CursorKind.COMPOUND_STMT:
                 _collect_vardecls(child, local_decls)
 
@@ -1125,8 +1169,7 @@ def analyze_files(files):
         from_callees = set()
         cursor = all_funcs[name][1]
         try:
-            with open(all_funcs[name][0]) as f:
-                flines = f.readlines()
+            flines = get_source_lines(all_funcs[name][0])
         except Exception:
             flines = []
 
@@ -1163,17 +1206,26 @@ def analyze_files(files):
                 from_callees |= (callee_live_out - callee_locals - callee_params)
 
         stmts = []
-        for child in cursor.get_children():
-            if child.kind == clang.cindex.CursorKind.COMPOUND_STMT:
-                stmts = _collect_top_stmts(child)
-                break
+        try:
+            fname = cursor.location.file.name
+        except Exception:
+            fname = ''
+        cached_stmts = _stmts_cache.get((fname, name))
+        if cached_stmts is not None:
+            stmts = cached_stmts
+        else:
+            for child in _get_children(cursor):
+                if child.kind == clang.cindex.CursorKind.COMPOUND_STMT:
+                    stmts = _collect_top_stmts(child)
+                    break
+            _stmts_cache[(fname, name)] = stmts
 
         # Top-level CALL_EXPR statements (catches calls in if/while/for
         # conditions, which the line-based detect_call skips).
         for line_num, stmt in stmts:
             if stmt.kind != clang.cindex.CursorKind.CALL_EXPR:
                 continue
-            children = list(stmt.get_children())
+            children = list(_get_children(stmt))
             callee_name = None
             if children and children[0].kind == clang.cindex.CursorKind.DECL_REF_EXPR:
                 callee_name = children[0].spelling
@@ -1250,7 +1302,7 @@ def analyze_files(files):
 
 def _collect_vardecls(cursor, local_decls):
     """Recursively collect VarDecl names from AST."""
-    for child in cursor.get_children():
+    for child in _get_children(cursor):
         if child.kind == clang.cindex.CursorKind.VAR_DECL:
             if child.spelling in TRACKED_VARS:
                 local_decls.add(child.spelling)
