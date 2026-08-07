@@ -764,7 +764,7 @@ static void microspace_cmd(void)
     //     php
     uint8_t saved_flags = flags;
     //     ldx #0x0a
-    x = 0x0a;
+    uint8_t x = 0x0a;
     //     plp
     flags = saved_flags;
     //     beq c8608
@@ -1079,7 +1079,7 @@ c832d:
     //     and #0xdf
     a &= 0xdf;
     //     ldx #0
-    x = 0;
+    uint8_t x = 0;
     //     cmp #0x59 ; 'Y'
     if (a == 0x59)
         goto c8349;
@@ -1147,7 +1147,7 @@ static void save_cmd_write_cmd(void)
         }
 
         //         ldx #0
-        x = 0;
+        uint8_t x = 0;
         //         zrepeat
         do
         {

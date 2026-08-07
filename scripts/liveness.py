@@ -1116,8 +1116,13 @@ def analyze_files(files):
         local_uses = info.get('uses', set())
         local_decls_func = info.get('local_decls', set())
 
-        # passed_to_callees
+        # passed_to_callees: register-convention inputs handed DOWN to the
+        # direct callees (what the caller must provide).
+        # from_callees: registers produced by the direct callees and read back
+        # (the callees' live_out, possibly transitive) -- the caller's upward
+        # interface, so never scratch of the caller.
         passed_to_callees = set()
+        from_callees = set()
         cursor = all_funcs[name][1]
         try:
             with open(all_funcs[name][0]) as f:
@@ -1126,9 +1131,8 @@ def analyze_files(files):
             flines = []
 
         def _process_callee(callee_name, line_num):
-            """Add a callee's register-convention inputs/outputs to
-            passed_to_callees."""
-            nonlocal passed_to_callees
+            """Classify a direct callee's register-convention interface."""
+            nonlocal passed_to_callees, from_callees
             if not callee_name or callee_name in INLINE_HELPERS:
                 return
             if line_num > 0 and line_num <= len(flines):
@@ -1149,19 +1153,14 @@ def analyze_files(files):
                 if re.search(r'(?<!\w)' + var + r'(?!\w)', sl):
                     if not re.search(r'\b' + var + r'\s*=', sl):
                         passed_to_callees.add(var)
-            # Callee's defs, live_in and live_out
+            # Callee's live_in (inputs the callee needs) and live_out (the
+            # registers the callee produces that the caller reads back).
             callee_info = local_info.get(callee_name)
             if callee_info:
-                passed_to_callees |= (callee_info.get('live_in', set()) - callee_params)
-                callee_defs = callee_info.get('defs', set())
                 callee_locals = callee_info.get('local_decls', set())
+                passed_to_callees |= (callee_info.get('live_in', set()) - callee_params)
                 callee_live_out = callee_info.get('live_out', set())
-                # The callee's live_out is an interface produced by the
-                # callee (possibly transitively through its own callees).
-                # Such registers must not be reported as scratch of the
-                # caller.  Unioning with direct defs keeps dead-but-defined
-                # registers out of scratch too.
-                passed_to_callees |= ((callee_defs | callee_live_out) - callee_locals - callee_params)
+                from_callees |= (callee_live_out - callee_locals - callee_params)
 
         stmts = []
         for child in cursor.get_children():
@@ -1189,7 +1188,7 @@ def analyze_files(files):
         for line_num, callee_name, _args in info['call_sites']:
             _process_callee(callee_name, line_num)
 
-        globals_used_locally = ((local_defs & local_uses) - live_in - live_out - passed_to_callees - local_decls_func)
+        globals_used_locally = ((local_defs & local_uses) - live_in - live_out - passed_to_callees - from_callees - local_decls_func)
         globals_used_locally = {v for v in globals_used_locally if not v.startswith('flags:')}
 
         summaries[name] = {
@@ -1199,6 +1198,7 @@ def analyze_files(files):
             'live_out': live_out,
             'locals': globals_used_locally,
             'consumed': set(),
+            'from_callees': from_callees,
             'file': info['file'],
             'calls': [(c, a) for _, c, a in info['call_sites']],
             'passed_to_callees': passed_to_callees,
@@ -1288,6 +1288,8 @@ def main():
                 print(f"    Scratch:  {format_vars(s['locals'])}")
             if s['consumed']:
                 print(f"    ToCallee: {format_vars(s['consumed'])}")
+            if s['from_callees']:
+                print(f"    FromCallees: {format_vars(s['from_callees'])}")
             if s['calls']:
                 print(f"    Calls:    {calls_str}")
 

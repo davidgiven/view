@@ -153,7 +153,7 @@ static void ce_fmt_cmd(void)
     if (!(flags & FLAG_C))
         return;
     //     txa
-    a = x;
+    uint8_t a = x;
 
     //     beq return_36
     if (a == 0)
@@ -223,7 +223,7 @@ static void rj_fmt_cmd(void)
         return;
     }
     //     txa
-    a = x;
+    uint8_t a = x;
 
     //     beq c9529
     if (a == 0)

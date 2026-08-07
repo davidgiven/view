@@ -478,7 +478,7 @@ int main(int argc, char* argv[])
 }
 
 // run_editor moved to editor.c
-static void read_next_command_byte(void)
+static uint8_t read_next_command_byte(uint8_t y)
 {
     // sub_c8310
     // sub_c8310:
@@ -492,12 +492,12 @@ static void read_next_command_byte(void)
     cmp(&flags, a, l007e); // Z live
     //     beq return_2
     if (flags & FLAG_Z)
-        return;
+        return y;
     //     cmp #0x0d
     cmp(&flags, a, 0x0d); // Z live
     // return_2:
     //     rts
-    return;
+    return y;
 }
 
 void redraw_and_write_back(addr_t ptr6)
@@ -576,7 +576,7 @@ static const uint8_t escaped_char_table[] = {
 static const uint8_t l83e0_table[] = {
     1, 9, 0x0d, 2, 0x0b, 0x1a, 0x1c, 0x1d, 0xff};
 
-static uint8_t expand_escaped_string(void)
+static uint8_t expand_escaped_string(uint8_t x, uint8_t y)
 {
     // expand_escaped_string
     // expand_escaped_string:
@@ -587,7 +587,7 @@ static uint8_t expand_escaped_string(void)
 c83a3:
     // c83a3:
     //     jsr sub_c8310
-    read_next_command_byte();
+    y = read_next_command_byte(y);
     //     beq c83da
     if (flags & FLAG_Z)
         goto c83da;
@@ -596,7 +596,7 @@ c83a3:
         goto c83ca;
     //     bne c83ca
     //     jsr sub_c8310
-    read_next_command_byte();
+    y = read_next_command_byte(y);
     //     beq c83da
     if (flags & FLAG_Z)
         goto c83da;
@@ -678,7 +678,7 @@ void process_cli_command(void)
     {
         y = input_buffer_offset;
         y++;
-        x = expand_escaped_string();
+        x = expand_escaped_string(x, y);
         l004a = x;
     }
     // c8402:
@@ -724,9 +724,8 @@ void reset_command_parse_state(void)
     if (flags & FLAG_Z)
         return;
     //     ldx #0
-    x = 0;
     //     jsr expand_escaped_string
-    x = expand_escaped_string();
+    x = expand_escaped_string(0, y);
     //     stx l007a
     l007a = x;
     //     cpx #0
