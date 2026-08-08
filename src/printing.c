@@ -27,16 +27,16 @@ void display_not_enough_memory(void);
 static void microspace_word_processor(void);
 static void nested_macro_error(void);
 void parse_decimal_number(void);
-bool parse_optional_filename_from_command(void);
+bool parse_optional_filename_from_command(struct scan_state* scan);
 static void print_char_x_times(uint8_t a, uint8_t x);
-void print_document(void);
+void print_document(struct scan_state* scan);
 static void print_loop(void);
 static void print_newline(void);
 static void print_vertical_space(uint8_t x);
 void read_block_from_file(void);
 static void render_header_or_footer(uint8_t y);
 static void render_new_page(void);
-void scan_input_buffer(void);
+bool scan_input_buffer(struct scan_state* state);
 static void start_microspacing_if_active(uint8_t a);
 static void emit_microspacing_spaces(uint8_t x);
 static void prepare_output_line(void);
@@ -2363,7 +2363,7 @@ void parse_decimal_number(void)
     set_flags(&flags, had_digits); // Z live
 }
 
-bool parse_optional_filename_from_command(void)
+bool parse_optional_filename_from_command(struct scan_state* scan)
 {
     // parse_optional_filename_from_command
     // Pseudocode: Parses optional filename from input buffer into
@@ -2371,21 +2371,20 @@ bool parse_optional_filename_from_command(void)
 
     // parse_optional_filename_from_command:
     //     jsr sub_c8e33
-    scan_input_buffer();
     //     beq return_19
-    if (flags & FLAG_Z)
+    if (scan_input_buffer(scan))
         return false; // no filename
     //     ldx #0
     uint8_t x = 0;
     while (1)
     {
-        a = input_buffer[y];
-        if (a == 0x0d)
+        scan->ch = input_buffer[scan->pos];
+        if (scan->ch == 0x0d)
             break;
-        y++;
-        if (a == l007e)
+        scan->pos++;
+        if (scan->ch == l007e)
             break;
-        filename_buffer[x] = a;
+        filename_buffer[x] = scan->ch;
         x++;
         if (x == MAX_COMMAND_LENGTH - 1)
         {
@@ -2395,11 +2394,11 @@ bool parse_optional_filename_from_command(void)
         }
     }
     //     lda #0x0d
-    a = 0x0d;
+    // (A = 0x0d; passed inline to c8f29_sub by print_document)
     //     sta filename_buffer,x
     filename_buffer[x] = 0x0d;
     //     sty input_buffer_offset
-    input_buffer_offset = y;
+    input_buffer_offset = scan->pos;
     // return_20:
     //     rts
     return true;
@@ -2424,7 +2423,7 @@ return_32:
     return;
 }
 
-void print_document(void)
+void print_document(struct scan_state* scan)
 {
     // print_document
     // print_document:
@@ -2485,9 +2484,8 @@ void print_document(void)
     //     jsr find_margins_of_current_ruler_buffer
     find_margins_of_current_ruler_buffer();
     //     jsr sub_c8e33
-    scan_input_buffer();
     //     bne c8f0d
-    if (!(flags & FLAG_Z))
+    if (!scan_input_buffer(scan))
         goto c8f0d;
     //     inc printing_from_file_flag
     printing_from_file_flag++;
@@ -2499,9 +2497,10 @@ void print_document(void)
 c8f0d:
     //     jsr parse_optional_filename_from_command
     //     bne c8f29
-    if (parse_optional_filename_from_command())
+    if (parse_optional_filename_from_command(scan))
     {
-        c8f29_sub(a);
+        // A = 0x0d (set by parse_optional_filename_from_command's lda #&0d)
+        c8f29_sub(0x0d);
         print_loop();
         goto c8f0d;
     }
@@ -3158,49 +3157,66 @@ c92d4:
     return;
 }
 
-void scan_input_buffer(void)
+/**
+ * scan_input_buffer: Scans input_buffer from input_buffer_offset looking for
+ * the next character that is not the delimiter l007e.
+ *
+ * Advances the scan position past any run of delimiter characters and stops at
+ * the first character that differs from l007e (a "mark"/argument character) or
+ * at the end of the command line.
+ *
+ * @param state On return holds the scan result (see struct scan_state):
+ *              state->ch is the character at the scan position (the first
+ *              non-delimiter character, or 0x0d if the end of the line was
+ *              reached first, or l007e itself when l007e == 0x0d); state->pos
+ * is its index into input_buffer (input_buffer_offset advanced past any
+ * delimiters).
+ * @return true if the Z flag would be set, i.e. no non-delimiter character was
+ *         found (no mark); false if a non-delimiter character was found.
+ *
+ * Note: input_buffer_offset itself is not modified; callers advance it once the
+ * mark position is known (e.g. parse_mark_from_command does state->pos++ then
+ * input_buffer_offset = state->pos).
+ */
+bool scan_input_buffer(struct scan_state* state)
 {
     // sub_c8e33
     // sub_c8e33:
     //     lda l007e
-    a = l007e;
     //     cmp #0x0d
     //     beq return_20
-    if (a == 0x0d)
+    state->pos = input_buffer_offset;
+    state->ch = l007e;
+    if (state->ch == 0x0d)
     {
-        set_flags(&flags, 0); // Z set
-        return;
+        return true; // Z set (no mark)
     }
     //     ldy input_buffer_offset
-    y = input_buffer_offset;
     // loop_c8e3b:
     while (1)
     {
         //     lda input_buffer,y
-        a = input_buffer[y];
+        state->ch = input_buffer[state->pos];
         //     cmp #0x0d
         //     beq return_20
-        if (a == 0x0d)
+        if (state->ch == 0x0d)
         {
-            set_flags(&flags, 0); // Z set
-            return;
+            return true; // Z set (no mark)
         }
         //     cmp l007e
         //     bne return_20
-        if (a != l007e)
+        if (state->ch != l007e)
         {
-            set_flags(&flags, 1); // Z clear (mark found)
-            return;
+            return false; // Z clear (mark found)
         }
         //     iny
-        y++;
+        state->pos++;
         //     bne loop_c8e3b
-        if (y == 0)
+        if (state->pos == 0)
             break;
     }
-    set_flags(&flags, y); // Z live
     //     rts (falls through to check_not_continuous_editing in 6502)
-    return;
+    return true; // Z set (scan position wrapped past the buffer)
 }
 
 static void start_microspacing_if_active(uint8_t a)

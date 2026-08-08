@@ -55,13 +55,13 @@ jmp_buf env;
 
 // Forward declarations
 void check_continuous_editing(void);
-void parse_filename_from_command(void);
+void parse_filename_from_command(struct scan_state* scan);
 
 command_prefix_t check_for_command_prefix(uint8_t ch);
 
-void reset_command_parse_state(void);
+void reset_command_parse_state(struct scan_state* scan);
 void init_document_pointers(void);
-void process_cli_command(void);
+void process_cli_command(struct scan_state* scan);
 void check_area_memory(addr_t ptr2);
 void redraw_and_write_back(void);
 void setup_area_pointers(addr_t ptr2);
@@ -669,19 +669,18 @@ c83da:
     //     rts
 }
 
-void process_cli_command(void)
+void process_cli_command(struct scan_state* scan)
 {
     // sub_c83f0
     // sub_c83f0:
     //     jsr sub_c8412
-    reset_command_parse_state();
+    reset_command_parse_state(scan);
     //     beq c8410
     if (flags & FLAG_Z)
         goto c8410;
     //     jsr sub_c8e33
-    scan_input_buffer();
     //     beq c8402
-    if (!(flags & FLAG_Z))
+    if (!scan_input_buffer(scan))
     {
         y = input_buffer_offset;
         y++;
@@ -690,7 +689,7 @@ void process_cli_command(void)
     }
     // c8402:
     //     jsr parse_marks_from_command
-    parse_marks_from_command();
+    parse_marks_from_command(scan);
     //     jsr sanitise_area
     area_status_t status = sanitise_area();
     //     sec
@@ -715,7 +714,7 @@ c8410:
     return;
 }
 
-void reset_command_parse_state(void)
+void reset_command_parse_state(struct scan_state* scan)
 {
     // sub_c8412
     // sub_c8412:
@@ -726,13 +725,12 @@ void reset_command_parse_state(void)
     //     stx l004a
     l004a = x;
     //     jsr sub_c8e33
-    scan_input_buffer();
     //     beq return_5
-    if (flags & FLAG_Z)
+    if (scan_input_buffer(scan))
         return;
     //     ldx #0
     //     jsr expand_escaped_string
-    x = expand_escaped_string(0, y);
+    x = expand_escaped_string(0, scan->pos);
     //     stx l007a
     l007a = x;
     //     cpx #0
@@ -1366,7 +1364,7 @@ static void compute_required_space_for_insertion(uint8_t a, uint8_t y)
     compute_space_common(a, y);
 }
 
-void parse_filename_from_command(void)
+void parse_filename_from_command(struct scan_state* scan)
 {
     // Pseudocode: Parses mandatory filename, calls bad_filename_error if
     // missing
@@ -1374,7 +1372,7 @@ void parse_filename_from_command(void)
     // parse_filename_from_command:
     //     jsr parse_optional_filename_from_command
     //     beq bad_filename_error  ; Z=1 → no filename
-    if (!parse_optional_filename_from_command())
+    if (!parse_optional_filename_from_command(scan))
     {
         bad_filename_error();
         return;

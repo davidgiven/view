@@ -140,15 +140,25 @@ extern command_prefix_t check_for_command_prefix(uint8_t ch);
 extern control_code_t check_for_control_code(uint8_t a);
 extern void render_number_to_screen(uint16_t val);
 extern void print_char_via_putchar(uint8_t a);
+
 // Functions in view.c called by other modules
-extern void reset_command_parse_state(void);
+// scan_input_buffer: result of the input-buffer scan.  ch is the character
+// found (first non-delimiter char, or 0x0d at end of line) and pos is its index
+// into input_buffer.  See scan_input_buffer in printing.c for details.
+struct scan_state
+{
+    uint8_t ch;  // character found at the scan position
+    uint8_t pos; // index of that character into input_buffer
+};
+
+extern void reset_command_parse_state(struct scan_state* scan);
 extern void init_document_pointers(void);
-extern void process_cli_command(void);
+extern void process_cli_command(struct scan_state* scan);
 extern void check_area_memory(addr_t ptr2);
 extern void redraw_and_write_back(void);
 extern void setup_area_pointers(addr_t ptr2);
 extern void esc_key(void);
-extern void parse_filename_from_command(void);
+extern void parse_filename_from_command(struct scan_state* scan);
 extern void set_document_name_to_filename_buffer(void);
 extern void read_first_chunk_from_input_file(void);
 extern void check_continuous_editing(void);
@@ -160,12 +170,12 @@ typedef enum
 } area_status_t;
 
 extern area_status_t sanitise_area(void);
-extern void parse_marks_from_command(void);
+extern void parse_marks_from_command(struct scan_state* scan);
 extern void write_area_to_file(void);
 extern void read_next_chunk_from_input_file(void);
 extern void read_into_document(void);
 extern void reset_document_name_after_load(void);
-extern void parse_integer_from_command(void);
+extern void parse_integer_from_command(struct scan_state* scan);
 extern uint8_t l0021, l0031, l0038, l007a;
 #define RAM_REGISTER_VALUE_P (RAM_REGISTER_VALUE_ARRAY + ('P' - 'A') * 2)
 #define RAM_REGISTER_VALUE_L (RAM_REGISTER_VALUE_ARRAY + ('L' - 'A') * 2)
@@ -271,9 +281,10 @@ extern area_status_t sanitise_area(void);
 extern void make_space_for_insertion(void);
 extern void adjust_pointers(addr_t tmp45, addr_t tmp67);
 extern void parse_decimal_number(void);
-extern bool parse_optional_filename_from_command(void);
+extern bool parse_optional_filename_from_command(struct scan_state* scan);
 extern void read_block_from_file(void);
-extern void scan_input_buffer(void);
+
+extern bool scan_input_buffer(struct scan_state* state);
 extern uint8_t check_for_embedded_ruler(addr_t tmp01, uint8_t y);
 
 // Functions moved to printing.c still called from view.c/other modules
@@ -302,10 +313,10 @@ extern void check_not_continuous_editing(void);
 extern uint8_t adjust_area_pointers(addr_t tmp67);
 extern void wipe_buffer(uint8_t a, addr_t ptr1);
 extern void format_paragraph(void);
-extern void print_document(void);
+extern void print_document(struct scan_state* scan);
 extern uint8_t draw_prompt_characters(uint8_t x, uint8_t y);
 extern void show_memory_full_error(void);
 extern void bad_filename_error(void);
 extern void clear_screen(void);
-extern addr_t parse_mark_from_command(void);
+extern addr_t parse_mark_from_command(struct scan_state* scan);
 #endif

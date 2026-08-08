@@ -3,13 +3,13 @@
 #include "printing.h"
 #include "io.h"
 #include <stdlib.h>
-addr_t parse_mark_from_command(void);
+addr_t parse_mark_from_command(struct scan_state* scan);
 
 // Forward declarations for CLI utilities
 void file_error(void);
 void file_not_found_error(void);
-void parse_integer_from_command(void);
-void parse_marks_from_command(void);
+void parse_integer_from_command(struct scan_state* scan);
+void parse_marks_from_command(struct scan_state* scan);
 void reset_document_name_after_load(void);
 void set_document_name_to_filename_buffer(void);
 void zero_terminate_filename_buffer(void);
@@ -18,31 +18,31 @@ void zero_terminate_filename_buffer(void);
 static void bye_cmd(void);
 static void cmd_err_no_target(void);
 static void cmd_err_no_string(void);
-static void search_cmd(void);
-static void change_cmd(void);
-static void replace_cmd(void);
-static void screen_cmd(void);
-static void sheets_cmd(void);
-static void print_cmd(void);
-static void print_to_screen(void);
-static void edit_cmd(void);
-static void more_cmd(void);
+static void search_cmd(struct scan_state* scan);
+static void change_cmd(struct scan_state* scan);
+static void replace_cmd(struct scan_state* scan);
+static void screen_cmd(struct scan_state* scan);
+static void sheets_cmd(struct scan_state* scan);
+static void print_cmd(struct scan_state* scan);
+static void print_to_screen(struct scan_state* scan);
+static void edit_cmd(struct scan_state* scan);
+static void more_cmd(struct scan_state* scan);
 static void finish_cmd(void);
 static void quit_cmd(void);
 static void close_input_output_files(void);
-static void save_cmd_write_cmd(void);
-static void load_cmd(void);
-static void read_cmd(void);
+static void save_cmd_write_cmd(struct scan_state* scan);
+static void load_cmd(struct scan_state* scan);
+static void read_cmd(struct scan_state* scan);
 static void mode_cmd(void);
-static void microspace_cmd(addr_t tmp89);
-static void setup_cmd(void);
-static void field_cmd(addr_t tmp89);
-static void count_cmd(void);
-static void format_cmd(void);
+static void microspace_cmd(addr_t tmp89, struct scan_state* scan);
+static void setup_cmd(struct scan_state* scan);
+static void field_cmd(addr_t tmp89, struct scan_state* scan);
+static void count_cmd(struct scan_state* scan);
+static void format_cmd(struct scan_state* scan);
 static void new_cmd(void);
-static void fold_cmd(void);
-static void printer_cmd(void);
-static void name_cmd(void);
+static void fold_cmd(struct scan_state* scan);
+static void printer_cmd(struct scan_state* scan);
+static void name_cmd(struct scan_state* scan);
 
 // check_for_at_least_150_bytes_free defined in document.c
 
@@ -58,7 +58,7 @@ static void bye_cmd(void)
     exit(0);
 }
 
-void execute_cli_command(uint8_t a)
+void execute_cli_command(uint8_t a, struct scan_state* scan)
 {
     // execute_cli_command
     // call_through_jumptable (y=2):
@@ -85,49 +85,49 @@ void execute_cli_command(uint8_t a)
             new_cmd();
             break;
         case 2:
-            format_cmd();
+            format_cmd(scan);
             break;
         case 3:
-            setup_cmd();
+            setup_cmd(scan);
             break;
         case 4:
-            read_cmd();
+            read_cmd(scan);
             break;
         case 5:
-            more_cmd();
+            more_cmd(scan);
             break;
         case 6:
-            screen_cmd();
+            screen_cmd(scan);
             break;
         case 7:
-            sheets_cmd();
+            sheets_cmd(scan);
             break;
         case 8:
-            save_cmd_write_cmd();
+            save_cmd_write_cmd(scan);
             break;
         case 9:
-            count_cmd();
+            count_cmd(scan);
             break;
         case 10:
-            field_cmd(tmp89);
+            field_cmd(tmp89, scan);
             break;
         case 11:
-            printer_cmd();
+            printer_cmd(scan);
             break;
         case 12:
-            search_cmd();
+            search_cmd(scan);
             break;
         case 13:
             clear_cmd();
             break;
         case 14:
-            microspace_cmd(tmp89);
+            microspace_cmd(tmp89, scan);
             break;
         case 15:
-            fold_cmd();
+            fold_cmd(scan);
             break;
         case 16:
-            name_cmd();
+            name_cmd(scan);
             break;
         case 17:
             mode_cmd();
@@ -136,22 +136,22 @@ void execute_cli_command(uint8_t a)
             finish_cmd();
             break;
         case 19:
-            print_cmd();
+            print_cmd(scan);
             break;
         case 20:
-            change_cmd();
+            change_cmd(scan);
             break;
         case 21:
-            save_cmd_write_cmd();
+            save_cmd_write_cmd(scan);
             break;
         case 22:
-            edit_cmd();
+            edit_cmd(scan);
             break;
         case 23:
-            replace_cmd();
+            replace_cmd(scan);
             break;
         case 24:
-            load_cmd();
+            load_cmd(scan);
             break;
         case 25:
             bye_cmd();
@@ -159,7 +159,7 @@ void execute_cli_command(uint8_t a)
     }
 }
 
-static void change_cmd(void)
+static void change_cmd(struct scan_state* scan)
 {
     // change_cmd
     // Pseudocode: Replaces all occurrences of search string in document area,
@@ -167,7 +167,7 @@ static void change_cmd(void)
 
     // change_cmd:
     //     jsr sub_c83f0
-    process_cli_command();
+    process_cli_command(scan);
     //     bcs c82fa
     if (flags & FLAG_C)
     {
@@ -305,7 +305,7 @@ static void cmd_err_no_target(void)
     return;
 }
 
-static void count_cmd(void)
+static void count_cmd(struct scan_state* scan)
 {
     addr_t tmp89;
 
@@ -318,7 +318,7 @@ static void count_cmd(void)
     // ***************************************************************************************
     // count_cmd:
     //     jsr parse_marks_from_command
-    parse_marks_from_command();
+    parse_marks_from_command(scan);
     //     jsr sanitise_area
     if (sanitise_area() == AREA_EMPTY)
     {
@@ -491,17 +491,17 @@ c871f:
     //     .byte 0
 }
 
-static void edit_cmd(void)
+static void edit_cmd(struct scan_state* scan)
 {
     uint8_t a;
     uint8_t x;
 
     // edit_cmd
     check_not_continuous_editing();
-    parse_filename_from_command();
+    parse_filename_from_command(scan);
     set_document_name_to_filename_buffer();
     open_input_file();
-    parse_filename_from_command();
+    parse_filename_from_command(scan);
     open_output_file();
     x = 0;
     input_file_empty_flag = x;
@@ -524,7 +524,7 @@ static void edit_cmd(void)
     file_edit_flags = 1;
 }
 
-static void field_cmd(addr_t tmp89)
+static void field_cmd(addr_t tmp89, struct scan_state* scan)
 {
     // field_cmd
     // Pseudocode: Sets the tab key field width from parsed integer argument
@@ -533,7 +533,7 @@ static void field_cmd(addr_t tmp89)
     // ***************************************************************************************
     // field_cmd:
     //     jsr parse_integer_from_command
-    parse_integer_from_command();
+    parse_integer_from_command(scan);
     //     beq c869b
     if (flags & FLAG_Z)
     {
@@ -599,7 +599,7 @@ static void finish_cmd(void)
     }
 }
 
-static void fold_cmd(void)
+static void fold_cmd(struct scan_state* scan)
 {
     uint8_t a;
     // fold_cmd
@@ -609,12 +609,11 @@ static void fold_cmd(void)
     // ***************************************************************************************
     // fold_cmd:
     //     jsr sub_c8e33
-    scan_input_buffer();
     //     beq c87b4
-    if (flags & FLAG_Z)
+    if (scan_input_buffer(scan))
         goto c87b4;
     //     lda input_buffer,y
-    a = input_buffer[y];
+    a = input_buffer[scan->pos];
     //     cmp #'1'
     //     beq c87b2 (true → folding_flag = 0)
     if (a == '1')
@@ -657,7 +656,7 @@ c87b4:
     return;
 }
 
-static void format_cmd(void)
+static void format_cmd(struct scan_state* scan)
 {
     // Pseudocode: Formats document area by running line-by-line through
     // formatting pipeline
@@ -666,7 +665,7 @@ static void format_cmd(void)
     // ***************************************************************************************
     // format_cmd:
     //     jsr parse_marks_from_command
-    parse_marks_from_command();
+    parse_marks_from_command(scan);
     //     jsr sanitise_area
     if (sanitise_area() == AREA_EMPTY)
         goto c878b;
@@ -726,14 +725,14 @@ c8791:
     return;
 }
 
-static void load_cmd(void)
+static void load_cmd(struct scan_state* scan)
 {
     // load_cmd
     // load_cmd:
     //     jsr check_not_continuous_editing
     check_not_continuous_editing();
     //     jsr parse_filename_from_command
-    parse_filename_from_command();
+    parse_filename_from_command(scan);
     //     jsr initialise_document
     initialise_document();
     top = page; // WORKAROUND: ensure_cr_at_document_top bumped top past the
@@ -754,7 +753,7 @@ static void load_cmd(void)
     return;
 }
 
-static void microspace_cmd(addr_t tmp89)
+static void microspace_cmd(addr_t tmp89, struct scan_state* scan)
 {
     // microspace_cmd
     // Pseudocode: Configures microspacing by querying printer driver
@@ -765,7 +764,7 @@ static void microspace_cmd(addr_t tmp89)
     //     jsr prepare_printer_driver
     prepare_printer_driver();
     //     jsr parse_integer_from_command
-    parse_integer_from_command();
+    parse_integer_from_command(scan);
     //     php
     uint8_t saved_flags = flags;
     //     ldx #0x0a
@@ -816,7 +815,7 @@ static void mode_cmd(void)
     return;
 }
 
-static void more_cmd(void)
+static void more_cmd(struct scan_state* scan)
 {
     uint8_t x;
     // more_cmd
@@ -829,7 +828,7 @@ static void more_cmd(void)
     //     jsr check_continuous_editing
     check_continuous_editing();
     //     jsr parse_marks_from_command
-    parse_marks_from_command();
+    parse_marks_from_command(scan);
     //     jsr move_cursor_to_address
     move_cursor_to_address(area_start_ptr);
 
@@ -883,7 +882,7 @@ static void more_cmd(void)
     ensure_cr_at_document_top();
 }
 
-static void name_cmd(void)
+static void name_cmd(struct scan_state* scan)
 {
     // name_cmd
     // Pseudocode: Sets document name from optional filename argument
@@ -894,7 +893,7 @@ static void name_cmd(void)
     //     jsr check_not_continuous_editing
     check_not_continuous_editing();
     //     jsr parse_optional_filename_from_command
-    bool has_filename = parse_optional_filename_from_command();
+    bool has_filename = parse_optional_filename_from_command(scan);
     //     php
     //     lda #0
     //     sta file_edit_flags
@@ -923,7 +922,7 @@ static void new_cmd(void)
     return;
 }
 
-static void print_cmd(void)
+static void print_cmd(struct scan_state* scan)
 {
     // Pseudocode: Sets print flags and falls through to print_to_screen
 
@@ -936,22 +935,22 @@ static void print_cmd(void)
     // ***************************************************************************************
     start_printing();
     // MULTIPLE ENTRY POINTS: print_cmd, print_to_screen
-    print_to_screen();
+    print_to_screen(scan);
 }
 
-static void print_to_screen(void)
+static void print_to_screen(struct scan_state* scan)
 {
     // print_to_screen: Prints document for screen preview, returns to CLI when
     // done
 
     //     jsr print_document
-    print_document();
+    print_document(scan);
     //     jmp return_to_cli_prompt
     return_to_cli_prompt();
     return;
 }
 
-static void printer_cmd(void)
+static void printer_cmd(struct scan_state* scan)
 {
     // Pseudocode: Redirects to print_cmd (printer driver loading code is
     // disabled with #if 0)
@@ -960,7 +959,7 @@ static void printer_cmd(void)
     // ***************************************************************************************
     // printer_cmd:
     //     jmp print_cmd
-    print_cmd();
+    print_cmd(scan);
     return;
     // #if 0
     //     // TODO: implement loading printer drivers.
@@ -1023,13 +1022,13 @@ static void quit_cmd(void)
     close_input_output_files();
 }
 
-static void read_cmd(void)
+static void read_cmd(struct scan_state* scan)
 {
     // read_cmd:
     //     jsr parse_filename_from_command
-    parse_filename_from_command();
+    parse_filename_from_command(scan);
     //     jsr parse_marks_from_command
-    parse_marks_from_command();
+    parse_marks_from_command(scan);
     // 1:
     read_into_document();
     //     jmp return_to_cli_prompt
@@ -1037,7 +1036,7 @@ static void read_cmd(void)
     return;
 }
 
-static void replace_cmd(void)
+static void replace_cmd(struct scan_state* scan)
 {
     // replace_cmd
     // Pseudocode: Interactive search and replace prompting for each match
@@ -1047,7 +1046,7 @@ static void replace_cmd(void)
     // ***************************************************************************************
     // replace_cmd:
     //     jsr sub_c83f0
-    process_cli_command();
+    process_cli_command(scan);
     //     beq c82e7
     if (flags & FLAG_Z)
     {
@@ -1124,7 +1123,7 @@ c8356:
     goto c832d;
 }
 
-static void save_cmd_write_cmd(void)
+static void save_cmd_write_cmd(struct scan_state* scan)
 {
     // save_cmd_write_cmd
     // Pseudocode: Saves document area to output file with optional filename
@@ -1135,7 +1134,7 @@ static void save_cmd_write_cmd(void)
     // write_cmd:
     //     jsr parse_optional_filename_from_command
     //     zif eq
-    if (!parse_optional_filename_from_command())
+    if (!parse_optional_filename_from_command(scan))
     {
         //         bit file_edit_flags
         bit(&flags, a, file_edit_flags); // V live
@@ -1165,7 +1164,7 @@ static void save_cmd_write_cmd(void)
         //     zendif
     }
     //     jsr parse_marks_from_command
-    parse_marks_from_command();
+    parse_marks_from_command(scan);
     //     jsr sanitise_area
     if (sanitise_area() == AREA_EMPTY)
         return;
@@ -1187,7 +1186,7 @@ static void save_cmd_write_cmd(void)
     // MULTIPLE ENTRY POINTS: save_cmd, write_cmd
 }
 
-static void screen_cmd(void)
+static void screen_cmd(struct scan_state* scan)
 {
     // Pseudocode: Jumps to print_to_screen for on-screen document preview
 
@@ -1195,11 +1194,11 @@ static void screen_cmd(void)
     // ***************************************************************************************
     // screen_cmd:
     //     jmp print_to_screen
-    print_to_screen();
+    print_to_screen(scan);
     return;
 }
 
-static void search_cmd(void)
+static void search_cmd(struct scan_state* scan)
 {
     // search_cmd
     // Pseudocode: Searches for target string, reports position if found
@@ -1208,7 +1207,7 @@ static void search_cmd(void)
     // ***************************************************************************************
     // search_cmd:
     //     jsr sub_c8412
-    reset_command_parse_state();
+    reset_command_parse_state(scan);
     //     beq c82e7
     if (flags & FLAG_Z)
     {
@@ -1216,7 +1215,7 @@ static void search_cmd(void)
         return;
     }
     //     jsr parse_marks_from_command
-    parse_marks_from_command();
+    parse_marks_from_command(scan);
     //     jsr sanitise_area
     if (sanitise_area() == AREA_EMPTY)
     {
@@ -1244,7 +1243,7 @@ static void search_cmd(void)
     // ***************************************************************************************
 }
 
-static void setup_cmd(void)
+static void setup_cmd(struct scan_state* scan)
 {
     addr_t tmp67;
     addr_t tmp89;
@@ -1274,19 +1273,18 @@ static void setup_cmd(void)
     // c8649:
 c8649:
     //     jsr sub_c8e33
-    scan_input_buffer();
     //     beq c8672
-    if (flags & FLAG_Z)
+    if (scan_input_buffer(scan))
         goto c8672;
     //     and #0xdf
-    a &= 0xdf;
+    scan->ch &= 0xdf;
     //     ldx #0
     x = 0;
     // loop_c8652:
     for (;;)
     {
         //     cmp c867d,x
-        if (a == ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x])
+        if (scan->ch == ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x])
             goto c8669;
         //     inx
         x++;
@@ -1356,7 +1354,7 @@ c8672:
     //     .byte 0, 0xff
 }
 
-static void sheets_cmd(void)
+static void sheets_cmd(struct scan_state* scan)
 {
     // Pseudocode: Prints document to printer then displays newline and returns
     // to CLI
@@ -1368,7 +1366,7 @@ static void sheets_cmd(void)
     //     jsr start_printing
     start_printing();
     //     jsr print_document
-    print_document();
+    print_document(scan);
     //     jsr stop_printing
     stop_printing();
     //     jsr bdos_print_newline
@@ -1472,7 +1470,8 @@ void input_line_not_escaped(void)
     // (branch restructured: Mistake is printed when C is set or y >= 48)
     if ((flags & FLAG_C) || y >= 48)
         cli_putstring("Mistake\n");
-    execute_cli_command(l0080);
+    struct scan_state scan;
+    execute_cli_command(l0080, &scan);
     //     jmp run_cli
     run_cli();
 }
@@ -1822,7 +1821,7 @@ void file_not_found_error(void)
     return;
 }
 
-void parse_integer_from_command(void)
+void parse_integer_from_command(struct scan_state* scan)
 {
     // Pseudocode: Parses a decimal integer from the command input buffer
 
@@ -1835,22 +1834,22 @@ void parse_integer_from_command(void)
     //     sta current_format_line_ptr+1
     current_format_line_ptr = (addr_t)(uintptr_t)input_buffer;
     //     jsr sub_c8e33
-    scan_input_buffer();
     //     beq return_8
-    if (flags & FLAG_Z)
+    if (scan_input_buffer(scan))
         return;
     //     jmp ca6fe
+    y = scan->pos; // parse_decimal_number reads the global y as its index
     parse_decimal_number();
     return;
 }
 
-void parse_marks_from_command(void)
+void parse_marks_from_command(struct scan_state* scan)
 {
     // parse_marks_from_command:
     //     jsr reset_area_to_entire_document
     reset_area_to_entire_document();
     //     jsr parse_mark_from_command
-    addr_t start_mark = parse_mark_from_command();
+    addr_t start_mark = parse_mark_from_command(scan);
     //     beq return_11
     if (start_mark == 0)
         return;
@@ -1858,7 +1857,7 @@ void parse_marks_from_command(void)
     area_start_ptr = start_mark;
     //     sty area_start_ptr+1
     //     jsr parse_mark_from_command
-    addr_t end_mark = parse_mark_from_command();
+    addr_t end_mark = parse_mark_from_command(scan);
     //     beq return_11
     if (end_mark == 0)
         return;
@@ -1932,21 +1931,20 @@ void zero_terminate_filename_buffer(void)
     return;
 }
 
-addr_t parse_mark_from_command(void)
+addr_t parse_mark_from_command(struct scan_state* scan)
 {
     // parse_mark_from_command
     // parse_mark_from_command:
     //     jsr sub_c8e33
-    scan_input_buffer();
     //     beq return_12
-    if (flags & FLAG_Z)
+    if (scan_input_buffer(scan))
         return 0;
     //     iny
-    y++;
+    scan->pos++;
     //     sty input_buffer_offset
-    input_buffer_offset = y;
+    input_buffer_offset = scan->pos;
     //     jsr lookup_marker
-    lookup_marker(a);
+    lookup_marker(scan->ch);
     //     bcs c89b3 / c89b3: jsr print_inline_string ; .ascii "Bad marker" ;
     //     .byte 0xff
     if (flags & FLAG_C)
