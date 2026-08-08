@@ -671,6 +671,7 @@ c83da:
 
 void process_cli_command(struct scan_state* scan)
 {
+    uint8_t x;
     // sub_c83f0
     // sub_c83f0:
     //     jsr sub_c8412
@@ -684,7 +685,8 @@ void process_cli_command(struct scan_state* scan)
     {
         y = input_buffer_offset;
         y++;
-        x = expand_escaped_string(x, y);
+        // (base index comes from l007a, set by reset_command_parse_state)
+        x = expand_escaped_string(l007a, y);
         l004a = x;
     }
     // c8402:
@@ -716,6 +718,7 @@ c8410:
 
 void reset_command_parse_state(struct scan_state* scan)
 {
+    uint8_t x;
     // sub_c8412
     // sub_c8412:
     //     ldx #0

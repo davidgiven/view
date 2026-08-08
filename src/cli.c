@@ -1247,7 +1247,8 @@ static void setup_cmd(struct scan_state* scan)
 {
     addr_t tmp67;
     addr_t tmp89;
-
+    uint8_t a;
+    uint8_t y;
     // setup_cmd
     // Pseudocode: Parses flag letters and sets format_mode_flag,
     // justifying_flag, insert_mode_flag
