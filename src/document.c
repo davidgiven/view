@@ -194,29 +194,28 @@ void find_margins_of_current_ruler_buffer(void)
     ruler_right_stop = 0;
     ruler_left_stop = 0;
     // loop_caba5:
-loop_caba5:
-    //     lda (current_ruler_ptr),y
-    a = ram[current_ruler_ptr + y];
-    //     cmp #0x3e ; '>'
-    if (a == 0x3e)
+    do
     {
-        ruler_left_stop = y;
-    }
-    //     cmp #0x3c ; '<'
-    if (a == 0x3c)
-    {
-        ruler_right_stop = y;
-    }
-    //     cmp #0x0d
-    if (a == 0x0d)
-        goto cabbc;
-    //     iny
-    y++;
-    //     cpy #0x84
-    if (y != MAX_LINE_LENGTH)
-        goto loop_caba5;
+        //     lda (current_ruler_ptr),y
+        a = ram[current_ruler_ptr + y];
+        //     cmp #0x3e ; '>'
+        if (a == 0x3e)
+        {
+            ruler_left_stop = y;
+        }
+        //     cmp #0x3c ; '<'
+        if (a == 0x3c)
+        {
+            ruler_right_stop = y;
+        }
+        //     cmp #0x0d
+        if (a == 0x0d)
+            break;
+        //     iny
+        y++;
+        //     cpy #0x84
+    } while (y != MAX_LINE_LENGTH);
     // cabbc:
-cabbc:
     //     sty l003a
     l003a = y;
     //     lda ruler_left_stop
@@ -367,20 +366,24 @@ ca5e1:
     //  local so y is never touched.)
     {
         uint8_t tab_pos = l0039;
-    loop_ca5e5:
-        //     iny
-        tab_pos++;
-        //     cpy l003a
-        //     bcs ca5f8
-        if (tab_pos >= l003a)
-            goto ca5f8;
-        //     lda (current_ruler_ptr),y
-        a = ram[current_ruler_ptr + tab_pos];
-        //     cmp #0x2a ; '*'
-        cmp(&flags, a, 0x2a); // Z, C live
-        //     bne loop_ca5e5
-        if (!(flags & FLAG_Z))
-            goto loop_ca5e5;
+        // loop_ca5e5:
+        for (;;)
+        {
+            //     iny
+            tab_pos++;
+            //     cpy l003a
+            //     bcs ca5f8
+            if (tab_pos >= l003a)
+                goto ca5f8;
+            //     lda (current_ruler_ptr),y
+            a = ram[current_ruler_ptr + tab_pos];
+            //     cmp #0x2a ; '*'
+            cmp(&flags, a, 0x2a); // Z, C live
+            //     bne loop_ca5e5
+            if (!(flags & FLAG_Z))
+                continue;
+            break;
+        }
         //     tya
         a = tab_pos;
     }
@@ -584,39 +587,41 @@ uint8_t create_default_ruler(uint16_t ruler_addr)
     //     Y=0x00
     y = a;
     // loop_cb0e7:
-loop_cb0e7:
-    //     lda #0x2e ; '.'
-    a = 0x2e;
-    // loop_cb0e9:
-loop_cb0e9:
-    //     sta (((uint8_t*)&tmp01)[0]),y
-    ram[tmp01 + y] = a;
-    //     iny
-    y++;
-    //     tya
-    a = y;
-    //     tax
-    x = a;
-    //     inx
-    x++;
-    //     clc
-    //     adc #6
-    a += 6;
-    //     cmp screen_width
-    if (a == screen_maxcolumn)
-        goto cb0ff;
-    //     txa
-    a = x;
-    //     and #7
-    a &= 7;
-    //     bne loop_cb0e7
-    if (a != 0)
-        goto loop_cb0e7;
-    //     lda #0x2a ; '*'
-    a = 0x2a;
-    //     bne loop_cb0e9                                                    ;
-    //     ALWAYS branch
-    goto loop_cb0e9;
+    for (;;)
+    {
+        //     lda #0x2e ; '.'
+        a = 0x2e;
+        // loop_cb0e9:
+        for (;;)
+        {
+            //     sta (((uint8_t*)&tmp01)[0]),y
+            ram[tmp01 + y] = a;
+            //     iny
+            y++;
+            //     tya
+            a = y;
+            //     tax
+            x = a;
+            //     inx
+            x++;
+            //     clc
+            //     adc #6
+            a += 6;
+            //     cmp screen_width
+            if (a == screen_maxcolumn)
+                goto cb0ff;
+            //     txa
+            a = x;
+            //     and #7
+            a &= 7;
+            //     bne loop_cb0e7
+            if (a != 0)
+                break;
+            //     lda #0x2a ; '*'
+            a = 0x2a;
+            //     bne loop_cb0e9 ; ALWAYS branch
+        }
+    }
 
     // cb0ff:
 cb0ff:
@@ -853,58 +858,63 @@ void move_cursor_to_address(uint16_t addr)
     //     cmp ((uint8_t*)&tmp89)[0]
     //     bcc cabf9
     //     beq cac20
-    if (cur < addr)
-        goto cabf9;
     if (cur == addr)
         goto cac20;
-    // cabdf:
-cabdf:
-    //     jsr sub_cab37
-    move_tmp01_to_previous_line(cur);
-    cur = tmp01;
-    //     bcc cac20
-    if (!(flags & FLAG_C))
-        goto cac20;
-    //     cpy ((uint8_t*)&tmp89)[1]
-    //     bcc cac20
-    //     bne cabdf
-    //     cmp ((uint8_t*)&tmp89)[0]
-    //     bcc cac20
-    //     bne cabdf
-    //     beq cac20                                                         ;
-    //     ALWAYS branch
-    if (cur <= addr)
-        goto cac20;
-    goto cabdf;
+    if (cur > addr)
+    {
+        // cabdf:
+        for (;;)
+        {
+            //     jsr sub_cab37
+            move_tmp01_to_previous_line(cur);
+            cur = tmp01;
+            //     bcc cac20
+            if (!(flags & FLAG_C))
+                goto cac20;
+            //     cpy ((uint8_t*)&tmp89)[1]
+            //     bcc cac20
+            //     bne cabdf
+            //     cmp ((uint8_t*)&tmp89)[0]
+            //     bcc cac20
+            //     bne cabdf
+            //     beq cac20
+            if (cur <= addr)
+                goto cac20;
+            //     ALWAYS branch
+        }
+    }
 
     // cabf6:
-cabf6:
-    //     jsr sub_cac41
-    check_for_embedded_ruler(tmp01, y);
     // cabf9:
-cabf9:
-    //     sta ((uint8_t*)&tmp01)[0]
-    move_tmp01_to_next_line(cur);
-    //     beq cac17
-    if (flags & FLAG_Z)
-        goto cac17;
-    //     tya
-    //     ldy ((uint8_t*)&tmp01)[1]
-    //     clc
-    //     adc ((uint8_t*)&tmp01)[0]
-    //     bcc cac0b
-    cur = tmp01 + y;
-    //     cpy ((uint8_t*)&tmp89)[1]
-    //     bcc cabf6
-    //     bne cac17
-    //     cmp ((uint8_t*)&tmp89)[0]
-    //     bcc cabf6
-    //     beq cac1d
-    if (cur < addr)
-        goto cabf6;
-    if (cur == addr)
-        goto cac1d;
-    goto cac17;
+    do
+    {
+        //     sta ((uint8_t*)&tmp01)[0]
+        move_tmp01_to_next_line(cur);
+        //     beq cac17
+        if (flags & FLAG_Z)
+            goto cac17;
+        //     tya
+        //     ldy ((uint8_t*)&tmp01)[1]
+        //     clc
+        //     adc ((uint8_t*)&tmp01)[0]
+        //     bcc cac0b
+        cur = tmp01 + y;
+        //     cpy ((uint8_t*)&tmp89)[1]
+        //     bcc cabf6
+        //     bne cac17
+        //     cmp ((uint8_t*)&tmp89)[0]
+        //     bcc cabf6
+        //     beq cac1d
+        if (cur >= addr)
+        {
+            if (cur == addr)
+                goto cac1d;
+            goto cac17;
+        }
+        //     cabf6:
+        //     jsr sub_cac41
+        check_for_embedded_ruler(tmp01, y);
+    } while (1);
     // cac17:
 cac17:
     //     lda ((uint8_t*)&tmp01)[0]

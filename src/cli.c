@@ -193,27 +193,30 @@ static void change_cmd(void)
     //     stx ptr3+1
     ptr3 = 0;
     // loop_c82b3:
-loop_c82b3:
-    //     inc ptr3
-    //     bne c82b9
-    //     inc ptr3+1
-    // c82b9:
-    ptr3++;
-    //     jsr move_cursor_to_address
-    move_cursor_to_address((uint16_t)(y) << 8 | a);
-    //     lda #0
-    //     sta print_xpos
-    print_xpos = 0;
-    //     jsr sub_c8a4f
-    check_area_memory(ptr2);
-    //     bcs c830d
-    if (flags & FLAG_C)
-        goto c830d;
-    //     jsr c8b7b
-    scan_document_for_next_line();
-    //     beq loop_c82b3
-    if (flags & FLAG_Z)
-        goto loop_c82b3;
+    for (;;)
+    {
+        //     inc ptr3
+        //     bne c82b9
+        //     inc ptr3+1
+        // c82b9:
+        ptr3++;
+        //     jsr move_cursor_to_address
+        move_cursor_to_address((uint16_t)(y) << 8 | a);
+        //     lda #0
+        //     sta print_xpos
+        print_xpos = 0;
+        //     jsr sub_c8a4f
+        check_area_memory(ptr2);
+        //     bcs c830d
+        if (flags & FLAG_C)
+            goto c830d;
+        //     jsr c8b7b
+        scan_document_for_next_line();
+        //     beq loop_c82b3
+        if (flags & FLAG_Z)
+            continue;
+        break;
+    }
     //     ldx ptr3
     render_number_to_screen(ptr3);
     //     jsr print_inline_string
@@ -349,36 +352,39 @@ c86b8:
     //     iny
     y++;
     // loop_c86c2:
-loop_c86c2:
-    //     lda (((uint8_t*)&tmp01)[0]),y
-    a = ram[tmp01 + y];
-    //     iny
-    y++;
-    //     cmp l8747,x
-    if (a != l8747_data[x])
-        goto c86d1;
-    //     lda (((uint8_t*)&tmp01)[0]),y
-    a = ram[tmp01 + y];
-    //     cmp l8748,x
-    if (a == l8747_data[x + 1])
-        goto c86df;
-    // c86d1:
-c86d1:
-    //     lda l8749,x
-    a = l8747_data[x + 2];
+    for (;;)
+    {
+        //     lda (((uint8_t*)&tmp01)[0]),y
+        a = ram[tmp01 + y];
+        //     iny
+        y++;
+        //     cmp l8747,x
+        if (a != l8747_data[x])
+            goto c86d1;
+        //     lda (((uint8_t*)&tmp01)[0]),y
+        a = ram[tmp01 + y];
+        //     cmp l8748,x
+        if (a == l8747_data[x + 1])
+            goto c86df;
+        // c86d1:
+    c86d1:
+        //     lda l8749,x
+        a = l8747_data[x + 2];
 
-    //     beq c86db
-    if (a == 0)
-        goto c86db;
-    //     dey
-    y--;
-    //     inx
-    x++;
-    //     inx
-    x++;
-    if (x != 0)
-        goto loop_c86c2;
-    //     bne loop_c86c2
+        //     beq c86db
+        if (a == 0)
+            goto c86db;
+        //     dey
+        y--;
+        //     inx
+        x++;
+        //     inx
+        x++;
+        //     bne loop_c86c2
+        if (x != 0)
+            continue;
+        break;
+    }
     // c86db:
 c86db:
     //     lda #0x80
@@ -1280,17 +1286,20 @@ c8649:
     //     ldx #0
     x = 0;
     // loop_c8652:
-loop_c8652:
-    //     cmp c867d,x
-    if (a == ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x])
-        goto c8669;
-    //     inx
-    x++;
-    //     ldy c867d,x
-    y = ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x];
-    //     bne loop_c8652
-    if (y != 0)
-        goto loop_c8652;
+    for (;;)
+    {
+        //     cmp c867d,x
+        if (a == ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x])
+            goto c8669;
+        //     inx
+        x++;
+        //     ldy c867d,x
+        y = ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x];
+        //     bne loop_c8652
+        if (y != 0)
+            continue;
+        break;
+    }
     //     jsr print_inline_string
     //     .ascii "Bad flag"
     //     .byte 0xff
@@ -1677,71 +1686,79 @@ static void parse_command(void)
     //     X=0xff
     x = a;
     // ca84c:
-ca84c:
-    //     ldy input_buffer_offset
-    y = input_buffer_offset;
-    //     dey
-    y--;
-    //     inc l0082
-    l0082++;
-    // loop_ca851:
-loop_ca851:
-    //     inx
-    x++;
-    //     iny
-    y++;
-    //     lda (((uint8_t*)&tmp01)[0]),y
-    a = input_buffer[y];
-    //     and #0xdf
-    a &= 0xdf;
-    //     sta l0084
-    l0084 = a;
-    //     lda parser_table,x
-    a = parser_table[x];
-    set_flags(&flags, a); // Z, N live
-    //     beq ca890
-    if (flags & FLAG_Z)
-        goto ca890;
-    //     bmi ca87e
-    if (flags & FLAG_N)
-        goto ca87e;
-    //     eor #0x5b ; '['
-    a ^= 0x5b;
-    //     sta l0083
-    l0083 = a;
-    //     and #0xdf
-    a &= 0xdf;
-    //     cmp l0084
-    if (a == l0084)
-        goto loop_ca851;
-    //     beq loop_ca851
-    // loop_ca86a:
-loop_ca86a:
-    //     inx
-    x++;
-    //     lda parser_table,x
-    a = parser_table[x];
-    set_flags(&flags, a); // Z, N live
-    //     beq ca890
-    if (flags & FLAG_Z)
-        goto ca890;
-    //     bpl loop_ca86a
-    if (!(flags & FLAG_N))
-        goto loop_ca86a;
-    //     lda l0083
-    a = l0083;
-    //     and #0x20 ; ' '
-    a &= 0x20;
-    flags = (flags & ~FLAG_Z) | (a == 0 ? FLAG_Z : 0);
-    //     beq ca84c
-    if (flags & FLAG_Z)
-        goto ca84c;
-    //     lda (((uint8_t*)&tmp01)[0]),y
-    a = input_buffer[y];
-    //     cmp #0x30 ; '0'
-    if (a >= 0x30)
-        goto ca84c;
-    //     bcs ca84c
+    for (;;)
+    {
+        //     ldy input_buffer_offset
+        y = input_buffer_offset;
+        //     dey
+        y--;
+        //     inc l0082
+        l0082++;
+        // loop_ca851:
+        for (;;)
+        {
+            //     inx
+            x++;
+            //     iny
+            y++;
+            //     lda (((uint8_t*)&tmp01)[0]),y
+            a = input_buffer[y];
+            //     and #0xdf
+            a &= 0xdf;
+            //     sta l0084
+            l0084 = a;
+            //     lda parser_table,x
+            a = parser_table[x];
+            set_flags(&flags, a); // Z, N live
+            //     beq ca890
+            if (flags & FLAG_Z)
+                goto ca890;
+            //     bmi ca87e
+            if (flags & FLAG_N)
+                goto ca87e;
+            //     eor #0x5b ; '['
+            a ^= 0x5b;
+            //     sta l0083
+            l0083 = a;
+            //     and #0xdf
+            a &= 0xdf;
+            //     cmp l0084
+            if (a != l0084)
+                break;
+            //     beq loop_ca851
+        }
+        // loop_ca86a:
+        for (;;)
+        {
+            //     inx
+            x++;
+            //     lda parser_table,x
+            a = parser_table[x];
+            set_flags(&flags, a); // Z, N live
+            //     beq ca890
+            if (flags & FLAG_Z)
+                goto ca890;
+            //     bpl loop_ca86a
+            if (!(flags & FLAG_N))
+                continue;
+            break;
+        }
+        //     lda l0083
+        a = l0083;
+        //     and #0x20 ; ' '
+        a &= 0x20;
+        flags = (flags & ~FLAG_Z) | (a == 0 ? FLAG_Z : 0);
+        //     beq ca84c
+        if (flags & FLAG_Z)
+            continue;
+        //     lda (((uint8_t*)&tmp01)[0]),y
+        a = input_buffer[y];
+        //     cmp #0x30 ; '0'
+        if (a >= 0x30)
+            continue;
+        //     bcs ca84c
+        break;
+    }
     // ca87e:
 ca87e:
     //     lda (((uint8_t*)&tmp01)[0]),y

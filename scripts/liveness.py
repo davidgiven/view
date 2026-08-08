@@ -24,6 +24,7 @@ REGISTERS = ['a', 'x', 'y']
 FLAG_BITS = ['C', 'Z', 'N', 'V']
 TMP_VARS = ['tmp01', 'tmp23', 'tmp45', 'tmp67', 'tmp89']
 PTR_VARS = ['ptr1', 'ptr2', 'ptr3', 'ptr5', 'ptr6']
+DEBUG_FOR = False
 ALL_VARS_SET = set(REGISTERS + TMP_VARS + PTR_VARS +
                    [f'flags:{b}' for b in FLAG_BITS])
 
@@ -672,6 +673,15 @@ def _backward_stmt(cur, live, backward_needs, local_info, func_params,
 
         # while/for: the condition may be false before the body ever runs, so
         # the loop-exit live set must also hold at the loop head.
+        if DEBUG_FOR:
+            _lines_ = open(cur.location.file.name).read().split('\n')
+            print(f"[FOR] line {cur.location.line}: {_lines_[cur.location.line - 1].strip()}")
+            _bd = set(live)
+            if body_stmt is not None:
+                _bd = _backward_stmt(body_stmt, set(live), backward_needs,
+                                     local_info, func_params, local_decls,
+                                     source_lines, func_live_out)
+            print(f"[FOR]   exit_live={sorted(live)} body_before={sorted(_bd)}")
         prev = None
         result = set(live)
         for _ in range(20):

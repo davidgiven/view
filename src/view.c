@@ -609,29 +609,29 @@ c83a3:
     l0082 = a;
     //     ldx #0xfe
     x = 0xfe;
-loop_c83b8:
     // loop_c83b8:
-    //     inx
-    //     inx
-    x += 2;
+    for (;;)
     {
+        //     inx
+        //     inx
+        x += 2;
         uint8_t idx = x >> 1;
         //     lda escaped_char_table,x
         a = escaped_char_table[idx];
         //     bmi c83c8
         if (a & 0x80)
-            goto c83c8;
+            break;
         //     cmp l0082
-        if (a != l0082)
-            goto loop_c83b8;
+        if (a == l0082)
+        {
+            //     lda l83e0,x
+            a = l83e0_table[idx];
+            //     bne c83ca
+            if (a != 0)
+                goto c83ca;
+        }
         //     bne loop_c83b8
-        //     lda l83e0,x
-        a = l83e0_table[idx];
-        //     bne c83ca
-        if (a != 0)
-            goto c83ca;
     }
-c83c8:
     // c83c8:
     //     lda l0084
     a = l0084;
@@ -856,27 +856,29 @@ c8a6c:
     if (y >= l0048)
         goto c8a84;
     //     bcs c8a84
-loop_c8a74:
     // loop_c8a74:
-    //     lda output_buffer,y
-    a = output_buffer[y];
-    //     php
+    while (1)
     {
-        uint8_t saved_flags_ = flags;
-        //     iny
-        y++;
-        //     plp
-        flags = saved_flags_;
+        //     lda output_buffer,y
+        a = output_buffer[y];
+        //     php
+        {
+            uint8_t saved_flags_ = flags;
+            //     iny
+            y++;
+            //     plp
+            flags = saved_flags_;
+        }
+        //     beq c8a86
+        if (flags & FLAG_Z)
+            goto c8a86;
+        //     inc l0082
+        l0082++;
+        //     cpy l0048
+        if (y >= l0048)
+            break;
+        //     bcc loop_c8a74
     }
-    //     beq c8a86
-    if (flags & FLAG_Z)
-        goto c8a86;
-    //     inc l0082
-    l0082++;
-    //     cpy l0048
-    if (y < l0048)
-        goto loop_c8a74;
-    //     bcc loop_c8a74
     //     dec l0082
     l0082--;
 c8a84:
@@ -981,31 +983,34 @@ c8ada:
         goto c8b11;
     //     ldx input_buffer_offset+1
     x = l0080;
-loop_c8ae4:
     // loop_c8ae4:
-    //     lda (ptr2),y
-    a = ram[ptr2 + y];
-    //     iny
-    y++;
-    //     jsr is_uppercase
-    if (isupper(a))
+    for (;;)
     {
-        flags &= ~FLAG_C;
+        //     lda (ptr2),y
+        a = ram[ptr2 + y];
+        //     iny
+        y++;
+        //     jsr is_uppercase
+        if (isupper(a))
+        {
+            flags &= ~FLAG_C;
+        }
+        else
+        {
+            flags |= FLAG_C;
+        }
+        //     bcc c8af3
+        if (!(flags & FLAG_C))
+            goto c8af3;
+        //     ror print_xpos
+        print_xpos = ror(&flags, print_xpos); // C live
+        //     dex
+        x--;
+        //     bne loop_c8ae4
+        if (x != 0)
+            continue;
+        break;
     }
-    else
-    {
-        flags |= FLAG_C;
-    }
-    //     bcc c8af3
-    if (!(flags & FLAG_C))
-        goto c8af3;
-    //     ror print_xpos
-    print_xpos = ror(&flags, print_xpos); // C live
-    //     dex
-    x--;
-    if (x != 0)
-        goto loop_c8ae4;
-    //     bne loop_c8ae4
     //     beq c8b11
     goto c8b11;
 

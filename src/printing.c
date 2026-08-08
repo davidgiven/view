@@ -280,42 +280,47 @@ static void expand_line(void)
         return;
     // c9537:
 c9537:
-    //     lda (current_format_line_ptr),y
-    a = ram[current_format_line_ptr + y];
-    //     iny
-    y++;
-    //     cmp #0x7c ; '|'
-    if (a == 0x7c)
-        goto c955e;
-    // c953e:
-c953e:
-    //     sta output_buffer,x
-    output_buffer[x] = a;
-    //     jsr check_for_control_code
-    control_code_t cc = check_for_control_code(a);
-    //     bne c9548
-    if (cc != NO_CONTROL_CODE)
+    for (;;)
     {
-        l0083++;
+        //     lda (current_format_line_ptr),y
+        a = ram[current_format_line_ptr + y];
+        //     iny
+        y++;
+        //     cmp #0x7c ; '|'
+        if (a == 0x7c)
+            goto c955e;
+        // c953e:
+    c953e:
+        for (;;)
+        {
+            //     sta output_buffer,x
+            output_buffer[x] = a;
+            //     jsr check_for_control_code
+            control_code_t cc = check_for_control_code(a);
+            //     bne c9548
+            if (cc != NO_CONTROL_CODE)
+            {
+                l0083++;
+            }
+            //     inx
+            x++;
+            //     cmp #0x0d
+            //     beq c9555
+            if (a == 0x0d)
+            {
+                flags |=
+                    FLAG_C; // C = (a >= 0x0d) = 1, feeds c9555's sbc/return
+                goto c9555;
+            }
+            //     cpx #MAX_LINE_LENGTH-1
+            //     bcc c9537
+            if (x < MAX_LINE_LENGTH - 1)
+                break;
+            //     lda #0x0d
+            a = 0x0d;
+            //     bne c953e ; ALWAYS branch
+        }
     }
-    //     inx
-    x++;
-    //     cmp #0x0d
-    //     beq c9555
-    if (a == 0x0d)
-    {
-        flags |= FLAG_C; // C = (a >= 0x0d) = 1, feeds c9555's sbc/return
-        goto c9555;
-    }
-    //     cpx #MAX_LINE_LENGTH-1
-    //     bcc c9537
-    if (x < MAX_LINE_LENGTH - 1)
-        goto c9537;
-    //     lda #0x0d
-    //     bne c953e                                                         ;
-    //     ALWAYS branch
-    goto c953e;
-
     // c9555:
 c9555:
     //     lda print_flags
@@ -388,41 +393,45 @@ static uint8_t process_header_footer_line(uint8_t x, uint8_t y)
     l0083 = a;
     //     ldx #0x3f ; '?'
     x = 0x3f;
-loop_c9589:
-    //     iny
-    y++;
-    //     sty l0082
-    l0082 = y;
-    //     lda (current_format_line_ptr),y
-    a = ram[current_format_line_ptr + y];
-    //     cmp #0x0d
-    //     cmp #0x1b
-    //     cmp l0083
-    // c959c:
-    //     ora #0x80
-    // c959e:
-    //     jsr sub_c95b2
-    // (branch restructured: |= 0x80 when a is 0x0d, or equals l0083)
-    if (a == 0x0d)
-        a |= 0x80;
-    else
+    // loop_c9589:
+    for (;;)
     {
-        if (a < 0x1b)
-            a = 0x20;
-        if (a == l0083)
+        //     iny
+        y++;
+        //     sty l0082
+        l0082 = y;
+        //     lda (current_format_line_ptr),y
+        a = ram[current_format_line_ptr + y];
+        //     cmp #0x0d
+        //     cmp #0x1b
+        //     cmp l0083
+        // c959c:
+        //     ora #0x80
+        // c959e:
+        //     jsr sub_c95b2
+        // (branch restructured: |= 0x80 when a is 0x0d, or equals l0083)
+        if (a == 0x0d)
             a |= 0x80;
+        else
+        {
+            if (a < 0x1b)
+                a = 0x20;
+            if (a == l0083)
+                a |= 0x80;
+        }
+        store_to_output_buffer(a, tmp23);
+        //     cmp #0x8d
+        if (a == 0x8d)
+            goto c95aa;
+        //     ldy l0082
+        y = l0082;
+        //     dex
+        x--;
+        //     bne loop_c9589
+        if (x != 0)
+            continue;
+        break;
     }
-    store_to_output_buffer(a, tmp23);
-    //     cmp #0x8d
-    if (a == 0x8d)
-        goto c95aa;
-    //     ldy l0082
-    y = l0082;
-    //     dex
-    x--;
-    //     bne loop_c9589
-    if (x != 0)
-        goto loop_c9589;
 c95aa:
     //     lda #0x80
     //     jsr sub_c95b2
@@ -1384,22 +1393,25 @@ c9788:
         return;
     }
     // loop_c979d:
-loop_c979d:
-    //     inx
-    x++;
-    //     lda l97b0,x
-    a = l97b0_data[x];
-    if ((int8_t)a < 0)
-        goto c97ae;
-    //     cmp #0x20 ; ' '
-    if (a >= 0x20)
-        goto loop_c979d;
-    //     ldy l0084
-    //     lda l97b1,x
-    a = l97b0_data[x + 1];
-    if ((int8_t)a >= 0)
-        goto c9788;
-    //     bpl c9788
+    for (;;)
+    {
+        //     inx
+        x++;
+        //     lda l97b0,x
+        a = l97b0_data[x];
+        if ((int8_t)a < 0)
+            goto c97ae;
+        //     cmp #0x20 ; ' '
+        if (a >= 0x20)
+            continue;
+        //     ldy l0084
+        //     lda l97b1,x
+        a = l97b0_data[x + 1];
+        if ((int8_t)a >= 0)
+            goto c9788;
+        //     bpl c9788
+        break;
+    }
     // c97ae:
 c97ae:
     //     sec
@@ -3304,39 +3316,43 @@ c91a3:
     x = 0;
     // c91a7:
 c91a7:
-    //     lda (ptr3),y
-    a = ram[ptr3 + y];
-    //     cmp #4
-    //     beq c9184
-    if (a == 4)
+    for (;;)
     {
-        macro_executing_flag = 0;
-        goto c9188_normal_entry;
+        //     lda (ptr3),y
+        a = ram[ptr3 + y];
+        //     cmp #4
+        //     beq c9184
+        if (a == 4)
+        {
+            macro_executing_flag = 0;
+            goto c9188_normal_entry;
+        }
+        //     cmp #0x40 ; '@'
+        //     beq c91da
+        if (a == 0x40)
+            goto c91da;
+        //     iny
+        y++;
+        // loop_c91b2:
+        for (;;)
+        {
+            //     sta current_line_buffer,x
+            ram[RAM_CURRENT_LINE_BUF + x] = a;
+            //     inx
+            x++;
+            //     cmp #0x0d
+            //     beq c91c2
+            if (a == 0x0d)
+                goto c91c2;
+            //     cpx #0x83
+            //     bcc c91a7
+            if (x < 0x83)
+                break;
+            //     lda #0x0d
+            a = 0x0d;
+            //     bne loop_c91b2 ; ALWAYS branch
+        }
     }
-    //     cmp #0x40 ; '@'
-    //     beq c91da
-    if (a == 0x40)
-        goto c91da;
-    //     iny
-    y++;
-    // loop_c91b2:
-loop_c91b2:
-    //     sta current_line_buffer,x
-    ram[RAM_CURRENT_LINE_BUF + x] = a;
-    //     inx
-    x++;
-    //     cmp #0x0d
-    //     beq c91c2
-    if (a == 0x0d)
-        goto c91c2;
-    //     cpx #0x83
-    //     bcc c91a7
-    if (x < 0x83)
-        goto c91a7;
-    //     lda #0x0d
-    //     bne loop_c91b2                                                    ;
-    //     ALWAYS branch
-    goto loop_c91b2;
 
     // c91c2:
 c91c2:
