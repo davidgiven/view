@@ -167,15 +167,15 @@ static void change_cmd(struct scan_state* scan)
 
     // change_cmd:
     //     jsr sub_c83f0
-    process_cli_command(scan);
+    cli_cmd_status_t st = process_cli_command(scan);
     //     bcs c82fa
-    if (flags & FLAG_C)
+    if (st == CLI_CMD_NO_STRING)
     {
         cmd_err_no_string();
         return;
     }
     //     beq c82e7
-    if (flags & FLAG_Z)
+    if (st == CLI_CMD_NO_TARGET)
     {
         cmd_err_no_target();
         return;
@@ -1046,9 +1046,9 @@ static void replace_cmd(struct scan_state* scan)
     // ***************************************************************************************
     // replace_cmd:
     //     jsr sub_c83f0
-    process_cli_command(scan);
+    cli_cmd_status_t st = process_cli_command(scan);
     //     beq c82e7
-    if (flags & FLAG_Z)
+    if (st != CLI_CMD_OK)
     {
         cmd_err_no_target();
         return;

@@ -153,7 +153,15 @@ struct scan_state
 
 extern bool reset_command_parse_state(struct scan_state* scan);
 extern void init_document_pointers(void);
-extern void process_cli_command(struct scan_state* scan);
+
+typedef enum
+{
+    CLI_CMD_OK,        // command parsed and processed (was C=0, Z=0)
+    CLI_CMD_NO_TARGET, // no command given (was C=0, Z=1)
+    CLI_CMD_NO_STRING  // area empty / no search string (was C=1, Z=1)
+} cli_cmd_status_t;
+
+extern cli_cmd_status_t process_cli_command(struct scan_state* scan);
 extern void check_area_memory(addr_t ptr2);
 extern void redraw_and_write_back(void);
 extern void setup_area_pointers(addr_t ptr2);

@@ -61,7 +61,7 @@ command_prefix_t check_for_command_prefix(uint8_t ch);
 
 bool reset_command_parse_state(struct scan_state* scan);
 void init_document_pointers(void);
-void process_cli_command(struct scan_state* scan);
+cli_cmd_status_t process_cli_command(struct scan_state* scan);
 void check_area_memory(addr_t ptr2);
 void redraw_and_write_back(void);
 void setup_area_pointers(addr_t ptr2);
@@ -669,7 +669,7 @@ c83da:
     //     rts
 }
 
-void process_cli_command(struct scan_state* scan)
+cli_cmd_status_t process_cli_command(struct scan_state* scan)
 {
     uint8_t x;
     // sub_c83f0
@@ -677,7 +677,7 @@ void process_cli_command(struct scan_state* scan)
     //     jsr sub_c8412
     //     beq c8410
     if (reset_command_parse_state(scan))
-        goto c8410;
+        return CLI_CMD_NO_TARGET; // c8410: no command
     //     jsr sub_c8e33
     //     beq c8402
     if (!scan_input_buffer(scan))
@@ -693,26 +693,19 @@ void process_cli_command(struct scan_state* scan)
     parse_marks_from_command(scan);
     //     jsr sanitise_area
     area_status_t status = sanitise_area();
-    //     sec
-    flags |= FLAG_C;
     //     beq return_4
     if (status == AREA_EMPTY)
     {
-        //     (Z set by beq; C stays set)
-        set_flags(&flags, 0);
-        return;
+        return CLI_CMD_NO_STRING; // sec + Z set: no string
     }
     //     jsr sub_c8c7c
     init_document_pointers();
     //     lda #1
-    set_flags(&flags, 1);
-c8410:
     // c8410:
     //     clc
-    flags &= ~FLAG_C;
     // return_4:
     //     rts
-    return;
+    return CLI_CMD_OK;
 }
 
 bool reset_command_parse_state(struct scan_state* scan)
