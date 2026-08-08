@@ -289,7 +289,8 @@ extern uint8_t l0048;
 extern uint8_t l0042;
 extern uint8_t l0043;
 extern uint8_t printing_from_file_flag;
-extern addr_t ptr6;
+extern addr_t editor_ptr6;
+extern addr_t printer_ptr6;
 extern uint8_t parser_table[];
 
 extern uint8_t l0049;

@@ -120,8 +120,12 @@ addr_t himem; // PROVISIONAL: absolute upper bound of available RAM
 addr_t top_of_screen_line_ptr; // PROVISIONAL: document address of the first
                                // visible line on screen
 // X ptr6: .fill 2
-addr_t ptr6; // PROVISIONAL: file/print read pointer — points to next byte to
-             // read during printing/formatting
+addr_t editor_ptr6;  // PROVISIONAL: editor redraw pointer — the document line
+                     // to position the cursor on during redraw_editor (split
+                     // from the 6502's single ptr6)
+addr_t printer_ptr6; // PROVISIONAL: file/print read pointer — points to next
+                     // byte to read during printing/formatting (split from
+                     // the 6502's single ptr6)
 // X ptr5: .fill 2
 addr_t ptr5; // PROVISIONAL: print-engine source pointer — next line/file-byte
              // to print

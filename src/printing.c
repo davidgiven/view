@@ -2490,7 +2490,7 @@ void print_document(void)
         goto c8f0d;
     //     inc printing_from_file_flag
     printing_from_file_flag++;
-    ptr6 = page;
+    printer_ptr6 = page;
     print_loop();
     goto c8f0d;
     // c8f0a:
@@ -3546,12 +3546,12 @@ static void read_next_output_line(void)
     // loop_c9247:
     do
     {
-        a2 = ram[ptr6 + y];
+        a2 = ram[printer_ptr6 + y];
         flags |= FLAG_C;
         if (a2 == 0)
             return;
         ram[tmp01 + y] = a2;
-        ptr6++;
+        printer_ptr6++;
         tmp01++;
     } while (a2 != 0x0d);
     //     clc

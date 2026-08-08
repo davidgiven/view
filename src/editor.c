@@ -5466,9 +5466,9 @@ static void update_line_length(void)
 
 void clamp_ptr6_to_document(void)
 {
-    // ca741: Updates ptr6 to current_line_ptr if ptr6 is ahead, sets refresh
-    // flags On entry: current_line_ptr, ptr6 On exit:  ptr6 = min(ptr6,
-    // current_line_ptr), l0073 = l003d = 0xff
+    // ca741: Updates editor_ptr6 to current_line_ptr if editor_ptr6 is ahead,
+    // sets refresh flags On entry: current_line_ptr, editor_ptr6 On exit:
+    // editor_ptr6 = min(editor_ptr6, current_line_ptr), l0073 = l003d = 0xff
 
     //     ldx current_line_ptr
     //     ldy current_line_ptr+1
@@ -5477,12 +5477,12 @@ void clamp_ptr6_to_document(void)
     //     bne ca753
     //     cpx ptr6
     //     bcs ca753
-    if (current_line_ptr < ptr6)
+    if (current_line_ptr < editor_ptr6)
     {
         // ca74f:
         //     stx ptr6
         //     sty ptr6+1
-        ptr6 = current_line_ptr;
+        editor_ptr6 = current_line_ptr;
     }
     // ca753:
     //     ldx #0xff
@@ -6548,9 +6548,9 @@ ca2e6:
     //     inx (5271)
     x++;
     //     cpy ptr6+1 (5272)
-    if (y == (uint8_t)(ptr6 >> 8))
+    if (y == (uint8_t)(editor_ptr6 >> 8))
     {
-        if (a == (uint8_t)(ptr6 & 0xff))
+        if (a == (uint8_t)(editor_ptr6 & 0xff))
         {
             l003d = x;
         }
@@ -6755,9 +6755,9 @@ ca395:
     //     inx (5384)
     x++;
     //     lda ptr6 (5385)
-    a = (uint8_t)(ptr6 & 0xff);
+    a = (uint8_t)(editor_ptr6 & 0xff);
     //     ldy ptr6+1 (5386)
-    y = (uint8_t)(ptr6 >> 8);
+    y = (uint8_t)(editor_ptr6 >> 8);
     //     bne ca3c1 (5387)
     if (y != 0)
         goto ca3c1;
@@ -6871,7 +6871,7 @@ ca3e7:
     //     dey (5445)
     y = -1;
     //     sty ptr6+1 (5446)
-    ptr6 = (ptr6 & 0x00ff) | ((uint16_t)y << 8);
+    editor_ptr6 = (editor_ptr6 & 0x00ff) | ((uint16_t)y << 8);
     //     ldy ypos (5447) jsr set_cursor_position (5448)
     screen_setcursor(x, ypos);
     //     jmp cursor_on (5449)
