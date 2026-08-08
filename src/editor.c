@@ -3957,23 +3957,21 @@ c9cf5:
         if (marker_index == 0x0c)
             goto c9d0d;
         //     lda l0081
-        a = l0081;
         //     clc
-        flags &= ~FLAG_C;
         //     adc ((uint8_t*)&tmp45)[0]
-        a = adc(&flags, a, ((uint8_t*)&tmp45)[0]); // C live
         //     sta markers_array,x
-        ((uint8_t*)markers_array)[marker_index] = a;
         //     lda ((uint8_t*)&tmp45)[1]
-        a = ((uint8_t*)&tmp45)[1];
         //     adc #0
-        a = adc(&flags, a, 0); // C live
         //     sta markers_array+1,x
-        ((uint8_t*)markers_array)[marker_index + 1] = a;
-        //     bcc loop_c9cf9
-        if (!(flags & FLAG_C))
-            continue;
-        break;
+        // (16-bit arithmetic: markers_array[marker_index] = tmp45 + l0081;
+        //  the bcc loop_c9cf9 continues while the address fits in 16 bits)
+        {
+            uint16_t val = tmp45 + l0081;
+            ((uint8_t*)markers_array)[marker_index] = (uint8_t)(val & 0xff);
+            ((uint8_t*)markers_array)[marker_index + 1] = (uint8_t)(val >> 8);
+            if (tmp45 + (uint16_t)l0081 >= 0x10000)
+                break;
+        }
     }
     // c9d0d:
 c9d0d:
@@ -6028,9 +6026,9 @@ c98b5:
         l0045--;
     }
     //     clc
-    flags &= ~FLAG_C;
     //     adc l0044
-    a = adc(&flags, a, l0044); // none live
+    // (plain addition: a += l0044)
+    a += l0044;
     //     sta input_buffer,y
     input_buffer[y] = a;
     //     lda l0082
@@ -7767,21 +7765,17 @@ static void find_next_word_boundary(uint8_t y)
     //     tya
     a = y;
     //     sec
-    flags |= FLAG_C;
     //     adc current_line_ptr
-    a = adc(&flags, a, (uint16_t)(uint8_t)(current_line_ptr & 0xff)); // C live
     //     sta ((uint8_t*)&tmp89)[0]
-    ((uint8_t*)&tmp89)[0] = a;
     //     sta ((uint8_t*)&tmp45)[0]
-    ((uint8_t*)&tmp45)[0] = a;
     //     lda current_line_ptr+1
-    a = (uint8_t)(current_line_ptr >> 8);
     //     adc #0
-    a = adc(&flags, a, 0); // Z, C live
     //     sta ((uint8_t*)&tmp89)[1]
-    ((uint8_t*)&tmp89)[1] = a;
     //     sta ((uint8_t*)&tmp45)[1]
-    ((uint8_t*)&tmp45)[1] = a;
+    // (16-bit arithmetic: the sec before the adc adds 1, so
+    //  tmp89 = tmp45 = current_line_ptr + y + 1)
+    tmp89 = current_line_ptr + a + 1;
+    tmp45 = tmp89;
     //     ldy #0
     y = 0;
     //     sty l0083
@@ -8201,22 +8195,21 @@ caad5:
     if (idx == 0x0c)
         goto caae8;
     //     tya
-    a = y;
     //     clc
-    flags &= ~FLAG_C;
     //     adc current_format_line_ptr
-    a = adc(&flags, a, (uint8_t)(current_format_line_ptr & 0xff)); // C live
     //     sta __begin_pointer_array,x
-    ((uint8_t*)markers_array)[idx] = a;
     //     lda current_format_line_ptr+1
-    a = (uint8_t)(current_format_line_ptr >> 8);
     //     adc #0
-    a = adc(&flags, a, 0); // Z live
     //     sta markers_array+1,x
-    ((uint8_t*)markers_array)[idx + 1] = a;
-    //     bne caad5
-    if (!(flags & FLAG_Z))
-        goto caad5;
+    // (16-bit arithmetic: markers_array[idx] = current_format_line_ptr + y;
+    //  the bne caad5 loops while the high byte of the result is non-zero)
+    {
+        uint16_t val = current_format_line_ptr + y;
+        ((uint8_t*)markers_array)[idx] = (uint8_t)(val & 0xff);
+        ((uint8_t*)markers_array)[idx + 1] = (uint8_t)(val >> 8);
+        if ((uint8_t)(val >> 8) != 0)
+            goto caad5;
+    }
     // caae8:
 caae8:
     //     lda (current_line_ptr),y

@@ -159,11 +159,9 @@ static void ce_fmt_cmd(void)
     if (a == 0)
         return;
     //     lsr
-    {
-        flags = (flags & ~(FLAG_C | FLAG_Z | FLAG_N)) | ((a & 1) ? FLAG_C : 0);
-        a >>= 1;
-        flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
-    }
+    // (flags not used; the following sec and C-comparisons set/read their
+    //  own values)
+    a >>= 1;
     //     sta l0084
     l0084 = a;
     //     lda ruler_right_stop
@@ -180,28 +178,25 @@ static void ce_fmt_cmd(void)
     //     sbc ruler_left_stop
     a = sbc(&flags, a, ruler_left_stop); // none live
     //     lsr
-    {
-        flags = (flags & ~(FLAG_C | FLAG_Z | FLAG_N)) | ((a & 1) ? FLAG_C : 0);
-        a >>= 1;
-        flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
-    }
+    // (flags not used; the following add and C-comparisons set/read their
+    //  own values)
+    a >>= 1;
     //     sec
-    flags |= FLAG_C;
     //     adc ruler_left_stop
-    a = adc(&flags, a, ruler_left_stop); // none live
+    // (sec makes this a + ruler_left_stop + 1)
+    a += ruler_left_stop + 1;
     //     sec
-    flags |= FLAG_C;
     //     sbc l0084
-    a = sbc(&flags, a, l0084); // C, V live
     //     bcs c950f
-    if (flags & FLAG_C)
+    // (sbc with C=1 is a plain subtraction; its C flag (no borrow) selects
+    //  the result passed to c950f_impl)
+    if (a >= l0084)
     {
-        c950f_impl(a);
+        c950f_impl(a - l0084);
         return;
     }
     //     lda #0
-    //     beq c950f                                                         ;
-    //     ALWAYS branch
+    //     beq c950f ; ALWAYS branch
     c950f_impl(0);
     return;
 }
@@ -725,15 +720,14 @@ static void op_fmt_cmd(void)
     //     lda register_value_p
     uint8_t a = ram[RAM_REGISTER_VALUE_P];
     //     lsr
-    flags = (flags & ~(FLAG_C | FLAG_Z | FLAG_N)) | ((a & 1) ? FLAG_C : 0);
-    a >>= 1;
-    flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
-    //     bcc page_eject_fmt
-    if (!(flags & FLAG_C))
+    // (only the C flag is used: the shifted-out low bit selects the page
+    //  parity branch)
+    if (!(a & 1))
     {
         page_eject_fmt();
         return;
     }
+    a >>= 1;
     //     bcs c9642                                                         ;
     //     ALWAYS branch
     c9642_tail();
@@ -747,15 +741,14 @@ static void ep_fmt_cmd(void)
     //     lda register_value_p
     uint8_t a = ram[RAM_REGISTER_VALUE_P];
     //     lsr
-    flags = (flags & ~(FLAG_C | FLAG_Z | FLAG_N)) | ((a & 1) ? FLAG_C : 0);
-    a >>= 1;
-    flags |= (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
-    //     bcs page_eject_fmt
-    if (flags & FLAG_C)
+    // (only the C flag is used: the shifted-out low bit selects the page
+    //  parity branch)
+    if (a & 1)
     {
         page_eject_fmt();
         return;
     }
+    a >>= 1;
     // c9642:
     c9642_tail();
     return;
@@ -2961,7 +2954,8 @@ static void render_header_or_footer(uint16_t yx)
     //     txa
     a = x;
     //     lsr
-    a = asr(&flags, a); // Z live
+    // (flags not used: get_right_margin sets them fresh; plain shift)
+    a >>= 1;
     //     sta l0081
     l0081 = a;
     //     jsr sub_c93be
@@ -2970,20 +2964,20 @@ static void render_header_or_footer(uint16_t yx)
     if (flags & FLAG_Z)
         goto c9355;
     //     lsr
-    a = asr(&flags, a); // none live
+    // (flags not used; plain shift)
+    a >>= 1;
     //     sec
-    flags |= FLAG_C;
     //     sbc l0081
-    a = sbc(&flags, a, l0081); // C live
     //     bcc c9355
-    if ((flags & FLAG_C))
+    //     sbc l0039
+    //     bcc c9355
+    // (the two sbc subtractions are equivalent to a C comparison:
+    //  reach add_justification_spaces iff a >= l0081 + l0039, with
+    //  the count a - l0081 - l0039)
+    if (a >= l0081 + l0039)
     {
-        a = sbc(&flags, a, l0039); // C live
-        if ((flags & FLAG_C))
-        {
-            x = a;
-            a = add_justification_spaces(x);
-        }
+        x = a - l0081 - l0039;
+        a = add_justification_spaces(x);
     }
 c9355:
     //     jsr c937b
