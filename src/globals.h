@@ -8,6 +8,22 @@
 
 typedef uint16_t addr_t;
 
+// Result of check_for_command_prefix / deref_and_check_for_command_prefix
+typedef enum
+{
+    NO_COMMAND_PREFIX = 0,
+    COMMAND_PREFIX, /* 0x80 format command */
+    RULER_PREFIX,   /* 0x81 ruler line */
+} command_prefix_t;
+
+// Result of check_for_control_code
+typedef enum
+{
+    NO_CONTROL_CODE = 0,
+    HIGHLIGHT1_CODE, /* 0x1c highlight 1 toggle */
+    HIGHLIGHT2_CODE, /* 0x1d highlight 2 toggle */
+} control_code_t;
+
 // Flag bit masks
 #define FLAG_C 0x01
 #define FLAG_Z 0x02
@@ -120,8 +136,8 @@ extern addr_t tmp01, tmp23, tmp45, tmp67, tmp89;
 extern uint8_t print_flags, folding_flag, macro_executing_flag;
 extern uint8_t ruler_right_stop, ruler_left_stop;
 
-extern uint8_t check_for_command_prefix(uint8_t ch);
-extern uint8_t check_for_control_code(uint8_t a);
+extern command_prefix_t check_for_command_prefix(uint8_t ch);
+extern control_code_t check_for_control_code(uint8_t a);
 extern void render_number_to_screen(uint16_t val);
 extern void print_char_via_putchar(uint8_t a);
 // Functions in view.c called by other modules

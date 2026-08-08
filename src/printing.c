@@ -292,9 +292,9 @@ c953e:
     //     sta output_buffer,x
     output_buffer[x] = a;
     //     jsr check_for_control_code
-    check_for_control_code(a);
+    control_code_t cc = check_for_control_code(a);
     //     bne c9548
-    if ((flags & FLAG_Z))
+    if (cc != NO_CONTROL_CODE)
     {
         l0083++;
     }
@@ -969,9 +969,9 @@ c96a2:
     //     lda (last_macro_ptr),y
     a = ram[last_macro_ptr + y];
     //     jsr check_for_command_prefix
-    flags = check_for_command_prefix(a);
+    command_prefix_t cp = check_for_command_prefix(a);
     //     bne c96f8
-    if (!(flags & FLAG_Z))
+    if (cp == NO_COMMAND_PREFIX)
         goto c96f8;
     //     jsr lookup_formatting_command
     lookup_formatting_command();
@@ -2545,9 +2545,9 @@ static void print_loop(void)
         //     sty input_buffer_ptr+1
         l0080 = y;
         //     jsr deref_and_check_for_command_prefix
-        flags = deref_and_check_for_command_prefix(y, tmp01);
+        command_prefix_t cp = deref_and_check_for_command_prefix(y, tmp01);
         //     bne c8fce_thunk
-        if (!(flags & FLAG_Z))
+        if (cp == NO_COMMAND_PREFIX)
             goto c8fce_thunk_l;
         //     ldy #3
         y = 3;
@@ -2820,9 +2820,9 @@ c8c95:
     if (x != 0)
         goto c8c95;
     //     jsr check_for_command_prefix
-    flags = check_for_command_prefix(a);
+    command_prefix_t cp = check_for_command_prefix(a);
     //     bne c8c95
-    if (!(flags & FLAG_Z))
+    if (cp == NO_COMMAND_PREFIX)
         goto c8c95;
     //     ldx #0xfd
     x = 0xfd;
@@ -2834,9 +2834,9 @@ c8caf:
     if (a >= 0x20)
         goto c8cc8;
     //     jsr check_for_control_code
-    check_for_control_code(a);
+    control_code_t cc = check_for_control_code(a);
     //     beq c8cc8
-    if (flags & FLAG_Z)
+    if (cc != NO_CONTROL_CODE)
         goto c8cc8;
     //     cmp #0x1a
     if (a == 0x1a)
@@ -3703,7 +3703,6 @@ static uint8_t get_right_margin(void)
     a -= 1;
     set_flags(&flags, a); // Z = (a == 0)
     // return_29:
-return_29:; // fallthrough to rts
     return a;
 }
 
@@ -3730,9 +3729,9 @@ c93ce:
     if ((int8_t)a < 0)
         goto c93e6;
     //     jsr check_for_control_code
-    check_for_control_code(a);
+    control_code_t cc = check_for_control_code(a);
     //     bne c93d9
-    if ((flags & FLAG_Z))
+    if (cc != NO_CONTROL_CODE)
     {
         l0081++;
     }
