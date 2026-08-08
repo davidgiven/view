@@ -881,13 +881,9 @@ static void cf7_join_lines_key(void)
     adjust_pointers(tmp45, 1);
 
     //     lda current_line_ptr
-
     //     ldy current_line_ptr+1
-
     //     jsr cac78
-
-    split_line_at_wrap(tmp89);
-
+    split_line_at_wrap(current_line_ptr);
     //     inc l0079
 
     l0079++;
@@ -4375,7 +4371,13 @@ static void check_pointer_in_area(void)
     addr_t tmp89;
 
     // sub_ca1cc
-    if (doc_ptr1 >= area_start_ptr && doc_ptr1 < area_end_ptr)
+    //     lda doc_ptr1 / ldy doc_ptr1+1
+    //     cpy area_start_ptr+1 / bcc ca1ea / bne ca1da
+    //     cmp area_start_ptr / bcc ca1ea
+    //     ; ca1da: cpy area_end_ptr+1 / bcc ca1c9 / bne ca1e6
+    //     ;        cmp area_end_ptr / bcc ca1c9 / beq ca1c9
+    // (beep when area_start_ptr <= doc_ptr1 <= area_end_ptr)
+    if (doc_ptr1 >= area_start_ptr && doc_ptr1 <= area_end_ptr)
     {
         beep();
         return;
@@ -4405,13 +4407,12 @@ static void check_pointer_in_area(void)
     }
     addr_t saved_tmp67 = tmp67;
     doc_ptr1 = tmp45;
-    {
-        uint16_t adjusted = (tmp23)-1;
-        a = (uint8_t)(adjusted & 0xff);
-        y = (uint8_t)(adjusted >> 8);
-    }
-    split_line_at_wrap(tmp89);
-    split_line_at_wrap(tmp89);
+    //     lda tmp2 / ldy tmp3 / sec / sbc #1 / bcs ca24d / dey
+    uint16_t adjusted = (tmp23)-1;
+    //     jsr split_line_at_wrap
+    split_line_at_wrap(adjusted);
+    //     lda doc_ptr1 / ldy doc_ptr1+1 / jsr split_line_at_wrap
+    split_line_at_wrap(doc_ptr1);
     tmp67 = saved_tmp67;
     l0073 = 1;
     cursor_moved_flag = 1;
@@ -7236,7 +7237,7 @@ uint8_t adjust_area_pointers(addr_t tmp67)
     //     lda ((uint8_t*)&tmp45)[0]
     //     ldy ((uint8_t*)&tmp45)[1]
     //     jmp cac78
-    split_line_at_wrap(tmp89);
+    split_line_at_wrap(tmp45);
     return a;
 }
 
