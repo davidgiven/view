@@ -6,7 +6,7 @@
 
 // call_printer_driver moved to printing.c
 
-uint8_t check_for_command_prefix(uint8_t ch)
+command_prefix_t check_for_command_prefix(uint8_t ch)
 {
     // check_for_command_prefix:
     //     cmp #0x80
@@ -16,30 +16,37 @@ uint8_t check_for_command_prefix(uint8_t ch)
     // return_81:
     //     rts
     if (ch == 0x80)
-        return FLAG_Z | FLAG_C;
+        return COMMAND_PREFIX;
     if (ch == 0x81)
-        return FLAG_Z;
-    return 0;
+        return RULER_PREFIX;
+    return NO_COMMAND_PREFIX;
 }
 
-uint8_t check_for_control_code(uint8_t a)
+control_code_t check_for_control_code(uint8_t a)
 {
     // Pseudocode: Checks if character is a control code (0x1c or 0x1d)
-    // Returns the processor status (still stored in the global flags, so
-    // callers that read it after the call keep working): Z set if a is 0x1c
-    // or 0x1d, C set if a is 0x1c
+    // Returns HIGHLIGHT1_CODE for 0x1c, HIGHLIGHT2_CODE for 0x1d, or
+    // NO_CONTROL_CODE otherwise.  Also sets the global Z/C flags exactly as
+    // the 6502 CMPs do — a later render step (process_document_character's
+    // SBC at ca5f1) reads the C flag produced here.
 
     // check_for_control_code:
     //     cmp #0x1c
-    cmp(&flags, a, 0x1c); // Z live
     //     beq return_63
+    //     cmp #0x1d
+    //     clc
+    //     rts
+    cmp(&flags, a, 0x1c); // Z, C live
     if (!(flags & FLAG_Z))
     {
         cmp(&flags, a, 0x1d); // Z live
         flags &= ~FLAG_C;
     }
-    //     rts
-    return flags;
+    if (a == 0x1c)
+        return HIGHLIGHT1_CODE;
+    if (a == 0x1d)
+        return HIGHLIGHT2_CODE;
+    return NO_CONTROL_CODE;
 }
 
 int compute_bytes_free(void)
@@ -81,7 +88,7 @@ void check_for_at_least_150_bytes_free(void)
     display_not_enough_memory();
 }
 
-uint8_t deref_and_check_for_command_prefix(uint8_t y, addr_t tmp01)
+command_prefix_t deref_and_check_for_command_prefix(uint8_t y, addr_t tmp01)
 {
     // deref_and_check_for_command_prefix:
     //     lda (((uint8_t*)&tmp01)[0]),y
@@ -90,8 +97,8 @@ uint8_t deref_and_check_for_command_prefix(uint8_t y, addr_t tmp01)
     return check_for_command_prefix(a);
 }
 
-// Returns flags value: if ch is 0x80 (format command) → FLAG_Z|FLAG_C;
-// if ch is 0x81 (ruler line) → FLAG_Z; otherwise → 0.
+// Returns COMMAND_PREFIX for ch == 0x80 (format command), RULER_PREFIX for
+// ch == 0x81 (ruler line), or NO_COMMAND_PREFIX otherwise.
 
 void display_document_file_state(void)
 {
@@ -262,18 +269,16 @@ void print_char_just_to_screen(uint8_t a)
         return;
     }
     //     jsr check_for_control_code
-    check_for_control_code(a);
+    control_code_t cc = check_for_control_code(a);
     //     bne c9488
-    if (!(flags & FLAG_Z))
+    if (cc == NO_CONTROL_CODE)
         goto c9488;
     //     pha
     {
         uint8_t saved_a = a;
         //     lda #0x2d ; '-'
-        a = 0x2d; // '-'
+        a = (cc == HIGHLIGHT1_CODE) ? 0x2d : 0x2a;
         //     bcs c947e
-        if (!(flags & FLAG_C))
-            a = 0x2a; // '*'
         // c947e:
         //     jsr set_inverted_text_if_not_mode_7
         screen_setstyle(STYLE_REVERSE);
@@ -929,9 +934,9 @@ cac20:
     //     lda (current_line_ptr),y
     a = ram[current_line_ptr + yy];
     //     jsr check_for_command_prefix
-    flags = check_for_command_prefix(a);
+    command_prefix_t cp = check_for_command_prefix(a);
     //     bne cac3e
-    if ((flags & FLAG_Z))
+    if (cp != NO_COMMAND_PREFIX)
     {
         a = x;
         x = 0;

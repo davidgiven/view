@@ -340,9 +340,9 @@ c86b8:
     //     ldy #0
     y = 0;
     //     jsr deref_and_check_for_command_prefix
-    flags = deref_and_check_for_command_prefix(y, tmp01);
+    command_prefix_t cp = deref_and_check_for_command_prefix(y, tmp01);
     //     bne c86ea
-    if (!(flags & FLAG_Z))
+    if (cp == NO_COMMAND_PREFIX)
         goto c86ea;
     //     ldx #0
     x = 0;

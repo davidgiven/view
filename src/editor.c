@@ -759,11 +759,11 @@ static void cf6_split_line_key(void)
 
     //     jsr check_for_command_prefix
 
-    flags = check_for_command_prefix(a);
+    command_prefix_t cp = check_for_command_prefix(a);
 
     //     bne c9dcd
 
-    if ((flags & FLAG_Z))
+    if (cp != NO_COMMAND_PREFIX)
     {
         x++;
         x++;
@@ -844,11 +844,11 @@ static void cf7_join_lines_key(void)
 
     //     jsr check_for_command_prefix
 
-    flags = check_for_command_prefix(a);
+    command_prefix_t cp = check_for_command_prefix(a);
 
     //     beq c9eda
 
-    if (flags & FLAG_Z)
+    if (cp != NO_COMMAND_PREFIX)
     {
         beep();
         return;
@@ -1066,6 +1066,7 @@ static void delete_key(void)
 
 void esc_key(void)
 {
+
     // esc_key
 
     // Pseudocode: Saves edit buffer via write_line_back_to_document_safely and
@@ -3419,11 +3420,11 @@ static void sf9_delete_command_key(void)
 
     //     jsr check_for_command_prefix
 
-    flags = check_for_command_prefix(a);
+    command_prefix_t cp = check_for_command_prefix(a);
 
     //     bne return_56
 
-    if (!(flags & FLAG_Z))
+    if (cp == NO_COMMAND_PREFIX)
         return;
 
     //     tya
@@ -4801,9 +4802,11 @@ void set_marker_to_here(uint8_t x)
     y = xpos;
     set_flags(&flags, y); // Z live
     //     jsr check_for_command_prefix
-    flags = check_for_command_prefix(a);
+    command_prefix_t cp = check_for_command_prefix(a);
+
     //     bne cad5c
-    if ((flags & FLAG_Z))
+
+    if (cp != NO_COMMAND_PREFIX)
     {
         y++;
         y++;
@@ -4855,9 +4858,11 @@ cac7b:
     //     lda (((uint8_t*)&tmp89)[0]),y
     a = ram[tmp89 + y];
     //     jsr check_for_command_prefix
-    flags = check_for_command_prefix(a);
+    command_prefix_t cp = check_for_command_prefix(a);
+
     //     bne cac8d
-    if ((flags & FLAG_Z))
+
+    if (cp != NO_COMMAND_PREFIX)
     {
         x++;
         x++;
@@ -5208,9 +5213,9 @@ c8b9f:
     a = ram[tmp89];
     set_flags(&flags, a); // Z live
     //     jsr check_for_command_prefix
-    flags = check_for_command_prefix(a);
+    command_prefix_t cp = check_for_command_prefix(a);
     //     bne c8bb7
-    if (!(flags & FLAG_Z))
+    if (cp == NO_COMMAND_PREFIX)
         goto c8bb7;
     //     lda ((uint8_t*)&tmp89)[0]
     a = ((uint8_t*)&tmp89)[0];
@@ -5251,9 +5256,9 @@ c8bbc:
     if (a == 0)
         goto c8bdb;
     //     jsr check_for_command_prefix
-    flags = check_for_command_prefix(a);
+    command_prefix_t cp2 = check_for_command_prefix(a);
     //     beq c8bdb
-    if (flags & FLAG_Z)
+    if (cp2 != NO_COMMAND_PREFIX)
         goto c8bdb;
     //     lda header_text_maybe,x
     a = header_text_maybe[x];
@@ -5576,9 +5581,9 @@ void draw_line(struct render_state* rs, uint16_t addr)
     //     sty l0039
     rs->char_width = 0;
     //     jsr deref_and_check_for_command_prefix
-    uint8_t f = deref_and_check_for_command_prefix(0, tmp01);
+    command_prefix_t f = deref_and_check_for_command_prefix(0, tmp01);
     //     bne ca4b4
-    if (!(f & FLAG_Z))
+    if (f == NO_COMMAND_PREFIX)
         goto ca4b4;
     //     ldy #3
     //     lda hscroll_pos
@@ -5784,10 +5789,10 @@ static void get_line_length(void)
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + 0];
     //     jsr check_for_command_prefix
-    flags = check_for_command_prefix(a);
+    command_prefix_t cp = check_for_command_prefix(a);
     //     php
     {
-        uint8_t saved_f = flags;
+        command_prefix_t saved_cp = cp;
         //     ldy #0x84
         y = MAX_LINE_LENGTH;
         // loop_caafb:
@@ -5812,12 +5817,11 @@ static void get_line_length(void)
         //     iny
         y++;
         //     tya
-        a = y;
-        //     plp
-        flags = saved_f;
+        a = y; //     plp
+        cp = saved_cp;
     }
     //     bne return_69
-    if ((flags & FLAG_Z))
+    if (cp != NO_COMMAND_PREFIX)
     {
         a += 3;
     }
@@ -6965,10 +6969,10 @@ static void render_char(struct render_state* rs)
 ca514:
     a = char_to_render;
     //     jsr check_for_control_code
-    uint8_t f = check_for_control_code(a);
-    if ((f & FLAG_Z))
+    control_code_t f = check_for_control_code(a);
+    if (f != NO_CONTROL_CODE)
     {
-        if (f & FLAG_C)
+        if (f == HIGHLIGHT1_CODE)
         {
             a = 0x2d;
         }
@@ -7382,9 +7386,9 @@ void format_paragraph(void)
     //      lda (current_line_ptr),y
     a = ram[current_line_ptr + y];
     //     jsr check_for_command_prefix
-    flags = check_for_command_prefix(a);
+    command_prefix_t cp = check_for_command_prefix(a);
     //     beq c9974
-    if (flags & FLAG_Z)
+    if (cp != NO_COMMAND_PREFIX)
     {
         advance_to_next_line();
         return;
@@ -7657,9 +7661,9 @@ c9a2e:
     //     iny
     y++;
     //     jsr check_for_control_code
-    check_for_control_code(a);
+    control_code_t cc = check_for_control_code(a);
     //     beq c9a40
-    if (!(flags & FLAG_Z))
+    if (cc == NO_CONTROL_CODE)
     {
         l0039++;
     }
@@ -7823,9 +7827,9 @@ c9ad5:
     if (a == 0)
         goto c9b2f;
     //     jsr check_for_command_prefix
-    flags = check_for_command_prefix(a);
+    command_prefix_t cp = check_for_command_prefix(a);
     //     beq c9b2f
-    if (flags & FLAG_Z)
+    if (cp != NO_COMMAND_PREFIX)
         goto c9b2f;
     //     cmp #0x0d
     if (a == 0x0d)
@@ -8160,11 +8164,11 @@ static void unpack_line(addr_t ptr1)
     //     ldx current_edit_line_ptr
     //     ldy current_edit_line_ptr+1
     //     jsr check_for_command_prefix
-    flags = check_for_command_prefix(a);
+    command_prefix_t cp = check_for_command_prefix(a);
     //     bne caab7
-    if ((flags & FLAG_Z))
+    if (cp != NO_COMMAND_PREFIX)
     {
-        if (!(flags & FLAG_C))
+        if (cp == RULER_PREFIX)
         {
             edit_buffer_unpacked_flag = a;
         }
@@ -8172,7 +8176,8 @@ static void unpack_line(addr_t ptr1)
     }
     //     stx current_format_line_ptr
     //     sty current_format_line_ptr+1
-    current_format_line_ptr = ((flags & FLAG_Z)) ? ptr1 : RAM_EDIT_BUFFER;
+    current_format_line_ptr =
+        (cp != NO_COMMAND_PREFIX) ? ptr1 : RAM_EDIT_BUFFER;
     //     ldy #0
     y = 0;
     // loop_caabd:

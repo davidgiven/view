@@ -15,6 +15,7 @@
 #include <fcntl.h>
 
 #include "io.h"
+#include "globals.h"
 
 // Functions defined in printing.c
 
@@ -56,7 +57,7 @@ jmp_buf env;
 void check_continuous_editing(void);
 void parse_filename_from_command(void);
 
-uint8_t check_for_command_prefix(uint8_t ch);
+command_prefix_t check_for_command_prefix(uint8_t ch);
 
 void reset_command_parse_state(void);
 void init_document_pointers(void);
@@ -73,7 +74,7 @@ void read_first_chunk_from_input_file(void);
 void read_next_chunk_from_input_file(void);
 static void compute_space_available(void);
 static void compute_space_common(uint8_t a, uint8_t y);
-uint8_t check_for_control_code(uint8_t a);
+control_code_t check_for_control_code(uint8_t a);
 
 static void system_init(void);
 
