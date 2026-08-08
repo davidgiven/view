@@ -1207,9 +1207,8 @@ static void search_cmd(struct scan_state* scan)
     // ***************************************************************************************
     // search_cmd:
     //     jsr sub_c8412
-    reset_command_parse_state(scan);
     //     beq c82e7
-    if (flags & FLAG_Z)
+    if (reset_command_parse_state(scan))
     {
         cmd_err_no_target();
         return;

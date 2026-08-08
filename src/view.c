@@ -59,7 +59,7 @@ void parse_filename_from_command(struct scan_state* scan);
 
 command_prefix_t check_for_command_prefix(uint8_t ch);
 
-void reset_command_parse_state(struct scan_state* scan);
+bool reset_command_parse_state(struct scan_state* scan);
 void init_document_pointers(void);
 void process_cli_command(struct scan_state* scan);
 void check_area_memory(addr_t ptr2);
@@ -675,9 +675,8 @@ void process_cli_command(struct scan_state* scan)
     // sub_c83f0
     // sub_c83f0:
     //     jsr sub_c8412
-    reset_command_parse_state(scan);
     //     beq c8410
-    if (flags & FLAG_Z)
+    if (reset_command_parse_state(scan))
         goto c8410;
     //     jsr sub_c8e33
     //     beq c8402
@@ -716,7 +715,7 @@ c8410:
     return;
 }
 
-void reset_command_parse_state(struct scan_state* scan)
+bool reset_command_parse_state(struct scan_state* scan)
 {
     uint8_t x;
     // sub_c8412
@@ -730,14 +729,14 @@ void reset_command_parse_state(struct scan_state* scan)
     //     jsr sub_c8e33
     //     beq return_5
     if (scan_input_buffer(scan))
-        return;
+        return true; // Z set (no command)
     //     ldx #0
     //     jsr expand_escaped_string
     x = expand_escaped_string(0, scan->pos);
     //     stx l007a
     l007a = x;
     //     cpx #0
-    set_flags(&flags, x); // Z = (x == 0), live out
+    return x == 0; // Z = (x == 0)
     // return_5:
     //     rts
 }

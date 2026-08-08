@@ -151,7 +151,7 @@ struct scan_state
     uint8_t pos; // index of that character into input_buffer
 };
 
-extern void reset_command_parse_state(struct scan_state* scan);
+extern bool reset_command_parse_state(struct scan_state* scan);
 extern void init_document_pointers(void);
 extern void process_cli_command(struct scan_state* scan);
 extern void check_area_memory(addr_t ptr2);
