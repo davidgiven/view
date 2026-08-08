@@ -258,7 +258,7 @@ extern void parse_decimal_number(void);
 extern void parse_optional_filename_from_command(void);
 extern void read_block_from_file(void);
 extern void scan_input_buffer(void);
-extern uint8_t check_for_embedded_ruler(addr_t tmp01);
+extern uint8_t check_for_embedded_ruler(addr_t tmp01, uint8_t y);
 
 // Functions moved to printing.c still called from view.c/other modules
 extern void display_not_enough_memory(void);
@@ -280,10 +280,10 @@ extern uint8_t l0049;
 extern addr_t ptr2;
 
 extern void scan_document_for_next_line(void);
-extern void process_current_document_character(void);
+extern void process_current_document_character(addr_t tmp01);
 extern void check_not_continuous_editing(void);
 extern uint8_t adjust_area_pointers(addr_t tmp67);
-extern void wipe_buffer(uint8_t a);
+extern void wipe_buffer(uint8_t a, addr_t ptr1);
 extern void format_paragraph(void);
 extern void print_document(void);
 extern uint8_t draw_prompt_characters(uint8_t x, uint8_t y);

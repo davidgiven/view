@@ -72,7 +72,7 @@ void read_first_chunk_from_input_file(void);
 // flags.C=0
 void read_next_chunk_from_input_file(void);
 static void compute_space_available(void);
-static void compute_space_common(void);
+static void compute_space_common(uint8_t a, uint8_t y);
 uint8_t check_for_control_code(uint8_t a);
 
 static void system_init(void);
@@ -1273,7 +1273,7 @@ void write_area_to_file(void)
     //     rts
 }
 
-static void compute_space_common(void)
+static void compute_space_common(uint8_t a, uint8_t y)
 {
     // compute_space_common
     // c8daf:
@@ -1347,7 +1347,7 @@ static void compute_space_available(void)
     //     tay
     //     pla
     tmp89 = (addr_t)compute_bytes_free();
-    compute_space_common();
+    compute_space_common(a, y);
 }
 
 static void compute_required_space_for_insertion(void)
@@ -1358,7 +1358,7 @@ static void compute_required_space_for_insertion(void)
     tmp89 = 0;
     //     beq c8daf                                                         ;
     //     ALWAYS branch
-    compute_space_common();
+    compute_space_common(a, y);
 }
 
 void parse_filename_from_command(void)

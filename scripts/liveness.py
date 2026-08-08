@@ -23,18 +23,15 @@ CPPFLAGS = ['-I.', '-Isrc', f'-I{RESOURCE_DIR}/include',
 REGISTERS = ['a', 'x', 'y']
 FLAG_BITS = ['C', 'Z', 'N', 'V']
 TMP_VARS = ['tmp01', 'tmp23', 'tmp45', 'tmp67', 'tmp89']
-BYTE_VARS = [f'tmp{i}' for i in range(10)]
 PTR_VARS = ['ptr1', 'ptr2', 'ptr3', 'ptr5', 'ptr6']
-ALL_VARS_SET = set(REGISTERS + TMP_VARS + BYTE_VARS + PTR_VARS +
+ALL_VARS_SET = set(REGISTERS + TMP_VARS + PTR_VARS +
                    [f'flags:{b}' for b in FLAG_BITS])
 
-TRACKED_VARS = set(REGISTERS + TMP_VARS + BYTE_VARS + PTR_VARS)
+TRACKED_VARS = set(REGISTERS + TMP_VARS + PTR_VARS)
 
 # ─── Inline / lib helpers ─────────────────────────────────────────
 INLINE_HELPERS = {
     'set_flags', 'cmp', 'adc', 'sbc', 'bit', 'rol', 'ror', 'asr',
-    '_tmp0', '_tmp1', '_tmp2', '_tmp3', '_tmp4', '_tmp5',
-    '_tmp6', '_tmp7', '_tmp8', '_tmp9',
 }
 LIB_FUNCTIONS = {
     'exit', 'setjmp', 'longjmp', 'snprintf', 'sprintf', 'printf',
@@ -70,20 +67,6 @@ def helper_flag_defs(name):
     return HELPER_FLAG_DEFS.get(name, set())
 def helper_flag_uses(name):
     return HELPER_FLAG_USES.get(name, set())
-
-# ─── Byte-to-combined mapping ─────────────────────────────────────
-BYTE_TO_COMBINED = {
-    'tmp0': 'tmp01', 'tmp1': 'tmp01',
-    'tmp2': 'tmp23', 'tmp3': 'tmp23',
-    'tmp4': 'tmp45', 'tmp5': 'tmp45',
-    'tmp6': 'tmp67', 'tmp7': 'tmp67',
-    'tmp8': 'tmp89', 'tmp9': 'tmp89',
-}
-COMBINED_TO_BYTES = {
-    'tmp01': ['tmp0', 'tmp1'], 'tmp23': ['tmp2', 'tmp3'],
-    'tmp45': ['tmp4', 'tmp5'], 'tmp67': ['tmp6', 'tmp7'],
-    'tmp89': ['tmp8', 'tmp9'],
-}
 
 # ─── CORRUPTS & ALL_IN_OUT ────────────────────────────────────────
 CORRUPTS = {
@@ -542,16 +525,6 @@ def get_local_info_ast(func_cursor, callee_live_out=None, callee_live_in=None):
         d.update(cd)
         u.update(cu)
 
-        # Byte/combined variable propagation
-        for bv, cv in BYTE_TO_COMBINED.items():
-            if bv in d: d.add(cv)
-            if bv in u: u.add(cv)
-        for cv, blist in COMBINED_TO_BYTES.items():
-            if cv in d:
-                for bv in blist: d.add(bv)
-            if cv in u:
-                for bv in blist: u.add(bv)
-
         # Flag ops via regex (macros expand in AST)
         fd, fu = get_flag_defs_uses(stripped)
         d |= fd
@@ -752,18 +725,6 @@ def _analyze_stmt_effect(cur, local_decls, source_lines, local_info=None,
                          func_params=None):
     """defs/uses of a statement (with byte/flag propagation)."""
     d, u = analyze_stmt(cur, set(local_decls), 'use')
-    for bv, cv in BYTE_TO_COMBINED.items():
-        if bv in d:
-            d.add(cv)
-        if bv in u:
-            u.add(cv)
-    for cv, blist in COMBINED_TO_BYTES.items():
-        if cv in d:
-            for bv in blist:
-                d.add(bv)
-        if cv in u:
-            for bv in blist:
-                u.add(bv)
     if cur.location.line > 0 and cur.location.line <= len(source_lines):
         fd, fu = get_flag_defs_uses(source_lines[cur.location.line - 1])
         d |= fd
@@ -976,7 +937,6 @@ def format_vars(var_set):
     regs = sorted(v for v in var_set if v in REGISTERS)
     bits = sorted(v[6] for v in var_set if v.startswith('flags:'))
     tmps = sorted(v for v in var_set if v in TMP_VARS)
-    bytes = sorted(v for v in var_set if v in BYTE_VARS)
     ptrs = sorted(v for v in var_set if v in PTR_VARS)
     parts = []
     if regs:
@@ -985,8 +945,6 @@ def format_vars(var_set):
         parts.append('|'.join(bits))
     if tmps:
         parts.append(', '.join(tmps))
-    if bytes:
-        parts.append(', '.join(bytes))
     if ptrs:
         parts.append(', '.join(ptrs))
     return '; '.join(parts) if parts else '(none)'

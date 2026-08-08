@@ -21,7 +21,7 @@ extern uint8_t status_line_needs_redrawing_flag;
 extern uint8_t l003a;
 extern uint8_t screen_maxcolumn;
 
-void push_onto_ruler_index(void);
+void push_onto_ruler_index(uint8_t y, addr_t tmp01);
 void pop_from_ruler_index(void);
 void create_default_ruler(uint16_t ruler_addr);
 
@@ -69,10 +69,8 @@ int main(void)
         a = x = y = flags = 0;
         ruler_left_stop = ruler_right_stop = 0;
 
-        tmp0 = (uint8_t)((ruler1_addr - 3) & 0xff);
-        tmp1 = (uint8_t)((ruler1_addr - 3) >> 8);
-
-        push_onto_ruler_index();
+        y = 0;
+        push_onto_ruler_index(y, ruler1_addr - 3);
 
         ASSERT_EQ(0xfe,
             ruler_index_ptr,
@@ -87,10 +85,8 @@ int main(void)
     }
 
     {
-        tmp0 = (uint8_t)((ruler2_addr - 3) & 0xff);
-        tmp1 = (uint8_t)((ruler2_addr - 3) >> 8);
-
-        push_onto_ruler_index();
+        y = 0;
+        push_onto_ruler_index(y, ruler2_addr - 3);
 
         ASSERT_EQ(
             0xfc, ruler_index_ptr, "%d", "ruler_index_ptr decremented to 0xfc");
@@ -127,9 +123,8 @@ int main(void)
     {
         oshwm = 0x0800;
         ruler_index_ptr = 0;
-        tmp0 = (uint8_t)((ruler1_addr - 3) & 0xff);
-        tmp1 = (uint8_t)((ruler1_addr - 3) >> 8);
-        push_onto_ruler_index();
+        y = 0;
+        push_onto_ruler_index(y, ruler1_addr - 3);
 
         uint8_t hi = ram[oshwm + 0xfe];
         uint8_t lo = ram[oshwm + 0xff];
@@ -150,9 +145,8 @@ int main(void)
         addr_t ruler_addr = 0x7200;
         create_default_ruler(ruler_addr);
 
-        tmp0 = (uint8_t)((ruler_addr - 3) & 0xff);
-        tmp1 = (uint8_t)((ruler_addr - 3) >> 8);
-        push_onto_ruler_index();
+        y = 0;
+        push_onto_ruler_index(y, ruler_addr - 3);
 
         ASSERT_EQ(0xfe, ruler_index_ptr, "%d", "ruler_index_ptr = 0xfe");
         ASSERT_EQ(0, ruler_left_stop, "%d", "default ruler left_stop = 0");

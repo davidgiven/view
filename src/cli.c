@@ -34,9 +34,9 @@ static void save_cmd_write_cmd(void);
 static void load_cmd(void);
 static void read_cmd(void);
 static void mode_cmd(void);
-static void microspace_cmd(void);
+static void microspace_cmd(addr_t tmp89);
 static void setup_cmd(void);
-static void field_cmd(void);
+static void field_cmd(addr_t tmp89);
 static void count_cmd(void);
 static void format_cmd(void);
 static void new_cmd(void);
@@ -109,7 +109,7 @@ void execute_cli_command(uint8_t a)
             count_cmd();
             break;
         case 10:
-            field_cmd();
+            field_cmd(tmp89);
             break;
         case 11:
             printer_cmd();
@@ -121,7 +121,7 @@ void execute_cli_command(uint8_t a)
             clear_cmd();
             break;
         case 14:
-            microspace_cmd();
+            microspace_cmd(tmp89);
             break;
         case 15:
             fold_cmd();
@@ -340,7 +340,7 @@ c86b8:
     //     ldy #0
     y = 0;
     //     jsr deref_and_check_for_command_prefix
-    flags = deref_and_check_for_command_prefix(y);
+    flags = deref_and_check_for_command_prefix(y, tmp01);
     //     bne c86ea
     if (!(flags & FLAG_Z))
         goto c86ea;
@@ -409,7 +409,7 @@ c86ea:
     //     ldy #0
     y = 0;
     //     jsr process_current_document_character
-    process_current_document_character();
+    process_current_document_character(tmp01);
     //     and #0x7f
     a &= 0x7f;
     //     ldx #0
@@ -518,7 +518,7 @@ static void edit_cmd(void)
     file_edit_flags = 1;
 }
 
-static void field_cmd(void)
+static void field_cmd(addr_t tmp89)
 {
     // field_cmd
     // Pseudocode: Sets the tab key field width from parsed integer argument
@@ -672,7 +672,7 @@ static void format_cmd(void)
     clear_format_mode_bit7();
     //     lda #0x10
     //     jsr wipe_buffer
-    wipe_buffer(0x10);
+    wipe_buffer(0x10, ptr1);
     //     lda current_edit_line_ptr
     //     sta current_format_line_ptr
     //     lda current_edit_line_ptr+1
@@ -749,7 +749,7 @@ static void load_cmd(void)
     return;
 }
 
-static void microspace_cmd(void)
+static void microspace_cmd(addr_t tmp89)
 {
     // microspace_cmd
     // Pseudocode: Configures microspacing by querying printer driver

@@ -81,7 +81,7 @@ void check_for_at_least_150_bytes_free(void)
     display_not_enough_memory();
 }
 
-uint8_t deref_and_check_for_command_prefix(uint8_t y)
+uint8_t deref_and_check_for_command_prefix(uint8_t y, addr_t tmp01)
 {
     // deref_and_check_for_command_prefix:
     //     lda (((uint8_t*)&tmp01)[0]),y
@@ -894,7 +894,7 @@ cabdf:
     // cabf6:
 cabf6:
     //     jsr sub_cac41
-    check_for_embedded_ruler(tmp01);
+    check_for_embedded_ruler(tmp01, y);
     // cabf9:
 cabf9:
     //     sta ((uint8_t*)&tmp01)[0]
@@ -942,7 +942,7 @@ cac17:
     // cac1d:
 cac1d:
     //     jsr sub_cac41
-    check_for_embedded_ruler(tmp01);
+    check_for_embedded_ruler(tmp01, y);
     // cac20:
 cac20:
     //     sta current_line_ptr
@@ -1130,7 +1130,7 @@ void pop_from_ruler_index(void)
     load_current_ruler(y);
 }
 
-void push_onto_ruler_index(uint8_t y)
+void push_onto_ruler_index(uint8_t y, addr_t tmp01)
 {
     uint8_t a;
     uint8_t a2;
@@ -1219,7 +1219,7 @@ void find_next_line(uint8_t a)
     //     bne push_onto_ruler_stack
     if (!(flags & FLAG_Z))
     {
-        push_onto_ruler_index(y);
+        push_onto_ruler_index(y, tmp01);
         return;
     }
     //     rts

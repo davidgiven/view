@@ -21,7 +21,7 @@ void bad_filename_error(void);
 static void c8f29_sub(uint8_t a);
 static void process_page_footer(void);
 static void print_output_buffer(void);
-static uint8_t scan_string_length(uint8_t y_start);
+static uint8_t scan_string_length(uint8_t y_start, addr_t tmp45);
 void check_not_continuous_editing(void);
 void display_not_enough_memory(void);
 static void microspace_word_processor(void);
@@ -32,26 +32,26 @@ static void print_char_x_times(uint8_t a, uint8_t x);
 void print_document(void);
 static void print_loop(void);
 static void print_newline(void);
-static void print_vertical_space(void);
+static void print_vertical_space(uint8_t x);
 void read_block_from_file(void);
-static void render_header_or_footer(void);
+static void render_header_or_footer(uint8_t y);
 static void render_new_page(void);
 void scan_input_buffer(void);
-static void start_microspacing_if_active(void);
-static void emit_microspacing_spaces(void);
+static void start_microspacing_if_active(uint8_t a);
+static void emit_microspacing_spaces(uint8_t x);
 static void prepare_output_line(void);
 static void parse_register_reference(uint8_t a);
 static void read_next_output_line(void);
 static void compute_lines_remaining_on_page(void);
-static void compute_header_left_section(void);
-static void compute_header_middle_section(void);
+static void compute_header_left_section(addr_t tmp45);
+static void compute_header_middle_section(addr_t tmp45);
 static void compute_header_odd_page_section(void);
 static uint8_t get_line_width(void);
 static uint8_t get_right_margin(void);
-static void copy_header_footer_text(void);
+static void copy_header_footer_text(addr_t tmp23);
 static void get_page_parity(void);
 static void output_left_margin(void);
-static uint8_t add_justification_spaces(void);
+static uint8_t add_justification_spaces(uint8_t x);
 static void convert_char_for_printing(void);
 static void reset_print_registers(void);
 static void write_byte_to_memory(uint8_t a);
@@ -69,7 +69,7 @@ static void evaluate_expression_from_fmt_cmd(void);
 static void get_current_fmt_cmd_byte(void);
 static void get_next_fmt_cmd_byte(uint8_t y);
 void lookup_formatting_command(void);
-static void store_to_output_buffer(uint8_t a);
+static void store_to_output_buffer(uint8_t a, addr_t tmp23);
 static uint8_t process_header_footer_line(uint8_t x, uint8_t y);
 void render_register(uint8_t a, uint8_t y);
 static void render_number_to_output_buffer(uint16_t value);
@@ -351,7 +351,7 @@ c955e:
     goto c9537;
 }
 
-static void store_to_output_buffer(uint8_t a)
+static void store_to_output_buffer(uint8_t a, addr_t tmp23)
 {
     // sub_c95b2
     // sub_c95b2:
@@ -372,7 +372,7 @@ static uint8_t process_header_footer_line(uint8_t x, uint8_t y)
 
     // c9575
     //     stx ((uint8_t*)&tmp23)[0]
-    tmp23 = (addr_t)(y) << 8 | x;
+    addr_t tmp23 = (addr_t)(y) << 8 | x;
     //     lda #0
     //     sta l0081
     l0081 = 0;
@@ -412,7 +412,7 @@ loop_c9589:
         if (a == l0083)
             a |= 0x80;
     }
-    store_to_output_buffer(a);
+    store_to_output_buffer(a, tmp23);
     //     cmp #0x8d
     if (a == 0x8d)
         goto c95aa;
@@ -426,11 +426,11 @@ loop_c9589:
 c95aa:
     //     lda #0x80
     //     jsr sub_c95b2
-    store_to_output_buffer(0x80);
+    store_to_output_buffer(0x80, tmp23);
     //     jsr sub_c95b2
-    store_to_output_buffer(0x80);
+    store_to_output_buffer(0x80, tmp23);
     //     (fall through into sub_c95b2)
-    store_to_output_buffer(0x80);
+    store_to_output_buffer(0x80, tmp23);
     return a;
     // MULTIPLE ENTRY POINTS: dh_fmt_cmd, df_fmt_cmd
 }
@@ -1720,20 +1720,20 @@ static void process_page_footer(void)
     //     X=number of lines
     x = l0021;
     //     jsr print_vertical_space
-    print_vertical_space();
+    print_vertical_space(x);
     //     ldx footer_margin                                                 ;
     //     X=number of lines
     x = footer_margin;
     //     jsr print_vertical_space
-    print_vertical_space();
+    print_vertical_space(x);
     //     lda footers_enabled_flag
     a = footers_enabled_flag;
     //     beq c927c
     if (a != 0)
     {
         x = (uint8_t)((uintptr_t)footer_text_maybe & 0xff);
-        y = (uint8_t)((uintptr_t)footer_text_maybe >> 8);
-        render_header_or_footer();
+        uint8_t y = (uint8_t)((uintptr_t)footer_text_maybe >> 8);
+        render_header_or_footer(y);
     }
     //     jsr print_newline
     print_newline();
@@ -1741,7 +1741,7 @@ static void process_page_footer(void)
     //     X=number of lines
     x = bottom_margin;
     //     jsr print_vertical_space
-    print_vertical_space();
+    print_vertical_space(x);
     // c9284:
 c9284:
     //     inc register_value_p
@@ -1797,7 +1797,7 @@ static void print_output_buffer(void)
     //     rts
 }
 
-static uint8_t scan_string_length(uint8_t y_start)
+static uint8_t scan_string_length(uint8_t y_start, addr_t tmp45)
 {
     // c93b8:
     //     iny
@@ -2233,7 +2233,7 @@ c912b:
             l0045--;
         }
         //     jsr sub_c9173
-        emit_microspacing_spaces();
+        emit_microspacing_spaces(x);
         //     lda #0x20 ; ' '
         a = 0x20;
         //     bne c9160 ; ALWAYS branch
@@ -2244,7 +2244,7 @@ c912b:
         //     ldx microspacing_flag
         x = microspacing_flag;
         //     jsr sub_c9173
-        emit_microspacing_spaces();
+        emit_microspacing_spaces(x);
         // c9160:
     c9160:
         //     jsr print_char
@@ -2293,7 +2293,7 @@ c8ffb_inline:
     //     sta l0021
     l0021 = a;
     //     jsr print_vertical_space
-    print_vertical_space();
+    print_vertical_space(x);
     //     rts
     return;
 }
@@ -2535,14 +2535,14 @@ static void print_loop(void)
         if (flags & FLAG_C)
             return;
         //     jsr sub_c916a
-        start_microspacing_if_active();
+        start_microspacing_if_active(a);
         //     ldy #0
         y = 0;
         set_flags(&flags, y); // Z live
         //     sty input_buffer_ptr+1
         l0080 = y;
         //     jsr deref_and_check_for_command_prefix
-        flags = deref_and_check_for_command_prefix(y);
+        flags = deref_and_check_for_command_prefix(y, tmp01);
         //     bne c8fce_thunk
         if (!(flags & FLAG_Z))
             goto c8fce_thunk_l;
@@ -2754,7 +2754,7 @@ static void print_loop(void)
         //     sta l0021
         l0021 = a;
         //     jsr print_vertical_space
-        print_vertical_space();
+        print_vertical_space(x);
         // c900e:
         //     jmp c8f30
     }
@@ -2768,7 +2768,7 @@ static void print_newline(void)
     print_char(a);
 }
 
-static void print_vertical_space(void)
+static void print_vertical_space(uint8_t x)
 {
     // Pseudocode: Prints X number of blank lines (newlines)
 
@@ -2920,7 +2920,7 @@ c8cf2:
     //     rts
 }
 
-static void render_header_or_footer(void)
+static void render_header_or_footer(uint8_t y)
 {
     // render_header_or_footer
     // Pseudocode: Renders header or footer text with centering and
@@ -2946,7 +2946,7 @@ static void render_header_or_footer(void)
     //     sta l0039
     l0039 = a;
     //     jsr sub_c9393
-    compute_header_left_section();
+    compute_header_left_section(tmp45);
     //     jsr sub_c93fd
     get_page_parity();
     //     bcs c932e
@@ -2955,13 +2955,13 @@ static void render_header_or_footer(void)
         compute_header_odd_page_section();
     }
     //     jsr sub_c93c8
-    copy_header_footer_text();
+    copy_header_footer_text(tmp23);
     //     jsr c937b
     print_output_buffer();
     //     jsr sub_c939b
-    compute_header_middle_section();
+    compute_header_middle_section(tmp45);
     //     jsr sub_c93c8
-    copy_header_footer_text();
+    copy_header_footer_text(tmp23);
     //     txa
     a = x;
     //     beq c9355
@@ -2993,7 +2993,7 @@ static void render_header_or_footer(void)
         if ((flags & FLAG_C))
         {
             x = a;
-            a = add_justification_spaces();
+            a = add_justification_spaces(x);
         }
     }
 c9355:
@@ -3006,10 +3006,10 @@ c9355:
     //     bcs c9363
     if (!(flags & FLAG_C))
     {
-        compute_header_left_section();
+        compute_header_left_section(tmp45);
     }
     //     jsr sub_c93c8
-    copy_header_footer_text();
+    copy_header_footer_text(tmp23);
     //     jsr sub_c93be
     a = get_right_margin();
     //     beq c937b
@@ -3043,7 +3043,7 @@ c9355:
     //     inx
     x++;
     //     jsr sub_c941a
-    a = add_justification_spaces();
+    a = add_justification_spaces(x);
     print_output_buffer();
 }
 
@@ -3122,15 +3122,15 @@ c92d4:
     //     X=number of lines
     x = top_margin;
     //     jsr print_vertical_space
-    print_vertical_space();
+    print_vertical_space(x);
     //     lda headers_enabled_flag
     a = headers_enabled_flag;
     //     beq c92e8
     if (a != 0)
     {
         x = (uint8_t)((uintptr_t)header_text_maybe & 0xff);
-        y = (uint8_t)((uintptr_t)header_text_maybe >> 8);
-        render_header_or_footer();
+        uint8_t y = (uint8_t)((uintptr_t)header_text_maybe >> 8);
+        render_header_or_footer(y);
     }
     //     jsr print_newline
     print_newline();
@@ -3138,7 +3138,7 @@ c92d4:
     //     X=number of lines
     x = header_margin;
     //     jsr print_vertical_space
-    print_vertical_space();
+    print_vertical_space(x);
     // c92f0: fall-through to shared routine
     compute_lines_remaining_on_page();
     return;
@@ -3183,7 +3183,7 @@ void scan_input_buffer(void)
     return;
 }
 
-static void start_microspacing_if_active(void)
+static void start_microspacing_if_active(uint8_t a)
 {
     uint8_t x;
 
@@ -3205,21 +3205,17 @@ static void start_microspacing_if_active(void)
     //     jsr sub_c9445
     print_alignment_spaces(a);
     //     pha
-    {
-        uint8_t saved_a = a;
-        //     stx l0043
-        l0043 = x;
-        //     lda #9
-        printer_driver_ptr->printer_microspace();
-        //     pla
-        a = saved_a;
-    }
+    //     stx l0043
+    l0043 = x;
+    //     lda #9
+    printer_driver_ptr->printer_microspace();
+    //     pla
     // return_25:
     //     rts
     return;
 }
 
-static void emit_microspacing_spaces(void)
+static void emit_microspacing_spaces(uint8_t x)
 {
     // Pseudocode: Emits spaces for microspacing by calling printer driver with
     // spacing count
@@ -3598,7 +3594,7 @@ c930d:
     return;
 }
 
-static void compute_header_left_section(void)
+static void compute_header_left_section(addr_t tmp45)
 {
     uint8_t a;
 
@@ -3623,7 +3619,7 @@ static void compute_header_left_section(void)
     }
 }
 
-static void compute_header_middle_section(void)
+static void compute_header_middle_section(addr_t tmp45)
 {
     uint8_t y;
 
@@ -3659,7 +3655,7 @@ static void compute_header_odd_page_section(void)
     //     jsr sub_c93b6
     //     jsr c93b8
     // c93a7:
-    uint8_t y = scan_string_length(get_line_width());
+    uint8_t y = scan_string_length(get_line_width(), tmp45);
     y++;
     a = y;
     y--;
@@ -3678,7 +3674,7 @@ static uint8_t get_line_width(void)
 {
     // sub_c93b6:
     //     ldy #0xff
-    return scan_string_length(0xff);
+    return scan_string_length(0xff, tmp45);
 }
 
 static uint8_t get_right_margin(void)
@@ -3701,7 +3697,7 @@ return_29:; // fallthrough to rts
     return a;
 }
 
-static void copy_header_footer_text(void)
+static void copy_header_footer_text(addr_t tmp23)
 {
     uint8_t a;
     uint8_t y = 0;
@@ -3797,7 +3793,7 @@ return_31:; // fallthrough to rts
 
 static void output_left_margin(void)
 {
-    uint8_t x;
+    uint8_t a, x;
 
     // Pseudocode: Outputs left margin spaces, adjusting for two-sided printing
 
@@ -3825,13 +3821,13 @@ static void output_left_margin(void)
     print_char_x_times(a, x);
 }
 
-static uint8_t add_justification_spaces(void)
+static uint8_t add_justification_spaces(uint8_t x)
 {
     // Pseudocode: Adds extra spaces to x position for centering/justification
 
     // sub_c941a:
     //     txa
-    a = x;
+    uint8_t a = x;
     //     clc
     //     adc l0039
     a += l0039;
