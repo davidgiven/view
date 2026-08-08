@@ -1247,32 +1247,36 @@ static void search_cmd(struct scan_state* scan)
 
 static void setup_cmd(struct scan_state* scan)
 {
-    addr_t tmp67;
-    addr_t tmp89;
+    uint8_t tmp6;
+    uint8_t tmp7;
+    uint8_t tmp8;
     uint8_t a;
     uint8_t y;
     // setup_cmd
     // Pseudocode: Parses flag letters and sets format_mode_flag,
     // justifying_flag, insert_mode_flag
-
     // ;
     // ***************************************************************************************
     // setup_cmd:
+    // c867d:
+    static const uint8_t c867d_data[] = {0x4e, 0x4a, 0x00, 0x49, 0x00};
+    // c8681:
+    static const uint8_t c8681_data[] = {0x00, 0x00, 0xff};
     //     ldx #1
     uint8_t x;
     x = 1;
-    //     stx ((uint8_t*)&tmp67)[0]
-    ((uint8_t*)&tmp67)[0] = x;
+    //     stx tmp6
+    tmp6 = x;
     //     dex                                                               ;
     //     X=0x00
     x--;
-    //     stx ((uint8_t*)&tmp89)[0]
-    ((uint8_t*)&tmp89)[0] = x;
+    //     stx tmp8
+    tmp8 = x;
     //     dex                                                               ;
     //     X=0xff
     x--;
-    //     stx ((uint8_t*)&tmp67)[1]
-    ((uint8_t*)&tmp67)[1] = x;
+    //     stx tmp7
+    tmp7 = x;
     // c8649:
 c8649:
     //     jsr sub_c8e33
@@ -1287,12 +1291,12 @@ c8649:
     for (;;)
     {
         //     cmp c867d,x
-        if (scan->ch == ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x])
+        if (scan->ch == c867d_data[x])
             goto c8669;
         //     inx
         x++;
         //     ldy c867d,x
-        y = ((const uint8_t[]){0x4e, 0x4a, 0x00, 0x49, 0x00})[x];
+        y = c867d_data[x];
         //     bne loop_c8652
         if (y != 0)
             continue;
@@ -1308,14 +1312,14 @@ c8649:
     // c8669:
 c8669:
     //     lda c8681,x
-    a = ((const uint8_t[]){0x00, 0x00, 0xff})[x];
-    //     sta ((uint8_t*)&tmp67)[0],x
+    a = c8681_data[x];
+    //     sta tmp6,x
     if (x == 0)
-        ((uint8_t*)&tmp67)[0] = a;
+        tmp6 = a;
     else if (x == 1)
-        ((uint8_t*)&tmp67)[1] = a;
+        tmp7 = a;
     else
-        ((uint8_t*)&tmp89)[0] = a;
+        tmp8 = a;
     //     inc input_buffer_offset
     input_buffer_offset++;
     if (input_buffer_offset != 0)
@@ -1329,11 +1333,11 @@ c8672:
     do
     {
         if (x == 0)
-            a = ((uint8_t*)&tmp67)[0];
+            a = tmp6;
         else if (x == 1)
-            a = ((uint8_t*)&tmp67)[1];
+            a = tmp7;
         else
-            a = ((uint8_t*)&tmp89)[0];
+            a = tmp8;
         if (x == 0)
             format_mode_flag = a;
         else if (x == 1)
