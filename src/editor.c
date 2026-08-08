@@ -50,7 +50,7 @@ void make_space_for_insertion(void);
 static void memory_full(void);
 void process_current_document_character(addr_t tmp01);
 static void recalculate_cursor_xpos(void);
-void redraw_editor(addr_t ptr6);
+void redraw_editor(void);
 static void render_char(struct render_state* rs);
 static void advance_to_next_char(struct render_state* rs);
 static void render_xchar(struct render_state* rs);
@@ -79,7 +79,7 @@ static void find_line_start(addr_t tmp89);
 static int find_left_margin_stop(void);
 static void insert_at_left_margin(void);
 static void insert_byte_at_xpos(uint8_t y);
-static void unpack_line_into_buffer(void);
+static void unpack_line_into_buffer(addr_t ptr1);
 void wipe_buffer(uint8_t a, addr_t ptr1);
 static void write_line_back_to_document(void);
 void write_line_back_to_document_safely(void);
@@ -441,7 +441,7 @@ void editor_loop_impl(void)
 
             //     jsr redraw_editor
 
-            redraw_editor(ptr6);
+            redraw_editor();
         }
 
         //     jsr read_char
@@ -701,7 +701,7 @@ static void cf5_default_ruler_key(void)
 
     //     jsr sub_ca276
 
-    redraw_editor(ptr6);
+    redraw_editor();
 
     //     jsr cf8_mark_as_ruler_key
 
@@ -2657,7 +2657,7 @@ static void sf11_copy_key(void)
 
     //     jsr sub_ca276
 
-    redraw_editor(ptr6);
+    redraw_editor();
 
     //     ldx l003a
 
@@ -3234,7 +3234,7 @@ static void sf8_edit_command_key(addr_t ptr1)
 
     //     jsr redraw_editor
 
-    redraw_editor(ptr6);
+    redraw_editor();
 
     //     inc l006d
 
@@ -6437,7 +6437,7 @@ ca63d:
     return;
 }
 
-void redraw_editor(addr_t ptr6)
+void redraw_editor(void)
 {
     {
     }
@@ -6675,7 +6675,7 @@ ca360:
     //     jsr cab91 (5344)
     load_current_ruler(l0034);
     //     jsr unpack_line_into_buffer (5345)
-    unpack_line_into_buffer();
+    unpack_line_into_buffer(ptr1);
     //     jsr sub_ca608 (5346)
     recalculate_cursor_xpos();
     //     lda screen_width (5347)
@@ -6828,7 +6828,7 @@ ca3de:
     // ca3e7: (5419)
 ca3e7:
     //     jsr unpack_line_into_buffer (5420)
-    unpack_line_into_buffer();
+    unpack_line_into_buffer(ptr1);
     //     jsr sub_caacb (5421)
     update_markers_to_format_buffer();
     //     jsr draw_ruler (5422)
@@ -8427,7 +8427,7 @@ static void insert_byte_at_xpos(uint8_t y)
     //     rts
 }
 
-static void unpack_line_into_buffer(void)
+static void unpack_line_into_buffer(addr_t ptr1)
 {
     // unpack_line_into_buffer:
     //     lda l006e

@@ -145,7 +145,7 @@ extern void reset_command_parse_state(void);
 extern void init_document_pointers(void);
 extern void process_cli_command(void);
 extern void check_area_memory(addr_t ptr2);
-extern void redraw_and_write_back(addr_t ptr6);
+extern void redraw_and_write_back(void);
 extern void setup_area_pointers(addr_t ptr2);
 extern void esc_key(void);
 extern void parse_filename_from_command(void);
@@ -263,7 +263,7 @@ extern void file_not_found_error(void);
 extern void file_error(void);
 
 // Functions moved to editor.c still called from view.c/other modules
-extern void redraw_editor(addr_t ptr6);
+extern void redraw_editor(void);
 extern void write_line_back_to_document_safely(void);
 extern void clamp_ptr6_to_document(void);
 extern uint8_t upper_case_unless_folding(void);

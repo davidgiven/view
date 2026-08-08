@@ -45,8 +45,8 @@ static void read_next_output_line(void);
 static void compute_lines_remaining_on_page(void);
 static void compute_header_left_section(addr_t tmp45);
 static void compute_header_middle_section(addr_t tmp45);
-static void compute_header_odd_page_section(void);
-static uint8_t get_line_width(void);
+static void compute_header_odd_page_section(addr_t tmp45);
+static uint8_t get_line_width(addr_t tmp45);
 static uint8_t get_right_margin(void);
 static void copy_header_footer_text(addr_t tmp23);
 static void get_page_parity(void);
@@ -2966,7 +2966,7 @@ static void render_header_or_footer(uint8_t y)
     //     bcs c932e
     if (!(flags & FLAG_C))
     {
-        compute_header_odd_page_section();
+        compute_header_odd_page_section(tmp45);
     }
     //     jsr sub_c93c8
     copy_header_footer_text(tmp23);
@@ -3014,7 +3014,7 @@ c9355:
     //     jsr c937b
     print_output_buffer();
     //     jsr sub_c93a1
-    compute_header_odd_page_section();
+    compute_header_odd_page_section(tmp45);
     //     jsr sub_c93fd
     get_page_parity();
     //     bcs c9363
@@ -3623,7 +3623,7 @@ static void compute_header_left_section(addr_t tmp45)
 
     // sub_c9393:
     //     jsr sub_c93b6
-    get_line_width();
+    get_line_width(tmp45);
     //     lda #0
     a = 0;
     //     jmp c93aa
@@ -3647,7 +3647,7 @@ static void compute_header_middle_section(addr_t tmp45)
 
     // sub_c939b:
     //     jsr sub_c93b6
-    y = get_line_width();
+    y = get_line_width(tmp45);
     //     jmp c93a7
     // c93a7:
     //     iny
@@ -3668,7 +3668,7 @@ static void compute_header_middle_section(addr_t tmp45)
     }
 }
 
-static void compute_header_odd_page_section(void)
+static void compute_header_odd_page_section(addr_t tmp45)
 {
     uint8_t a;
 
@@ -3676,7 +3676,7 @@ static void compute_header_odd_page_section(void)
     //     jsr sub_c93b6
     //     jsr c93b8
     // c93a7:
-    uint8_t y = scan_string_length(get_line_width(), tmp45);
+    uint8_t y = scan_string_length(get_line_width(tmp45), tmp45);
     y++;
     a = y;
     y--;
@@ -3692,7 +3692,7 @@ static void compute_header_odd_page_section(void)
     }
 }
 
-static uint8_t get_line_width(void)
+static uint8_t get_line_width(addr_t tmp45)
 {
     // sub_c93b6:
     //     ldy #0xff

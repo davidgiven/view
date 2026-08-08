@@ -63,7 +63,7 @@ void reset_command_parse_state(void);
 void init_document_pointers(void);
 void process_cli_command(void);
 void check_area_memory(addr_t ptr2);
-void redraw_and_write_back(addr_t ptr6);
+void redraw_and_write_back(void);
 void setup_area_pointers(addr_t ptr2);
 void write_area_to_file(void);
 void run_editor(void);
@@ -79,7 +79,7 @@ control_code_t check_for_control_code(uint8_t a);
 static void system_init(void);
 
 // Forward declarations for recently translated functions
-static void compute_required_space_for_insertion(void);
+static void compute_required_space_for_insertion(uint8_t a, uint8_t y);
 
 #include "io.h"
 
@@ -503,7 +503,7 @@ static uint8_t read_next_command_byte(uint8_t y)
     return y;
 }
 
-void redraw_and_write_back(addr_t ptr6)
+void redraw_and_write_back(void)
 {
     // sub_c8361
     // sub_c8361:
@@ -511,7 +511,7 @@ void redraw_and_write_back(addr_t ptr6)
     //     sta l006e
     edit_buffer_unpacked_flag = 0;
     //     jsr redraw_editor
-    redraw_editor(ptr6);
+    redraw_editor();
     //     jmp write_line_back_to_document_safely
     write_line_back_to_document_safely();
     return;
@@ -764,11 +764,13 @@ void read_into_document(void)
     //     jsr move_cursor_to_address
     move_cursor_to_address(area_start_ptr);
     //     lda ((uint8_t*)&tmp45)[0]
-    a = ((uint8_t*)&tmp45)[0];
     //     ldy ((uint8_t*)&tmp45)[1]
-    y = ((uint8_t*)&tmp45)[1];
+    // (a is read back by the callee chain; y is passed as an explicit
+    //  parameter to compute_required_space_for_insertion, so the global
+    //  y write is dead)
+    a = ((uint8_t*)&tmp45)[0];
     //     jsr compute_required_space_for_insertion
-    compute_required_space_for_insertion();
+    compute_required_space_for_insertion(a, (uint8_t)((tmp45 >> 8) & 0xff));
     //     jsr make_space_for_insertion
     make_space_for_insertion();
 
@@ -1349,7 +1351,7 @@ static void compute_space_available(void)
     compute_space_common(a, y);
 }
 
-static void compute_required_space_for_insertion(void)
+static void compute_required_space_for_insertion(uint8_t a, uint8_t y)
 {
     // compute_required_space_for_insertion:
     //     ldx #0

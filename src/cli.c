@@ -20,7 +20,7 @@ static void cmd_err_no_target(void);
 static void cmd_err_no_string(void);
 static void search_cmd(void);
 static void change_cmd(void);
-static void replace_cmd(addr_t ptr6);
+static void replace_cmd(void);
 static void screen_cmd(void);
 static void sheets_cmd(void);
 static void print_cmd(void);
@@ -148,7 +148,7 @@ void execute_cli_command(uint8_t a)
             edit_cmd();
             break;
         case 23:
-            replace_cmd(ptr6);
+            replace_cmd();
             break;
         case 24:
             load_cmd();
@@ -1039,7 +1039,7 @@ static void read_cmd(void)
     return;
 }
 
-static void replace_cmd(addr_t ptr6)
+static void replace_cmd(void)
 {
     // replace_cmd
     // Pseudocode: Interactive search and replace prompting for each match
@@ -1071,7 +1071,7 @@ static void replace_cmd(addr_t ptr6)
     // c832d:
 c832d:
     //     jsr sub_c8361
-    redraw_and_write_back(ptr6);
+    redraw_and_write_back();
     //     ldx #0x52 ; 'R'
     //     ldy #0x50 ; 'P'
     //     jsr draw_prompt_characters
@@ -1112,7 +1112,7 @@ c8349:
         return;
     }
     //     jsr sub_c8361
-    redraw_and_write_back(ptr6);
+    redraw_and_write_back();
     // c8356:
 c8356:
     //     jsr c8b7b
