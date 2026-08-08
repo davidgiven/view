@@ -741,9 +741,9 @@ static void load_cmd(struct scan_state* scan)
     reset_area_to_entire_document();
     //     jsr 1f
     read_into_document();
-    top = (addr_t)((uint16_t)((uint8_t*)&tmp01)[1] << 8) |
-          ((uint8_t*)&tmp01)[0]; // WORKAROUND: adjust_pointers adds stale bytes
-                                 // from end of ram[]; fix top
+    // (16-bit copy: adjust_pointers adds stale bytes from end of ram[];
+    //  fix top from tmp01)
+    top = tmp01;
     //     jsr reset_document_name_after_load
     reset_document_name_after_load();
     //     jsr clear_cmd

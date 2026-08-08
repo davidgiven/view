@@ -1304,14 +1304,13 @@ static void compute_space_common(uint8_t a, uint8_t y)
     // c8dce:
     //     lda ((uint8_t*)&tmp67)[0]; sbc ((uint8_t*)&tmp89)[0]; sta
     //     ((uint8_t*)&tmp67)[0]
-    a = ((uint8_t*)&tmp67)[0];
-    a = sbc(&flags, a, ((uint8_t*)&tmp89)[0]); // C live
-    ((uint8_t*)&tmp67)[0] = a;
     //     lda ((uint8_t*)&tmp67)[1]; sbc ((uint8_t*)&tmp89)[1]; sta
     //     ((uint8_t*)&tmp67)[1]
-    a = ((uint8_t*)&tmp67)[1];
-    a = sbc(&flags, a, ((uint8_t*)&tmp89)[1]); // C live
-    ((uint8_t*)&tmp67)[1] = a;
+    // (16-bit subtraction; the C flag set by the clamp above (sec/clc)
+    //  is the borrow into the subtraction)
+    tmp67 -= tmp89;
+    if (!(flags & FLAG_C))
+        tmp67--;
     //     lda ((uint8_t*)&tmp01)[0]; clc; adc ((uint8_t*)&tmp67)[0]; sta ptr5;
     //     pha lda ((uint8_t*)&tmp01)[1]; adc ((uint8_t*)&tmp67)[1]; sta ptr5+1;
     //     sta l0081; pla

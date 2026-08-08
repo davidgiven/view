@@ -2814,27 +2814,13 @@ c9fab:
         return;
 
     //     tya
-
     a = y;
-
     //     clc
-
-    flags &= ~FLAG_C;
-
     //     adc current_line_ptr
-
-    a = adc(&flags, a, (uint8_t)(current_line_ptr & 0xff)); // C live
-
     //     sta current_line_ptr
-
-    current_line_ptr = (uint16_t)((current_line_ptr & 0xff00) | a);
-
     //     bcc c9fc3
-
-    if ((flags & FLAG_C))
-    {
-        current_line_ptr = (uint16_t)(current_line_ptr + 0x100);
-    }
+    // (16-bit arithmetic: current_line_ptr += y)
+    current_line_ptr += a;
 
     //     jsr unpack_line
 
@@ -5397,16 +5383,15 @@ c8c3e:
     //     ldy doc_ptr2+1
     y = (uint8_t)(doc_ptr2 >> 8);
     //     ldx ((uint8_t*)&tmp89)[0]
-    x = ((uint8_t*)&tmp89)[0];
     //     stx doc_ptr2+0
-    doc_ptr2 = (doc_ptr2 & 0xff00) | x;
     //     ldx ((uint8_t*)&tmp89)[1]
-    x = ((uint8_t*)&tmp89)[1];
     //     stx doc_ptr2+1
-    doc_ptr2 = (doc_ptr2 & 0x00ff) | ((uint16_t)x << 8);
     //     sta ptr2
-    ptr2 = (addr_t)(y) << 8 | a;
     //     sty ptr2+1
+    // (16-bit copy: doc_ptr2 = tmp89; ptr2 = the previous doc_ptr2,
+    //  which is also returned in the A/Y registers for the caller)
+    doc_ptr2 = tmp89;
+    ptr2 = (addr_t)(y) << 8 | a;
     //     ldx #0
     x = 0;
     set_flags(&flags, 0); // Z live
@@ -6206,33 +6191,26 @@ void make_space_for_insertion(void)
     // ((uint8_t*)&tmp89)[0], ((uint8_t*)&tmp89)[1]
 
     //     lda top (6438)
-    a = (uint8_t)(top & 0xff);
     //     sta ((uint8_t*)&tmp23)[0] (6439)
-    ((uint8_t*)&tmp23)[0] = a;
     //     clc (6440)
-    flags &= ~FLAG_C;
     //     adc ((uint8_t*)&tmp67)[0] (6441)
-    a = adc(&flags, a, ((uint8_t*)&tmp67)[0]); // C live
     //     sta ((uint8_t*)&tmp89)[0] (6442)
-    ((uint8_t*)&tmp89)[0] = a;
     //     tax (6443)
-    x = a;
     //     lda top+1 (6444)
-    a = (uint8_t)(top >> 8);
     //     sta ((uint8_t*)&tmp23)[1] (6445)
-    ((uint8_t*)&tmp23)[1] = a;
     //     adc ((uint8_t*)&tmp67)[1] (6446)
-    a = adc(&flags, a, ((uint8_t*)&tmp67)[1]); // V live
     //     sta ((uint8_t*)&tmp89)[1] (6447)
-    ((uint8_t*)&tmp89)[1] = a;
     //     tay (6448)
-    y = a;
     //     cpy himem+1 (6449)
-    if (((uint16_t)y << 8 | x) >= himem)
-        goto return_67;
-    // caa32: (6454)
+    //     caa32: (6454)
     //     stx top (6455) sty top+1 (6456)
-    top = (uint16_t)y << 8 | x;
+    // (16-bit arithmetic: tmp23 = top, then tmp89 = top + tmp67;
+    //  if that exceeds himem there is not enough space)
+    tmp23 = top;
+    tmp89 = top + tmp67;
+    if (tmp89 >= himem)
+        goto return_67;
+    top = tmp89;
     //     ldx #0 (6457)
     x = 0;
     // loop_caa38: (6458)
@@ -6616,16 +6594,11 @@ ca313:
     //     tya (5321)
     a = y;
     //     clc (5322)
-    flags &= ~FLAG_C;
     //     adc l0011 (5323)
-    a = adc(&flags, a, (uint8_t)(top_of_screen_line_ptr & 0xff)); // C live
     //     sta l0011 (5324)
-    top_of_screen_line_ptr = (top_of_screen_line_ptr & 0xff00) | a;
     //     bcc ca348 (5325)
-    if ((flags & FLAG_C))
-    {
-        top_of_screen_line_ptr += 0x0100;
-    }
+    // (16-bit arithmetic: top_of_screen_line_ptr += y)
+    top_of_screen_line_ptr += a;
     //     ldy #SCREEN_SCROLLUP (5328) jsr SCREEN (5329)
     screen_scrollup();
     //     ldx #0 (5330) ldy screen_height (5331) jsr set_cursor_position (5332)

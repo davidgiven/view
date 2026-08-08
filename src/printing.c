@@ -919,17 +919,11 @@ c968f:
     //     lda #4
     a = 4;
     //     clc
-    flags &= ~FLAG_C;
     //     adc last_macro_ptr
-    a = adc(&flags, a, (uint8_t)(last_macro_ptr & 0xff)); // C, V live
     //     sta last_macro_ptr
-    last_macro_ptr = (last_macro_ptr & 0xff00) | a;
     //     bcc c96a2
-    if ((flags & FLAG_C))
-    {
-        last_macro_ptr = (last_macro_ptr & 0x00ff) |
-                         ((uint16_t)((last_macro_ptr >> 8) + 1) << 8);
-    }
+    // (16-bit arithmetic: last_macro_ptr += 4)
+    last_macro_ptr += a;
 c96a2:
     //     lda himem
     //     sec
@@ -950,22 +944,19 @@ c96a2:
         }
     }
     //     lda last_macro_ptr
-    a = (uint8_t)(last_macro_ptr & 0xff);
     //     sta ((uint8_t*)&tmp01)[0]
-    ((uint8_t*)&tmp01)[0] = a;
     //     sta input_buffer_offset+1
-    l0080 = a;
     //     sta current_format_line_ptr
-    current_format_line_ptr = (current_format_line_ptr & 0xff00) | a;
     //     lda last_macro_ptr+1
-    a = (uint8_t)((last_macro_ptr >> 8) & 0xff);
     //     sta ((uint8_t*)&tmp01)[1]
-    ((uint8_t*)&tmp01)[1] = a;
     //     sta l0081
-    l0081 = a;
     //     sta current_format_line_ptr+1
-    current_format_line_ptr =
-        (current_format_line_ptr & 0x00ff) | ((uint16_t)a << 8);
+    // (16-bit copy: tmp01 = current_format_line_ptr = last_macro_ptr,
+    //  with l0080 = low byte, l0081 = high byte)
+    tmp01 = last_macro_ptr;
+    l0080 = (uint8_t)(last_macro_ptr & 0xff);
+    current_format_line_ptr = last_macro_ptr;
+    l0081 = (uint8_t)(last_macro_ptr >> 8);
     //     jsr sub_c9241
     read_next_output_line();
     //     bcc c96ce
@@ -3011,38 +3002,45 @@ c9355:
     //     jsr sub_c93be
     a = get_right_margin();
     //     beq c937b
-    if (flags & FLAG_Z)
-    {
-        print_output_buffer();
-        return;
-    }
     //     stx l0081
-    l0081 = x;
     //     sec
-    flags |= FLAG_C;
     //     sbc l0081
-    a = sbc(&flags, a, l0081); // C live
     //     bcc c937b
-    if (!(flags & FLAG_C))
-    {
-        print_output_buffer();
-        return;
-    }
     //     sbc l0039
-    a = sbc(&flags, a, l0039); // C live
     //     bcc c937b
-    if (!(flags & FLAG_C))
-    {
-        print_output_buffer();
-        return;
-    }
     //     tax
-    x = a;
     //     inx
-    x++;
     //     jsr sub_c941a
-    a = add_justification_spaces(x);
+    // (only reach add_justification_spaces when the right margin is
+    //  non-zero and both sbc subtractions succeed; otherwise fall through
+    //  to the shared end, c937b)
+    if (!(flags & FLAG_Z))
+    {
+        //     stx l0081
+        l0081 = x;
+        //     sec
+        //     sbc l0081
+        //     bcc c937b
+        //     sbc l0039
+        //     bcc c937b
+        //     tax
+        //     inx
+        //     jsr sub_c941a
+        // (the two sbc subtractions are equivalent to a C comparison:
+        //  reach add_justification_spaces iff a >= l0081 + l0039, with
+        //  the count a - l0081 - l0039)
+        if (a >= l0081 + l0039)
+        {
+            x = a - l0081 - l0039;
+            x++;
+            a = add_justification_spaces(x);
+        }
+    }
+    // c937b:
+    //     jsr print_output_buffer
+    //     rts
     print_output_buffer();
+    return;
 }
 
 static void render_new_page(void)
@@ -3362,17 +3360,11 @@ c91c2:
     //     tya
     a = y;
     //     clc
-    flags &= ~FLAG_C;
     //     adc ptr3
-    a = adc(&flags, a, (uint8_t)(ptr3 & 0xff)); // C live
     //     sta ptr3
-    ptr3 = (ptr3 & 0xff00) | a;
     //     bcc c91cc
-    if ((flags & FLAG_C))
-    {
-        ptr3 = (ptr3 & 0x00ff) |
-               ((uint16_t)((uint8_t)((ptr3 >> 8) & 0xff) + 1) << 8);
-    }
+    // (16-bit arithmetic: ptr3 += y)
+    ptr3 += a;
     //     lda ptr1
     a = (uint8_t)(ptr1 & 0xff);
     //     ldy ptr1+1
