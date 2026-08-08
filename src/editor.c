@@ -476,11 +476,8 @@ void editor_loop_impl(void)
 
         //     cmp #0x7f
 
-        cmp(&flags, a, 0x7f); // C live
-
         //     bcc enter_printable_character
-
-        if (!(flags & FLAG_C))
+        if (a < 0x7f)
         {
             a = enter_printable_character();
             goto editor_loop;
@@ -1034,11 +1031,8 @@ static void delete_key(void)
 
     //     cmp #0x0c
 
-    cmp(&flags, a, 0x0c); // C live
-
     //     bcc return_55
-
-    if (!(flags & FLAG_C))
+    if (a < 0x0c)
         return;
 
     //     ldx insert_mode_flag
@@ -1056,16 +1050,11 @@ static void delete_key(void)
 
     //     cpy xpos
 
-    cmp(&flags, y, xpos); // Z, C live
-
     //     bcc return_55
-
-    if (!(flags & FLAG_C))
+    if (y < xpos)
         return;
-
     //     beq return_55
-
-    if (flags & FLAG_Z)
+    if (y == xpos)
         return;
 
     //     falls through to f8_insert_char_key
@@ -1220,11 +1209,8 @@ void f13_right_key(void)
 
     //     cpy #MAX_LINE_LENGTH
 
-    cmp(&flags, y, MAX_LINE_LENGTH); // C live
-
     //     bcs return_51
-
-    if (flags & FLAG_C)
+    if (y >= MAX_LINE_LENGTH)
         return;
 
     //     inc xpos
@@ -2747,11 +2733,8 @@ static void sf12_left_key(void)
 
     //     cmp #0x20 ; ' '
 
-    cmp(&flags, a, 0x20); // Z live
-
     //     beq c9f80
-
-    if (flags & FLAG_Z)
+    if (a == 0x20)
     {
         move_to_previous_line();
         return;
@@ -2899,11 +2882,8 @@ c9fab:
 
     //     cmp #0x20 ; ' '
 
-    cmp(&flags, a, 0x20); // Z live
-
     //     bne return_58
-
-    if (!(flags & FLAG_Z))
+    if (a != 0x20)
         return;
 
     //     (fall through — line starts with space, scan forward as usual)
@@ -3598,9 +3578,8 @@ cae78:
         goto cae98;
     //     lda #0
     //     cpy l0084
-    cmp(&flags, y, l0084); // C live
     //     bcc cae91
-    if (!(flags & FLAG_C))
+    if (y < l0084)
         goto cae91;
     //     tya
     a = y;
@@ -3640,9 +3619,8 @@ cae98:
     //     lda xpos
     a = xpos;
     //     cmp #0x84
-    cmp(&flags, a, MAX_LINE_LENGTH); // C live
     //     bcs return_78
-    if (flags & FLAG_C)
+    if (a >= MAX_LINE_LENGTH)
     { /* return_78: */
         return;
     }
@@ -3897,18 +3875,17 @@ c9c56:
     //     lda l0072 (4211)
     a = l0072;
     //     cmp ruler_left_stop (4212)
-    cmp(&flags, a, ruler_left_stop); // Z, C live
     //     beq c9c9d (4213) bcs c9ca2 (4214)
     // c9c9d: (4215)
     //     ldy input_buffer_ptr+1, dey, sty xpos (4216-4218)
-    if (flags & FLAG_Z)
+    if (a == ruler_left_stop)
     {
         y = input_buffer_offset;
         y--;
         xpos = y;
         goto c9ca2;
     }
-    if (!(flags & FLAG_C))
+    if (a < ruler_left_stop)
     {
         {
             y = input_buffer_offset;
@@ -4684,9 +4661,8 @@ void insert_edit_buffer_bytes_at_xpos(uint8_t x)
     //     lda xpos
     a = xpos;
     //     cmp #MAX_LINE_LENGTH
-    cmp(&flags, a, MAX_LINE_LENGTH); // C live
     //     bcs cae03
-    if (flags & FLAG_C)
+    if (a >= MAX_LINE_LENGTH)
     {
         beep();
         return;
@@ -4708,9 +4684,8 @@ void insert_edit_buffer_bytes_at_xpos(uint8_t x)
         return;
     }
     //     cmp #0x85
-    cmp(&flags, a, MAX_LINE_LENGTH + 1); // C live
     //     bcs cae03
-    if (flags & FLAG_C)
+    if (a >= MAX_LINE_LENGTH + 1)
     {
         beep();
         return;
@@ -4911,17 +4886,15 @@ cac9a:
     // cac9c:
 cac9c:
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d); // Z live
     //     beq return_73
-    if (flags & FLAG_Z)
+    if (a == 0x0d)
         return;
     //     cpy l0084
-    cmp(&flags, y, l0084); // Z, C live
     //     beq cac8f
-    if (flags & FLAG_Z)
+    if (y == l0084)
         goto cac8f;
     //     bcc cac8f
-    if (!(flags & FLAG_C))
+    if (y < l0084)
         goto cac8f;
     //     lda l0084
     //     ldx l0083
@@ -6094,9 +6067,8 @@ c98b5:
         //     iny
         y++;
         //     cpy l0046
-        cmp(&flags, y, l0046); // C live
         //     bcc c98d3
-        if ((flags & FLAG_C))
+        if (y >= l0046)
         {
             y = 0;
         }
@@ -6166,10 +6138,9 @@ c98fa:
     //     ldy l0039
     y = l0039;
     //     cpy l0046
-    cmp(&flags, y, l0046); // C live
     //     lda #0
     //     bcs c9912
-    if (!(flags & FLAG_C))
+    if (y < l0046)
     {
         a = input_buffer[y];
     }
@@ -6214,8 +6185,7 @@ c9922:
     //     cpy #0x84
     while (1)
     {
-        cmp(&flags, y, MAX_LINE_LENGTH); // C live
-        if (flags & FLAG_C)
+        if (y >= MAX_LINE_LENGTH)
             return;
         ram[RAM_EDIT_BUFFER + y] = a;
         y++;
@@ -6602,12 +6572,8 @@ ca2f9:
         y++;
     }
     //     cpx screen_height (5292)
-    cmp(&flags, x, screen_maxrow); // Z, C live
     //     beq ca2e6 (5293)
-    if (flags & FLAG_Z)
-        goto ca2e6;
-    //     bcc ca2e6 (5294)
-    if (!(flags & FLAG_C))
+    if (x <= screen_maxrow)
         goto ca2e6;
     // ca30d: (5295)
 ca30d:
@@ -7376,9 +7342,8 @@ c9969:
         goto c9967;
     //     bcc c9967
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20); // Z, C live
     //     bcc return_49
-    if (!(flags & FLAG_C))
+    if (a < 0x20)
         return;
     //     inc l0039
     l0039++;
@@ -7942,9 +7907,8 @@ c9b06:
     // c9b1a:
 c9b1a:
     //     cmp #0x0b
-    cmp(&flags, a, 0x0b); // Z, C live
     //     bne c9b23
-    if (!(flags & FLAG_Z))
+    if (a != 0x0b)
         goto c9b23;
     //     sta l0083
     l0083 = a;
@@ -8145,16 +8109,14 @@ loop_ca544:
     //     lda ((uint8_t*)&tmp89)[1]
     a = ((uint8_t*)&tmp89)[1];
     //     cmp markers_array+1,x
-    cmp(&flags, a, ((uint8_t*)markers_array)[x + 1]); // Z live
     //     bne ca550
-    if (!(flags & FLAG_Z))
+    if (a != ((uint8_t*)markers_array)[x + 1])
         goto ca550;
     //     lda ((uint8_t*)&tmp89)[0]
     a = ((uint8_t*)&tmp89)[0];
     //     cmp markers_array,x
-    cmp(&flags, a, ((uint8_t*)markers_array)[x]); // Z live
     //     beq ca558
-    if (flags & FLAG_Z)
+    if (a == ((uint8_t*)markers_array)[x])
         goto ca558;
     // ca550:
 ca550:
@@ -8280,9 +8242,8 @@ caae8:
     //     lda (current_line_ptr),y
     a = ram[current_line_ptr + y];
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d); // Z live
     //     beq return_68
-    if (flags & FLAG_Z)
+    if (a == 0x0d)
         return;
     //     iny
     y++;

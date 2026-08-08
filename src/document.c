@@ -310,12 +310,11 @@ void process_document_character(void)
     if (a == 0x0b)
         goto ca5d9;
     //     cmp #0x1a
-    cmp(&flags, a, 0x1a); // Z, C live
     //     beq ca5d5
-    if (flags & FLAG_Z)
+    if (a == 0x1a)
         goto ca5d5;
     //     bcc ca5d1
-    if (!(flags & FLAG_C))
+    if (a < 0x1a)
         goto ca5d1;
     //     cmp #0x20 ; ' '
     cmp(&flags, a, 0x20); // C live
@@ -367,9 +366,8 @@ ca5e1:
         //     iny
         tab_pos++;
         //     cpy l003a
-        cmp(&flags, tab_pos, l003a); // C live
         //     bcs ca5f8
-        if (flags & FLAG_C)
+        if (tab_pos >= l003a)
             goto ca5f8;
         //     lda (current_ruler_ptr),y
         a = ram[current_ruler_ptr + tab_pos];
@@ -475,7 +473,7 @@ void is_embedded_ruler(addr_t tmp01)
     //     lda (((uint8_t*)&tmp01)[0]),y
     a = ram[tmp01 + y];
     //     cmp #0x81
-    cmp(&flags, a, 0x81); // Z live
+    set_flags(&flags, a != 0x81); // Z = (a == 0x81), live out
     //     rts
     return;
 }
@@ -819,9 +817,8 @@ void lookup_marker(uint8_t a)
     //     asl
     a <<= 1;
     //     cmp #0x0c
-    cmp(&flags, a, 0x0c); // Z, C live
     //     bcs return_75
-    if (flags & FLAG_C)
+    if (a >= 0x0c)
     { /* return_75: */
         return;
     }
@@ -937,9 +934,8 @@ cac20:
     if ((flags & FLAG_Z))
     {
         a = x;
-        cmp(&flags, x, 3); // Z, C live
         x = 0;
-        if ((flags & FLAG_C))
+        if (a >= 3)
         {
             a -= 3;
             x = a;

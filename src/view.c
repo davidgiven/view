@@ -489,12 +489,14 @@ static uint8_t read_next_command_byte(uint8_t y)
     //     sta l0084
     l0084 = a;
     //     cmp l007e
-    cmp(&flags, a, l007e); // Z live
     //     beq return_2
-    if (flags & FLAG_Z)
+    if (a == l007e)
+    {
+        set_flags(&flags, 0); // Z set (delimiter)
         return y;
+    }
     //     cmp #0x0d
-    cmp(&flags, a, 0x0d); // Z live
+    set_flags(&flags, a != 0x0d); // Z = (a == 0x0d), live out
     // return_2:
     //     rts
     return y;
@@ -729,7 +731,7 @@ void reset_command_parse_state(void)
     //     stx l007a
     l007a = x;
     //     cpx #0
-    cmp(&flags, x, 0); // Z live
+    set_flags(&flags, x); // Z = (x == 0), live out
     // return_5:
     //     rts
 }

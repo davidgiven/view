@@ -610,9 +610,8 @@ static void fold_cmd(void)
     //     lda input_buffer,y
     a = input_buffer[y];
     //     cmp #'1'
-    cmp(&flags, a, '1'); // Z live
     //     beq c87b2 (true → folding_flag = 0)
-    if (flags & FLAG_Z)
+    if (a == '1')
     {
         folding_flag = 0;
         goto c87b4;
