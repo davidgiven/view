@@ -2881,20 +2881,14 @@ c8cdb:
     if (x == 0)
         goto c8c95;
     //     lda ((uint8_t*)&tmp01)[1]
-    a = ((uint8_t*)&tmp01)[1];
     //     cmp l0081
     //     bcc c8c95
-    if (a < l0081)
-        goto c8c95;
     //     bne c8cf1
-    if (a != l0081)
-        goto c8cf1;
     //     lda ((uint8_t*)&tmp01)[0]
-    a = ((uint8_t*)&tmp01)[0];
     //     cmp input_buffer_offset+1
-    if (a < l0080)
+    // (16-bit comparison: tmp01 < (l0081 << 8 | l0080))
+    if (tmp01 < ((uint16_t)l0081 << 8 | l0080))
         goto c8c95;
-c8cf1:
     // c8cf1:
     //     clc
     flags &= ~FLAG_C;

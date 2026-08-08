@@ -1290,11 +1290,11 @@ static void compute_space_common(uint8_t a, uint8_t y)
         tmp89 = t;
     }
     //     lda ((uint8_t*)&tmp89)[1]; cmp #4
-    if (((uint8_t*)&tmp89)[1] >= 4)
+    // (16-bit comparison: tmp89 >= 0x0400)
+    if (tmp89 >= 0x0400)
     {
         //     lda #4; sta ((uint8_t*)&tmp89)[1]; sta ((uint8_t*)&tmp89)[0]
-        ((uint8_t*)&tmp89)[1] = 4;
-        ((uint8_t*)&tmp89)[0] = 4;
+        tmp89 = 0x0404;
         flags |= FLAG_C;
     }
     else

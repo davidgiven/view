@@ -4953,30 +4953,21 @@ ca9c3:
     //     lda __begin_pointer_array+0,x (6385)
     a = ((uint8_t*)&pointer_array)[x];
     //     cpy ((uint8_t*)&tmp45)[1] (6386)
-    cmp(&flags, y, ((uint8_t*)&tmp45)[1]); // Z, C live
     //     bcc ca9f1 (6387)
-    if (!(flags & FLAG_C))
-        goto ca9f1;
     //     bne ca9d1 (6388)
-    if (!(flags & FLAG_Z))
-        goto ca9d1;
     //     cmp ((uint8_t*)&tmp45)[0] (6389)
-    if (a < ((uint8_t*)&tmp45)[0])
-        goto ca9f1;
     //     bcc ca9f1 (6390)
-    // ca9d1: (6391)
-ca9d1:
-    //     cpy ((uint8_t*)&tmp89)[1] (6392)
-    cmp(&flags, y, ((uint8_t*)&tmp89)[1]); // Z, C live
-    //     bcc ca9db (6393)
-    if (!(flags & FLAG_C))
+    // (16-bit comparisons: (y << 8 | a) < tmp45 → ca9f1,
+    //  else (y << 8 | a) < tmp89 → ca9db)
+    if (((uint16_t)y << 8 | a) < tmp45)
+        goto ca9f1;
+    if (((uint16_t)y << 8 | a) < tmp89)
         goto ca9db;
+    //     ca9d1: (6391)
+    //     cpy ((uint8_t*)&tmp89)[1] (6392)
+    //     bcc ca9db (6393)
     //     bne ca9e7 (6394)
-    if (!(flags & FLAG_Z))
-        goto ca9e7;
     //     cmp ((uint8_t*)&tmp89)[0] (6395)
-    if (a >= ((uint8_t*)&tmp89)[0])
-        goto ca9e7;
     //     bcs ca9e7 (6396)
     // ca9db: (6397)
 ca9db:
@@ -6252,19 +6243,14 @@ void make_space_for_insertion(void)
         //     lda __begin_pointer_array+0,x (6460)
         a = ((uint8_t*)&pointer_array)[x];
         //     cpy ((uint8_t*)&tmp45)[1] (6461)
-        cmp(&flags, y, ((uint8_t*)&tmp45)[1]); // Z, C live
         //     bcc caa51 (6462)
-        if (!(flags & FLAG_C))
-            goto caa51;
         //     bne caa46 (6463)
-        if (!(flags & FLAG_Z))
-            goto caa46;
         //     cmp ((uint8_t*)&tmp45)[0] (6464)
-        if (a < ((uint8_t*)&tmp45)[0])
-            goto caa51;
         //     bcc caa51 (6465)
+        // (16-bit comparison: (y << 8 | a) < tmp45 → caa51, else caa46)
+        if (((uint16_t)y << 8 | a) < tmp45)
+            goto caa51;
         // caa46: (6466)
-    caa46:
         //     clc (6467)
         flags &= ~FLAG_C;
         //     adc ((uint8_t*)&tmp67)[0] (6468)
@@ -6548,21 +6534,18 @@ ca2e6:
     //     inx (5271)
     x++;
     //     cpy ptr6+1 (5272)
-    if (y == (uint8_t)(editor_ptr6 >> 8))
+    //     cmp ptr6 (5274)
+    // (16-bit comparison: (y << 8 | a) == editor_ptr6)
+    if ((((addr_t)(y) << 8) | a) == editor_ptr6)
     {
-        if (a == (uint8_t)(editor_ptr6 & 0xff))
-        {
-            l003d = x;
-        }
+        l003d = x;
     }
     //     cpy current_line_ptr+1 (5278)
-    if (y != (uint8_t)(current_line_ptr >> 8))
-        goto ca2f9;
     //     cmp current_line_ptr (5280)
-    if (a == (uint8_t)(current_line_ptr & 0xff))
+    // (16-bit comparison: (y << 8 | a) == current_line_ptr)
+    if ((((addr_t)(y) << 8) | a) == current_line_ptr)
         goto ca313;
     // ca2f9: (5282)
-ca2f9:
     //     jsr sub_cab1a (5283)
     find_next_line(a);
     //     beq ca313 (5284)
