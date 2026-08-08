@@ -34,7 +34,7 @@ static void print_loop(void);
 static void print_newline(void);
 static void print_vertical_space(uint8_t x);
 void read_block_from_file(void);
-static void render_header_or_footer(uint8_t y);
+static void render_header_or_footer(uint16_t yx);
 static void render_new_page(void);
 bool scan_input_buffer(struct scan_state* state);
 static void start_microspacing_if_active(uint8_t a);
@@ -1748,9 +1748,11 @@ static void process_page_footer(void)
     //     beq c927c
     if (a != 0)
     {
+        // (address in YX registers: x = low byte, y = high byte;
+        //  passed explicitly as the yx parameter)
         x = (uint8_t)((uintptr_t)footer_text_maybe & 0xff);
         uint8_t y = (uint8_t)((uintptr_t)footer_text_maybe >> 8);
-        render_header_or_footer(y);
+        render_header_or_footer((uint16_t)(y) << 8 | x);
     }
     //     jsr print_newline
     print_newline();
@@ -2914,7 +2916,7 @@ c8cf2:
     //     rts
 }
 
-static void render_header_or_footer(uint8_t y)
+static void render_header_or_footer(uint16_t yx)
 {
     // render_header_or_footer
     // Pseudocode: Renders header or footer text with centering and
@@ -2923,13 +2925,15 @@ static void render_header_or_footer(uint8_t y)
     // ;
     // ***************************************************************************************
     // render_header_or_footer:
-    tmp45 = (addr_t)(y) << 8 | x;
+    // (address passed in YX: high byte in y, low byte in x)
+    tmp45 = yx;
     //     ldy #0
-    y = 0;
     //     sty l0082
-    l0082 = y;
     //     lda (((uint8_t*)&tmp45)[0]),y
-    a = ram[tmp45 + y];
+    // (y is 0 throughout, so the first header/footer text byte is read
+    // directly)
+    l0082 = 0;
+    a = ram[tmp45];
     //     beq return_28
     if (a == 0)
         return;
@@ -3122,9 +3126,11 @@ c92d4:
     //     beq c92e8
     if (a != 0)
     {
+        // (address in YX registers: x = low byte, y = high byte;
+        //  passed explicitly as the yx parameter)
         x = (uint8_t)((uintptr_t)header_text_maybe & 0xff);
         uint8_t y = (uint8_t)((uintptr_t)header_text_maybe >> 8);
-        render_header_or_footer(y);
+        render_header_or_footer((uint16_t)(y) << 8 | x);
     }
     //     jsr print_newline
     print_newline();
