@@ -779,9 +779,10 @@ static void microspace_cmd(addr_t tmp89, struct scan_state* scan)
             return;
     }
     //     ldy #0
-    y = 0;
     //     lda #0x0c
     //     jsr call_printer_driver
+    // (the printer driver returns its status in the global y register;
+    //  the y = 0 input setup is unused by the default driver)
     printer_driver_ptr->printer_getflags();
     //     tya
     a = y;
@@ -1838,8 +1839,11 @@ void parse_integer_from_command(struct scan_state* scan)
     if (scan_input_buffer(scan))
         return;
     //     jmp ca6fe
-    y = scan->pos; // parse_decimal_number reads the global y as its index
-    parse_decimal_number();
+    uint8_t y = scan->pos;
+    int parsed;
+    bool ok = parse_decimal_number(&parsed, &y);
+    tmp89 = (addr_t)parsed;
+    set_flags(&flags, ok); // Z = 1 if no integer parsed
     return;
 }
 

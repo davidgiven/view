@@ -26,7 +26,7 @@ void check_not_continuous_editing(void);
 void display_not_enough_memory(void);
 static void microspace_word_processor(void);
 static void nested_macro_error(void);
-void parse_decimal_number(void);
+bool parse_decimal_number(int* value, uint8_t* y);
 bool parse_optional_filename_from_command(struct scan_state* scan);
 static void print_char_x_times(uint8_t a, uint8_t x);
 void print_document(struct scan_state* scan);
@@ -1457,8 +1457,9 @@ c97c0:
     // c97d5:
 c97d5:
     //     jsr ca6fe
-    parse_decimal_number();
-    tmp89 = (addr_t)(x) << 8 | a;
+    int parsed;
+    parse_decimal_number(&parsed, &y);
+    tmp89 = (addr_t)parsed;
     // c97dc:
 c97dc:
     //     ldx input_buffer_offset+1
@@ -2317,36 +2318,20 @@ static void nested_macro_error(void)
     return;
 }
 
-void parse_decimal_number(void)
+bool parse_decimal_number(int* value, uint8_t* y)
 {
-    addr_t tmp89;
-
     // ca6fe - Parse decimal number from format command line
-    // On entry: y = index into current_format_line_ptr
-    // On exit:  ((uint8_t*)&tmp89)[0]:((uint8_t*)&tmp89)[1] = parsed value, a/x
-    // = value, y = advanced past digits
-    //           flags.Z = 1 if no digits parsed
-
-    uint8_t had_digits = 0;
-    tmp89 = 0;
-
-    for (;;)
-    {
-        a = ram[(uint16_t)current_format_line_ptr + y];
-        if (a < '0' || a > '9')
-            break;
-        a -= '0';
-        y++;
-        had_digits = 0xff;
-
-        uint16_t val = tmp89;
-        val = val * 10 + a;
-        tmp89 = val;
-    }
-
-    a = ((uint8_t*)&tmp89)[0];
-    x = ((uint8_t*)&tmp89)[1];
-    set_flags(&flags, had_digits); // Z live
+    // On entry: *y = index into current_format_line_ptr
+    // On exit:  *value = parsed value, *y = advanced past digits
+    // (no leading whitespace is guaranteed, and strtoul parses the value as
+    //  unsigned, so no leading-sign/whitespace handling is needed: a leading
+    //  non-digit yields end == start and value 0)
+    const char* start = (const char*)&ram[current_format_line_ptr + *y];
+    char* end;
+    *value = (int)(addr_t)strtoul(start, &end, 10);
+    bool parsed = (end != start);
+    *y += (uint8_t)(end - start);
+    return parsed;
 }
 
 bool parse_optional_filename_from_command(struct scan_state* scan)
