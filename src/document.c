@@ -836,60 +836,44 @@ void lookup_marker(uint8_t a)
 
 void move_cursor_to_address(uint16_t addr)
 {
+    uint8_t a;
     uint8_t x;
+    uint8_t yy;
 
     // move_cursor_to_address
     // move_cursor_to_address:
     //     sta ((uint8_t*)&tmp89)[0]
     addr_t tmp89 = addr;
-    uint8_t a = (uint8_t)(current_line_ptr & 0xff);
-    uint8_t yy = (uint8_t)(current_line_ptr >> 8);
+    uint16_t cur = current_line_ptr;
     //     cpy ((uint8_t*)&tmp89)[1]
-    cmp(&flags, yy, ((uint8_t*)&tmp89)[1]); // Z, C live
     //     bcc cabf9
-    if (!(flags & FLAG_C))
-        goto cabf9;
     //     bne cabdf
-    if (!(flags & FLAG_Z))
-        goto cabdf;
     //     cmp ((uint8_t*)&tmp89)[0]
-    cmp(&flags, a, ((uint8_t*)&tmp89)[0]); // Z, C live
     //     bcc cabf9
-    if (!(flags & FLAG_C))
-        goto cabf9;
     //     beq cac20
-    if (flags & FLAG_Z)
+    if (cur < addr)
+        goto cabf9;
+    if (cur == addr)
         goto cac20;
     // cabdf:
 cabdf:
     //     jsr sub_cab37
-    move_tmp01_to_previous_line(current_line_ptr);
-    //     lda ((uint8_t*)&tmp01)[0]
-    a = ((uint8_t*)&tmp01)[0];
-    //     ldy ((uint8_t*)&tmp01)[1]
-    yy = ((uint8_t*)&tmp01)[1];
+    move_tmp01_to_previous_line(cur);
+    cur = tmp01;
     //     bcc cac20
     if (!(flags & FLAG_C))
         goto cac20;
     //     cpy ((uint8_t*)&tmp89)[1]
-    cmp(&flags, yy, ((uint8_t*)&tmp89)[1]); // Z, C live
     //     bcc cac20
-    if (!(flags & FLAG_C))
-        goto cac20;
     //     bne cabdf
-    if (!(flags & FLAG_Z))
-        goto cabdf;
     //     cmp ((uint8_t*)&tmp89)[0]
-    cmp(&flags, a, ((uint8_t*)&tmp89)[0]); // Z, C live
     //     bcc cac20
-    if (!(flags & FLAG_C))
-        goto cac20;
     //     bne cabdf
-    if (!(flags & FLAG_Z))
-        goto cabdf;
     //     beq cac20                                                         ;
     //     ALWAYS branch
-    goto cac20;
+    if (cur <= addr)
+        goto cac20;
+    goto cabdf;
 
     // cabf6:
 cabf6:
@@ -898,46 +882,33 @@ cabf6:
     // cabf9:
 cabf9:
     //     sta ((uint8_t*)&tmp01)[0]
-    move_tmp01_to_next_line((addr_t)(yy) << 8 | a);
+    move_tmp01_to_next_line(cur);
     //     beq cac17
     if (flags & FLAG_Z)
         goto cac17;
     //     tya
-    a = y;
     //     ldy ((uint8_t*)&tmp01)[1]
-    yy = ((uint8_t*)&tmp01)[1];
     //     clc
-    flags &= ~FLAG_C;
     //     adc ((uint8_t*)&tmp01)[0]
-    a = adc(&flags, a, ((uint8_t*)&tmp01)[0]); // C live
     //     bcc cac0b
-    if ((flags & FLAG_C))
-    {
-        yy++;
-    }
+    cur = tmp01 + y;
     //     cpy ((uint8_t*)&tmp89)[1]
-    cmp(&flags, yy, ((uint8_t*)&tmp89)[1]); // Z, C live
     //     bcc cabf6
-    if (!(flags & FLAG_C))
-        goto cabf6;
     //     bne cac17
-    if (!(flags & FLAG_Z))
-        goto cac17;
     //     cmp ((uint8_t*)&tmp89)[0]
-    cmp(&flags, a, ((uint8_t*)&tmp89)[0]); // Z, C live
     //     bcc cabf6
-    if (!(flags & FLAG_C))
-        goto cabf6;
     //     beq cac1d
-    if (flags & FLAG_Z)
+    if (cur < addr)
+        goto cabf6;
+    if (cur == addr)
         goto cac1d;
+    goto cac17;
     // cac17:
 cac17:
     //     lda ((uint8_t*)&tmp01)[0]
-    a = ((uint8_t*)&tmp01)[0];
     //     ldy ((uint8_t*)&tmp01)[1]
-    yy = ((uint8_t*)&tmp01)[1];
     //     bne cac20
+    cur = tmp01;
     goto cac20;
     // cac1d:
 cac1d:
@@ -947,7 +918,7 @@ cac1d:
 cac20:
     //     sta current_line_ptr
     //     sty current_line_ptr+1
-    current_line_ptr = ((uint16_t)yy << 8) | a;
+    current_line_ptr = cur;
     //     lda ((uint8_t*)&tmp89)[0]
     a = ((uint8_t*)&tmp89)[0];
     //     sec
@@ -1040,8 +1011,6 @@ void move_tmp01_to_next_line(uint16_t start)
 
 void move_tmp01_to_previous_line(uint16_t val)
 {
-    uint8_t y;
-
     uint8_t a;
     // move_tmp01_to_previous_line
     // sub_cab37:
@@ -1051,19 +1020,15 @@ void move_tmp01_to_previous_line(uint16_t val)
     //     bcs cab3f
     //     sty ((uint8_t*)&tmp01)[1]
     tmp01 = val - 1;
-    a = (uint8_t)tmp01;
-    y = (uint8_t)(tmp01 >> 8);
     //     cpy page+1
-    cmp(&flags, y, (uint8_t)(page >> 8)); // Z, C live
     //     bcc return_71
-    if (!(flags & FLAG_C))
-        return;
     //     bne cab4b
-    if ((flags & FLAG_Z))
+    //     cmp page
+    //     bcc return_71
+    if (tmp01 < page)
     {
-        cmp(&flags, a, (uint8_t)(page & 0xff)); // C live
-        if (!(flags & FLAG_C))
-            return;
+        flags &= ~FLAG_C;
+        return;
     }
     // loop_cab4d:
     do
