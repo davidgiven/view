@@ -921,21 +921,16 @@ c968f:
     }
 c96a2:
     //     lda himem
-    a = (uint8_t)(himem & 0xff);
     //     sec
-    flags |= FLAG_C;
     //     sbc last_macro_ptr
-    a = sbc(&flags, a, (uint8_t)(last_macro_ptr & 0xff)); // C live
     //     tax
-    x = a;
     //     lda himem+1
-    a = (uint8_t)((himem >> 8) & 0xff);
     //     sbc last_macro_ptr+1
-    a = sbc(&flags, a, (uint8_t)((last_macro_ptr >> 8) & 0xff)); // Z live
     //     bne c96b8
-    if ((flags & FLAG_Z))
     {
-        if (x < 0x97)
+        uint16_t diff = himem - last_macro_ptr;
+        x = (uint8_t)diff;
+        if (diff < 0x97)
         {
             {
                 display_not_enough_memory();
@@ -3608,14 +3603,11 @@ static void compute_header_left_section(addr_t tmp45)
         // c93aa:
         //     clc
         //     adc ((uint8_t*)&tmp45)[0]
-        flags &= ~FLAG_C;
-        a = adc(&flags, a, ((uint8_t*)&tmp45)[0]); // C live
-        ((uint8_t*)&tmp23)[0] = a;
+        //     sta ((uint8_t*)&tmp23)[0]
         //     lda ((uint8_t*)&tmp45)[1]
-        a = ((uint8_t*)&tmp45)[1];
         //     adc #0
-        a = adc(&flags, a, 0); // none live
-        ((uint8_t*)&tmp23)[1] = a;
+        //     sta ((uint8_t*)&tmp23)[1]
+        tmp23 = tmp45 + a;
     }
 }
 
@@ -3638,12 +3630,13 @@ static void compute_header_middle_section(addr_t tmp45)
     y--;
     {
         // c93aa:
-        flags &= ~FLAG_C;
-        a = adc(&flags, a, ((uint8_t*)&tmp45)[0]); // C live
-        ((uint8_t*)&tmp23)[0] = a;
-        a = ((uint8_t*)&tmp45)[1];
-        a = adc(&flags, a, 0); // none live
-        ((uint8_t*)&tmp23)[1] = a;
+        //     clc
+        //     adc ((uint8_t*)&tmp45)[0]
+        //     sta ((uint8_t*)&tmp23)[0]
+        //     lda ((uint8_t*)&tmp45)[1]
+        //     adc #0
+        //     sta ((uint8_t*)&tmp23)[1]
+        tmp23 = tmp45 + a;
     }
 }
 
@@ -3661,12 +3654,13 @@ static void compute_header_odd_page_section(void)
     y--;
     // c93aa:
     {
-        flags &= ~FLAG_C;
-        a = adc(&flags, a, ((uint8_t*)&tmp45)[0]); // C live
-        ((uint8_t*)&tmp23)[0] = a;
-        a = ((uint8_t*)&tmp45)[1];
-        a = adc(&flags, a, 0); // none live
-        ((uint8_t*)&tmp23)[1] = a;
+        //     clc
+        //     adc ((uint8_t*)&tmp45)[0]
+        //     sta ((uint8_t*)&tmp23)[0]
+        //     lda ((uint8_t*)&tmp45)[1]
+        //     adc #0
+        //     sta ((uint8_t*)&tmp23)[1]
+        tmp23 = tmp45 + a;
     }
 }
 

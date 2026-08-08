@@ -788,19 +788,13 @@ c8598:
     //     lda ((uint8_t*)&tmp01)[0]
     tmp45 = tmp01;
     //     lda ptr5
-    a = (uint8_t)(ptr5 & 0xff);
     //     sec
-    flags |= FLAG_C;
     //     sbc ((uint8_t*)&tmp01)[0]
-    a = sbc(&flags, a, (uint8_t)(((uint8_t*)&tmp01)[0] & 0xff)); // C live
     //     sta ((uint8_t*)&tmp67)[0]
-    ((uint8_t*)&tmp67)[0] = a;
     //     lda ptr5+1
-    a = (uint8_t)((ptr5 >> 8) & 0xff);
     //     sbc ((uint8_t*)&tmp01)[1]
-    a = sbc(&flags, a, (uint8_t)(((uint8_t*)&tmp01)[1] & 0xff)); // none live
     //     sta ((uint8_t*)&tmp67)[1]
-    ((uint8_t*)&tmp67)[1] = a;
+    tmp67 = ptr5 - tmp01;
     //     jsr adjust_pointers
     adjust_pointers(tmp45, tmp67);
     return;
@@ -896,24 +890,21 @@ c8a87:
     if (x < l004a)
         goto c8a5b;
     //     lda doc_ptr2+0
-    a = (uint8_t)(doc_ptr2 & 0xff);
     //     sec
-    flags |= FLAG_C;
     //     sbc ptr2
-    flags |= FLAG_C;
-    a = sbc(&flags, a, (uint8_t)(ptr2 & 0xff)); // C live
     //     sta input_buffer_offset+1
-    l0080 = a;
     //     lda doc_ptr2+1
-    a = (uint8_t)(doc_ptr2 >> 8);
     //     sbc ptr2+1
-    a = sbc(&flags, a, (uint8_t)(ptr2 >> 8)); // none live
     //     sta l0081
-    l0081 = a;
+    {
+        uint16_t doc_ptr2_minus_ptr2 = doc_ptr2 - ptr2;
+        l0080 = (uint8_t)doc_ptr2_minus_ptr2;
+        l0081 = (uint8_t)(doc_ptr2_minus_ptr2 >> 8);
+    }
     //     ldx l0082
     x = l0082;
     //     tay
-    y = a;
+    y = l0081;
     if (y == 0)
     {
         if (x >= l0080)

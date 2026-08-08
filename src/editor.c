@@ -4839,18 +4839,17 @@ void set_marker_to_here(uint8_t x)
     // cad5d:
 cad5d:
     //     clc
-    flags &= ~FLAG_C;
     //     adc current_line_ptr
-    flags &= ~FLAG_C;
-    a = adc(&flags, a, (uint8_t)(current_line_ptr & 0xff)); // C live
     //     sta 0,x
-    ((uint8_t*)markers_array)[x] = a;
     //     lda current_line_ptr+1
-    a = (uint8_t)(current_line_ptr >> 8);
     //     adc #0
-    a = adc(&flags, a, 0); // none live
     //     sta 1,x
-    ((uint8_t*)markers_array)[x + 1] = a;
+    {
+        uint16_t marker_addr = current_line_ptr + a;
+        ((uint8_t*)markers_array)[x] = (uint8_t)marker_addr;
+        ((uint8_t*)markers_array)[x + 1] = (uint8_t)(marker_addr >> 8);
+        a = (uint8_t)(marker_addr >> 8);
+    }
     //     rts
 }
 
