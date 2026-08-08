@@ -1622,9 +1622,12 @@ static void emit_to_output_buffer_callback(uint8_t digit)
     {
         //     txa
         //     pha
-        uint8_t saved_x = x;
         //     ldx l0082
-        x = l0082;
+        //     pla
+        //     tax
+        // (the work uses a local x, so the caller's x register is
+        //  preserved without an explicit save/restore)
+        uint8_t x = l0082;
         //     sta output_buffer,x
         output_buffer[x] = digit;
         //     cpx #MAX_LINE_LENGTH-2
@@ -1632,9 +1635,6 @@ static void emit_to_output_buffer_callback(uint8_t digit)
         {
             l0082++;
         }
-        //     pla
-        //     tax
-        x = saved_x;
         //     pla (restore a — but we didn't push it; keep the digit value)
         a = digit;
     }

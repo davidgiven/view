@@ -1138,7 +1138,9 @@ static void save_cmd_write_cmd(struct scan_state* scan)
     if (!parse_optional_filename_from_command(scan))
     {
         //         bit file_edit_flags
-        bit(&flags, a, file_edit_flags); // V live
+        // (the A value only affects BIT's Z flag, which is not checked here;
+        //  V comes from file_edit_flags, so a constant is passed)
+        bit(&flags, 0, file_edit_flags); // V live
         //         zif vc
         if (!(flags & FLAG_V))
         {
@@ -1150,18 +1152,19 @@ static void save_cmd_write_cmd(struct scan_state* scan)
 
         //         ldx #0
         uint8_t x = 0;
+        uint8_t ch;
         //         zrepeat
         do
         {
             //             lda input_filename,x
-            a = input_filename[x];
+            ch = input_filename[x];
             //             sta filename_buffer,x
-            filename_buffer[x] = a;
+            filename_buffer[x] = ch;
             //             inx
             x++;
             //             cmp #0x0d
             //         zuntil eq
-        } while (a != 0x0d);
+        } while (ch != 0x0d);
         //     zendif
     }
     //     jsr parse_marks_from_command
