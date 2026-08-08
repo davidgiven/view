@@ -2434,39 +2434,26 @@ void print_document(struct scan_state* scan)
     //     jsr sub_cb104
     reset_print_registers();
     //     lda top
-    a = (uint8_t)(top & 0xff);
     //     adc #3
-    flags &= ~FLAG_C;
-    a = adc(&flags, a, 3); // C live
     //     sta ptr5
-    ptr5 = (ptr5 & 0xff00) | a;
     //     tax
-    x = a;
     //     lda top+1
-    a = (uint8_t)(top >> 8);
     //     adc #0
-    a = adc(&flags, a, 0); // C live
     //     sta ptr5+1
-    ptr5 = (ptr5 & 0x00ff) | ((uint16_t)a << 8);
     //     tay
-    y = a;
+    // (16-bit arithmetic: ptr5 = top + 3)
+    ptr5 = top + 3;
     //     txa
-    a = x;
     //     adc #0x8d
-    a = adc(&flags, a, 0x8d); // C live
     //     bcc c8edb
-    if ((flags & FLAG_C))
-    {
-        y++;
-    }
+    //     iny
     //     sta first_macro_ptr
-    first_macro_ptr = (first_macro_ptr & 0xff00) | a;
     //     sta last_macro_ptr
-    last_macro_ptr = (last_macro_ptr & 0xff00) | a;
     //     sty first_macro_ptr+1
-    first_macro_ptr = (first_macro_ptr & 0x00ff) | ((uint16_t)y << 8);
     //     sty last_macro_ptr+1
-    last_macro_ptr = (last_macro_ptr & 0x00ff) | ((uint16_t)y << 8);
+    // (16-bit arithmetic: first_macro_ptr = last_macro_ptr = ptr5 + 0x8d)
+    first_macro_ptr = ptr5 + 0x8d;
+    last_macro_ptr = ptr5 + 0x8d;
     //     lda #0
     a = 0;
     //     sta l0031

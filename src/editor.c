@@ -5048,19 +5048,14 @@ ca9f1:
     // caa08: (6427)
 caa08:
     //     tya (6428)
-    a = y;
     //     clc (6429)
-    flags &= ~FLAG_C;
     //     adc ((uint8_t*)&tmp23)[0] (6430)
-    a = adc(&flags, a, ((uint8_t*)&tmp23)[0]); // C live
     //     sta top (6431)
-    top = (top & 0xff00) | a;
     //     lda ((uint8_t*)&tmp23)[1] (6432)
-    a = ((uint8_t*)&tmp23)[1];
     //     adc #0 (6433)
-    a = adc(&flags, a, 0); // V live
     //     sta top+1 (6434)
-    top = (top & 0x00ff) | ((uint16_t)a << 8);
+    // (16-bit arithmetic: top = tmp23 + y)
+    top = tmp23 + y;
     //     rts (6435)
 }
 
@@ -5193,9 +5188,14 @@ void scan_document_for_next_line(void)
 c8b91:
     // c8b91:
     //     lda ((uint8_t*)&tmp89)[1]
-    a = ((uint8_t*)&tmp89)[1];
     //     cmp doc_ptr3+1
-    if (((uint16_t)a << 8 | ((uint8_t*)&tmp89)[0]) < doc_ptr3)
+    //     bcc c8b9f
+    //     bne signal_no_more_document
+    //     lda ((uint8_t*)&tmp89)[0]
+    //     cmp doc_ptr3
+    //     bcs signal_no_more_document
+    // (16-bit comparison: tmp89 < doc_ptr3)
+    if (tmp89 < doc_ptr3)
         goto c8b9f;
     // c8b78:
     //     lda #0xff
@@ -8590,22 +8590,18 @@ ca919:
                 if (idx == 0x0c)
                     goto ca92f;
                 //     tya
-                a = y;
                 //     clc
-                flags &= ~FLAG_C;
                 //     adc current_line_ptr
-                a = adc(
-                    &flags, a, (uint8_t)(current_line_ptr & 0xff)); // C live
                 //     sta markers_array,x
-                ((uint8_t*)markers_array)[idx] = a;
                 //     lda current_line_ptr+1
-                a = (uint8_t)(current_line_ptr >> 8);
                 //     adc #0
-                a = adc(&flags, a, 0); // V live
                 //     sta markers_array+1,x
-                ((uint8_t*)markers_array)[idx + 1] = a;
+                // (16-bit arithmetic: val = current_line_ptr + y)
+                uint16_t val = current_line_ptr + y;
+                ((uint8_t*)markers_array)[idx] = (uint8_t)(val & 0xff);
+                ((uint8_t*)markers_array)[idx + 1] = (uint8_t)(val >> 8);
                 //     bne loop_ca91c
-                if (a != 0)
+                if ((uint8_t)(val >> 8) != 0)
                     continue;
                 break;
             }

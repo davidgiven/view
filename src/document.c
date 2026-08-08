@@ -494,29 +494,20 @@ void load_current_ruler(uint8_t y)
 
     // cab91:
     //     sty ruler_stack_ptr
-    uint8_t a;
-    ruler_index_ptr = y;
     //     iny
-    y++;
     //     lda (oshwm),y
     //     clc
     //     adc #3
     //     sta current_ruler_ptr
-    flags &= ~FLAG_C;
-    //     lda (oshwm),y
-    a = ram[oshwm + y];
-    //     adc #3
-    a = adc(&flags, a, 3); // C live
-    //     sta current_ruler_ptr
-    current_ruler_ptr = (current_ruler_ptr & 0xff00) | a;
     //     dey
-    y--;
     //     lda (oshwm),y
-    a = ram[oshwm + y];
     //     adc #0
-    a = adc(&flags, a, 0); // none live
     //     sta current_ruler_ptr+1
-    current_ruler_ptr = (current_ruler_ptr & 0x00ff) | ((uint16_t)a << 8);
+    // (16-bit arithmetic: the two stacked bytes form the stored ruler
+    //  pointer, high byte first; current_ruler_ptr = stored + 3)
+    ruler_index_ptr = y;
+    current_ruler_ptr = ((addr_t)ram[oshwm + y] << 8) | ram[oshwm + y + 1];
+    current_ruler_ptr += 3;
     // MULTIPLE ENTRY POINTS: pop_from_ruler_index, cab91
     //     (falls through to find_margins_of_current_ruler_buffer)
     find_margins_of_current_ruler_buffer();
