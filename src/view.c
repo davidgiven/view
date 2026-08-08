@@ -1373,9 +1373,8 @@ void parse_filename_from_command(void)
 
     // parse_filename_from_command:
     //     jsr parse_optional_filename_from_command
-    parse_optional_filename_from_command();
     //     beq bad_filename_error  ; Z=1 → no filename
-    if (flags & FLAG_Z)
+    if (!parse_optional_filename_from_command())
     {
         bad_filename_error();
         return;

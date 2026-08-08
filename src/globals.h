@@ -271,7 +271,7 @@ extern area_status_t sanitise_area(void);
 extern void make_space_for_insertion(void);
 extern void adjust_pointers(addr_t tmp45, addr_t tmp67);
 extern void parse_decimal_number(void);
-extern void parse_optional_filename_from_command(void);
+extern bool parse_optional_filename_from_command(void);
 extern void read_block_from_file(void);
 extern void scan_input_buffer(void);
 extern uint8_t check_for_embedded_ruler(addr_t tmp01, uint8_t y);

@@ -894,16 +894,14 @@ static void name_cmd(void)
     //     jsr check_not_continuous_editing
     check_not_continuous_editing();
     //     jsr parse_optional_filename_from_command
-    parse_optional_filename_from_command();
+    bool has_filename = parse_optional_filename_from_command();
     //     php
-    uint8_t saved_flags = flags;
     //     lda #0
     //     sta file_edit_flags
-    file_edit_flags = 0;
     //     plp
-    flags = saved_flags;
+    file_edit_flags = 0;
     //     beq return_9
-    if (flags & FLAG_Z)
+    if (!has_filename)
         return;
 
     // MULTIPLE ENTRY POINTS: name_cmd, reset_document_name_after_load
@@ -1136,9 +1134,8 @@ static void save_cmd_write_cmd(void)
     // save_cmd:
     // write_cmd:
     //     jsr parse_optional_filename_from_command
-    parse_optional_filename_from_command();
     //     zif eq
-    if (flags & FLAG_Z)
+    if (!parse_optional_filename_from_command())
     {
         //         bit file_edit_flags
         bit(&flags, a, file_edit_flags); // V live

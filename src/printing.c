@@ -27,7 +27,7 @@ void display_not_enough_memory(void);
 static void microspace_word_processor(void);
 static void nested_macro_error(void);
 void parse_decimal_number(void);
-void parse_optional_filename_from_command(void);
+bool parse_optional_filename_from_command(void);
 static void print_char_x_times(uint8_t a, uint8_t x);
 void print_document(void);
 static void print_loop(void);
@@ -2363,7 +2363,7 @@ void parse_decimal_number(void)
     set_flags(&flags, had_digits); // Z live
 }
 
-void parse_optional_filename_from_command(void)
+bool parse_optional_filename_from_command(void)
 {
     // parse_optional_filename_from_command
     // Pseudocode: Parses optional filename from input buffer into
@@ -2374,7 +2374,7 @@ void parse_optional_filename_from_command(void)
     scan_input_buffer();
     //     beq return_19
     if (flags & FLAG_Z)
-        return; // returns Z=1 → no filename
+        return false; // no filename
     //     ldx #0
     uint8_t x = 0;
     while (1)
@@ -2395,13 +2395,14 @@ void parse_optional_filename_from_command(void)
         }
     }
     //     lda #0x0d
-    set_flags(&flags, 0x0d); // Z live
+    a = 0x0d;
     //     sta filename_buffer,x
     filename_buffer[x] = 0x0d;
     //     sty input_buffer_offset
     input_buffer_offset = y;
     // return_20:
     //     rts
+    return true;
 }
 
 static void print_char_x_times(uint8_t a, uint8_t x)
@@ -2497,9 +2498,8 @@ void print_document(void)
     // c8f0d:
 c8f0d:
     //     jsr parse_optional_filename_from_command
-    parse_optional_filename_from_command();
     //     bne c8f29
-    if (!(flags & FLAG_Z))
+    if (parse_optional_filename_from_command())
     {
         c8f29_sub(a);
         print_loop();
