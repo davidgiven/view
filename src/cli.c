@@ -1140,9 +1140,8 @@ static void save_cmd_write_cmd(struct scan_state* scan)
         //         bit file_edit_flags
         // (the A value only affects BIT's Z flag, which is not checked here;
         //  V comes from file_edit_flags, so a constant is passed)
-        bit(&flags, 0, file_edit_flags); // V live
         //         zif vc
-        if (!(flags & FLAG_V))
+        if (!(file_edit_flags & 0x40))
         {
             //             jmp bad_filename_error
             bad_filename_error();

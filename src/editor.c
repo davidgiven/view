@@ -335,11 +335,8 @@ void editor_loop_impl(void)
 
             //     bit format_mode_flag
 
-            bit(&flags, a, format_mode_flag); // V live
-
             //     bvs c9b6a
-
-            if (flags & FLAG_V)
+            if (format_mode_flag & 0x40)
                 goto c9b6a_;
 
             //     sty xpos
@@ -7634,11 +7631,12 @@ c9a2e:
     }
 c9a40:
     //     bit l0046
-    bit(&flags, a, l0046); // N live
     //     stx l0046
+    // (bit test: N reflects the old l0046 before it is overwritten)
+    bool old_l0046_high = (l0046 & 0x80) != 0;
     l0046 = x;
     //     bmi c9a58
-    if (flags & FLAG_N)
+    if (old_l0046_high)
         goto c9a58;
     //     cmp #0x20 ; ' '
     if (a == 0x20)

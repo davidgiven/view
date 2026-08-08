@@ -976,9 +976,9 @@ c8ada:
     //     sty l0081
     l0081 = y;
     //     bit print_xpos
-    bit(&flags, a, print_xpos); // N, V live
     //     bmi c8b11
-    if (flags & FLAG_N)
+    // (bit test: N = print_xpos & 0x80)
+    if (print_xpos & 0x80)
         goto c8b11;
     //     ldx input_buffer_offset+1
     x = l0080;
@@ -1130,9 +1130,9 @@ c8b47:
     }
     // c8b4d:
     //     bit folding_flag
-    bit(&flags, a, folding_flag); // N, V live
     //     bmi c8b64
-    if (flags & FLAG_N)
+    // (bit test: N = folding_flag & 0x80)
+    if (folding_flag & 0x80)
         goto c8b64;
     //     ldy print_xpos
     y = print_xpos;

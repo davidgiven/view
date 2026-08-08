@@ -1915,9 +1915,9 @@ c9048:
     if (a != 0x1a)
         goto c906f;
     //     bit l0083
-    bit(&flags, a, l0083); // N, V live
     //     bpl c9064
-    if (!(flags & FLAG_N))
+    // (bit test: N = l0083 & 0x80)
+    if (!(l0083 & 0x80))
         goto c9064;
     //     lda l0048
     a = l0048;
@@ -1954,9 +1954,9 @@ c906f:
     if (a != 0x20)
         goto c9090;
     //     bit l0083
-    bit(&flags, a, l0083); // N, V live
     //     bpl c9064
-    if (!(flags & FLAG_N))
+    // (bit test: N = l0083 & 0x80)
+    if (!(l0083 & 0x80))
         goto c9064;
     //     lda l0042
     a = l0042;
@@ -3035,9 +3035,9 @@ static void render_new_page(void)
     //     sta l0031
     l0031 = a;
     //     bit print_flags
-    bit(&flags, a, print_flags); // V live
     //     bvc c92d4
-    if (!(flags & FLAG_V))
+    // (bit test: V = print_flags & 0x40)
+    if (!(print_flags & 0x40))
         goto c92d4;
     //     jsr stop_printing
     stop_printing();
