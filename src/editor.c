@@ -30,7 +30,7 @@ void adjust_pointers(addr_t tmp45, addr_t tmp67);
 static void advance_to_next_line(void);
 void beep(void);
 void scan_document_for_next_line(void);
-static uint8_t c9de3_insert_line(uint8_t a, uint8_t y);
+static uint8_t c9de3_insert_line(addr_t ptr);
 static void update_line_length(void);
 void clamp_ptr6_to_document(void);
 void clear_screen(void);
@@ -133,7 +133,7 @@ static void set_marker_5(void);
 
 static void set_marker_6(void);
 
-static uint8_t insert_line_at_cursor(uint8_t a, uint8_t y);
+static uint8_t insert_line_at_cursor(addr_t ptr);
 
 static void move_to_previous_line(void);
 
@@ -782,18 +782,15 @@ static void cf6_split_line_key(void)
     //     bcc c9de3
     //     iny
     //     bne c9de3
-    // (16-bit arithmetic: current_line_ptr + x; y holds the high byte of
-    //  the result; if the sum wraps past 0xffff (y == 0 after the carry),
-    //  fall through to f6_insert_line_key)
+    // (16-bit arithmetic: current_line_ptr + x; if the sum wraps past
+    //  0xffff (y == 0 after the carry), fall through to f6_insert_line_key)
     uint32_t sum = (uint32_t)current_line_ptr + x;
-    a = (uint8_t)sum;
-    y = (uint8_t)(sum >> 8);
     if (sum > 0xffff)
     {
         f6_insert_line_key();
         return;
     }
-    c9de3_insert_line(a, y);
+    c9de3_insert_line((uint16_t)sum);
     return;
 }
 
@@ -1387,13 +1384,10 @@ static void f6_insert_line_key(void)
 
     //     lda current_line_ptr
     //     ldy current_line_ptr+1
-    // (a is read back by the callee chain; y is passed as an explicit
-    //  parameter to insert_line_at_cursor, so the global y write is dead)
-    a = current_line_ptr;
     //     inc l0079
     l0079++;
     //     falls through to sub_c9de1
-    insert_line_at_cursor(a, (uint8_t)(current_line_ptr >> 8));
+    insert_line_at_cursor(current_line_ptr);
 }
 
 static void f7_delete_line_key(void)
@@ -2566,14 +2560,12 @@ uint8_t return_key(void)
     //     bcc c9d98
     //     iny
     // (16-bit arithmetic: current_line_ptr + y (the offset from
-    //  move_tmp01_to_next_line); the result is passed as the a/y registers)
+    //  move_tmp01_to_next_line))
     uint16_t sum = current_line_ptr + y;
-    a = (uint8_t)sum;
-    y = (uint8_t)(sum >> 8);
 
     //     jsr sub_c9de1
 
-    x = insert_line_at_cursor(a, y);
+    x = insert_line_at_cursor(sum);
 
     //     // falls through to c9d9b
 
@@ -4163,7 +4155,7 @@ static void set_marker_6(void)
     return;
 }
 
-static uint8_t insert_line_at_cursor(uint8_t a, uint8_t y)
+static uint8_t insert_line_at_cursor(addr_t ptr)
 {
     uint8_t x;
 
@@ -4171,7 +4163,7 @@ static uint8_t insert_line_at_cursor(uint8_t a, uint8_t y)
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     falls through to c9de3
-    x = c9de3_insert_line(a, y);
+    x = c9de3_insert_line(ptr);
     return x;
 }
 
@@ -5351,10 +5343,10 @@ c8c3e:
     //     rts
 }
 
-static uint8_t c9de3_insert_line(uint8_t a, uint8_t y)
+static uint8_t c9de3_insert_line(addr_t ptr)
 {
     //     sta ((uint8_t*)&tmp45)[0]
-    tmp45 = (addr_t)(y) << 8 | a;
+    tmp45 = ptr;
     //     lda #1
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda #0
@@ -5365,9 +5357,7 @@ static uint8_t c9de3_insert_line(uint8_t a, uint8_t y)
     //     bcs c9dfd
     if (!(flags & FLAG_C))
     {
-        a = 0x0d;
-        y = 0;
-        ram[tmp45 + y] = a;
+        ram[tmp45] = 0x0d;
         clamp_ptr6_to_document();
         return x;
     }
