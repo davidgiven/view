@@ -3817,18 +3817,16 @@ c9ca2:
     //     lda input_buffer_ptr+1 (4220)
     a = input_buffer_offset;
     //     sec (4221)
-    flags |= FLAG_C;
     //     sbc xpos (4222)
-    a = sbc(&flags, a, xpos); // none live
     //     sta top_margin (4223)
+    a -= xpos;
     top_margin = a;
     //     lda l0083 (4224)
     a = l0083;
     //     sec (4225)
-    flags |= FLAG_C;
     //     sbc xpos (4226)
-    a = sbc(&flags, a, xpos); // none live
     //     sta l0083 (4227)
+    a -= xpos;
     l0083 = a;
     //     tay (4228)
     y = a;
@@ -4606,11 +4604,11 @@ void insert_edit_buffer_bytes_at_xpos(uint8_t x)
     //     tya
     a = y; // global y: line length (local y not yet declared)
     //     clc
-    flags &= ~FLAG_C;
     //     adc input_buffer_offset+1
-    a = adc(&flags, a, l0080); // C live
     //     bcs cae03
-    if (flags & FLAG_C)
+    // (adc with C=0 is a plain addition; carry means overflow)
+    a += l0080;
+    if (a < l0080)
     {
         beep();
         return;
@@ -4640,11 +4638,11 @@ cae27:
     //     tya
     a = y;
     //     clc
-    flags &= ~FLAG_C;
     //     adc input_buffer_offset+1
-    a = adc(&flags, a, l0080); // C live
     //     bcs cae35
-    if (!(flags & FLAG_C))
+    // (adc with C=0 is a plain addition; carry means overflow)
+    a += l0080;
+    if (a >= l0080)
     {
         if (a < MAX_LINE_LENGTH)
         {
@@ -6297,11 +6295,11 @@ static void recalculate_cursor_xpos(void)
         //     txa
         a = x;
         //     clc
-        flags &= ~FLAG_C;
         //     adc l0039
-        a = adc(&flags, a, l0039); // C live
         //     bcc loop_ca615
-        if (!(flags & FLAG_C))
+        // (adc with C=0 is a plain addition; carry means overflow)
+        a += l0039;
+        if (a >= l0039)
             continue;
         break;
     }
@@ -6596,13 +6594,16 @@ ca381:
     //     lda l0072 (5360)
     a = l0072;
     //     sec (5361)
-    flags |= FLAG_C;
     //     sbc l0083 (5362)
-    a = sbc(&flags, a, l0083); // C live
     //     bcs ca38a (5363)
-    if (!(flags & FLAG_C))
+    // (sbc with C=1 is a plain subtraction; the borrow selects 0)
+    if (a < l0083)
     {
         a = 0;
+    }
+    else
+    {
+        a -= l0083;
     }
     //     sta hscroll_pos (5366)
     hscroll_pos = a;
@@ -6739,11 +6740,10 @@ ca3e7:
     //     lda l0072 (5435)
     a = l0072;
     //     sec (5436)
-    flags |= FLAG_C;
     //     sbc hscroll_pos (5437)
-    a = sbc(&flags, a, hscroll_pos); // none live
     //     clc (5438)
     //     adc #3 (5439)
+    a -= hscroll_pos;
     a += 3;
     //     tax (5440)
     x = a;
@@ -7182,9 +7182,10 @@ static void process_char_for_output(uint8_t y)
     a = x;
     //     clc
     //     adc l0039
-    a = adc(&flags, a, l0039); // Z live
     //     bne c995c
-    if (!(flags & FLAG_Z))
+    // (adc with C=0 is a plain addition; Z means the result is zero)
+    a += l0039;
+    if (a != 0)
         goto c995c;
     // c994a:
 c994a:
@@ -8364,15 +8365,19 @@ static void write_line_back_to_document(void)
     //     lda l003b
     a = l003b;
     //     sec
-    flags |= FLAG_C;
     //     sbc l0083
-    a = sbc(&flags, a, l0083); // Z, C live
     //     bcc ca8df
-    if (!(flags & FLAG_C))
-        goto ca8df;
     //     beq ca8ed
-    if (flags & FLAG_Z)
-        goto ca8ed;
+    // (sbc with C=1 is a plain subtraction; a holds a - l0083 on all
+    //  paths, and the borrow/zero flags select the branch)
+    {
+        uint8_t minuend = a;
+        a -= l0083;
+        if (minuend < l0083)
+            goto ca8df; // borrow: a < l0083
+        if (a == 0)
+            goto ca8ed;
+    }
     //     sta ((uint8_t*)&tmp67)[0]
     ((uint8_t*)&tmp67)[0] = a;
     //     jsr adjust_pointers

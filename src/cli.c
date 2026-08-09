@@ -838,10 +838,10 @@ static void more_cmd(struct scan_state* scan)
     }
 
     //     ldy #0
-    y = 0;
     //     ldx l003a
-    x = l003a;
     // loop_c84c4:
+    uint8_t y = 0;
+    x = l003a;
     do
     {
         a = ram[current_ruler_ptr + y];

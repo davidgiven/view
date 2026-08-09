@@ -799,16 +799,16 @@ void lookup_marker(uint8_t a)
     // lookup_marker: Converts marker character '1'-'6' to index
 
     //     sec
-    flags |= FLAG_C;
     //     sbc #0x31 ; '1'
-    a = sbc(&flags, a, 0x31); // Z, C live
     //     bcc loop_caced
-    if (!(flags & FLAG_C))
+    // (sbc with C=1 is a plain subtraction; borrow means invalid marker)
+    if (a < 0x31)
     {
         beep();
         flags |= FLAG_C; // set C explicitly: invalid marker
         return;
     }
+    a -= 0x31;
     //     asl
     a <<= 1;
     //     cmp #0x0c
@@ -919,10 +919,10 @@ cac20:
     //     lda ((uint8_t*)&tmp89)[0]
     a = ((uint8_t*)&tmp89)[0];
     //     sec
-    flags |= FLAG_C;
     //     sbc current_line_ptr
-    a = sbc(&flags, a, (uint8_t)(current_line_ptr & 0xff)); // Z live
     //     tax
+    // (sbc with C=1 is a plain subtraction; tax overwrites the flags)
+    a -= (uint8_t)(current_line_ptr & 0xff);
     x = a;
     //     ldy #0
     yy = 0;

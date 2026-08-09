@@ -681,9 +681,8 @@ cli_cmd_status_t process_cli_command(struct scan_state* scan)
     //     beq c8402
     if (!scan_input_buffer(scan))
     {
-        y = input_buffer_offset;
-        y++;
         // (base index comes from l007a, set by reset_command_parse_state)
+        uint8_t y = input_buffer_offset + 1;
         x = expand_escaped_string(l007a, y);
         l004a = x;
     }

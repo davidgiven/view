@@ -174,12 +174,11 @@ static void ce_fmt_cmd(void)
         return;
     }
     //     sec
-    flags |= FLAG_C;
     //     sbc ruler_left_stop
-    a = sbc(&flags, a, ruler_left_stop); // none live
     //     lsr
     // (flags not used; the following add and C-comparisons set/read their
     //  own values)
+    a -= ruler_left_stop;
     a >>= 1;
     //     sec
     //     adc ruler_left_stop
@@ -1023,7 +1022,7 @@ static void ht_fmt_cmd(void)
     if (flags & FLAG_Z)
         return;
     //     tax
-    x = a;
+    uint8_t x = a;
     //     lda #0
     //     cpx #0x2d ; '-'
     if (x == 0x2d)
@@ -1043,12 +1042,12 @@ c9719:
     //     jsr evaluate_expression_from_fmt_cmd
     evaluate_expression_from_fmt_cmd();
     //     sec
-    flags |= FLAG_C;
     //     sbc #1
-    a = sbc(&flags, a, 1); // C live
     //     bcc return_44
-    if (!(flags & FLAG_C))
+    // (sbc with C=1 is a plain subtraction; borrow means a was 0)
+    if (a == 0)
         return;
+    a -= 1;
     //     cmp #2
     //     bcs return_44
     if (a >= 2)
@@ -3368,12 +3367,12 @@ c91da:
     //     lda (ptr3),y
     a = ram[ptr3 + y];
     //     sec
-    flags |= FLAG_C;
     //     sbc #0x30 ; '0'
-    a = sbc(&flags, a, 0x30); // C, V live
     //     bcc c9225
-    if (!(flags & FLAG_C))
+    // (sbc with C=1 is a plain subtraction; borrow means non-digit)
+    if (a < 0x30)
         goto c9225;
+    a -= 0x30;
     //     cmp #0x0a
     //     bcs c9225
     if (a >= 0x0a)
