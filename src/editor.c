@@ -7046,13 +7046,9 @@ static void save_cursor_position(void)
     // save_cursor_position:
     //     ldy #SCREEN_GETCURSOR
     //     jsr SCREEN
-    uint8_t x;
-    uint8_t a;
     uint16_t cursor_ = screen_getcursor();
-    a = (uint8_t)(cursor_ & 0xff);
-    x = (uint8_t)(cursor_ >> 8);
     //     sta ((uint8_t*)&tmp45)[0]
-    tmp45 = (addr_t)(x) << 8 | a;
+    tmp45 = cursor_;
     //     rts
 }
 

@@ -180,7 +180,7 @@ typedef enum
 extern area_status_t sanitise_area(void);
 extern void parse_marks_from_command(struct scan_state* scan);
 extern void write_area_to_file(void);
-extern void read_next_chunk_from_input_file(void);
+extern void read_next_chunk_from_input_file(addr_t ptr);
 extern void read_into_document(void);
 extern void reset_document_name_after_load(void);
 extern void parse_integer_from_command(struct scan_state* scan);
@@ -290,7 +290,7 @@ extern void make_space_for_insertion(void);
 extern void adjust_pointers(addr_t tmp45, addr_t tmp67);
 extern bool parse_decimal_number(int* value, uint8_t* y);
 extern bool parse_optional_filename_from_command(struct scan_state* scan);
-extern void read_block_from_file(void);
+extern void read_block_from_file(addr_t limit);
 
 extern bool scan_input_buffer(struct scan_state* state);
 extern uint8_t check_for_embedded_ruler(addr_t tmp01, uint8_t y);

@@ -870,9 +870,7 @@ static void more_cmd(struct scan_state* scan)
     //     bne c84e8
     if (a == 0)
     {
-        a = (uint8_t)(top & 0xff);
-        y = (uint8_t)((top >> 8) & 0xff);
-        read_next_chunk_from_input_file();
+        read_next_chunk_from_input_file(top);
         if (flags & FLAG_Z)
         {
             return_to_cli_prompt();

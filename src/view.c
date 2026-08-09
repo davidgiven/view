@@ -71,15 +71,15 @@ void read_first_chunk_from_input_file(void);
 // Input:  a = document character, y = line offset (for tab stop lookup)
 // Output: a = character to render, x = screen width consumed, y preserved,
 // flags.C=0
-void read_next_chunk_from_input_file(void);
-static void compute_space_available(void);
-static void compute_space_common(uint8_t a, uint8_t y);
+void read_next_chunk_from_input_file(addr_t ptr);
+static addr_t compute_space_available(addr_t ptr);
+static addr_t compute_space_common(addr_t ptr, addr_t tmp89);
 control_code_t check_for_control_code(uint8_t a);
 
 static void system_init(void);
 
 // Forward declarations for recently translated functions
-static void compute_required_space_for_insertion(uint8_t a, uint8_t y);
+static addr_t compute_required_space_for_insertion(addr_t ptr);
 
 #include "io.h"
 
@@ -762,17 +762,13 @@ void read_into_document(void)
     move_cursor_to_address(area_start_ptr);
     //     lda ((uint8_t*)&tmp45)[0]
     //     ldy ((uint8_t*)&tmp45)[1]
-    // (a is read back by the callee chain; y is passed as an explicit
-    //  parameter to compute_required_space_for_insertion, so the global
-    //  y write is dead)
-    a = ((uint8_t*)&tmp45)[0];
     //     jsr compute_required_space_for_insertion
-    compute_required_space_for_insertion(a, (uint8_t)((tmp45 >> 8) & 0xff));
+    addr_t space_limit = compute_required_space_for_insertion(tmp45);
     //     jsr make_space_for_insertion
     make_space_for_insertion();
 
     //     jsr read_block_from_file
-    read_block_from_file();
+    read_block_from_file(space_limit);
     //     beq c8584
     //     bcs c8598
     if (flags & FLAG_Z)
@@ -796,7 +792,8 @@ c8598:
     //     lda ptr5+1
     //     sbc ((uint8_t*)&tmp01)[1]
     //     sta ((uint8_t*)&tmp67)[1]
-    tmp67 = ptr5 - tmp01;
+    // (16-bit subtraction: tmp67 = space_limit - tmp01)
+    tmp67 = space_limit - tmp01;
     //     jsr adjust_pointers
     adjust_pointers(tmp45, tmp67);
     return;
@@ -1194,16 +1191,16 @@ void init_document_pointers(void)
     //     rts
 }
 
-void read_next_chunk_from_input_file(void)
+void read_next_chunk_from_input_file(addr_t ptr)
 {
 
     // read_next_chunk_from_input_file
     // read_next_chunk_from_input_file:
     //     jsr sub_c8da2
-    compute_space_available();
+    addr_t space_limit = compute_space_available(ptr);
     select_file(0);
     //     jsr read_block_from_file
-    read_block_from_file();
+    read_block_from_file(space_limit);
     //     php
     //     beq c8d39
     //     bcc c8d39
@@ -1227,11 +1224,9 @@ void read_first_chunk_from_input_file(void)
 {
     // read_first_chunk_from_input_file:
     //     lda page
-    a = (uint8_t)(page & 0xff);
     //     ldy page+1
-    y = (uint8_t)((page >> 8) & 0xff);
     //     jmp read_next_chunk_from_input_file
-    read_next_chunk_from_input_file();
+    read_next_chunk_from_input_file(page);
 }
 
 void write_area_to_file(void)
@@ -1271,14 +1266,13 @@ void write_area_to_file(void)
     //     rts
 }
 
-static void compute_space_common(uint8_t a, uint8_t y)
+static addr_t compute_space_common(addr_t ptr, addr_t tmp89)
 {
     // compute_space_common
     // c8daf:
     //     sta ((uint8_t*)&tmp01)[0]
-    addr_t ptr5;
     addr_t tmp67;
-    tmp01 = (addr_t)(y) << 8 | a;
+    tmp01 = ptr;
     //     jsr compute_bytes_free
     //     stx ((uint8_t*)&tmp67)[0]
     tmp67 = (addr_t)compute_bytes_free();
@@ -1291,47 +1285,36 @@ static void compute_space_common(uint8_t a, uint8_t y)
     }
     //     lda ((uint8_t*)&tmp89)[1]; cmp #4
     // (16-bit comparison: tmp89 >= 0x0400)
-    if (tmp89 >= 0x0400)
-    {
-        //     lda #4; sta ((uint8_t*)&tmp89)[1]; sta ((uint8_t*)&tmp89)[0]
-        tmp89 = 0x0404;
-        flags |= FLAG_C;
-    }
-    else
-    {
-        flags &= ~FLAG_C;
-    }
-    // c8dce:
+    // c8dce (the clamp's C flag supplies the SBC borrow-in, so the
+    //  subtraction is folded into each branch: borrow-in 0 after the clamp
+    //  ran, 1 otherwise):
     //     lda ((uint8_t*)&tmp67)[0]; sbc ((uint8_t*)&tmp89)[0]; sta
     //     ((uint8_t*)&tmp67)[0]
     //     lda ((uint8_t*)&tmp67)[1]; sbc ((uint8_t*)&tmp89)[1]; sta
     //     ((uint8_t*)&tmp67)[1]
-    // (16-bit subtraction; the C flag set by the clamp above (sec/clc)
-    //  is the borrow into the subtraction)
-    tmp67 -= tmp89;
-    if (!(flags & FLAG_C))
-        tmp67--;
+    if (tmp89 >= 0x0400)
+    {
+        //     lda #4; sta ((uint8_t*)&tmp89)[1]; sta ((uint8_t*)&tmp89)[0]
+        tmp89 = 0x0404;
+        tmp67 -= tmp89;
+    }
+    else
+    {
+        tmp67 -= tmp89 + 1;
+    }
     //     lda ((uint8_t*)&tmp01)[0]; clc; adc ((uint8_t*)&tmp67)[0]; sta ptr5;
     //     pha lda ((uint8_t*)&tmp01)[1]; adc ((uint8_t*)&tmp67)[1]; sta ptr5+1;
     //     sta l0081; pla
-    ptr5 = tmp01 + tmp67;
-    l0081 = (uint8_t)(ptr5 >> 8);
-    a = (uint8_t)ptr5;
     //     sbc #0x8b
-    a = sbc(&flags, a, 0x8b); // C live
-    //     sta input_buffer_offset+1
-    l0080 = a;
     //     bcs return_18
-    if (!(flags & FLAG_C))
-    {
-        //     dec l0081
-        l0081--;
-    }
+    //     dec l0081
+    // (16-bit subtraction: result = tmp01 + tmp67 - 0x8b)
     // return_18:
     //     rts
+    return tmp01 + tmp67 - 0x8b;
 }
 
-static void compute_space_available(void)
+static addr_t compute_space_available(addr_t ptr)
 {
     // sub_c8da2
     // sub_c8da2:
@@ -1343,19 +1326,17 @@ static void compute_space_available(void)
     //     pla
     //     tay
     //     pla
-    tmp89 = (addr_t)compute_bytes_free();
-    compute_space_common(a, y);
+    return compute_space_common(ptr, (addr_t)compute_bytes_free());
 }
 
-static void compute_required_space_for_insertion(uint8_t a, uint8_t y)
+static addr_t compute_required_space_for_insertion(addr_t ptr)
 {
     // compute_required_space_for_insertion:
     //     ldx #0
     //     stx ((uint8_t*)&tmp89)[0]
-    tmp89 = 0;
     //     beq c8daf                                                         ;
     //     ALWAYS branch
-    compute_space_common(a, y);
+    return compute_space_common(ptr, 0);
 }
 
 void parse_filename_from_command(struct scan_state* scan)

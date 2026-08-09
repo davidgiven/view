@@ -33,7 +33,7 @@ void print_document(struct scan_state* scan);
 static void print_loop(void);
 static void print_newline(void);
 static void print_vertical_space(uint8_t x);
-void read_block_from_file(void);
+void read_block_from_file(addr_t limit);
 static void render_header_or_footer(uint16_t yx);
 static void render_new_page(void);
 bool scan_input_buffer(struct scan_state* state);
@@ -41,7 +41,7 @@ static void start_microspacing_if_active(uint8_t a);
 static void emit_microspacing_spaces(uint8_t x);
 static void prepare_output_line(void);
 static void parse_register_reference(uint8_t a);
-static void read_next_output_line(void);
+static void read_next_output_line(addr_t limit);
 static void compute_lines_remaining_on_page(void);
 static void compute_header_left_section(addr_t tmp45);
 static void compute_header_middle_section(addr_t tmp45);
@@ -951,7 +951,7 @@ c96a2:
     current_format_line_ptr = last_macro_ptr;
     l0081 = (uint8_t)(last_macro_ptr >> 8);
     //     jsr sub_c9241
-    read_next_output_line();
+    read_next_output_line(last_macro_ptr);
     //     bcc c96ce
     if ((flags & FLAG_C))
     {
@@ -2756,7 +2756,7 @@ static void print_vertical_space(uint8_t x)
     print_char_x_times(a, x);
 }
 
-void read_block_from_file(void)
+void read_block_from_file(addr_t limit)
 {
     uint8_t a;
 
@@ -2857,8 +2857,8 @@ c8cdb:
     //     bne c8cf1
     //     lda ((uint8_t*)&tmp01)[0]
     //     cmp input_buffer_offset+1
-    // (16-bit comparison: tmp01 < (l0081 << 8 | l0080))
-    if (tmp01 < ((uint16_t)l0081 << 8 | l0080))
+    // (16-bit comparison: tmp01 < limit)
+    if (tmp01 < limit)
         goto c8c95;
     // c8cf1:
     //     clc
@@ -3277,7 +3277,7 @@ c9188_normal_entry:
     //     sta ((uint8_t*)&tmp01)[1]
     ((uint8_t*)&tmp01)[1] = a;
     //     jsr sub_c9241
-    read_next_output_line();
+    read_next_output_line(ptr5);
     //     bcs return_26
     if (flags & FLAG_C)
         return;
@@ -3496,7 +3496,7 @@ static void parse_register_reference(uint8_t a)
     return;
 }
 
-static void read_next_output_line(void)
+static void read_next_output_line(addr_t limit)
 {
     uint8_t a;
     uint8_t a2;
@@ -3512,7 +3512,7 @@ static void read_next_output_line(void)
     //     beq c9260
     if (a == 0)
     {
-        read_block_from_file();
+        read_block_from_file(limit);
         return;
     }
     //     ldy #0

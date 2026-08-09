@@ -520,8 +520,6 @@ void ensure_cr_at_document_top(void)
 
     if (page != top)
         return;
-    uint8_t y = (uint8_t)(page >> 8);
-    uint8_t a = (uint8_t)(page & 0xff);
     //     inc top
     top++;
     //     bne cb06c
@@ -532,12 +530,12 @@ void ensure_cr_at_document_top(void)
     // cb06c:
 cb06c:
     //     sta current_line_ptr
-    current_line_ptr = (uint16_t)y << 8 | a;
     //     sty current_line_ptr+1
+    current_line_ptr = page;
     //     ldy #0
-    y = 0;
+    uint8_t y = 0;
     //     lda #0x0d
-    a = 0x0d;
+    uint8_t a = 0x0d;
     //     sta (page),y
     ram[page + y] = a;
     //     tya
@@ -559,9 +557,6 @@ void close_file(void)
 
 uint8_t create_default_ruler(uint16_t ruler_addr)
 {
-    uint8_t a;
-    a = (uint8_t)(ruler_addr & 0xff);
-    y = (uint8_t)(ruler_addr >> 8);
     // create_default_ruler
     // Pseudocode: Creates a default ruler with tab stops every 6 columns
 
@@ -570,10 +565,10 @@ uint8_t create_default_ruler(uint16_t ruler_addr)
     // create_default_ruler:
     //     sta ((uint8_t*)&tmp01)[0]
     uint8_t x;
-    tmp01 = (addr_t)(y) << 8 | a;
+    tmp01 = ruler_addr;
 
     //     lda #0
-    a = 0;
+    uint8_t a = 0;
     //     tay                                                               ;
     //     Y=0x00
     y = a;
