@@ -1630,11 +1630,11 @@ c81db:
     // c81e0:
 c81e0:
     //     txa
-    a = x;
     //     lsr
-    a = asr(&flags, a); // C live
     //     adc #0x31 ; '1'
-    a = adc(&flags, a, 0x31); // none live
+    // (x is an even offset into markers_array, so lsr shifts out a 0 and
+    //  the carry is 0: a = (x >> 1) + 0x31)
+    a = (x >> 1) + 0x31;
     //     jsr screen_putchar
     screen_putchar(a);
     // c81e7:

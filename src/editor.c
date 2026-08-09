@@ -4549,14 +4549,14 @@ caf19:
     if (y >= l0083)
         goto caf28;
     //     sec
-    flags |= FLAG_C;
     //     sbc ruler_left_stop
-    a = sbc(&flags, a, ruler_left_stop); // C live
     //     bcc caf2a
-    if (!(flags & FLAG_C))
+    // (sbc with C=1 in is a plain subtraction; if it borrows, skip the store.
+    //  Otherwise the carry into the following adc is 1: a += xpos + 1)
+    if (l0083 < ruler_left_stop)
         goto caf2a;
+    a = l0083 - ruler_left_stop + xpos + 1;
     //     adc xpos
-    a = adc(&flags, a, xpos); // C live
     // caf28:
 caf28:
     //     sta xpos
@@ -4870,7 +4870,6 @@ void adjust_pointers(addr_t tmp45, addr_t tmp67)
     addr_t tmp23;
 
     // adjust_pointers
-    uint8_t y;
     uint8_t x;
     // adjust_pointers: (6372)
     tmp23 = tmp45;
@@ -4880,104 +4879,89 @@ void adjust_pointers(addr_t tmp45, addr_t tmp67)
     // ca9c3: (6383)
 ca9c3:
     //     ldy __begin_pointer_array+1,x (6384)
-    y = ((uint8_t*)&pointer_array)[x + 1];
     //     lda __begin_pointer_array+0,x (6385)
-    a = ((uint8_t*)&pointer_array)[x];
     //     cpy ((uint8_t*)&tmp45)[1] (6386)
     //     bcc ca9f1 (6387)
     //     bne ca9d1 (6388)
     //     cmp ((uint8_t*)&tmp45)[0] (6389)
     //     bcc ca9f1 (6390)
-    // (16-bit comparisons: (y << 8 | a) < tmp45 → ca9f1,
-    //  else (y << 8 | a) < tmp89 → ca9db)
-    if (((uint16_t)y << 8 | a) < tmp45)
-        goto ca9f1;
-    if (((uint16_t)y << 8 | a) < tmp89)
-        goto ca9db;
     //     ca9d1: (6391)
     //     cpy ((uint8_t*)&tmp89)[1] (6392)
     //     bcc ca9db (6393)
     //     bne ca9e7 (6394)
     //     cmp ((uint8_t*)&tmp89)[0] (6395)
     //     bcs ca9e7 (6396)
+    // (16-bit comparisons: pointer_array[x] < tmp45 → ca9f1 (unchanged),
+    //  pointer_array[x] < tmp89 → ca9db (zero if marker, else subtract),
+    //  else → ca9e7 (subtract))
+    {
+        addr_t pa_val = ((addr_t*)&pointer_array)[x];
+        if (pa_val < tmp45)
+            goto ca9f1;
+        if (pa_val < tmp89)
+            goto ca9db;
+        goto ca9e7;
+    }
     // ca9db: (6397)
 ca9db:
     //     cpx #12 (6398)
-    if (x >= 12)
+    if (x >= ARRAY_SIZE(markers_array))
         goto ca9e7;
     //     bcs ca9e7 (6399)
     //     lda #0 (6400)
-    a = 0;
     //     sta __begin_pointer_array+0,x (6401)
-    ((uint8_t*)&pointer_array)[x] = a;
     //     sta __begin_pointer_array+1,x (6402)
-    ((uint8_t*)&pointer_array)[x + 1] = a;
+    ((addr_t*)&pointer_array)[x] = 0;
     //     beq ca9f1 (6403) ALWAYS branch
     goto ca9f1;
 
     // ca9e7: (6405)
 ca9e7:
     //     sbc ((uint8_t*)&tmp67)[0] (6406)
-    a = sbc(&flags, a, ((uint8_t*)&tmp67)[0]); // C live
     //     sta __begin_pointer_array+0,x (6407)
-    ((uint8_t*)&pointer_array)[x] = a;
     //     lda __begin_pointer_array+1,x (6408)
-    a = ((uint8_t*)&pointer_array)[x + 1];
     //     sbc ((uint8_t*)&tmp67)[1] (6409)
-    a = sbc(&flags, a, ((uint8_t*)&tmp67)[1]); // Z, C live
     //     sta __begin_pointer_array+1,x (6410)
-    ((uint8_t*)&pointer_array)[x + 1] = a;
+    // (carry-in to the first sbc is always 1 (all three paths to ca9e7 leave
+    //  C=1), so this is a plain 16-bit subtraction: pointer_array[x] -= tmp67)
+    ((addr_t*)&pointer_array)[x] -= tmp67;
     // ca9f1: (6411)
 ca9f1:
     //     inx (6412)
-    x++;
     //     inx (6413)
-    x++;
     //     cpx #22 (6414)
-    if (x != sizeof(pointer_array))
+    // (the 6502 steps x by two bytes per entry; x counts elements here)
+    x++;
+    if (x != sizeof(pointer_array) / sizeof(addr_t))
         goto ca9c3;
     // loop_ca9f7: (6416)
-    for (;;)
+    //     ldy #0 (6417)
+    // loop_ca9f9: (6418)
+    //     lda (((uint8_t*)&tmp89)[0]),y (6419)
+    //     sta (((uint8_t*)&tmp23)[0]),y (6420)
+    //     beq caa08 (6421)
+    //     iny (6422)
+    //     bne loop_ca9f9 (6423)
+    //     inc ((uint8_t*)&tmp23)[1] (6424)
+    //     inc ((uint8_t*)&tmp89)[1] (6425)
+    //     bne loop_ca9f7 (6426)
+    // (6502 (ptr),y loop consolidated into a single memmove: copies the
+    //  NUL-terminated region at tmp89 down to tmp23, including the 0x00
+    //  terminator; the page wrap in the asm is a plain contiguous copy)
     {
-        //     ldy #0 (6417)
-        y = 0;
-        // loop_ca9f9: (6418)
-        for (;;)
-        {
-            //     lda (((uint8_t*)&tmp89)[0]),y (6419)
-            a = ram[tmp89 + y];
-            //     sta (((uint8_t*)&tmp23)[0]),y (6420)
-            ram[tmp23 + y] = a;
-            //     beq caa08 (6421)
-            if (a == 0)
-                goto caa08;
-            //     iny (6422)
-            y++;
-            //     bne loop_ca9f9 (6423)
-            if (y != 0)
-                continue;
-            break;
-        }
-        //     inc ((uint8_t*)&tmp23)[1] (6424)
-        ((uint8_t*)&tmp23)[1]++;
-        //     inc ((uint8_t*)&tmp89)[1] (6425)
-        ((uint8_t*)&tmp89)[1]++;
-        //     bne loop_ca9f7 (6426)
-        if (((uint8_t*)&tmp89)[1] != 0)
-            continue;
-        break;
+        size_t copy_len = strlen((char*)&ram[tmp89]) + 1;
+        memmove(&ram[tmp23], &ram[tmp89], copy_len);
+        // caa08: (6427)
+        //     tya (6428)
+        //     clc (6429)
+        //     adc ((uint8_t*)&tmp23)[0] (6430)
+        //     sta top (6431)
+        //     lda ((uint8_t*)&tmp23)[1] (6432)
+        //     adc #0 (6433)
+        //     sta top+1 (6434)
+        // (16-bit arithmetic: top = tmp23 + y = tmp23 + strlen)
+        top = tmp23 + copy_len - 1;
     }
-    // caa08: (6427)
-caa08:
-    //     tya (6428)
-    //     clc (6429)
-    //     adc ((uint8_t*)&tmp23)[0] (6430)
-    //     sta top (6431)
-    //     lda ((uint8_t*)&tmp23)[1] (6432)
-    //     adc #0 (6433)
-    //     sta top+1 (6434)
-    // (16-bit arithmetic: top = tmp23 + y)
-    top = tmp23 + y;
     //     rts (6435)
 }
 
@@ -6118,9 +6102,7 @@ void make_space_for_insertion(void)
     addr_t tmp89;
     addr_t tmp23;
 
-    uint8_t y;
     uint8_t x;
-    uint8_t a;
     // make_space_for_insertion: Shifts content up to make space for insertion
     // (6437) On entry: ((uint8_t*)&tmp45)[0]:((uint8_t*)&tmp45)[1] = block
     // base, ((uint8_t*)&tmp67)[0]:((uint8_t*)&tmp67)[1] = size, top = current
@@ -6155,16 +6137,14 @@ void make_space_for_insertion(void)
     for (;;)
     {
         //     ldy __begin_pointer_array+1,x (6459)
-        y = ((uint8_t*)&pointer_array)[x + 1];
         //     lda __begin_pointer_array+0,x (6460)
-        a = ((uint8_t*)&pointer_array)[x];
         //     cpy ((uint8_t*)&tmp45)[1] (6461)
         //     bcc caa51 (6462)
         //     bne caa46 (6463)
         //     cmp ((uint8_t*)&tmp45)[0] (6464)
         //     bcc caa51 (6465)
-        // (16-bit comparison: (y << 8 | a) < tmp45 → caa51, else caa46)
-        if (((uint16_t)y << 8 | a) < tmp45)
+        // (16-bit comparison: pointer_array[x] < tmp45 → caa51, else caa46)
+        if (((addr_t*)&pointer_array)[x] < tmp45)
             goto caa51;
         // caa46: (6466)
         //     clc (6467)
@@ -6174,17 +6154,15 @@ void make_space_for_insertion(void)
         //     adc ((uint8_t*)&tmp67)[1] (6471)
         //     sta __begin_pointer_array+1,x (6472)
         // (16-bit addition: pointer_array[x] += tmp67)
-        addr_t pa_val = ((uint16_t)y << 8 | a) + tmp67;
-        ((uint8_t*)&pointer_array)[x] = (uint8_t)pa_val;
-        ((uint8_t*)&pointer_array)[x + 1] = (uint8_t)(pa_val >> 8);
+        ((addr_t*)&pointer_array)[x] += tmp67;
         // caa51: (6473)
     caa51:
         //     inx (6474)
-        x++;
         //     inx (6475)
-        x++;
         //     cpx #22 (6476)
-        if (x != sizeof(pointer_array))
+        // (the 6502 steps x by two bytes per entry; x counts elements here)
+        x++;
+        if (x != sizeof(pointer_array) / sizeof(addr_t))
             continue;
         break;
     }
@@ -7310,11 +7288,11 @@ c998a:
         return;
     }
     //     sec
-    flags |= FLAG_C;
     //     sbc ruler_left_stop
-    a = sbc(&flags, a, ruler_left_stop); // C live
     //     bcc c9974
-    if (!(flags & FLAG_C))
+    // (sbc with C=1 in is a plain subtraction; if it borrows, bail out.
+    //  Otherwise the carry into the following adc is 1: adc #1 adds 2)
+    if (a < ruler_left_stop)
     {
         advance_to_next_line();
         return;
@@ -7322,7 +7300,8 @@ c998a:
     // PROVISIONAL: Compute line width = right_stop - left_stop + 1, store in
     // l0080.
     //      adc #1
-    a = adc(&flags, a, 1); // none live
+    // (carry is 1, so this is a + 2)
+    a = a - ruler_left_stop + 2;
     //     sta input_buffer_offset+1
     l0080 = a;
     // PROVISIONAL: Wipe the edit buffer with 0x10 (soft spaces) and set up

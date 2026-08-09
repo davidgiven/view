@@ -30,6 +30,8 @@ typedef enum
 #define FLAG_N 0x80
 #define FLAG_V 0x40
 
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+
 #define MAX_LINE_LENGTH 132
 #define MAX_COMMAND_LENGTH 68
 #define JMP_CLI 1

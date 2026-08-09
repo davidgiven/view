@@ -2280,13 +2280,13 @@ c8ffb_inline:
     //     ldx line_spacing
     x = line_spacing;
     //     lda l0021
-    a = l0021;
     //     clc
-    flags &= ~FLAG_C;
     //     sbc line_spacing
-    a = sbc(&flags, a, line_spacing); // C live
     //     bcs c9009_inline
-    if (!(flags & FLAG_C))
+    // (clc forces C=0, so the sbc subtracts line_spacing + 1; the borrow
+    //  branch is taken when l0021 <= line_spacing)
+    a = l0021 - line_spacing - 1;
+    if (l0021 <= line_spacing)
     {
         a = 0;
         x = l0021;
@@ -2711,13 +2711,13 @@ static void print_loop(void)
         //     ldx line_spacing
         x = line_spacing;
         //     lda l0021
-        a = l0021;
         //     clc
-        flags &= ~FLAG_C;
         //     sbc line_spacing
-        a = sbc(&flags, a, line_spacing); // C live
         //     bcs c9009
-        if (!(flags & FLAG_C))
+        // (clc forces C=0, so the sbc subtracts line_spacing + 1; the borrow
+        //  branch is taken when l0021 <= line_spacing)
+        a = l0021 - line_spacing - 1;
+        if (l0021 <= line_spacing)
         {
             a = 0;
             x = l0021;
