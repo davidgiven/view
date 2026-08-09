@@ -396,18 +396,14 @@ c86db:
     // c86df:
 c86df:
     //     lda ((uint8_t*)&tmp01)[0]
-    a = ((uint8_t*)&tmp01)[0];
     //     clc
-    flags &= ~FLAG_C;
     //     adc #3
-    a = adc(&flags, a, 3); // C live
     //     sta ((uint8_t*)&tmp01)[0]
-    ((uint8_t*)&tmp01)[0] = a;
     //     bcs c871d
-    if (flags & FLAG_C)
-        goto c871d;
     //     bcc c871f                                                         ;
     //     ALWAYS branch
+    // (16-bit arithmetic: tmp01 += 3)
+    tmp01 += 3;
     goto c871f;
 
     // c86ea:
@@ -463,7 +459,6 @@ c8715:
     //     sta l0082
     l0082 = a;
     tmp01++;
-c871d:
     // c871f:
 c871f:
     //     ldy ((uint8_t*)&tmp01)[1]

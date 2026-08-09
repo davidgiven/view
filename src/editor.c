@@ -775,38 +775,26 @@ static void cf6_split_line_key(void)
 
     a = x;
 
+    //     ldy current_line_ptr+1
+    //     txa
     //     clc
-
-    flags &= ~FLAG_C;
-
     //     adc current_line_ptr
-
-    flags &= ~FLAG_C;
-    a = adc(&flags, a, (uint8_t)(current_line_ptr & 0xff)); // C live
-
     //     bcc c9de3
-
-    if (!(flags & FLAG_C))
-    {
-        c9de3_insert_line(a, y);
-        return;
-    }
-
     //     iny
-
-    y++;
-
     //     bne c9de3
-
-    if (y != 0)
+    // (16-bit arithmetic: current_line_ptr + x; y holds the high byte of
+    //  the result; if the sum wraps past 0xffff (y == 0 after the carry),
+    //  fall through to f6_insert_line_key)
+    uint32_t sum = (uint32_t)current_line_ptr + x;
+    a = (uint8_t)sum;
+    y = (uint8_t)(sum >> 8);
+    if (sum > 0xffff)
     {
-        c9de3_insert_line(a, y);
+        f6_insert_line_key();
         return;
     }
-
-    //     (fall through - y wrapped to 0 → f6_insert_line_key)
-
-    f6_insert_line_key();
+    c9de3_insert_line(a, y);
+    return;
 }
 
 // MULTIPLE ENTRY POINTS: cf6_split_line_key, f6_insert_line_key, sub_c9de1
@@ -2572,27 +2560,16 @@ uint8_t return_key(void)
     }
 
     //     tya
-
-    a = y;
-
     //     ldy current_line_ptr+1
-
-    y = (uint8_t)(current_line_ptr >> 8);
-
     //     clc
-
-    flags &= ~FLAG_C;
-
     //     adc current_line_ptr
-
-    a = adc(&flags, a, (uint8_t)(current_line_ptr & 0xff)); // C live
-
     //     bcc c9d98
-
-    if ((flags & FLAG_C))
-    {
-        y++;
-    }
+    //     iny
+    // (16-bit arithmetic: current_line_ptr + y (the offset from
+    //  move_tmp01_to_next_line); the result is passed as the a/y registers)
+    uint16_t sum = current_line_ptr + y;
+    a = (uint8_t)sum;
+    y = (uint8_t)(sum >> 8);
 
     //     jsr sub_c9de1
 
@@ -3539,33 +3516,25 @@ cae78:
     //     lda #0
     //     cpy l0084
     //     bcc cae91
-    if (y < l0084)
-        goto cae91;
     //     tya
-    a = y;
     //     sbc input_buffer_offset+1
-    a = sbc(&flags, a, l0080); // none live
     //     clc
-    flags &= ~FLAG_C;
     //     adc current_edit_line_ptr
-    a = adc(&flags, a, (uint8_t)(RAM_EDIT_BUFFER & 0xff)); // C live
     //     sta markers_array,x
-    ((uint8_t*)markers_array)[x] = a;
     //     lda current_edit_line_ptr+1
-    a = (uint8_t)(RAM_EDIT_BUFFER >> 8);
     //     adc #0
-    a = adc(&flags, a, 0); // Z, C live
     //     bne cae93
-    if (!(flags & FLAG_Z))
-        goto cae93;
+    //     (fall through to cae91 if the high byte is 0, which never happens
+    //      because RAM_EDIT_BUFFER's high byte is 0x05)
     // cae91:
-cae91:
     //     sta markers_array,x
-    ((uint8_t*)markers_array)[x] = a;
     // cae93:
-cae93:
     //     sta markers_array+1,x
-    ((uint8_t*)markers_array)[x + 1] = a;
+    // (16-bit store: markers_array[x] = (y >= l0084)
+    //  ? RAM_EDIT_BUFFER + (y - l0080) : 0)
+    uint16_t marker_val = (y >= l0084) ? RAM_EDIT_BUFFER + (y - l0080) : 0;
+    ((uint8_t*)markers_array)[x] = (uint8_t)marker_val;
+    ((uint8_t*)markers_array)[x + 1] = (uint8_t)(marker_val >> 8);
     //     jmp cae78
     goto cae78;
 
@@ -4703,31 +4672,24 @@ cae27:
         if (idx == 0x0c)
             goto cae52;
         //     lda l0081
-        a = l0081;
         //     beq cae4b
-        if (a == 0)
-            goto cae4b;
         //     clc
-        flags &= ~FLAG_C;
         //     adc current_edit_line_ptr
-        a = adc(&flags, a, (uint8_t)(RAM_EDIT_BUFFER & 0xff)); // C live
         //     sta markers_array,x
-        ((uint8_t*)markers_array)[idx] = a;
         //     lda current_edit_line_ptr+1
-        a = (uint8_t)(RAM_EDIT_BUFFER >> 8);
         //     adc #0
-        a = adc(&flags, a, 0); // Z live
         //     bne cae4d
-        if (!(flags & FLAG_Z))
-            goto cae4d;
+        //     (fall through to cae4b if the high byte is 0, which never
+        //      happens because RAM_EDIT_BUFFER's high byte is 0x05)
         // cae4b:
-    cae4b:
         //     sta markers_array,x
-        ((uint8_t*)markers_array)[idx] = a;
         // cae4d:
-    cae4d:
         //     sta markers_array+1,x
-        ((uint8_t*)markers_array)[idx + 1] = a;
+        // (16-bit store: markers_array[idx] = l0081
+        //  ? RAM_EDIT_BUFFER + l0081 : 0)
+        uint16_t marker_val = l0081 ? RAM_EDIT_BUFFER + l0081 : 0;
+        ((uint8_t*)markers_array)[idx] = (uint8_t)marker_val;
+        ((uint8_t*)markers_array)[idx + 1] = (uint8_t)(marker_val >> 8);
         //     jmp loop_cae37
     }
 
@@ -5187,25 +5149,21 @@ c8b9f:
     if (cp == NO_COMMAND_PREFIX)
         goto c8bb7;
     //     lda ((uint8_t*)&tmp89)[0]
-    a = ((uint8_t*)&tmp89)[0];
     //     clc
-    flags &= ~FLAG_C;
     //     adc #3
-    flags &= ~FLAG_C;
-    a = adc(&flags, a, 3); // C live
     //     sta doc_ptr2+0
-    doc_ptr2 = (doc_ptr2 & 0xff00) | a;
     //     lda ((uint8_t*)&tmp89)[1]
-    a = ((uint8_t*)&tmp89)[1];
     //     sta doc_ptr2+1
-    doc_ptr2 = (doc_ptr2 & 0x00ff) | ((uint16_t)a << 8);
     //     bcc c8b7b
-    if (!(flags & FLAG_C))
+    //     bcs c8bdf
+    // (16-bit arithmetic: doc_ptr2 = tmp89 + 3; c8bdf increments the high
+    //  byte if the low-byte addition carried)
+    doc_ptr2 = tmp89 + 3;
+    if (((uint8_t)(tmp89 & 0xff) + 3) <= 0xff)
     {
         scan_document_for_next_line();
         return;
     }
-    //     bcs c8bdf
     goto c8bdf;
 
 c8bb7:
@@ -6225,17 +6183,15 @@ void make_space_for_insertion(void)
             goto caa51;
         // caa46: (6466)
         //     clc (6467)
-        flags &= ~FLAG_C;
         //     adc ((uint8_t*)&tmp67)[0] (6468)
-        a = adc(&flags, a, ((uint8_t*)&tmp67)[0]); // C live
         //     sta __begin_pointer_array+0,x (6469)
-        ((uint8_t*)&pointer_array)[x] = a;
         //     lda __begin_pointer_array+1,x (6470)
-        a = ((uint8_t*)&pointer_array)[x + 1];
         //     adc ((uint8_t*)&tmp67)[1] (6471)
-        a = adc(&flags, a, ((uint8_t*)&tmp67)[1]); // Z, V live
         //     sta __begin_pointer_array+1,x (6472)
-        ((uint8_t*)&pointer_array)[x + 1] = a;
+        // (16-bit addition: pointer_array[x] += tmp67)
+        addr_t pa_val = ((uint16_t)y << 8 | a) + tmp67;
+        ((uint8_t*)&pointer_array)[x] = (uint8_t)pa_val;
+        ((uint8_t*)&pointer_array)[x + 1] = (uint8_t)(pa_val >> 8);
         // caa51: (6473)
     caa51:
         //     inx (6474)
@@ -6525,18 +6481,14 @@ ca2e6:
     if (flags & FLAG_Z)
         goto ca313;
     //     tya (5285)
-    a = y;
     //     ldy ((uint8_t*)&tmp01)[1] (5286)
-    y = ((uint8_t*)&tmp01)[1];
     //     clc (5287)
-    flags &= ~FLAG_C;
     //     adc ((uint8_t*)&tmp01)[0] (5288)
-    a = adc(&flags, a, ((uint8_t*)&tmp01)[0]); // C live
     //     bcc ca307 (5289)
-    if ((flags & FLAG_C))
-    {
-        y++;
-    }
+    // (16-bit arithmetic: tmp01 += y; result kept in a/y for the loop)
+    tmp01 += y;
+    a = (uint8_t)tmp01;
+    y = (uint8_t)(tmp01 >> 8);
     //     cpx screen_height (5292)
     //     beq ca2e6 (5293)
     if (x <= screen_maxrow)
@@ -6746,18 +6698,14 @@ ca3c1:
         if (flags & FLAG_Z)
             goto ca422;
         //     tya (5404)
-        a = y;
         //     ldy ((uint8_t*)&tmp01)[1] (5405)
-        y = ((uint8_t*)&tmp01)[1];
         //     clc (5406)
-        flags &= ~FLAG_C;
         //     adc ((uint8_t*)&tmp01)[0] (5407)
-        a = adc(&flags, a, ((uint8_t*)&tmp01)[0]); // C live
         //     bcc ca3d8 (5408)
-        if ((flags & FLAG_C))
-        {
-            y++;
-        }
+        // (16-bit arithmetic: tmp01 += y; result kept in a/y for the loop)
+        tmp01 += y;
+        a = (uint8_t)tmp01;
+        y = (uint8_t)(tmp01 >> 8);
         //     inc l0082 (5411)
         l0082++;
         //     dec l0081 (5412)

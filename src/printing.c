@@ -2061,23 +2061,23 @@ c90b6:
     if (a == 0)
         goto c9048;
     //     clc
-    flags &= ~FLAG_C;
     //     adc l0044
-    a = adc(&flags, a, l0044); // C live
     //     sta l0044
-    l0044 = a;
     //     lda l0046
-    a = l0046;
     //     adc l0048
-    a = adc(&flags, a, l0048); // C live
     //     sta l0046
-    l0046 = a;
     //     lda l0045
-    a = l0045;
     //     adc l0043
-    a = adc(&flags, a, l0043); // none live
     //     sta l0045
-    l0045 = a;
+    // (24-bit addition: the (l0045, l0046, l0044) accumulator is
+    //  incremented by l0048 in its two low bytes and l0043 in its high byte)
+    {
+        uint32_t acc = ((uint32_t)l0045 << 16) | ((uint32_t)l0046 << 8) | l0044;
+        acc += ((uint32_t)l0043 << 16) | ((uint32_t)l0048 << 8) | l0048;
+        l0044 = (uint8_t)acc;
+        l0046 = (uint8_t)(acc >> 8);
+        l0045 = (uint8_t)(acc >> 16);
+    }
     //     lda #0
     a = 0;
     //     sta l0048
@@ -2155,12 +2155,12 @@ c9101:
         }
         if ((flags & FLAG_C))
         {
-            flags &= ~FLAG_C;
-            a = adc(&flags, a, microspacing_flag); // C live
-            if ((flags & FLAG_C))
-            {
-                ((uint8_t*)&tmp89)[1]++;
-            }
+            //     adc microspacing_flag
+            //     bcc c9115
+            //     inc tmp9
+            // (16-bit arithmetic: tmp89 += microspacing_flag)
+            tmp89 += microspacing_flag;
+            a = (uint8_t)tmp89;
         }
         x--;
     } while (x != 0);
