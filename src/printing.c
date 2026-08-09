@@ -2104,22 +2104,23 @@ c90e2:
     if (a == 0)
         goto c90f8;
     //     sec
-    flags |= FLAG_C;
     //     sbc l0047
-    a = sbc(&flags, a, l0047); // C live
     //     bcc c90f8
-    if (!(flags & FLAG_C))
-        goto c90f8;
     //     sbc l0045
-    a = sbc(&flags, a, l0045); // C live
     //     adc #0
-    a = adc(&flags, a, 0); // none live
     //     sec
-    flags |= FLAG_C;
     //     sbc l0046
-    a = sbc(&flags, a, l0046); // Z, C live
     //     beq c9101
-    if (flags & FLAG_Z)
+    // (16-bit arithmetic: d = ruler_right_stop - l0047, then subtract
+    //  l0045 and recover the borrow with adc #0, so the result is
+    //  ((d - l0045) & 0xff) + (d >= l0045 ? 1 : 0); c9101 is reached
+    //  iff that final byte equals l0046)
+    int d = ruler_right_stop - l0047;
+    if (d < 0)
+        goto c90f8;
+    int diff = d - l0045;
+    uint8_t t = (uint8_t)((diff & 0xff) + (diff >= 0 ? 1 : 0));
+    if (t == l0046)
         goto c9101;
     // c90f8:
 c90f8:
