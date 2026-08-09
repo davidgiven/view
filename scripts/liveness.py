@@ -148,22 +148,6 @@ def get_flag_defs_uses(line_text):
             defs.add(f'flags:{bit}')
     return defs, uses
 
-# ─── Call detection (regex on line text) ──────────────────────────
-CALL_RE = re.compile(r'\b(\w+)\s*\(')
-def detect_call(stripped):
-    if stripped.startswith('//') or stripped == '':
-        return None
-    if stripped.startswith('if ') or stripped.startswith('while ') or stripped.startswith('for '):
-        return None
-    if re.match(r'^(?:static\s+)?(?:\w+\s+)+\**\w+\s*\(', stripped) and '{' not in stripped:
-        return None
-    m = CALL_RE.search(stripped)
-    if m:
-        name = m.group(1)
-        if name not in INLINE_HELPERS and name not in ('if', 'while', 'for', 'switch', 'sizeof'):
-            return name
-    return None
-
 
 # ─── AST-based def/use analysis ───────────────────────────────────
 def analyze_stmt(cursor, local_decls, context='use'):
@@ -540,36 +524,37 @@ def get_local_info_ast(func_cursor, callee_live_out=None, callee_live_in=None):
         local_uses |= u
         defined_so_far |= d
 
-        # Detect calls via regex on source line (handles nested calls)
-        callee = detect_call(stripped)
-        if callee:
-            if callee not in LIB_FUNCTIONS:
-                args = {v for v in u if v in TRACKED_VARS and not v.startswith('flags:')}
-                call_sites.append((line_num, callee, args))
-                # Variables the callee needs as INPUT must be live before the
-                # call.  Check against the caller's own definitions so far
-                # (NOT the callee's kill set, which masks inputs the callee
-                # also writes).
-                cli = callee_live_in.get(callee)
-                if cli is None and callee in ALL_IN_OUT:
-                    cli = ALL_VARS_SET
-                if cli is not None:
-                    for v in cli:
-                        if v not in defined_so_far:
-                            local_live_in.add(v)
-                            local_uses.add(v)
-                # The callee's live_out is a kill set: after the call those
-                # globals are redefined.
-                clo = callee_live_out.get(callee)
-                if clo is None:
-                    if callee in CORRUPTS:
-                        pass
-                    elif callee in ALL_IN_OUT:
-                        clo = ALL_VARS_SET
-                    else:
-                        clo = ALL_VARS_SET
-                if clo is not None:
-                    defined_so_far.update(clo)
+        # Detect calls via the clang AST (finds calls in return values,
+        # initializers, conditions, and nested expressions).
+        for callee in _find_call_expr_callees(stmt):
+            if callee in LIB_FUNCTIONS:
+                continue
+            args = {v for v in u if v in TRACKED_VARS and not v.startswith('flags:')}
+            call_sites.append((line_num, callee, args))
+            # Variables the callee needs as INPUT must be live before the
+            # call.  Check against the caller's own definitions so far
+            # (NOT the callee's kill set, which masks inputs the callee
+            # also writes).
+            cli = callee_live_in.get(callee)
+            if cli is None and callee in ALL_IN_OUT:
+                cli = ALL_VARS_SET
+            if cli is not None:
+                for v in cli:
+                    if v not in defined_so_far:
+                        local_live_in.add(v)
+                        local_uses.add(v)
+            # The callee's live_out is a kill set: after the call those
+            # globals are redefined.
+            clo = callee_live_out.get(callee)
+            if clo is None:
+                if callee in CORRUPTS:
+                    pass
+                elif callee in ALL_IN_OUT:
+                    clo = ALL_VARS_SET
+                else:
+                    clo = ALL_VARS_SET
+            if clo is not None:
+                defined_so_far.update(clo)
 
     return local_defs, local_uses, local_live_in, call_sites
 
@@ -757,45 +742,50 @@ def _analyze_stmt_effect(cur, local_decls, source_lines, local_info=None,
 
 def _backward_plain(cur, live, backward_needs, local_info, func_params,
                     local_decls, source_lines, func_live_out):
-    """Backward handling for a straight-line (leaf) statement."""
-    line_num = cur.location.line
-    if 0 < line_num <= len(source_lines):
-        stripped = source_lines[line_num - 1].strip()
-    else:
-        stripped = ''
+    """Backward handling for a straight-line (leaf) statement.
 
-    callee_name = detect_call(stripped)
-    if callee_name:
-        if callee_name in ALL_IN_OUT:
-            backward_needs.setdefault(callee_name, set()).update(ALL_VARS_SET)
-            return ALL_VARS_SET
-        if callee_name in NORETURN:
-            # The callee never returns, so nothing is live after the call;
-            # only its inputs are needed before it.
+    Calls in the statement are found via the clang AST (handles calls in
+    return values, initializers, conditions, and nested expressions)."""
+    line_num = cur.location.line
+
+    callees = list(_find_call_expr_callees(cur))
+    if callees:
+        # A noreturn or ALL_IN_OUT callee dominates: its effect overrides
+        # the rest of the statement.
+        for callee_name in callees:
+            if callee_name in ALL_IN_OUT:
+                backward_needs.setdefault(callee_name, set()).update(ALL_VARS_SET)
+                return ALL_VARS_SET
+            if callee_name in NORETURN:
+                # The callee never returns, so nothing is live after the call;
+                # only its inputs are needed before it.
+                callee_info = local_info.get(callee_name, {})
+                callee_params = func_params.get(callee_name, set())
+                d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
+                cli = callee_info.get('live_in', set()) - callee_params
+                return cli | u
+
+        # Process each non-library callee's kill set, then fold in the
+        # statement's own defs/uses and the callees' live-in requirements.
+        d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
+        result = live
+        for callee_name in callees:
+            if callee_name in LIB_FUNCTIONS:
+                continue
+            if callee_name in CORRUPTS and callee_name not in local_info:
+                result = (result - CORRUPTS[callee_name]) | u
+                continue
+            backward_needs.setdefault(callee_name, set()).update(result)
             callee_info = local_info.get(callee_name, {})
             callee_params = func_params.get(callee_name, set())
-            d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
-            cli = callee_info.get('live_in', set()) - callee_params
-            return cli | u
-        if callee_name not in LIB_FUNCTIONS:
-            backward_needs.setdefault(callee_name, set()).update(live)
-            callee_info = local_info.get(callee_name, {})
             callee_defs = callee_info.get('cached_defs', callee_info.get('defs', set()))
-            callee_params = func_params.get(callee_name, set())
             kill_set = callee_defs - callee_params
             if callee_name in CORRUPTS:
                 kill_set = kill_set | CORRUPTS[callee_name]
-            d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
-            live = (live - kill_set) | u
+            result = (result - kill_set) | u
             cli = callee_info.get('live_in', set()) - callee_params
-            live |= cli
-            return live
-        if callee_name in CORRUPTS:
-            corr = CORRUPTS[callee_name]
-            d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
-            return (live - corr) | u
-        d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
-        return live | u
+            result |= cli
+        return result
 
     d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
     return (live - d) | u
@@ -880,6 +870,17 @@ def _is_noreturn_body(body, noreturn):
     return _stmt_never_completes(body, noreturn)
 
 
+def _return_value_uses(body_cursor, local_decls, source_lines):
+    """Yield tracked-global uses in return statements of a function body."""
+    if body_cursor is None:
+        return
+    for _ln, stmt in _collect_top_stmts(body_cursor):
+        if stmt.kind != clang.cindex.CursorKind.RETURN_STMT:
+            continue
+        _, u = _analyze_stmt_effect(stmt, local_decls, source_lines, None, None)
+        yield from u
+
+
 def backward_scan_ast(func_cursor, backward_needs, local_info, func_params, live_out_start=None):
     """
     Backward scan using AST for a single function.
@@ -911,6 +912,12 @@ def backward_scan_ast(func_cursor, backward_needs, local_info, func_params, live
     func_live_out = set(live_out_start)
     _backward_stmt(body, set(func_live_out), backward_needs, local_info,
                    func_params, local_decls, source_lines, func_live_out)
+    # The registers read to form a return value are produced by this function
+    # for its callers, so they are live on exit even if no caller's backward
+    # scan happens to demand them (e.g. the high byte of a value returned in
+    # A:Y where the caller only models the low byte).
+    for return_use in _return_value_uses(body, local_decls, source_lines):
+        backward_needs.setdefault(func_cursor.spelling, set()).add(return_use)
 
 
 # ─── Find functions (regex on source lines) ────────────────────────
@@ -1189,7 +1196,7 @@ def analyze_files(files):
             _stmts_cache[(fname, name)] = stmts
 
         # Top-level CALL_EXPR statements (catches calls in if/while/for
-        # conditions, which the line-based detect_call skips).
+        # conditions and other control-flow expressions).
         for line_num, stmt in stmts:
             if stmt.kind != clang.cindex.CursorKind.CALL_EXPR:
                 continue
