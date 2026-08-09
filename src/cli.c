@@ -244,11 +244,10 @@ void clear_cmd(void)
     uint8_t x;
     x = 0x0b;
     //     lda #0
-    uint8_t a = 0;
     // loop_cb095:
     do
     {
-        ((uint8_t*)markers_array)[x] = a;
+        ((uint8_t*)markers_array)[x] = 0;
         x--;
     } while (!(x & 0x80));
     //     rts
@@ -262,11 +261,10 @@ static void close_input_output_files(void)
 
     // close_input_output_files:
     //     lda #0
-    uint8_t a = 0;
     //     sta input_file_empty_flag
-    input_file_empty_flag = a;
+    input_file_empty_flag = 0;
     //     sta file_edit_flags
-    file_edit_flags = a;
+    file_edit_flags = 0;
 
     //     jsr select_file
     select_file(1);

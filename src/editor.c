@@ -3445,13 +3445,12 @@ static void clear_marks_1_2(void)
     // clear_marks_1_2: Clears markers 1 and 2 (resets to zero)
 
     //     lda #0
-    uint8_t a = 0;
     //     ldx #3
     uint8_t x = 3;
     // loop_cad12:
     do
     {
-        ((uint8_t*)markers_array)[x] = a;
+        ((uint8_t*)markers_array)[x] = 0;
         x--;
     } while (!(x & 0x80));
     //     rts
@@ -4391,7 +4390,6 @@ void enter_editor_mode(void)
     //     jsr clear_screen
     clear_screen();
     //     lda #0
-    uint8_t a = 0;
     //     sta l006d
     edit_buffer_dirty_flag = 0;
     //     sta l006f
@@ -4403,7 +4401,7 @@ void enter_editor_mode(void)
     // loop_cb0a8:
     do
     {
-        line_lengths[x] = a;
+        line_lengths[x] = 0;
         x--;
     } while (!(x & 0x80));
     //     ldx #2
@@ -5613,12 +5611,11 @@ static void draw_ruler(void)
     if (flags & FLAG_Z)
         return;
     //     ldy #0
-    uint8_t y = 0;
     //     sty status_line_needs_redrawing_flag
-    status_line_needs_redrawing_flag = y;
+    status_line_needs_redrawing_flag = 0;
 
     //     sty l0082
-    struct render_state rs = {.line = y};
+    struct render_state rs = {.line = 0};
     draw_line(&rs, current_ruler_ptr);
     // The 6502 never sets flags_need_redrawing_flag in the scroll/redraw path,
     // so draw_status_word is not called after draw_ruler.  This would leave

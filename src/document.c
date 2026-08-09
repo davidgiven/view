@@ -477,9 +477,8 @@ void is_embedded_ruler(addr_t tmp01)
     // sub_cab6e:
     //     ldy #0
     uint8_t a;
-    uint8_t y = 0;
     //     lda (((uint8_t*)&tmp01)[0]),y
-    a = ram[tmp01 + y];
+    a = ram[tmp01];
     //     cmp #0x81
     set_flags(&flags, a != 0x81); // Z = (a == 0x81), live out
     //     rts
@@ -568,10 +567,10 @@ uint8_t create_default_ruler(uint16_t ruler_addr)
     tmp01 = ruler_addr;
 
     //     lda #0
-    uint8_t a = 0;
     //     tay                                                               ;
     //     Y=0x00
-    y = a;
+    uint8_t a;
+    y = 0;
     // loop_cb0e7:
     for (;;)
     {

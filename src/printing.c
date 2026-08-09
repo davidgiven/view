@@ -1874,23 +1874,23 @@ static void microspace_word_processor(void)
     //     ldx #0
     x = 0;
     //     stx l0044
-    l0044 = x;
+    l0044 = 0;
     //     stx l0046
-    l0046 = x;
+    l0046 = 0;
     //     stx l0045
-    l0045 = x;
+    l0045 = 0;
     //     stx l0047
-    l0047 = x;
+    l0047 = 0;
     //     stx l0039
-    l0039 = x;
+    l0039 = 0;
     //     stx l0048
-    l0048 = x;
+    l0048 = 0;
     //     stx l0042
-    l0042 = x;
+    l0042 = 0;
     //     stx l0043
-    l0043 = x;
+    l0043 = 0;
     //     stx l0083
-    l0083 = x;
+    l0083 = 0;
     // c9048:
 c9048:
     //     txa
@@ -3955,7 +3955,6 @@ static void write_byte_to_memory(uint8_t a)
 {
     // write_byte_to_memory:
     //     ldy #0
-    uint8_t y = 0;
     //     sta (((uint8_t*)&tmp01)[0]),y
     ram[tmp01] = a;
     //     inc ((uint8_t*)&tmp01)[0]
@@ -3970,9 +3969,9 @@ static void write_byte_to_memory(uint8_t a)
     if (a != 0x0d)
         return;
     //     sty l0084
-    l0084 = y;
+    l0084 = 0;
     //     sty l0083
-    l0083 = y;
+    l0083 = 0;
     // return_16:
     //     rts
 }

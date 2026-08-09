@@ -538,7 +538,6 @@ void setup_area_pointers(addr_t ptr2)
     //     sta ((uint8_t*)&tmp89)[1]
     tmp89 = ptr2;
     //     ldy #0
-    uint8_t y = 0;
     //     ldx #0
     x = 0;
     // c837d:
@@ -551,7 +550,7 @@ void setup_area_pointers(addr_t ptr2)
         goto c8398;
     // c8389:
     //     lda (((uint8_t*)&tmp89)[0]),y
-    a = ram[tmp89 + y];
+    a = ram[tmp89];
     //     cmp #0x0d
     if (a == 0x0d)
     {
