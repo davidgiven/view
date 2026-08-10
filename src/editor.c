@@ -5149,7 +5149,6 @@ c8bbc:
     y++;
     //     lda (((uint8_t*)&tmp89)[0]),y
     a = ram[tmp89 + y];
-    set_flags(&flags, a); // Z live
     //     beq c8bdb
     if (a == 0)
         goto c8bdb;
@@ -5159,8 +5158,8 @@ c8bbc:
     if (cp2 != NO_COMMAND_PREFIX)
         goto c8bdb;
     //     lda header_text_maybe,x
+    // (Z from this lda is clobbered by the following cmp #0x20)
     a = header_text_maybe[x];
-    set_flags(&flags, a); // Z live
     //     cmp #0x20 ; ' '
     if (a == 0x20)
         goto c8bf7;
@@ -8146,9 +8145,9 @@ uint8_t check_for_embedded_ruler(addr_t tmp01, uint8_t y)
     {
         uint8_t saved_a = a;
         //     jsr sub_cab6e
-        is_embedded_ruler(tmp01);
         //     bne cac4c
-        if ((flags & FLAG_Z))
+        // (inlined: Z = (ram[tmp01] == RULER_BYTE))
+        if (ram[tmp01] == RULER_BYTE)
         {
             push_onto_ruler_index(y, tmp01);
         }

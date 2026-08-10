@@ -16,6 +16,10 @@ typedef enum
     RULER_PREFIX,   /* 0x81 ruler line */
 } command_prefix_t;
 
+// Command-prefix byte values (first byte of a format command / ruler line)
+#define COMMAND_BYTE 0x80
+#define RULER_BYTE 0x81
+
 // Result of check_for_control_code
 typedef enum
 {

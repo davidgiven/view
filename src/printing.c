@@ -1749,9 +1749,8 @@ static void process_page_footer(void)
 c9284:
     //     inc register_value_p
     ram[RAM_REGISTER_VALUE_P]++;
-    set_flags(&flags, ram[RAM_REGISTER_VALUE_P]); // Z live
     //     bne c928c
-    if ((flags & FLAG_Z))
+    if (ram[RAM_REGISTER_VALUE_P] == 0)
     {
         ram[RAM_REGISTER_VALUE_P + 1]++;
     }
@@ -1959,12 +1958,11 @@ c906f:
         goto c9064;
     //     lda l0042
     a = l0042;
-    set_flags(&flags, a); // Z, N live
     //     beq c908a
-    if (flags & FLAG_Z)
+    if (a == 0)
         goto c908a;
     //     bmi c9087
-    if (flags & FLAG_N)
+    if (a & 0x80)
         goto c9087;
     //     inc l0043
     l0043++;
@@ -2021,8 +2019,8 @@ c90a0:
     {
         uint8_t saved_a2 = a;
         //     lda l0039
+        // (Z from this lda is clobbered by the following lda #0)
         a = l0039;
-        set_flags(&flags, a); // Z live
         //     sta l0047
         l0047 = a;
         //     lda #0
@@ -2271,9 +2269,8 @@ c8fe6_inline:
     } while (a != 0x0d);
     //     inc register_value_l
     ram[RAM_REGISTER_VALUE_L]++;
-    set_flags(&flags, ram[RAM_REGISTER_VALUE_L]); // Z live
     //     bne c8ffb_inline
-    if ((flags & FLAG_Z))
+    if (ram[RAM_REGISTER_VALUE_L] == 0)
     {
         ram[RAM_REGISTER_VALUE_L + 1]++;
     }
@@ -2524,9 +2521,9 @@ static void print_loop(void)
         //     sty input_buffer_ptr+1
         l0080 = y;
         //     jsr sub_cab6e
-        is_embedded_ruler(tmp01);
         //     bne c8f6e
-        if (!(flags & FLAG_Z))
+        // (inlined: Z = (ram[tmp01] == RULER_BYTE))
+        if (ram[tmp01] != RULER_BYTE)
             goto c8f6e_l;
         //     ldy #3
         y = 3;
@@ -2703,9 +2700,8 @@ static void print_loop(void)
         } while (a != 0x0d);
         //     inc register_value_l
         ram[RAM_REGISTER_VALUE_L]++;
-        set_flags(&flags, ram[RAM_REGISTER_VALUE_L]); // Z live
         //     bne c8ffb
-        if ((flags & FLAG_Z))
+        if (ram[RAM_REGISTER_VALUE_L] == 0)
         {
             ram[RAM_REGISTER_VALUE_L + 1]++;
         }

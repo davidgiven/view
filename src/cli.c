@@ -1703,12 +1703,11 @@ static void parse_command(void)
             l0084 = a;
             //     lda parser_table,x
             a = parser_table[x];
-            set_flags(&flags, a); // Z, N live
             //     beq ca890
-            if (flags & FLAG_Z)
+            if (a == 0)
                 goto ca890;
             //     bmi ca87e
-            if (flags & FLAG_N)
+            if (a & 0x80)
                 goto ca87e;
             //     eor #0x5b ; '['
             a ^= 0x5b;
@@ -1728,12 +1727,11 @@ static void parse_command(void)
             x++;
             //     lda parser_table,x
             a = parser_table[x];
-            set_flags(&flags, a); // Z, N live
             //     beq ca890
-            if (flags & FLAG_Z)
+            if (a == 0)
                 goto ca890;
             //     bpl loop_ca86a
-            if (!(flags & FLAG_N))
+            if (!(a & 0x80))
                 continue;
             break;
         }

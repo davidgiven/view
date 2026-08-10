@@ -15,9 +15,9 @@ command_prefix_t check_for_command_prefix(uint8_t ch)
     //     clc
     // return_81:
     //     rts
-    if (ch == 0x80)
+    if (ch == COMMAND_BYTE)
         return COMMAND_PREFIX;
-    if (ch == 0x81)
+    if (ch == RULER_BYTE)
         return RULER_PREFIX;
     return NO_COMMAND_PREFIX;
 }
@@ -465,22 +465,6 @@ void print_alignment_spaces(uint8_t a)
     // c9453:
 c9453:
     //     pla
-    //     rts
-    return;
-}
-
-void is_embedded_ruler(addr_t tmp01)
-{
-    // Pseudocode: Checks if byte at ((uint8_t*)&tmp01)[0] is a command prefix
-    // (0x81)
-
-    // sub_cab6e:
-    //     ldy #0
-    uint8_t a;
-    //     lda (((uint8_t*)&tmp01)[0]),y
-    a = ram[tmp01];
-    //     cmp #0x81
-    set_flags(&flags, a != 0x81); // Z = (a == 0x81), live out
     //     rts
     return;
 }
@@ -1034,9 +1018,9 @@ void move_tmp01_to_previous_line(uint16_t val)
     } while (a != 0x0d);
     tmp01++;
     //     jsr sub_cab6e
-    is_embedded_ruler(tmp01);
     //     bne cab6c
-    if ((flags & FLAG_Z))
+    // (inlined: Z = (ram[tmp01] == RULER_BYTE))
+    if (ram[tmp01] == RULER_BYTE)
     {
         pop_from_ruler_index();
     }
@@ -1168,9 +1152,9 @@ void find_next_line(uint8_t a)
     //     sta ((uint8_t*)&tmp01)[0]
     tmp01 = (addr_t)(y) << 8 | a;
     //     jsr sub_cab6e
-    is_embedded_ruler(tmp01);
     //     bne cab29
-    if (!(flags & FLAG_Z))
+    // (inlined: Z = (ram[tmp01] == RULER_BYTE))
+    if (ram[tmp01] != RULER_BYTE)
     {
         move_tmp01_to_next_line(tmp01);
         return;
