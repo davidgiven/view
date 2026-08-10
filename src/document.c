@@ -1115,11 +1115,6 @@ void push_onto_ruler_index(uint8_t y, addr_t tmp01)
     return;
 }
 
-void put_byte_to_file(uint8_t a)
-{
-    fputc(a, file_ptr);
-}
-
 void reset_area_to_entire_document(void)
 {
     // reset_area_to_entire_document: Resets area to entire document (top to
@@ -1136,11 +1131,6 @@ void reset_area_to_entire_document(void)
     //     lda page+1
     //     sta area_end_ptr+1
     //     rts
-}
-
-void select_file(uint8_t x)
-{
-    file_ptr = x ? output_fp : input_fp;
 }
 
 void find_next_line(uint8_t a)

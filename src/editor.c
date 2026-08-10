@@ -61,7 +61,6 @@ static void set_marker(uint8_t x);
 static void set_marker_common(uint8_t a);
 void show_memory_full_error(void);
 uint8_t adjust_area_pointers(addr_t tmp67);
-static void append_zero_to_output_buffer(void);
 static void append_to_output_buffer(uint8_t a);
 uint8_t upper_case_unless_folding(void);
 static void process_char_for_output(uint8_t y);
@@ -105,33 +104,9 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t x);
 
 static uint8_t enter_printable_character(void);
 
-static void go_to_marker_1(void);
-
-static void go_to_marker_2(void);
-
-static void go_to_marker_3(void);
-
-static void go_to_marker_4(void);
-
-static void go_to_marker_5(void);
-
-static void go_to_marker_6(void);
-
 static void prompt_for_marker(void);
 
 static void reset_area_to_marks_1_2(void);
-
-static void set_marker_1(void);
-
-static void set_marker_2(void);
-
-static void set_marker_3(void);
-
-static void set_marker_4(void);
-
-static void set_marker_5(void);
-
-static void set_marker_6(void);
 
 static uint8_t insert_line_at_cursor(addr_t ptr);
 
@@ -1560,27 +1535,27 @@ static void k_command_key(void)
             return;
 
         case '1':
-            set_marker_1();
+            set_marker_common('1');
             return;
 
         case '2':
-            set_marker_2();
+            set_marker_common('2');
             return;
 
         case '3':
-            set_marker_3();
+            set_marker_common('3');
             return;
 
         case '4':
-            set_marker_4();
+            set_marker_common('4');
             return;
 
         case '5':
-            set_marker_5();
+            set_marker_common('5');
             return;
 
         case '6':
-            set_marker_6();
+            set_marker_common('6');
             return;
     }
 
@@ -2491,27 +2466,27 @@ static void q_command_key(void)
             return;
 
         case '1':
-            go_to_marker_1();
+            go_to_marker_n('1');
             return;
 
         case '2':
-            go_to_marker_2();
+            go_to_marker_n('2');
             return;
 
         case '3':
-            go_to_marker_3();
+            go_to_marker_n('3');
             return;
 
         case '4':
-            go_to_marker_4();
+            go_to_marker_n('4');
             return;
 
         case '5':
-            go_to_marker_5();
+            go_to_marker_n('5');
             return;
 
         case '6':
-            go_to_marker_6();
+            go_to_marker_n('6');
             return;
     }
 
@@ -3985,49 +3960,6 @@ c9d30:
 
 // MULTIPLE ENTRY POINTS: sf1_swap_case_key, f13_right_key
 
-static void go_to_marker_1(void)
-{
-    // go_to_marker_1:
-    go_to_marker_n('1');
-    return;
-}
-
-static void go_to_marker_2(void)
-{
-    // go_to_marker_2:
-    go_to_marker_n('2');
-    return;
-}
-
-static void go_to_marker_3(void)
-{
-    // go_to_marker_3:
-    go_to_marker_n('3');
-    return;
-}
-
-static void go_to_marker_4(void)
-{
-    // go_to_marker_4:
-    go_to_marker_n('4');
-    return;
-}
-
-static void go_to_marker_5(void)
-{
-    // go_to_marker_5:
-    go_to_marker_n('5');
-    return;
-}
-
-static void go_to_marker_6(void)
-{
-    // go_to_marker_6
-    // go_to_marker_6:
-    go_to_marker_n('6');
-    return;
-}
-
 static void prompt_for_marker(void)
 {
     // Pseudocode: Prompts for a marker character and looks it up
@@ -4101,54 +4033,6 @@ cad45:
     flags |= FLAG_C;
     // return_76:
     //     rts
-}
-
-static void set_marker_1(void)
-{
-
-    // set_marker_1:
-    set_marker_common('1');
-    return;
-}
-
-static void set_marker_2(void)
-{
-
-    // set_marker_2:
-    set_marker_common('2');
-    return;
-}
-
-static void set_marker_3(void)
-{
-
-    // set_marker_3:
-    set_marker_common('3');
-    return;
-}
-
-static void set_marker_4(void)
-{
-
-    // set_marker_4:
-    set_marker_common('4');
-    return;
-}
-
-static void set_marker_5(void)
-{
-
-    // set_marker_5:
-    set_marker_common('5');
-    return;
-}
-
-static void set_marker_6(void)
-{
-
-    // set_marker_6:
-    set_marker_common('6');
-    return;
 }
 
 static uint8_t insert_line_at_cursor(addr_t ptr)
@@ -5252,7 +5136,8 @@ c8bf7:
     if (a == 0)
         goto c8bdb;
     //     jsr sub_c8c51
-    append_zero_to_output_buffer();
+    // (inlined: append_to_output_buffer(0))
+    append_to_output_buffer(0);
     //     lda #0
     // (Z from this lda is clobbered by the following ldx l0084)
     a = 0;
@@ -7097,13 +6982,6 @@ uint8_t adjust_area_pointers(addr_t tmp67)
     //     jmp cac78
     split_line_at_wrap(tmp45);
     return a;
-}
-
-static void append_zero_to_output_buffer(void)
-{
-    // sub_c8c51:
-    //     lda #0
-    append_to_output_buffer(0);
 }
 
 static void append_to_output_buffer(uint8_t a)

@@ -267,7 +267,8 @@ static void close_input_output_files(void)
     file_edit_flags = 0;
 
     //     jsr select_file
-    select_file(1);
+    // (inlined: file_ptr = output_fp)
+    file_ptr = output_fp;
     //     jsr close_file
     close_file();
     //     jmp return_to_cli_prompt
@@ -566,14 +567,18 @@ static void finish_cmd(void)
     {
         reset_area_to_entire_document();
         sanitise_area();
-        select_file(1);
+        //     jsr select_file
+        // (inlined: file_ptr = output_fp)
+        file_ptr = output_fp;
         write_area_to_file();
         if (!(flags & FLAG_Z))
         {
             return_to_cli_prompt();
             return;
         }
-        put_byte_to_file(0);
+        //     jsr put_byte_to_file
+        // (inlined: fputc(0, file_ptr))
+        fputc(0, file_ptr);
         adjust_area_pointers(tmp67);
         move_cursor_to_top_of_document();
         ensure_cr_at_document_top();
@@ -827,7 +832,8 @@ static void more_cmd(struct scan_state* scan)
     move_cursor_to_address(area_start_ptr);
 
     //     jsr select_file
-    select_file(1);
+    // (inlined: file_ptr = output_fp)
+    file_ptr = output_fp;
     //     jsr write_area_to_file
     write_area_to_file();
     //     bne c84ab
@@ -1169,7 +1175,8 @@ static void save_cmd_write_cmd(struct scan_state* scan)
     write_area_to_file();
     //     lda #0
     //     jsr put_byte_to_file
-    put_byte_to_file(0);
+    // (inlined: fputc(0, file_ptr))
+    fputc(0, file_ptr);
 
     //     jsr close_file
     close_file();
@@ -1216,7 +1223,9 @@ static void search_cmd(struct scan_state* scan)
         return;
     }
     //     jsr sub_c8c7c
-    init_document_pointers();
+    // (inlined: doc_ptr2 = area_start_ptr; doc_ptr3 = area_end_ptr)
+    doc_ptr2 = area_start_ptr;
+    doc_ptr3 = area_end_ptr;
     //     jsr c8b7b
     scan_document_for_next_line();
     //     bne c82fa

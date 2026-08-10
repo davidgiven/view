@@ -1641,11 +1641,6 @@ static void emit_to_output_buffer_callback(uint8_t digit)
     return;
 }
 
-void print_char_via_putchar(uint8_t a)
-{
-    cli_putchar(a);
-}
-
 void render_number_to_screen(uint16_t val)
 {
     addr_t tmp89;
@@ -1664,7 +1659,7 @@ void render_number_to_screen(uint16_t val)
     //     lda #<(bdos_print_char)
     //     ldy #>(bdos_print_char)
     // Fall through to render_number_to_callback in original 6502
-    render_number_to_callback(tmp89, print_char_via_putchar);
+    render_number_to_callback(tmp89, cli_putchar);
 }
 
 static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t))

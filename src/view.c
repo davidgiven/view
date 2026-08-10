@@ -60,7 +60,6 @@ void parse_filename_from_command(struct scan_state* scan);
 command_prefix_t check_for_command_prefix(uint8_t ch);
 
 bool reset_command_parse_state(struct scan_state* scan);
-void init_document_pointers(void);
 cli_cmd_status_t process_cli_command(struct scan_state* scan);
 void check_area_memory(addr_t ptr2);
 void redraw_and_write_back(void);
@@ -697,7 +696,9 @@ cli_cmd_status_t process_cli_command(struct scan_state* scan)
         return CLI_CMD_NO_STRING; // sec + Z set: no string
     }
     //     jsr sub_c8c7c
-    init_document_pointers();
+    // (inlined: doc_ptr2 = area_start_ptr; doc_ptr3 = area_end_ptr)
+    doc_ptr2 = area_start_ptr;
+    doc_ptr3 = area_end_ptr;
     //     lda #1
     // c8410:
     //     clc
@@ -1181,14 +1182,6 @@ c8b6b:
     //     rts
 }
 
-void init_document_pointers(void)
-{
-    // sub_c8c7c:
-    doc_ptr2 = area_start_ptr;
-    doc_ptr3 = area_end_ptr;
-    //     rts
-}
-
 void read_next_chunk_from_input_file(addr_t ptr)
 {
 
@@ -1196,7 +1189,9 @@ void read_next_chunk_from_input_file(addr_t ptr)
     // read_next_chunk_from_input_file:
     //     jsr sub_c8da2
     addr_t space_limit = compute_space_available(ptr);
-    select_file(0);
+    //     jsr select_file
+    // (inlined: file_ptr = input_fp)
+    file_ptr = input_fp;
     //     jsr read_block_from_file
     read_block_from_file(space_limit);
     //     php
@@ -1256,7 +1251,8 @@ void write_area_to_file(void)
         //         lda (((uint8_t*)&tmp89)[0]),y
         a = ram[tmp89];
         //         jsr put_byte_to_file
-        put_byte_to_file(a);
+        // (inlined: fputc(a, file_ptr))
+        fputc(a, file_ptr);
         tmp89++;
 
     } while (tmp89 != area_end_ptr);

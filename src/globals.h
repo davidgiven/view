@@ -145,7 +145,6 @@ extern uint8_t ruler_right_stop, ruler_left_stop;
 extern command_prefix_t check_for_command_prefix(uint8_t ch);
 extern control_code_t check_for_control_code(uint8_t a);
 extern void render_number_to_screen(uint16_t val);
-extern void print_char_via_putchar(uint8_t a);
 
 // Functions in view.c called by other modules
 // scan_input_buffer: result of the input-buffer scan.  ch is the character
@@ -158,7 +157,6 @@ struct scan_state
 };
 
 extern bool reset_command_parse_state(struct scan_state* scan);
-extern void init_document_pointers(void);
 
 typedef enum
 {
