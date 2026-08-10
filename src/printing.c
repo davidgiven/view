@@ -1989,8 +1989,9 @@ c908a:
     // c908c:
 c908c:
     //     lda #0x20 ; ' '
+    // (Z set here is never read: bne is an ALWAYS branch and sta/inx/cmp
+    //  clobber flags before the next Z consumer)
     a = 0x20;
-    set_flags(&flags, a); // Z live
     //     bne c90b6                                                         ;
     //     ALWAYS branch
     goto c90b6;
@@ -2509,8 +2510,8 @@ static void print_loop(void)
         //     jsr sub_c916a
         start_microspacing_if_active(a);
         //     ldy #0
+        // (Z from ldy #0 is clobbered by the following jsr)
         y = 0;
-        set_flags(&flags, y); // Z live
         //     sty input_buffer_ptr+1
         l0080 = y;
         //     jsr deref_and_check_for_command_prefix
@@ -3709,7 +3710,8 @@ static void copy_header_footer_text(addr_t tmp23)
     //     ldx #0
     x = 0;
     //     ldy #0
-    set_flags(&flags, y); // Z live
+    // (Z from ldy #0 is clobbered by the following lda (tmp23),y)
+    y = 0;
     //     sty l0081
     l0081 = y;
     // c93ce:

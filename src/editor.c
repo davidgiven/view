@@ -750,9 +750,8 @@ static void cf6_split_line_key(void)
     y = 0;
 
     //     lda (current_format_line_ptr),y
-
+    // (Z from this lda is clobbered by the following jsr)
     a = ram[current_format_line_ptr + y];
-    set_flags(&flags, a); // Z live
 
     //     jsr check_for_command_prefix
 
@@ -4721,8 +4720,8 @@ void set_marker_to_here(uint8_t x)
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + 0];
     //     ldy xpos
+    // (Z from ldy xpos is clobbered by the following jsr)
     y = xpos;
-    set_flags(&flags, y); // Z live
     //     jsr check_for_command_prefix
     command_prefix_t cp = check_for_command_prefix(a);
 
@@ -5077,10 +5076,10 @@ void scan_document_for_next_line(void)
     }
     //     lda #0x14
     a = 0x14;
-    set_flags(&flags, a); // Z live
     //     sta l0048
     l0048 = a;
     //     ldx #0
+    // (the 6502's ldx #0 overwrites Z before any branch reads it)
     x = 0;
     //     stx l0049
     l0049 = x;
@@ -5113,8 +5112,8 @@ c8b9f:
     //     ldy #0
     y = 0;
     //     lda (((uint8_t*)&tmp89)[0]),y
+    // (Z from this lda is clobbered by the following jsr)
     a = ram[tmp89];
-    set_flags(&flags, a); // Z live
     //     jsr check_for_command_prefix
     command_prefix_t cp = check_for_command_prefix(a);
     //     bne c8bb7
@@ -5256,8 +5255,8 @@ c8bf7:
     //     jsr sub_c8c51
     append_zero_to_output_buffer();
     //     lda #0
+    // (Z from this lda is clobbered by the following ldx l0084)
     a = 0;
-    set_flags(&flags, a); // Z live
     //     sta l0081
     l0081 = a;
     //     ldx l0084
@@ -7243,8 +7242,8 @@ void format_paragraph(void)
     //     sty print_xpos
     print_xpos = 4;
     //     ldy #0
+    // (Z from ldy #0 is clobbered by the following lda (current_line_ptr),y)
     y = 0;
-    set_flags(&flags, y); // Z live
     //     sty input_buffer_offset
     input_buffer_offset = y;
     //     sty l007e
@@ -8369,8 +8368,8 @@ ca8df:
     //     sta l0084
     l0084 = a;
     //     lda #0
+    // (Z from this lda is clobbered by the following sbc l0084)
     a = 0;
-    set_flags(&flags, a); // Z live
     //     sec
     //     sbc l0084
     a -= l0084;

@@ -1766,8 +1766,8 @@ ca87e:
     //     sty input_buffer_offset
     input_buffer_offset = y;
     //     ldy l0082
+    // (N/Z from ldy l0082 are clobbered by the following lda parser_table,x)
     y = l0082;
-    set_flags(&flags, y); // N live
     //     lda parser_table,x
     a = parser_table[x];
     //     clc
