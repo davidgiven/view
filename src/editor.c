@@ -2746,7 +2746,7 @@ c9fab:
 
     //     jsr sub_cab1a
 
-    find_next_line(a);
+    find_next_line(current_line_ptr);
 
     //     beq return_58
 
@@ -3389,16 +3389,12 @@ static void tab_key(void)
 
 static void c9d9b_advance_ptr(void)
 {
-    uint8_t a;
-
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     lda current_line_ptr
     //     ldy current_line_ptr+1
     //     jsr sub_cab1a
-    a = (uint8_t)(current_line_ptr & 0xff);
-    y = (uint8_t)(current_line_ptr >> 8);
-    find_next_line(a);
+    find_next_line(current_line_ptr);
     //     beq return_54
     if (flags & FLAG_Z)
         return;
@@ -4144,7 +4140,7 @@ static void move_cursor_down(uint8_t x)
     while (1)
     {
         //     jsr sub_cab1a
-        find_next_line(a);
+        find_next_line((addr_t)(y) << 8 | a);
         //     beq ca0d2
         if (flags & FLAG_Z)
         {
@@ -4850,8 +4846,6 @@ ca9f1:
 
 static void advance_to_next_line(void)
 {
-    uint8_t a;
-
     // advance_to_next_line
     // c9a8d: Advance to next line in document
     // Sets Z from l007e on return (like c9aa5 does)
@@ -4859,11 +4853,9 @@ static void advance_to_next_line(void)
     //     jsr c9e94
     xpos = 0;
     //     lda current_line_ptr
-    a = (uint8_t)(current_line_ptr & 0xff);
     //     ldy current_line_ptr+1
-    y = (uint8_t)((current_line_ptr >> 8) & 0xff);
     //     jsr sub_cab1a
-    find_next_line(a);
+    find_next_line(current_line_ptr);
     //     sec
     flags |= FLAG_C;
     //     beq c9aa5
@@ -4885,7 +4877,6 @@ static void advance_to_next_line(void)
     //     clv
     flags &= ~FLAG_V;
     //     lda l007e
-    a = l007e;
 }
 
 [[nodiscard]] static bool sub_c9aa9(void)
@@ -6322,7 +6313,7 @@ ca2e6:
         goto ca313;
     // ca2f9: (5282)
     //     jsr sub_cab1a (5283)
-    find_next_line(a);
+    find_next_line((addr_t)(y) << 8 | a);
     //     beq ca313 (5284)
     if (flags & FLAG_Z)
         goto ca313;
@@ -6383,7 +6374,7 @@ ca313:
     //     lda l0011 (5319)
     a = (uint8_t)(top_of_screen_line_ptr & 0xff);
     //     jsr sub_cab1a (5320)
-    find_next_line(a);
+    find_next_line(top_of_screen_line_ptr);
     //     tya (5321)
     a = y;
     //     clc (5322)
@@ -6542,7 +6533,7 @@ ca3c1:
         //     ldy ((uint8_t*)&tmp01)[1] (5401)
         y = ((uint8_t*)&tmp01)[1];
         //     jsr sub_cab1a (5402)
-        find_next_line(a);
+        find_next_line(tmp01);
         //     beq ca422 (5403)
         if (flags & FLAG_Z)
             goto ca422;

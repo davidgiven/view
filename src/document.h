@@ -54,6 +54,6 @@ extern void push_onto_ruler_index(uint8_t y, addr_t tmp01);
 
 extern void reset_area_to_entire_document(void);
 
-extern void find_next_line(uint8_t a);
+extern void find_next_line(addr_t line);
 
 #endif
