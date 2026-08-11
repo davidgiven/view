@@ -622,45 +622,28 @@ uint8_t get_byte_from_file(void)
     return a;
 }
 
-void get_register_address(uint8_t a)
+uint16_t* get_register_address(uint8_t a)
 {
     // get_register_address
-    // get_register_address: Gets address of a register value by letter name
+    // get_register_address: Gets a pointer to the 16-bit register value by
+    // letter name.  Returns NULL if the letter is not an uppercase A-Z
+    // (invalid).
 
     //     jsr is_uppercase
-    if (isupper(a))
-    {
-        flags &= ~FLAG_C;
-    }
-    else
-    {
-        flags |= FLAG_C;
-    }
     //     bcs return_77
-    if (flags & FLAG_C)
-    { /* return_77: */
-        return;
-    }
+    if (!isupper(a))
+        return NULL;
     //     and #0xdf
     a &= 0xdf;
-    //     pha
-    {
-        uint8_t saved_a = a;
-        //     sbc #0x40 ; '@'
-        //     asl
-        //     adc #<register_value_array
-        //     sta ((uint8_t*)&tmp67)[0]
-        //     lda #>register_value_array
-        //     adc #0
-        //     sta ((uint8_t*)&tmp67)[1]
-        tmp67 = RAM_REGISTER_VALUE_ARRAY + ((a - 0x41) << 1);
-        //     pla
-        a = saved_a;
-    }
-    //     clc
-    flags &= ~FLAG_C;
-    // return_77:
-    //     rts
+    //     sbc #0x40 ; '@'
+    //     asl
+    //     adc #<register_value_array
+    //     sta ((uint8_t*)&tmp67)[0]
+    //     lda #>register_value_array
+    //     adc #0
+    //     sta ((uint8_t*)&tmp67)[1]
+    // (16-bit arithmetic: pointer = register_value_array + (a - 'A') * 2)
+    return &register_value_array_words[a - 0x41];
 }
 
 uint8_t initialise_document(void)

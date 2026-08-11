@@ -477,8 +477,6 @@ static void dh_fmt_cmd(void)
 
 static void em_fmt_cmd(void)
 {
-    addr_t tmp01;
-
     // em_fmt_cmd
     // Pseudocode: Evaluates expression and stores result in a register
 
@@ -495,22 +493,18 @@ static void em_fmt_cmd(void)
     //     iny
     y++;
     //     jsr get_register_address
-    get_register_address(a);
     //     bcs return_38
-    if (flags & FLAG_C)
+    uint16_t* register_value = get_register_address(a);
+    if (register_value == NULL)
         return;
-    tmp01 = tmp67;
     //     jsr evaluate_expression_from_fmt_cmd
+    // (result is in tmp89; stored as a 16-bit value into the register)
     evaluate_expression_from_fmt_cmd();
     //     ldy #0
     //     sta (((uint8_t*)&tmp01)[0]),y
-    ram[tmp01 + 0] = a;
-    //     iny                                                               ;
-    //     Y=0x01
     //     lda ((uint8_t*)&tmp89)[1]
-    a = ((uint8_t*)&tmp89)[1];
     //     sta (((uint8_t*)&tmp01)[0]),y
-    ram[tmp01 + 1] = a;
+    *register_value = tmp89;
     // return_38:
     //     rts
     return;
@@ -718,7 +712,7 @@ static void op_fmt_cmd(void)
     // op_fmt_cmd
     // op_fmt_cmd:
     //     lda register_value_p
-    uint8_t a = ram[RAM_REGISTER_VALUE_P];
+    uint8_t a = (uint8_t)register_value_array_words[('P' - 'A')];
     //     lsr
     // (only the C flag is used: the shifted-out low bit selects the page
     //  parity branch)
@@ -739,7 +733,7 @@ static void ep_fmt_cmd(void)
     // ep_fmt_cmd
     // ep_fmt_cmd:
     //     lda register_value_p
-    uint8_t a = ram[RAM_REGISTER_VALUE_P];
+    uint8_t a = (uint8_t)register_value_array_words[('P' - 'A')];
     //     lsr
     // (only the C flag is used: the shifted-out low bit selects the page
     //  parity branch)
@@ -1563,20 +1557,21 @@ void render_register(uint8_t a, uint8_t y)
     //     sty l0084
     l0084 = y;
     //     jsr get_register_address
-    get_register_address(a);
+    //     bcs cada2
+    uint16_t* register_value = get_register_address(a);
     //     ldy #0
     y = 0;
     //     sty ((uint8_t*)&tmp89)[0]
     tmp89 = 0;
-    //     bcs cada2
-    if (!(flags & FLAG_C))
+    if (register_value != NULL)
     {
         bit(&flags, a, lada6); // none live
-        a = ram[tmp67 + y];
-        ((uint8_t*)&tmp89)[0] = a;
-        y++;
-        a = ram[tmp67 + y];
-        ((uint8_t*)&tmp89)[1] = a;
+        //     lda (tmp6),y
+        //     sta tmp8
+        //     iny ; Y=&01
+        //     lda (tmp6),y
+        //     sta tmp9
+        tmp89 = *register_value;
         render_number_to_output_buffer(tmp89);
     }
     //     clv
@@ -1745,18 +1740,14 @@ static void process_page_footer(void)
     // c9284:
 c9284:
     //     inc register_value_p
-    ram[RAM_REGISTER_VALUE_P]++;
     //     bne c928c
-    if (ram[RAM_REGISTER_VALUE_P] == 0)
-    {
-        ram[RAM_REGISTER_VALUE_P + 1]++;
-    }
+    //     inc register_value_p+1
+    register_value_array_words[('P' - 'A')]++;
     //     lda #1
     //     sta register_value_l
-    ram[RAM_REGISTER_VALUE_L] = 1;
+    register_value_array_words[('L' - 'A')] = 1;
     //     lda #0
     //     sta register_value_l+1
-    ram[RAM_REGISTER_VALUE_L + 1] = 0;
     //     sta l0031
     l0031 = 0;
     //     rts
@@ -2265,12 +2256,9 @@ c8fe6_inline:
         print_char_x_times(a, x);
     } while (a != 0x0d);
     //     inc register_value_l
-    ram[RAM_REGISTER_VALUE_L]++;
     //     bne c8ffb_inline
-    if (ram[RAM_REGISTER_VALUE_L] == 0)
-    {
-        ram[RAM_REGISTER_VALUE_L + 1]++;
-    }
+    //     inc register_value_l+1
+    register_value_array_words[('L' - 'A')]++;
 c8ffb_inline:
     //     ldx line_spacing
     x = line_spacing;
@@ -2393,7 +2381,6 @@ void print_document(struct scan_state* scan)
 {
     uint8_t a;
     uint8_t y;
-    addr_t ptr5;
     // print_document
     // print_document:
     //     jsr check_not_continuous_editing
@@ -2699,12 +2686,9 @@ static void print_loop(void)
             print_char_x_times(a, x);
         } while (a != 0x0d);
         //     inc register_value_l
-        ram[RAM_REGISTER_VALUE_L]++;
         //     bne c8ffb
-        if (ram[RAM_REGISTER_VALUE_L] == 0)
-        {
-            ram[RAM_REGISTER_VALUE_L + 1]++;
-        }
+        //     inc register_value_l+1
+        register_value_array_words[('L' - 'A')]++;
         //     ldx line_spacing
         x = line_spacing;
         //     lda l0021
@@ -3044,8 +3028,7 @@ static void render_new_page(void)
     cli_putstring("\nPage ");
 
     //     ldx register_value_p
-    render_number_to_screen(((addr_t)ram[RAM_REGISTER_VALUE_P + 1] << 8) |
-                            ram[RAM_REGISTER_VALUE_P]);
+    render_number_to_screen(register_value_array_words[('P' - 'A')]);
     //     jsr print_inline_string
     //     .ascii ".."
     //     .byte 0
@@ -3780,7 +3763,7 @@ static void get_page_parity(void)
     if (a == 0)
         goto return_31;
     //     lda register_value_p
-    a = ram[RAM_REGISTER_VALUE_P];
+    a = (uint8_t)register_value_array_words[('P' - 'A')];
     //     lsr
     flags = (flags & ~FLAG_C) | (a & 1);
     a >>= 1;
@@ -3919,9 +3902,9 @@ static void reset_print_registers(void)
     //     sta l0038
     l0038 = a;
     //     sta register_value_p
-    ram[RAM_REGISTER_VALUE_P] = a;
     //     sta register_value_l
-    ram[RAM_REGISTER_VALUE_L] = a;
+    register_value_array_words[('P' - 'A')] = a;
+    register_value_array_words[('L' - 'A')] = a;
     //     ldy #0x80
     y = 0x80;
     //     sty highlight1_code

@@ -823,10 +823,13 @@ def _backward_plain(cur, live, backward_needs, per_caller_readback, per_caller_p
             result = (result - kill_set) | u
             cli = callee_info.get('live_in', set()) - callee_params
             result |= cli
-            # Record what THIS caller must provide to the callee: the live set
-            # before the call.  Registers the current statement itself defines
-            # (d) are produced by the caller here, not provided by its caller.
-            per_caller_provided.setdefault((caller, callee_name), set()).update(result - d)
+            # Record what THIS caller must provide to the callee: only the
+            # callee's required inputs (cli) plus the statement's own uses (u),
+            # minus registers the statement itself defines (d).  The full
+            # live-through set (result) also carries registers live for the
+            # caller's own continuation (e.g. tmp01 live on exit), which the
+            # callee does not consume.
+            per_caller_provided.setdefault((caller, callee_name), set()).update((u | cli) - d)
         return result
 
     d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)

@@ -194,6 +194,9 @@ extern uint8_t l0021, l0031, l0038, l007a;
 
 #define RAM_REGISTER_VALUE_ARRAY 0x0798
 #define register_value_array (&ram[RAM_REGISTER_VALUE_ARRAY])
+#define register_value_array_words \
+    ((uint16_t*)&ram[RAM_REGISTER_VALUE_ARRAY]) // 16-bit alias for A-Z
+                                                // registers
 #define RAM_CURRENT_RULER_BUF 0x05CF
 
 extern jmp_buf env;
