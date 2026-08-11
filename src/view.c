@@ -759,7 +759,9 @@ void read_into_document(void)
     //     jsr compute_required_space_for_insertion
     addr_t space_limit = compute_required_space_for_insertion(tmp45);
     //     jsr make_space_for_insertion
-    make_space_for_insertion();
+    // (the 6502 leaves the clamped free-space size in tmp67; since
+    //  space_limit = tmp45 + tmp67 - 0x8b, tmp67 = space_limit - tmp45 + 0x8b)
+    make_space_for_insertion(tmp45, space_limit - tmp45 + 0x8b);
 
     //     jsr read_block_from_file
     read_block_from_file(space_limit);
@@ -944,7 +946,7 @@ c8a87:
     //     sta ((uint8_t*)&tmp67)[0]
     ((uint8_t*)&tmp67)[0] = a;
     //     jsr make_space_for_insertion
-    make_space_for_insertion();
+    make_space_for_insertion(tmp45, tmp67);
     //     bcc c8ada
     if (!(flags & FLAG_C))
         goto c8ada;
@@ -993,7 +995,10 @@ c8ada:
         if (!(flags & FLAG_C))
             goto c8af3;
         //     ror print_xpos
-        print_xpos = ror(&flags, print_xpos); // C live
+        // (carry-in is 1, guaranteed by the bcc c8af3 guard above; the result
+        //  C flag is dead — overwritten by jsr is_uppercase on the loop-back
+        //  and by cpx/cmp on the exit path)
+        print_xpos = (uint8_t)(print_xpos >> 1) | 0x80;
         //     dex
         x--;
         //     bne loop_c8ae4

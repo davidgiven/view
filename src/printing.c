@@ -75,7 +75,6 @@ void render_register(uint8_t a, uint8_t y);
 static void render_number_to_output_buffer(uint16_t value);
 static void emit_to_output_buffer_callback(uint8_t digit);
 static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t));
-static const uint8_t lada6 = 0x40;
 
 static void c950f_impl(uint8_t a)
 {
@@ -1565,7 +1564,9 @@ void render_register(uint8_t a, uint8_t y)
     tmp89 = 0;
     if (register_value != NULL)
     {
-        bit(&flags, a, lada6); // none live
+        //     bit lada6
+        // (the bit's Z/N/V flags are all dead: clv clears V and ldy l0084
+        //  sets Z/N before any read, so the instruction is a no-op)
         //     lda (tmp6),y
         //     sta tmp8
         //     iny ; Y=&01
@@ -1965,9 +1966,11 @@ c906f:
     // c9087:
 c9087:
     //     clc
-    flags &= ~FLAG_C;
     //     ror l0042
-    l0042 = ror(&flags, l0042); // N live
+    // (the ror result is never read before l0042 is overwritten, and the
+    //  result flags are dead too — N is clobbered by the following
+    //  inc l0048, and C is clobbered by cmp #0x0d at c90b6 — so the
+    //  statement is a no-op)
     // c908a:
 c908a:
     //     inc l0048
@@ -1995,9 +1998,9 @@ c9092:
     if (a == 0x0b)
         goto c90a0;
     //     sec
-    flags |= FLAG_C;
     //     ror l0083
-    l0083 = ror(&flags, l0083); // none live
+    // (the ror result is never read before l0083 is overwritten, and the
+    //  result flags are dead too — the statement is a no-op)
     //     jmp c90b6
     goto c90b6;
 
@@ -2121,51 +2124,35 @@ c90f8:
     // c9101:
 c9101:
     //     lda #0
-    a = 0;
     //     sta ((uint8_t*)&tmp89)[1]
-    ((uint8_t*)&tmp89)[1] = a;
     //     ldx #8
-    x = 8;
     // loop_c9107:
-    do
-    {
-        {
-            uint8_t c = (a & 0x80) ? FLAG_C : 0;
-            a <<= 1;
-            flags = (flags & ~(FLAG_C | FLAG_Z | FLAG_N)) | c;
-        }
-        ((uint8_t*)&tmp89)[1] = rol(&flags, ((uint8_t*)&tmp89)[1]); // none live
-        {
-            uint8_t c = (l0045 & 0x80) ? FLAG_C : 0;
-            l0045 <<= 1;
-            flags = (flags & ~(FLAG_C | FLAG_Z | FLAG_N)) | c;
-        }
-        if ((flags & FLAG_C))
-        {
-            //     adc microspacing_flag
-            //     bcc c9115
-            //     inc tmp9
-            // (16-bit arithmetic: tmp89 += microspacing_flag)
-            tmp89 += microspacing_flag;
-            a = (uint8_t)tmp89;
-        }
-        x--;
-    } while (x != 0);
-    //     sta ((uint8_t*)&tmp89)[0]
-    ((uint8_t*)&tmp89)[0] = a;
+    //     asl
+    //     rol tmp9
+    //     asl l0045
+    //     bcc c9115
+    //     clc
+    //     adc microspacing_flag
+    //     bcc c9115
+    //     inc tmp9
+    // c9115:
+    //     dex
+    //     bne loop_c9107
+    //     sta tmp8
+    // (shift-add multiply: tmp89 = l0045 * microspacing_flag)
+    tmp89 = (uint16_t)l0045 * microspacing_flag;
     //     lda l0044
-    a = l0044;
     //     sta l0046
-    l0046 = a;
+    l0046 = l0044;
     //     jsr sub_cadf0
     //     sta l0045
-    a = tmp89 % l0046;
-    tmp89 = tmp89 / l0046;
-    l0045 = a;
-    //     lda ((uint8_t*)&tmp89)[0]
-    a = ((uint8_t*)&tmp89)[0];
+    //     lda tmp8
     //     sta l0044
-    l0044 = a;
+    // (16-bit division by 8-bit: l0044 = tmp89 / l0046,
+    //  l0045 = tmp89 % l0046)
+    l0045 = tmp89 % l0046;
+    tmp89 = tmp89 / l0046;
+    l0044 = (uint8_t)tmp89;
     //     ldy #0
     y = 0;
     //     sty l0039

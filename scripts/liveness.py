@@ -43,7 +43,7 @@ LIB_FUNCTIONS = {
     'screen_setstyle', 'screen_getsize', 'screen_enter', 'screen_leave',
     'screen_clear', 'screen_scrollup', 'screen_scrolldown', 'screen_enablecursor',
     'isupper', 'islower', 'isalpha', 'isdigit', 'isalnum', 'isspace',
-    'toupper', 'tolower', 'memset',
+    'toupper', 'tolower', 'memset', 'memmove', 'strlen',
 }
 
 # ─── Inline helper flag definitions/uses ──────────────────────────
@@ -1161,7 +1161,9 @@ def analyze_files(files):
             info = local_info[name]
             all_defs = info.get('cached_defs', info['defs'])
             required = backward_needs.get(name, set())
-            new_out = required & all_defs
+            # A function's own locals and parameters shadow the globals, so
+            # they can never be produced as live-out globals for callers.
+            new_out = (required & all_defs) - info.get('local_decls', set())
 
             if name in ALL_IN_OUT:
                 new_out = ALL_VARS_SET

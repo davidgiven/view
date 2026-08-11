@@ -46,7 +46,7 @@ static void go_to_marker(uint8_t x);
 static void go_to_marker_n(uint8_t marker);
 static void home_cursor(void);
 void justify_edit_buffer(void);
-void make_space_for_insertion(void);
+void make_space_for_insertion(addr_t tmp45, addr_t tmp67);
 static void memory_full(void);
 void process_current_document_character(addr_t tmp01);
 static void recalculate_cursor_xpos(void);
@@ -3822,7 +3822,7 @@ c9ca2:
     //     sta ((uint8_t*)&tmp45)[1] (4242)
     tmp45 = current_line_ptr + l003b + 1;
     //     jsr make_space_for_insertion (4243)
-    make_space_for_insertion();
+    make_space_for_insertion(tmp45, tmp67);
     //     bcc c9cd0 (4244)
     if (!(flags & FLAG_C))
         goto c9cd0;
@@ -4207,7 +4207,7 @@ static void check_pointer_in_area(void)
         tmp67 = diff;
     }
     tmp45 = doc_ptr1;
-    make_space_for_insertion();
+    make_space_for_insertion(tmp45, tmp67);
     if (flags & FLAG_C)
     {
         show_memory_full_error();
@@ -4729,7 +4729,7 @@ cacad:
     //     sta ((uint8_t*)&tmp67)[1]
     tmp67 = 1;
     //     jsr make_space_for_insertion
-    make_space_for_insertion();
+    make_space_for_insertion(tmp45, tmp67);
     //     lda #0x0d
     a = 0x0d;
     //     ldy #0
@@ -4888,7 +4888,8 @@ static void advance_to_next_line(void)
     //     sec
     flags |= FLAG_C;
     //     rol l007e
-    l007e = rol(&flags, l007e); // none live
+    // (carry-in is 1 from the sec; the result flags are dead)
+    l007e = (uint8_t)(l007e << 1) | 1;
     //     ldy l0047
     //     dey
     //     sty l003b
@@ -5206,7 +5207,7 @@ static uint8_t c9de3_insert_line(addr_t ptr)
     //     sta ((uint8_t*)&tmp67)[1]
     tmp67 = 1;
     //     jsr make_space_for_insertion
-    make_space_for_insertion();
+    make_space_for_insertion(tmp45, tmp67);
     //     bcs c9dfd
     if (!(flags & FLAG_C))
     {
@@ -5763,7 +5764,10 @@ c9871:
     {
         l0084 = a;
         a = x;
-        a = sbc(&flags, a, l0084); // C live
+        //     sbc l0084
+        // (carry-in is 1 from the preceding sbc #0x84; the result C flag is
+        //  dead, so this is a plain subtraction)
+        a -= l0084;
         x = a;
     }
     //     stx l0082
@@ -5968,7 +5972,7 @@ c9922:
     return;
 }
 
-void make_space_for_insertion(void)
+void make_space_for_insertion(addr_t tmp45, addr_t tmp67)
 {
     addr_t tmp89;
     addr_t tmp23;
@@ -6000,7 +6004,10 @@ void make_space_for_insertion(void)
     tmp23 = top;
     tmp89 = top + tmp67;
     if (tmp89 >= himem)
-        goto return_67;
+    {
+        flags |= FLAG_C;
+        return;
+    }
     top = tmp89;
     //     ldx #0 (6457)
     x = 0;
@@ -7395,7 +7402,10 @@ c9a2e:
     //     bne c9a38
     if ((flags & FLAG_Z))
     {
-        bottom_margin = ror(&flags, bottom_margin); // none live
+        //     ror bottom_margin
+        // (carry-in is 1 from the cmp #0x20 with a == 0x20; the result
+        //  flags are dead)
+        bottom_margin = (uint8_t)(bottom_margin >> 1) | 0x80;
     }
     //     iny
     y++;
@@ -8240,7 +8250,7 @@ ca8df:
     //     sta ((uint8_t*)&tmp67)[0]
     ((uint8_t*)&tmp67)[0] = a;
     //     jsr make_space_for_insertion
-    make_space_for_insertion();
+    make_space_for_insertion(tmp45, tmp67);
     //     bcs return_66
     if (flags & FLAG_C)
         return;
