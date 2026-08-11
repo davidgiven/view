@@ -712,7 +712,7 @@ static void op_fmt_cmd(void)
     // op_fmt_cmd
     // op_fmt_cmd:
     //     lda register_value_p
-    uint8_t a = (uint8_t)register_value_array_words[('P' - 'A')];
+    uint8_t a = (uint8_t)register_value_array['P' - 'A'];
     //     lsr
     // (only the C flag is used: the shifted-out low bit selects the page
     //  parity branch)
@@ -733,7 +733,7 @@ static void ep_fmt_cmd(void)
     // ep_fmt_cmd
     // ep_fmt_cmd:
     //     lda register_value_p
-    uint8_t a = (uint8_t)register_value_array_words[('P' - 'A')];
+    uint8_t a = (uint8_t)register_value_array['P' - 'A'];
     //     lsr
     // (only the C flag is used: the shifted-out low bit selects the page
     //  parity branch)
@@ -1742,10 +1742,10 @@ c9284:
     //     inc register_value_p
     //     bne c928c
     //     inc register_value_p+1
-    register_value_array_words[('P' - 'A')]++;
+    register_value_array['P' - 'A']++;
     //     lda #1
     //     sta register_value_l
-    register_value_array_words[('L' - 'A')] = 1;
+    register_value_array['L' - 'A'] = 1;
     //     lda #0
     //     sta register_value_l+1
     //     sta l0031
@@ -2258,7 +2258,7 @@ c8fe6_inline:
     //     inc register_value_l
     //     bne c8ffb_inline
     //     inc register_value_l+1
-    register_value_array_words[('L' - 'A')]++;
+    register_value_array['L' - 'A']++;
 c8ffb_inline:
     //     ldx line_spacing
     x = line_spacing;
@@ -2688,7 +2688,7 @@ static void print_loop(void)
         //     inc register_value_l
         //     bne c8ffb
         //     inc register_value_l+1
-        register_value_array_words[('L' - 'A')]++;
+        register_value_array['L' - 'A']++;
         //     ldx line_spacing
         x = line_spacing;
         //     lda l0021
@@ -3028,7 +3028,7 @@ static void render_new_page(void)
     cli_putstring("\nPage ");
 
     //     ldx register_value_p
-    render_number_to_screen(register_value_array_words[('P' - 'A')]);
+    render_number_to_screen(register_value_array['P' - 'A']);
     //     jsr print_inline_string
     //     .ascii ".."
     //     .byte 0
@@ -3763,7 +3763,7 @@ static void get_page_parity(void)
     if (a == 0)
         goto return_31;
     //     lda register_value_p
-    a = (uint8_t)register_value_array_words[('P' - 'A')];
+    a = (uint8_t)register_value_array['P' - 'A'];
     //     lsr
     flags = (flags & ~FLAG_C) | (a & 1);
     a >>= 1;
@@ -3903,8 +3903,8 @@ static void reset_print_registers(void)
     l0038 = a;
     //     sta register_value_p
     //     sta register_value_l
-    register_value_array_words[('P' - 'A')] = a;
-    register_value_array_words[('L' - 'A')] = a;
+    register_value_array['P' - 'A'] = a;
+    register_value_array['L' - 'A'] = a;
     //     ldy #0x80
     y = 0x80;
     //     sty highlight1_code

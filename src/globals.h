@@ -189,15 +189,11 @@ extern void read_into_document(void);
 extern void reset_document_name_after_load(void);
 extern bool parse_integer_from_command(struct scan_state* scan);
 extern uint8_t l0021, l0031, l0038, l007a;
-#define RAM_REGISTER_VALUE_P (RAM_REGISTER_VALUE_ARRAY + ('P' - 'A') * 2)
-#define RAM_REGISTER_VALUE_L (RAM_REGISTER_VALUE_ARRAY + ('L' - 'A') * 2)
 
-#define RAM_REGISTER_VALUE_ARRAY 0x0798
-#define register_value_array (&ram[RAM_REGISTER_VALUE_ARRAY])
-#define register_value_array_words \
-    ((uint16_t*)&ram[RAM_REGISTER_VALUE_ARRAY]) // 16-bit alias for A-Z
-                                                // registers
 #define RAM_CURRENT_RULER_BUF 0x05CF
+
+// Emulated register values for A-Z (originally stored in 6502 RAM at 0x0798)
+extern uint16_t register_value_array[26];
 
 extern jmp_buf env;
 extern const struct printer_driver* printer_driver_ptr;

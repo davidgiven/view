@@ -643,7 +643,7 @@ uint16_t* get_register_address(uint8_t a)
     //     adc #0
     //     sta ((uint8_t*)&tmp67)[1]
     // (16-bit arithmetic: pointer = register_value_array + (a - 'A') * 2)
-    return &register_value_array_words[a - 0x41];
+    return &register_value_array[a - 0x41];
 }
 
 uint8_t initialise_document(void)

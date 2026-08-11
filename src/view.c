@@ -424,14 +424,9 @@ uint8_t printer_driver_name[0x14]; // PROVISIONAL: filename of loaded printer
                                    // driver (e.g. "P.DOTMATRIX")
 
 // X register_value_array:           .fill 26*2
-#define RAM_REGISTER_VALUE_ARRAY 0x0798
-#define register_value_array \
-    (&ram[RAM_REGISTER_VALUE_ARRAY]) // PROVISIONAL: 52-byte array of 16-bit
-                                     // values for registers A-Z
-// X register_value_l                = register_value_array + ('L'-'A')*2
-#define RAM_REGISTER_VALUE_L (RAM_REGISTER_VALUE_ARRAY + ('L' - 'A') * 2)
-// X register_value_p                = register_value_array + ('P'-'A')*2
-#define RAM_REGISTER_VALUE_P (RAM_REGISTER_VALUE_ARRAY + ('P' - 'A') * 2)
+// (originally stored in emulated 6502 RAM at 0x0798; now a real C array of
+//  16-bit values for registers A-Z)
+uint16_t register_value_array[26];
 
 #define MAX_LINES 100
 #define MAX_COLUMNS 132
