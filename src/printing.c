@@ -663,6 +663,7 @@ static void ls_fmt_cmd(void)
 
 static void pe_fmt_cmd(void)
 {
+    uint8_t x;
     // pe_fmt_cmd
     // Pseudocode: Forces page eject if remaining lines are less than value
 
@@ -2390,6 +2391,9 @@ return_32:
 
 void print_document(struct scan_state* scan)
 {
+    uint8_t a;
+    uint8_t y;
+    addr_t ptr5;
     // print_document
     // print_document:
     //     jsr check_not_continuous_editing

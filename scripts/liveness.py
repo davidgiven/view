@@ -592,8 +592,8 @@ def get_local_info_ast(func_cursor, callee_live_out=None, callee_live_in=None):
 
 
 # ─── AST-based backward scan ──────────────────────────────────────
-def _backward_stmt(cur, live, backward_needs, per_caller_readback, caller,
-                   local_info, func_params,
+def _backward_stmt(cur, live, backward_needs, per_caller_readback, per_caller_provided,
+                   caller, local_info, func_params,
                    local_decls, source_lines, func_live_out):
     """Recursive branch-aware backward dataflow.
 
@@ -607,7 +607,7 @@ def _backward_stmt(cur, live, backward_needs, per_caller_readback, caller,
     # Compound statement: process children in reverse order.
     if ck == clang.cindex.CursorKind.COMPOUND_STMT:
         for ch in reversed(list(_get_children(cur))):
-            live = _backward_stmt(ch, live, backward_needs, per_caller_readback, caller,
+            live = _backward_stmt(ch, live, backward_needs, per_caller_readback, per_caller_provided, caller,
                                   local_info, func_params, local_decls, source_lines,
                                   func_live_out)
         return live
@@ -618,7 +618,7 @@ def _backward_stmt(cur, live, backward_needs, per_caller_readback, caller,
         branches = children[1:]
         merged = set(live)
         for b in branches:
-            merged |= _backward_stmt(b, set(live), backward_needs, per_caller_readback, caller,
+            merged |= _backward_stmt(b, set(live), backward_needs, per_caller_readback, per_caller_provided, caller,
                                      local_info, func_params, local_decls, source_lines,
                                      func_live_out)
         d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
@@ -632,13 +632,13 @@ def _backward_stmt(cur, live, backward_needs, per_caller_readback, caller,
             if ch.kind == clang.cindex.CursorKind.COMPOUND_STMT:
                 # process each case independently (do NOT thread linearly)
                 for case in _get_children(ch):
-                    merged |= _backward_stmt(case, set(live), backward_needs, per_caller_readback, caller,
+                    merged |= _backward_stmt(case, set(live), backward_needs, per_caller_readback, per_caller_provided, caller,
                                              local_info, func_params,
                                              local_decls, source_lines,
                                              func_live_out)
             elif ch.kind in (clang.cindex.CursorKind.CASE_STMT,
                              clang.cindex.CursorKind.DEFAULT_STMT):
-                merged |= _backward_stmt(ch, set(live), backward_needs, per_caller_readback, caller,
+                merged |= _backward_stmt(ch, set(live), backward_needs, per_caller_readback, per_caller_provided, caller,
                                          local_info, func_params, local_decls,
                                          source_lines, func_live_out)
         d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
@@ -649,7 +649,7 @@ def _backward_stmt(cur, live, backward_needs, per_caller_readback, caller,
               clang.cindex.CursorKind.DEFAULT_STMT,
               clang.cindex.CursorKind.LABEL_STMT):
         for ch in _get_children(cur):
-            live = _backward_stmt(ch, live, backward_needs, per_caller_readback, caller,
+            live = _backward_stmt(ch, live, backward_needs, per_caller_readback, per_caller_provided, caller,
                                   local_info, func_params, local_decls, source_lines,
                                   func_live_out)
         return live
@@ -680,7 +680,7 @@ def _backward_stmt(cur, live, backward_needs, per_caller_readback, caller,
                     new_head = set(before_cond)
                 else:
                     new_head = _backward_stmt(body_stmt, before_cond,
-                                              backward_needs, per_caller_readback, caller,
+                                              backward_needs, per_caller_readback, per_caller_provided, caller,
                                               local_info, func_params, local_decls,
                                               source_lines, func_live_out)
                 if new_head == prev:
@@ -696,7 +696,7 @@ def _backward_stmt(cur, live, backward_needs, per_caller_readback, caller,
             print(f"[FOR] line {cur.location.line}: {_lines_[cur.location.line - 1].strip()}")
             _bd = set(live)
             if body_stmt is not None:
-                _bd = _backward_stmt(body_stmt, set(live), backward_needs, per_caller_readback, caller,
+                _bd = _backward_stmt(body_stmt, set(live), backward_needs, per_caller_readback, per_caller_provided, caller,
                                      local_info, func_params, local_decls,
                                      source_lines, func_live_out)
             print(f"[FOR]   exit_live={sorted(live)} body_before={sorted(_bd)}")
@@ -705,7 +705,7 @@ def _backward_stmt(cur, live, backward_needs, per_caller_readback, caller,
         for _ in range(20):
             body_in = set(live)
             if body_stmt is not None:
-                body_in = _backward_stmt(body_stmt, body_in, backward_needs, per_caller_readback, caller,
+                body_in = _backward_stmt(body_stmt, body_in, backward_needs, per_caller_readback, per_caller_provided, caller,
                                          local_info, func_params,
                                          local_decls, source_lines,
                                          func_live_out)
@@ -722,7 +722,7 @@ def _backward_stmt(cur, live, backward_needs, per_caller_readback, caller,
     if ck == clang.cindex.CursorKind.RETURN_STMT:
         return set(func_live_out)
 
-    return _backward_plain(cur, live, backward_needs, per_caller_readback, caller,
+    return _backward_plain(cur, live, backward_needs, per_caller_readback, per_caller_provided, caller,
                            local_info, func_params,
                            local_decls, source_lines, func_live_out)
 
@@ -774,7 +774,7 @@ def _analyze_stmt_effect(cur, local_decls, source_lines, local_info=None,
     return d, u
 
 
-def _backward_plain(cur, live, backward_needs, per_caller_readback, caller,
+def _backward_plain(cur, live, backward_needs, per_caller_readback, per_caller_provided, caller,
                     local_info, func_params,
                     local_decls, source_lines, func_live_out):
     """Backward handling for a straight-line (leaf) statement.
@@ -823,6 +823,10 @@ def _backward_plain(cur, live, backward_needs, per_caller_readback, caller,
             result = (result - kill_set) | u
             cli = callee_info.get('live_in', set()) - callee_params
             result |= cli
+            # Record what THIS caller must provide to the callee: the live set
+            # before the call.  Registers the current statement itself defines
+            # (d) are produced by the caller here, not provided by its caller.
+            per_caller_provided.setdefault((caller, callee_name), set()).update(result - d)
         return result
 
     d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
@@ -919,7 +923,7 @@ def _return_value_uses(body_cursor, local_decls, source_lines):
         yield from u
 
 
-def backward_scan_ast(func_cursor, backward_needs, per_caller_readback, caller,
+def backward_scan_ast(func_cursor, backward_needs, per_caller_readback, per_caller_provided, caller,
                       local_info, func_params, live_out_start=None):
     """
     Backward scan using AST for a single function.
@@ -949,7 +953,7 @@ def backward_scan_ast(func_cursor, backward_needs, per_caller_readback, caller,
         return
 
     func_live_out = set(live_out_start)
-    _backward_stmt(body, set(func_live_out), backward_needs, per_caller_readback, caller,
+    _backward_stmt(body, set(func_live_out), backward_needs, per_caller_readback, per_caller_provided, caller,
                    local_info, func_params, local_decls, source_lines, func_live_out)
     # The registers read to form a return value are produced by this function
     # for its callers, so they are live on exit even if no caller's backward
@@ -1105,6 +1109,7 @@ def analyze_files(files):
     # ── Full interprocedural fixed-point iteration ──
     backward_needs = {name: set() for name in all_funcs}
     per_caller_readback = {}
+    per_caller_provided = {}
     fp_iter = 0
     changed = True
     while changed and fp_iter < 10:
@@ -1114,11 +1119,12 @@ def analyze_files(files):
         # Backward scan using AST
         backward_needs.clear()
         per_caller_readback = {}
+        per_caller_provided = {}
         for name in all_funcs:
             info = local_info[name]
             cursor = all_funcs[name][1]
-            backward_scan_ast(cursor, backward_needs, per_caller_readback, name,
-                              local_info, func_params,
+            backward_scan_ast(cursor, backward_needs, per_caller_readback, per_caller_provided,
+                              name, local_info, func_params,
                               info.get('live_out', set()))
 
         # Compute live_out
@@ -1218,7 +1224,15 @@ def analyze_files(files):
             callee_info = local_info.get(callee_name)
             if callee_info:
                 callee_locals = callee_info.get('local_decls', set())
-                passed_to_callees |= (callee_info.get('live_in', set()) - callee_params)
+                # Only registers this caller actually has to provide before
+                # the call count as "passed" to the callee (see
+                # per_caller_provided).  A callee's static live_in may be
+                # produced internally by the caller before the call (e.g.
+                # expand_escaped_string defines a via read_next_command_byte
+                # before upper_case_unless_folding reads it), so it is not a
+                # caller input.
+                provided = per_caller_provided.get((name, callee_name), set())
+                passed_to_callees |= (provided - callee_params)
                 # Only registers this caller actually reads back after the
                 # call count as "from" the callee (see per_caller_readback).
                 read_back = per_caller_readback.get((name, callee_name), set())
@@ -1288,14 +1302,14 @@ def analyze_files(files):
             for callee, args in s['calls']:
                 cs = summaries.get(callee)
                 if cs:
-                    # Propagate the callee's live_in and transitive consumed in
-                    # full.  A callee's own explicit parameters never appear in
-                    # its live_in/consumed (they are local_decls there), so this
-                    # carries only genuine register-convention GLOBAL reads --
-                    # both direct and transitive (e.g. print_char() reading the
-                    # global a through print_char_x_times()).
-                    consumed.update(cs.get('live_in', set()))
-                    consumed.update(cs.get('consumed', set()))
+                    # Only registers this caller actually hands to the callee
+                    # (per_caller_provided) propagate as consumed -- plus the
+                    # callee's transitive consumed for those hand-offs.  The
+                    # callee's static live_in is already reflected in
+                    # per_caller_provided and may be produced internally by
+                    # this caller, so it must not be added wholesale here.
+                    provided = per_caller_provided.get((name, callee), set())
+                    consumed.update(provided & cs.get('consumed', set()))
                 elif callee in CORRUPTS:
                     consumed.update(ALL_VARS_SET)
             consumed = consumed - s['live_in'] - s['live_out']

@@ -8,7 +8,7 @@ addr_t parse_mark_from_command(struct scan_state* scan);
 // Forward declarations for CLI utilities
 void file_error(void);
 void file_not_found_error(void);
-void parse_integer_from_command(struct scan_state* scan);
+bool parse_integer_from_command(struct scan_state* scan);
 void parse_marks_from_command(struct scan_state* scan);
 void reset_document_name_after_load(void);
 void set_document_name_to_filename_buffer(void);
@@ -307,6 +307,7 @@ static void cmd_err_no_target(void)
 static void count_cmd(struct scan_state* scan)
 {
     uint8_t x;
+    uint8_t y;
     addr_t tmp89;
 
     // count_cmd
@@ -528,9 +529,8 @@ static void field_cmd(addr_t tmp89, struct scan_state* scan)
     // ***************************************************************************************
     // field_cmd:
     //     jsr parse_integer_from_command
-    parse_integer_from_command(scan);
     //     beq c869b
-    if (flags & FLAG_Z)
+    if (!parse_integer_from_command(scan))
     {
         return_to_cli_prompt();
         return;
@@ -765,15 +765,12 @@ static void microspace_cmd(addr_t tmp89, struct scan_state* scan)
     //     jsr prepare_printer_driver
     prepare_printer_driver();
     //     jsr parse_integer_from_command
-    parse_integer_from_command(scan);
     //     php
-    uint8_t saved_flags = flags;
+    bool parsed = parse_integer_from_command(scan);
     //     ldx #0x0a
     uint8_t x = 0x0a;
-    //     plp
-    flags = saved_flags;
     //     beq c8608
-    if (!(flags & FLAG_Z))
+    if (parsed)
     {
         x = ((uint8_t*)&tmp89)[0];
         if (x == 0)
@@ -1829,7 +1826,7 @@ void file_not_found_error(void)
     return;
 }
 
-void parse_integer_from_command(struct scan_state* scan)
+bool parse_integer_from_command(struct scan_state* scan)
 {
     // Pseudocode: Parses a decimal integer from the command input buffer
 
@@ -1844,14 +1841,15 @@ void parse_integer_from_command(struct scan_state* scan)
     //     jsr sub_c8e33
     //     beq return_8
     if (scan_input_buffer(scan))
-        return;
+        return false;
     //     jmp ca6fe
     uint8_t y = scan->pos;
     int parsed;
     bool ok = parse_decimal_number(&parsed, &y);
     tmp89 = (addr_t)parsed;
-    set_flags(&flags, ok); // Z = 1 if no integer parsed
-    return;
+    // (6502 returns Z set when no integer was parsed; the boolean mirrors
+    //  that: true = an integer was parsed)
+    return ok;
 }
 
 void parse_marks_from_command(struct scan_state* scan)

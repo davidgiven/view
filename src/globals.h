@@ -187,7 +187,7 @@ extern void write_area_to_file(void);
 extern void read_next_chunk_from_input_file(addr_t ptr);
 extern void read_into_document(void);
 extern void reset_document_name_after_load(void);
-extern void parse_integer_from_command(struct scan_state* scan);
+extern bool parse_integer_from_command(struct scan_state* scan);
 extern uint8_t l0021, l0031, l0038, l007a;
 #define RAM_REGISTER_VALUE_P (RAM_REGISTER_VALUE_ARRAY + ('P' - 'A') * 2)
 #define RAM_REGISTER_VALUE_L (RAM_REGISTER_VALUE_ARRAY + ('L' - 'A') * 2)
