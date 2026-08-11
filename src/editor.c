@@ -3417,13 +3417,12 @@ static void clear_marks_1_2(void)
 
     //     lda #0
     //     ldx #3
-    uint8_t x = 3;
     // loop_cad12:
-    do
-    {
-        ((uint8_t*)markers_array)[x] = 0;
-        x--;
-    } while (!(x & 0x80));
+    //     sta markers_array,x
+    //     dex
+    //     bpl loop_cad12
+    markers_array[0] = 0;
+    markers_array[1] = 0;
     //     rts
 }
 
@@ -3473,7 +3472,8 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t x)
 cae78:
     //     jsr sub_ca536
     //     bne cae98
-    if (find_marker_at_position(y, tmp67) == 0x0c)
+    x = find_marker_at_position(y, tmp67);
+    if (x == 0x0c)
         goto cae98;
     //     lda #0
     //     cpy l0084
@@ -3495,8 +3495,7 @@ cae78:
     // (16-bit store: markers_array[x] = (y >= l0084)
     //  ? RAM_EDIT_BUFFER + (y - l0080) : 0)
     uint16_t marker_val = (y >= l0084) ? RAM_EDIT_BUFFER + (y - l0080) : 0;
-    ((uint8_t*)markers_array)[x] = (uint8_t)marker_val;
-    ((uint8_t*)markers_array)[x + 1] = (uint8_t)(marker_val >> 8);
+    markers_array[x / 2] = marker_val;
     //     jmp cae78
     goto cae78;
 
@@ -3893,8 +3892,7 @@ c9cf5:
         //  the bcc loop_c9cf9 continues while the address fits in 16 bits)
         {
             uint16_t val = tmp45 + l0081;
-            ((uint8_t*)markers_array)[marker_index] = (uint8_t)(val & 0xff);
-            ((uint8_t*)markers_array)[marker_index + 1] = (uint8_t)(val >> 8);
+            markers_array[marker_index / 2] = val;
             if (tmp45 + (uint16_t)l0081 >= 0x10000)
                 break;
         }
@@ -4002,11 +4000,10 @@ static void reset_area_to_marks_1_2(void)
     if (flags & FLAG_Z)
         goto cad45;
     //     lda __begin_pointer_array,x
-    uint8_t a = ((uint8_t*)markers_array)[x];
     //     sta area_start_ptr
-    area_start_ptr = (uint16_t)((uint8_t*)markers_array)[x + 1] << 8 | a;
     //     lda markers_array+1,x
     //     sta area_start_ptr+1
+    area_start_ptr = markers_array[x / 2];
     //     lda #0x32 ; '2'
     //     jsr lookup_marker
     lookup_marker(0x32);
@@ -4016,8 +4013,11 @@ static void reset_area_to_marks_1_2(void)
     //     beq cad45
     if (!(flags & FLAG_Z))
     {
-        a = ((uint8_t*)markers_array)[x];
-        area_end_ptr = (uint16_t)((uint8_t*)markers_array)[x + 1] << 8 | a;
+        //     lda __begin_pointer_array,x
+        //     sta area_end_ptr
+        //     lda markers_array+1,x
+        //     sta area_end_ptr+1
+        area_end_ptr = markers_array[x / 2];
         x = ((uint8_t*)&doc_ptr1 - (uint8_t*)markers_array);
         set_marker_to_here(x);
         area_status_t status = sanitise_area();
@@ -4556,8 +4556,7 @@ cae27:
         // (16-bit store: markers_array[idx] = l0081
         //  ? RAM_EDIT_BUFFER + l0081 : 0)
         uint16_t marker_val = l0081 ? RAM_EDIT_BUFFER + l0081 : 0;
-        ((uint8_t*)markers_array)[idx] = (uint8_t)marker_val;
-        ((uint8_t*)markers_array)[idx + 1] = (uint8_t)(marker_val >> 8);
+        markers_array[idx / 2] = marker_val;
         //     jmp loop_cae37
     }
 
@@ -4626,8 +4625,7 @@ cad5d:
     //     sta 1,x
     {
         uint16_t marker_addr = current_line_ptr + a;
-        ((uint8_t*)markers_array)[x] = (uint8_t)marker_addr;
-        ((uint8_t*)markers_array)[x + 1] = (uint8_t)(marker_addr >> 8);
+        markers_array[x / 2] = marker_addr;
         a = (uint8_t)(marker_addr >> 8);
     }
     //     rts
@@ -5190,8 +5188,8 @@ c8c3e:
     //     sty ptr2+1
     // (16-bit copy: doc_ptr2 = tmp89; ptr2 = the previous doc_ptr2,
     //  which is also returned in the A/Y registers for the caller)
+    ptr2 = doc_ptr2;
     doc_ptr2 = tmp89;
-    ptr2 = (addr_t)(y) << 8 | a;
     //     ldx #0
     x = 0;
     set_flags(&flags, 0); // Z live
@@ -5606,11 +5604,9 @@ static void go_to_marker(uint8_t x)
 {
     // go_to_marker:
     //     lda markers_array,x
-    uint8_t a = ((uint8_t*)markers_array)[x];
     //     ldy markers_array+1,x
-    uint8_t y = ((uint8_t*)markers_array)[x + 1];
     //     jsr move_cursor_to_address
-    move_cursor_to_address((uint16_t)(y) << 8 | a);
+    move_cursor_to_address(markers_array[x / 2]);
     // ca035:
     //     lda #1
     //     sta l0073
@@ -7220,7 +7216,7 @@ c99b6:
         //     lda #0
         a = 0;
         //     sta markers_array+1,x
-        markers_array[1 + idx] = a;
+        markers_array[idx / 2] &= 0x00ff;
         //     inc l007e
         l007e++;
         //     bne loop_c99ba
@@ -7840,7 +7836,6 @@ static uint8_t find_marker_at_position(uint8_t y, addr_t tmp67)
 {
     addr_t tmp89;
     uint8_t x;
-    uint8_t a;
 
     // sub_ca536
     // Pseudocode: Checks if a position in the edit line corresponds to a marker
@@ -7855,17 +7850,15 @@ static uint8_t find_marker_at_position(uint8_t y, addr_t tmp67)
     for (;;)
     {
         //     lda ((uint8_t*)&tmp89)[1]
-        a = ((uint8_t*)&tmp89)[1];
         //     cmp markers_array+1,x
         //     bne ca550
-        if (a != ((uint8_t*)markers_array)[x + 1])
-            goto ca550;
         //     lda ((uint8_t*)&tmp89)[0]
-        a = ((uint8_t*)&tmp89)[0];
         //     cmp markers_array,x
         //     beq ca558
-        if (a == ((uint8_t*)markers_array)[x])
-            goto ca558;
+        // ca550:
+        if (tmp89 != markers_array[x / 2])
+            goto ca550;
+        goto ca558;
         // ca550:
     ca550:
         //     inx
@@ -7984,8 +7977,7 @@ caad5:
     //  the bne caad5 loops while the high byte of the result is non-zero)
     {
         uint16_t val = current_format_line_ptr + y;
-        ((uint8_t*)markers_array)[idx] = (uint8_t)(val & 0xff);
-        ((uint8_t*)markers_array)[idx + 1] = (uint8_t)(val >> 8);
+        markers_array[idx / 2] = val;
         if ((uint8_t)(val >> 8) != 0)
             goto caad5;
     }
@@ -8331,8 +8323,7 @@ ca919:
                 //     sta markers_array+1,x
                 // (16-bit arithmetic: val = current_line_ptr + y)
                 uint16_t val = current_line_ptr + y;
-                ((uint8_t*)markers_array)[idx] = (uint8_t)(val & 0xff);
-                ((uint8_t*)markers_array)[idx + 1] = (uint8_t)(val >> 8);
+                markers_array[idx / 2] = val;
                 //     bne loop_ca91c
                 if ((uint8_t)(val >> 8) != 0)
                     continue;
