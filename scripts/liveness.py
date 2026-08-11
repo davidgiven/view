@@ -825,11 +825,28 @@ def _backward_plain(cur, live, backward_needs, per_caller_readback, per_caller_p
             result |= cli
             # Record what THIS caller must provide to the callee: only the
             # callee's required inputs (cli) plus the statement's own uses (u),
-            # minus registers the statement itself defines (d).  The full
-            # live-through set (result) also carries registers live for the
-            # caller's own continuation (e.g. tmp01 live on exit), which the
-            # callee does not consume.
-            per_caller_provided.setdefault((caller, callee_name), set()).update((u | cli) - d)
+            # minus registers the statement itself defines (own_d).  The full
+            # live-through set (result) carries registers live for the caller's
+            # own continuation, and the callee's cached_defs (part of d) are
+            # outputs produced by the callee -- neither of which count as
+            # inputs the caller hands over.  A register can be both a callee
+            # input and output (e.g. y incremented by the callee), in which
+            # case it is still provided by the caller.  Also include the
+            # callee's transitive consumed registers (e.g. ptr5 that print_loop
+            # passes on to prepare_output_line) -- the caller provides these if
+            # it defines them before the call.
+            own_d = analyze_stmt(cur, set(local_decls), 'use')[0]
+            provided = (u | cli) - own_d
+            # Also include registers the callee forwards to ITS callees (its
+            # transitive inputs), e.g. ptr5 that print_loop passes on to
+            # prepare_output_line.  Only include registers the callee does NOT
+            # define internally (they must come from the caller); registers the
+            # callee produces itself (e.g. a produced by read_next_command_byte)
+            # are not caller inputs.
+            callee_provided = callee_info.get('per_callee_provided', {})
+            for v in callee_provided.values():
+                provided |= (set(v) - callee_info.get('defs', set()) - own_d)
+            per_caller_provided.setdefault((caller, callee_name), set()).update(provided)
         return result
 
     d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
@@ -1123,12 +1140,21 @@ def analyze_files(files):
         backward_needs.clear()
         per_caller_readback = {}
         per_caller_provided = {}
+        # Pass each callee's previously-computed passed_to_callees so that
+        # registers forwarded by a callee to ITS callees (e.g. ptr5 passed by
+        # print_loop to prepare_output_line) are seen as inputs the caller must
+        # provide.
         for name in all_funcs:
             info = local_info[name]
             cursor = all_funcs[name][1]
             backward_scan_ast(cursor, backward_needs, per_caller_readback, per_caller_provided,
                               name, local_info, func_params,
                               info.get('live_out', set()))
+
+        # Store per-callee provided sets into local_info for the next iteration.
+        for (caller, callee), v in per_caller_provided.items():
+            entry = local_info.setdefault(caller, {}).setdefault('per_callee_provided', {})
+            entry[callee] = set(v)
 
         # Compute live_out
         for name in all_funcs:

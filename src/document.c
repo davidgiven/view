@@ -622,12 +622,11 @@ uint8_t get_byte_from_file(void)
     return a;
 }
 
-uint16_t* get_register_address(uint8_t a)
+unsigned int* get_register_address(uint8_t a)
 {
     // get_register_address
-    // get_register_address: Gets a pointer to the 16-bit register value by
-    // letter name.  Returns NULL if the letter is not an uppercase A-Z
-    // (invalid).
+    // get_register_address: Gets a pointer to the register value by letter
+    // name.  Returns NULL if the letter is not an uppercase A-Z (invalid).
 
     //     jsr is_uppercase
     //     bcs return_77

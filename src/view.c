@@ -425,8 +425,8 @@ uint8_t printer_driver_name[0x14]; // PROVISIONAL: filename of loaded printer
 
 // X register_value_array:           .fill 26*2
 // (originally stored in emulated 6502 RAM at 0x0798; now a real C array of
-//  16-bit values for registers A-Z)
-uint16_t register_value_array[26];
+//  unsigned int values for registers A-Z)
+unsigned int register_value_array[26];
 
 #define MAX_LINES 100
 #define MAX_COLUMNS 132

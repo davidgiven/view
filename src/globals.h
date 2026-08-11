@@ -193,7 +193,7 @@ extern uint8_t l0021, l0031, l0038, l007a;
 #define RAM_CURRENT_RULER_BUF 0x05CF
 
 // Emulated register values for A-Z (originally stored in 6502 RAM at 0x0798)
-extern uint16_t register_value_array[26];
+extern unsigned int register_value_array[26];
 
 extern jmp_buf env;
 extern const struct printer_driver* printer_driver_ptr;

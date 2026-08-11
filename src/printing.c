@@ -494,7 +494,7 @@ static void em_fmt_cmd(void)
     y++;
     //     jsr get_register_address
     //     bcs return_38
-    uint16_t* register_value = get_register_address(a);
+    unsigned int* register_value = get_register_address(a);
     if (register_value == NULL)
         return;
     //     jsr evaluate_expression_from_fmt_cmd
@@ -1558,7 +1558,7 @@ void render_register(uint8_t a, uint8_t y)
     l0084 = y;
     //     jsr get_register_address
     //     bcs cada2
-    uint16_t* register_value = get_register_address(a);
+    unsigned int* register_value = get_register_address(a);
     //     ldy #0
     y = 0;
     //     sty ((uint8_t*)&tmp89)[0]
@@ -3874,7 +3874,7 @@ static void reset_print_registers(void)
     //     ldx #0x33 ; '3'
     // loop_cb108:
     //     sta register_value_array,x
-    memset(register_value_array, 0, 26 * 2);
+    memset(register_value_array, 0, sizeof(register_value_array));
     //     sta header_text_maybe
     header_text_maybe[0] = a;
     //     sta footer_text_maybe
