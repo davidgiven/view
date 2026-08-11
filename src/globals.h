@@ -52,7 +52,7 @@ struct printer_driver
     void (*printer_on)(void);
     void (*printer_off)(void);
     void (*printer_microspace)(void);
-    void (*printer_getflags)(void);
+    void (*printer_getflags)(uint8_t* x, uint8_t* y);
 };
 
 // Inline helpers

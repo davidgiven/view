@@ -306,6 +306,7 @@ static void cmd_err_no_target(void)
 
 static void count_cmd(struct scan_state* scan)
 {
+    uint8_t x;
     addr_t tmp89;
 
     // count_cmd
@@ -753,6 +754,8 @@ static void load_cmd(struct scan_state* scan)
 
 static void microspace_cmd(addr_t tmp89, struct scan_state* scan)
 {
+    uint8_t a;
+    uint8_t y;
     // microspace_cmd
     // Pseudocode: Configures microspacing by querying printer driver
 
@@ -781,7 +784,7 @@ static void microspace_cmd(addr_t tmp89, struct scan_state* scan)
     //     jsr call_printer_driver
     // (the printer driver returns its status in the global y register;
     //  the y = 0 input setup is unused by the default driver)
-    printer_driver_ptr->printer_getflags();
+    printer_driver_ptr->printer_getflags(&x, &y);
     //     tya
     a = y;
     //     and #1

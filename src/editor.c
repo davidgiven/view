@@ -3148,6 +3148,7 @@ static void sf7_set_marker_key(void)
 
 static void sf8_edit_command_key(addr_t ptr1)
 {
+    uint8_t y;
     // sf8_edit_command_key
     //  Ptrs:   ptr1
 
@@ -6116,6 +6117,7 @@ void process_current_document_character(addr_t tmp01)
 
 static void recalculate_cursor_xpos(void)
 {
+    uint8_t a;
     // recalculate_cursor_xpos
     // Pseudocode: Recalculates cursor xpos from visual position accounting for
     // tabs and margins
@@ -7095,6 +7097,7 @@ c9969:
 
 void format_paragraph(void)
 {
+    uint8_t y;
     // sub_c9977
     // PROVISIONAL: Main line formatting routine — reads source line, handles
     // margins, tabs, wrapping. PROVISIONAL: Called from f0_format_block_key
@@ -8188,6 +8191,7 @@ void wipe_buffer(uint8_t a, addr_t ptr1)
 
 static void write_line_back_to_document(void)
 {
+    uint8_t y;
     // write_line_back_to_document
     // sub_ca8b9:
     // write_line_back_to_document:

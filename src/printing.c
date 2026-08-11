@@ -13,7 +13,7 @@ static void default_print_char(uint8_t a);
 static void default_printer_on(void);
 static void default_printer_off(void);
 static void default_printer_microspace(void);
-static void default_printer_getflags(void);
+static void default_printer_getflags(uint8_t* x, uint8_t* y);
 static const struct printer_driver default_printer_driver;
 
 // Printing-only functions
@@ -1408,6 +1408,7 @@ c97ae:
 
 static void evaluate_expression_from_fmt_cmd(void)
 {
+    uint8_t x;
     addr_t tmp45 = 0;
 
     // evaluate_expression_from_fmt_cmd
@@ -4061,10 +4062,10 @@ static void default_printer_off(void)
 static void default_printer_microspace(void) {}
 
 // Default printer_getflags: sets x and y to zero (original view-cpm.S entry)
-static void default_printer_getflags(void)
+static void default_printer_getflags(uint8_t* x, uint8_t* y)
 {
-    x = 0;
-    y = 0;
+    *x = 0;
+    *y = 0;
 }
 
 static const struct printer_driver default_printer_driver = {

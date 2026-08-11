@@ -1133,14 +1133,13 @@ void reset_area_to_entire_document(void)
     //     rts
 }
 
-void find_next_line(addr_t line)
+void find_next_line(uint16_t tmp01)
 {
     // Pseudocode: Finds next line in document, handling command prefix and
     // ruler stack
 
     // sub_cab1a:
     //     sta ((uint8_t*)&tmp01)[0]
-    tmp01 = line;
     //     jsr sub_cab6e
     //     bne cab29
     // (inlined: Z = (ram[tmp01] == RULER_BYTE))
