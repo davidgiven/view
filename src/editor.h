@@ -21,7 +21,7 @@ extern void move_cursor_to_address(uint16_t addr);
 extern void lookup_marker(uint8_t a);
 
 extern void split_line_at_wrap(addr_t tmp89);
-extern void insert_edit_buffer_bytes_at_xpos(uint8_t x);
+extern bool insert_edit_buffer_bytes_at_xpos(uint8_t x);
 extern void set_marker_to_here(uint8_t x);
 extern void set_format_mode_bit7(void);
 extern void justify_edit_buffer(void);

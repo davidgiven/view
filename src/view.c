@@ -762,7 +762,6 @@ void read_into_document(void)
     // (the 6502 leaves the clamped free-space size in tmp67; since
     //  space_limit = tmp45 + tmp67 - 0x8b, tmp67 = space_limit - tmp45 + 0x8b)
     make_space_for_insertion(tmp45, space_limit - tmp45 + 0x8b);
-
     //     jsr read_block_from_file
     read_block_status_t status = read_block_from_file(&tmp01, space_limit);
     //     beq c8584
@@ -946,10 +945,8 @@ c8a87:
     //     sta ((uint8_t*)&tmp67)[0]
     ((uint8_t*)&tmp67)[0] = a;
     //     jsr make_space_for_insertion
-    make_space_for_insertion(tmp45, tmp67);
-    //     bcc c8ada
-    if (!(flags & FLAG_C))
-        goto c8ada;
+    if (make_space_for_insertion(tmp45, tmp67))
+        goto c8ada; // bcc c8ada
     //     rts
     return;
 
@@ -1247,7 +1244,8 @@ void write_area_to_file(void)
     do
     {
         //         ldy #0
-        y = 0;
+        // (y is only set as a side effect of the 6502's indexed dereference;
+        //  the C reads ram[tmp89] directly and no caller reads y afterwards)
         //         lda (((uint8_t*)&tmp89)[0]),y
         a = ram[tmp89];
         //         jsr put_byte_to_file

@@ -49,7 +49,7 @@ static void compute_header_odd_page_section(addr_t tmp45);
 static uint8_t get_line_width(addr_t tmp45);
 static uint8_t get_right_margin(void);
 static void copy_header_footer_text(addr_t tmp23);
-static void get_page_parity(void);
+static bool get_page_parity(void);
 static void output_left_margin(void);
 static uint8_t add_justification_spaces(uint8_t x);
 static void convert_char_for_printing(void);
@@ -66,8 +66,8 @@ static void parse_word_flag(void);
 static void parse_boolean_from_fmt_cmd(void);
 static void page_eject_fmt(void);
 static void evaluate_expression_from_fmt_cmd(void);
-static void get_current_fmt_cmd_byte(void);
-static void get_next_fmt_cmd_byte(uint8_t y);
+static uint8_t get_current_fmt_cmd_byte(void);
+static uint8_t get_next_fmt_cmd_byte(uint8_t y);
 void lookup_formatting_command(void);
 static void store_to_output_buffer(uint8_t a, addr_t tmp23);
 static uint8_t process_header_footer_line(uint8_t x, uint8_t y);
@@ -265,11 +265,11 @@ static void expand_line(void)
     //     ldy #3
     y = 3;
     //     jsr get_current_fmt_cmd_byte
-    get_current_fmt_cmd_byte();
+    a = get_current_fmt_cmd_byte();
     //     clc
     flags &= ~FLAG_C;
     //     beq return_37
-    if (flags & FLAG_Z)
+    if (a == 0)
         return;
     // c9537:
 c9537:
@@ -485,9 +485,9 @@ static void em_fmt_cmd(void)
     //     ldy #3
     y = 3;
     //     jsr get_current_fmt_cmd_byte
-    get_current_fmt_cmd_byte();
+    a = get_current_fmt_cmd_byte();
     //     beq return_38
-    if (flags & FLAG_Z)
+    if (a == 0)
         return;
     //     iny
     y++;
@@ -1011,9 +1011,9 @@ static void ht_fmt_cmd(void)
     //     ldy #3
     y = 3;
     //     jsr get_current_fmt_cmd_byte
-    get_current_fmt_cmd_byte();
+    a = get_current_fmt_cmd_byte();
     //     beq return_44
-    if (flags & FLAG_Z)
+    if (a == 0)
         return;
     //     tax
     uint8_t x = a;
@@ -1289,11 +1289,11 @@ static void parse_boolean_from_fmt_cmd(void)
     // ***************************************************************************************
     // parse_boolean_from_fmt_cmd:
     //     jsr get_current_fmt_cmd_byte
-    get_current_fmt_cmd_byte();
+    a = get_current_fmt_cmd_byte();
     //     sec
     flags |= FLAG_C;
     //     beq return_46
-    if (flags & FLAG_Z)
+    if (a == 0)
         return;
     //     lda current_format_line_ptr
     a = current_format_line_ptr;
@@ -1429,17 +1429,17 @@ static void evaluate_expression_from_fmt_cmd(void)
     // c97c0:
 c97c0:
     //     jsr get_current_fmt_cmd_byte
-    get_current_fmt_cmd_byte();
+    a = get_current_fmt_cmd_byte();
     //     beq c9821
-    if (flags & FLAG_Z)
+    if (a == 0)
         goto c9821;
     //     cmp #0x7c ; '|'
     if (a != 0x7c)
         goto c97d5;
     //     jsr get_next_fmt_cmd_byte
-    get_next_fmt_cmd_byte(y);
+    a = get_next_fmt_cmd_byte(y);
     //     beq c9821
-    if (flags & FLAG_Z)
+    if (a == 0)
         goto c9821;
     //     iny
     y++;
@@ -1486,9 +1486,9 @@ c97f7:
 c9804:
     tmp45 = tmp89;
     //     jsr get_current_fmt_cmd_byte
-    get_current_fmt_cmd_byte();
+    a = get_current_fmt_cmd_byte();
     //     beq c9821
-    if (flags & FLAG_Z)
+    if (a == 0)
         goto c9821;
     //     ldx #1
     x = 1;
@@ -1519,32 +1519,26 @@ c9821:
     return;
 }
 
-static void get_current_fmt_cmd_byte(void)
+static uint8_t get_current_fmt_cmd_byte(void)
 {
     // get_current_fmt_cmd_byte:
     while (1)
     {
         a = ram[current_format_line_ptr + y];
         if (a == 0x0d)
-        {
-            set_flags(&flags, 0); // Z set
-            return;
-        }
+            return 0; // Z set
         if (a != 0x20)
-        {
-            set_flags(&flags, 1); // Z clear
-            return;
-        }
+            return a; // Z clear
         y++;
     }
 }
 
-static void get_next_fmt_cmd_byte(uint8_t y)
+static uint8_t get_next_fmt_cmd_byte(uint8_t y)
 {
     // get_next_fmt_cmd_byte:
     //     iny
     y++;
-    get_current_fmt_cmd_byte();
+    return get_current_fmt_cmd_byte();
 }
 
 void render_register(uint8_t a, uint8_t y)
@@ -2888,9 +2882,9 @@ static void render_header_or_footer(uint16_t yx)
     //     jsr sub_c9393
     compute_header_left_section(tmp45);
     //     jsr sub_c93fd
-    get_page_parity();
+    bool parity = get_page_parity();
     //     bcs c932e
-    if (!(flags & FLAG_C))
+    if (!parity)
     {
         compute_header_odd_page_section(tmp45);
     }
@@ -2919,7 +2913,7 @@ static void render_header_or_footer(uint16_t yx)
     //     jsr sub_c93be
     a = get_right_margin();
     //     beq c9355
-    if (flags & FLAG_Z)
+    if (a == 0)
         goto c9355;
     //     lsr
     // (flags not used; plain shift)
@@ -2943,9 +2937,9 @@ c9355:
     //     jsr sub_c93a1
     compute_header_odd_page_section(tmp45);
     //     jsr sub_c93fd
-    get_page_parity();
+    bool parity2 = get_page_parity();
     //     bcs c9363
-    if (!(flags & FLAG_C))
+    if (!parity2)
     {
         compute_header_left_section(tmp45);
     }
@@ -2966,7 +2960,7 @@ c9355:
     // (only reach add_justification_spaces when the right margin is
     //  non-zero and both sbc subtractions succeed; otherwise fall through
     //  to the shared end, c937b)
-    if (!(flags & FLAG_Z))
+    if (a != 0)
     {
         //     stx l0081
         l0081 = x;
@@ -3652,17 +3646,13 @@ static uint8_t get_right_margin(void)
     //     lda ruler_right_stop
     a = ruler_right_stop;
     if (a != 0)
-    {
-        set_flags(&flags, 1); // Z clear (margin present)
         return a;
-    }
     //     bne return_29
     //     lda l003a
     a = l003a;
     //     sec
     //     sbc #1
     a -= 1;
-    set_flags(&flags, a); // Z = (a == 0)
     // return_29:
     return a;
 }
@@ -3738,28 +3728,23 @@ c93f2:
     goto c93ce;
 }
 
-static void get_page_parity(void)
+static bool get_page_parity(void)
 {
     // Pseudocode: Checks two_sided_flag and returns page parity for alternate
     // layout
 
     // sub_c93fd:
     //     sec
-    uint8_t a;
-    flags |= FLAG_C;
     //     lda two_sided_flag
-    a = two_sided_flag;
-
     //     beq return_31
-    if (a == 0)
-        goto return_31;
     //     lda register_value_p
-    a = (uint8_t)register_value_array['P' - 'A'];
     //     lsr
-    flags = (flags & ~FLAG_C) | (a & 1);
-    a >>= 1;
     // return_31:
-return_31:; // fallthrough to rts
+    // (return value: C flag = 1 if two_sided_flag is 0, otherwise
+    //  the parity of register P; true means "even page / left-hand")
+    if (two_sided_flag == 0)
+        return true;
+    return (register_value_array['P' - 'A'] & 1) != 0;
 }
 
 static void output_left_margin(void)
@@ -3770,11 +3755,11 @@ static void output_left_margin(void)
 
     // sub_c9407:
     //     jsr sub_c93fd
-    get_page_parity();
+    bool parity = get_page_parity();
     //     lda left_margin
     a = left_margin;
     //     bcc c9415
-    if ((flags & FLAG_C))
+    if (parity)
     {
         x = two_sided_flag;
 

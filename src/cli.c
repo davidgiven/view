@@ -1071,9 +1071,9 @@ c832d:
     //     jsr draw_prompt_characters
     draw_prompt_characters('R', 'P');
     //     jsr flush_and_read_char
-    read_char();
+    a = read_char();
     //     bcs return_2
-    if (flags & FLAG_C)
+    if (a == 0x1b)
         return;
     //     and #0xdf
     a &= 0xdf;

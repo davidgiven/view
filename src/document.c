@@ -411,7 +411,7 @@ ca5fa:
     return;
 }
 
-void read_char(void)
+uint8_t read_char(void)
 {
     // read_char
     // Pseudocode: Reads a character from keyboard via SCREEN, returning escape
@@ -425,16 +425,13 @@ void read_char(void)
 
     //     cmp #0x1b                                                         ;
     //     A=character read
-    cmp(&flags, a, 0x1b); // Z live
     //     clc
-    flags &= ~FLAG_C;
     //     bne return_65
-    if ((flags & FLAG_Z))
-    {
-        flags |= FLAG_C;
-    }
+    //     sec
+    // return_65:
+    // (return value: the character read; 0x1b == ESCAPE)
     //     rts
-    return;
+    return a;
 }
 
 void return_to_cli_prompt(void)
@@ -1091,7 +1088,6 @@ void push_onto_ruler_index(uint8_t y, addr_t tmp01)
         //     pla
         //     tay
         y = saved_y;
-        set_flags(&flags, y); // Z live
     }
     //     rts
     return;

@@ -14,7 +14,7 @@ extern void find_margins_of_current_ruler_buffer(void);
 extern void print_char(uint8_t a);
 extern void print_char_just_to_screen(uint8_t a);
 extern void process_document_character(void);
-extern void read_char(void);
+extern uint8_t read_char(void);
 extern void return_to_cli_prompt(void);
 
 extern void print_alignment_spaces(uint8_t a);
