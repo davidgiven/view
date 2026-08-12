@@ -764,12 +764,12 @@ void read_into_document(void)
     make_space_for_insertion(tmp45, space_limit - tmp45 + 0x8b);
 
     //     jsr read_block_from_file
-    read_block_from_file(space_limit);
+    read_block_status_t status = read_block_from_file(&tmp01, space_limit);
     //     beq c8584
     //     bcs c8598
-    if (flags & FLAG_Z)
+    if (status == READ_BLOCK_EMPTY)
         goto c8584;
-    if (flags & FLAG_C)
+    if (status == READ_BLOCK_DONE)
         goto c8598;
     // c8584:
 c8584:
@@ -1193,11 +1193,11 @@ void read_next_chunk_from_input_file(addr_t ptr)
     // (inlined: file_ptr = input_fp)
     file_ptr = input_fp;
     //     jsr read_block_from_file
-    read_block_from_file(space_limit);
+    read_block_status_t status = read_block_from_file(&tmp01, space_limit);
     //     php
     //     beq c8d39
     //     bcc c8d39
-    if (!(flags & FLAG_Z) && (flags & FLAG_C))
+    if (status == READ_BLOCK_DONE)
     {
         //     inc input_file_empty_flag
         input_file_empty_flag++;

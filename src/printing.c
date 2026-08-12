@@ -33,7 +33,7 @@ void print_document(struct scan_state* scan);
 static void print_loop(void);
 static void print_newline(void);
 static void print_vertical_space(uint8_t x);
-void read_block_from_file(addr_t limit);
+read_block_status_t read_block_from_file(addr_t* cursor, addr_t limit);
 static void render_header_or_footer(uint16_t yx);
 static void render_new_page(void);
 bool scan_input_buffer(struct scan_state* state);
@@ -54,8 +54,8 @@ static void output_left_margin(void);
 static uint8_t add_justification_spaces(uint8_t x);
 static void convert_char_for_printing(void);
 static void reset_print_registers(void);
-static void write_byte_to_memory(uint8_t a);
-static void write_cr_to_memory(void);
+static void write_byte_to_memory(addr_t* cursor, uint8_t a);
+static void write_cr_to_memory(addr_t* cursor);
 
 // Functions from view.c used by printing code
 
@@ -2724,7 +2724,7 @@ static void print_vertical_space(uint8_t x)
     print_char_x_times(a, x);
 }
 
-void read_block_from_file(addr_t limit)
+read_block_status_t read_block_from_file(addr_t* cursor, addr_t limit)
 {
     uint8_t a;
 
@@ -2803,7 +2803,7 @@ c8cc8:
     {
         {
             uint8_t saved_a_ = a;
-            write_cr_to_memory();
+            write_cr_to_memory(&tmp01);
             a = saved_a_;
         }
         x++;
@@ -2813,7 +2813,7 @@ c8cdb:
     //     inc l0083
     l0083++;
     //     jsr write_byte_to_memory
-    write_byte_to_memory(a);
+    write_byte_to_memory(cursor, a);
     //     txa
 
     //     beq c8c95
@@ -2826,7 +2826,7 @@ c8cdb:
     //     lda ((uint8_t*)&tmp01)[0]
     //     cmp input_buffer_offset+1
     // (16-bit comparison: tmp01 < limit)
-    if (tmp01 < limit)
+    if (*cursor < limit)
         goto c8c95;
     // c8cf1:
     //     clc
@@ -2841,7 +2841,7 @@ c8cf2:
         //     beq c8cfa
         if (a != 0)
         {
-            write_cr_to_memory();
+            write_cr_to_memory(cursor);
         }
         // c8cfa:
         //     plp
@@ -2849,7 +2849,12 @@ c8cf2:
     }
     //     lda l0082
     a = l0082;
-    flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
+    // (return: Z set if l0082 == 0, else the C flag selects EOF vs block-full)
+    if (a == 0)
+        return READ_BLOCK_EMPTY;
+    if (flags & FLAG_C)
+        return READ_BLOCK_DONE;
+    return READ_BLOCK_MORE;
     //     rts
 }
 
@@ -3479,10 +3484,9 @@ static void read_next_output_line(addr_t limit)
     //     beq c9260
     if (a == 0)
     {
-        read_block_from_file(limit);
+        read_block_from_file(&tmp01, limit);
         return;
-    }
-    //     ldy #0
+    } //     ldy #0
     uint8_t y = 0;
     // loop_c9247:
     do
@@ -3918,14 +3922,14 @@ static void reset_print_registers(void)
 
 // main is now the function above (inlined from main_)
 
-static void write_byte_to_memory(uint8_t a)
+static void write_byte_to_memory(addr_t* cursor, uint8_t a)
 {
     // write_byte_to_memory:
     //     ldy #0
     //     sta (((uint8_t*)&tmp01)[0]),y
-    ram[tmp01] = a;
+    ram[*cursor] = a;
     //     inc ((uint8_t*)&tmp01)[0]
-    tmp01++;
+    (*cursor)++;
     //     bne c8d0a
     //     inc ((uint8_t*)&tmp01)[1]
     // c8d0a:
@@ -3943,11 +3947,11 @@ static void write_byte_to_memory(uint8_t a)
     //     rts
 }
 
-static void write_cr_to_memory(void)
+static void write_cr_to_memory(addr_t* cursor)
 {
     // write_cr_to_memory:
     //     lda #0x0d
-    write_byte_to_memory(0x0d);
+    write_byte_to_memory(cursor, 0x0d);
 }
 
 // Printer driver setup (called from cli.c)

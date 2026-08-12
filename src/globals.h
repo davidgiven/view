@@ -293,7 +293,15 @@ extern void make_space_for_insertion(addr_t tmp45, addr_t tmp67);
 extern void adjust_pointers(addr_t tmp45, addr_t tmp67);
 extern bool parse_decimal_number(int* value, uint8_t* y);
 extern bool parse_optional_filename_from_command(struct scan_state* scan);
-extern void read_block_from_file(addr_t limit);
+
+typedef enum
+{
+    READ_BLOCK_EMPTY, /* Z set: nothing was read (l0082 == 0) */
+    READ_BLOCK_DONE,  /* C set: reached end of file, all data read */
+    READ_BLOCK_MORE   /* neither C nor Z: block filled to limit, more data */
+} read_block_status_t;
+
+extern read_block_status_t read_block_from_file(addr_t* cursor, addr_t limit);
 
 extern bool scan_input_buffer(struct scan_state* state);
 extern uint8_t check_for_embedded_ruler(addr_t tmp01, uint8_t y);
