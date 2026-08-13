@@ -327,7 +327,8 @@ extern uint8_t l0049;
 extern addr_t ptr2;
 
 extern void scan_document_for_next_line(void);
-extern void process_current_document_character(addr_t tmp01);
+extern uint8_t process_current_document_character(
+    addr_t tmp01, uint8_t* x, uint8_t* y, bool* is_tab);
 extern void check_not_continuous_editing(void);
 extern uint8_t adjust_area_pointers(addr_t tmp67);
 extern void wipe_buffer(uint8_t a, addr_t ptr1);

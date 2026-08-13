@@ -411,7 +411,8 @@ c86ea:
     //     ldy #0
     y = 0;
     //     jsr process_current_document_character
-    process_current_document_character(tmp01);
+    bool is_tab = false;
+    a = process_current_document_character(tmp01, &x, &y, &is_tab);
     //     and #0x7f
     a &= 0x7f;
     //     ldx #0

@@ -52,7 +52,7 @@ static void copy_header_footer_text(addr_t tmp23);
 static bool get_page_parity(void);
 static void output_left_margin(void);
 static uint8_t add_justification_spaces(uint8_t x);
-static void convert_char_for_printing(void);
+static void convert_char_for_printing(bool* is_tab);
 static void reset_print_registers(void);
 static void write_byte_to_memory(addr_t* cursor, uint8_t a);
 static void write_cr_to_memory(addr_t* cursor);
@@ -1764,13 +1764,14 @@ static void print_output_buffer(void)
     if (x == 0)
         return;
     // loop_c9381:
+    bool is_tab = false;
     do
     {
         a = x;
         {
             uint8_t saved_x = a;
             a = output_buffer[y];
-            convert_char_for_printing();
+            convert_char_for_printing(&is_tab);
             print_char(a);
             y++;
             a = saved_x;
@@ -1872,6 +1873,7 @@ static void microspace_word_processor(void)
     l0043 = 0;
     //     stx l0083
     l0083 = 0;
+    bool is_tab = false;
     // c9048:
 c9048:
     //     txa
@@ -1882,7 +1884,7 @@ c9048:
         //     lda (((uint8_t*)&tmp01)[0]),y
         a = ram[tmp01 + y];
         //     jsr sub_c9431
-        convert_char_for_printing();
+        convert_char_for_printing(&is_tab);
         //     pla
         a = saved_a;
     }
@@ -2158,7 +2160,7 @@ c912b:
     //     iny
     y++;
     //     jsr sub_c9431
-    convert_char_for_printing();
+    convert_char_for_printing(&is_tab);
     //     pha
     {
         uint8_t saved_a3 = a;
@@ -2233,7 +2235,7 @@ c8fe6_inline:
     {
         a = ram[tmp01 + y];
         y++;
-        convert_char_for_printing();
+        convert_char_for_printing(&is_tab);
         print_char_x_times(a, x);
     } while (a != 0x0d);
     //     inc register_value_l
@@ -2453,6 +2455,7 @@ static void print_loop(void)
 
     // print_loop
     // c8f30:
+    bool is_tab = false;
     while (1)
     {
         //     lda l0031
@@ -2663,7 +2666,7 @@ static void print_loop(void)
         {
             a = ram[tmp01 + y];
             y++;
-            convert_char_for_printing();
+            convert_char_for_printing(&is_tab);
             print_char_x_times(a, x);
         } while (a != 0x0d);
         //     inc register_value_l
@@ -3797,13 +3800,13 @@ static uint8_t add_justification_spaces(uint8_t x)
     return a;
 }
 
-static void convert_char_for_printing(void)
+static void convert_char_for_printing(bool* is_tab)
 {
     // Pseudocode: Converts character for printing, updates x position counter
 
     // sub_c9431:
     //     jsr sub_ca5ae
-    process_document_character();
+    a = process_document_character(a, &x, is_tab);
     //     bit print_flags
     if (!(print_flags & 0x80))
         goto c943c;

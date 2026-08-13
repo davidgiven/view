@@ -27,8 +27,8 @@ control_code_t check_for_control_code(uint8_t a)
     // Pseudocode: Checks if character is a control code (0x1c or 0x1d)
     // Returns HIGHLIGHT1_CODE for 0x1c, HIGHLIGHT2_CODE for 0x1d, or
     // NO_CONTROL_CODE otherwise.  Also sets the global Z/C flags exactly as
-    // the 6502 CMPs do — a later render step (process_document_character's
-    // SBC at ca5f1) reads the C flag produced here.
+    // the 6502 CMPs do — render_char consumes the C flag to choose the
+    // '-'/'*' replacement and its reverse-video style.
 
     // check_for_control_code:
     //     cmp #0x1c
@@ -300,8 +300,32 @@ c9488:
     cli_putchar(a);
 }
 
-void process_document_character(void)
+/**
+ * Process one document character, performing tab, ruler and highlight-code
+ * expansion.
+ *
+ * @param a the character to process (the byte from the current edit line).
+ * @param[out] x on return, holds 1 on the ordinary paths (ca5d1 / ca5f8), or
+ * the tab offset (index of the first `*` ruler stop beyond l0039) on the tab
+ * path.
+ * @param[in,out] is_tab on entry, the previous character in the same walk's
+ * tab-expansion status (the 6502's carry flag left by draw_char's SEC/CLC);
+ * the indent path (ca5d9) uses it as the borrow-in for the ruler-stop SBC at
+ * ca5f1.  On return, true if a tab expansion was performed (the C flag of the
+ * 6502 sub_ca5ae), false otherwise.
+ *
+ * Reads the globals current_ruler_ptr, ruler_left_stop, l0039, l003a,
+ * print_flags and highlight_code.
+ *
+ * @return the processed character, normally `0x20` (space): tabs and
+ * characters below `0x1a` map to space, and characters in `[0x1a, 0x20)`
+ * map to a highlight code when `print_flags & 0x80`.
+ */
+uint8_t process_document_character(uint8_t a, uint8_t* x, bool* is_tab)
 {
+    bool carry_in;
+    bool no_borrow;
+
     // process_document_character
     // sub_ca5ae:
     //     cmp #9
@@ -321,26 +345,29 @@ void process_document_character(void)
     if (a < 0x1a)
         goto ca5d1;
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20); // C live
     //     bcs ca5d1
-    // (The 6502 saves/restores y via l0084 around this block; the C reads
-    //  print_flags directly, so the register is never clobbered.)
-    if (!(flags & FLAG_C))
+    // (The 6502 saves/restores y via l0084 around this block; print_flags is
+    //  read directly, so the register is never clobbered.)
+    if (a < 0x20)
     {
         if ((print_flags & 0x80))
         {
-            a = sbc(&flags, a, 0x1b); // C, V live
-            x = a;
-            a = highlight_code[x];
+            //     sbc #0x1b
+            // (carry is clear from the cmp #0x20, so this is a -= 0x1b + 1)
+            a = (uint8_t)(a - 0x1b - 1);
+            //     tax
+            //     lda highlight1_code,x
+            *x = a;
+            a = highlight_code[*x];
         }
     }
 ca5d1:
     //     ldx #1
-    x = 1;
+    *x = 1;
     //     clc
-    flags &= ~FLAG_C;
+    *is_tab = false;
     //     rts
-    return;
+    return a;
 
 ca5d5:
     //     lda #0x20 ; ' '
@@ -357,6 +384,10 @@ ca5d9:
         goto ca5d5;
     //     sty l0084
     //     bne ca5f1
+    // (The SBC at ca5f1 reads the carry-in left by the previous draw_char's
+    //  SEC/CLC — i.e. whether the previous character in this walk was a tab
+    //  expansion.  On entry is_tab holds that value.)
+    carry_in = *is_tab;
     goto ca5f1;
 
 ca5e1:
@@ -378,37 +409,43 @@ ca5e1:
             //     lda (current_ruler_ptr),y
             a = ram[current_ruler_ptr + tab_pos];
             //     cmp #0x2a ; '*'
-            cmp(&flags, a, 0x2a); // Z, C live
             //     bne loop_ca5e5
-            if (!(flags & FLAG_Z))
+            if (a != 0x2a)
                 continue;
             break;
         }
         //     tya
         a = tab_pos;
     }
+    // (The cmp #0x2a that matched sets carry, so the SBC at ca5f1 borrows 0.)
+    carry_in = true;
 ca5f1:
     //     sbc l0039
-    a = sbc(&flags, a, l0039); // C, V live
+    // (carry-in: prev_is_tab on the indent path, 1 on the tab path)
+    {
+        uint16_t tmp_ = (uint16_t)a - l0039 - (carry_in ? 0 : 1);
+        no_borrow = (tmp_ <= 0xff);
+        a = (uint8_t)tmp_;
+    }
     //     tax
-    x = a;
+    *x = a;
     //     beq ca5f8
-    if (x == 0)
+    if (*x == 0)
         goto ca5f8;
     //     bcs ca5fa
-    if (flags & FLAG_C)
+    if (no_borrow)
         goto ca5fa;
 ca5f8:
     //     ldx #1
-    x = 1;
+    *x = 1;
 ca5fa:
     //     lda #0x20 ; ' '
     a = 0x20;
     //     ldy l0084
     //     sec
-    flags |= FLAG_C;
+    *is_tab = true;
     //     rts
-    return;
+    return a;
 }
 
 uint8_t read_char(void)

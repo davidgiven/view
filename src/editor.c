@@ -5,6 +5,7 @@
 #include "io.h"
 
 #include <ctype.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "globals.h"
@@ -23,6 +24,7 @@ struct render_state
     uint8_t buf_off;    // l0080: input buffer offset
     uint8_t char_width; // l0039: width accumulator
     uint8_t ch;         // a: current character
+    bool prev_is_tab;   // whether the previous character was a tab expansion
 };
 
 // Editor-only functions
@@ -48,7 +50,8 @@ static void home_cursor(void);
 void justify_edit_buffer(void);
 bool make_space_for_insertion(addr_t tmp45, addr_t tmp67);
 static void memory_full(void);
-void process_current_document_character(addr_t tmp01);
+uint8_t process_current_document_character(
+    addr_t tmp01, uint8_t* x, uint8_t* y, bool* is_tab);
 static void recalculate_cursor_xpos(void);
 void redraw_editor(void);
 static void render_char(struct render_state* rs);
@@ -2788,8 +2791,8 @@ c9fab:
     y = 0;
 
     //     jsr process_current_document_character
-
-    process_current_document_character(tmp01);
+    bool is_tab = false;
+    a = process_current_document_character(tmp01, &x, &y, &is_tab);
 
     //     cmp #0x20 ; ' '
 
@@ -2801,7 +2804,7 @@ c9fab:
 
     goto entry;
 
-    // loop_c9ff8:
+// loop_c9ff8:
 loop_c9ff8:
     for (;;)
     {
@@ -2810,14 +2813,14 @@ loop_c9ff8:
         if (y >= line_len)
             goto ca00f;
         //     jsr process_current_document_character
-        process_current_document_character(tmp01);
+        a = process_current_document_character(tmp01, &x, &y, &is_tab);
         //     cmp #0x20 ; ' '
         if (a != 0x20)
             continue;
         //     bne loop_c9ff8
         break;
     }
-    // loop_ca003:
+    //     loop_ca003:
     for (;;)
     {
         //     cpy input_buffer_ptr+1
@@ -2825,7 +2828,7 @@ loop_c9ff8:
         if (y >= line_len)
             goto ca00f;
         //     jsr process_current_document_character
-        process_current_document_character(tmp01);
+        a = process_current_document_character(tmp01, &x, &y, &is_tab);
         //     cmp #0x20 ; ' '
         if (a == 0x20)
             continue;
@@ -3638,7 +3641,10 @@ c9c1d:
     if (a != 9)
         goto c9c31;
     //     jsr sub_ca5ae
-    process_document_character();
+    {
+        bool is_tab = false;
+        a = process_document_character(a, &x, &is_tab);
+    }
     //     txa
     a = x;
     //     clc
@@ -4313,6 +4319,7 @@ void draw_previous_word(void)
     tmp01 = RAM_EDIT_BUFFER;
     //     ldy xpos
     y = xpos;
+    bool is_tab = false;
     //     beq caf55
     if (y == 0)
         goto caf55;
@@ -4326,7 +4333,7 @@ void draw_previous_word(void)
         if (y == 0)
             goto caf55;
         //     jsr process_current_document_character
-        process_current_document_character(tmp01);
+        a = process_current_document_character(tmp01, &x, &y, &is_tab);
         //     dey
         y--;
         //     cmp #0x20 ; ' '
@@ -4341,7 +4348,7 @@ void draw_previous_word(void)
         //     dey
         y--;
         //     jsr process_current_document_character
-        process_current_document_character(tmp01);
+        a = process_current_document_character(tmp01, &x, &y, &is_tab);
         //     cmp #0x20 ; ' '
         if (a == 0x20)
             goto caf55;
@@ -4358,7 +4365,7 @@ caf55:
     //     sty xpos
     xpos = y;
     //     jsr process_current_document_character
-    process_current_document_character(tmp01);
+    a = process_current_document_character(tmp01, &x, &y, &is_tab);
     //     dey
     y--;
     set_flags(&flags, y); // Z live
@@ -6084,14 +6091,16 @@ static void memory_full(void)
 // la995: "Memory full - Press ESCAPE"
 static const uint8_t la995_data[] = "Memory full - Press ESCAPE";
 
-void process_current_document_character(addr_t tmp01)
+uint8_t process_current_document_character(
+    addr_t tmp01, uint8_t* x, uint8_t* y, bool* is_tab)
 {
     // draw_char:
     //     lda (((uint8_t*)&tmp01)[0]),y
-    a = ram[tmp01 + y];
+    uint8_t a = ram[tmp01 + *y];
     //     iny
-    y++;
-    process_document_character();
+    (*y)++;
+    a = process_document_character(a, x, is_tab);
+    return a;
 }
 
 static void recalculate_cursor_xpos(void)
@@ -6109,6 +6118,9 @@ static void recalculate_cursor_xpos(void)
     tmp01 = RAM_EDIT_BUFFER;
     //     lda l0079
     a = l0079;
+    // (The SBC at ca5f1 in process_document_character uses the previous
+    //  character's tab status as its borrow-in; propagate it across the walk.)
+    bool is_tab = false;
     if (a != 0)
         goto ca624;
     //     bne ca624
@@ -6124,7 +6136,7 @@ static void recalculate_cursor_xpos(void)
         //     sta l0039
         l0039 = a;
         //     jsr process_current_document_character
-        process_current_document_character(tmp01);
+        a = process_current_document_character(tmp01, &x, &y, &is_tab);
         //     txa
         a = x;
         //     clc
@@ -6149,7 +6161,7 @@ ca624:
     do
     {
         l0039 = a;
-        process_current_document_character(tmp01);
+        a = process_current_document_character(tmp01, &x, &y, &is_tab);
         a = x;
         a += l0039;
     } while (a < l0072);
@@ -7003,7 +7015,10 @@ static void process_char_for_output(uint8_t y)
         goto c994a;
     //     bne c994a
     //     jsr sub_ca5ae
-    process_document_character();
+    {
+        bool is_tab = false;
+        a = process_document_character(a, &x, &is_tab);
+    }
     //     txa
     a = x;
     //     clc
@@ -7230,7 +7245,10 @@ c99c9:
         goto c99e0;
     //     bne c99e0
     //     jsr sub_ca5ae
-    process_document_character();
+    {
+        bool is_tab = false;
+        a = process_document_character(a, &x, &is_tab);
+    }
     //     dex
     x--;
     //     txa
@@ -7795,7 +7813,7 @@ static void advance_to_next_char(struct render_state* rs)
     tmp01 = rs->line_ptr;
     y = rs->pos;
     l0039 = rs->char_width;
-    process_current_document_character(tmp01);
+    a = process_current_document_character(tmp01, &x, &y, &rs->prev_is_tab);
     rs->ch = a;
     rs->pos = y;
     rs->width = x;
