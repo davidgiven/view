@@ -66,10 +66,10 @@ void show_memory_full_error(void);
 uint8_t adjust_area_pointers(addr_t tmp67);
 static void append_to_output_buffer(uint8_t a);
 uint8_t upper_case_unless_folding(void);
-static void process_char_for_output(uint8_t y);
+static bool process_char_for_output(uint8_t y, bool carry_in);
 void format_paragraph(void);
 static bool find_next_word_boundary(uint8_t y);
-static void insert_character_into_edit_buffer(uint8_t a);
+static bool insert_character_into_edit_buffer(uint8_t a);
 static void set_xpos_to_line_length(void);
 static uint8_t compute_display_start_line(void);
 static void advance_to_next_char_and_render(struct render_state* rs);
@@ -83,14 +83,14 @@ static void insert_at_left_margin(void);
 static bool insert_byte_at_xpos(uint8_t y);
 static void unpack_line_into_buffer(addr_t ptr1);
 void wipe_buffer(uint8_t a, addr_t ptr1);
-static void write_line_back_to_document(void);
+static bool write_line_back_to_document(void);
 void write_line_back_to_document_safely(void);
 
 void enter_editor_mode(void);
 void clear_format_mode_bit7(void);
 void set_format_mode_bit7(void);
 void draw_previous_word(void);
-void adjust_margins_at_left_margin(void);
+bool adjust_margins_at_left_margin(void);
 bool insert_edit_buffer_bytes_at_xpos(uint8_t x);
 void set_marker_to_here(uint8_t x);
 void split_line_at_wrap(addr_t tmp89);
@@ -1223,12 +1223,10 @@ static void f15_up_key(void)
 
     //     lda current_line_ptr
 
-    move_tmp01_to_previous_line(current_line_ptr);
+    if (!move_tmp01_to_previous_line(current_line_ptr))
+        return;
 
     //     bcc return_53
-
-    if (!(flags & FLAG_C))
-        return;
 
     current_line_ptr = tmp01;
 
@@ -3562,10 +3560,9 @@ static uint8_t enter_printable_character(void)
     //     inc l006d
     edit_buffer_dirty_flag++;
     //     jsr sub_caef4
-    adjust_margins_at_left_margin();
-    //     bcs c9bca
-    if (flags & FLAG_C)
+    if (adjust_margins_at_left_margin())
         return a;
+    //     bcs c9bca
     //     lda current_edit_line_ptr
     tmp67 = RAM_EDIT_BUFFER;
     //     ldy xpos
@@ -4044,10 +4041,9 @@ static void move_to_previous_line(void)
     //     jsr write_line_back_to_document_safely
     write_line_back_to_document_safely();
     //     lda current_line_ptr
-    move_tmp01_to_previous_line(current_line_ptr);
-    //     bcc return_56
-    if (!(flags & FLAG_C))
+    if (!move_tmp01_to_previous_line(current_line_ptr))
         return;
+    //     bcc return_56
     current_line_ptr = tmp01;
     //     jsr unpack_line
     unpack_line(ptr1);
@@ -4081,13 +4077,7 @@ static void move_cursor_up(uint8_t x)
     {
         //     sta ((uint8_t*)&tmp23)[0]
         tmp23 = (addr_t)(y) << 8 | a;
-        move_tmp01_to_previous_line((addr_t)(y) << 8 | a);
-        //     lda ((uint8_t*)&tmp01)[0]
-        a = ((uint8_t*)&tmp01)[0];
-        //     ldy ((uint8_t*)&tmp01)[1]
-        y = ((uint8_t*)&tmp01)[1];
-        //     bcc ca093
-        if (!(flags & FLAG_C))
+        if (!move_tmp01_to_previous_line((addr_t)(y) << 8 | a))
         {
             // ca093:
             //     lda ((uint8_t*)&tmp23)[0]
@@ -4096,6 +4086,10 @@ static void move_cursor_up(uint8_t x)
             y = ((uint8_t*)&tmp23)[1];
             break;
         }
+        //     lda ((uint8_t*)&tmp01)[0]
+        a = ((uint8_t*)&tmp01)[0];
+        //     ldy ((uint8_t*)&tmp01)[1]
+        y = ((uint8_t*)&tmp01)[1];
         //     ldx input_buffer_offset+1
         x = l0080;
         //     bmi ca07c
@@ -4236,16 +4230,14 @@ static void tab_highlight_common(uint8_t a)
     // c9e3a:
     //     pha
     //     jsr sub_caef4
-    adjust_margins_at_left_margin();
+    if (adjust_margins_at_left_margin())
+        return;
     //     pla
     //     bcs return_55
-    if (flags & FLAG_C)
-        return;
     //     jsr sub_c9e22
-    insert_character_into_edit_buffer(a);
-    //     bcs return_55
-    if (flags & FLAG_C)
+    if (!insert_character_into_edit_buffer(a))
         return;
+    //     bcs return_55
     //     jmp f13_right_key
     f13_right_key();
     return;
@@ -4372,7 +4364,7 @@ caf55:
     //     rts
 }
 
-void adjust_margins_at_left_margin(void)
+bool adjust_margins_at_left_margin(void)
 {
     // sub_caef4
     // sub_caef4: Handles margin/folding adjustments when typing at left margin
@@ -4439,17 +4431,15 @@ caf28:
 caf2a:
     //     jsr sub_caedd
     if (!insert_byte_at_xpos(y))
-    { /* return_79: */
-        return;
-    }
+        return true; // bcs return_79 — insertion failed
     //     inc l0074
     l0074++;
     // caf31:
 caf31:
     //     clc
-    flags &= ~FLAG_C;
     // return_79:
     //     rts
+    return false;
 }
 
 bool insert_edit_buffer_bytes_at_xpos(uint8_t x)
@@ -4570,7 +4560,6 @@ cae52:
             &ram[RAM_EDIT_BUFFER + xpos],
             (size_t)copy_len);
     //     clc
-    flags &= ~FLAG_C;
     //     rts
     return true;
 }
@@ -4887,9 +4876,7 @@ static void advance_to_next_line(void)
     //     inc l006e
     edit_buffer_unpacked_flag++;
     //     jsr write_line_back_to_document
-    write_line_back_to_document();
-    //     bcc return_50
-    if (!(flags & FLAG_C))
+    if (!write_line_back_to_document())
         return false;
     //     pla (pop sub_c9aa9's return address)
     //     pla (pop sub_c9977's return address — stack unwind)
@@ -5676,11 +5663,10 @@ c9847:
     if (y == l0043)
         goto c9871;
     //     clc
-    flags &= ~FLAG_C;
     //     jsr sub_c9936
-    process_char_for_output(y);
+    bool is_zero = process_char_for_output(y, false);
     //     beq c985c
-    if (flags & FLAG_Z)
+    if (is_zero)
         goto c985c;
     //     cmp #0x20 ; ' '
     if (a != 0x20)
@@ -5698,11 +5684,10 @@ c985c:
     // c9861:
 c9861:
     //     sec
-    flags |= FLAG_C;
     //     jsr sub_c9936
-    process_char_for_output(y);
+    is_zero = process_char_for_output(y, true);
     //     beq c985c
-    if (flags & FLAG_Z)
+    if (is_zero)
         goto c985c;
     //     cmp #0x20 ; ' '
     if (a != 0x20)
@@ -6997,7 +6982,8 @@ uint8_t upper_case_unless_folding(void)
     return a;
 }
 
-static void process_char_for_output(uint8_t y)
+// Returns true if the resulting width accumulator is zero (the 6502's Z flag).
+static bool process_char_for_output(uint8_t y, bool carry_in)
 {
     // sub_c9936
     // Pseudocode: Processes a character from the edit line for output, handling
@@ -7005,7 +6991,7 @@ static void process_char_for_output(uint8_t y)
 
     // sub_c9936:
     //     ror l0083
-    l0083 = ror(&flags, l0083); // none live
+    l0083 = (l0083 >> 1) | (carry_in ? 0x80 : 0);
     //     lda (current_edit_line_ptr),y
     a = ram[RAM_EDIT_BUFFER + y];
     //     sta output_buffer,y
@@ -7063,9 +7049,8 @@ c995c:
     a = 0;
     //     sta l0046
     l0046 = a;
-    set_flags(&flags, 0); // Z live
     //     rts
-    return;
+    return true;
 
     // c9967:
 c9967:
@@ -7080,13 +7065,12 @@ c9969:
     //     cmp #0x20 ; ' '
     //     bcc return_49
     if (a < 0x20)
-        return;
+        return false;
     //     inc l0039
     l0039++;
-    set_flags(&flags, l0039); // Z live
     // return_49:
     //     rts
-    return;
+    return l0039 == 0;
 }
 
 void format_paragraph(void)
@@ -7691,7 +7675,8 @@ c9b31:
     return false;
 }
 
-static void insert_character_into_edit_buffer(uint8_t a)
+// Returns false if the insert failed (out of memory).
+static bool insert_character_into_edit_buffer(uint8_t a)
 {
     bool ok;
 
@@ -7707,14 +7692,14 @@ static void insert_character_into_edit_buffer(uint8_t a)
     }
     //     bcs return_55
     if (!ok)
-        return;
+        return false;
     //     sta (current_edit_line_ptr),y
     ram[RAM_EDIT_BUFFER + y] = a;
     //     inc l0074
     l0074++;
     // return_55:
     //     rts
-    return;
+    return true;
 }
 
 // MULTIPLE ENTRY POINTS: tab_key, sf4_highlight1_key, sf5_highlight2_key
@@ -7773,15 +7758,14 @@ static uint8_t compute_display_start_line(void)
             goto ca479;
         //     sta ((uint8_t*)&tmp23)[0]
         tmp23 = (addr_t)(y) << 8 | a;
-        move_tmp01_to_previous_line((addr_t)(y) << 8 | a);
+        if (!move_tmp01_to_previous_line((addr_t)(y) << 8 | a))
+            break;
         //     lda ((uint8_t*)&tmp01)[0]
         a = ((uint8_t*)&tmp01)[0];
         //     ldy ((uint8_t*)&tmp01)[1]
         y = ((uint8_t*)&tmp01)[1];
         //     bcs loop_ca465
-        if (flags & FLAG_C)
-            continue;
-        break;
+        continue;
     }
     //     lda ((uint8_t*)&tmp23)[0]
     a = ((uint8_t*)&tmp23)[0];
@@ -8182,7 +8166,7 @@ void wipe_buffer(uint8_t a, addr_t ptr1)
     //     rts
 }
 
-static void write_line_back_to_document(void)
+static bool write_line_back_to_document(void)
 {
     uint8_t y;
     // write_line_back_to_document
@@ -8240,7 +8224,7 @@ ca8df:
     ((uint8_t*)&tmp67)[0] = a;
     //     jsr make_space_for_insertion
     if (!make_space_for_insertion(tmp45, tmp67))
-        return; // bcs return_66
+        return true; // bcs return_66 — out of memory, write failed
 
     // ca8ed:
 ca8ed:
@@ -8349,10 +8333,9 @@ ca919:
     // ca93a:
 ca93a:
     //     clc
-    flags &= ~FLAG_C;
     // return_66:
     //     rts
-    return;
+    return false;
 }
 
 // MULTIPLE ENTRY POINTS: write_line_back_to_document_safely (via memory_full)
@@ -8360,11 +8343,10 @@ ca93a:
 void write_line_back_to_document_safely(void)
 {
     // write_line_back_to_document_safely: Write back edit buffer. If out of
-    // memory (C=1), fall through to memory_full.
+    // memory, fall through to memory_full.
     //     jsr write_line_back_to_document
-    write_line_back_to_document();
     //     bcc return_66
-    if (!(flags & FLAG_C))
+    if (!write_line_back_to_document())
         return;
     //     falls through to memory_full
     memory_full();

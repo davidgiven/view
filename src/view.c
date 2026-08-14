@@ -477,7 +477,9 @@ int main(int argc, char* argv[])
 }
 
 // run_editor moved to editor.c
-static uint8_t read_next_command_byte(uint8_t y)
+// sub_c8310.  *end is set if the byte is the delimiter (l007e) or CR,
+// terminating the current token (the 6502's Z flag).
+static uint8_t read_next_command_byte(uint8_t y, bool* end)
 {
     // sub_c8310
     // sub_c8310:
@@ -489,13 +491,8 @@ static uint8_t read_next_command_byte(uint8_t y)
     l0084 = a;
     //     cmp l007e
     //     beq return_2
-    if (a == l007e)
-    {
-        set_flags(&flags, 0); // Z set (delimiter)
-        return y;
-    }
     //     cmp #0x0d
-    set_flags(&flags, a != 0x0d); // Z = (a == 0x0d), live out
+    *end = (a == l007e) || (a == 0x0d);
     // return_2:
     //     rts
     return y;
@@ -587,18 +584,19 @@ static uint8_t expand_escaped_string(uint8_t x, uint8_t y)
 c83a3:
     // c83a3:
     //     jsr sub_c8310
-    y = read_next_command_byte(y);
+    bool end;
+    y = read_next_command_byte(y, &end);
     //     beq c83da
-    if (flags & FLAG_Z)
+    if (end)
         goto c83da;
     //     cmp #0x5e ; '^'
     if (a != 0x5e)
         goto c83ca;
     //     bne c83ca
     //     jsr sub_c8310
-    y = read_next_command_byte(y);
+    y = read_next_command_byte(y, &end);
     //     beq c83da
-    if (flags & FLAG_Z)
+    if (end)
         goto c83da;
     //     jsr to_uppercase
     a = toupper(a);

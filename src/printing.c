@@ -2729,6 +2729,10 @@ read_block_status_t read_block_from_file(addr_t* cursor, addr_t limit)
 
     uint8_t x;
 
+    // Set when the read ended on a NUL/EOF byte (as opposed to the destination
+    // block filling up); distinguishes READ_BLOCK_DONE from READ_BLOCK_MORE.
+    bool eof = false;
+
     // read_block_from_file
     // read_block_from_file:
     //     lda #0
@@ -2742,8 +2746,11 @@ c8c95:
     //     jsr get_byte_from_file
     a = get_byte_from_file();
     //     beq c8cf2
-    if (flags & FLAG_Z)
+    if (a == 0)
+    {
+        eof = true;
         goto c8cf2;
+    }
     //     ldy #0
     //     cmp #0x7f
     if (a < 0x7f)
@@ -2827,29 +2834,23 @@ c8cdb:
         goto c8c95;
     // c8cf1:
     //     clc
-    flags &= ~FLAG_C;
+    eof = false;
 c8cf2:
     // c8cf2:
-    //     php
+    //     lda l0084
+    a = l0084;
+    //     beq c8cfa
+    if (a != 0)
     {
-        uint8_t saved_flags_ = flags;
-        //     lda l0084
-        a = l0084;
-        //     beq c8cfa
-        if (a != 0)
-        {
-            write_cr_to_memory(cursor);
-        }
-        // c8cfa:
-        //     plp
-        flags = saved_flags_;
+        write_cr_to_memory(cursor);
     }
+    // c8cfa:
     //     lda l0082
     a = l0082;
-    // (return: Z set if l0082 == 0, else the C flag selects EOF vs block-full)
+    // (return: EMPTY if l0082 == 0, else eof selects DONE vs block-full MORE)
     if (a == 0)
         return READ_BLOCK_EMPTY;
-    if (flags & FLAG_C)
+    if (eof)
         return READ_BLOCK_DONE;
     return READ_BLOCK_MORE;
     //     rts

@@ -26,9 +26,7 @@ control_code_t check_for_control_code(uint8_t a)
 {
     // Pseudocode: Checks if character is a control code (0x1c or 0x1d)
     // Returns HIGHLIGHT1_CODE for 0x1c, HIGHLIGHT2_CODE for 0x1d, or
-    // NO_CONTROL_CODE otherwise.  Also sets the global Z/C flags exactly as
-    // the 6502 CMPs do — render_char consumes the C flag to choose the
-    // '-'/'*' replacement and its reverse-video style.
+    // NO_CONTROL_CODE otherwise.
 
     // check_for_control_code:
     //     cmp #0x1c
@@ -36,12 +34,6 @@ control_code_t check_for_control_code(uint8_t a)
     //     cmp #0x1d
     //     clc
     //     rts
-    cmp(&flags, a, 0x1c); // Z, C live
-    if (!(flags & FLAG_Z))
-    {
-        cmp(&flags, a, 0x1d); // Z live
-        flags &= ~FLAG_C;
-    }
     if (a == 0x1c)
         return HIGHLIGHT1_CODE;
     if (a == 0x1d)
@@ -641,19 +633,8 @@ uint8_t get_byte_from_file(void)
     // get_byte_from_file
     int c = fgetc(file_ptr);
     if (c == EOF || c == 0)
-    {
-        a = 0;
-        flags |= FLAG_C;
-        flags = (flags & ~(FLAG_Z | FLAG_N)) | FLAG_Z;
-    }
-    else
-    {
-        a = (uint8_t)c;
-        flags &= ~FLAG_C;
-        flags =
-            (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
-    }
-    return a;
+        return 0;
+    return (uint8_t)c;
 }
 
 unsigned int* get_register_address(uint8_t a)
@@ -851,11 +832,10 @@ void move_cursor_to_address(uint16_t addr)
         for (;;)
         {
             //     jsr sub_cab37
-            move_tmp01_to_previous_line(cur);
+            if (!move_tmp01_to_previous_line(cur))
+                goto cac20;
             cur = tmp01;
             //     bcc cac20
-            if (!(flags & FLAG_C))
-                goto cac20;
             //     cpy ((uint8_t*)&tmp89)[1]
             //     bcc cac20
             //     bne cabdf
@@ -1005,7 +985,9 @@ void move_tmp01_to_next_line(uint16_t start)
     return;
 }
 
-void move_tmp01_to_previous_line(uint16_t val)
+// Returns false if tmp01 is already at the start of the document (no previous
+// line); true if it was moved back to the start of the previous line.
+bool move_tmp01_to_previous_line(uint16_t val)
 {
     uint8_t a;
     // move_tmp01_to_previous_line
@@ -1022,10 +1004,7 @@ void move_tmp01_to_previous_line(uint16_t val)
     //     cmp page
     //     bcc return_71
     if (tmp01 < page)
-    {
-        flags &= ~FLAG_C;
-        return;
-    }
+        return false;
     // loop_cab4d:
     do
     {
@@ -1041,10 +1020,9 @@ void move_tmp01_to_previous_line(uint16_t val)
         pop_from_ruler_index();
     }
     //     sec
-    flags |= FLAG_C;
     // return_71:
     //     rts
-    return;
+    return true;
 }
 
 void open_input_file(void)

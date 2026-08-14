@@ -42,7 +42,7 @@ extern void move_cursor_to_top_of_document(void);
 
 extern void move_tmp01_to_next_line(uint16_t start);
 
-extern void move_tmp01_to_previous_line(uint16_t val);
+extern bool move_tmp01_to_previous_line(uint16_t val);
 
 extern void open_input_file(void);
 
