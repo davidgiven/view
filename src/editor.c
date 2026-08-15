@@ -4827,7 +4827,7 @@ static void advance_to_next_line(void)
     //     lda l007e
 }
 
-[[nodiscard]] static bool sub_c9aa9(void)
+[[nodiscard]] static bool flush_formatted_line(void)
 {
     // Pseudocode: Completes line formatting: adjusts pointers updates ruler
     // stack Returns: true if write failed (V=1, caller should return
@@ -7407,7 +7407,7 @@ c9a58:
     // through the edit buffer replacing spaces (0x20) PROVISIONAL: with 0x10
     // (justification markers). This marks word boundaries for
     // justify_edit_buffer. PROVISIONAL: On finding a space, call sub_caed6,
-    // justify_edit_buffer, then sub_c9aa9 to write PROVISIONAL: the line.
+    // justify_edit_buffer, then flush_formatted_line to write the line.
     // Advance to the next document line; if non-empty, loop back to c998a.
 c9a60:
     //     inc l0047
@@ -7440,7 +7440,7 @@ c9a60:
     //     jsr justify_edit_buffer
     justify_edit_buffer();
     //     jsr sub_c9aa9
-    if (sub_c9aa9())
+    if (flush_formatted_line())
         return;
     //     jsr c9a8d
     advance_to_next_line();
@@ -7452,14 +7452,14 @@ c9a60:
 
     // c9a87:
     // PROVISIONAL: Word-wrap path — line needs wrapping at a word boundary.
-    // Flush the current PROVISIONAL: buffer via sub_caed6 + sub_c9aa9, advance
-    // to the next document line, PROVISIONAL: then fall through to c9a8d
-    // (returns to sub_c9977's caller).
+    // Flush the current PROVISIONAL: buffer via sub_caed6 +
+    // flush_formatted_line, advance to the next document line, PROVISIONAL:
+    // then fall through to c9a8d (returns to sub_c9977's caller).
 c9a87:
     //     jsr sub_caed6
     insert_at_left_margin();
     //     jsr sub_c9aa9
-    if (sub_c9aa9())
+    if (flush_formatted_line())
         return;
     //     (fall through to c9a8d in 6502 — no jsr)
     advance_to_next_line();

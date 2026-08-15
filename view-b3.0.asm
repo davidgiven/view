@@ -4894,7 +4894,7 @@ l94b2 = default_printer_driver_ptr+1
     ror input_buffer_ptr                                              ; 9a74: 66 7f       f.
     jsr insert_at_left_margin                                         ; 9a76: 20 d6 ae     ..
     jsr justify_edit_buffer                                           ; 9a79: 20 30 98     0.
-    jsr sub_c9aa9                                                     ; 9a7c: 20 a9 9a     ..
+    jsr flush_formatted_line                                          ; 9a7c: 20 a9 9a     ..
     jsr advance_to_next_line                                          ; 9a7f: 20 8d 9a     ..
     beq c9aa5                                                         ; 9a82: f0 21       .!
     jmp c998a                                                         ; 9a84: 4c 8a 99    L..
@@ -4902,7 +4902,7 @@ l94b2 = default_printer_driver_ptr+1
 ; &9a87 referenced 1 time by &9a1b
 .c9a87
     jsr insert_at_left_margin                                         ; 9a87: 20 d6 ae     ..
-    jsr sub_c9aa9                                                     ; 9a8a: 20 a9 9a     ..
+    jsr flush_formatted_line                                          ; 9a8a: 20 a9 9a     ..
 ; ***************************************************************************************
 ; &9a8d referenced 4 times by &9974, &9a16, &9a65, &9a7f
 .advance_to_next_line
@@ -4927,8 +4927,9 @@ l94b2 = default_printer_driver_ptr+1
     lda l007e                                                         ; 9aa6: a5 7e       .~
     rts                                                               ; 9aa8: 60          `
 
+; ***************************************************************************************
 ; &9aa9 referenced 2 times by &9a7c, &9a8a
-.sub_c9aa9
+.flush_formatted_line
     sec                                                               ; 9aa9: 38          8
     rol l007e                                                         ; 9aaa: 26 7e       &~
     ldy l0047                                                         ; 9aac: a4 47       .G
@@ -10274,6 +10275,7 @@ save pydis_start, pydis_end
 ;     first_macro_ptr:                        2
 ;     first_macro_ptr+0:                      2
 ;     first_macro_ptr+1:                      2
+;     flush_formatted_line:                   2
 ;     format_paragraph:                       2
 ;     get_next_fmt_cmd_byte:                  2
 ;     get_register_address:                   2
@@ -10340,7 +10342,6 @@ save pydis_start, pydis_end
 ;     set_marker_to_here:                     2
 ;     setup_CRTC_10_write:                    2
 ;     sub_c8849:                              2
-;     sub_c9aa9:                              2
 ;     sub_ca94a:                              2
 ;     system_init:                            2
 ;     test_for_cassette_filesystem:           2
