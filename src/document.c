@@ -849,10 +849,9 @@ void move_cursor_to_address(uint16_t addr)
     do
     {
         //     sta ((uint8_t*)&tmp01)[0]
-        move_tmp01_to_next_line(cur);
-        //     beq cac17
-        if (flags & FLAG_Z)
+        if (move_tmp01_to_next_line(cur))
             goto cac17;
+        //     beq cac17
         //     tya
         //     ldy ((uint8_t*)&tmp01)[1]
         //     clc
@@ -947,7 +946,10 @@ void move_cursor_to_top_of_document(void)
     load_current_ruler(0xfe);
 }
 
-void move_tmp01_to_next_line(uint16_t start)
+// Skips to the next CR or zero terminator.  Sets the global y to the offset of
+// the byte past the CR (or of the NUL), and returns true if that byte is a NUL
+// (end of document) — the 6502's Z flag.
+bool move_tmp01_to_next_line(uint16_t start)
 {
     tmp01 = start;
     // move_tmp01_to_next_line
@@ -968,16 +970,15 @@ void move_tmp01_to_next_line(uint16_t start)
     {
         a = ram[tmp01 + y];
         if (a == 0)
-            return;
+            return true;
         y++;
         if (a == 0x0d)
             break;
     }
     a = ram[tmp01 + y];
-    set_flags(&flags, a); // Z live
     // return_70:
     //     rts
-    return;
+    return a == 0;
 }
 
 // Returns false if tmp01 is already at the start of the document (no previous
@@ -1121,7 +1122,10 @@ void reset_area_to_entire_document(void)
     //     rts
 }
 
-void find_next_line(uint16_t tmp01)
+// Finds the next line, handling a command/ruler prefix and pushing onto the
+// ruler index.  Returns true if the next line is the end of the document (the
+// 6502's Z flag, as left by move_tmp01_to_next_line).
+bool find_next_line(uint16_t tmp01)
 {
     // Pseudocode: Finds next line in document, handling command prefix and
     // ruler stack
@@ -1133,17 +1137,15 @@ void find_next_line(uint16_t tmp01)
     // (inlined: Z = (ram[tmp01] == RULER_BYTE))
     if (ram[tmp01] != RULER_BYTE)
     {
-        move_tmp01_to_next_line(tmp01);
-        return;
+        return move_tmp01_to_next_line(tmp01);
     }
     //     jsr cab29
-    move_tmp01_to_next_line(tmp01);
+    bool end = move_tmp01_to_next_line(tmp01);
     //     bne push_onto_ruler_stack
-    if (!(flags & FLAG_Z))
+    if (!end)
     {
         push_onto_ruler_index(y, tmp01);
-        return;
     }
     //     rts
-    return;
+    return end;
 }

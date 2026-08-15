@@ -181,13 +181,12 @@ static void change_cmd(struct scan_state* scan)
         return;
     }
     //     jsr c8b7b
-    scan_document_for_next_line();
-    //     bne c82fa
-    if (!(flags & FLAG_Z))
+    if (!scan_document_for_next_line())
     {
         cmd_err_no_string();
         return;
     }
+    //     bne c82fa
     //     ldx #0
     //     stx ptr3
     //     stx ptr3+1
@@ -211,10 +210,9 @@ static void change_cmd(struct scan_state* scan)
         if (flags & FLAG_C)
             goto c830d;
         //     jsr c8b7b
-        scan_document_for_next_line();
-        //     beq loop_c82b3
-        if (flags & FLAG_Z)
+        if (scan_document_for_next_line())
             continue;
+        //     beq loop_c82b3
         break;
     }
     //     ldx ptr3
@@ -510,8 +508,7 @@ static void edit_cmd(struct scan_state* scan)
         x++;
     } while (a != 0x0d);
     initialise_document();
-    read_first_chunk_from_input_file();
-    if (flags & FLAG_Z)
+    if (read_first_chunk_from_input_file())
     {
         close_input_output_files();
         return_to_cli_prompt();
@@ -589,8 +586,7 @@ static void finish_cmd(void)
             close_input_output_files();
             return;
         }
-        read_first_chunk_from_input_file();
-        if (flags & FLAG_Z)
+        if (read_first_chunk_from_input_file())
         {
             return_to_cli_prompt();
             return;
@@ -869,8 +865,7 @@ static void more_cmd(struct scan_state* scan)
     //     bne c84e8
     if (a == 0)
     {
-        read_next_chunk_from_input_file(top);
-        if (flags & FLAG_Z)
+        if (read_next_chunk_from_input_file(top))
         {
             return_to_cli_prompt();
             return;
@@ -1052,13 +1047,12 @@ static void replace_cmd(struct scan_state* scan)
         return;
     }
     //     jsr c8b7b
-    scan_document_for_next_line();
-    //     bne c82fa
-    if (!(flags & FLAG_Z))
+    if (!scan_document_for_next_line())
     {
         cmd_err_no_string();
         return;
     }
+    //     bne c82fa
     //     jsr move_cursor_to_address
     move_cursor_to_address((uint16_t)(y) << 8 | a);
     //     jsr enter_editor_mode
@@ -1111,10 +1105,9 @@ c8349:
     // c8356:
 c8356:
     //     jsr c8b7b
-    scan_document_for_next_line();
-    //     bne return_2
-    if (!(flags & FLAG_Z))
+    if (!scan_document_for_next_line())
         return;
+    //     bne return_2
     //     jsr move_cursor_to_address
     move_cursor_to_address((uint16_t)(y) << 8 | a);
     //     jmp c832d
@@ -1227,13 +1220,12 @@ static void search_cmd(struct scan_state* scan)
     doc_ptr2 = area_start_ptr;
     doc_ptr3 = area_end_ptr;
     //     jsr c8b7b
-    scan_document_for_next_line();
-    //     bne c82fa
-    if (!(flags & FLAG_Z))
+    if (!scan_document_for_next_line())
     {
         cmd_err_no_string();
         return;
     }
+    //     bne c82fa
     //     jsr move_cursor_to_address
     move_cursor_to_address((uint16_t)(y) << 8 | a);
     //     jmp enter_editor_mode
@@ -1402,15 +1394,11 @@ void start_printing(void)
 // from "readline" to avoid colliding with GNU readline's readline(3), whose
 // symbol the executable would otherwise interpose over (causing infinite
 // recursion in cli_readstring).
-void read_command_line(void)
+// Returns true if the line read was empty (the 6502's carry flag).
+bool read_command_line(void)
 {
     input_buffer_offset = 0;
-    if (cli_readstring((char*)input_buffer, MAX_COMMAND_LENGTH))
-    {
-        flags |= FLAG_C;
-        return;
-    }
-    flags &= ~FLAG_C;
+    return cli_readstring((char*)input_buffer, MAX_COMMAND_LENGTH);
 }
 
 const uint8_t la83d[] = "VIEW\0B3.0 for CP/M-65";
@@ -1453,7 +1441,7 @@ static void print_x_words_of_help(uint8_t x)
     return;
 }
 
-static void parse_command(void);
+static bool parse_command(void);
 
 void input_line_not_escaped(void)
 {
@@ -1462,7 +1450,7 @@ void input_line_not_escaped(void)
     // jump table
 
     //     jsr parse_command
-    parse_command();
+    bool parsed = parse_command();
     //     sty input_buffer_offset+1
     l0080 = y;
     //     bcs c8263
@@ -1475,7 +1463,7 @@ void input_line_not_escaped(void)
     //     ldy #2
     //     jsr call_through_jumptable
     // (branch restructured: Mistake is printed when C is set or y >= 48)
-    if ((flags & FLAG_C) || y >= 48)
+    if (parsed || y >= 48)
         cli_putstring("Mistake\n");
     struct scan_state scan;
     execute_cli_command(l0080, &scan);
@@ -1498,7 +1486,11 @@ void cli_handler_impl(void)
     //     jsr print_inline_string ; .ascii "=>"
     cli_putstring("=>");
     //     jsr readline
-    read_command_line();
+    if (!read_command_line())
+    {
+        input_line_not_escaped();
+        return;
+    }
     //     lda #<input_buffer
     //     sta ((uint8_t*)&tmp01)[0]
     //     ldx #>input_buffer
@@ -1506,11 +1498,6 @@ void cli_handler_impl(void)
     // (((uint8_t*)&tmp01)[0]/((uint8_t*)&tmp01)[1] no longer used as a pointer;
     // parse_command reads input_buffer[] directly)
     //     bcc input_line_not_escaped
-    if (!(flags & FLAG_C))
-    {
-        input_line_not_escaped();
-        return;
-    }
     //     jmp run_editor
     run_editor();
 }
@@ -1668,7 +1655,7 @@ c81e7:
 }
 
 // CLI command parser
-static void parse_command(void)
+static bool parse_command(void)
 {
     // parse_command
     //     .ascii "VIEW"
@@ -1778,16 +1765,14 @@ ca87e:
     //     lda parser_table,x
     a = parser_table[x];
     //     clc
-    flags &= ~FLAG_C;
     //     rts
-    return;
+    return false;
 
     // ca890:
 ca890:
     //     sec
-    flags |= FLAG_C;
     //     rts
-    return;
+    return true;
 }
 
 // CLI utility functions

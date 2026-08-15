@@ -31,7 +31,7 @@ struct render_state
 void adjust_pointers(addr_t tmp45, addr_t tmp67);
 static void advance_to_next_line(void);
 void beep(void);
-void scan_document_for_next_line(void);
+bool scan_document_for_next_line(void);
 static uint8_t c9de3_insert_line(addr_t ptr);
 static void update_line_length(void);
 void clamp_ptr6_to_document(void);
@@ -89,7 +89,7 @@ void write_line_back_to_document_safely(void);
 void enter_editor_mode(void);
 void clear_format_mode_bit7(void);
 void set_format_mode_bit7(void);
-void draw_previous_word(void);
+bool draw_previous_word(void);
 bool adjust_margins_at_left_margin(void);
 bool insert_edit_buffer_bytes_at_xpos(uint8_t x);
 void set_marker_to_here(uint8_t x);
@@ -109,7 +109,7 @@ static uint8_t enter_printable_character(void);
 
 static int prompt_for_marker(void);
 
-static void reset_area_to_marks_1_2(void);
+static bool reset_area_to_marks_1_2(void);
 
 static uint8_t insert_line_at_cursor(addr_t ptr);
 
@@ -594,9 +594,7 @@ static void cf0_delete_block_key(void)
 
     cursor_moved_flag++;
 
-    reset_area_to_marks_1_2();
-
-    if (flags & FLAG_C)
+    if (reset_area_to_marks_1_2())
     {
         beep();
         return;
@@ -619,9 +617,7 @@ static void cf1_next_match_key(void)
 
     write_line_back_to_document_safely();
 
-    scan_document_for_next_line();
-
-    if (!(flags & FLAG_Z))
+    if (!scan_document_for_next_line())
     {
         esc_key();
         return;
@@ -791,15 +787,14 @@ static void cf7_join_lines_key(void)
 
     //     sta ((uint8_t*)&tmp01)[1]
 
-    move_tmp01_to_next_line(current_line_ptr);
-
-    //     beq c9eda
-
-    if (flags & FLAG_Z)
+    //     jsr sub_cab6e
+    if (move_tmp01_to_next_line(current_line_ptr))
     {
         beep();
         return;
     }
+
+    //     beq c9eda
 
     //     jsr check_for_command_prefix
 
@@ -1115,9 +1110,7 @@ static void f11_copy_key(void)
 
     write_line_back_to_document_safely();
 
-    reset_area_to_marks_1_2();
-
-    if (flags & FLAG_C)
+    if (reset_area_to_marks_1_2())
     {
         beep();
         return;
@@ -2518,15 +2511,12 @@ uint8_t return_key(void)
 
     //     sta ((uint8_t*)&tmp01)[1]
 
-    move_tmp01_to_next_line(current_line_ptr);
-
-    //     bne c9d9b
-
-    if (!(flags & FLAG_Z))
+    if (!move_tmp01_to_next_line(current_line_ptr))
     {
         c9d9b_advance_ptr();
         return x;
     }
+    //     bne c9d9b
 
     //     tya
     //     ldy current_line_ptr+1
@@ -2560,9 +2550,7 @@ static void sf0_move_block_key(void)
 
     write_line_back_to_document_safely();
 
-    reset_area_to_marks_1_2();
-
-    if (flags & FLAG_C)
+    if (reset_area_to_marks_1_2())
     {
         beep();
         return;
@@ -2656,12 +2644,10 @@ static void sf12_left_key(void)
 
     //     jsr draw_previous_word
 
-    draw_previous_word();
+    if (!draw_previous_word())
+        return;
 
     //     bne return_57
-
-    if (!(flags & FLAG_Z))
-        return;
 
     //     cmp #0x20 ; ' '
 
@@ -2745,12 +2731,10 @@ c9fab:
 
     //     jsr sub_cab1a
 
-    find_next_line(current_line_ptr);
+    if (find_next_line(current_line_ptr))
+        return;
 
     //     beq return_58
-
-    if (flags & FLAG_Z)
-        return;
 
     //     tya
     a = y;
@@ -3390,10 +3374,9 @@ static void c9d9b_advance_ptr(void)
     //     lda current_line_ptr
     //     ldy current_line_ptr+1
     //     jsr sub_cab1a
-    find_next_line(current_line_ptr);
-    //     beq return_54
-    if (flags & FLAG_Z)
+    if (find_next_line(current_line_ptr))
         return;
+    //     beq return_54
     //     tya
     //     clc
     //     adc current_line_ptr
@@ -3965,7 +3948,10 @@ static int prompt_for_marker(void)
     return lookup_marker(a);
 }
 
-static void reset_area_to_marks_1_2(void)
+// Sets the area to markers 1 and 2, then adjusts doc_ptr1.  Returns true if
+// the area could not be defined (an invalid or unset marker, or an empty
+// area) — the 6502's carry flag.
+static bool reset_area_to_marks_1_2(void)
 {
     // reset_area_to_marks_1_2
     // reset_area_to_marks_1_2: Sets area to markers 1 and 2, then adjusts
@@ -3976,7 +3962,7 @@ static void reset_area_to_marks_1_2(void)
     int idx1 = lookup_marker(0x31);
     //     bcs return_76
     if (idx1 == MARKER_INVALID)
-        return;
+        return true;
     //     beq cad45
     if (markers_array[idx1] == 0)
         goto cad45;
@@ -3990,7 +3976,7 @@ static void reset_area_to_marks_1_2(void)
     int idx2 = lookup_marker(0x32);
     //     bcs return_76
     if (idx2 == MARKER_INVALID)
-        return;
+        return true;
     //     beq cad45
     if (markers_array[idx2] != 0)
     {
@@ -4004,15 +3990,14 @@ static void reset_area_to_marks_1_2(void)
         x = ((uint8_t*)&doc_ptr1 - (uint8_t*)markers_array) / sizeof(addr_t);
         set_marker_to_here(x);
         area_status_t status = sanitise_area();
-        flags &= ~FLAG_C;
         if (status == AREA_NOT_EMPTY)
-            return;
+            return false;
     }
 cad45:
     //     sec
-    flags |= FLAG_C;
     // return_76:
     //     rts
+    return true;
 }
 
 static uint8_t insert_line_at_cursor(addr_t ptr)
@@ -4121,9 +4106,7 @@ static void move_cursor_down(uint8_t x)
     while (1)
     {
         //     jsr sub_cab1a
-        find_next_line((addr_t)(y) << 8 | a);
-        //     beq ca0d2
-        if (flags & FLAG_Z)
+        if (find_next_line((addr_t)(y) << 8 | a))
         {
             // ca0d2:
             //     lda ((uint8_t*)&tmp01)[0]
@@ -4291,7 +4274,9 @@ void set_format_mode_bit7(void)
     }
 }
 
-void draw_previous_word(void)
+// Returns true if the cursor landed on the start of the line (y == 0) — the
+// 6502's Z flag.
+bool draw_previous_word(void)
 {
     // draw_previous_word
     // draw_previous_word: Moves cursor back to start of previous word
@@ -4352,8 +4337,8 @@ caf55:
     a = process_current_document_character(tmp01, &x, &y, &is_tab);
     //     dey
     y--;
-    set_flags(&flags, y); // Z live
     //     rts
+    return y == 0;
 }
 
 bool adjust_margins_at_left_margin(void)
@@ -4823,11 +4808,11 @@ static void advance_to_next_line(void)
     //     lda current_line_ptr
     //     ldy current_line_ptr+1
     //     jsr sub_cab1a
-    find_next_line(current_line_ptr);
+    bool end_of_document = find_next_line(current_line_ptr);
     //     sec
     flags |= FLAG_C;
     //     beq c9aa5
-    if (!(flags & FLAG_Z))
+    if (!end_of_document)
     {
         //     tya
         //     clc
@@ -4897,7 +4882,10 @@ void beep(void)
     //     rts
 }
 
-void scan_document_for_next_line(void)
+// Scans the document for the next format-command line, updating doc_ptr2 and
+// ptr2.  Returns true if such a line was found (the 6502's Z flag set by the
+// final ldx #0).
+bool scan_document_for_next_line(void)
 {
     uint8_t x;
 
@@ -4913,8 +4901,7 @@ void scan_document_for_next_line(void)
     if (a == 0)
     {
         a = 0xff;
-        set_flags(&flags, a); // Z live
-        return;
+        return false;
     }
     //     lda #0x14
     a = 0x14;
@@ -4947,8 +4934,7 @@ c8b91:
     // c8b78:
     //     lda #0xff
     a = 0xff;
-    set_flags(&flags, a); // Z live
-    return;
+    return false;
 c8b9f:
     // c8b9f:
     //     ldy #0
@@ -4974,8 +4960,7 @@ c8b9f:
     doc_ptr2 = tmp89 + 3;
     if (((uint8_t)(tmp89 & 0xff) + 3) <= 0xff)
     {
-        scan_document_for_next_line();
-        return;
+        return scan_document_for_next_line();
     }
     goto c8bdf;
 
@@ -5027,8 +5012,7 @@ c8bdb:
     //     bne c8b7b
     if ((uint8_t)(doc_ptr2 & 0xff) != 0)
     {
-        scan_document_for_next_line();
-        return;
+        return scan_document_for_next_line();
     }
 c8bdf:
     // c8bdf:
@@ -5036,12 +5020,10 @@ c8bdf:
     //     bne c8b7b
     if (doc_ptr2 != 0)
     {
-        scan_document_for_next_line();
-        return;
+        return scan_document_for_next_line();
     }
     a = 0xff;
-    set_flags(&flags, a); // Z live
-    return;
+    return false;
 c8be3:
     // c8be3:
     //     lda l0083
@@ -5160,8 +5142,7 @@ c8c3e:
     doc_ptr2 = tmp89;
     //     ldx #0
     x = 0;
-    set_flags(&flags, 0); // Z live
-    //     rts
+    return true;
 }
 
 static uint8_t c9de3_insert_line(addr_t ptr)
@@ -6287,10 +6268,9 @@ ca2e6:
         goto ca313;
     // ca2f9: (5282)
     //     jsr sub_cab1a (5283)
-    find_next_line((addr_t)(y) << 8 | a);
-    //     beq ca313 (5284)
-    if (flags & FLAG_Z)
+    if (find_next_line((addr_t)(y) << 8 | a))
         goto ca313;
+    //     beq ca313 (5284)
     //     tya (5285)
     //     ldy ((uint8_t*)&tmp01)[1] (5286)
     //     clc (5287)
@@ -6507,10 +6487,9 @@ ca3c1:
         //     ldy ((uint8_t*)&tmp01)[1] (5401)
         y = ((uint8_t*)&tmp01)[1];
         //     jsr sub_cab1a (5402)
-        find_next_line(tmp01);
-        //     beq ca422 (5403)
-        if (flags & FLAG_Z)
+        if (find_next_line(tmp01))
             goto ca422;
+        //     beq ca422 (5403)
         //     tya (5404)
         //     ldy ((uint8_t*)&tmp01)[1] (5405)
         //     clc (5406)

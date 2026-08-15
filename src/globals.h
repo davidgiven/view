@@ -172,7 +172,7 @@ extern void setup_area_pointers(addr_t ptr2);
 extern void esc_key(void);
 extern void parse_filename_from_command(struct scan_state* scan);
 extern void set_document_name_to_filename_buffer(void);
-extern void read_first_chunk_from_input_file(void);
+extern bool read_first_chunk_from_input_file(void);
 extern void check_continuous_editing(void);
 
 typedef enum
@@ -184,7 +184,7 @@ typedef enum
 extern area_status_t sanitise_area(void);
 extern void parse_marks_from_command(struct scan_state* scan);
 extern void write_area_to_file(void);
-extern void read_next_chunk_from_input_file(addr_t ptr);
+extern bool read_next_chunk_from_input_file(addr_t ptr);
 extern void read_into_document(void);
 extern void reset_document_name_after_load(void);
 extern bool parse_integer_from_command(struct scan_state* scan);
@@ -326,7 +326,7 @@ extern uint8_t parser_table[];
 extern uint8_t l0049;
 extern addr_t ptr2;
 
-extern void scan_document_for_next_line(void);
+extern bool scan_document_for_next_line(void);
 extern uint8_t process_current_document_character(
     addr_t tmp01, uint8_t* x, uint8_t* y, bool* is_tab);
 extern void check_not_continuous_editing(void);

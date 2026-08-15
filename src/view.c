@@ -66,11 +66,11 @@ void redraw_and_write_back(void);
 void setup_area_pointers(addr_t ptr2);
 void write_area_to_file(void);
 void run_editor(void);
-void read_first_chunk_from_input_file(void);
+bool read_first_chunk_from_input_file(void);
 // Input:  a = document character, y = line offset (for tab stop lookup)
 // Output: a = character to render, x = screen width consumed, y preserved,
 // flags.C=0
-void read_next_chunk_from_input_file(addr_t ptr);
+bool read_next_chunk_from_input_file(addr_t ptr);
 static addr_t compute_space_available(addr_t ptr);
 static addr_t compute_space_common(addr_t ptr, addr_t tmp89);
 control_code_t check_for_control_code(uint8_t a);
@@ -1177,9 +1177,10 @@ c8b6b:
     //     rts
 }
 
-void read_next_chunk_from_input_file(addr_t ptr)
+// Returns true if the block read was empty (the 6502's Z flag, restored by
+// the php/plp around read_block_from_file).
+bool read_next_chunk_from_input_file(addr_t ptr)
 {
-
     // read_next_chunk_from_input_file
     // read_next_chunk_from_input_file:
     //     jsr sub_c8da2
@@ -1206,15 +1207,16 @@ void read_next_chunk_from_input_file(addr_t ptr)
     top = tmp01;
     //     plp
     //     rts
+    return status == READ_BLOCK_EMPTY;
 }
 
-void read_first_chunk_from_input_file(void)
+bool read_first_chunk_from_input_file(void)
 {
     // read_first_chunk_from_input_file:
     //     lda page
     //     ldy page+1
     //     jmp read_next_chunk_from_input_file
-    read_next_chunk_from_input_file(page);
+    return read_next_chunk_from_input_file(page);
 }
 
 void write_area_to_file(void)
