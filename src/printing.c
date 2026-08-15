@@ -68,7 +68,13 @@ static void page_eject_fmt(void);
 static void evaluate_expression_from_fmt_cmd(void);
 static uint8_t get_current_fmt_cmd_byte(void);
 static uint8_t get_next_fmt_cmd_byte(uint8_t y);
-void lookup_formatting_command(void);
+
+enum formatting_command_index_t
+{
+    NO_FORMATTING_COMMAND = -1
+};
+
+int lookup_formatting_command(void);
 static void store_to_output_buffer(uint8_t a, addr_t tmp23);
 static uint8_t process_header_footer_line(uint8_t x, uint8_t y);
 void render_register(uint8_t a, uint8_t y);
@@ -960,10 +966,9 @@ c96a2:
     if (cp == NO_COMMAND_PREFIX)
         goto c96f8;
     //     jsr lookup_formatting_command
-    lookup_formatting_command();
-    //     cpx #5
-    if (x != 5)
+    if (lookup_formatting_command() != 5)
         goto c96f8;
+    //     cpx #5
     //     lda #4
     //     ldy #0
     y = 0;
@@ -1070,57 +1075,18 @@ c9725:
     return;
 }
 
-static const uint8_t commands_table[] = {'C',
-    'E',
-    'R',
-    'J',
-    'D',
-    'F',
-    'D',
-    'H',
-    'D',
-    'M',
-    'E',
-    'M',
-    'S',
-    'R',
-    'P',
-    'E',
-    'T',
-    'M',
-    'B',
-    'M',
-    'P',
-    'L',
-    'T',
-    'S',
-    'F',
-    'O',
-    'H',
-    'E',
-    'H',
-    'T',
-    'H',
-    'M',
-    'F',
-    'M',
-    'L',
-    'M',
-    'L',
-    'S',
-    'O',
-    'P',
-    'E',
-    'P',
-    'L',
-    'J',
-    'P',
-    'B',
-    0xff};
+// Zero-terminated string of the two-letter formatting command codes.  The
+// 6502 terminates the table with 0xff (detected via the N flag); the C
+// version uses a NUL terminator instead.
+static const uint8_t commands_table[] =
+    "CERJDFDHDMEMSRPETMBMPLTSFOHEHTHMFMLMLSOPEPLJPB";
 
-void lookup_formatting_command(void)
+// Returns the index of the matched two-letter formatting command in
+// commands_table, or NO_FORMATTING_COMMAND if the letters don't match.
+int lookup_formatting_command(void)
 {
-    addr_t tmp23;
+    uint8_t char1;
+    uint8_t char2;
 
     // Pseudocode: Looks up two-letter formatting command in commands_table
 
@@ -1130,46 +1096,48 @@ void lookup_formatting_command(void)
     //     ldy #2
     uint8_t y;
     uint8_t a;
+    int index;
     y = 2;
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
-    //     sta ((uint8_t*)&tmp23)[1]
-    ((uint8_t*)&tmp23)[1] = a;
+    //     sta tmp3                     ; second command letter
+    char2 = a;
     //     dey                                                               ;
     //     Y=0x01
     y--;
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
-    //     sta ((uint8_t*)&tmp23)[0]
-    ((uint8_t*)&tmp23)[0] = a;
+    //     sta tmp2                     ; first command letter
+    char1 = a;
     //     dey                                                               ;
     //     Y=0x00
     y--;
     //     ldx #0
-    x = 0;
+    // (the 6502 uses x for the command index; the C returns it)
+    index = 0;
     // loop_c973e:
     do
     {
-        a = ((uint8_t*)&tmp23)[0];
+        a = char1;
         if (a == commands_table[y])
         {
-            a = ((uint8_t*)&tmp23)[1];
+            a = char2;
             if (a == commands_table[y + 1])
             {
-                set_flags(&flags, 0); // Z set
-                return;
+                return index;
             }
         }
-        x++;
+        index++;
         y++;
         y++;
         a = commands_table[y];
-    } while (!((int8_t)a < 0));
+    } while (a != 0);
     //     bpl loop_c973e
-    set_flags(&flags, a); // N live
+    // (the 6502 terminates the table with 0xff and detects it via N; the C
+    //  table is NUL-terminated, so the scan ends on a == 0)
     // return_45:
     //     rts
-    return;
+    return NO_FORMATTING_COMMAND;
 }
 
 void execute_formatting_command(uint8_t x)
@@ -2518,12 +2486,12 @@ static void print_loop(void)
         // c8f6e:
     c8f6e_l:
         //     jsr lookup_formatting_command
-        lookup_formatting_command();
+        int fmt_cmd_index = lookup_formatting_command();
         //     bmi c8f7a
-        if (flags & FLAG_N)
+        if (fmt_cmd_index == NO_FORMATTING_COMMAND)
             goto c8f7a_l;
         //     jsr execute_formatting_command
-        execute_formatting_command(x);
+        execute_formatting_command((uint8_t)fmt_cmd_index);
         //     beq c8f6b
         if (flags & FLAG_Z)
             goto c8f6b_l;
