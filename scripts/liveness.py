@@ -803,7 +803,12 @@ def _backward_plain(cur, live, backward_needs, per_caller_readback, per_caller_p
         # Process each non-library callee's kill set, then fold in the
         # statement's own defs/uses and the callees' live-in requirements.
         d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
-        result = live
+        # The statement's own defs (assignments and inline-helper flag writes
+        # such as set_flags -> Z|N) kill those variables in the backward scan,
+        # just like the no-callee branch below.  Callee inputs re-added via
+        # `result |= cli` below survive this because they are applied after.
+        own_d = analyze_stmt(cur, set(local_decls), 'use')[0]
+        result = live - own_d
         for callee_name in callees:
             if callee_name in LIB_FUNCTIONS:
                 continue
