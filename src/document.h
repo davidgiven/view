@@ -34,7 +34,12 @@ extern unsigned int* get_register_address(uint8_t a);
 
 extern uint8_t initialise_document(void);
 
-extern void lookup_marker(uint8_t a);
+enum marker_lookup_result_t
+{
+    MARKER_INVALID = -1
+};
+
+extern int lookup_marker(uint8_t a);
 
 extern void move_cursor_to_address(uint16_t addr);
 

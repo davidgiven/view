@@ -774,7 +774,10 @@ uint8_t initialise_document(void)
     return a;
 }
 
-void lookup_marker(uint8_t a)
+// Returns the marker index 0-5, or MARKER_INVALID if the character is not a
+// valid marker ('1'-'6').  Beeps on a non-digit marker (the 6502 branches to
+// the beep entry point); out-of-range digits return MARKER_INVALID silently.
+int lookup_marker(uint8_t a)
 {
     // lookup_marker
     // lookup_marker: Converts marker character '1'-'6' to index
@@ -782,29 +785,21 @@ void lookup_marker(uint8_t a)
     //     sec
     //     sbc #0x31 ; '1'
     //     bcc loop_caced
-    // (sbc with C=1 is a plain subtraction; borrow means invalid marker)
+    // (sbc with C=1 is a plain subtraction; borrow means invalid marker.
+    //  loop_caced is beep.)
     if (a < 0x31)
     {
         beep();
-        flags |= FLAG_C; // set C explicitly: invalid marker
-        return;
+        return MARKER_INVALID;
     }
     a -= 0x31;
-    //     asl
-    a <<= 1;
-    //     cmp #0x0c
+    //     cmp #6
     //     bcs return_75
-    if (a >= 0x0c)
-    { /* return_75: */
-        return;
-    }
-    //     tax
-    x = a;
-    //     lda markers_array+1,x
-    a = ((uint8_t*)markers_array)[x + 1];
-    set_flags(&flags, a); // Z live
+    if (a >= 6)
+        return MARKER_INVALID;
     // return_75:
     //     rts
+    return a;
 }
 
 void move_cursor_to_address(uint16_t addr)

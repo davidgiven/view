@@ -107,7 +107,7 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t x);
 
 static uint8_t enter_printable_character(void);
 
-static void prompt_for_marker(void);
+static int prompt_for_marker(void);
 
 static void reset_area_to_marks_1_2(void);
 
@@ -3099,21 +3099,21 @@ static void sf6_go_to_marker_key(void)
 
     //     jsr prompt_for_marker
 
-    prompt_for_marker();
+    int marker = prompt_for_marker();
 
     //     bcs return_58
 
-    if (flags & FLAG_C)
+    if (marker == MARKER_INVALID)
         return;
 
     //     beq return_58
 
-    if (flags & FLAG_Z)
+    if (markers_array[marker] == 0)
         return;
 
     // go_to_marker:
 
-    go_to_marker(x);
+    go_to_marker(marker);
     return;
 }
 
@@ -3128,16 +3128,16 @@ static void sf7_set_marker_key(void)
 
     //     jsr prompt_for_marker
 
-    prompt_for_marker();
+    int marker = prompt_for_marker();
 
     //     bcs return_58
 
-    if (flags & FLAG_C)
+    if (marker == MARKER_INVALID)
         return;
 
     // set_marker:
 
-    set_marker(x);
+    set_marker(marker);
     return;
 }
 
@@ -3946,7 +3946,9 @@ c9d30:
 
 // MULTIPLE ENTRY POINTS: sf1_swap_case_key, f13_right_key
 
-static void prompt_for_marker(void)
+// Prompts for a marker character and looks it up.  Returns the marker index
+// 0-5, or MARKER_INVALID if the character read is not a valid marker.
+static int prompt_for_marker(void)
 {
     // Pseudocode: Prompts for a marker character and looks it up
 
@@ -3960,19 +3962,7 @@ static void prompt_for_marker(void)
     //     jsr read_char
     read_char();
     //     jsr lookup_marker
-    lookup_marker(a);
-    //     bcc return_74
-    if (!(flags & FLAG_C))
-        return;
-    // ;
-    // ***************************************************************************************
-    // beep:
-    // loop_caced:
-    //     sec
-    // return_74:
-    //     rts
-    flags |= FLAG_C;
-    return;
+    return lookup_marker(a);
 }
 
 static void reset_area_to_marks_1_2(void)
@@ -3983,33 +3973,35 @@ static void reset_area_to_marks_1_2(void)
 
     //     lda #0x31 ; '1'
     //     jsr lookup_marker
-    lookup_marker(0x31);
+    int idx1 = lookup_marker(0x31);
     //     bcs return_76
-    if (flags & FLAG_C)
+    if (idx1 == MARKER_INVALID)
         return;
     //     beq cad45
-    if (flags & FLAG_Z)
+    if (markers_array[idx1] == 0)
         goto cad45;
     //     lda __begin_pointer_array,x
     //     sta area_start_ptr
     //     lda markers_array+1,x
     //     sta area_start_ptr+1
-    area_start_ptr = markers_array[x / 2];
+    area_start_ptr = markers_array[idx1];
     //     lda #0x32 ; '2'
     //     jsr lookup_marker
-    lookup_marker(0x32);
+    int idx2 = lookup_marker(0x32);
     //     bcs return_76
-    if (flags & FLAG_C)
+    if (idx2 == MARKER_INVALID)
         return;
     //     beq cad45
-    if (!(flags & FLAG_Z))
+    if (markers_array[idx2] != 0)
     {
         //     lda __begin_pointer_array,x
         //     sta area_end_ptr
         //     lda markers_array+1,x
         //     sta area_end_ptr+1
-        area_end_ptr = markers_array[x / 2];
-        x = ((uint8_t*)&doc_ptr1 - (uint8_t*)markers_array);
+        area_end_ptr = markers_array[idx2];
+        // (doc_ptr1 aliases markers_array[8]; set_marker_to_here now takes the
+        //  element index, so divide the byte offset by the element size)
+        x = ((uint8_t*)&doc_ptr1 - (uint8_t*)markers_array) / sizeof(addr_t);
         set_marker_to_here(x);
         area_status_t status = sanitise_area();
         flags &= ~FLAG_C;
@@ -4602,7 +4594,7 @@ cad5d:
     //     sta 1,x
     {
         uint16_t marker_addr = current_line_ptr + a;
-        markers_array[x / 2] = marker_addr;
+        markers_array[x] = marker_addr;
         a = (uint8_t)(marker_addr >> 8);
     }
     //     rts
@@ -5583,7 +5575,7 @@ static void go_to_marker(uint8_t x)
     //     lda markers_array,x
     //     ldy markers_array+1,x
     //     jsr move_cursor_to_address
-    move_cursor_to_address(markers_array[x / 2]);
+    move_cursor_to_address(markers_array[x]);
     // ca035:
     //     lda #1
     //     sta l0073
@@ -5600,9 +5592,9 @@ static void go_to_marker_n(uint8_t marker)
     write_line_back_to_document_safely();
     //     pla
     //     jsr lookup_marker
-    lookup_marker(marker);
+    int idx = lookup_marker(marker);
     //     jmp go_to_marker
-    go_to_marker(x);
+    go_to_marker(idx);
     return;
 }
 
@@ -6839,9 +6831,9 @@ static void set_marker_common(uint8_t a)
     write_line_back_to_document_safely();
     //     pla
     //     jsr lookup_marker
-    lookup_marker(a);
+    int idx = lookup_marker(a);
     //     jmp set_marker
-    set_marker(x);
+    set_marker(idx);
     return;
 }
 

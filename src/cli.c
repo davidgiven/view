@@ -1953,10 +1953,10 @@ addr_t parse_mark_from_command(struct scan_state* scan)
     //     sty input_buffer_offset
     input_buffer_offset = scan->pos;
     //     jsr lookup_marker
-    lookup_marker(scan->ch);
+    int marker_index = lookup_marker(scan->ch);
     //     bcs c89b3 / c89b3: jsr print_inline_string ; .ascii "Bad marker" ;
     //     .byte 0xff
-    if (flags & FLAG_C)
+    if (marker_index == MARKER_INVALID)
     {
         cli_putstring("Bad marker\n");
         return_to_cli_prompt();
@@ -1964,16 +1964,16 @@ addr_t parse_mark_from_command(struct scan_state* scan)
     }
     //     beq c89c1 / c89c1: jsr print_inline_string ; .ascii "Marker not set"
     //     ; .byte 0xff
-    if (flags & FLAG_Z)
+    if (markers_array[marker_index] == 0)
     {
         cli_putstring("Marker not set\n");
         return_to_cli_prompt();
         return 0;
     }
     //     lda markers_array,x
-    a = (uint8_t)(markers_array[x] & 0xff);
+    a = (uint8_t)(markers_array[marker_index] & 0xff);
     //     ldy markers_array+1,x
-    y = (uint8_t)(markers_array[x] >> 8);
+    y = (uint8_t)(markers_array[marker_index] >> 8);
     // return_12:
     //     rts
     return (addr_t)(y) << 8 | a;
