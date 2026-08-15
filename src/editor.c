@@ -3172,11 +3172,6 @@ edit_command_loop:
 
     read_char();
 
-    //     bcs finished_editing_command
-
-    if (flags & FLAG_C)
-        goto finished_editing_command;
-
     //     cmp #0x0d
 
     if (a == 0x0d)
@@ -4859,9 +4854,8 @@ static void advance_to_next_line(void)
     //     pla (pop sub_c9977's return address — stack unwind)
     //     lda #0x40 ; '@'
     //     sta l0084
-    l0084 = 0x40;
     //     bit l0084   ; sets V
-    bit(&flags, 0x40, l0084); // Z, V live
+    // (the 6502 returns V=1 via the bit; the C return value conveys it)
     //     rts (return to sub_c9977's caller with V=1, bypassing sub_c9977's
     //     clv)
     return true;

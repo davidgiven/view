@@ -569,11 +569,6 @@ static void finish_cmd(void)
         // (inlined: file_ptr = output_fp)
         file_ptr = output_fp;
         write_area_to_file();
-        if (!(flags & FLAG_Z))
-        {
-            return_to_cli_prompt();
-            return;
-        }
         //     jsr put_byte_to_file
         // (inlined: fputc(0, file_ptr))
         fputc(0, file_ptr);
@@ -832,13 +827,6 @@ static void more_cmd(struct scan_state* scan)
     file_ptr = output_fp;
     //     jsr write_area_to_file
     write_area_to_file();
-    //     bne c84ab
-    if (!(flags & FLAG_Z))
-    {
-        return_to_cli_prompt();
-        return;
-    }
-
     //     ldy #0
     //     ldx l003a
     // loop_c84c4:

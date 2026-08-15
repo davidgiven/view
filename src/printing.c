@@ -3026,9 +3026,6 @@ static void render_new_page(void)
 
     //     jsr flush_and_read_char
     read_char();
-    //     bcs c92cc
-    if (flags & FLAG_C)
-        goto c92cc;
     //     and #0xdf
     a &= 0xdf;
     //     cmp #0x4d ; 'M'
@@ -3039,8 +3036,7 @@ static void render_new_page(void)
     //     bne c92cf
     if (a != 0x51)
         goto c92cf;
-    // c92cc:
-c92cc:
+    // c92cc: (Q pressed — stop printing)
     //     jmp c8f1a
     stop_printing();
     cli_putchar('\n');
