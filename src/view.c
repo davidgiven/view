@@ -148,7 +148,9 @@ addr_t oshwm; // PROVISIONAL: OS high-water mark, base address for ruler stack
 uint8_t l0021; // PROVISIONAL: remaining-lines counter on current page during
                // printing
 // X l0030: .fill 1
-uint8_t l0030; // PROVISIONAL: multi-line format-command line counter
+uint8_t
+    formatted_line_written_flag; // PROVISIONAL: set by a format command that
+                                 // writes a formatted line (the 6502's l0030)
 // X l0031: .fill 1
 uint8_t l0031; // PROVISIONAL: page-break-requested flag for the print engine
 // X printing_from_file_flag: .fill 1

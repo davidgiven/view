@@ -135,7 +135,8 @@ extern addr_t ptr5, current_format_line_ptr;
 extern uint8_t header_text_maybe[0x42];
 extern uint8_t footer_text_maybe[0x42];
 extern uint8_t output_buffer[];
-extern uint8_t l0030, l0039;
+extern uint8_t formatted_line_written_flag;
+extern uint8_t l0039;
 extern uint8_t l0080, l0081, l0082, l0083, l0084;
 extern addr_t tmp01, tmp23, tmp45, tmp67, tmp89;
 

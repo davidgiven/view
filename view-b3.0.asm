@@ -55,7 +55,7 @@ rhs_extra_margin                = &002c
 macro_executing_flag            = &002d
 two_sided_flag                  = &002e
 left_margin                     = &002f
-l0030                           = &0030
+formatted_line_written_flag     = &0030
 l0031                           = &0031
 printing_from_file_flag         = &0032
 l0033                           = &0033
@@ -3874,7 +3874,7 @@ l94b2 = default_printer_driver_ptr+1
     inx                                                               ; 9522: e8          .
     cmp #&0d                                                          ; 9523: c9 0d       ..
     bne c951c                                                         ; 9525: d0 f5       ..
-    inc l0030                                                         ; 9527: e6 30       .0
+    inc formatted_line_written_flag                                   ; 9527: e6 30       .0
 ; &9529 referenced 2 times by &94fb, &94fe
 .c9529
     sec                                                               ; 9529: 38          8
@@ -4315,9 +4315,9 @@ l94b2 = default_printer_driver_ptr+1
     txa                                                               ; 9755: 8a          .
     ldy #2                                                            ; 9756: a0 02       ..
     ldx #0                                                            ; 9758: a2 00       ..
-    stx l0030                                                         ; 975a: 86 30       .0
+    stx formatted_line_written_flag                                   ; 975a: 86 30       .0
     jsr call_through_jumptable                                        ; 975c: 20 92 a8     ..
-    ldx l0030                                                         ; 975f: a6 30       .0
+    ldx formatted_line_written_flag                                   ; 975f: a6 30       .0
     rts                                                               ; 9761: 60          `
 
 ; ***************************************************************************************
@@ -10056,6 +10056,7 @@ save pydis_start, pydis_end
 ;     expand_line:                            3
 ;     flush_and_read_char:                    3
 ;     footers_enabled_flag:                   3
+;     formatted_line_written_flag:            3
 ;     get_line_width:                         3
 ;     get_page_parity:                        3
 ;     headers_enabled_flag:                   3
@@ -10064,7 +10065,6 @@ save pydis_start, pydis_end
 ;     initialise_document:                    3
 ;     input_filename:                         3
 ;     insert_edit_buffer_bytes_at_xpos:       3
-;     l0030:                                  3
 ;     l0102:                                  3
 ;     l050c:                                  3
 ;     l050d:                                  3

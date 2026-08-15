@@ -115,7 +115,7 @@ c951c:
         x++;
     } while (a != 0x0d);
     //     inc l0030
-    l0030++;
+    formatted_line_written_flag++;
     // c9529:
     //     sec
     flags |= FLAG_C;
@@ -1140,7 +1140,29 @@ int lookup_formatting_command(void)
     return NO_FORMATTING_COMMAND;
 }
 
-void execute_formatting_command(uint8_t x)
+/**
+ * Execute one formatting command by index.
+ *
+ * @param x the format command index (0-22) as returned by
+ * lookup_formatting_command().
+ *
+ * The command is dispatched through the format jump table.  The dispatched
+ * *fmt_cmd increments formatted_line_written_flag when it emits a formatted
+ * line.
+ *
+ * @return true iff formatted_line_written_flag == 0 (the 6502's Z flag),
+ * i.e. the command did not
+ * emit a formatted line.  print_loop uses this to choose between continuing to
+ * the next command line (true, c8f6b_l) and outputting the formatted line
+ * (false, c8fce_l).  This is the only deliberately-returned flag.
+ *
+ * C/V are not produced here: the terminal `ldx l0030` only writes Z/N, so C/V
+ * are preserved live-through from whatever the dispatched command left; the
+ * printing pipeline that follows reads them later.  They are not a deliberate
+ * return channel.  tmp01, ptr1, ptr5 are registers the dispatched command
+ * reads/writes, used by the printing pipeline after the call.
+ */
+bool execute_formatting_command(uint8_t x)
 {
     uint8_t a;
 
@@ -1156,7 +1178,7 @@ void execute_formatting_command(uint8_t x)
     //     ldx #0
     x = 0;
     //     stx l0030
-    l0030 = x;
+    formatted_line_written_flag = x;
     //     jsr call_through_jumptable (call_through_jumptable_0, y=0)
     //     asl
     //     clc
@@ -1244,9 +1266,8 @@ void execute_formatting_command(uint8_t x)
             break;
     }
     //     ldx l0030
-    set_flags(&flags, l0030); // Z live
     //     rts
-    return;
+    return formatted_line_written_flag == 0;
 }
 
 static void parse_boolean_from_fmt_cmd(void)
@@ -2491,10 +2512,9 @@ static void print_loop(void)
         if (fmt_cmd_index == NO_FORMATTING_COMMAND)
             goto c8f7a_l;
         //     jsr execute_formatting_command
-        execute_formatting_command((uint8_t)fmt_cmd_index);
-        //     beq c8f6b
-        if (flags & FLAG_Z)
+        if (execute_formatting_command((uint8_t)fmt_cmd_index))
             goto c8f6b_l;
+        //     beq c8f6b
         // c8fce_thunk:
     c8fce_thunk_l:
         //     bne c8fce ; ALWAYS branch
