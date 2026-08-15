@@ -5594,7 +5594,11 @@ static void go_to_marker_n(uint8_t marker)
     //     jsr lookup_marker
     int idx = lookup_marker(marker);
     //     jmp go_to_marker
-    go_to_marker(idx);
+    // (skip the jump if the marker is unset, mirroring sf6_go_to_marker_key's
+    //  Z-flag guard — otherwise an unset marker's null address is treated as a
+    //  document position)
+    if (markers_array[idx] != 0)
+        go_to_marker(idx);
     return;
 }
 

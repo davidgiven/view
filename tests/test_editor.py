@@ -935,6 +935,26 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_set_and_go_to_unset_marker(self):
+        self._test_enter_editor_and_type(
+            b"hello" + CTRL_K + b"1" + b" world" + CTRL_Q + b"2" + b"XYZ",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   hello worldXYZ                                                               ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_set_and_go_to_invalid_marker(self):
+        self._test_enter_editor_and_type(
+            b"hello" + CTRL_K + b"1" + b" world" + CTRL_Q + b"7" + b"XYZ",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   hello worldXYZ                                                               ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_indent(self):
         self._test_enter_editor_and_type(
             CTRL_O + CTRL_S + b"       >" + CTRL_M + b"hello",
