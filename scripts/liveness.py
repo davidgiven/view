@@ -622,6 +622,17 @@ def _backward_stmt(cur, live, backward_needs, per_caller_readback, per_caller_pr
                                      local_info, func_params, local_decls, source_lines,
                                      func_live_out)
         d, u = _analyze_stmt_effect(cur, local_decls, source_lines, local_info, func_params)
+        # Record the readback for calls in the condition: the caller may read
+        # the callee's outputs after the call (e.g. the a set by
+        # draw_previous_word and read by the following statement).  Standalone
+        # calls get this in _backward_plain; do it here so a condition call
+        # contributes to the callee's live-out too.
+        if children:
+            for callee in _find_call_expr_callees(children[0]):
+                if callee in LIB_FUNCTIONS or callee in INLINE_HELPERS:
+                    continue
+                backward_needs.setdefault(callee, set()).update(live)
+                per_caller_readback.setdefault((caller, callee), set()).update(live)
         return (merged - d) | u
 
     # switch: each case is an independent branch.
