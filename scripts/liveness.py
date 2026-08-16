@@ -860,8 +860,9 @@ def _backward_plain(cur, live, backward_needs, per_caller_readback, per_caller_p
             # callee produces itself (e.g. a produced by read_next_command_byte)
             # are not caller inputs.
             callee_provided = callee_info.get('per_callee_provided', {})
+            callee_locals = callee_info.get('local_decls', set())
             for v in callee_provided.values():
-                provided |= (set(v) - callee_info.get('defs', set()) - own_d)
+                provided |= (set(v) - callee_info.get('defs', set()) - callee_locals - own_d)
             per_caller_provided.setdefault((caller, callee_name), set()).update(provided)
         return result
 

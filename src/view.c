@@ -639,7 +639,7 @@ c83ca:
     //     bne c83d1
     if (x == 0)
     {
-        a = upper_case_unless_folding();
+        a = upper_case_unless_folding(a);
     }
     // c83d1:
     //     ldx l0083

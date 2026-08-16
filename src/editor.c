@@ -65,7 +65,7 @@ static void set_marker_common(uint8_t a);
 void show_memory_full_error(void);
 uint8_t adjust_area_pointers(addr_t tmp67);
 static void append_to_output_buffer(uint8_t a);
-uint8_t upper_case_unless_folding(void);
+uint8_t upper_case_unless_folding(uint8_t a);
 static bool process_char_for_output(uint8_t y, bool carry_in);
 void format_paragraph(void);
 static bool find_next_word_boundary(uint8_t y);
@@ -101,7 +101,7 @@ static void c9d9b_advance_ptr(void);
 
 static void clear_marks_1_2(void);
 
-static uint8_t control_key_to_ascii(void);
+static uint8_t control_key_to_ascii(uint8_t a);
 
 static void delete_edit_buffer_bytes_at_xpos(uint8_t x);
 
@@ -1507,9 +1507,9 @@ static void k_command_key(void)
 
     flags_need_redrawing_flag++;
 
-    read_char();
+    a = read_char();
 
-    a = control_key_to_ascii();
+    a = control_key_to_ascii(a);
 
     switch (a)
     {
@@ -2338,9 +2338,9 @@ static void o_command_key(void)
 
     flags_need_redrawing_flag++;
 
-    read_char();
+    a = read_char();
 
-    a = control_key_to_ascii();
+    a = control_key_to_ascii(a);
 
     switch (a)
     {
@@ -2426,9 +2426,9 @@ static void q_command_key(void)
 
     flags_need_redrawing_flag++;
 
-    read_char();
+    a = read_char();
 
-    a = control_key_to_ascii();
+    a = control_key_to_ascii(a);
 
     switch (a)
     {
@@ -3404,7 +3404,7 @@ static void clear_marks_1_2(void)
     //     rts
 }
 
-static uint8_t control_key_to_ascii(void)
+static uint8_t control_key_to_ascii(uint8_t a)
 {
     // Pseudocode: Converts control key code to ASCII letter by ORing with 0x40
     // zproc control_key_to_ascii
@@ -3416,8 +3416,7 @@ static uint8_t control_key_to_ascii(void)
     // zendproc
     if (a < 0x20)
         a |= 0x40;
-    a = toupper(a);
-    return a;
+    return toupper(a);
 }
 
 static void delete_edit_buffer_bytes_at_xpos(uint8_t x)
@@ -3536,7 +3535,7 @@ static uint8_t enter_printable_character(void)
     // enter_printable_character
     // enter_printable_character:
     //     ldy xpos
-    y = xpos;
+    uint8_t y = xpos;
     //     cpy #0x84
     if (y >= MAX_LINE_LENGTH)
         return a;
@@ -4984,7 +4983,7 @@ c8b9f:
 c8bb7:
     // c8bb7:
     //     jsr sub_c8c5f
-    a = upper_case_unless_folding();
+    a = upper_case_unless_folding(a);
     //     sta l0083
     l0083 = a;
 c8bbc:
@@ -6965,15 +6964,14 @@ static void append_to_output_buffer(uint8_t a)
     //     rts
 }
 
-uint8_t upper_case_unless_folding(void)
+uint8_t upper_case_unless_folding(uint8_t a)
 {
     // sub_c8c5f: converts to uppercase only if folding flag is clear
     //     bit folding_flag
     if (folding_flag & FLAG_N)
         return a;
     //     falls through to to_uppercase
-    a = toupper(a);
-    return a;
+    return toupper(a);
 }
 
 // Returns true if the resulting width accumulator is zero (the 6502's Z flag).
@@ -7710,6 +7708,7 @@ static void set_xpos_to_line_length(void)
 static uint8_t compute_display_start_line(void)
 {
     addr_t tmp23;
+    uint8_t x;
 
     // sub_ca44e
     // sub_ca44e: Computes starting line for display based on screen position

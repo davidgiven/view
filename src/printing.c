@@ -1521,11 +1521,11 @@ static uint8_t get_current_fmt_cmd_byte(uint8_t* y)
     // get_current_fmt_cmd_byte:
     while (1)
     {
-        a = ram[current_format_line_ptr + *y];
-        if (a == 0x0d)
+        uint8_t val = ram[current_format_line_ptr + *y];
+        if (val == 0x0d)
             return 0; // Z set
-        if (a != 0x20)
-            return a; // Z clear
+        if (val != 0x20)
+            return val; // Z clear
         (*y)++;
     }
 }
@@ -3634,17 +3634,14 @@ static uint8_t get_right_margin(void)
 
     // sub_c93be:
     //     lda ruler_right_stop
-    a = ruler_right_stop;
-    if (a != 0)
-        return a;
     //     bne return_29
+    if (ruler_right_stop != 0)
+        return ruler_right_stop;
     //     lda l003a
-    a = l003a;
     //     sec
     //     sbc #1
-    a -= 1;
     // return_29:
-    return a;
+    return l003a - 1;
 }
 
 static void copy_header_footer_text(addr_t tmp23)
