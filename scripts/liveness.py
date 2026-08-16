@@ -948,15 +948,47 @@ def _is_noreturn_body(body, noreturn):
     return _stmt_never_completes(body, noreturn)
 
 
+_CMP_LOGICAL_OPS = {'==', '!=', '<', '>', '<=', '>=', '&&', '||', '!'}
+
+
 def _return_value_uses(body_cursor, local_decls, source_lines):
-    """Yield tracked-global uses in return statements of a function body."""
+    """Yield tracked-global reads that form the returned register value.
+
+    Registers composing the actual return value (e.g. `return (addr_t)(y) << 8
+    | a`) are live on exit even if no caller's backward scan demands them.  But
+    operands of comparison/logical operators (e.g. `return y == 0`) produce a
+    boolean returned via the flags, not a register, so they are excluded.
+    """
     if body_cursor is None:
         return
     for _ln, stmt in _collect_top_stmts(body_cursor):
         if stmt.kind != clang.cindex.CursorKind.RETURN_STMT:
             continue
-        _, u = _analyze_stmt_effect(stmt, local_decls, source_lines, None, None)
-        yield from u
+        for ch in _get_children(stmt):
+            yield from _value_expr_uses(ch, local_decls)
+
+
+def _value_expr_uses(cursor, local_decls):
+    """Yield tracked-global uses that form a returned register value, skipping
+    operands of comparison/logical operators (returned via the flags)."""
+    if cursor is None:
+        return
+    ck = cursor.kind
+    if ck == clang.cindex.CursorKind.DECL_REF_EXPR:
+        name = cursor.spelling
+        if name in TRACKED_VARS and name not in local_decls:
+            yield name
+        return
+    if ck in (clang.cindex.CursorKind.BINARY_OPERATOR,
+              clang.cindex.CursorKind.UNARY_OPERATOR,
+              clang.cindex.CursorKind.CONDITIONAL_OPERATOR):
+        if cursor.spelling in _CMP_LOGICAL_OPS:
+            return
+        for ch in _get_children(cursor):
+            yield from _value_expr_uses(ch, local_decls)
+        return
+    for ch in _get_children(cursor):
+        yield from _value_expr_uses(ch, local_decls)
 
 
 def backward_scan_ast(func_cursor, backward_needs, per_caller_readback, per_caller_provided, caller,

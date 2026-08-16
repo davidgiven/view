@@ -89,7 +89,7 @@ void write_line_back_to_document_safely(void);
 void enter_editor_mode(void);
 void clear_format_mode_bit7(void);
 void set_format_mode_bit7(void);
-bool draw_previous_word(void);
+void draw_previous_word(uint8_t* word_boundary, bool* is_start_of_line);
 bool adjust_margins_at_left_margin(void);
 bool insert_edit_buffer_bytes_at_xpos(uint8_t x);
 void set_marker_to_here(uint8_t x);
@@ -2646,15 +2646,18 @@ static void sf12_left_key(void)
 
     //     jsr draw_previous_word
 
-    if (!draw_previous_word())
-        return;
+    uint8_t word_boundary;
+    bool is_start_of_line;
+    draw_previous_word(&word_boundary, &is_start_of_line);
 
     //     bne return_57
 
     //     cmp #0x20 ; ' '
 
     //     beq c9f80
-    if (a == 0x20)
+    if (!is_start_of_line)
+        return;
+    if (word_boundary == 0x20)
     {
         move_to_previous_line();
         return;
@@ -3732,7 +3735,9 @@ c9c56:
     //     sty input_buffer_ptr+1 (4208)
     input_buffer_offset = y;
     //     jsr draw_previous_word (4209)
-    draw_previous_word();
+    uint8_t word_boundary;
+    bool is_start_of_line;
+    draw_previous_word(&word_boundary, &is_start_of_line);
     //     jsr sub_ca608 (4210)
     recalculate_cursor_xpos();
     //     lda l0072 (4211)
@@ -4272,10 +4277,22 @@ void set_format_mode_bit7(void)
     }
 }
 
-// Returns true if the cursor landed on the start of the line (y == 0) — the
-// 6502's Z flag.
-bool draw_previous_word(void)
+/**
+ * Move the cursor back to the start of the previous word.
+ *
+ * Scans backward from the current cursor position through the edit buffer,
+ * skipping whitespace, until the start of the previous word is found, and
+ * sets xpos to that position.
+ *
+ * @param[out] word_boundary the processed character at the previous word
+ * boundary (the 6502's A register; callers test it, e.g. for a space).
+ * @param[out] is_start_of_line true if the cursor landed at the start of the
+ * line (y == 0, the 6502's Z flag); false if a word boundary was found.
+ */
+void draw_previous_word(uint8_t* word_boundary, bool* is_start_of_line)
 {
+    uint8_t a;
+    uint8_t y;
     // draw_previous_word
     // draw_previous_word: Moves cursor back to start of previous word
 
@@ -4335,8 +4352,9 @@ caf55:
     a = process_current_document_character(tmp01, &x, &y, &is_tab);
     //     dey
     y--;
-    //     rts
-    return y == 0;
+    // (the 6502 returns the boundary character in A and Z = (y == 0))
+    *word_boundary = a;
+    *is_start_of_line = (y == 0);
 }
 
 bool adjust_margins_at_left_margin(void)
