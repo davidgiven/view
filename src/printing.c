@@ -257,6 +257,7 @@ static void rj_fmt_cmd(void)
 
 static void expand_line(void)
 {
+    uint8_t y;
     // expand_line
     // Pseudocode: Expands a format line into output_buffer, handling register
     // references via |
@@ -482,6 +483,8 @@ static void dh_fmt_cmd(void)
 
 static void em_fmt_cmd(void)
 {
+    uint8_t a;
+    uint8_t y;
     // em_fmt_cmd
     // Pseudocode: Evaluates expression and stores result in a register
 
@@ -1002,6 +1005,8 @@ c96f8:
 
 static void ht_fmt_cmd(void)
 {
+    uint8_t a;
+    uint8_t y;
     // ht_fmt_cmd
     // Pseudocode: Sets highlight codes (highlight1_code, highlight2_code) from
     // format command
@@ -1291,11 +1296,14 @@ static const uint8_t l97b0_data[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
 
 static void parse_word_flag(addr_t ptr, uint8_t* y)
 {
+    uint8_t x;
+
     // sub_c976c
     // Pseudocode: Parses word-based flag (ON/OFF/YES/NO) from format command
     // On entry: ptr = the format-command line (the 6502 passes it in XA),
     //           *y = cursor position into the line (advanced as the word is
     //           consumed).
+    // x is a scratch index into the word table.
 
     // sub_c976c:
     //     lda (((uint8_t*)&tmp89)[0]),y
@@ -2699,7 +2707,7 @@ static void print_vertical_space(uint8_t x)
     // ***************************************************************************************
     // print_vertical_space:
     //     lda #0x0d
-    a = 0x0d;
+    uint8_t a = 0x0d;
     print_char_x_times(a, x);
 }
 

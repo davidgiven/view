@@ -687,6 +687,7 @@ static void cf6_split_line_key(void)
 {
     uint8_t a;
     uint8_t x;
+    uint8_t y;
 
     // cf6_split_line_key
 
@@ -701,7 +702,8 @@ static void cf6_split_line_key(void)
     uint8_t line_len = get_line_length();
 
     //     cpy xpos
-
+    // (get_line_length leaves Y = line length; bcc keeps it when Y < xpos)
+    y = line_len;
     if (line_len >= xpos)
     {
         y = xpos;
@@ -3948,6 +3950,7 @@ static int prompt_for_marker(void)
 // area) — the 6502's carry flag.
 static bool reset_area_to_marks_1_2(void)
 {
+    uint8_t x;
     // reset_area_to_marks_1_2
     // reset_area_to_marks_1_2: Sets area to markers 1 and 2, then adjusts
     // doc_ptr1
@@ -4338,6 +4341,7 @@ caf55:
 
 bool adjust_margins_at_left_margin(void)
 {
+    uint8_t y;
     // sub_caef4
     // sub_caef4: Handles margin/folding adjustments when typing at left margin
 
@@ -4538,6 +4542,7 @@ cae52:
 
 void set_marker_to_here(uint8_t x)
 {
+    uint8_t y;
     // set_marker_to_here
     // set_marker_to_here: Sets marker at current cursor position
 
@@ -5592,6 +5597,7 @@ static void home_cursor(void)
 void justify_edit_buffer(void)
 {
     addr_t tmp89;
+    uint8_t y;
 
     // Pseudocode: Word-spacing justification: distributes extra spaces between
     // words
@@ -6062,6 +6068,7 @@ uint8_t process_current_document_character(
 static void recalculate_cursor_xpos(void)
 {
     uint8_t a;
+    uint8_t x;
     // recalculate_cursor_xpos
     // Pseudocode: Recalculates cursor xpos from visual position accounting for
     // tabs and margins
@@ -7759,6 +7766,9 @@ ca479:
 
 static void advance_to_next_char(struct render_state* rs)
 {
+    uint8_t a;
+    uint8_t x;
+    uint8_t y;
     // Advance to the next document character.  The shared
     // process_current_document_character() reads/writes the simulated
     // registers, so synchronise the render state around the call.

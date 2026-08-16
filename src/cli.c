@@ -304,7 +304,9 @@ static void cmd_err_no_target(void)
 
 static void count_cmd(struct scan_state* scan)
 {
+    uint8_t a;
     uint8_t x;
+    uint8_t y;
     addr_t tmp89;
 
     // count_cmd
