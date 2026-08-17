@@ -257,6 +257,7 @@ static void rj_fmt_cmd(void)
 
 static void expand_line(void)
 {
+    uint8_t a;
     uint8_t y;
     // expand_line
     // Pseudocode: Expands a format line into output_buffer, handling register
@@ -1742,6 +1743,7 @@ c9284:
 
 static void print_output_buffer(void)
 {
+    uint8_t a;
     uint8_t x;
     uint8_t y;
 
@@ -1835,6 +1837,8 @@ void display_not_enough_memory(void)
 
 static void microspace_word_processor(void)
 {
+    uint8_t a;
+    uint8_t x;
     addr_t tmp89;
 
     // microspace_word_processor
@@ -2441,6 +2445,8 @@ c8f0d:
 
 static void print_loop(void)
 {
+    uint8_t a;
+    uint8_t x;
     addr_t tmp67;
     addr_t tmp89;
 
@@ -2848,6 +2854,7 @@ c8cf2:
 
 static void render_header_or_footer(uint16_t yx)
 {
+    uint8_t a;
     // render_header_or_footer
     // Pseudocode: Renders header or footer text with centering and
     // justification

@@ -809,6 +809,7 @@ static void mode_cmd(void)
 
 static void more_cmd(struct scan_state* scan)
 {
+    uint8_t a;
     uint8_t x;
     // more_cmd
     // Pseudocode: Appends more text from input file into document at current

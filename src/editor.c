@@ -941,6 +941,7 @@ static void delete_key(void)
 {
     uint8_t a;
     uint8_t x;
+    uint8_t y;
 
     // delete_key
 
@@ -1473,6 +1474,7 @@ static void f9_delete_char_key(void)
 
 static void k_command_key(void)
 {
+    uint8_t a;
     // k_command_key
 
     // Pseudocode: K-command handler: prompts for K-key, looks up in k_key_table
@@ -2670,6 +2672,7 @@ static void sf12_left_key(void)
 
 static void sf13_right_key(void)
 {
+    uint8_t a;
     // sf13_right_key
 
     // sf13_right_key: Moves cursor right by one word
@@ -4358,6 +4361,7 @@ caf55:
 
 bool adjust_margins_at_left_margin(void)
 {
+    uint8_t a;
     uint8_t y;
     // sub_caef4
     // sub_caef4: Handles margin/folding adjustments when typing at left margin
@@ -7067,6 +7071,7 @@ c9969:
 
 void format_paragraph(void)
 {
+    uint8_t x;
     uint8_t y;
     // sub_c9977
     // PROVISIONAL: Main line formatting routine — reads source line, handles
