@@ -305,7 +305,7 @@ typedef enum
 extern read_block_status_t read_block_from_file(addr_t* cursor, addr_t limit);
 
 extern bool scan_input_buffer(struct scan_state* state);
-extern uint8_t check_for_embedded_ruler(addr_t tmp01, uint8_t y);
+extern void check_for_embedded_ruler(addr_t tmp01, uint8_t y);
 
 // Functions moved to printing.c still called from view.c/other modules
 extern void display_not_enough_memory(void);
@@ -331,7 +331,7 @@ extern bool scan_document_for_next_line(void);
 extern uint8_t process_current_document_character(
     addr_t tmp01, uint8_t* x, uint8_t* y, bool* is_tab);
 extern void check_not_continuous_editing(void);
-extern uint8_t adjust_area_pointers(addr_t tmp67);
+extern void adjust_area_pointers(addr_t tmp67);
 extern void wipe_buffer(uint8_t a, addr_t ptr1);
 extern void format_paragraph(void);
 extern void print_document(struct scan_state* scan);

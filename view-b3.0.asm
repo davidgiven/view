@@ -2706,7 +2706,7 @@ l80f2 = brk_handler_ptr+1
 ; &8f0d referenced 1 time by &8efc
 .c8f0d
     jsr parse_optional_filename_from_command                          ; 8f0d: 20 f4 8d     ..
-    bne c8f29                                                         ; 8f10: d0 17       ..
+    bne set_rw_file_handle                                            ; 8f10: d0 17       ..
     lda l0031                                                         ; 8f12: a5 31       .1
     bpl return_23                                                     ; 8f14: 10 03       ..
     jmp process_page_footer                                           ; 8f16: 4c 63 92    Lc.
@@ -2723,8 +2723,9 @@ l80f2 = brk_handler_ptr+1
     jsr osnewl                                                        ; 8f23: 20 e7 ff     ..            ; Write newline (characters 10 and 13)
     jmp cli_loop                                                      ; 8f26: 4c f6 81    L..
 
+; ***************************************************************************************
 ; &8f29 referenced 1 time by &8f10
-.c8f29
+.set_rw_file_handle
     lda #&40 ; '@'                                                    ; 8f29: a9 40       .@
     jsr open_file                                                     ; 8f2b: 20 58 88     X.
     sta rw_file_handle                                                ; 8f2e: 85 4d       .M
@@ -3816,7 +3817,7 @@ l94b2 = default_printer_driver_ptr+1
     jsr expand_line                                                   ; 94d0: 20 2b 95     +.
     bcc return_36                                                     ; 94d3: 90 55       .U
     lda #0                                                            ; 94d5: a9 00       ..
-    beq c950f                                                         ; 94d7: f0 36       .6             ; ALWAYS branch
+    beq write_output_buffer_to_format_line                            ; 94d7: f0 36       .6             ; ALWAYS branch
 
 ; ***************************************************************************************
 .ce_fmt_cmd
@@ -3827,7 +3828,7 @@ l94b2 = default_printer_driver_ptr+1
     lsr a                                                             ; 94e1: 4a          J
     sta l0084                                                         ; 94e2: 85 84       ..
     lda ruler_right_stop                                              ; 94e4: a5 3e       .>
-    beq c950f                                                         ; 94e6: f0 27       .'
+    beq write_output_buffer_to_format_line                            ; 94e6: f0 27       .'
     sec                                                               ; 94e8: 38          8
     sbc ruler_left_stop                                               ; 94e9: e5 3f       .?
     lsr a                                                             ; 94eb: 4a          J
@@ -3835,9 +3836,9 @@ l94b2 = default_printer_driver_ptr+1
     adc ruler_left_stop                                               ; 94ed: 65 3f       e?
     sec                                                               ; 94ef: 38          8
     sbc l0084                                                         ; 94f0: e5 84       ..
-    bcs c950f                                                         ; 94f2: b0 1b       ..
+    bcs write_output_buffer_to_format_line                            ; 94f2: b0 1b       ..
     lda #0                                                            ; 94f4: a9 00       ..
-    beq c950f                                                         ; 94f6: f0 17       ..             ; ALWAYS branch
+    beq write_output_buffer_to_format_line                            ; 94f6: f0 17       ..             ; ALWAYS branch
 
 ; ***************************************************************************************
 .rj_fmt_cmd
@@ -3849,13 +3850,14 @@ l94b2 = default_printer_driver_ptr+1
     dex                                                               ; 9501: ca          .
     lda #0                                                            ; 9502: a9 00       ..
     cpx ruler_right_stop                                              ; 9504: e4 3e       .>
-    bcs c950f                                                         ; 9506: b0 07       ..
+    bcs write_output_buffer_to_format_line                            ; 9506: b0 07       ..
     stx l0083                                                         ; 9508: 86 83       ..
     lda ruler_right_stop                                              ; 950a: a5 3e       .>
     sec                                                               ; 950c: 38          8
     sbc l0083                                                         ; 950d: e5 83       ..
+; ***************************************************************************************
 ; &950f referenced 5 times by &94d7, &94e6, &94f2, &94f6, &9506
-.c950f
+.write_output_buffer_to_format_line
     ldy #3                                                            ; 950f: a0 03       ..
     tax                                                               ; 9511: aa          .
     beq c951c                                                         ; 9512: f0 08       ..
@@ -4097,15 +4099,16 @@ l94b2 = default_printer_driver_ptr+1
     lda register_value_p                                              ; 9634: ad b6 07    ...
     lsr a                                                             ; 9637: 4a          J
     bcc page_eject_fmt                                                ; 9638: 90 0b       ..
-    bcs c9642                                                         ; 963a: b0 06       ..             ; ALWAYS branch
+    bcs eject_two_pages                                               ; 963a: b0 06       ..             ; ALWAYS branch
 
 ; ***************************************************************************************
 .ep_fmt_cmd
     lda register_value_p                                              ; 963c: ad b6 07    ...
     lsr a                                                             ; 963f: 4a          J
     bcs page_eject_fmt                                                ; 9640: b0 03       ..
+; ***************************************************************************************
 ; &9642 referenced 1 time by &963a
-.c9642
+.eject_two_pages
     jsr page_eject_fmt                                                ; 9642: 20 45 96     E.
 ; ***************************************************************************************
 ; &9645 referenced 5 times by &9629, &9631, &9638, &9640, &9642
@@ -5433,7 +5436,7 @@ l94b2 = default_printer_driver_ptr+1
 .f14_down_key
     jsr write_line_back_to_document_or_error                          ; 9d74: 20 3c a9     <.
     inc l0079                                                         ; 9d77: e6 79       .y
-    bne c9d9b                                                         ; 9d79: d0 20       .
+    bne advance_current_line_pointer                                  ; 9d79: d0 20       .
 ; ***************************************************************************************
 ; &9d7b referenced 1 time by &9d1e
 .return_key
@@ -5445,7 +5448,7 @@ l94b2 = default_printer_driver_ptr+1
     lda current_line_ptr+1                                            ; 9d86: a5 09       ..
     sta tmp1                                                          ; 9d88: 85 86       ..
     jsr move_tmp01_to_next_line                                       ; 9d8a: 20 29 ab     ).
-    bne c9d9b                                                         ; 9d8d: d0 0c       ..
+    bne advance_current_line_pointer                                  ; 9d8d: d0 0c       ..
     tya                                                               ; 9d8f: 98          .
     ldy current_line_ptr+1                                            ; 9d90: a4 09       ..
     clc                                                               ; 9d92: 18          .
@@ -5455,8 +5458,9 @@ l94b2 = default_printer_driver_ptr+1
 ; &9d98 referenced 1 time by &9d95
 .c9d98
     jsr insert_line_at_cursor                                         ; 9d98: 20 e1 9d     ..
+; ***************************************************************************************
 ; &9d9b referenced 2 times by &9d79, &9d8d
-.c9d9b
+.advance_current_line_pointer
     inc cursor_moved_flag                                             ; 9d9b: e6 7d       .}
     lda current_line_ptr                                              ; 9d9d: a5 08       ..
     ldy current_line_ptr+1                                            ; 9d9f: a4 09       ..
@@ -5497,9 +5501,9 @@ l94b2 = default_printer_driver_ptr+1
     txa                                                               ; 9dcf: 8a          .
     clc                                                               ; 9dd0: 18          .
     adc current_line_ptr                                              ; 9dd1: 65 08       e.
-    bcc c9de3                                                         ; 9dd3: 90 0e       ..
+    bcc insert_line_into_document                                     ; 9dd3: 90 0e       ..
     iny                                                               ; 9dd5: c8          .
-    bne c9de3                                                         ; 9dd6: d0 0b       ..
+    bne insert_line_into_document                                     ; 9dd6: d0 0b       ..
 ; ***************************************************************************************
 ; &9dd8 referenced 2 times by &a0db, &a0f2
 .f6_insert_line_key
@@ -5511,8 +5515,9 @@ l94b2 = default_printer_driver_ptr+1
 ; &9de1 referenced 1 time by &9d98
 .insert_line_at_cursor
     inc cursor_moved_flag                                             ; 9de1: e6 7d       .}
+; ***************************************************************************************
 ; &9de3 referenced 2 times by &9dd3, &9dd6
-.c9de3
+.insert_line_into_document
     sta tmp4                                                          ; 9de3: 85 89       ..
     sty tmp5                                                          ; 9de5: 84 8a       ..
     lda #1                                                            ; 9de7: a9 01       ..
@@ -9935,7 +9940,6 @@ save pydis_start, pydis_end
 ;     c8cc8:                                  5
 ;     c9048:                                  5
 ;     c930d:                                  5
-;     c950f:                                  5
 ;     c9c7f:                                  5
 ;     c9e94:                                  5
 ;     check_not_continuous_editing:           5
@@ -9964,6 +9968,7 @@ save pydis_start, pydis_end
 ;     split_line_at_wrap:                     5
 ;     sub_ca276:                              5
 ;     unpack_line:                            5
+;     write_output_buffer_to_format_line:     5
 ;     acknowledge_escape:                     4
 ;     adjust_area_pointers:                   4
 ;     advance_to_next_line:                   4
@@ -10100,6 +10105,7 @@ save pydis_start, pydis_end
 ;     zp_initialisation_canary:               3
 ;     add_justification_spaces:               2
 ;     adjust_margins_at_left_margin:          2
+;     advance_current_line_pointer:           2
 ;     advance_to_next_char_and_render:        2
 ;     bad_filename_error:                     2
 ;     c816d:                                  2
@@ -10177,8 +10183,6 @@ save pydis_start, pydis_end
 ;     c9c00:                                  2
 ;     c9c48:                                  2
 ;     c9c67:                                  2
-;     c9d9b:                                  2
-;     c9de3:                                  2
 ;     c9e3a:                                  2
 ;     c9e9b:                                  2
 ;     c9eda:                                  2
@@ -10283,6 +10287,7 @@ save pydis_start, pydis_end
 ;     init_document_pointers:                 2
 ;     initialise_document_if_document_bad:    2
 ;     insert_at_left_margin:                  2
+;     insert_line_into_document:              2
 ;     justify_edit_buffer:                    2
 ;     l0103:                                  2
 ;     l0502:                                  2
@@ -10457,7 +10462,6 @@ save pydis_start, pydis_end
 ;     c8edb:                                  1
 ;     c8f0a:                                  1
 ;     c8f0d:                                  1
-;     c8f29:                                  1
 ;     c8f6e:                                  1
 ;     c8f7a:                                  1
 ;     c8f92:                                  1
@@ -10525,7 +10529,6 @@ save pydis_start, pydis_end
 ;     c959c:                                  1
 ;     c959e:                                  1
 ;     c95aa:                                  1
-;     c9642:                                  1
 ;     c964c:                                  1
 ;     c968d:                                  1
 ;     c968f:                                  1
@@ -10756,6 +10759,7 @@ save pydis_start, pydis_end
 ;     do_osfile_with_block:                   1
 ;     draw_ruler:                             1
 ;     draw_status_word:                       1
+;     eject_two_pages:                        1
 ;     enter_nonprintable_character:           1
 ;     enter_printable_character:              1
 ;     escape_flag:                            1
@@ -10984,6 +10988,7 @@ save pydis_start, pydis_end
 ;     save_cursor_position:                   1
 ;     service_handler:                        1
 ;     set_document_name_to_filename_buffer:   1
+;     set_rw_file_handle:                     1
 ;     setup_area_pointers:                    1
 ;     start_microspacing_if_active:           1
 ;     sub_ca4dd:                              1

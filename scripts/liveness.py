@@ -496,6 +496,11 @@ def get_local_info_ast(func_cursor, callee_live_out=None, callee_live_in=None):
     if body is None:
         return local_defs, local_uses, local_live_in, call_sites
 
+    # Body locals shadow the simulated register globals.  Collect them before
+    # analyzing statements so local `a`/`x`/`y` variables are not misclassified
+    # as register uses or definitions.
+    _collect_vardecls(body, local_decls)
+
     # Collect the source lines for this function for flag regex
     try:
         source_lines = get_source_lines(func_cursor.location.file.name)
@@ -1020,6 +1025,11 @@ def backward_scan_ast(func_cursor, backward_needs, per_caller_readback, per_call
             break
     if body is None:
         return
+
+    # Body locals shadow the simulated register globals just like parameters.
+    # Include them in backward analysis so local `a`/`x`/`y` variables do not
+    # create false interprocedural register dependencies.
+    _collect_vardecls(body, local_decls)
 
     func_live_out = set(live_out_start)
     _backward_stmt(body, set(func_live_out), backward_needs, per_caller_readback, per_caller_provided, caller,

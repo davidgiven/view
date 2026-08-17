@@ -63,7 +63,7 @@ static void save_cursor_position(void);
 static void set_marker(uint8_t x);
 static void set_marker_common(uint8_t a);
 void show_memory_full_error(void);
-uint8_t adjust_area_pointers(addr_t tmp67);
+void adjust_area_pointers(addr_t tmp67);
 static void append_to_output_buffer(uint8_t a);
 uint8_t upper_case_unless_folding(uint8_t a);
 static bool process_char_for_output(uint8_t y, bool carry_in);
@@ -76,7 +76,7 @@ static void advance_to_next_char_and_render(struct render_state* rs);
 static uint8_t find_marker_at_position(uint8_t y, addr_t tmp67);
 static void unpack_line(addr_t ptr1);
 static void update_markers_to_format_buffer(void);
-uint8_t check_for_embedded_ruler(addr_t tmp01, uint8_t y);
+void check_for_embedded_ruler(addr_t tmp01, uint8_t y);
 static void find_line_start(addr_t tmp89);
 static int find_left_margin_stop(void);
 static void insert_at_left_margin(void);
@@ -6929,7 +6929,7 @@ ca97c:
     //     rts
 }
 
-uint8_t adjust_area_pointers(addr_t tmp67)
+void adjust_area_pointers(addr_t tmp67)
 {
     // sub_c89d3:
     //     lda area_start_ptr
@@ -6943,7 +6943,7 @@ uint8_t adjust_area_pointers(addr_t tmp67)
     //     ldy ((uint8_t*)&tmp45)[1]
     //     jmp cac78
     split_line_at_wrap(tmp45);
-    return a;
+    return;
 }
 
 static void append_to_output_buffer(uint8_t a)
@@ -7977,7 +7977,7 @@ caae8:
     //     rts
 }
 
-uint8_t check_for_embedded_ruler(addr_t tmp01, uint8_t y)
+void check_for_embedded_ruler(addr_t tmp01, uint8_t y)
 {
     // Pseudocode: Pushes ruler stack before entering a new ruler region
 
@@ -7985,22 +7985,18 @@ uint8_t check_for_embedded_ruler(addr_t tmp01, uint8_t y)
     //     pha
     //     tya
     //     pha
+    //     jsr sub_cab6e
+    //     bne cac4c
+    // (inlined: Z = (ram[tmp01] == RULER_BYTE))
+    if (ram[tmp01] == RULER_BYTE)
     {
-        uint8_t saved_a = a;
-        //     jsr sub_cab6e
-        //     bne cac4c
-        // (inlined: Z = (ram[tmp01] == RULER_BYTE))
-        if (ram[tmp01] == RULER_BYTE)
-        {
-            push_onto_ruler_index(y, tmp01);
-        }
-        //     pla
-        //     tay
-        //     pla
-        a = saved_a;
+        push_onto_ruler_index(y, tmp01);
     }
+    //     pla
+    //     tay
+    //     pla
     //     rts
-    return a;
+    return;
 }
 
 static void find_line_start(addr_t tmp89)

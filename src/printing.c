@@ -38,7 +38,7 @@ static void render_header_or_footer(uint16_t yx);
 static void render_new_page(void);
 bool scan_input_buffer(struct scan_state* state);
 static void start_microspacing_if_active(uint8_t a);
-static void emit_microspacing_spaces(uint8_t x);
+static void emit_microspacing_spaces(uint8_t a, uint8_t x);
 static void prepare_output_line(void);
 static void parse_register_reference(uint8_t a);
 static void read_next_output_line(addr_t limit);
@@ -52,7 +52,7 @@ static void copy_header_footer_text(addr_t tmp23);
 static bool get_page_parity(void);
 static void output_left_margin(void);
 static uint8_t add_justification_spaces(uint8_t x);
-static void convert_char_for_printing(bool* is_tab);
+static uint8_t convert_char_for_printing(uint8_t a, uint8_t* x, bool* is_tab);
 static void reset_print_registers(void);
 static void write_byte_to_memory(addr_t* cursor, uint8_t a);
 static void write_cr_to_memory(addr_t* cursor);
@@ -1762,7 +1762,7 @@ static void print_output_buffer(void)
         {
             uint8_t saved_x = a;
             a = output_buffer[y];
-            convert_char_for_printing(&is_tab);
+            a = convert_char_for_printing(a, &x, &is_tab);
             print_char(a);
             y++;
             a = saved_x;
@@ -1875,7 +1875,7 @@ c9048:
         //     lda (((uint8_t*)&tmp01)[0]),y
         a = ram[tmp01 + y];
         //     jsr sub_c9431
-        convert_char_for_printing(&is_tab);
+        convert_char_for_printing(a, &x, &is_tab);
         //     pla
         a = saved_a;
     }
@@ -2151,7 +2151,7 @@ c912b:
     //     iny
     y++;
     //     jsr sub_c9431
-    convert_char_for_printing(&is_tab);
+    a = convert_char_for_printing(a, &x, &is_tab);
     //     pha
     {
         uint8_t saved_a3 = a;
@@ -2196,7 +2196,7 @@ c912b:
             l0045--;
         }
         //     jsr sub_c9173
-        emit_microspacing_spaces(x);
+        emit_microspacing_spaces(a, x);
         //     lda #0x20 ; ' '
         a = 0x20;
         //     bne c9160 ; ALWAYS branch
@@ -2207,7 +2207,7 @@ c912b:
         //     ldx microspacing_flag
         x = microspacing_flag;
         //     jsr sub_c9173
-        emit_microspacing_spaces(x);
+        emit_microspacing_spaces(a, x);
         // c9160:
     c9160:
         //     jsr print_char
@@ -2226,7 +2226,7 @@ c8fe6_inline:
     {
         a = ram[tmp01 + y];
         y++;
-        convert_char_for_printing(&is_tab);
+        a = convert_char_for_printing(a, &x, &is_tab);
         print_char_x_times(a, x);
     } while (a != 0x0d);
     //     inc register_value_l
@@ -2656,7 +2656,7 @@ static void print_loop(void)
         {
             a = ram[tmp01 + y];
             y++;
-            convert_char_for_printing(&is_tab);
+            a = convert_char_for_printing(a, &x, &is_tab);
             print_char_x_times(a, x);
         } while (a != 0x0d);
         //     inc register_value_l
@@ -3171,7 +3171,13 @@ static void start_microspacing_if_active(uint8_t a)
     return;
 }
 
-static void emit_microspacing_spaces(uint8_t x)
+/**
+ * Emits microspacing spaces while preserving the character being printed.
+ *
+ * @param a character to preserve across the printer callback
+ * @param x requested microspacing amount
+ */
+static void emit_microspacing_spaces(uint8_t a, uint8_t x)
 {
     // Pseudocode: Emits spaces for microspacing by calling printer driver with
     // spacing count
@@ -3185,15 +3191,11 @@ static void emit_microspacing_spaces(uint8_t x)
     //     jsr sub_c9445
     print_alignment_spaces(a);
     //     pha
-    {
-        uint8_t saved_a = a;
-        //     stx l0043
-        l0043 = x;
-        //     lda #9
-        printer_driver_ptr->printer_microspace();
-        //     pla
-        a = saved_a;
-    }
+    //     stx l0043
+    l0043 = x;
+    //     lda #9
+    printer_driver_ptr->printer_microspace();
+    //     pla
     // return_25:
     //     rts
     return;
@@ -3784,13 +3786,21 @@ static uint8_t add_justification_spaces(uint8_t x)
     return a;
 }
 
-static void convert_char_for_printing(bool* is_tab)
+/**
+ * Converts a character for printing and updates its display width.
+ *
+ * @param a character to convert
+ * @param[out] x converted character width
+ * @param is_tab tab-state carried between characters
+ * @return converted character
+ */
+static uint8_t convert_char_for_printing(uint8_t a, uint8_t* x, bool* is_tab)
 {
     // Pseudocode: Converts character for printing, updates x position counter
 
     // sub_c9431:
     //     jsr sub_ca5ae
-    a = process_document_character(a, &x, is_tab);
+    a = process_document_character(a, x, is_tab);
     //     bit print_flags
     if (!(print_flags & 0x80))
         goto c943c;
@@ -3808,7 +3818,7 @@ c943c:
     {
         uint8_t saved_a = a;
         //     txa
-        a = x;
+        a = *x;
         //     clc
         //     adc l0039
         a += l0039;
@@ -3820,7 +3830,7 @@ c943c:
 // return_33:
 return_33:
     //     rts
-    return;
+    return a;
 }
 
 static void reset_print_registers(void)
