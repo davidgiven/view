@@ -81,8 +81,8 @@ Functions defined in the source files and their callees (only calls to other fun
 - **scan_input_buffer** [a, flags, input_buffer, input_buffer_offset, l007e, y]
 - **check_not_continuous_editing** → display_document_file_state [a, file_edit_flags, flags]
 - **check_continuous_editing** → display_document_file_state [file_edit_flags, flags]
-- **c8f29_sub** [a, rw_file_handle]
-- **print_document** → c8f29_sub, process_page_footer, check_for_at_least_150_bytes_free, check_not_continuous_editing, find_margins_of_current_ruler_buffer, parse_optional_filename_from_command, print_loop, scan_input_buffer, reset_print_registers [a, current_ruler_ptr, first_macro_ptr, flags, l0031, last_macro_ptr, page, print_xpos, printing_from_file_flag, ptr5, ptr6, ram, top, x, y]
+- **set_rw_file_handle** [a, rw_file_handle]
+- **print_document** → set_rw_file_handle, process_page_footer, check_for_at_least_150_bytes_free, check_not_continuous_editing, find_margins_of_current_ruler_buffer, parse_optional_filename_from_command, print_loop, scan_input_buffer, reset_print_registers [a, current_ruler_ptr, first_macro_ptr, flags, l0031, last_macro_ptr, page, print_xpos, printing_from_file_flag, ptr5, ptr6, ram, top, x, y]
 - **print_loop** → process_page_footer, deref_and_check_for_command_prefix, execute_formatting_command, find_margins_of_current_ruler_buffer, lookup_formatting_command, microspace_word_processor, nested_macro_error, print_char_x_times, print_vertical_space, render_new_page, start_microspacing_if_active, prepare_output_line, output_left_margin, convert_char_for_printing, is_embedded_ruler [a, current_format_line_ptr, current_ruler_buffer, first_macro_ptr, flags, l0021, l0031, l0039, l0080, line_spacing, macro_executing_flag, microspacing_flag, print_flags, ptr3, ram, tmp0, tmp1, tmp6, tmp7, tmp8, tmp9, x, y]
 - **nested_macro_error** → return_to_cli_prompt, stop_printing
 - **microspace_word_processor** → print_char, print_char_x_times, print_vertical_space, emit_microspacing_spaces, convert_char_for_printing [a, flags, l0021, l0039, l0042, l0043, l0044, l0045, l0046, l0047, l0048, l0080, l0083, line_spacing, microspacing_flag, output_buffer, ram, ruler_right_stop, tmp0, tmp1, tmp8, tmp9, x, y]
@@ -126,12 +126,12 @@ Functions defined in the source files and their callees (only calls to other fun
 - **f13_right_key** [flags, xpos, y]
 - **f12_left_key** [l0072, xpos, y]
 - **f15_up_key** → move_tmp01_to_previous_line, write_line_back_to_document_safely [a, current_line_ptr, cursor_moved_flag, flags, l0079, tmp0, tmp1, y]
-- **c9d9b_advance_ptr** → find_next_line [a, current_line_ptr, cursor_moved_flag, flags, y]
-- **f14_down_key** → c9d9b_advance_ptr, return_key, write_line_back_to_document_safely [l0079]
-- **return_key** → c9d9b_advance_ptr, move_tmp01_to_next_line, insert_line_at_cursor, write_line_back_to_document_safely [a, current_line_ptr, flags, tmp0, tmp1, xpos, y]
-- **c9de3_insert_line** → clamp_ptr6_to_document, make_space_for_insertion, memory_full [a, flags, ram, tmp4, tmp5, tmp6, tmp7, y]
-- **insert_line_at_cursor** → c9de3_insert_line [cursor_moved_flag]
-- **cf6_split_line_key** → c9de3_insert_line, check_for_command_prefix, f6_insert_line_key, get_line_length, write_line_back_to_document_safely [current_format_line_ptr, current_line_ptr, flags, l0079, ram, xpos, y]
+- **advance_current_line_pointer** → find_next_line [a, current_line_ptr, cursor_moved_flag, flags, y]
+- **f14_down_key** → advance_current_line_pointer, return_key, write_line_back_to_document_safely [l0079]
+- **return_key** → advance_current_line_pointer, move_tmp01_to_next_line, insert_line_at_cursor, write_line_back_to_document_safely [a, current_line_ptr, flags, tmp0, tmp1, xpos, y]
+- **insert_line_into_document** → clamp_ptr6_to_document, make_space_for_insertion, memory_full [a, flags, ram, tmp4, tmp5, tmp6, tmp7, y]
+- **insert_line_at_cursor** → insert_line_into_document [cursor_moved_flag]
+- **cf6_split_line_key** → insert_line_into_document, check_for_command_prefix, f6_insert_line_key, get_line_length, write_line_back_to_document_safely [current_format_line_ptr, current_line_ptr, flags, l0079, ram, xpos, y]
 - **f6_insert_line_key** → insert_line_at_cursor, write_line_back_to_document_safely [a, current_line_ptr, l0079, y]
 - **delete_key** → f8_insert_char_key, f9_delete_char_key, get_line_length [flags, insert_mode_flag, l0072, ram, xpos, y]
 - **f8_insert_char_key** → insert_character_into_edit_buffer [a]
@@ -278,10 +278,10 @@ Functions defined in the source files and their callees (only calls to other fun
 
 ## printing
 
-- **c950f_impl** [a, current_format_line_ptr, flags, l0030, output_buffer, ram, x, y]
-- **lj_fmt_cmd** → c950f_impl, expand_line [a, flags]
-- **ce_fmt_cmd** → c950f_impl, expand_line [a, flags, l0084, ruler_left_stop, ruler_right_stop, x]
-- **rj_fmt_cmd** → c950f_impl, expand_line [a, flags, l0083, ruler_right_stop, x]
+- **write_output_buffer_to_format_line** [a, current_format_line_ptr, flags, l0030, output_buffer, ram, x, y]
+- **lj_fmt_cmd** → write_output_buffer_to_format_line, expand_line [a, flags]
+- **ce_fmt_cmd** → write_output_buffer_to_format_line, expand_line [a, flags, l0084, ruler_left_stop, ruler_right_stop, x]
+- **rj_fmt_cmd** → write_output_buffer_to_format_line, expand_line [a, flags, l0083, ruler_right_stop, x]
 - **expand_line** → check_for_control_code, get_current_fmt_cmd_byte, render_register [a, current_format_line_ptr, flags, l0082, l0083, output_buffer, print_flags, ram, x, y]
 - **store_to_output_buffer** [a, l0081, ram, tmp2, tmp3, y]
 - **process_header_footer_line** → store_to_output_buffer [a, current_format_line_ptr, flags, l007a, l0080, l0081, l0082, l0083, ram, tmp2, tmp3, x, y]
@@ -297,9 +297,9 @@ Functions defined in the source files and their callees (only calls to other fun
 - **lm_fmt_cmd** → evaluate_expression_from_fmt_cmd [a, left_margin, y]
 - **ls_fmt_cmd** → evaluate_expression_from_fmt_cmd [a, line_spacing, y]
 - **pe_fmt_cmd** → evaluate_expression_from_fmt_cmd, page_eject_fmt [a, flags, l0021, l0031, x, y]
-- **c9642_tail** → page_eject_fmt
-- **op_fmt_cmd** → c9642_tail, page_eject_fmt [flags, ram]
-- **ep_fmt_cmd** → c9642_tail, page_eject_fmt [flags, ram]
+- **eject_two_pages** → page_eject_fmt
+- **op_fmt_cmd** → eject_two_pages, page_eject_fmt [flags, ram]
+- **ep_fmt_cmd** → eject_two_pages, page_eject_fmt [flags, ram]
 - **page_eject_fmt** → process_page_footer, render_new_page [flags, l0031]
 - **fo_fmt_cmd** → parse_boolean_from_fmt_cmd [a, flags, footers_enabled_flag, y]
 - **he_fmt_cmd** → parse_boolean_from_fmt_cmd [a, flags, headers_enabled_flag, y]
@@ -342,4 +342,3 @@ Functions defined in the source files and their callees (only calls to other fun
 ## editor
 
 *(stub)*
-

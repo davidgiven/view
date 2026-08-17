@@ -18,7 +18,7 @@ static const struct printer_driver default_printer_driver;
 
 // Printing-only functions
 void bad_filename_error(void);
-static void c8f29_sub(uint8_t a);
+static void set_rw_file_handle(uint8_t a);
 static void process_page_footer(void);
 static void print_output_buffer(void);
 static uint8_t scan_string_length(uint8_t y_start, addr_t tmp45);
@@ -61,7 +61,7 @@ static void write_cr_to_memory(addr_t* cursor);
 
 // Forward declarations within printing.c
 static void expand_line(void);
-static void c950f_impl(uint8_t a);
+static void write_output_buffer_to_format_line(uint8_t a);
 static void parse_word_flag(addr_t ptr, uint8_t* y);
 static void parse_boolean_from_fmt_cmd(uint8_t* y);
 static void page_eject_fmt(void);
@@ -82,7 +82,7 @@ static void render_number_to_output_buffer(uint16_t value);
 static void emit_to_output_buffer_callback(uint8_t digit);
 static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t));
 
-static void c950f_impl(uint8_t a)
+static void write_output_buffer_to_format_line(uint8_t a)
 {
     // c950f_impl
     // c950f:
@@ -140,7 +140,7 @@ static void lj_fmt_cmd(void)
     //     lda #0
     //     beq c950f                                                         ;
     //     ALWAYS branch
-    c950f_impl(0);
+    write_output_buffer_to_format_line(0);
     return;
 }
 
@@ -175,7 +175,7 @@ static void ce_fmt_cmd(void)
     //     beq c950f
     if (a == 0)
     {
-        c950f_impl(a);
+        write_output_buffer_to_format_line(a);
         return;
     }
     //     sec
@@ -196,12 +196,12 @@ static void ce_fmt_cmd(void)
     //  the result passed to c950f_impl)
     if (a >= l0084)
     {
-        c950f_impl(a - l0084);
+        write_output_buffer_to_format_line(a - l0084);
         return;
     }
     //     lda #0
     //     beq c950f ; ALWAYS branch
-    c950f_impl(0);
+    write_output_buffer_to_format_line(0);
     return;
 }
 
@@ -240,7 +240,7 @@ static void rj_fmt_cmd(void)
     //     bcs c950f
     if (x >= ruler_right_stop)
     {
-        c950f_impl(a);
+        write_output_buffer_to_format_line(a);
         return;
     }
     //     stx l0083
@@ -251,7 +251,7 @@ static void rj_fmt_cmd(void)
     //     sbc l0083
     a -= l0083;
     // c950f: fall-through to shared routine
-    c950f_impl(a);
+    write_output_buffer_to_format_line(a);
     return;
 }
 
@@ -703,7 +703,7 @@ static void pe_fmt_cmd(void)
     return;
 }
 
-static void c9642_tail(void)
+static void eject_two_pages(void)
 {
     // c9642:
     //     jsr page_eject_fmt
@@ -729,7 +729,7 @@ static void op_fmt_cmd(void)
     a >>= 1;
     //     bcs c9642                                                         ;
     //     ALWAYS branch
-    c9642_tail();
+    eject_two_pages();
     return;
 }
 
@@ -749,7 +749,7 @@ static void ep_fmt_cmd(void)
     }
     a >>= 1;
     // c9642:
-    c9642_tail();
+    eject_two_pages();
     return;
 }
 
@@ -1671,7 +1671,7 @@ void bad_filename_error(void)
     return;
 }
 
-static void c8f29_sub(uint8_t a)
+static void set_rw_file_handle(uint8_t a)
 {
     // c8f29:
     //     #if 0
@@ -2417,7 +2417,7 @@ c8f0d:
     if (parse_optional_filename_from_command(scan))
     {
         // A = 0x0d (set by parse_optional_filename_from_command's lda #&0d)
-        c8f29_sub(0x0d);
+        set_rw_file_handle(0x0d);
         print_loop();
         goto c8f0d;
     }

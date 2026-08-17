@@ -32,7 +32,7 @@ void adjust_pointers(addr_t tmp45, addr_t tmp67);
 static void advance_to_next_line(void);
 void beep(void);
 bool scan_document_for_next_line(void);
-static uint8_t c9de3_insert_line(addr_t ptr);
+static uint8_t insert_line_into_document(addr_t ptr);
 static void update_line_length(void);
 void clamp_ptr6_to_document(void);
 void clear_screen(void);
@@ -97,7 +97,7 @@ void split_line_at_wrap(addr_t tmp89);
 
 // Editor-internal helper functions
 
-static void c9d9b_advance_ptr(void);
+static void advance_current_line_pointer(void);
 
 static void clear_marks_1_2(void);
 
@@ -765,7 +765,7 @@ static void cf6_split_line_key(void)
         f6_insert_line_key();
         return;
     }
-    c9de3_insert_line((uint16_t)sum);
+    insert_line_into_document((uint16_t)sum);
     return;
 }
 
@@ -1197,7 +1197,7 @@ static void f14_down_key(void)
 
     if (l0079 != 0)
     {
-        c9d9b_advance_ptr();
+        advance_current_line_pointer();
         return;
     }
 
@@ -2515,7 +2515,7 @@ uint8_t return_key(void)
 
     if (!move_tmp01_to_next_line(current_line_ptr))
     {
-        c9d9b_advance_ptr();
+        advance_current_line_pointer();
         return x;
     }
     //     bne c9d9b
@@ -2536,7 +2536,7 @@ uint8_t return_key(void)
 
     //     // falls through to c9d9b
 
-    c9d9b_advance_ptr();
+    advance_current_line_pointer();
     return x;
 }
 
@@ -3367,7 +3367,7 @@ static void tab_key(void)
     return;
 }
 
-static void c9d9b_advance_ptr(void)
+static void advance_current_line_pointer(void)
 {
     //     inc cursor_moved_flag
     cursor_moved_flag++;
@@ -4010,7 +4010,7 @@ static uint8_t insert_line_at_cursor(addr_t ptr)
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     falls through to c9de3
-    x = c9de3_insert_line(ptr);
+    x = insert_line_into_document(ptr);
     return x;
 }
 
@@ -5161,7 +5161,7 @@ c8c3e:
     return true;
 }
 
-static uint8_t c9de3_insert_line(addr_t ptr)
+static uint8_t insert_line_into_document(addr_t ptr)
 {
     //     sta ((uint8_t*)&tmp45)[0]
     tmp45 = ptr;
