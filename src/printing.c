@@ -40,7 +40,7 @@ bool scan_input_buffer(struct scan_state* state);
 static void start_microspacing_if_active(uint8_t a);
 static void emit_microspacing_spaces(uint8_t a, uint8_t x);
 static void prepare_output_line(void);
-static void parse_register_reference(uint8_t a);
+static enum parse_register_result_t parse_register_reference(uint8_t a);
 static void read_next_output_line(addr_t limit);
 static void compute_lines_remaining_on_page(void);
 static void compute_header_left_section(addr_t tmp45);
@@ -72,6 +72,13 @@ static uint8_t get_next_fmt_cmd_byte(uint8_t* y);
 enum formatting_command_index_t
 {
     NO_FORMATTING_COMMAND = -1
+};
+
+enum parse_register_result_t
+{
+    PARSE_REGISTER_MARKER,
+    PARSE_REGISTER_VALUE,
+    PARSE_REGISTER_OTHER,
 };
 
 int lookup_formatting_command(void);
@@ -3372,13 +3379,15 @@ c91f5:
     if (a == 0x0d)
         goto c9223;
     //     jsr sub_c9228
-    parse_register_reference(a);
-    //     beq c91f5
-    if (flags & FLAG_Z)
-        goto c91f5;
-    //     bvs c91f5
-    if (flags & FLAG_V)
-        goto c91f5;
+    {
+        enum parse_register_result_t r = parse_register_reference(a);
+        //     beq c91f5
+        if (r == PARSE_REGISTER_MARKER)
+            goto c91f5;
+        //     bvs c91f5
+        if (r == PARSE_REGISTER_VALUE)
+            goto c91f5;
+    }
     //     cmp #0x2c ; ','
     //     beq loop_c91f1
     if (a == 0x2c)
@@ -3398,13 +3407,15 @@ c9209:
     if (a == 0x0d)
         goto c9223;
     //     jsr sub_c9228
-    parse_register_reference(a);
-    //     beq c9209
-    if (flags & FLAG_Z)
-        goto c9209;
-    //     bvs c921b
-    if (flags & FLAG_V)
-        goto c921b;
+    {
+        enum parse_register_result_t r = parse_register_reference(a);
+        //     beq c9209
+        if (r == PARSE_REGISTER_MARKER)
+            goto c9209;
+        //     bvs c921b
+        if (r == PARSE_REGISTER_VALUE)
+            goto c921b;
+    }
     //     cmp #0x2c ; ','
     //     beq c9223
     if (a == 0x2c)
@@ -3429,7 +3440,7 @@ c9225:
     goto c91a7;
 }
 
-static void parse_register_reference(uint8_t a)
+static enum parse_register_result_t parse_register_reference(uint8_t a)
 {
     // sub_c9228
     // Pseudocode: Parses register reference markers (<, >, =) in format line
@@ -3441,8 +3452,7 @@ static void parse_register_reference(uint8_t a)
     {
         a = 0;
         l0082 = a;
-        set_flags(&flags, a); // Z live
-        return;
+        return PARSE_REGISTER_MARKER; // Z live
     }
     //     cmp #0x3c ; '<'
     //     bne c923c
@@ -3450,16 +3460,16 @@ static void parse_register_reference(uint8_t a)
     {
         a = 0x40;
         l0082 = a;
-        set_flags(&flags, 0); // Z live
-        return;
+        return PARSE_REGISTER_MARKER; // Z live
     }
     //     bit l0082
-    bit(&flags, a, l0082); // V live
+    // (bit sets Z and V; Z is killed by the following set_flags, so V
+    //  is the only surviving flag on this path)
+    if (a & l0082)
+        return PARSE_REGISTER_VALUE; // V live
     //     ora #0
-    a |= 0;
-    set_flags(&flags, a); // Z live
     //     rts
-    return;
+    return PARSE_REGISTER_OTHER;
 }
 
 static void read_next_output_line(addr_t limit)
