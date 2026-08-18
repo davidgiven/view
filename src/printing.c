@@ -1648,6 +1648,7 @@ void render_number_to_screen(uint16_t val)
 
 static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t))
 {
+    uint8_t a;
     // Pseudocode: Render 16-bit number as decimal via callback
 
     char buf[6];

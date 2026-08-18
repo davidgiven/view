@@ -454,7 +454,7 @@ def get_func_params_from_ast(func_cursor):
     params = set()
     for child in _get_children(func_cursor):
         if child.kind == clang.cindex.CursorKind.PARM_DECL:
-            if child.spelling in REGISTERS:
+            if child.spelling in TRACKED_VARS:
                 params.add(child.spelling)
     return params
 
@@ -766,6 +766,47 @@ def _find_call_expr_callees(cur):
         yield from _find_call_expr_callees(ch)
 
 
+def _find_call_expr_arg_names(cur):
+    """Yield tracked-variable names passed as arguments in call expressions
+    found in `cur`'s subtree."""
+    if cur is None:
+        return
+    ck = cur.kind
+    if ck == clang.cindex.CursorKind.COMPOUND_STMT:
+        return
+    if ck == clang.cindex.CursorKind.CALL_EXPR:
+        children = list(_get_children(cur))
+        if len(children) > 1:
+            for arg in children[1:]:
+                if arg.kind == clang.cindex.CursorKind.DECL_REF_EXPR:
+                    if arg.spelling in TRACKED_VARS:
+                        yield arg.spelling
+                else:
+                    yield from _find_call_expr_arg_names(arg)
+        return
+    for ch in _get_children(cur):
+        yield from _find_call_expr_arg_names(ch)
+
+
+def _get_call_arg_names(source_lines, line_num):
+    """Extract tracked-variable names from call arguments on a source line.
+
+    Falls back to a regex on the source text when the AST is unavailable."""
+    if line_num > 0 and line_num <= len(source_lines):
+        sl = source_lines[line_num - 1].strip()
+    else:
+        return set()
+    m = re.search(r'\w+\s*\(([^)]*)\)', sl)
+    if not m:
+        return set()
+    result = set()
+    for tok in re.split(r'[,\s]+', m.group(1)):
+        tok = tok.strip()
+        if tok and tok in TRACKED_VARS:
+            result.add(tok)
+    return result
+
+
 def _analyze_stmt_effect(cur, local_decls, source_lines, local_info=None,
                          func_params=None):
     """defs/uses of a statement (with byte/flag propagation)."""
@@ -866,8 +907,14 @@ def _backward_plain(cur, live, backward_needs, per_caller_readback, per_caller_p
             # are not caller inputs.
             callee_provided = callee_info.get('per_callee_provided', {})
             callee_locals = callee_info.get('local_decls', set())
-            for v in callee_provided.values():
-                provided |= (set(v) - callee_info.get('defs', set()) - callee_locals - own_d)
+            for inner_callee, v in callee_provided.items():
+                inner_params = func_params.get(inner_callee, set())
+                provided |= (set(v) - callee_info.get('defs', set()) - callee_locals - inner_params - own_d)
+            # Callee parameters are passed by value; they are not global
+            # register hand-offs the caller must provide.  Also exclude
+            # variable names that appear as call arguments on the source line.
+            provided -= callee_params
+            provided -= _get_call_arg_names(source_lines, line_num)
             per_caller_provided.setdefault((caller, callee_name), set()).update(provided)
         return result
 
@@ -1303,8 +1350,20 @@ def analyze_files(files):
             # callee's own locals, so the caller's global is just a scratch
             # temporary, not consumed by the callee.  Only non-parameter
             # arguments (register-convention globals) are consumed here.
+            #
+            # Also exclude variable names found as call arguments in the
+            # source line — these are passed by value regardless of whether
+            # they match the callee's declared parameters.
+            call_arg_names = set()
+            if callee_name and sl:
+                m = re.search(r'\b' + re.escape(callee_name) + r'\s*\(([^)]*)\)', sl)
+                if m:
+                    for tok in re.split(r'[,\s]+', m.group(1)):
+                        tok = tok.strip()
+                        if tok and tok in TRACKED_VARS:
+                            call_arg_names.add(tok)
             for var in TRACKED_VARS:
-                if var in local_decls_func or var in callee_params:
+                if var in local_decls_func or var in callee_params or var in call_arg_names:
                     continue
                 if re.search(r'(?<!\w)' + var + r'(?!\w)', sl):
                     if not re.search(r'\b' + var + r'\s*=', sl):

@@ -773,6 +773,7 @@ static void cf6_split_line_key(void)
 
 static void cf7_join_lines_key(void)
 {
+    addr_t tmp45;
     // cf7_join_lines_key
 
     // cf7_join_lines_key: Joins current line with next line
@@ -2672,6 +2673,7 @@ static void sf12_left_key(void)
 
 static void sf13_right_key(void)
 {
+    addr_t tmp01;
     uint8_t a;
     // sf13_right_key
 
@@ -3535,6 +3537,8 @@ cae98:
 
 static uint8_t enter_printable_character(void)
 {
+    addr_t tmp45;
+    addr_t tmp67;
     // enter_printable_character
     // enter_printable_character:
     //     ldy xpos
@@ -4154,6 +4158,7 @@ static void move_cursor_down(uint8_t x)
 
 static void check_pointer_in_area(void)
 {
+    addr_t tmp45;
     addr_t tmp23;
     addr_t tmp89;
 
@@ -4293,6 +4298,7 @@ void set_format_mode_bit7(void)
  */
 void draw_previous_word(uint8_t* word_boundary, bool* is_start_of_line)
 {
+    addr_t tmp01;
     uint8_t a;
     uint8_t y;
     // draw_previous_word
@@ -4563,6 +4569,7 @@ cae52:
 
 void set_marker_to_here(uint8_t x)
 {
+    uint8_t a;
     uint8_t y;
     // set_marker_to_here
     // set_marker_to_here: Sets marker at current cursor position
@@ -4608,6 +4615,8 @@ cad5d:
 
 void split_line_at_wrap(addr_t tmp89)
 {
+    addr_t tmp45;
+    addr_t tmp67;
     uint8_t a;
     uint8_t y;
 
@@ -5167,6 +5176,8 @@ c8c3e:
 
 static uint8_t insert_line_into_document(addr_t ptr)
 {
+    addr_t tmp45;
+    addr_t tmp67;
     //     sta ((uint8_t*)&tmp45)[0]
     tmp45 = ptr;
     //     lda #1
@@ -6627,6 +6638,7 @@ ca422:
 
 static void render_char(struct render_state* rs)
 {
+    addr_t tmp67;
     // render_char
     // ca4e9: Renders character to screen with attribute handling.
     //
@@ -6935,6 +6947,7 @@ ca97c:
 
 void adjust_area_pointers(addr_t tmp67)
 {
+    addr_t tmp45;
     // sub_c89d3:
     //     lda area_start_ptr
     //     sta ((uint8_t*)&tmp45)[0]
@@ -7071,6 +7084,8 @@ c9969:
 
 void format_paragraph(void)
 {
+    uint8_t a;
+    addr_t tmp67;
     uint8_t x;
     uint8_t y;
     // sub_c9977
@@ -7930,6 +7945,7 @@ caac8:
 
 static void update_markers_to_format_buffer(void)
 {
+    addr_t tmp67;
     uint8_t y;
     uint8_t a;
 
@@ -8165,6 +8181,7 @@ void wipe_buffer(uint8_t a, addr_t ptr1)
 
 static bool write_line_back_to_document(void)
 {
+    addr_t tmp45;
     uint8_t y;
     // write_line_back_to_document
     // sub_ca8b9:

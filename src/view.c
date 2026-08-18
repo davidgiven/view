@@ -730,6 +730,8 @@ bool reset_command_parse_state(struct scan_state* scan)
 
 void read_into_document(void)
 {
+    addr_t tmp45;
+    addr_t tmp67;
     // read_into_document
     //  Ptrs:   ptr5
     // 1: - shared entry point used by both load_cmd and read_cmd
@@ -796,6 +798,8 @@ c8598:
 
 void check_area_memory(addr_t ptr2)
 {
+    addr_t tmp45;
+    addr_t tmp67;
     uint8_t a;
 
     uint8_t y;
