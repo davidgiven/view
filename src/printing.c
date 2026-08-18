@@ -41,7 +41,7 @@ static void start_microspacing_if_active(uint8_t a);
 static void emit_microspacing_spaces(uint8_t a, uint8_t x);
 static void prepare_output_line(void);
 static enum parse_register_result_t parse_register_reference(uint8_t a);
-static void read_next_output_line(addr_t limit);
+static read_block_status_t read_next_output_line(addr_t limit);
 static void compute_lines_remaining_on_page(void);
 static void compute_header_left_section(addr_t tmp45);
 static void compute_header_middle_section(addr_t tmp45);
@@ -958,9 +958,8 @@ c96a2:
     current_format_line_ptr = last_macro_ptr;
     l0081 = (uint8_t)(last_macro_ptr >> 8);
     //     jsr sub_c9241
-    read_next_output_line(last_macro_ptr);
+    if (read_next_output_line(last_macro_ptr) == READ_BLOCK_DONE)
     //     bcc c96ce
-    if ((flags & FLAG_C))
     {
         return;
     }
@@ -3250,10 +3249,12 @@ c9188_normal_entry:
     //     sta ((uint8_t*)&tmp01)[1]
     ((uint8_t*)&tmp01)[1] = a;
     //     jsr sub_c9241
-    read_next_output_line(ptr5);
-    //     bcs return_26
-    if (flags & FLAG_C)
+    if (read_next_output_line(ptr5) == READ_BLOCK_DONE)
+    {
+        //     bcs return_26
+        flags |= FLAG_C;
         return;
+    }
     //     lda ptr5
     a = (uint8_t)(ptr5 & 0xff);
     //     ldy ptr5+1
@@ -3472,7 +3473,7 @@ static enum parse_register_result_t parse_register_reference(uint8_t a)
     return PARSE_REGISTER_OTHER;
 }
 
-static void read_next_output_line(addr_t limit)
+static read_block_status_t read_next_output_line(addr_t limit)
 {
     uint8_t a;
     uint8_t a2;
@@ -3488,26 +3489,23 @@ static void read_next_output_line(addr_t limit)
     //     beq c9260
     if (a == 0)
     {
-        read_block_from_file(&tmp01, limit);
-        return;
+        return read_block_from_file(&tmp01, limit);
     } //     ldy #0
     uint8_t y = 0;
     // loop_c9247:
     do
     {
         a2 = ram[printer_ptr6 + y];
-        flags |= FLAG_C;
         if (a2 == 0)
-            return;
+            return READ_BLOCK_DONE;
         ram[tmp01 + y] = a2;
         printer_ptr6++;
         tmp01++;
     } while (a2 != 0x0d);
     //     clc
-    flags &= ~FLAG_C;
     // return_27:
     //     rts
-    return;
+    return READ_BLOCK_MORE;
 
     // c9260:
     //     jmp read_block_from_file
