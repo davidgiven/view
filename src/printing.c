@@ -3533,30 +3533,28 @@ static void compute_lines_remaining_on_page(void)
     //     lda page_length
     a = page_length;
     //     clc
-    flags &= ~FLAG_C;
     //     sbc top_margin
-    a = sbc(&flags, a, top_margin); // C live
     //     bcc c930d
-    if (!(flags & FLAG_C))
+    if (a < top_margin)
         goto c930d;
+    a -= top_margin;
     //     sbc header_margin
-    a = sbc(&flags, a, header_margin); // C live
     //     bcc c930d
-    if (!(flags & FLAG_C))
+    if (a < header_margin)
         goto c930d;
+    a -= header_margin;
     //     clc
-    flags &= ~FLAG_C;
     //     sbc bottom_margin
-    a = sbc(&flags, a, bottom_margin); // C live
     //     bcc c930d
-    if ((flags & FLAG_C))
-    {
-        a = sbc(&flags, a, footer_margin); // C live
-        if ((flags & FLAG_C))
-        {
-            x = a;
-        }
-    }
+    if (a < bottom_margin)
+        goto c930d;
+    a -= bottom_margin;
+    //     sbc footer_margin
+    //     bcc c930d
+    if (a < footer_margin)
+        goto c930d;
+    a -= footer_margin;
+    x = a;
 c930d:
     //     stx l0021
     l0021 = x;
