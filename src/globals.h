@@ -69,24 +69,6 @@ static inline void cmp(uint8_t* flags, uint8_t reg, uint8_t value)
              ((uint8_t)tmp_ & FLAG_N) | ((uint16_t)reg >= value ? FLAG_C : 0);
 }
 
-static inline uint8_t adc(uint8_t* flags, uint8_t a, uint8_t value)
-{
-    uint16_t tmp_ = (uint16_t)a + value + (*flags & FLAG_C ? 1 : 0);
-    *flags = (*flags & ~FLAG_C) | (tmp_ > 0xff ? FLAG_C : 0);
-    a = (uint8_t)tmp_;
-    set_flags(flags, a);
-    return a;
-}
-
-static inline uint8_t sbc(uint8_t* flags, uint8_t a, uint8_t value)
-{
-    uint16_t tmp_ = (uint16_t)a - value - (1 - (*flags & FLAG_C ? 1 : 0));
-    *flags = (*flags & ~FLAG_C) | (tmp_ <= 0xff ? FLAG_C : 0);
-    a = (uint8_t)tmp_;
-    set_flags(flags, a);
-    return a;
-}
-
 static inline void bit(uint8_t* flags, uint8_t a, uint8_t value)
 {
     uint8_t tmp_ = a & value;

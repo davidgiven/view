@@ -5724,32 +5724,27 @@ c9871:
     //     lda ruler_right_stop
     a = ruler_right_stop;
     //     sec
-    flags |= FLAG_C;
     //     sbc l0084
-    a = sbc(&flags, a, l0084); // C live
     //     bcc return_47
-    if (!(flags & FLAG_C))
+    // (C=1: plain subtraction; if it borrows, abort)
+    if (a < l0084)
         return;
+    a -= l0084;
     //     adc #0
-    a = adc(&flags, a, 0); // C live
     //     tax
-    x = a;
     //     adc l0043
-    a = adc(&flags, a, l0043); // none live
     //     sec
-    flags |= FLAG_C;
-    //     sbc #0x84
-    a = sbc(&flags, a, MAX_LINE_LENGTH); // C live
+    //     sbc #MAX_LINE_LENGTH
     //     bcc c988c
-    if ((flags & FLAG_C))
+    // (the 6502 chains adc/sbc only to stay within 8 bits; in C this is one
+    //  value: if the line already reaches the margin, the slack to distribute
+    //  is MAX_LINE_LENGTH - l0043)
+    x = (uint8_t)(a + 1);
+    uint8_t extra = (uint8_t)(a + 1 + l0043);
+    if (extra >= MAX_LINE_LENGTH)
     {
-        l0084 = a;
-        a = x;
-        //     sbc l0084
-        // (carry-in is 1 from the preceding sbc #0x84; the result C flag is
-        //  dead, so this is a plain subtraction)
-        a -= l0084;
-        x = a;
+        l0084 = (uint8_t)(extra - MAX_LINE_LENGTH);
+        x = (uint8_t)(x - l0084);
     }
     //     stx l0082
     l0082 = x;
@@ -6414,11 +6409,15 @@ ca360:
     //     lda hscroll_pos (5353)
     a = hscroll_pos;
     //     clc (5354)
-    flags &= ~FLAG_C;
     //     adc screen_width (5355)
-    a = adc(&flags, a, screen_maxcolumn); // C live
     //     sbc #3 (5356)
-    a = sbc(&flags, a, 3); // none live
+    // (C_in for the adc is 0 (clc); the sbc reuses the adc's carry-out)
+    {
+        int sum = (int)hscroll_pos + screen_maxcolumn;
+        int carry = (sum > 0xff);
+        int diff = sum - 3 - (1 - carry);
+        a = (uint8_t)diff;
+    }
     //     cmp l0072 (5357)
     if (a >= l0072)
         goto ca395;
