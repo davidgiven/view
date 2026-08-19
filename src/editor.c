@@ -5814,27 +5814,22 @@ c98b5:
     //     lda l0082
     a = l0082;
     //     sec
-    flags |= FLAG_C;
     //     sbc input_buffer,y
-    a = sbc(&flags, a, input_buffer[y]); // none live
-    //     php
+    // (sec makes this a plain 8-bit subtraction; the result's Z flag is tested
+    //  by the following beq, so compare directly instead of via php/plp)
+    a = a - input_buffer[y];
+    //     sta l0082
+    l0082 = a;
+    //     iny
+    y++;
+    //     cpy l0046
+    //     bcc c98d3
+    if (y >= l0046)
     {
-        uint8_t saved_flags = flags;
-        //     sta l0082
-        l0082 = a;
-        //     iny
-        y++;
-        //     cpy l0046
-        //     bcc c98d3
-        if (y >= l0046)
-        {
-            y = 0;
-        }
-        //     plp
-        flags = saved_flags;
+        y = 0;
     }
     //     beq c98d9
-    if (flags & FLAG_Z)
+    if (a == 0)
         goto c98d9;
     //     dex
     x--;

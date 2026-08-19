@@ -337,11 +337,12 @@ c9555:
         return;
     //     bpl return_37
     //     txa
-    a = x;
     //     sbc l0083
-    a = sbc(&flags, a, l0083); // C, V live
+    // (C=1: plain 8-bit subtraction; the carry flag (no borrow) is read by
+    //  callers via flags, so derive it from x >= l0083)
+    flags = (flags & ~FLAG_C) | (x >= l0083 ? FLAG_C : 0);
+    x = x - l0083;
     //     tax
-    x = a;
     // return_37:
     //     rts
     return;
