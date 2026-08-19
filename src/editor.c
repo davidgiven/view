@@ -47,7 +47,7 @@ static uint8_t get_line_length(void);
 static void go_to_marker(uint8_t x);
 static void go_to_marker_n(uint8_t marker);
 static void home_cursor(void);
-void justify_edit_buffer(void);
+uint8_t justify_edit_buffer(addr_t ptr1);
 bool make_space_for_insertion(addr_t tmp45, addr_t tmp67);
 static void memory_full(void);
 uint8_t process_current_document_character(
@@ -66,7 +66,7 @@ void show_memory_full_error(void);
 void adjust_area_pointers(addr_t tmp67);
 static void append_to_output_buffer(uint8_t a);
 uint8_t upper_case_unless_folding(uint8_t a);
-static bool process_char_for_output(uint8_t y, bool carry_in);
+static bool process_char_for_output(uint8_t y, bool carry_in, uint8_t* x);
 void format_paragraph(void);
 static bool find_next_word_boundary(uint8_t y);
 static bool insert_character_into_edit_buffer(uint8_t a);
@@ -3921,7 +3921,7 @@ c9d30:
     //     ALWAYS branch
     // c9d15:
     //     jsr justify_edit_buffer
-    justify_edit_buffer();
+    justify_edit_buffer(ptr1);
     //     jsr ca93c
     write_line_back_to_document_safely();
     //     jsr ca741
@@ -5626,10 +5626,10 @@ static void home_cursor(void)
     return;
 }
 
-void justify_edit_buffer(void)
+uint8_t justify_edit_buffer(addr_t ptr1)
 {
     addr_t tmp89;
-    uint8_t y;
+    uint8_t y, x;
 
     // Pseudocode: Word-spacing justification: distributes extra spaces between
     // words
@@ -5638,7 +5638,7 @@ void justify_edit_buffer(void)
     //     lda justifying_flag
     a = justifying_flag;
     if (a != 0)
-        return;
+        return x;
     //     bne return_47
     //     sta l0046
     l0046 = a;
@@ -5651,7 +5651,7 @@ void justify_edit_buffer(void)
 
     //     beq return_47
     if (a == 0)
-        return;
+        return x;
     //     jsr get_line_length
     l0043 = get_line_length();
     //     ldy #0
@@ -5673,7 +5673,7 @@ c9847:
         goto c9871;
     //     clc
     //     jsr sub_c9936
-    bool is_zero = process_char_for_output(y, false);
+    bool is_zero = process_char_for_output(y, false, &x);
     //     beq c985c
     if (is_zero)
         goto c985c;
@@ -5694,7 +5694,7 @@ c985c:
 c9861:
     //     sec
     //     jsr sub_c9936
-    is_zero = process_char_for_output(y, true);
+    is_zero = process_char_for_output(y, true, &x);
     //     beq c985c
     if (is_zero)
         goto c985c;
@@ -5712,7 +5712,7 @@ c986d:
 
     //     bmi return_47
     if (l0046 & 0x80)
-        return;
+        return x;
     // c9871:
 c9871:
     //     lda l0046
@@ -5720,7 +5720,7 @@ c9871:
 
     //     beq return_47
     if (a == 0)
-        return;
+        return x;
     //     lda ruler_right_stop
     a = ruler_right_stop;
     //     sec
@@ -5728,7 +5728,7 @@ c9871:
     //     bcc return_47
     // (C=1: plain subtraction; if it borrows, abort)
     if (a < l0084)
-        return;
+        return x;
     a -= l0084;
     //     adc #0
     //     tax
@@ -5934,13 +5934,13 @@ c9922:
     while (1)
     {
         if (y >= MAX_LINE_LENGTH)
-            return;
+            return x;
         ram[RAM_EDIT_BUFFER + y] = a;
         y++;
     }
     // return_48:
     //     rts
-    return;
+    return x;
 }
 
 bool make_space_for_insertion(addr_t tmp45, addr_t tmp67)
@@ -6986,7 +6986,7 @@ uint8_t upper_case_unless_folding(uint8_t a)
 }
 
 // Returns true if the resulting width accumulator is zero (the 6502's Z flag).
-static bool process_char_for_output(uint8_t y, bool carry_in)
+static bool process_char_for_output(uint8_t y, bool carry_in, uint8_t* x)
 {
     // sub_c9936
     // Pseudocode: Processes a character from the edit line for output, handling
@@ -7006,10 +7006,10 @@ static bool process_char_for_output(uint8_t y, bool carry_in)
     //     jsr sub_ca5ae
     {
         bool is_tab = false;
-        a = process_document_character(a, &x, &is_tab);
+        a = process_document_character(a, x, &is_tab);
     }
     //     txa
-    a = x;
+    a = *x;
     //     clc
     //     adc l0039
     //     bne c995c
@@ -7030,15 +7030,15 @@ c994a:
     if (a == 0)
         goto c9967;
     //     ldx l0039
-    x = l0039;
+    *x = l0039;
 
     //     beq c995c
-    if (x != 0)
+    if (*x != 0)
     {
-        if (x >= ruler_left_stop)
+        if (*x >= ruler_left_stop)
         {
-            x++;
-            a = x;
+            (*x)++;
+            a = *x;
         }
     }
 c995c:
@@ -7475,7 +7475,7 @@ c9a60:
     //     jsr sub_caed6
     insert_at_left_margin();
     //     jsr justify_edit_buffer
-    justify_edit_buffer();
+    justify_edit_buffer(ptr1);
     //     jsr sub_c9aa9
     if (flush_formatted_line())
         return;

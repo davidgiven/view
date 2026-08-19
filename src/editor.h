@@ -24,6 +24,6 @@ extern void split_line_at_wrap(addr_t tmp89);
 extern bool insert_edit_buffer_bytes_at_xpos(uint8_t x);
 extern void set_marker_to_here(uint8_t x);
 extern void set_format_mode_bit7(void);
-extern void justify_edit_buffer(void);
+extern uint8_t justify_edit_buffer(addr_t ptr1);
 extern uint8_t create_default_ruler(uint16_t ruler_addr);
 #endif
