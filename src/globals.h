@@ -62,13 +62,6 @@ static inline void set_flags(uint8_t* flags, uint8_t v)
         (*flags & ~(FLAG_Z | FLAG_N)) | (v == 0 ? FLAG_Z : 0) | (v & FLAG_N);
 }
 
-static inline void cmp(uint8_t* flags, uint8_t reg, uint8_t value)
-{
-    uint16_t tmp_ = (uint16_t)reg - value;
-    *flags = (*flags & ~(FLAG_Z | FLAG_N | FLAG_C)) | (tmp_ == 0 ? FLAG_Z : 0) |
-             ((uint8_t)tmp_ & FLAG_N) | ((uint16_t)reg >= value ? FLAG_C : 0);
-}
-
 static inline void bit(uint8_t* flags, uint8_t a, uint8_t value)
 {
     uint8_t tmp_ = a & value;

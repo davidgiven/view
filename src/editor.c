@@ -6731,7 +6731,6 @@ ca523:
 static void render_xchar(struct render_state* rs)
 {
     uint8_t x;
-    uint8_t f;
 
     // render_xchar: Renders a character to screen with style/attribute handling
 
@@ -6743,9 +6742,8 @@ static void render_xchar(struct render_state* rs)
     //     inc input_buffer_offset+1
     rs->buf_off++;
     //     cpx hscroll_pos
-    cmp(&f, x, hscroll_pos); // C live
     //     bcc ca533
-    if (!(f & FLAG_C))
+    if (x < hscroll_pos)
         return;
     //     jmp ca4e9
     render_char(rs);
@@ -7380,9 +7378,8 @@ c9a2e:
     //     sta (current_edit_line_ptr),y
     ram[RAM_EDIT_BUFFER + y] = a;
     //     cmp #0x20 ; ' '
-    cmp(&flags, a, 0x20); // Z, C live
     //     bne c9a38
-    if ((flags & FLAG_Z))
+    if (a == 0x20)
     {
         //     ror bottom_margin
         // (carry-in is 1 from the cmp #0x20 with a == 0x20; the result
@@ -7596,19 +7593,20 @@ c9aef:
         goto c9b2f;
     //     beq c9b2f
     //     cmp #0x0b
-    cmp(&flags, a, 0x0b); // Z, C live
     //     bne c9ae9
-    if (!(flags & FLAG_Z))
-        goto c9ae9;
-    //     rol l0084
-    //     sec
-    //     ror l0084
-    // (The 6502 sets bit 7 by rolling left, setting C, and rolling right
-    //  again; the carry is preserved from the preceding cmp.)
-    l0084 |= 0x80;
-    //     bcs c9ae9
-    if (flags & FLAG_C)
-        goto c9ae9;
+    if (a == 0x0b)
+    {
+        //     rol l0084
+        //     sec
+        //     ror l0084
+        // (The 6502 sets bit 7 by rolling left, setting C, and rolling right
+        //  again; the carry is preserved from the preceding cmp.)
+        l0084 |= 0x80;
+        //     bcs c9ae9
+        // (a >= 0x0b holds on this path, so the bcs is always taken)
+        if (a >= 0x0b)
+            goto c9ae9;
+    }
     // c9b06:
 c9b06:
     //     lda (((uint8_t*)&tmp45)[0]),y
