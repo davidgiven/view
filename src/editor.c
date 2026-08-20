@@ -4860,6 +4860,8 @@ static void advance_to_next_line(void)
     //     clv
     flags &= ~FLAG_V;
     //     lda l007e
+    a = l007e;
+    set_flags(&flags, a);
 }
 
 [[nodiscard]] static bool flush_formatted_line(void)
@@ -7467,11 +7469,9 @@ c9a60:
     } while (a != 0x20);
     //     sec
     //     ror input_buffer_offset
-    // (sec supplies the carry-in of 1; the rotated value is never read again
-    //  and the carry-out (old bit 0) is overwritten by flush_formatted_line
-    //  before any test, so only the ror's Z/N survive)
-    input_buffer_offset = (input_buffer_offset >> 1) | 0x80;
-    set_flags(&flags, input_buffer_offset);
+    // (dead: the rotated value is never read again, and the ror's Z/N flags
+    //  are overwritten by advance_to_next_line's `lda l007e` before the
+    //  `beq c9aa5`; that branch tests Z = (l007e == 0))
     //     jsr sub_caed6
     insert_at_left_margin();
     //     jsr justify_edit_buffer
