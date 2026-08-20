@@ -62,13 +62,6 @@ static inline void set_flags(uint8_t* flags, uint8_t v)
         (*flags & ~(FLAG_Z | FLAG_N)) | (v == 0 ? FLAG_Z : 0) | (v & FLAG_N);
 }
 
-static inline void bit(uint8_t* flags, uint8_t a, uint8_t value)
-{
-    uint8_t tmp_ = a & value;
-    *flags = (*flags & ~(FLAG_Z | FLAG_N | FLAG_V)) | (tmp_ == 0 ? FLAG_Z : 0) |
-             (value & (FLAG_N | FLAG_V));
-}
-
 // Global variables (shared between view.c and printing.c)
 extern uint8_t left_margin, line_spacing, top_margin, bottom_margin;
 extern uint8_t header_margin, footer_margin, page_length;
