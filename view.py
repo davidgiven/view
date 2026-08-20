@@ -154,6 +154,10 @@ label(0x78, "print_xpos")
 label(0x7B, "current_tab_key")
 label(0x7C, "folding_flag")
 label(0x7D, "cursor_moved_flag")
+# 0x7E is the delimiter/separator character during CLI command parsing and
+# printing scans (C: delimiter_char); the same byte is reused as a format
+# status counter during format_paragraph (C: line_format_status).
+label(0x7E, "delimiter_char")
 label(0x85, "tmp0")
 label(0x86, "tmp1")
 label(0x87, "tmp2")

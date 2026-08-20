@@ -1746,7 +1746,7 @@ ca87e:
     //     cmp #0x30 ; '0'
     if (a < 0x30)
     {
-        l007e = a;
+        delimiter_char = a;
         y++;
     }
     //     sty input_buffer_offset

@@ -697,7 +697,8 @@ uint8_t initialise_document(void)
     l0079 = 0;
     l007a = 0;
     cursor_moved_flag = 0;
-    l007e = 0;
+    delimiter_char = 0;
+    line_format_status = 0;
     input_buffer_offset = 0;
     // cafee:
     //     ldx oshwm

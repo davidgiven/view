@@ -2322,7 +2322,7 @@ bool parse_optional_filename_from_command(struct scan_state* scan)
         if (scan->ch == 0x0d)
             break;
         scan->pos++;
-        if (scan->ch == l007e)
+        if (scan->ch == delimiter_char)
             break;
         filename_buffer[x] = scan->ch;
         x++;
@@ -3094,16 +3094,18 @@ c92d4:
 
 /**
  * scan_input_buffer: Scans input_buffer from input_buffer_offset looking for
- * the next character that is not the delimiter l007e.
+ * the next character that is not the delimiter delimiter_char.
  *
  * Advances the scan position past any run of delimiter characters and stops at
- * the first character that differs from l007e (a "mark"/argument character) or
+ * the first character that differs from delimiter_char (a "mark"/argument
+ * character) or
  * at the end of the command line.
  *
  * @param state On return holds the scan result (see struct scan_state):
  *              state->ch is the character at the scan position (the first
  *              non-delimiter character, or 0x0d if the end of the line was
- *              reached first, or l007e itself when l007e == 0x0d); state->pos
+ *              reached first, or delimiter_char itself when delimiter_char ==
+ *              0x0d); state->pos
  * is its index into input_buffer (input_buffer_offset advanced past any
  * delimiters).
  * @return true if the Z flag would be set, i.e. no non-delimiter character was
@@ -3121,7 +3123,7 @@ bool scan_input_buffer(struct scan_state* state)
     //     cmp #0x0d
     //     beq return_20
     state->pos = input_buffer_offset;
-    state->ch = l007e;
+    state->ch = delimiter_char;
     if (state->ch == 0x0d)
     {
         return true; // Z set (no mark)
@@ -3140,7 +3142,7 @@ bool scan_input_buffer(struct scan_state* state)
         }
         //     cmp l007e
         //     bne return_20
-        if (state->ch != l007e)
+        if (state->ch != delimiter_char)
         {
             return false; // Z clear (mark found)
         }

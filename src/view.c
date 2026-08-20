@@ -268,9 +268,11 @@ uint8_t l007a; // PROVISIONAL: character-count limit used as loop bound in
 // X cursor_moved_flag: .fill 1
 uint8_t cursor_moved_flag; // PROVISIONAL: incremented when cursor position
                            // changes; triggers row recalculation in display
-// X l007e: .fill 1
-uint8_t l007e; // PROVISIONAL: delimiter/separator character (default space)
-               // used during CLI command parsing
+// X l007e: .fill 1  (6502 zero-page byte; split into two C variables by role)
+uint8_t delimiter_char; // delimiter/separator character used during CLI command
+                        // parsing and printing scans (part of 6502 l007e)
+uint8_t line_format_status; // format status byte (part of 6502 l007e): counts
+                            // marker bytes and is tagged when a line is flushed
 // X input_buffer_offset: .fill 2
 uint8_t input_buffer_offset; // PROVISIONAL: current read index into
                              // input_buffer during command/filename parsing
@@ -479,7 +481,7 @@ int main(int argc, char* argv[])
 }
 
 // run_editor moved to editor.c
-// sub_c8310.  *end is set if the byte is the delimiter (l007e) or CR,
+// sub_c8310.  *end is set if the byte is the delimiter (delimiter_char) or CR,
 // terminating the current token (the 6502's Z flag).
 static uint8_t read_next_command_byte(uint8_t y, bool* end)
 {
@@ -494,7 +496,7 @@ static uint8_t read_next_command_byte(uint8_t y, bool* end)
     //     cmp l007e
     //     beq return_2
     //     cmp #0x0d
-    *end = (a == l007e) || (a == 0x0d);
+    *end = (a == delimiter_char) || (a == 0x0d);
     // return_2:
     //     rts
     return y;

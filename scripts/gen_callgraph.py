@@ -54,7 +54,7 @@ KNOWN_GLOBALS = {
     'l0072', 'l0073', 'l0074',
     'flags_need_redrawing_flag', 'status_line_needs_redrawing_flag',
     'l0076', 'ypos', 'print_xpos', 'l0079', 'l007a',
-    'cursor_moved_flag', 'l007e',
+    'cursor_moved_flag', 'delimiter_char', 'line_format_status',
     'input_buffer_offset', 'l0080', 'l0081', 'l0082', 'l0083', 'l0084',
     'tmp0', 'tmp1', 'tmp2', 'tmp3', 'tmp4', 'tmp5', 'tmp6', 'tmp7', 'tmp8', 'tmp9',
     'top_margin', 'bottom_margin', 'header_margin', 'footer_margin',

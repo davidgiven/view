@@ -4827,11 +4827,29 @@ ca9f1:
     //     rts (6435)
 }
 
+/**
+ * Advance the document line cursor to the start of the next line.
+ *
+ * Corresponds to 6502 sub_ca8d (c9a8d).  Advances current_line_ptr past the
+ * current line's CR terminator, zeroes xpos, and returns the value of
+ * line_format_status
+ * in the A register with the processor flags set as the 6502 does.
+ *
+ * @note Outputs (via globals):
+ *  - current_line_ptr: start of the next line; left unchanged at end of
+ *    document (when find_next_line reports end-of-document).
+ *  - xpos: set to 0 (the jsr sub_c9e94).
+ *  - a: the value of line_format_status (the lda l007e).
+ *  - flags: V cleared (clv); Z and N set from the line_format_status load;
+ *    C is set when
+ *    at end of document (the sec of c9a8d is left set) and cleared
+ *    otherwise (the clc at c9aa4).
+ */
 static void advance_to_next_line(void)
 {
     // advance_to_next_line
     // c9a8d: Advance to next line in document
-    // Sets Z from l007e on return (like c9aa5 does)
+    // Sets Z from line_format_status on return (like c9aa5 does)
 
     //     jsr c9e94
     xpos = 0;
@@ -4860,7 +4878,7 @@ static void advance_to_next_line(void)
     //     clv
     flags &= ~FLAG_V;
     //     lda l007e
-    a = l007e;
+    a = line_format_status;
     set_flags(&flags, a);
 }
 
@@ -4875,7 +4893,7 @@ static void advance_to_next_line(void)
     flags |= FLAG_C;
     //     rol l007e
     // (carry-in is 1 from the sec; the result flags are dead)
-    l007e = (uint8_t)(l007e << 1) | 1;
+    line_format_status = (uint8_t)(line_format_status << 1) | 1;
     //     ldy l0047
     //     dey
     //     sty l003b
@@ -7086,11 +7104,11 @@ void format_paragraph(void)
     // PROVISIONAL: Main line formatting routine — reads source line, handles
     // margins, tabs, wrapping. PROVISIONAL: Called from f0_format_block_key
     // (Ctrl+B) and fold_cmd. PROVISIONAL: Processes one line (or skips
-    // command/ruler lines), returns with Z from l007e.
+    // command/ruler lines), returns with Z from line_format_status.
 
     // sub_c9977:
     // PROVISIONAL: Mark cursor moved, init print_xpos=4, zero
-    // input_buffer_offset and l007e.
+    // input_buffer_offset and line_format_status.
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     ldy #4
@@ -7102,7 +7120,7 @@ void format_paragraph(void)
     //     sty input_buffer_offset
     input_buffer_offset = y;
     //     sty l007e
-    l007e = y;
+    line_format_status = y;
     // PROVISIONAL: Check if first byte of current line is a command prefix
     // (0x80/0x81). PROVISIONAL: If so, skip this line and return (paragraph
     // boundary reached).
@@ -7185,8 +7203,8 @@ c998a:
     bottom_margin = y;
     // PROVISIONAL: Save current buffer index in l0048. Then scan forward
     // through the source line, PROVISIONAL: processing any marker-prefix bytes
-    // detected by sub_ca536. Increments l007e for PROVISIONAL: each marker
-    // processed (l007e counts marker bytes).
+    // detected by sub_ca536. Increments line_format_status for PROVISIONAL:
+    // each marker processed (line_format_status counts marker bytes).
     //  c99b6:
 c99b6:
     //     sty l0048
@@ -7206,9 +7224,9 @@ c99b6:
         //     sta markers_array+1,x
         markers_array[idx / 2] &= 0x00ff;
         //     inc l007e
-        l007e++;
+        line_format_status++;
         //     bne loop_c99ba
-        if (l007e != 0)
+        if (line_format_status != 0)
             continue;
         break;
     }
@@ -7470,8 +7488,9 @@ c9a60:
     //     sec
     //     ror input_buffer_offset
     // (dead: the rotated value is never read again, and the ror's Z/N flags
-    //  are overwritten by advance_to_next_line's `lda l007e` before the
-    //  `beq c9aa5`; that branch tests Z = (l007e == 0))
+    //  are overwritten by advance_to_next_line's `lda line_format_status`
+    //  before the
+    //  `beq c9aa5`; that branch tests Z = (line_format_status == 0))
     //     jsr sub_caed6
     insert_at_left_margin();
     //     jsr justify_edit_buffer
@@ -7504,13 +7523,14 @@ c9a87:
     //     caller)
     goto c9aa5;
     // c9aa5:
-    // PROVISIONAL: Cleanup — clear overflow flag, load l007e into A (sets Z for
+    // PROVISIONAL: Cleanup — clear overflow flag, load line_format_status into
+    // A (sets Z for
     // caller).
 c9aa5:
     //     clv
     flags &= ~FLAG_V;
     //     lda l007e
-    a = l007e;
+    a = line_format_status;
     set_flags(&flags, a); // Z live
     //     rts
     return;
