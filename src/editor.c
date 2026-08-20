@@ -7466,9 +7466,12 @@ c9a60:
         }
     } while (a != 0x20);
     //     sec
-    flags |= FLAG_C;
     //     ror input_buffer_offset
-    input_buffer_offset = ror(&flags, input_buffer_offset); // Z, C live
+    // (sec supplies the carry-in of 1; the rotated value is never read again
+    //  and the carry-out (old bit 0) is overwritten by flush_formatted_line
+    //  before any test, so only the ror's Z/N survive)
+    input_buffer_offset = (input_buffer_offset >> 1) | 0x80;
+    set_flags(&flags, input_buffer_offset);
     //     jsr sub_caed6
     insert_at_left_margin();
     //     jsr justify_edit_buffer
