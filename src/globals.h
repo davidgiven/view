@@ -87,14 +87,6 @@ static inline uint8_t ror(uint8_t* flags, uint8_t value)
     return value;
 }
 
-static inline uint8_t asr(uint8_t* flags, uint8_t value)
-{
-    *flags = (*flags & ~FLAG_C) | ((value & 0x01) ? FLAG_C : 0);
-    value >>= 1;
-    set_flags(flags, value);
-    return value;
-}
-
 // Global variables (shared between view.c and printing.c)
 extern uint8_t left_margin, line_spacing, top_margin, bottom_margin;
 extern uint8_t header_margin, footer_margin, page_length;

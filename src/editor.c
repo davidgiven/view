@@ -5629,7 +5629,7 @@ static void home_cursor(void)
 uint8_t justify_edit_buffer(addr_t ptr1)
 {
     addr_t tmp89;
-    uint8_t y, x;
+    uint8_t y, x = 0;
 
     // Pseudocode: Word-spacing justification: distributes extra spaces between
     // words
