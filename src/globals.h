@@ -269,7 +269,18 @@ extern uint8_t process_current_document_character(
 extern void check_not_continuous_editing(void);
 extern void adjust_area_pointers(addr_t tmp67);
 extern void wipe_buffer(uint8_t a, addr_t ptr1);
-extern bool format_paragraph(void);
+
+// Result of format_paragraph, conveying the 6502 exit flags explicitly:
+// FORMAT_MEMORY_FULL is V=1 (document write failed); FORMAT_AT_END is C=1
+// (advance_to_next_line reached the end of the document).
+typedef enum
+{
+    FORMAT_OK,
+    FORMAT_AT_END,
+    FORMAT_MEMORY_FULL
+} format_result_t;
+
+extern format_result_t format_paragraph(void);
 extern void print_document(struct scan_state* scan);
 extern uint8_t draw_prompt_characters(uint8_t x, uint8_t y);
 extern void show_memory_full_error(void);

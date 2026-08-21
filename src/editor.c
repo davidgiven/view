@@ -29,7 +29,7 @@ struct render_state
 
 // Editor-only functions
 void adjust_pointers(addr_t tmp45, addr_t tmp67);
-static void advance_to_next_line(void);
+static bool advance_to_next_line(void);
 void beep(void);
 bool scan_document_for_next_line(void);
 static uint8_t insert_line_into_document(addr_t ptr);
@@ -67,7 +67,7 @@ void adjust_area_pointers(addr_t tmp67);
 static void append_to_output_buffer(uint8_t a);
 uint8_t upper_case_unless_folding(uint8_t a);
 static bool process_char_for_output(uint8_t y, bool carry_in, uint8_t* x);
-bool format_paragraph(void);
+format_result_t format_paragraph(void);
 static bool find_next_word_boundary(uint8_t y);
 static bool insert_character_into_edit_buffer(uint8_t a);
 static void set_xpos_to_line_length(void);
@@ -1063,8 +1063,8 @@ static void f0_format_block_key(void)
     clamp_ptr6_to_document();
 
     //     jsr sub_c9977
-    //     bvs ca05b (V=1 conveyed as a true return)
-    if (format_paragraph())
+    //     bvs ca05b (V=1 conveyed as FORMAT_MEMORY_FULL)
+    if (format_paragraph() == FORMAT_MEMORY_FULL)
     {
         show_memory_full_error();
         longjmp(env, JMP_EDITOR);
@@ -4828,16 +4828,19 @@ ca9f1:
  *
  * Corresponds to 6502 sub_ca8d (c9a8d).  Advances current_line_ptr past the
  * current line's CR terminator and zeroes xpos.  The 6502 also returned
- * processor flags (V cleared, Z/N from l007e, C set at end of document), but
- * no caller consumes them: callers that branch on Z test line_format_status
- * directly instead.
+ * processor flags (V cleared, Z/N from l007e, C set at end of document); no
+ * caller consumes Z any more (they test line_format_status directly), but C
+ * survives to format_paragraph's callers, so it is returned explicitly here.
  *
  * @note Outputs (via globals):
  *  - current_line_ptr: start of the next line; left unchanged at end of
  *    document (when find_next_line reports end-of-document).
  *  - xpos: set to 0 (the jsr sub_c9e94).
+ *
+ * @return true when at the end of the document (6502 C=1), false when
+ *         current_line_ptr was advanced to a following line.
  */
-static void advance_to_next_line(void)
+static bool advance_to_next_line(void)
 {
     // advance_to_next_line
     // c9a8d: Advance to next line in document
@@ -4866,6 +4869,7 @@ static void advance_to_next_line(void)
     }
     //     clv
     //     lda l007e
+    return end_of_document;
 }
 
 [[nodiscard]] static bool flush_formatted_line(void)
@@ -4876,9 +4880,8 @@ static void advance_to_next_line(void)
 
     // sub_c9aa9:
     //     sec
-    flags |= FLAG_C;
+    // (the sec exists only as the rol carry-in; nothing consumes C here)
     //     rol l007e
-    // (carry-in is 1 from the sec; the result flags are dead)
     line_format_status = (uint8_t)(line_format_status << 1) | 1;
     //     ldy l0047
     //     dey
@@ -7088,17 +7091,20 @@ c9969:
  * skips command/ruler lines.
  *
  * On return the caller tests line_format_status == 0 directly (the 6502 set
- * Z from l007e at c9aa5).
+ * Z from l007e at c9aa5).  The 6502's outgoing C (end of document, from
+ * c9a8d) is returned as FORMAT_AT_END.
  *
- * @return true if the document write failed (memory full; 6502 V=1), false
- *         otherwise.
+ * @return FORMAT_MEMORY_FULL if the document write failed (6502 V=1),
+ *         FORMAT_AT_END if the final advance_to_next_line reached the end of
+ *         the document (6502 C=1), otherwise FORMAT_OK.
  */
-bool format_paragraph(void)
+format_result_t format_paragraph(void)
 {
     uint8_t a;
     addr_t tmp67;
     uint8_t x;
     uint8_t y;
+    bool at_end = false; // C from the final advance_to_next_line (c9a8d)
     // sub_c9977
     // PROVISIONAL: Main line formatting routine — reads source line, handles
     // margins, tabs, wrapping. PROVISIONAL: Called from f0_format_block_key
@@ -7131,8 +7137,7 @@ bool format_paragraph(void)
     //     beq c9974
     if (cp != NO_COMMAND_PREFIX)
     {
-        advance_to_next_line();
-        return false;
+        return advance_to_next_line() ? FORMAT_AT_END : FORMAT_OK;
     }
     // PROVISIONAL: Main formatting loop entry. Check format mode — if bit 7 or
     // bit 0 is set, PROVISIONAL: skip this line (paragraph boundary). Also skip
@@ -7147,8 +7152,7 @@ c998a:
     //     bne c9974
     if (a != 0)
     {
-        advance_to_next_line();
-        return false;
+        return advance_to_next_line() ? FORMAT_AT_END : FORMAT_OK;
     }
     //     lda ruler_right_stop
     a = ruler_right_stop;
@@ -7156,8 +7160,7 @@ c998a:
     //     beq c9974
     if (a == 0)
     {
-        advance_to_next_line();
-        return false;
+        return advance_to_next_line() ? FORMAT_AT_END : FORMAT_OK;
     }
     //     sec
     //     sbc ruler_left_stop
@@ -7166,8 +7169,7 @@ c998a:
     //  Otherwise the carry into the following adc is 1: adc #1 adds 2)
     if (a < ruler_left_stop)
     {
-        advance_to_next_line();
-        return false;
+        return advance_to_next_line() ? FORMAT_AT_END : FORMAT_OK;
     }
     // PROVISIONAL: Compute line width = right_stop - left_stop + 1, store in
     // l0080.
@@ -7358,8 +7360,7 @@ c9a11:
     //     beq c9a8d
     if (y == 0)
     {
-        advance_to_next_line();
-        return false;
+        return advance_to_next_line() ? FORMAT_AT_END : FORMAT_OK;
     }
     //     jsr sub_c9ac1
     if (find_next_word_boundary(y))
@@ -7474,8 +7475,7 @@ c9a60:
 
         if (y == 0)
         {
-            advance_to_next_line();
-            return false;
+            return advance_to_next_line() ? FORMAT_AT_END : FORMAT_OK;
         }
         a = ram[RAM_EDIT_BUFFER + y];
         {
@@ -7496,9 +7496,9 @@ c9a60:
     justify_edit_buffer(ptr1);
     //     jsr sub_c9aa9
     if (flush_formatted_line())
-        return true; // memory full (6502 V=1)
+        return FORMAT_MEMORY_FULL;
     //     jsr c9a8d
-    advance_to_next_line();
+    at_end = advance_to_next_line();
     //     beq c9aa5
     if (line_format_status == 0)
         goto c9aa5;
@@ -7515,9 +7515,9 @@ c9a87:
     insert_at_left_margin();
     //     jsr sub_c9aa9
     if (flush_formatted_line())
-        return true; // memory full (6502 V=1)
+        return FORMAT_MEMORY_FULL;
     //     (fall through to c9a8d in 6502 — no jsr)
-    advance_to_next_line();
+    at_end = advance_to_next_line();
     //     (c9a8d/c9aa5 merged into advance_to_next_line; return directly to
     //     caller)
     goto c9aa5;
@@ -7530,7 +7530,7 @@ c9aa5:
     // (the 6502 sets Z from line_format_status here for its caller; callers
     //  now test line_format_status == 0 directly)
     //     rts
-    return false;
+    return at_end ? FORMAT_AT_END : FORMAT_OK;
 }
 
 static bool find_next_word_boundary(uint8_t y)

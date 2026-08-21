@@ -678,11 +678,12 @@ static void format_cmd(struct scan_state* scan)
     // c876d:
 c876d:
     //     jsr sub_c9977
-    //     bvs c8791 (V=1 conveyed as a true return)
-    if (format_paragraph())
+    format_result_t fr = format_paragraph();
+    //     bvs c8791 (V=1 conveyed as FORMAT_MEMORY_FULL)
+    if (fr == FORMAT_MEMORY_FULL)
         goto c8791;
-    //     bcs c8787
-    if (flags & FLAG_C)
+    //     bcs c8787 (C=1 conveyed as FORMAT_AT_END)
+    if (fr == FORMAT_AT_END)
         goto c8787;
     //     lda #0x2e ; '.'
     //     jsr bdos_print_char
