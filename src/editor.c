@@ -4858,7 +4858,6 @@ static void advance_to_next_line(void)
     //     jsr sub_cab1a
     bool end_of_document = find_next_line(current_line_ptr);
     //     sec
-    flags |= FLAG_C;
     //     beq c9aa5
     if (!end_of_document)
     {
@@ -4873,13 +4872,9 @@ static void advance_to_next_line(void)
         current_line_ptr = tmp01 + y;
         // c9aa4:
         //     clc
-        flags &= ~FLAG_C;
     }
     //     clv
-    flags &= ~FLAG_V;
     //     lda l007e
-    a = line_format_status;
-    set_flags(&flags, a);
 }
 
 [[nodiscard]] static bool flush_formatted_line(void)
@@ -7501,7 +7496,7 @@ c9a60:
     //     jsr c9a8d
     advance_to_next_line();
     //     beq c9aa5
-    if (flags & FLAG_Z)
+    if (line_format_status == 0)
         goto c9aa5;
     //     jmp c998a
     goto c998a;

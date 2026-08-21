@@ -119,7 +119,7 @@ l007a                           = &007a
 current_tab_key                 = &007b
 folding_flag                    = &007c
 cursor_moved_flag               = &007d
-l007e                           = &007e
+delimiter_char                  = &007e
 input_buffer_ptr                = &007f
 l0081                           = &0081
 l0082                           = &0082
@@ -649,7 +649,7 @@ l80f2 = brk_handler_ptr+1
     iny                                                               ; 8310: c8          .
     lda input_buffer,y                                                ; 8311: b9 00 05    ...
     sta l0084                                                         ; 8314: 85 84       ..
-    cmp l007e                                                         ; 8316: c5 7e       .~
+    cmp delimiter_char                                                ; 8316: c5 7e       .~
     beq return_2                                                      ; 8318: f0 02       ..
     cmp #&0d                                                          ; 831a: c9 0d       ..
 ; &831c referenced 3 times by &8318, &833a, &8359
@@ -2509,7 +2509,7 @@ l80f2 = brk_handler_ptr+1
     cmp #&0d                                                          ; 8dfe: c9 0d       ..
     beq c8e25                                                         ; 8e00: f0 23       .#
     iny                                                               ; 8e02: c8          .
-    cmp l007e                                                         ; 8e03: c5 7e       .~
+    cmp delimiter_char                                                ; 8e03: c5 7e       .~
     beq c8e25                                                         ; 8e05: f0 1e       ..
     sta filename_buffer,x                                             ; 8e07: 9d 5c 07    .\.
     inx                                                               ; 8e0a: e8          .
@@ -2544,12 +2544,12 @@ l80f2 = brk_handler_ptr+1
 ; &8e2d referenced 1 time by &8243
 .verify_continuous_editing
     lda #&20 ; ' '                                                    ; 8e2d: a9 20       .
-    sta l007e                                                         ; 8e2f: 85 7e       .~
+    sta delimiter_char                                                ; 8e2f: 85 7e       .~
     sty input_buffer_ptr                                              ; 8e31: 84 7f       ..
 ; ***************************************************************************************
 ; &8e33 referenced 8 times by &83f5, &8418, &8649, &879d, &8841, &899f, &8df4, &8ef9
 .scan_input_buffer
-    lda l007e                                                         ; 8e33: a5 7e       .~
+    lda delimiter_char                                                ; 8e33: a5 7e       .~
     cmp #&0d                                                          ; 8e35: c9 0d       ..
     beq return_20                                                     ; 8e37: f0 f3       ..
     ldy input_buffer_ptr                                              ; 8e39: a4 7f       ..
@@ -2558,7 +2558,7 @@ l80f2 = brk_handler_ptr+1
     lda input_buffer,y                                                ; 8e3b: b9 00 05    ...
     cmp #&0d                                                          ; 8e3e: c9 0d       ..
     beq return_20                                                     ; 8e40: f0 ea       ..
-    cmp l007e                                                         ; 8e42: c5 7e       .~
+    cmp delimiter_char                                                ; 8e42: c5 7e       .~
     bne return_20                                                     ; 8e44: d0 e6       ..
     iny                                                               ; 8e46: c8          .
     bne loop_c8e3b                                                    ; 8e47: d0 f2       ..
@@ -4730,7 +4730,7 @@ l94b2 = default_printer_driver_ptr+1
     sty print_xpos                                                    ; 997b: 84 78       .x
     ldy #0                                                            ; 997d: a0 00       ..
     sty input_buffer_ptr                                              ; 997f: 84 7f       ..
-    sty l007e                                                         ; 9981: 84 7e       .~
+    sty delimiter_char                                                ; 9981: 84 7e       .~
     lda (current_line_ptr),y                                          ; 9983: b1 08       ..
     jsr check_for_command_prefix                                      ; 9985: 20 71 af     q.
     beq c9974                                                         ; 9988: f0 ea       ..
@@ -4768,7 +4768,7 @@ l94b2 = default_printer_driver_ptr+1
     bne c99c7                                                         ; 99bd: d0 08       ..
     lda #0                                                            ; 99bf: a9 00       ..
     sta markers_array+1,x                                             ; 99c1: 95 54       .T
-    inc l007e                                                         ; 99c3: e6 7e       .~
+    inc delimiter_char                                                ; 99c3: e6 7e       .~
     bne loop_c99ba                                                    ; 99c5: d0 f3       ..
 ; &99c7 referenced 1 time by &99bd
 .c99c7
@@ -4927,14 +4927,14 @@ l94b2 = default_printer_driver_ptr+1
 ; &9aa5 referenced 2 times by &9a82, &9a98
 .c9aa5
     clv                                                               ; 9aa5: b8          .
-    lda l007e                                                         ; 9aa6: a5 7e       .~
+    lda delimiter_char                                                ; 9aa6: a5 7e       .~
     rts                                                               ; 9aa8: 60          `
 
 ; ***************************************************************************************
 ; &9aa9 referenced 2 times by &9a7c, &9a8a
 .flush_formatted_line
     sec                                                               ; 9aa9: 38          8
-    rol l007e                                                         ; 9aaa: 26 7e       &~
+    rol delimiter_char                                                ; 9aaa: 26 7e       &~
     ldy l0047                                                         ; 9aac: a4 47       .G
     dey                                                               ; 9aae: 88          .
     sty l003b                                                         ; 9aaf: 84 3b       .;
@@ -7481,7 +7481,7 @@ la69b = la69a+1
     lda (tmp0),y                                                      ; a87e: b1 85       ..
     cmp #&30 ; '0'                                                    ; a880: c9 30       .0
     bcs ca887                                                         ; a882: b0 03       ..
-    sta l007e                                                         ; a884: 85 7e       .~
+    sta delimiter_char                                                ; a884: 85 7e       .~
     iny                                                               ; a886: c8          .
 ; &a887 referenced 1 time by &a882
 .ca887
@@ -9854,7 +9854,7 @@ save pydis_start, pydis_end
 ;     l0079:                                 11
 ;     sub_ca5ab:                             11
 ;     top_of_screen_line_ptr+1:              11
-;     l007e:                                 10
+;     delimiter_char:                        10
 ;     oshwm:                                 10
 ;     oshwm+0:                               10
 ;     edit_buffer_dirty_flag:                 9
