@@ -55,13 +55,6 @@ struct printer_driver
     void (*printer_getflags)(uint8_t* x, uint8_t* y);
 };
 
-// Inline helpers
-static inline void set_flags(uint8_t* flags, uint8_t v)
-{
-    *flags =
-        (*flags & ~(FLAG_Z | FLAG_N)) | (v == 0 ? FLAG_Z : 0) | (v & FLAG_N);
-}
-
 // Global variables (shared between view.c and printing.c)
 extern uint8_t left_margin, line_spacing, top_margin, bottom_margin;
 extern uint8_t header_margin, footer_margin, page_length;

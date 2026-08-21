@@ -1080,7 +1080,7 @@ static void f0_format_block_key(void)
 
     //     bne ca051
 
-    if ((flags & FLAG_Z))
+    if (line_format_status == 0)
     {
         flags &= ~FLAG_C;
     }
@@ -4831,25 +4831,20 @@ ca9f1:
  * Advance the document line cursor to the start of the next line.
  *
  * Corresponds to 6502 sub_ca8d (c9a8d).  Advances current_line_ptr past the
- * current line's CR terminator, zeroes xpos, and returns the value of
- * line_format_status
- * in the A register with the processor flags set as the 6502 does.
+ * current line's CR terminator and zeroes xpos.  The 6502 also returned
+ * processor flags (V cleared, Z/N from l007e, C set at end of document), but
+ * no caller consumes them: callers that branch on Z test line_format_status
+ * directly instead.
  *
  * @note Outputs (via globals):
  *  - current_line_ptr: start of the next line; left unchanged at end of
  *    document (when find_next_line reports end-of-document).
  *  - xpos: set to 0 (the jsr sub_c9e94).
- *  - a: the value of line_format_status (the lda l007e).
- *  - flags: V cleared (clv); Z and N set from the line_format_status load;
- *    C is set when
- *    at end of document (the sec of c9a8d is left set) and cleared
- *    otherwise (the clc at c9aa4).
  */
 static void advance_to_next_line(void)
 {
     // advance_to_next_line
     // c9a8d: Advance to next line in document
-    // Sets Z from line_format_status on return (like c9aa5 does)
 
     //     jsr c9e94
     xpos = 0;
@@ -7099,7 +7094,8 @@ void format_paragraph(void)
     // PROVISIONAL: Main line formatting routine — reads source line, handles
     // margins, tabs, wrapping. PROVISIONAL: Called from f0_format_block_key
     // (Ctrl+B) and fold_cmd. PROVISIONAL: Processes one line (or skips
-    // command/ruler lines), returns with Z from line_format_status.
+    // command/ruler lines).  On return the caller tests line_format_status
+    // == 0 directly (the 6502 set Z from l007e at c9aa5).
 
     // sub_c9977:
     // PROVISIONAL: Mark cursor moved, init print_xpos=4, zero
@@ -7483,9 +7479,8 @@ c9a60:
     //     sec
     //     ror input_buffer_offset
     // (dead: the rotated value is never read again, and the ror's Z/N flags
-    //  are overwritten by advance_to_next_line's `lda line_format_status`
-    //  before the
-    //  `beq c9aa5`; that branch tests Z = (line_format_status == 0))
+    //  are dead: the `beq c9aa5` that followed now tests
+    //  line_format_status == 0 directly)
     //     jsr sub_caed6
     insert_at_left_margin();
     //     jsr justify_edit_buffer
@@ -7518,15 +7513,13 @@ c9a87:
     //     caller)
     goto c9aa5;
     // c9aa5:
-    // PROVISIONAL: Cleanup — clear overflow flag, load line_format_status into
-    // A (sets Z for
-    // caller).
+    // PROVISIONAL: Cleanup — the 6502 cleared V and set Z from l007e here;
+    // callers now test line_format_status == 0 directly.
 c9aa5:
     //     clv
-    flags &= ~FLAG_V;
     //     lda l007e
-    a = line_format_status;
-    set_flags(&flags, a); // Z live
+    // (the 6502 sets Z from line_format_status here for its caller; callers
+    //  now test line_format_status == 0 directly)
     //     rts
     return;
 }
