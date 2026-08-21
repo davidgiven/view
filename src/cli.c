@@ -1725,9 +1725,8 @@ static bool parse_command(void)
         a = l0083;
         //     and #0x20 ; ' '
         a &= 0x20;
-        flags = (flags & ~FLAG_Z) | (a == 0 ? FLAG_Z : 0);
         //     beq ca84c
-        if (flags & FLAG_Z)
+        if (a == 0)
             continue;
         //     lda (((uint8_t*)&tmp01)[0]),y
         a = input_buffer[y];

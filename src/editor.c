@@ -819,8 +819,6 @@ static void cf7_join_lines_key(void)
 
     //     clc
 
-    flags &= ~FLAG_C;
-
     //     adc current_line_ptr
 
     tmp45 = current_line_ptr + y;
@@ -1071,34 +1069,13 @@ static void f0_format_block_key(void)
     }
 
     //     sec
-
-    flags |= FLAG_C;
-
     //     bne ca051
-
+    //     bcs return_59
+    // (the sec/clc dance just computes C = (line_format_status != 0))
     if (line_format_status == 0)
     {
-        flags &= ~FLAG_C;
-    }
-
-    //     pla
-
-    uint8_t a = saved_l003d;
-
-    //     tax
-
-    uint8_t x = a;
-
-    //     pla
-
-    a = saved_l0073;
-
-    //     bcs return_59
-
-    if (!(flags & FLAG_C))
-    {
-        l003d = x;
-        l0073 = a;
+        l003d = saved_l003d;
+        l0073 = saved_l0073;
     }
 
     //     rts
@@ -1290,11 +1267,8 @@ static void f3_delete_to_eol_key(void)
     a = MAX_LINE_LENGTH;
 
     //     sec
-
-    flags |= FLAG_C;
-
     //     sbc xpos
-
+    // (sbc with C=1 in is a plain subtraction)
     a -= xpos;
     x = a;
 
@@ -2904,19 +2878,8 @@ static void sf1_swap_case_key(void)
     a = ram[RAM_EDIT_BUFFER + y];
 
     //     jsr is_uppercase
-
-    if (isupper(a))
-    {
-        flags &= ~FLAG_C;
-    }
-    else
-    {
-        flags |= FLAG_C;
-    }
-
     //     bcs f13_right_key
-
-    if (flags & FLAG_C)
+    if (!isupper(a))
     {
         f13_right_key();
         return;
@@ -4203,7 +4166,6 @@ static void check_pointer_in_area(void)
     tmp67 = saved_tmp67;
     l0073 = 1;
     cursor_moved_flag = 1;
-    flags &= ~FLAG_C;
 }
 
 static void tab_highlight_common(uint8_t a)
@@ -5447,10 +5409,9 @@ static void draw_ruler(void)
     // ;
     // ***************************************************************************************
     // draw_ruler:
-    uint8_t a = status_line_needs_redrawing_flag;
-    flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
+    //     lda status_line_needs_redrawing_flag
     //     beq return_64
-    if (flags & FLAG_Z)
+    if (status_line_needs_redrawing_flag == 0)
         return;
     //     ldy #0
     //     sty status_line_needs_redrawing_flag
@@ -5486,15 +5447,12 @@ static void draw_status_word(void)
     x = 0x46;
     //     lda format_mode_flag
     a = format_mode_flag;
-    flags = (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
     //     beq ca666
-    if (!(flags & FLAG_Z))
+    if (a != 0)
     {
         x = 0x4d;
         a &= 0xc0;
-        flags =
-            (flags & ~(FLAG_Z | FLAG_N)) | (a == 0 ? FLAG_Z : 0) | (a & FLAG_N);
-        if ((flags & FLAG_Z))
+        if (a == 0)
         {
             x = 0x20;
         }
@@ -5507,9 +5465,8 @@ static void draw_status_word(void)
     a = 0x4a;
     //     ldx justifying_flag
     x = justifying_flag;
-    flags = (flags & ~(FLAG_Z | FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
     //     beq ca672
-    if (!(flags & FLAG_Z))
+    if (x != 0)
     {
         a = 0x20;
     }
@@ -5518,9 +5475,8 @@ static void draw_status_word(void)
     //     lda #0x49 ; 'I'
     //     ldx insert_mode_flag
     x = insert_mode_flag;
-    flags = (flags & ~(FLAG_Z | FLAG_N)) | (x == 0 ? FLAG_Z : 0) | (x & FLAG_N);
     //     bne ca681
-    if (!(flags & FLAG_Z))
+    if (x != 0)
     {
         home_cursor();
         return;
