@@ -125,7 +125,8 @@ c951c:
     formatted_line_written_flag++;
     // c9529:
     //     sec
-    flags |= FLAG_C;
+    // (every exit of the 6502 routine sets C unconditionally, so it carries
+    //  no information; no caller reads it afterwards)
     // return_36:
     //     rts
     return;
