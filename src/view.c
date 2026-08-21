@@ -39,7 +39,6 @@ jmp_buf env;
 #define FLAG_I 0x04
 #define FLAG_D 0x08
 #define FLAG_B 0x10
-#define FLAG_V 0x40
 #define FLAG_N 0x80
 
 #define CTRL(c) ((uint8_t)((c) & 0x1f))

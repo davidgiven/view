@@ -269,7 +269,7 @@ extern uint8_t process_current_document_character(
 extern void check_not_continuous_editing(void);
 extern void adjust_area_pointers(addr_t tmp67);
 extern void wipe_buffer(uint8_t a, addr_t ptr1);
-extern void format_paragraph(void);
+extern bool format_paragraph(void);
 extern void print_document(struct scan_state* scan);
 extern uint8_t draw_prompt_characters(uint8_t x, uint8_t y);
 extern void show_memory_full_error(void);

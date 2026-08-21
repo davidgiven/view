@@ -67,7 +67,7 @@ void adjust_area_pointers(addr_t tmp67);
 static void append_to_output_buffer(uint8_t a);
 uint8_t upper_case_unless_folding(uint8_t a);
 static bool process_char_for_output(uint8_t y, bool carry_in, uint8_t* x);
-void format_paragraph(void);
+bool format_paragraph(void);
 static bool find_next_word_boundary(uint8_t y);
 static bool insert_character_into_edit_buffer(uint8_t a);
 static void set_xpos_to_line_length(void);
@@ -1063,12 +1063,8 @@ static void f0_format_block_key(void)
     clamp_ptr6_to_document();
 
     //     jsr sub_c9977
-
-    format_paragraph();
-
-    //     bvs ca05b
-
-    if (flags & FLAG_V)
+    //     bvs ca05b (V=1 conveyed as a true return)
+    if (format_paragraph())
     {
         show_memory_full_error();
         longjmp(env, JMP_EDITOR);
@@ -7084,7 +7080,20 @@ c9969:
     return l0039 == 0;
 }
 
-void format_paragraph(void)
+/**
+ * Format the line at current_line_ptr (6502 sub_c9977).
+ *
+ * Reads the source line, handles margins, tabs and word wrapping.  Called
+ * from f0_format_block_key (Ctrl+B) and fold_cmd.  Processes one line, or
+ * skips command/ruler lines.
+ *
+ * On return the caller tests line_format_status == 0 directly (the 6502 set
+ * Z from l007e at c9aa5).
+ *
+ * @return true if the document write failed (memory full; 6502 V=1), false
+ *         otherwise.
+ */
+bool format_paragraph(void)
 {
     uint8_t a;
     addr_t tmp67;
@@ -7123,7 +7132,7 @@ void format_paragraph(void)
     if (cp != NO_COMMAND_PREFIX)
     {
         advance_to_next_line();
-        return;
+        return false;
     }
     // PROVISIONAL: Main formatting loop entry. Check format mode — if bit 7 or
     // bit 0 is set, PROVISIONAL: skip this line (paragraph boundary). Also skip
@@ -7139,7 +7148,7 @@ c998a:
     if (a != 0)
     {
         advance_to_next_line();
-        return;
+        return false;
     }
     //     lda ruler_right_stop
     a = ruler_right_stop;
@@ -7148,7 +7157,7 @@ c998a:
     if (a == 0)
     {
         advance_to_next_line();
-        return;
+        return false;
     }
     //     sec
     //     sbc ruler_left_stop
@@ -7158,7 +7167,7 @@ c998a:
     if (a < ruler_left_stop)
     {
         advance_to_next_line();
-        return;
+        return false;
     }
     // PROVISIONAL: Compute line width = right_stop - left_stop + 1, store in
     // l0080.
@@ -7350,7 +7359,7 @@ c9a11:
     if (y == 0)
     {
         advance_to_next_line();
-        return;
+        return false;
     }
     //     jsr sub_c9ac1
     if (find_next_word_boundary(y))
@@ -7466,7 +7475,7 @@ c9a60:
         if (y == 0)
         {
             advance_to_next_line();
-            return;
+            return false;
         }
         a = ram[RAM_EDIT_BUFFER + y];
         {
@@ -7487,7 +7496,7 @@ c9a60:
     justify_edit_buffer(ptr1);
     //     jsr sub_c9aa9
     if (flush_formatted_line())
-        return;
+        return true; // memory full (6502 V=1)
     //     jsr c9a8d
     advance_to_next_line();
     //     beq c9aa5
@@ -7506,7 +7515,7 @@ c9a87:
     insert_at_left_margin();
     //     jsr sub_c9aa9
     if (flush_formatted_line())
-        return;
+        return true; // memory full (6502 V=1)
     //     (fall through to c9a8d in 6502 — no jsr)
     advance_to_next_line();
     //     (c9a8d/c9aa5 merged into advance_to_next_line; return directly to
@@ -7521,7 +7530,7 @@ c9aa5:
     // (the 6502 sets Z from line_format_status here for its caller; callers
     //  now test line_format_status == 0 directly)
     //     rts
-    return;
+    return false;
 }
 
 static bool find_next_word_boundary(uint8_t y)

@@ -678,9 +678,8 @@ static void format_cmd(struct scan_state* scan)
     // c876d:
 c876d:
     //     jsr sub_c9977
-    format_paragraph();
-    //     bvs c8791
-    if (flags & FLAG_V)
+    //     bvs c8791 (V=1 conveyed as a true return)
+    if (format_paragraph())
         goto c8791;
     //     bcs c8787
     if (flags & FLAG_C)
