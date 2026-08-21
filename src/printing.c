@@ -3030,7 +3030,7 @@ static void render_new_page(void)
     cli_putstring("..");
 
     //     jsr flush_and_read_char
-    read_char();
+    a = screen_getchar();
     //     and #0xdf
     a &= 0xdf;
     //     cmp #0x4d ; 'M'

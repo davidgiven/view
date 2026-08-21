@@ -1057,7 +1057,7 @@ c832d:
     //     jsr draw_prompt_characters
     draw_prompt_characters('R', 'P');
     //     jsr flush_and_read_char
-    a = read_char();
+    a = screen_getchar();
     //     bcs return_2
     if (a == 0x1b)
         return;

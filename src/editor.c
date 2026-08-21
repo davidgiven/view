@@ -421,7 +421,7 @@ void editor_loop_impl(void)
 
         //     jsr read_char
 
-        a = read_char();
+        a = screen_getchar();
 
         //     cmp current_tab_key
 
@@ -1480,7 +1480,7 @@ static void k_command_key(void)
 
     flags_need_redrawing_flag++;
 
-    a = read_char();
+    a = screen_getchar();
 
     a = control_key_to_ascii(a);
 
@@ -2311,7 +2311,7 @@ static void o_command_key(void)
 
     flags_need_redrawing_flag++;
 
-    a = read_char();
+    a = screen_getchar();
 
     a = control_key_to_ascii(a);
 
@@ -2399,7 +2399,7 @@ static void q_command_key(void)
 
     flags_need_redrawing_flag++;
 
-    a = read_char();
+    a = screen_getchar();
 
     a = control_key_to_ascii(a);
 
@@ -2948,7 +2948,7 @@ static void sf3_delete_to_char_key(void)
 
     flags_need_redrawing_flag++;
 
-    read_char();
+    a = screen_getchar();
 
     // (branch restructured: 0xa0 -> 0x1c, 0xa1 -> 0x1d, control/high -> beep)
     if (a == 9 || a == 0xa0 || a == 0xa1)
@@ -3139,7 +3139,7 @@ edit_command_loop:
 
     //     jsr read_char
 
-    read_char();
+    a = screen_getchar();
 
     //     cmp #0x0d
 
@@ -3910,7 +3910,7 @@ static int prompt_for_marker(void)
     //     inc flags_need_redrawing_flag
     flags_need_redrawing_flag++;
     //     jsr read_char
-    read_char();
+    a = screen_getchar();
     //     jsr lookup_marker
     return lookup_marker(a);
 }
@@ -6890,7 +6890,7 @@ ca97c:
     do
     {
         beep();
-        a = read_char();
+        a = screen_getchar();
     } while (a != 0x1b);
     //     jsr cursor_on
     cursor_on();

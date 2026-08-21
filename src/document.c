@@ -440,29 +440,6 @@ ca5fa:
     return a;
 }
 
-uint8_t read_char(void)
-{
-    // read_char
-    // Pseudocode: Reads a character from keyboard via SCREEN, returning escape
-    // flag in carry flush_and_read_char / read_char (same entry point)
-    do
-    {
-        a = 0xff;
-        flags &= ~FLAG_C;
-        a = screen_getchar();
-    } while (flags & FLAG_C);
-
-    //     cmp #0x1b                                                         ;
-    //     A=character read
-    //     clc
-    //     bne return_65
-    //     sec
-    // return_65:
-    // (return value: the character read; 0x1b == ESCAPE)
-    //     rts
-    return a;
-}
-
 void return_to_cli_prompt(void)
 {
     longjmp(env, JMP_CLI);
