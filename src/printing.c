@@ -60,7 +60,7 @@ static void write_cr_to_memory(addr_t* cursor);
 // Functions from view.c used by printing code
 
 // Forward declarations within printing.c
-static void expand_line(void);
+static bool expand_line(void);
 static void write_output_buffer_to_format_line(uint8_t a);
 static void parse_word_flag(addr_t ptr, uint8_t* y);
 static void parse_boolean_from_fmt_cmd(uint8_t* y);
@@ -141,9 +141,8 @@ static void lj_fmt_cmd(void)
     // ***************************************************************************************
     // lj_fmt_cmd:
     //     jsr expand_line
-    expand_line();
-    //     bcc return_36
-    if (!(flags & FLAG_C))
+    //     bcc return_36 (C=0 conveyed as a false return)
+    if (!expand_line())
         return;
     //     lda #0
     //     beq c950f                                                         ;
@@ -161,9 +160,8 @@ static void ce_fmt_cmd(void)
     // ***************************************************************************************
     // ce_fmt_cmd:
     //     jsr expand_line
-    expand_line();
-    //     bcc return_36
-    if (!(flags & FLAG_C))
+    //     bcc return_36 (C=0 conveyed as a false return)
+    if (!expand_line())
         return;
     //     txa
     uint8_t a = x;
@@ -222,9 +220,8 @@ static void rj_fmt_cmd(void)
     // ***************************************************************************************
     // rj_fmt_cmd:
     //     jsr expand_line
-    expand_line();
-    //     bcc c9529
-    if (!(flags & FLAG_C))
+    //     bcc c9529 (C=0 conveyed as a false return)
+    if (!expand_line())
     {
         flags |= FLAG_C;
         return;
@@ -263,7 +260,17 @@ static void rj_fmt_cmd(void)
     return;
 }
 
-static void expand_line(void)
+/**
+ * Expand the current format command line into output_buffer, copying from
+ * offset 3 onward and expanding |<register> references via render_register.
+ * Control codes are counted in l0083 and MAX_LINE_LENGTH is enforced.
+ *
+ * @return false when the byte at offset 3 is nul, i.e. nothing to expand
+ *         (the 6502 returned C=0); otherwise true if the expanded length
+ *         reached the caller intact (6502 C=1), or false when more control
+ *         codes than characters were skipped (the sbc's no-borrow carry).
+ */
+static bool expand_line(void)
 {
     uint8_t a;
     uint8_t y;
@@ -283,10 +290,10 @@ static void expand_line(void)
     //     jsr get_current_fmt_cmd_byte
     a = get_current_fmt_cmd_byte(&y);
     //     clc
-    flags &= ~FLAG_C;
     //     beq return_37
+    // (the 6502 cleared C first; C=0 conveyed as a false return)
     if (a == 0)
-        return;
+        return false;
     // c9537:
 c9537:
     for (;;)
@@ -335,18 +342,19 @@ c9555:
     //     lda print_flags
     a = print_flags;
     if ((int8_t)a >= 0)
-        return;
+        return true; // C=1 from the cmp #0x0d that reached c9555
     //     bpl return_37
     //     txa
     //     sbc l0083
-    // (C=1: plain 8-bit subtraction; the carry flag (no borrow) is read by
-    //  callers via flags, so derive it from x >= l0083)
-    flags = (flags & ~FLAG_C) | (x >= l0083 ? FLAG_C : 0);
-    x = x - l0083;
+    // (C=1 carry-in makes this a plain subtraction; its resulting carry
+    //  (no borrow, i.e. x >= l0083) was returned to callers, who test it
+    //  for clear to bail out)
+    bool expanded_ok = x >= l0083;
+    x -= l0083;
     //     tax
     // return_37:
     //     rts
-    return;
+    return expanded_ok;
 
     // c955e:
 c955e:
