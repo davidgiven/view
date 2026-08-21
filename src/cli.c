@@ -205,9 +205,8 @@ static void change_cmd(struct scan_state* scan)
         //     sta print_xpos
         print_xpos = 0;
         //     jsr sub_c8a4f
-        check_area_memory(ptr2);
-        //     bcs c830d
-        if (flags & FLAG_C)
+        //     bcs c830d (C=1 conveyed as a true return)
+        if (check_area_memory(ptr2))
             goto c830d;
         //     jsr c8b7b
         if (scan_document_for_next_line())
@@ -1084,9 +1083,8 @@ c8349:
     //     jsr sub_c8371
     setup_area_pointers(ptr2);
     //     jsr sub_c8a4f
-    check_area_memory(ptr2);
-    //     bcs c836b
-    if (flags & FLAG_C)
+    //     bcs c836b (C=1 conveyed as a true return)
+    if (check_area_memory(ptr2))
     {
         show_memory_full_error();
         esc_key();

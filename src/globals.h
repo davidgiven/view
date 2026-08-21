@@ -102,7 +102,7 @@ typedef enum
 } cli_cmd_status_t;
 
 extern cli_cmd_status_t process_cli_command(struct scan_state* scan);
-extern void check_area_memory(addr_t ptr2);
+extern bool check_area_memory(addr_t ptr2);
 extern void redraw_and_write_back(void);
 extern void setup_area_pointers(addr_t ptr2);
 extern void esc_key(void);

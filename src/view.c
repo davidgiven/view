@@ -60,7 +60,7 @@ command_prefix_t check_for_command_prefix(uint8_t ch);
 
 bool reset_command_parse_state(struct scan_state* scan);
 cli_cmd_status_t process_cli_command(struct scan_state* scan);
-void check_area_memory(addr_t ptr2);
+bool check_area_memory(addr_t ptr2);
 void redraw_and_write_back(void);
 void setup_area_pointers(addr_t ptr2);
 void write_area_to_file(void);
@@ -797,7 +797,15 @@ c8598:
     return;
 }
 
-void check_area_memory(addr_t ptr2)
+/**
+ * Check that the area at ptr2 will fit in memory, expanding it if needed
+ * (6502 sub_c8a4f).  Also rebuilds ptr2's line into the edit buffer.
+ *
+ * @return true on memory full (the 6502 left C set after
+ *         make_space_for_insertion failed), false otherwise (the 6502's
+ *         explicit clc before rts).
+ */
+bool check_area_memory(addr_t ptr2)
 {
     addr_t tmp45;
     addr_t tmp67;
@@ -857,16 +865,12 @@ c8a6c:
     {
         //     lda output_buffer,y
         a = output_buffer[y];
-        //     php
-        {
-            uint8_t saved_flags_ = flags;
-            //     iny
-            y++;
-            //     plp
-            flags = saved_flags_;
-        }
+        //     php; iny; plp
+        // (the php/plp preserves Z across iny for the beq below; testing
+        //  a == 0 directly is equivalent)
+        y++;
         //     beq c8a86
-        if (flags & FLAG_Z)
+        if (a == 0)
             goto c8a86;
         //     inc l0082
         l0082++;
@@ -922,27 +926,16 @@ c8a87:
     a = l0082;
     //     sec; sbc input_buffer_offset+1; sta ((uint8_t*)&tmp67)[0]; lda #0;
     //     sbc l0081; sta ((uint8_t*)&tmp67)[1]
+    // (only the subtraction's N flag is consumed, by the bmi below)
     {
         uint16_t sub = (uint16_t)l0082 - ((uint16_t)l0081 << 8 | l0080);
         tmp67 = sub;
-        if ((uint16_t)l0082 >= ((uint16_t)l0081 << 8 | l0080))
-            flags |= FLAG_C;
-        else
-            flags &= ~FLAG_C;
+        //     bmi c8aca
         if (sub & 0x8000)
-            flags |= FLAG_N;
-        else
-            flags &= ~FLAG_N;
-        if (sub == 0)
-            flags |= FLAG_Z;
-        else
-            flags &= ~FLAG_Z;
+            goto c8aca;
     }
-    //     bmi c8aca
-    if (flags & FLAG_N)
-        goto c8aca;
     //     ora ((uint8_t*)&tmp67)[0]
-    a |= ((uint8_t*)&tmp67)[0];
+    a |= (uint8_t)tmp67;
 
     //     beq c8ada
     if (a == 0)
@@ -952,8 +945,8 @@ c8a87:
     //     jsr make_space_for_insertion
     if (make_space_for_insertion(tmp45, tmp67))
         goto c8ada; // bcc c8ada
-    //     rts
-    return;
+    //     rts (C=1 left set by the failure = memory full)
+    return true;
 
 c8aca:
     // c8aca:
@@ -985,21 +978,13 @@ c8ada:
         //     iny
         y++;
         //     jsr is_uppercase
-        if (isupper(a))
-        {
-            flags &= ~FLAG_C;
-        }
-        else
-        {
-            flags |= FLAG_C;
-        }
         //     bcc c8af3
-        if (!(flags & FLAG_C))
+        if (isupper(a))
             goto c8af3;
         //     ror print_xpos
-        // (carry-in is 1, guaranteed by the bcc c8af3 guard above; the result
-        //  C flag is dead — overwritten by jsr is_uppercase on the loop-back
-        //  and by cpx/cmp on the exit path)
+        // (carry-in is 1: is_uppercase left C set on this fall-through; the
+        //  result C flag is dead — overwritten by jsr is_uppercase on the
+        //  loop-back and by cpx/cmp on the exit path)
         print_xpos = (uint8_t)(print_xpos >> 1) | 0x80;
         //     dex
         x--;
@@ -1038,16 +1023,8 @@ c8af3:
     //     lda (ptr2),y
     a = ram[ptr2 + y];
     //     jsr is_uppercase
-    if (isupper(a))
-    {
-        flags &= ~FLAG_C;
-    }
-    else
-    {
-        flags |= FLAG_C;
-    }
     //     bcs c8b11
-    if (flags & FLAG_C)
+    if (!isupper(a))
         goto c8b11;
     //     and #0x20 ; ' '
     a &= 0x20;
@@ -1138,16 +1115,8 @@ c8b47:
     if (y != 0)
         goto c8b64;
     //     jsr is_uppercase
-    if (isupper(a))
-    {
-        flags &= ~FLAG_C;
-    }
-    else
-    {
-        flags |= FLAG_C;
-    }
     //     bcs c8b64
-    if (!(flags & FLAG_C))
+    if (isupper(a))
     {
         a |= 0x20;
         y = l0081;
@@ -1180,8 +1149,8 @@ c8b6b:
     //     jsr cac78
     split_line_at_wrap(tmp89);
     //     clc
-    flags &= ~FLAG_C;
     //     rts
+    return false;
 }
 
 // Returns true if the block read was empty (the 6502's Z flag, restored by
