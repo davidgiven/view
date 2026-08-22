@@ -89,7 +89,8 @@ void write_line_back_to_document_safely(void);
 void enter_editor_mode(void);
 void clear_format_mode_bit7(void);
 void set_format_mode_bit7(void);
-void draw_previous_word(uint8_t* word_boundary, bool* is_start_of_line);
+void draw_previous_word(
+    uint8_t* word_boundary, bool* is_start_of_line, uint8_t* char_width);
 bool adjust_margins_at_left_margin(void);
 bool insert_edit_buffer_bytes_at_xpos(uint8_t x);
 void set_marker_to_here(uint8_t x);
@@ -2621,7 +2622,8 @@ static void sf12_left_key(void)
 
     uint8_t word_boundary;
     bool is_start_of_line;
-    draw_previous_word(&word_boundary, &is_start_of_line);
+    uint8_t x;
+    draw_previous_word(&word_boundary, &is_start_of_line, &x);
 
     //     bne return_57
 
@@ -3704,7 +3706,8 @@ c9c56:
     //     jsr draw_previous_word (4209)
     uint8_t word_boundary;
     bool is_start_of_line;
-    draw_previous_word(&word_boundary, &is_start_of_line);
+    uint8_t x;
+    draw_previous_word(&word_boundary, &is_start_of_line, &x);
     //     jsr sub_ca608 (4210)
     recalculate_cursor_xpos();
     //     lda l0072 (4211)
@@ -4256,11 +4259,12 @@ void set_format_mode_bit7(void)
  * @param[out] is_start_of_line true if the cursor landed at the start of the
  * line (y == 0, the 6502's Z flag); false if a word boundary was found.
  */
-void draw_previous_word(uint8_t* word_boundary, bool* is_start_of_line)
+void draw_previous_word(
+    uint8_t* word_boundary, bool* is_start_of_line, uint8_t* char_width)
 {
-    addr_t tmp01;
-    uint8_t a;
-    uint8_t y;
+    addr_t line_base;
+    uint8_t ch;
+    uint8_t pos;
     // draw_previous_word
     // draw_previous_word: Moves cursor back to start of previous word
 
@@ -4268,28 +4272,29 @@ void draw_previous_word(uint8_t* word_boundary, bool* is_start_of_line)
     //     sta ((uint8_t*)&tmp01)[0]
     //     lda current_edit_line_ptr+1
     //     sta ((uint8_t*)&tmp01)[1]
-    tmp01 = RAM_EDIT_BUFFER;
+    line_base = RAM_EDIT_BUFFER;
     //     ldy xpos
-    y = xpos;
+    pos = xpos;
     bool is_tab = false;
     //     beq caf55
-    if (y == 0)
+    if (pos == 0)
         goto caf55;
     // loop_caf3f:
     // loop_caf3f:
     for (;;)
     {
         //     dey
-        y--;
+        pos--;
         //     beq caf55
-        if (y == 0)
+        if (pos == 0)
             goto caf55;
         //     jsr process_current_document_character
-        a = process_current_document_character(tmp01, &x, &y, &is_tab);
+        ch = process_current_document_character(
+            line_base, char_width, &pos, &is_tab);
         //     dey
-        y--;
+        pos--;
         //     cmp #0x20 ; ' '
-        if (a == 0x20)
+        if (ch == 0x20)
             continue;
         //     beq loop_caf3f
         break;
@@ -4298,31 +4303,33 @@ void draw_previous_word(uint8_t* word_boundary, bool* is_start_of_line)
     for (;;)
     {
         //     dey
-        y--;
+        pos--;
         //     jsr process_current_document_character
-        a = process_current_document_character(tmp01, &x, &y, &is_tab);
+        ch = process_current_document_character(
+            line_base, char_width, &pos, &is_tab);
         //     cmp #0x20 ; ' '
-        if (a == 0x20)
+        if (ch == 0x20)
             goto caf55;
         //     beq caf55
         //     dey
-        y--;
+        pos--;
         //     bne loop_caf4a
-        if (y != 0)
+        if (pos != 0)
             continue;
         break;
     }
     // caf55:
 caf55:
     //     sty xpos
-    xpos = y;
+    xpos = pos;
     //     jsr process_current_document_character
-    a = process_current_document_character(tmp01, &x, &y, &is_tab);
+    ch = process_current_document_character(
+        line_base, char_width, &pos, &is_tab);
     //     dey
-    y--;
+    pos--;
     // (the 6502 returns the boundary character in A and Z = (y == 0))
-    *word_boundary = a;
-    *is_start_of_line = (y == 0);
+    *word_boundary = ch;
+    *is_start_of_line = (pos == 0);
 }
 
 bool adjust_margins_at_left_margin(void)
