@@ -60,7 +60,7 @@ static void write_cr_to_memory(addr_t* cursor);
 // Functions from view.c used by printing code
 
 // Forward declarations within printing.c
-static bool expand_line(void);
+static uint8_t expand_line(void);
 static void write_output_buffer_to_format_line(uint8_t a);
 static void parse_word_flag(addr_t ptr, uint8_t* y);
 static void parse_boolean_from_fmt_cmd(uint8_t* y);
@@ -84,8 +84,9 @@ enum parse_register_result_t
 int lookup_formatting_command(void);
 static void store_to_output_buffer(uint8_t a, addr_t tmp23);
 static uint8_t process_header_footer_line(uint8_t x, uint8_t y);
-void render_register(uint8_t a);
-static void render_number_to_output_buffer(uint16_t value);
+static void write_output_buffer_to_format_line(uint8_t a);
+void render_register(uint8_t a, uint8_t x);
+static void render_number_to_output_buffer(uint16_t value, uint8_t start_x);
 static void emit_to_output_buffer_callback(uint8_t digit);
 static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t));
 
@@ -141,8 +142,8 @@ static void lj_fmt_cmd(void)
     // ***************************************************************************************
     // lj_fmt_cmd:
     //     jsr expand_line
-    //     bcc return_36 (C=0 conveyed as a false return)
-    if (!expand_line())
+    //     bcc return_36 (C=0 ⟺ nothing expanded: expand_line returned 0)
+    if (expand_line() == 0)
         return;
     //     lda #0
     //     beq c950f                                                         ;
@@ -160,12 +161,8 @@ static void ce_fmt_cmd(void)
     // ***************************************************************************************
     // ce_fmt_cmd:
     //     jsr expand_line
-    //     bcc return_36 (C=0 conveyed as a false return)
-    if (!expand_line())
-        return;
-    //     txa
-    uint8_t a = x;
-
+    //     bcc return_36 (C=0 ⟺ nothing expanded)
+    uint8_t a = expand_line();
     //     beq return_36
     if (a == 0)
         return;
@@ -220,17 +217,9 @@ static void rj_fmt_cmd(void)
     // ***************************************************************************************
     // rj_fmt_cmd:
     //     jsr expand_line
-    //     bcc c9529 (C=0 conveyed as a false return)
-    if (!expand_line())
-    {
-        flags |= FLAG_C;
-        return;
-    }
-    //     txa
-    uint8_t a = x;
-
-    //     beq c9529
-    if (a == 0)
+    //     bcc c9529 (C=0 ⟺ nothing expanded; both bail paths set C)
+    x = expand_line();
+    if (x == 0)
     {
         flags |= FLAG_C;
         return;
@@ -265,15 +254,18 @@ static void rj_fmt_cmd(void)
  * offset 3 onward and expanding |<register> references via render_register.
  * Control codes are counted in l0083 and MAX_LINE_LENGTH is enforced.
  *
- * @return false when the byte at offset 3 is nul, i.e. nothing to expand
- *         (the 6502 returned C=0); otherwise true if the expanded length
- *         reached the caller intact (6502 C=1), or false when more control
- *         codes than characters were skipped (the sbc's no-borrow carry).
+ * The 6502 also returned C, but it is redundant: the terminating CR is not
+ * a control code, so l0083 <= x-1 at the sbc and every non-empty expansion
+ * leaves x >= 1.  A zero return therefore means exactly "nothing expanded".
+ *
+ * @return the number of characters written to output_buffer (the 6502's X
+ *         register); 0 when the byte at offset 3 is nul.
  */
-static bool expand_line(void)
+static uint8_t expand_line(void)
 {
     uint8_t a;
     uint8_t y;
+    uint8_t x;
     // expand_line
     // Pseudocode: Expands a format line into output_buffer, handling register
     // references via |
@@ -291,9 +283,8 @@ static bool expand_line(void)
     a = get_current_fmt_cmd_byte(&y);
     //     clc
     //     beq return_37
-    // (the 6502 cleared C first; C=0 conveyed as a false return)
     if (a == 0)
-        return false;
+        return x;
     // c9537:
 c9537:
     for (;;)
@@ -341,20 +332,19 @@ c9537:
 c9555:
     //     lda print_flags
     a = print_flags;
-    if ((int8_t)a >= 0)
-        return true; // C=1 from the cmp #0x0d that reached c9555
+    if (!(a & 0x80))
+        return x; // C=1 from the cmp #0x0d that reached c9555
     //     bpl return_37
     //     txa
     //     sbc l0083
-    // (C=1 carry-in makes this a plain subtraction; its resulting carry
-    //  (no borrow, i.e. x >= l0083) was returned to callers, who test it
-    //  for clear to bail out)
-    bool expanded_ok = x >= l0083;
+    // (C=1 carry-in makes this a plain subtraction; the sbc's resulting
+    //  carry is provably always set here — CR is not a control code, so
+    //  l0083 <= x-1 — which is why the 6502's C return was redundant)
     x -= l0083;
     //     tax
     // return_37:
     //     rts
-    return expanded_ok;
+    return x;
 
     // c955e:
 c955e:
@@ -366,7 +356,7 @@ c955e:
     //     iny
     y++;
     //     jsr render_register
-    render_register(a);
+    render_register(a, x);
     // advance x past the digits written by render_number_to_output_buffer
     if (l0082 > x)
         x = l0082;
@@ -1415,7 +1405,7 @@ c97ae:
 // the expression is consumed).
 static addr_t evaluate_expression_from_fmt_cmd(uint8_t* y)
 {
-    uint8_t x;
+    uint8_t count;
     addr_t tmp45 = 0;
 
     // evaluate_expression_from_fmt_cmd
@@ -1457,7 +1447,7 @@ c97c0:
     //     iny
     (*y)++;
     //     jsr render_register
-    render_register(a);
+    render_register(a, x);
     //     jmp c97dc
     goto c97dc;
 
@@ -1470,20 +1460,20 @@ c97d5:
     // c97dc:
 c97dc:
     //     ldx input_buffer_offset+1
-    x = l0080;
+    count = l0080;
 
     //     beq c9804
-    if (x == 0)
+    if (count == 0)
         goto c9804;
     //     lda #0
     a = 0;
     //     sta input_buffer_offset+1
     l0080 = a;
     //     dex
-    x--;
+    count--;
 
     //     beq c97f7
-    if (x == 0)
+    if (count == 0)
         goto c97f7;
     //     lda ((uint8_t*)&tmp45)[0]
     a = ((uint8_t*)&tmp45)[0];
@@ -1504,14 +1494,14 @@ c9804:
     if (a == 0)
         goto c9821;
     //     ldx #1
-    x = 1;
+    count = 1;
     //     cmp #0x2b ; '+'
     //     beq c981c
     if (a == 0x2b)
         goto c981c;
     //     inx                                                               ;
     //     X=0x02
-    x++;
+    count++;
     //     cmp #0x2d ; '-'
     //     bne c9821
     if (a != 0x2d)
@@ -1519,7 +1509,7 @@ c9804:
     // c981c:
 c981c:
     //     stx input_buffer_offset+1
-    l0080 = x;
+    l0080 = count;
     //     iny
     (*y)++;
     //     bne c97c0
@@ -1555,7 +1545,7 @@ static uint8_t get_next_fmt_cmd_byte(uint8_t* y)
     return get_current_fmt_cmd_byte(y);
 }
 
-void render_register(uint8_t a)
+void render_register(uint8_t a, uint8_t x)
 {
     addr_t tmp89;
 
@@ -1577,7 +1567,7 @@ void render_register(uint8_t a)
         //     lda (tmp6),y
         //     sta tmp9
         tmp89 = *register_value;
-        render_number_to_output_buffer(tmp89);
+        render_number_to_output_buffer(tmp89, x);
     }
     //     clv
     // (the 6502 clears V here, but no caller of render_register reads it)
@@ -1585,7 +1575,7 @@ void render_register(uint8_t a)
     return;
 }
 
-static void render_number_to_output_buffer(uint16_t value)
+static void render_number_to_output_buffer(uint16_t value, uint8_t start_x)
 {
     // Pseudocode: Renders a 16-bit number to the output buffer using callback
 
@@ -1593,11 +1583,12 @@ static void render_number_to_output_buffer(uint16_t value)
     // ***************************************************************************************
     // ; On Entry:
     // ;     TMP9/TMP8: 16-bit number
+    // ;     X: position in the output buffer
     // ;
     // ***************************************************************************************
     // render_number_to_output_buffer:
     //     stx l0082
-    l0082 = x;
+    l0082 = start_x;
     //     lda la69a
     //     ldy la69b
     //     jsr render_number_to_callback
@@ -3738,7 +3729,7 @@ c93f2:
     //     iny
     y++;
     //     jsr render_register
-    render_register(a);
+    render_register(a, x);
     //     jmp c93ce
     goto c93ce;
 }
