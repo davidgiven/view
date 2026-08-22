@@ -200,7 +200,7 @@ static void change_cmd(struct scan_state* scan)
         // c82b9:
         ptr3++;
         //     jsr move_cursor_to_address
-        move_cursor_to_address((uint16_t)(y) << 8 | a);
+        move_cursor_to_address(ptr2);
         //     lda #0
         //     sta print_xpos
         print_xpos = 0;
@@ -1045,7 +1045,7 @@ static void replace_cmd(struct scan_state* scan)
     }
     //     bne c82fa
     //     jsr move_cursor_to_address
-    move_cursor_to_address((uint16_t)(y) << 8 | a);
+    move_cursor_to_address(ptr2);
     //     jsr enter_editor_mode
     enter_editor_mode();
     // c832d:
@@ -1099,7 +1099,7 @@ c8356:
         return;
     //     bne return_2
     //     jsr move_cursor_to_address
-    move_cursor_to_address((uint16_t)(y) << 8 | a);
+    move_cursor_to_address(ptr2);
     //     jmp c832d
     goto c832d;
 }
@@ -1217,7 +1217,7 @@ static void search_cmd(struct scan_state* scan)
     }
     //     bne c82fa
     //     jsr move_cursor_to_address
-    move_cursor_to_address((uint16_t)(y) << 8 | a);
+    move_cursor_to_address(ptr2);
     //     jmp enter_editor_mode
     enter_editor_mode();
     longjmp(env, JMP_EDITOR);
@@ -1945,10 +1945,9 @@ addr_t parse_mark_from_command(struct scan_state* scan)
         return 0;
     }
     //     lda markers_array,x
-    a = (uint8_t)(markers_array[marker_index] & 0xff);
     //     ldy markers_array+1,x
-    y = (uint8_t)(markers_array[marker_index] >> 8);
+    // (the 6502 returned the address in YA; the C returns it directly)
     // return_12:
     //     rts
-    return (addr_t)(y) << 8 | a;
+    return markers_array[marker_index];
 }

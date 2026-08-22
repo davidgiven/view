@@ -623,7 +623,7 @@ static void cf1_next_match_key(void)
         return;
     }
 
-    move_cursor_to_address((uint16_t)(y) << 8 | a);
+    move_cursor_to_address(ptr2);
 }
 
 static void cf2_format_mode_key(void)
@@ -4901,10 +4901,7 @@ bool scan_document_for_next_line(void)
     // c8b78:
     //     lda #0xff
     if (a == 0)
-    {
-        a = 0xff;
         return false;
-    }
     //     lda #0x14
     a = 0x14;
     //     sta l0048
@@ -4935,7 +4932,6 @@ c8b91:
         goto c8b9f;
     // c8b78:
     //     lda #0xff
-    a = 0xff;
     return false;
 c8b9f:
     // c8b9f:
@@ -5024,7 +5020,6 @@ c8bdf:
     {
         return scan_document_for_next_line();
     }
-    a = 0xff;
     return false;
 c8be3:
     // c8be3:
@@ -5129,17 +5124,16 @@ c8c33:
 c8c3e:
     // c8c3e:
     //     lda doc_ptr2+0
-    a = (uint8_t)(doc_ptr2 & 0xff);
     //     ldy doc_ptr2+1
-    y = (uint8_t)(doc_ptr2 >> 8);
     //     ldx ((uint8_t*)&tmp89)[0]
     //     stx doc_ptr2+0
     //     ldx ((uint8_t*)&tmp89)[1]
     //     stx doc_ptr2+1
     //     sta ptr2
     //     sty ptr2+1
-    // (16-bit copy: doc_ptr2 = tmp89; ptr2 = the previous doc_ptr2,
-    //  which is also returned in the A/Y registers for the caller)
+    // (16-bit copy: doc_ptr2 = tmp89; ptr2 = the previous doc_ptr2.  The
+    //  6502 also returned the old address in YA for its callers, who now
+    //  read ptr2 instead)
     ptr2 = doc_ptr2;
     doc_ptr2 = tmp89;
     //     ldx #0
