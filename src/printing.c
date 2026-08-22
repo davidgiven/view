@@ -62,10 +62,10 @@ static void write_cr_to_memory(addr_t* cursor);
 // Forward declarations within printing.c
 static uint8_t expand_line(void);
 static void write_output_buffer_to_format_line(uint8_t a);
-static void parse_word_flag(addr_t ptr, uint8_t* y);
-static void parse_boolean_from_fmt_cmd(uint8_t* y);
+static bool parse_word_flag(addr_t ptr, uint8_t* y);
+static bool parse_boolean_from_fmt_cmd(uint8_t* y);
 static void page_eject_fmt(void);
-static addr_t evaluate_expression_from_fmt_cmd(uint8_t* y);
+static bool evaluate_expression_from_fmt_cmd(uint16_t* result, uint8_t* y);
 static uint8_t get_current_fmt_cmd_byte(uint8_t* y);
 static uint8_t get_next_fmt_cmd_byte(uint8_t* y);
 
@@ -513,7 +513,9 @@ static void em_fmt_cmd(void)
         return;
     //     jsr evaluate_expression_from_fmt_cmd
     // (result returned as the 16-bit value; stored into the register)
-    *register_value = evaluate_expression_from_fmt_cmd(&y);
+    uint16_t reg_value;
+    evaluate_expression_from_fmt_cmd(&reg_value, &y);
+    *register_value = reg_value;
     //     ldy #0
     //     sta (((uint8_t*)&tmp01)[0]),y
     //     lda ((uint8_t*)&tmp89)[1]
@@ -534,7 +536,9 @@ static void pl_fmt_cmd(void)
     y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
-    page_length = evaluate_expression_from_fmt_cmd(&y);
+    uint16_t value;
+    evaluate_expression_from_fmt_cmd(&value, &y);
+    page_length = value;
     //     sta page_length
     //     rts
     return;
@@ -551,15 +555,16 @@ static void ts_fmt_cmd(void)
     //     ldy #3
     y = 3;
     //     jsr parse_boolean_from_fmt_cmd
-    parse_boolean_from_fmt_cmd(&y);
-    //     bcs return_39
-    if (flags & FLAG_C)
+    //     bcs return_39 (C=1 conveyed as a true return)
+    if (parse_boolean_from_fmt_cmd(&y))
         return;
     //     sta two_sided_flag
     two_sided_flag = a;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
-    rhs_extra_margin = evaluate_expression_from_fmt_cmd(&y);
+    uint16_t value;
+    evaluate_expression_from_fmt_cmd(&value, &y);
+    rhs_extra_margin = value;
     //     sta rhs_extra_margin
     // return_39:
     //     rts
@@ -577,7 +582,9 @@ static void tm_fmt_cmd(void)
     y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
-    top_margin = evaluate_expression_from_fmt_cmd(&y);
+    uint16_t value;
+    evaluate_expression_from_fmt_cmd(&value, &y);
+    top_margin = value;
     //     sta top_margin
     //     rts
     return;
@@ -594,7 +601,9 @@ static void bm_fmt_cmd(void)
     y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
-    bottom_margin = evaluate_expression_from_fmt_cmd(&y);
+    uint16_t value;
+    evaluate_expression_from_fmt_cmd(&value, &y);
+    bottom_margin = value;
     //     sta bottom_margin
     //     rts
     return;
@@ -611,7 +620,9 @@ static void hm_fmt_cmd(void)
     y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
-    header_margin = evaluate_expression_from_fmt_cmd(&y);
+    uint16_t value;
+    evaluate_expression_from_fmt_cmd(&value, &y);
+    header_margin = value;
     //     sta header_margin
     //     rts
     return;
@@ -628,7 +639,9 @@ static void fm_fmt_cmd(void)
     y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
-    footer_margin = evaluate_expression_from_fmt_cmd(&y);
+    uint16_t value;
+    evaluate_expression_from_fmt_cmd(&value, &y);
+    footer_margin = value;
     //     sta footer_margin
     //     rts
     return;
@@ -645,7 +658,9 @@ static void lm_fmt_cmd(void)
     y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
-    left_margin = evaluate_expression_from_fmt_cmd(&y);
+    uint16_t value;
+    evaluate_expression_from_fmt_cmd(&value, &y);
+    left_margin = value;
     //     sta left_margin
     //     rts
     return;
@@ -662,7 +677,9 @@ static void ls_fmt_cmd(void)
     y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
-    line_spacing = evaluate_expression_from_fmt_cmd(&y);
+    uint16_t value;
+    evaluate_expression_from_fmt_cmd(&value, &y);
+    line_spacing = value;
     //     sta line_spacing
     //     rts
     return;
@@ -680,7 +697,9 @@ static void pe_fmt_cmd(void)
     //     ldy #3
     y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
-    x = evaluate_expression_from_fmt_cmd(&y);
+    uint16_t value;
+    evaluate_expression_from_fmt_cmd(&value, &y);
+    x = value;
     //     tax
     //     beq page_eject_fmt
     if (x == 0)
@@ -791,9 +810,8 @@ static void fo_fmt_cmd(void)
     //     ldy #3
     y = 3;
     //     jsr parse_boolean_from_fmt_cmd
-    parse_boolean_from_fmt_cmd(&y);
-    //     bcs return_41
-    if (flags & FLAG_C)
+    //     bcs return_41 (C=1 conveyed as a true return)
+    if (parse_boolean_from_fmt_cmd(&y))
         return;
     //     sta footers_enabled_flag
     footers_enabled_flag = a;
@@ -812,9 +830,8 @@ static void he_fmt_cmd(void)
     //     ldy #3
     y = 3;
     //     jsr parse_boolean_from_fmt_cmd
-    parse_boolean_from_fmt_cmd(&y);
-    //     bcs return_42
-    if (flags & FLAG_C)
+    //     bcs return_42 (C=1 conveyed as a true return)
+    if (parse_boolean_from_fmt_cmd(&y))
         return;
     //     sta headers_enabled_flag
     headers_enabled_flag = a;
@@ -833,9 +850,8 @@ static void pb_fmt_cmd(void)
     //     ldy #3
     y = 3;
     //     jsr parse_boolean_from_fmt_cmd
-    parse_boolean_from_fmt_cmd(&y);
-    //     bcs return_43
-    if (flags & FLAG_C)
+    //     bcs return_43 (C=1 conveyed as a true return)
+    if (parse_boolean_from_fmt_cmd(&y))
         return;
     //     sta l0038
     l0038 = a;
@@ -1038,7 +1054,9 @@ c9716:
     // c9719:
 c9719:
     //     jsr evaluate_expression_from_fmt_cmd
-    a = evaluate_expression_from_fmt_cmd(&y);
+    uint16_t value;
+    evaluate_expression_from_fmt_cmd(&value, &y);
+    a = value;
     //     sec
     //     sbc #1
     //     bcc return_44
@@ -1058,7 +1076,8 @@ c9725:
     //     pha
     uint8_t saved_a = a;
     //     jsr evaluate_expression_from_fmt_cmd
-    addr_t highlight_value = evaluate_expression_from_fmt_cmd(&y);
+    addr_t highlight_value;
+    evaluate_expression_from_fmt_cmd(&highlight_value, &y);
     //     pla
     a = saved_a;
     //     tax
@@ -1267,7 +1286,17 @@ bool execute_formatting_command(uint8_t x)
     return formatted_line_written_flag == 0;
 }
 
-static void parse_boolean_from_fmt_cmd(uint8_t* y)
+/**
+ * Parse a boolean (ON/OFF/1/0) from the format command argument at *y
+ * (6502 parse_boolean_from_fmt_cmd).
+ *
+ * The 6502 returned error status in C (set = bad/missing argument); here it
+ * is the return value.  On success *y is advanced past the parsed token and
+ * a holds the value ('1'/ON → 1, '0' → 0).
+ *
+ * @return true on parse error, false on success.
+ */
+static bool parse_boolean_from_fmt_cmd(uint8_t* y)
 {
     // Pseudocode: Parses a boolean (ON/OFF/1/0) from format command argument
 
@@ -1277,21 +1306,27 @@ static void parse_boolean_from_fmt_cmd(uint8_t* y)
     //     jsr get_current_fmt_cmd_byte
     a = get_current_fmt_cmd_byte(y);
     //     sec
-    flags |= FLAG_C;
-    //     beq return_46
+    // (C=1 pre-set for the empty-argument return; conveyed as true)
     if (a == 0)
-        return;
+        return true;
     //     lda current_format_line_ptr
     //     ldx current_format_line_ptr+1
     // (the 6502 passes the pointer in XA; the C passes it as an argument)
 
     // MULTIPLE ENTRY POINTS: parse_boolean_from_fmt_cmd, sub_c976c
-    parse_word_flag(current_format_line_ptr, y);
+    return parse_word_flag(current_format_line_ptr, y);
 }
 
 static const uint8_t l97b0_data[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
 
-static void parse_word_flag(addr_t ptr, uint8_t* y)
+/**
+ * Parse a word-based flag (ON/OFF/YES/NO, or the digits 1/0) from ptr at
+ * *y (6502 sub_c976c).  On success *y is advanced past the token and a
+ * holds the value.
+ *
+ * @return true on parse error (the 6502's C set), false on success.
+ */
+static bool parse_word_flag(addr_t ptr, uint8_t* y)
 {
     uint8_t x;
 
@@ -1319,12 +1354,10 @@ static void parse_word_flag(addr_t ptr, uint8_t* y)
     // c977f:
 c977f:
     //     clc
-    flags &= ~FLAG_C;
-    //     iny
+    // (C=0 conveyed as a false return)
     (*y)++;
-    //     bne return_46
     if (*y != 0)
-        return;
+        return false;
     // c9783:
 c9783:
     //     dey
@@ -1354,8 +1387,7 @@ c9788:
     //     bcc return_46
     if (a < 0x20)
     {
-        flags &= ~FLAG_C; // C clear (a < 0x20)
-        return;
+        return false; // C clear (a < 0x20): word matched
     }
     // loop_c979d:
     for (;;)
@@ -1381,19 +1413,22 @@ c9788:
     // c97ae:
 c97ae:
     //     sec
-    flags |= FLAG_C;
-    // return_46:
-    //     rts
-    return;
+    // (C=1 conveyed as a true return = parse error)
+    return true;
 
     // MULTIPLE ENTRY POINTS: parse_boolean_from_fmt_cmd, sub_c976c
 }
 
 // Evaluates an arithmetic expression with +, - and register references.
-// Returns the 16-bit result (the 6502 leaves it in tmp89, with A set to the
-// low byte).  *y = cursor position into the format command line (advanced as
-// the expression is consumed).
-static addr_t evaluate_expression_from_fmt_cmd(uint8_t* y)
+// *y = cursor position into the format command line (advanced as the
+// expression is consumed).
+//
+// The 6502 returned the 16-bit result in tmp89 and left C meaningless (no
+// caller tested it); here the result is written through result on every
+// path, and the return value is true when a term was parsed, false when
+// the argument was empty (the line byte at *y was nul, leaving the value
+// at its initialised 0).
+static bool evaluate_expression_from_fmt_cmd(uint16_t* result, uint8_t* y)
 {
     uint8_t count;
     addr_t tmp45 = 0;
@@ -1425,7 +1460,11 @@ c97c0:
     a = get_current_fmt_cmd_byte(y);
     //     beq c9821
     if (a == 0)
-        goto c9821;
+    {
+        // empty argument: nothing parsed (the 6502 just returned tmp89=0)
+        *result = tmp89;
+        return false;
+    }
     //     cmp #0x7c ; '|'
     if (a != 0x7c)
         goto c97d5;
@@ -1468,8 +1507,9 @@ c97dc:
     //     lda ((uint8_t*)&tmp45)[0]
     a = ((uint8_t*)&tmp45)[0];
     //     sec
-    flags |= FLAG_C;
     //     sbc ((uint8_t*)&tmp89)[0]
+    // (the sec makes this a plain subtraction; its carry is dead — no
+    //  reader exists between here and the next flag write)
     tmp89 = tmp45 - tmp89;
     goto c9804;
 
@@ -1508,7 +1548,8 @@ c981c:
 c9821:
     //     lda ((uint8_t*)&tmp89)[0]
     //     rts
-    return tmp89;
+    *result = tmp89;
+    return true;
 }
 
 // Reads the next non-space byte of the current format command line, advancing
