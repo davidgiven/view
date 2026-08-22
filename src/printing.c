@@ -220,10 +220,9 @@ static void rj_fmt_cmd(void)
     //     bcc c9529 (C=0 ⟺ nothing expanded; both bail paths set C)
     x = expand_line();
     if (x == 0)
-    {
-        flags |= FLAG_C;
         return;
-    }
+    // (the 6502's bail path branched into c9529, setting C; no caller of
+    //  rj_fmt_cmd reads C, so it is not reproduced here)
     //     dex
     x--;
     //     dex
@@ -710,10 +709,8 @@ static void pe_fmt_cmd(void)
     //     cmp l0021
     //     bcc return_40
     if (a < l0021)
-    {
-        flags &= ~FLAG_C; // C clear (a < l0021)
         return;
-    }
+    // (the 6502 cleared C on this exit; pe_fmt_cmd's caller never reads it)
     //     lda l0031
     a = l0031;
 
@@ -1067,10 +1064,9 @@ c9719:
     //     cmp #2
     //     bcs return_44
     if (a >= 2)
-    {
-        flags |= FLAG_C; // C = (a >= 2)
         return;
-    }
+    // (the 6502's cmp left C set on this exit; no caller of ht_fmt_cmd
+    //  reads it)
     // c9725:
 c9725:
     //     pha
@@ -1172,11 +1168,14 @@ int lookup_formatting_command(void)
  * the next command line (true, c8f6b_l) and outputting the formatted line
  * (false, c8fce_l).  This is the only deliberately-returned flag.
  *
- * C/V are not produced here: the terminal `ldx l0030` only writes Z/N, so C/V
- * are preserved live-through from whatever the dispatched command left; the
- * printing pipeline that follows reads them later.  They are not a deliberate
- * return channel.  tmp01, ptr1, ptr5 are registers the dispatched command
- * reads/writes, used by the printing pipeline after the call.
+ * C/V are not produced here, and no caller reads them afterwards: the
+ * terminal `ldx l0030` only writes Z/N, and both paths back in print_loop
+ * (c8f6b_l via continue; c8fce_l through render_new_page /
+ * output_left_margin / the character loop) reach the next flag consumer
+ * only after prepare_output_line has rewritten C.  Handler exit-flag
+ * traffic is therefore not reproduced.  tmp01, ptr1, ptr5 are registers
+ * the dispatched command reads/writes, used by the printing pipeline
+ * after the call.
  */
 bool execute_formatting_command(uint8_t x)
 {
