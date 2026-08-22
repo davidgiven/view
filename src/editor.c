@@ -2940,6 +2940,7 @@ static void sf2_release_margins_key(void)
 
 static void sf3_delete_to_char_key(void)
 {
+    uint8_t a;
     uint8_t y;
 
     // sf3_delete_to_char_key
@@ -3096,6 +3097,7 @@ static void sf7_set_marker_key(void)
 
 static void sf8_edit_command_key(addr_t ptr1)
 {
+    uint8_t a;
     uint8_t y;
     // sf8_edit_command_key
     //  Ptrs:   ptr1

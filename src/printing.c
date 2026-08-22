@@ -30,7 +30,7 @@ bool parse_decimal_number(int* value, uint8_t* y);
 bool parse_optional_filename_from_command(struct scan_state* scan);
 static void print_char_x_times(uint8_t a, uint8_t x);
 void print_document(struct scan_state* scan);
-static void print_loop(void);
+static void print_loop(addr_t ptr5);
 static void print_newline(void);
 static void print_vertical_space(uint8_t x);
 read_block_status_t read_block_from_file(addr_t* cursor, addr_t limit);
@@ -39,7 +39,7 @@ static void render_new_page(void);
 bool scan_input_buffer(struct scan_state* state);
 static void start_microspacing_if_active(uint8_t a);
 static void emit_microspacing_spaces(uint8_t a, uint8_t x);
-static bool prepare_output_line(void);
+static bool prepare_output_line(addr_t ptr5, addr_t* macro_cursor);
 static enum parse_register_result_t parse_register_reference(uint8_t a);
 static read_block_status_t read_next_output_line(addr_t limit);
 static void compute_lines_remaining_on_page(void);
@@ -62,8 +62,8 @@ static void write_cr_to_memory(addr_t* cursor);
 // Forward declarations within printing.c
 static uint8_t expand_line(void);
 static void write_output_buffer_to_format_line(uint8_t a);
-static bool parse_word_flag(addr_t ptr, uint8_t* y);
-static bool parse_boolean_from_fmt_cmd(uint8_t* y);
+static bool parse_word_flag(addr_t ptr, uint8_t* y, uint8_t* value);
+static bool parse_boolean_from_fmt_cmd(uint8_t* y, uint8_t* value);
 static void page_eject_fmt(void);
 static bool evaluate_expression_from_fmt_cmd(uint16_t* result, uint8_t* y);
 static uint8_t get_current_fmt_cmd_byte(uint8_t* y);
@@ -210,6 +210,8 @@ static void ce_fmt_cmd(void)
 
 static void rj_fmt_cmd(void)
 {
+    uint8_t a;
+    uint8_t x;
     // rj_fmt_cmd
     // Pseudocode: Right-justifies the current format line
 
@@ -555,10 +557,11 @@ static void ts_fmt_cmd(void)
     y = 3;
     //     jsr parse_boolean_from_fmt_cmd
     //     bcs return_39 (C=1 conveyed as a true return)
-    if (parse_boolean_from_fmt_cmd(&y))
+    uint8_t flag_value;
+    if (parse_boolean_from_fmt_cmd(&y, &flag_value))
         return;
     //     sta two_sided_flag
-    two_sided_flag = a;
+    two_sided_flag = flag_value;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
@@ -808,10 +811,11 @@ static void fo_fmt_cmd(void)
     y = 3;
     //     jsr parse_boolean_from_fmt_cmd
     //     bcs return_41 (C=1 conveyed as a true return)
-    if (parse_boolean_from_fmt_cmd(&y))
+    uint8_t flag_value;
+    if (parse_boolean_from_fmt_cmd(&y, &flag_value))
         return;
     //     sta footers_enabled_flag
-    footers_enabled_flag = a;
+    footers_enabled_flag = flag_value;
     // return_41:
     //     rts
     return;
@@ -828,10 +832,11 @@ static void he_fmt_cmd(void)
     y = 3;
     //     jsr parse_boolean_from_fmt_cmd
     //     bcs return_42 (C=1 conveyed as a true return)
-    if (parse_boolean_from_fmt_cmd(&y))
+    uint8_t flag_value;
+    if (parse_boolean_from_fmt_cmd(&y, &flag_value))
         return;
     //     sta headers_enabled_flag
-    headers_enabled_flag = a;
+    headers_enabled_flag = flag_value;
     // return_42:
     //     rts
     return;
@@ -848,10 +853,11 @@ static void pb_fmt_cmd(void)
     y = 3;
     //     jsr parse_boolean_from_fmt_cmd
     //     bcs return_43 (C=1 conveyed as a true return)
-    if (parse_boolean_from_fmt_cmd(&y))
+    uint8_t flag_value;
+    if (parse_boolean_from_fmt_cmd(&y, &flag_value))
         return;
     //     sta l0038
-    l0038 = a;
+    l0038 = flag_value;
     // return_43:
     //     rts
     return;
@@ -1291,12 +1297,13 @@ bool execute_formatting_command(uint8_t x)
  *
  * The 6502 returned error status in C (set = bad/missing argument); here it
  * is the return value.  On success *y is advanced past the parsed token and
- * a holds the value ('1'/ON → 1, '0' → 0).
+ * *value holds the parsed byte (exactly what the 6502 left in A).
  *
  * @return true on parse error, false on success.
  */
-static bool parse_boolean_from_fmt_cmd(uint8_t* y)
+static bool parse_boolean_from_fmt_cmd(uint8_t* y, uint8_t* value)
 {
+    uint8_t a;
     // Pseudocode: Parses a boolean (ON/OFF/1/0) from format command argument
 
     // ;
@@ -1306,6 +1313,7 @@ static bool parse_boolean_from_fmt_cmd(uint8_t* y)
     a = get_current_fmt_cmd_byte(y);
     //     sec
     // (C=1 pre-set for the empty-argument return; conveyed as true)
+    *value = a;
     if (a == 0)
         return true;
     //     lda current_format_line_ptr
@@ -1313,20 +1321,21 @@ static bool parse_boolean_from_fmt_cmd(uint8_t* y)
     // (the 6502 passes the pointer in XA; the C passes it as an argument)
 
     // MULTIPLE ENTRY POINTS: parse_boolean_from_fmt_cmd, sub_c976c
-    return parse_word_flag(current_format_line_ptr, y);
+    return parse_word_flag(current_format_line_ptr, y, value);
 }
 
 static const uint8_t l97b0_data[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
 
 /**
  * Parse a word-based flag (ON/OFF/YES/NO, or the digits 1/0) from ptr at
- * *y (6502 sub_c976c).  On success *y is advanced past the token and a
- * holds the value.
+ * *y (6502 sub_c976c).  On success *y is advanced past the token and
+ * *value holds the parsed byte (exactly what the 6502 left in A).
  *
  * @return true on parse error (the 6502's C set), false on success.
  */
-static bool parse_word_flag(addr_t ptr, uint8_t* y)
+static bool parse_word_flag(addr_t ptr, uint8_t* y, uint8_t* value)
 {
+    uint8_t a;
     uint8_t x;
 
     // sub_c976c
@@ -1354,6 +1363,7 @@ static bool parse_word_flag(addr_t ptr, uint8_t* y)
 c977f:
     //     clc
     // (C=0 conveyed as a false return)
+    *value = a;
     (*y)++;
     if (*y != 0)
         return false;
@@ -1386,6 +1396,7 @@ c9788:
     //     bcc return_46
     if (a < 0x20)
     {
+        *value = a;
         return false; // C clear (a < 0x20): word matched
     }
     // loop_c979d:
@@ -1413,6 +1424,7 @@ c9788:
 c97ae:
     //     sec
     // (C=1 conveyed as a true return = parse error)
+    *value = a;
     return true;
 
     // MULTIPLE ENTRY POINTS: parse_boolean_from_fmt_cmd, sub_c976c
@@ -1431,6 +1443,7 @@ static bool evaluate_expression_from_fmt_cmd(uint16_t* result, uint8_t* y)
 {
     uint8_t count;
     addr_t tmp45 = 0;
+    addr_t tmp89;
 
     // evaluate_expression_from_fmt_cmd
     // Pseudocode: Evaluates arithmetic expression with +, - and register
@@ -2397,6 +2410,7 @@ void print_document(struct scan_state* scan)
 {
     uint8_t a;
     uint8_t y;
+    addr_t ptr5;
     // print_document
     // print_document:
     //     jsr check_not_continuous_editing
@@ -2449,7 +2463,7 @@ void print_document(struct scan_state* scan)
     //     inc printing_from_file_flag
     printing_from_file_flag++;
     printer_ptr6 = page;
-    print_loop();
+    print_loop(ptr5);
     goto c8f0d;
     // c8f0a:
     // c8f0d:
@@ -2460,7 +2474,7 @@ c8f0d:
     {
         // A = 0x0d (set by parse_optional_filename_from_command's lda #&0d)
         set_rw_file_handle(0x0d);
-        print_loop();
+        print_loop(ptr5);
         goto c8f0d;
     }
     //     lda l0031
@@ -2481,10 +2495,12 @@ c8f0d:
     //     jmp return_to_cli_prompt
 }
 
-static void print_loop(void)
+static void print_loop(addr_t ptr5)
 {
     uint8_t a;
     uint8_t x;
+    addr_t ptr3 = 0; // set before first use (macro start); 0 placates GCC's
+                     // cross-function uninitialised analysis
     addr_t tmp67;
     addr_t tmp89;
 
@@ -2507,7 +2523,7 @@ static void print_loop(void)
         }
         //     jsr sub_c9188
         //     bcs c8f0a (C=1 conveyed as a true return)
-        if (prepare_output_line())
+        if (prepare_output_line(ptr5, &ptr3))
             return;
         //     jsr sub_c916a
         start_microspacing_if_active(a);
@@ -2650,6 +2666,8 @@ static void print_loop(void)
             nested_macro_error();
             return;
         }
+        // (the macro body cursor persists across prepare_output_line calls,
+        //  so it lives here and is passed by reference)
         ptr3 = tmp67 + 4;
         macro_executing_flag = (uint8_t)(ptr3 >> 8);
         //     bne c900e
@@ -3018,6 +3036,7 @@ c9355:
 
 static void render_new_page(void)
 {
+    uint8_t a;
     // render_new_page
     // Pseudocode: Renders a new page with headers, margins, page number prompt
 
@@ -3241,10 +3260,14 @@ static void emit_microspacing_spaces(uint8_t a, uint8_t x)
  * output line via read_next_output_line (handling macro execution) and
  * points current_format_line_ptr at it.
  *
+ * The 6502 kept the macro-body cursor in the global ptr3, persisting it
+ * across successive calls; here the caller owns that cursor and passes it
+ * in by reference.
+ *
  * @return true when no more output remains (the 6502 returned C set;
  *         print_loop's bcs c8f0a), false on success.
  */
-static bool prepare_output_line(void)
+static bool prepare_output_line(addr_t ptr5, addr_t* macro_cursor)
 {
     uint8_t a;
 
@@ -3252,7 +3275,7 @@ static bool prepare_output_line(void)
     uint8_t y;
 
     // sub_c9188
-    //  Ptrs:   ptr1, ptr3, ptr5
+    //  Ptrs:   ptr1, (*macro_cursor), ptr5
     // c9184:
     //     lda #0
     //     sta macro_executing_flag
@@ -3300,8 +3323,8 @@ c91a3:
 c91a7:
     for (;;)
     {
-        //     lda (ptr3),y
-        a = ram[ptr3 + y];
+        //     lda ((*macro_cursor)),y
+        a = ram[(*macro_cursor) + y];
         //     cmp #4
         //     beq c9184
         if (a == 4)
@@ -3341,11 +3364,11 @@ c91c2:
     //     tya
     a = y;
     //     clc
-    //     adc ptr3
-    //     sta ptr3
+    //     adc (*macro_cursor)
+    //     sta (*macro_cursor)
     //     bcc c91cc
-    // (16-bit arithmetic: ptr3 += y)
-    ptr3 += a;
+    // (16-bit arithmetic: (*macro_cursor) += y)
+    (*macro_cursor) += a;
     //     lda ptr1
     a = (uint8_t)(ptr1 & 0xff);
     //     ldy ptr1+1
@@ -3365,8 +3388,8 @@ c91d0:
 c91da:
     //     iny
     y++;
-    //     lda (ptr3),y
-    a = ram[ptr3 + y];
+    //     lda ((*macro_cursor)),y
+    a = ram[(*macro_cursor) + y];
     //     sec
     //     sbc #0x30 ; '0'
     //     bcc c9225
