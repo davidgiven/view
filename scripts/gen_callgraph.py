@@ -37,7 +37,7 @@ LIB_FUNCS = {
 }
 
 KNOWN_GLOBALS = {
-    'a', 'x', 'y', 'sp', 'flags',
+    'a', 'x', 'y', 'sp',
     'ram',
     'ptr1', 'current_edit_line_ptr', 'current_format_line_ptr',
     'current_ruler_ptr', 'current_line_ptr', 'page', 'top', 'himem',

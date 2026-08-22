@@ -6,7 +6,7 @@ typedef uint16_t addr_t;
 #include <stdlib.h>
 
 /* ---- global state (same layout as view.c) ---- */
-uint8_t a, x, y, flags;
+uint8_t a, x, y;
 extern addr_t tmp01, tmp23, tmp45, tmp67, tmp89;
 addr_t tmp01 = 0, tmp23 = 0, tmp45 = 0, tmp67 = 0, tmp89 = 0;
 uint8_t l0083;
@@ -45,7 +45,6 @@ static void render_number(uint16_t value)
 {
     a = 0;
     y = 0;
-    flags = 0;
     reset_output();
     render_number_to_callback(value, test_callback);
 }

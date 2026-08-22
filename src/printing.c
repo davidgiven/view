@@ -39,7 +39,7 @@ static void render_new_page(void);
 bool scan_input_buffer(struct scan_state* state);
 static void start_microspacing_if_active(uint8_t a);
 static void emit_microspacing_spaces(uint8_t a, uint8_t x);
-static void prepare_output_line(void);
+static bool prepare_output_line(void);
 static enum parse_register_result_t parse_register_reference(uint8_t a);
 static read_block_status_t read_next_output_line(addr_t limit);
 static void compute_lines_remaining_on_page(void);
@@ -2506,9 +2506,8 @@ static void print_loop(void)
             }
         }
         //     jsr sub_c9188
-        prepare_output_line();
-        //     bcs c8f0a
-        if (flags & FLAG_C)
+        //     bcs c8f0a (C=1 conveyed as a true return)
+        if (prepare_output_line())
             return;
         //     jsr sub_c916a
         start_microspacing_if_active(a);
@@ -3237,7 +3236,15 @@ static void emit_microspacing_spaces(uint8_t a, uint8_t x)
     return;
 }
 
-static void prepare_output_line(void)
+/**
+ * Prepare the next line for printing (6502 sub_c9188): fetches the next
+ * output line via read_next_output_line (handling macro execution) and
+ * points current_format_line_ptr at it.
+ *
+ * @return true when no more output remains (the 6502 returned C set;
+ *         print_loop's bcs c8f0a), false on success.
+ */
+static bool prepare_output_line(void)
 {
     uint8_t a;
 
@@ -3273,9 +3280,8 @@ c9188_normal_entry:
     //     jsr sub_c9241
     if (read_next_output_line(ptr5) == READ_BLOCK_DONE)
     {
-        //     bcs return_26
-        flags |= FLAG_C;
-        return;
+        //     bcs return_26 (C=1 conveyed as a true return)
+        return true;
     }
     //     lda ptr5
     a = (uint8_t)(ptr5 & 0xff);
@@ -3351,10 +3357,9 @@ c91d0:
     //     sty current_format_line_ptr+1
     current_format_line_ptr = tmp01;
     //     clc
-    flags &= ~FLAG_C;
     // return_26:
     //     rts
-    return;
+    return false;
 
     // c91da:
 c91da:

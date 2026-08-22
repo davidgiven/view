@@ -8,7 +8,7 @@ typedef uint16_t addr_t;
 typedef uint16_t addr_t;
 
 extern uint8_t ram[65536];
-extern uint8_t a, x, y, flags;
+extern uint8_t a, x, y;
 extern uint8_t justifying_flag;
 extern uint8_t ruler_left_stop;
 extern uint8_t ruler_right_stop;
@@ -67,7 +67,7 @@ static void init_globals(const char* text, uint8_t jf, uint8_t rstop)
     tmp8 = tmp9 = 0;
     print_xpos = 4;
     input_buffer_offset = 0;
-    a = x = y = flags = 0;
+    a = x = y = 0;
     memset(output_buffer, 0, sizeof(output_buffer));
     memset(input_buffer, 0, sizeof(input_buffer));
 }

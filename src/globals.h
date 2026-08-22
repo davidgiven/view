@@ -28,12 +28,6 @@ typedef enum
     HIGHLIGHT2_CODE, /* 0x1d highlight 2 toggle */
 } control_code_t;
 
-// Flag bit masks
-#define FLAG_C 0x01
-#define FLAG_Z 0x02
-#define FLAG_N 0x80
-#define FLAG_V 0x40
-
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
 #define MAX_LINE_LENGTH 132
@@ -42,7 +36,7 @@ typedef enum
 #define JMP_EDITOR 2
 
 // 6502 CPU register globals
-extern uint8_t a, x, y, flags;
+extern uint8_t a, x, y;
 extern uint8_t ram[65536];
 
 // Printer driver struct

@@ -26,20 +26,12 @@
 typedef uint16_t addr_t;
 
 // ; 6502 CPU register globals
-uint8_t a, x, y, sp, flags;
+uint8_t a, x, y, sp;
 
 // ; Longjmp buffer for stack unwinding (txs equivalent)
 jmp_buf env;
 #define JMP_CLI 1
 #define JMP_EDITOR 2
-
-// ; Flag bit masks
-#define FLAG_C 0x01
-#define FLAG_Z 0x02
-#define FLAG_I 0x04
-#define FLAG_D 0x08
-#define FLAG_B 0x10
-#define FLAG_N 0x80
 
 #define CTRL(c) ((uint8_t)((c) & 0x1f))
 

@@ -2911,7 +2911,7 @@ static void sf2_release_margins_key(void)
 
     //     bit format_mode_flag
 
-    if (!(format_mode_flag & FLAG_V))
+    if (!(format_mode_flag & 0x40))
     {
         xpos = 0;
         return;
@@ -6942,7 +6942,7 @@ uint8_t upper_case_unless_folding(uint8_t a)
 {
     // sub_c8c5f: converts to uppercase only if folding flag is clear
     //     bit folding_flag
-    if (folding_flag & FLAG_N)
+    if (folding_flag & 0x80)
         return a;
     //     falls through to to_uppercase
     return toupper(a);
