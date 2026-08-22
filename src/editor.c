@@ -2879,7 +2879,7 @@ static void sf1_swap_case_key(void)
 
     //     jsr is_uppercase
     //     bcs f13_right_key
-    if (!isupper(a))
+    if (!isalpha(a))
     {
         f13_right_key();
         return;

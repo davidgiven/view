@@ -270,6 +270,32 @@ class PrintTests(unittest.TestCase):
         keys += _command("ZZ", "")
         self._type_and_screen(keys, [b"Body", b"Body"])
 
+    def test_dm_em_macro_definition_lowercase_invocation(self):
+        """Define macro zz with folding on, then invoke it via ZZ.
+        """
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("")
+        self.proc.drain()
+
+        keys = _command("DM", "zz") + CTRL_M
+        keys += b"Body" + CTRL_M
+        keys += _command("EM", "") + CTRL_M
+        keys += _command("ZZ", "")
+        self.proc.write(keys + b"\x1b")
+        self.proc.read_until(b"=>", timeout=3.0)
+
+        self.proc.writeline("SCREEN")
+        output = self.proc.read_until(b"=>", timeout=3.0)
+
+        start = output.find(b"SCREEN")
+        if start >= 0:
+            output = output[start + 6:].lstrip(b"\r\n")
+        prompt_pos = output.rfind(b"=>")
+        if prompt_pos >= 0:
+            output = output[:prompt_pos]
+        lines = [l.rstrip(b"\r") for l in output.split(b"\n") if l.strip()]
+        self.assertEqual(lines, [b"Body"])
+
     def test_dm_em_macro_with_parameters(self):
         """Define macro with @0 parameter, invoke with different arguments."""
         keys = _command("DM", "ZZ") + CTRL_M

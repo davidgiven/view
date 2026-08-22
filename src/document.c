@@ -618,11 +618,11 @@ unsigned int* get_register_address(uint8_t a)
 {
     // get_register_address
     // get_register_address: Gets a pointer to the register value by letter
-    // name.  Returns NULL if the letter is not an uppercase A-Z (invalid).
+    // name.  Returns NULL if the letter is not a letter A-Z/a-z (invalid).
 
     //     jsr is_uppercase
     //     bcs return_77
-    if (!isupper(a))
+    if (!isalpha(a))
         return NULL;
     //     and #0xdf
     a &= 0xdf;

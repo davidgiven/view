@@ -136,8 +136,12 @@ class CliTests(unittest.TestCase):
             output = output[:prompt_pos]
 
         lines = [l.rstrip(b"\r") for l in output.split(b"\n") if l.strip()]
-        count = sum(l.count(b"cow") for l in lines)
-        self.assertEqual(count, 29)
+
+        cow_count = sum(l.count(b"cow") for l in lines)
+        self.assertEqual(cow_count, 28)
+
+        big_cow_count = sum(l.count(b"Cow") for l in lines)
+        self.assertEqual(big_cow_count, 1)
 
     def test_change_case_sensitive(self):
         """FOLD 0 makes CHANGE case-sensitive — 'Horse' in title left alone."""

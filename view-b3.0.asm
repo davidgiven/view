@@ -1913,7 +1913,7 @@ l80f2 = brk_handler_ptr+1
 .loop_c8ae4
     lda (ptr2),y                                                      ; 8ae4: b1 4b       .K
     iny                                                               ; 8ae6: c8          .
-    jsr is_uppercase                                                  ; 8ae7: 20 6b 8c     k.
+    jsr is_letter                                                     ; 8ae7: 20 6b 8c     k.
     bcc c8af3                                                         ; 8aea: 90 07       ..
     ror print_xpos                                                    ; 8aec: 66 78       fx
     dex                                                               ; 8aee: ca          .
@@ -1932,7 +1932,7 @@ l80f2 = brk_handler_ptr+1
     dex                                                               ; 8aff: ca          .
     beq c8b0d                                                         ; 8b00: f0 0b       ..
     lda (ptr2),y                                                      ; 8b02: b1 4b       .K
-    jsr is_uppercase                                                  ; 8b04: 20 6b 8c     k.
+    jsr is_letter                                                     ; 8b04: 20 6b 8c     k.
     bcs c8b11                                                         ; 8b07: b0 08       ..
     and #&20 ; ' '                                                    ; 8b09: 29 20       )
     bne c8b11                                                         ; 8b0b: d0 04       ..
@@ -1984,7 +1984,7 @@ l80f2 = brk_handler_ptr+1
     bmi c8b64                                                         ; 8b4f: 30 13       0.
     ldy print_xpos                                                    ; 8b51: a4 78       .x
     bne c8b64                                                         ; 8b53: d0 0f       ..
-    jsr is_uppercase                                                  ; 8b55: 20 6b 8c     k.
+    jsr is_letter                                                     ; 8b55: 20 6b 8c     k.
     bcs c8b64                                                         ; 8b58: b0 0a       ..
     ora #&20 ; ' '                                                    ; 8b5a: 09 20       .
     ldy l0081                                                         ; 8b5c: a4 81       ..
@@ -2182,7 +2182,7 @@ l80f2 = brk_handler_ptr+1
 ; ***************************************************************************************
 ; &8c63 referenced 2 times by &83b1, &978b
 .to_uppercase
-    jsr is_uppercase                                                  ; 8c63: 20 6b 8c     k.
+    jsr is_letter                                                     ; 8c63: 20 6b 8c     k.
     bcs return_14                                                     ; 8c66: b0 02       ..
     and #&df                                                          ; 8c68: 29 df       ).
 ; &8c6a referenced 2 times by &8c61, &8c66
@@ -2191,7 +2191,7 @@ l80f2 = brk_handler_ptr+1
 
 ; ***************************************************************************************
 ; &8c6b referenced 8 times by &8ae7, &8b04, &8b55, &8c63, &8f8b, &9684, &9d40, &ad69
-.is_uppercase
+.is_letter
     cmp #&41 ; 'A'                                                    ; 8c6b: c9 41       .A
     bcc c8c7a                                                         ; 8c6d: 90 0b       ..
     cmp #&5b ; '['                                                    ; 8c6f: c9 5b       .[
@@ -2785,7 +2785,7 @@ l80f2 = brk_handler_ptr+1
     sta tmp8                                                          ; 8f86: 85 8d       ..
     iny                                                               ; 8f88: c8          .              ; Y=&02
     lda (current_format_line_ptr),y                                   ; 8f89: b1 04       ..
-    jsr is_uppercase                                                  ; 8f8b: 20 6b 8c     k.
+    jsr is_letter                                                     ; 8f8b: 20 6b 8c     k.
     bcc c8f92                                                         ; 8f8e: 90 02       ..
     lda #&20 ; ' '                                                    ; 8f90: a9 20       .
 ; &8f92 referenced 1 time by &8f8e
@@ -4164,7 +4164,7 @@ l94b2 = default_printer_driver_ptr+1
     sta l0084                                                         ; 967f: 85 84       ..
     iny                                                               ; 9681: c8          .              ; Y=&04
     lda (current_format_line_ptr),y                                   ; 9682: b1 04       ..
-    jsr is_uppercase                                                  ; 9684: 20 6b 8c     k.
+    jsr is_letter                                                     ; 9684: 20 6b 8c     k.
     bcc c968d                                                         ; 9687: 90 04       ..
     lda #&20 ; ' '                                                    ; 9689: a9 20       .
     bne c968f                                                         ; 968b: d0 02       ..             ; ALWAYS branch
@@ -5390,7 +5390,7 @@ l94b2 = default_printer_driver_ptr+1
 .sf1_swap_case_key
     ldy xpos                                                          ; 9d3c: a4 40       .@
     lda (current_edit_line_ptr),y                                     ; 9d3e: b1 02       ..
-    jsr is_uppercase                                                  ; 9d40: 20 6b 8c     k.
+    jsr is_letter                                                     ; 9d40: 20 6b 8c     k.
     bcs f13_right_key                                                 ; 9d43: b0 06       ..
     inc l0074                                                         ; 9d45: e6 74       .t
     eor #&20 ; ' '                                                    ; 9d47: 49 20       I
@@ -8453,7 +8453,7 @@ la8a5 = ca8a4+1
 ; ***************************************************************************************
 ; &ad69 referenced 2 times by &95c2, &ad83
 .get_register_address
-    jsr is_uppercase                                                  ; ad69: 20 6b 8c     k.
+    jsr is_letter                                                     ; ad69: 20 6b 8c     k.
     bcs return_77                                                     ; ad6c: b0 12       ..
     and #&df                                                          ; ad6e: 29 df       ).
     pha                                                               ; ad70: 48          H
@@ -9876,7 +9876,7 @@ save pydis_start, pydis_end
 ;     doc_ptr2+0:                             8
 ;     doc_ptr2+1:                             8
 ;     find_marker_at_position:                8
-;     is_uppercase:                           8
+;     is_letter:                              8
 ;     l0031:                                  8
 ;     l003d:                                  8
 ;     l0076:                                  8

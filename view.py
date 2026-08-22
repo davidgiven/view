@@ -252,7 +252,7 @@ subroutine(
     on_entry={"x": "address of ZP var containing handle"},
 )
 subroutine(0x8C63, "to_uppercase")
-subroutine(0x8C6B, "is_uppercase")
+subroutine(0x8C6B, "is_letter")
 subroutine(0x8C8D, "read_block_from_file")
 subroutine(0x8CFE, "write_cr_to_memory")
 subroutine(0x8D00, "write_byte_to_memory")

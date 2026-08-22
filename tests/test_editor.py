@@ -752,12 +752,19 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
-    def test_swap_case_lowercase_unchanged(self):
+    def test_swap_case_lowercase_toggles_up(self):
+        """^Q^S on lowercase letters swaps them to uppercase.
+
+        The 6502 is_letter routine (&8C6B) accepts A-Z *and* a-z, so
+        sf1_swap_case_key toggles lowercase letters too.  (An earlier
+        expectation of "abc"-unchanged was calibrated against a buggy
+        isupper() translation.)
+        """
         self._test_enter_editor_and_type(
             b"abc" + CTRL_Q + CTRL_S + CTRL_P + CTRL_P + CTRL_P,
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-                "   abc                                                                          ",
+                "   ABC                                                                          ",
                 "********************************************************************************",
             ],
         )
@@ -792,7 +799,7 @@ class EditorTests(unittest.TestCase):
             + CTRL_P,
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-                "   a1b2c                                                                        ",
+                "   a1B2c                                                                        ",
                 "********************************************************************************",
             ],
         )
@@ -1039,10 +1046,12 @@ class EditorTests(unittest.TestCase):
         self.proc.write(b"Y")
         raw = self._drain_editor()
         stream.feed(raw.decode("latin-1"))
+        # The replace engine preserves the matched word's capitalisation,
+        # so folded matching turns "Horse" into "Cow" (not "cow").
         self.assertIn(
-            "Water cow's Fireplace",
+            "Water Cow's Fireplace",
             screen.display[1],
-            f"Expected 'Water cow's Fireplace' on line 1, got {repr(screen.display[1])}",
+            f"Expected 'Water Cow's Fireplace' on line 1, got {repr(screen.display[1])}",
         )
 
     def test_replace_horse_with_cow_fold_0(self):

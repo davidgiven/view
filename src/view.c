@@ -979,7 +979,7 @@ c8ada:
         y++;
         //     jsr is_uppercase
         //     bcc c8af3
-        if (isupper(a))
+        if (isalpha(a))
             goto c8af3;
         //     ror print_xpos
         // (carry-in is 1: is_uppercase left C set on this fall-through; the
@@ -1024,7 +1024,7 @@ c8af3:
     a = ram[ptr2 + y];
     //     jsr is_uppercase
     //     bcs c8b11
-    if (!isupper(a))
+    if (!isalpha(a))
         goto c8b11;
     //     and #0x20 ; ' '
     a &= 0x20;
@@ -1116,7 +1116,7 @@ c8b47:
         goto c8b64;
     //     jsr is_uppercase
     //     bcs c8b64
-    if (isupper(a))
+    if (isalpha(a))
     {
         a |= 0x20;
         y = l0081;

@@ -313,12 +313,10 @@ c9537:
             x++;
             //     cmp #0x0d
             //     beq c9555
+            // (the cmp's C=1 fed c9555's sbc in the 6502; expand_line no
+            //  longer returns C, so it is not reproduced here)
             if (a == 0x0d)
-            {
-                flags |=
-                    FLAG_C; // C = (a >= 0x0d) = 1, feeds c9555's sbc/return
                 goto c9555;
-            }
             //     cpx #MAX_LINE_LENGTH-1
             //     bcc c9537
             if (x < MAX_LINE_LENGTH - 1)
@@ -883,16 +881,8 @@ static void dm_fmt_cmd(void)
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
     //     jsr is_uppercase
-    if (isupper(a))
-    {
-        flags &= ~FLAG_C;
-    }
-    else
-    {
-        flags |= FLAG_C;
-    }
     //     bcc c968d
-    if (!(flags & FLAG_C))
+    if (isalpha(a))
         goto c968d;
     //     lda #0x20 ; ' '
     a = 0x20;
@@ -2554,21 +2544,10 @@ static void print_loop(void)
         //     lda (current_format_line_ptr),y
         a = ram[current_format_line_ptr + y];
         //     jsr is_uppercase
-        // (is_uppercase returns C=0 for A-Z/a-z, C=1 otherwise)
-        if (a >= 'A' && a < '[')
-        {
-            flags &= ~FLAG_C;
-        }
-        else if (a >= 'a' && a < '{')
-        {
-            flags &= ~FLAG_C;
-        }
-        else
-        {
-            flags |= FLAG_C;
-        }
+        // (the 6502 is_uppercase returns C=0 for A-Z/a-z, i.e. what
+        //  isalpha() tests; C=1 otherwise)
         //     bcc c8f92
-        if ((flags & FLAG_C))
+        if (!isalpha(a))
         {
             a = 0x20;
         }
