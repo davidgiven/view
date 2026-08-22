@@ -26,7 +26,7 @@
 typedef uint16_t addr_t;
 
 // ; 6502 CPU register globals
-uint8_t a, x, y, sp;
+uint8_t a, x, y;
 
 // ; Longjmp buffer for stack unwinding (txs equivalent)
 jmp_buf env;
