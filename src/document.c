@@ -782,6 +782,7 @@ int lookup_marker(uint8_t a)
 
 void move_cursor_to_address(uint16_t addr)
 {
+    addr_t tmp01;
     uint8_t a;
     uint8_t x;
     uint8_t yy;

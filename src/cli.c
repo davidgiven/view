@@ -161,6 +161,7 @@ void execute_cli_command(uint8_t a, struct scan_state* scan)
 
 static void change_cmd(struct scan_state* scan)
 {
+    addr_t ptr3;
     // change_cmd
     // Pseudocode: Replaces all occurrences of search string in document area,
     // reports change count
@@ -1022,6 +1023,7 @@ static void read_cmd(struct scan_state* scan)
 
 static void replace_cmd(struct scan_state* scan)
 {
+    uint8_t a;
     // replace_cmd
     // Pseudocode: Interactive search and replace prompting for each match
     // (Y)es/(O)K/(N)o

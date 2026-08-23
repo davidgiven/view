@@ -1184,6 +1184,7 @@ static void f14_down_key(void)
 
 static void f15_up_key(void)
 {
+    addr_t tmp01;
     // f15_up_key
 
     // f15_up_key: Moves cursor to previous line, handling ruler stack
@@ -1335,6 +1336,7 @@ static void f6_insert_line_key(void)
 
 static void f7_delete_line_key(void)
 {
+    addr_t tmp01;
     addr_t tmp45;
     addr_t tmp67;
 
@@ -3987,6 +3989,7 @@ static uint8_t insert_line_at_cursor(addr_t ptr)
 
 static void move_to_previous_line(void)
 {
+    addr_t tmp01;
     // c9f80:
     //     jsr write_line_back_to_document_safely
     write_line_back_to_document_safely();
@@ -4005,6 +4008,7 @@ static void move_to_previous_line(void)
 
 static void move_cursor_up(uint8_t x)
 {
+    addr_t tmp01;
     uint8_t y;
     addr_t tmp23;
 
@@ -4061,6 +4065,7 @@ static void move_cursor_up(uint8_t x)
 
 static void move_cursor_down(uint8_t x)
 {
+    addr_t tmp01;
     uint8_t a;
 
     // sub_ca0af
@@ -4813,6 +4818,7 @@ ca9f1:
  */
 static bool advance_to_next_doc_line(void)
 {
+    addr_t tmp01;
     // advance_to_next_line
     // c9a8d: Advance to next line in document
 
@@ -4896,6 +4902,8 @@ void beep(void)
 // final ldx #0).
 bool scan_document_for_next_line(void)
 {
+    uint8_t a;
+    uint8_t y;
     uint8_t x;
 
     addr_t tmp89;
@@ -6057,6 +6065,7 @@ uint8_t process_current_document_character(
 
 static void recalculate_cursor_xpos(void)
 {
+    addr_t tmp01;
     uint8_t a;
     uint8_t x;
     // recalculate_cursor_xpos
@@ -7700,6 +7709,7 @@ static uint8_t compute_display_start_line(void)
 {
     addr_t tmp23;
     uint8_t x;
+    addr_t tmp01;
 
     // sub_ca44e
     // sub_ca44e: Computes starting line for display based on screen position
