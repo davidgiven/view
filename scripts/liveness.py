@@ -44,6 +44,8 @@ LIB_FUNCTIONS = {
     'screen_clear', 'screen_scrollup', 'screen_scrolldown', 'screen_enablecursor',
     'isupper', 'islower', 'isalpha', 'isdigit', 'isalnum', 'isspace',
     'toupper', 'tolower', 'memset', 'memmove', 'strlen',
+    'strtoul', 'strtol', 'atoi',
+    '__ctype_b_loc', '__errno_location',
 }
 
 # ─── Inline helper flag definitions/uses ──────────────────────────

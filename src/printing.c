@@ -43,9 +43,9 @@ static bool prepare_output_line(addr_t ptr5, addr_t* macro_cursor);
 static enum parse_register_result_t parse_register_reference(uint8_t a);
 static read_block_status_t read_next_output_line(addr_t limit);
 static void compute_lines_remaining_on_page(void);
-static void compute_header_left_section(addr_t tmp45);
-static void compute_header_middle_section(addr_t tmp45);
-static void compute_header_odd_page_section(addr_t tmp45);
+static addr_t compute_header_left_section(addr_t tmp45);
+static addr_t compute_header_middle_section(addr_t tmp45);
+static addr_t compute_header_odd_page_section(addr_t tmp45);
 static uint8_t get_line_width(addr_t tmp45);
 static uint8_t get_right_margin(void);
 static void copy_header_footer_text(addr_t tmp23);
@@ -2925,22 +2925,22 @@ static void render_header_or_footer(uint16_t yx)
     //     sta l0039
     l0039 = a;
     //     jsr sub_c9393
-    compute_header_left_section(tmp45);
+    addr_t section_start = compute_header_left_section(tmp45);
     //     jsr sub_c93fd
     bool parity = get_page_parity();
     //     bcs c932e
     if (!parity)
     {
-        compute_header_odd_page_section(tmp45);
+        section_start = compute_header_odd_page_section(tmp45);
     }
     //     jsr sub_c93c8
-    copy_header_footer_text(tmp23);
+    copy_header_footer_text(section_start);
     //     jsr c937b
     print_output_buffer();
     //     jsr sub_c939b
-    compute_header_middle_section(tmp45);
+    section_start = compute_header_middle_section(tmp45);
     //     jsr sub_c93c8
-    copy_header_footer_text(tmp23);
+    copy_header_footer_text(section_start);
     //     txa
     a = x;
     //     beq c9355
@@ -2980,16 +2980,16 @@ c9355:
     //     jsr c937b
     print_output_buffer();
     //     jsr sub_c93a1
-    compute_header_odd_page_section(tmp45);
+    section_start = compute_header_odd_page_section(tmp45);
     //     jsr sub_c93fd
     bool parity2 = get_page_parity();
     //     bcs c9363
     if (!parity2)
     {
-        compute_header_left_section(tmp45);
+        section_start = compute_header_left_section(tmp45);
     }
     //     jsr sub_c93c8
-    copy_header_footer_text(tmp23);
+    copy_header_footer_text(section_start);
     //     jsr sub_c93be
     a = get_right_margin();
     //     beq c937b
@@ -3612,9 +3612,10 @@ c930d:
     return;
 }
 
-static void compute_header_left_section(addr_t tmp45)
+static addr_t compute_header_left_section(addr_t tmp45)
 {
     uint8_t a;
+    addr_t tmp23;
 
     // sub_c9393:
     //     jsr sub_c93b6
@@ -3632,13 +3633,14 @@ static void compute_header_left_section(addr_t tmp45)
         //     sta ((uint8_t*)&tmp23)[1]
         tmp23 = tmp45 + a;
     }
+    return tmp23;
 }
 
-static void compute_header_middle_section(addr_t tmp45)
+static addr_t compute_header_middle_section(addr_t tmp45)
 {
     uint8_t y;
 
-    uint8_t a;
+    addr_t tmp23;
 
     // sub_c939b:
     //     jsr sub_c93b6
@@ -3646,24 +3648,20 @@ static void compute_header_middle_section(addr_t tmp45)
     //     jmp c93a7
     // c93a7:
     //     iny
-    y++;
     //     tya
-    a = y;
     //     dey
-    y--;
-    {
-        // c93aa:
-        //     clc
-        //     adc ((uint8_t*)&tmp45)[0]
-        //     sta ((uint8_t*)&tmp23)[0]
-        //     lda ((uint8_t*)&tmp45)[1]
-        //     adc #0
-        //     sta ((uint8_t*)&tmp23)[1]
-        tmp23 = tmp45 + a;
-    }
+    // c93aa:
+    //     clc
+    //     adc ((uint8_t*)&tmp45)[0]
+    //     sta ((uint8_t*)&tmp23)[0]
+    //     lda ((uint8_t*)&tmp45)[1]
+    //     adc #0
+    //     sta ((uint8_t*)&tmp23)[1]
+    tmp23 = tmp45 + y + 1;
+    return tmp23;
 }
 
-static void compute_header_odd_page_section(addr_t tmp45)
+static addr_t compute_header_odd_page_section(addr_t tmp45)
 {
     uint8_t a;
 
@@ -3672,6 +3670,7 @@ static void compute_header_odd_page_section(addr_t tmp45)
     //     jsr c93b8
     // c93a7:
     uint8_t y = scan_string_length(get_line_width(tmp45), tmp45);
+    addr_t tmp23;
     y++;
     a = y;
     y--;
@@ -3685,6 +3684,7 @@ static void compute_header_odd_page_section(addr_t tmp45)
         //     sta ((uint8_t*)&tmp23)[1]
         tmp23 = tmp45 + a;
     }
+    return tmp23;
 }
 
 static uint8_t get_line_width(addr_t tmp45)
