@@ -1431,7 +1431,7 @@ static void print_x_words_of_help(uint8_t x)
     return;
 }
 
-static bool parse_command(void);
+static bool parse_command(uint8_t* input_buffer_offset);
 
 void input_line_not_escaped(void)
 {
@@ -1440,9 +1440,11 @@ void input_line_not_escaped(void)
     // jump table
 
     //     jsr parse_command
-    bool parsed = parse_command();
+    bool failed = parse_command(&input_buffer_offset);
     //     sty input_buffer_offset+1
-    l0080 = y;
+    // (parse_command leaves the command index in l0082; the 6502 copied it
+    //  to Y on exit)
+    l0080 = l0082;
     //     bcs c8263
     //     cpy #(jumptable4_cli_end-jumptable4_cli)/2
     //     bcc c826e
@@ -1452,8 +1454,8 @@ void input_line_not_escaped(void)
     //     lda input_buffer_offset+1
     //     ldy #2
     //     jsr call_through_jumptable
-    // (branch restructured: Mistake is printed when C is set or y >= 48)
-    if (parsed || y >= 48)
+    // (branch restructured: Mistake is printed when C is set or index >= 48)
+    if (failed || l0082 >= 48)
         cli_putstring("Mistake\n");
     struct scan_state scan;
     execute_cli_command(l0080, &scan);
@@ -1645,7 +1647,7 @@ c81e7:
 }
 
 // CLI command parser
-static bool parse_command(void)
+static bool parse_command(uint8_t* input_buffer_offset)
 {
     // parse_command
     //     .ascii "VIEW"
@@ -1659,6 +1661,7 @@ static bool parse_command(void)
     //     lda #0xff
     uint8_t x;
     uint8_t a;
+    uint8_t y;
     a = 0xff;
     //     sta l0082
     l0082 = a;
@@ -1669,7 +1672,7 @@ static bool parse_command(void)
     for (;;)
     {
         //     ldy input_buffer_offset
-        y = input_buffer_offset;
+        y = *input_buffer_offset;
         //     dey
         y--;
         //     inc l0082
@@ -1746,11 +1749,10 @@ ca87e:
         delimiter_char = a;
         y++;
     }
-    //     sty input_buffer_offset
-    input_buffer_offset = y;
+    *input_buffer_offset = y;
     //     ldy l0082
-    // (N/Z from ldy l0082 are clobbered by the following lda parser_table,x)
-    y = l0082;
+    // (the 6502 copied the command index into Y here; callers now read
+    //  l0082 directly)
     //     lda parser_table,x
     a = parser_table[x];
     //     clc
