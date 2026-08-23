@@ -733,10 +733,8 @@ static void load_cmd(struct scan_state* scan)
     //     jsr reset_area_to_entire_document
     reset_area_to_entire_document();
     //     jsr 1f
-    read_into_document();
-    // (16-bit copy: adjust_pointers adds stale bytes from end of ram[];
-    //  fix top from tmp01)
-    top = tmp01;
+    // (returns the post-read cursor, which the 6502 left in tmp01)
+    top = read_into_document();
     //     jsr reset_document_name_after_load
     reset_document_name_after_load();
     //     jsr clear_cmd

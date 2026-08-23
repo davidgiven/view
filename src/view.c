@@ -721,7 +721,7 @@ bool reset_command_parse_state(struct scan_state* scan)
     //     rts
 }
 
-void read_into_document(void)
+addr_t read_into_document(void)
 {
     addr_t tmp45;
     addr_t tmp67;
@@ -758,7 +758,9 @@ void read_into_document(void)
     //  space_limit = tmp45 + tmp67 - 0x8b, tmp67 = space_limit - tmp45 + 0x8b)
     make_space_for_insertion(tmp45, space_limit - tmp45 + 0x8b);
     //     jsr read_block_from_file
-    read_block_status_t status = read_block_from_file(&tmp01, space_limit);
+    // (destination = the insertion point tmp45 explicitly)
+    addr_t cursor = tmp45;
+    read_block_status_t status = read_block_from_file(&cursor, space_limit);
     //     beq c8584
     //     bcs c8598
     if (status == READ_BLOCK_EMPTY)
@@ -774,7 +776,7 @@ c8584:
     // c8598:
 c8598:
     //     lda ((uint8_t*)&tmp01)[0]
-    tmp45 = tmp01;
+    tmp45 = cursor;
     //     lda ptr5
     //     sec
     //     sbc ((uint8_t*)&tmp01)[0]
@@ -783,10 +785,11 @@ c8598:
     //     sbc ((uint8_t*)&tmp01)[1]
     //     sta ((uint8_t*)&tmp67)[1]
     // (16-bit subtraction: tmp67 = space_limit - tmp01)
-    tmp67 = space_limit - tmp01;
+    tmp67 = space_limit - cursor;
     //     jsr adjust_pointers
     adjust_pointers(tmp45, tmp67);
-    return;
+    // (the 6502 left the post-read cursor in tmp01; load_cmd uses it for top)
+    return cursor;
 }
 
 /**
@@ -1157,7 +1160,8 @@ bool read_next_chunk_from_input_file(addr_t ptr)
     // (inlined: file_ptr = input_fp)
     file_ptr = input_fp;
     //     jsr read_block_from_file
-    read_block_status_t status = read_block_from_file(&tmp01, space_limit);
+    addr_t cursor = ptr;
+    read_block_status_t status = read_block_from_file(&cursor, space_limit);
     //     php
     //     beq c8d39
     //     bcc c8d39
@@ -1171,8 +1175,8 @@ bool read_next_chunk_from_input_file(addr_t ptr)
     //     tay                                                               ;
     //     Y=0x00
     //     sta (((uint8_t*)&tmp01)[0]),y
-    ram[tmp01 + 0] = 0;
-    top = tmp01;
+    ram[cursor + 0] = 0;
+    top = cursor;
     //     plp
     //     rts
     return status == READ_BLOCK_EMPTY;
@@ -1232,7 +1236,7 @@ static addr_t compute_space_common(addr_t ptr, addr_t tmp89)
     // c8daf:
     //     sta ((uint8_t*)&tmp01)[0]
     addr_t tmp67;
-    tmp01 = ptr;
+    addr_t tmp01 = ptr;
     //     jsr compute_bytes_free
     //     stx ((uint8_t*)&tmp67)[0]
     tmp67 = (addr_t)compute_bytes_free();
