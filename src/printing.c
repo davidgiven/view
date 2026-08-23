@@ -39,8 +39,7 @@ static void render_new_page(void);
 bool scan_input_buffer(struct scan_state* state);
 static void start_microspacing_if_active(uint8_t a);
 static void emit_microspacing_spaces(uint8_t a, uint8_t x);
-static bool prepare_output_line(
-    addr_t read_limit, addr_t* macro_cursor, addr_t* cursor);
+static addr_t prepare_output_line(addr_t read_limit, addr_t* macro_cursor);
 static enum parse_register_result_t parse_register_reference(uint8_t a);
 static read_block_status_t read_next_output_line(addr_t limit, addr_t* cursor);
 static void compute_lines_remaining_on_page(void);
@@ -2525,7 +2524,8 @@ static void print_loop(addr_t ptr5)
         }
         //     jsr sub_c9188
         //     bcs c8f0a (C=1 conveyed as a true return)
-        if (prepare_output_line(ptr5, &ptr3, &cursor))
+        cursor = prepare_output_line(ptr5, &ptr3);
+        if (cursor == 0)
             return;
         //     jsr sub_c916a
         start_microspacing_if_active(a);
@@ -3266,12 +3266,13 @@ static void emit_microspacing_spaces(uint8_t a, uint8_t x)
  * across successive calls; here the caller owns that cursor and passes it
  * in by reference.
  *
- * @return true when no more output remains (the 6502 returned C set;
- *         print_loop's bcs c8f0a), false on success.
+ * @return the address of the prepared line, or NULL (0) when no more
+ *         output remains (the 6502 returned C set; print_loop's bcs
+ *         c8f0a).
  */
-static bool prepare_output_line(
-    addr_t read_limit, addr_t* macro_cursor, addr_t* cursor)
+addr_t prepare_output_line(addr_t read_limit, addr_t* macro_cursor)
 {
+    addr_t cursor;
     uint8_t a;
 
     uint8_t x;
@@ -3295,17 +3296,16 @@ c9188_normal_entry:
     //     sta input_buffer_ptr+1
     //     lda ptr5+1
     //     sta l0081
-    // (16-bit copy: *cursor = read_limit, with the low/high bytes duplicated
-    // into
-    //  l0080/l0081)
-    l0080 = (uint8_t)(read_limit & 0xff);
-    l0081 = (uint8_t)(read_limit >> 8);
-    *cursor = read_limit;
+    // (16-bit copy: *cursor = read_limit.  The 6502 also stored the low/high
+    //  bytes into input_buffer_ptr+1 (l0080) and l0081; every reachable
+    //  reader of those bytes re-initialises them first, so the stores are
+    //  omitted.)
+    cursor = read_limit;
     //     jsr sub_c9241
-    if (read_next_output_line(read_limit, cursor) == READ_BLOCK_DONE)
+    if (read_next_output_line(read_limit, &cursor) == READ_BLOCK_DONE)
     {
         //     bcs return_26 (C=1 conveyed as a true return)
-        return true;
+        return 0;
     }
     //     lda ptr5
     a = (uint8_t)(read_limit & 0xff);
@@ -3376,14 +3376,14 @@ c91c2:
     y = (uint8_t)(ptr1 >> 8);
     // c91d0:
 c91d0:
-    *cursor = (addr_t)(y) << 8 | a;
+    cursor = (addr_t)(y) << 8 | a;
     //     sta current_format_line_ptr
     //     sty current_format_line_ptr+1
-    current_format_line_ptr = *cursor;
+    current_format_line_ptr = cursor;
     //     clc
     // return_26:
     //     rts
-    return false;
+    return cursor;
 
     // c91da:
 c91da:
