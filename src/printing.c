@@ -40,7 +40,7 @@ bool scan_input_buffer(struct scan_state* state);
 static void start_microspacing_if_active(uint8_t a);
 static void emit_microspacing_spaces(uint8_t a, uint8_t x);
 static bool prepare_output_line(
-    addr_t ptr5, addr_t* macro_cursor, addr_t* cursor);
+    addr_t read_limit, addr_t* macro_cursor, addr_t* cursor);
 static enum parse_register_result_t parse_register_reference(uint8_t a);
 static read_block_status_t read_next_output_line(addr_t limit, addr_t* cursor);
 static void compute_lines_remaining_on_page(void);
@@ -3270,7 +3270,7 @@ static void emit_microspacing_spaces(uint8_t a, uint8_t x)
  *         print_loop's bcs c8f0a), false on success.
  */
 static bool prepare_output_line(
-    addr_t ptr5, addr_t* macro_cursor, addr_t* cursor)
+    addr_t read_limit, addr_t* macro_cursor, addr_t* cursor)
 {
     uint8_t a;
 
@@ -3278,7 +3278,7 @@ static bool prepare_output_line(
     uint8_t y;
 
     // sub_c9188
-    //  Ptrs:   ptr1, (*macro_cursor), ptr5
+    //  Ptrs:   ptr1, (*macro_cursor), read_limit
     // c9184:
     //     lda #0
     //     sta macro_executing_flag
@@ -3295,21 +3295,22 @@ c9188_normal_entry:
     //     sta input_buffer_ptr+1
     //     lda ptr5+1
     //     sta l0081
-    // (16-bit copy: *cursor = ptr5, with the low/high bytes duplicated into
+    // (16-bit copy: *cursor = read_limit, with the low/high bytes duplicated
+    // into
     //  l0080/l0081)
-    l0080 = (uint8_t)(ptr5 & 0xff);
-    l0081 = (uint8_t)(ptr5 >> 8);
-    *cursor = ptr5;
+    l0080 = (uint8_t)(read_limit & 0xff);
+    l0081 = (uint8_t)(read_limit >> 8);
+    *cursor = read_limit;
     //     jsr sub_c9241
-    if (read_next_output_line(ptr5, cursor) == READ_BLOCK_DONE)
+    if (read_next_output_line(read_limit, cursor) == READ_BLOCK_DONE)
     {
         //     bcs return_26 (C=1 conveyed as a true return)
         return true;
     }
     //     lda ptr5
-    a = (uint8_t)(ptr5 & 0xff);
+    a = (uint8_t)(read_limit & 0xff);
     //     ldy ptr5+1
-    y = (uint8_t)(ptr5 >> 8);
+    y = (uint8_t)(read_limit >> 8);
     //     bne c91d0
     if (y != 0)
         goto c91d0;
@@ -3424,7 +3425,7 @@ c91f5:
     //     iny
     y++;
     //     lda (ptr5),y
-    a = ram[ptr5 + y];
+    a = ram[read_limit + y];
     //     cmp #0x0d
     //     beq c9223
     if (a == 0x0d)
@@ -3452,7 +3453,7 @@ c9209:
     //     iny
     y++;
     //     lda (ptr5),y
-    a = ram[ptr5 + y];
+    a = ram[read_limit + y];
     //     cmp #0x0d
     //     beq c9223
     if (a == 0x0d)
