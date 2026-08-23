@@ -7791,10 +7791,9 @@ static void advance_to_next_char(struct render_state* rs)
     // process_current_document_character() reads/writes the simulated
     // registers, so synchronise the render state around the call.
     //     jsr process_current_document_character
-    tmp01 = rs->line_ptr;
     y = rs->pos;
     l0039 = rs->char_width;
-    a = process_current_document_character(tmp01, &x, &y, &rs->prev_is_tab);
+    a = process_current_document_character(rs->line_ptr, &x, &y, &rs->prev_is_tab);
     rs->ch = a;
     rs->pos = y;
     rs->width = x;

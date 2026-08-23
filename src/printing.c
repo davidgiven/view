@@ -39,9 +39,10 @@ static void render_new_page(void);
 bool scan_input_buffer(struct scan_state* state);
 static void start_microspacing_if_active(uint8_t a);
 static void emit_microspacing_spaces(uint8_t a, uint8_t x);
-static bool prepare_output_line(addr_t ptr5, addr_t* macro_cursor);
+static bool prepare_output_line(
+    addr_t ptr5, addr_t* macro_cursor, addr_t* cursor);
 static enum parse_register_result_t parse_register_reference(uint8_t a);
-static read_block_status_t read_next_output_line(addr_t limit);
+static read_block_status_t read_next_output_line(addr_t limit, addr_t* cursor);
 static void compute_lines_remaining_on_page(void);
 static addr_t compute_header_left_section(addr_t tmp45);
 static addr_t compute_header_middle_section(addr_t tmp45);
@@ -967,7 +968,7 @@ c96a2:
     current_format_line_ptr = last_macro_ptr;
     l0081 = (uint8_t)(last_macro_ptr >> 8);
     //     jsr sub_c9241
-    if (read_next_output_line(last_macro_ptr) == READ_BLOCK_DONE)
+    if (read_next_output_line(last_macro_ptr, &tmp01) == READ_BLOCK_DONE)
     //     bcc c96ce
     {
         return;
@@ -2503,6 +2504,7 @@ static void print_loop(addr_t ptr5)
                      // cross-function uninitialised analysis
     addr_t tmp67;
     addr_t tmp89;
+    addr_t cursor; // current format-line address (was global tmp01)
 
     // print_loop
     // c8f30:
@@ -2523,7 +2525,7 @@ static void print_loop(addr_t ptr5)
         }
         //     jsr sub_c9188
         //     bcs c8f0a (C=1 conveyed as a true return)
-        if (prepare_output_line(ptr5, &ptr3))
+        if (prepare_output_line(ptr5, &ptr3, &cursor))
             return;
         //     jsr sub_c916a
         start_microspacing_if_active(a);
@@ -2533,7 +2535,7 @@ static void print_loop(addr_t ptr5)
         //     sty input_buffer_ptr+1
         l0080 = y;
         //     jsr deref_and_check_for_command_prefix
-        command_prefix_t cp = deref_and_check_for_command_prefix(y, tmp01);
+        command_prefix_t cp = deref_and_check_for_command_prefix(y, cursor);
         //     bne c8fce_thunk
         if (cp == NO_COMMAND_PREFIX)
             goto c8fce_thunk_l;
@@ -2544,7 +2546,7 @@ static void print_loop(addr_t ptr5)
         //     jsr sub_cab6e
         //     bne c8f6e
         // (inlined: Z = (ram[tmp01] == RULER_BYTE))
-        if (ram[tmp01] != RULER_BYTE)
+        if (ram[cursor] != RULER_BYTE)
             goto c8f6e_l;
         //     ldy #3
         y = 3;
@@ -2553,7 +2555,7 @@ static void print_loop(addr_t ptr5)
         // loop_c8f5d:
         do
         {
-            a = ram[tmp01 + y];
+            a = ram[cursor + y];
             current_ruler_buffer[x] = a;
             y++;
             x++;
@@ -2704,7 +2706,7 @@ static void print_loop(addr_t ptr5)
         }
         do
         {
-            a = ram[tmp01 + y];
+            a = ram[cursor + y];
             y++;
             a = convert_char_for_printing(a, &x, &is_tab);
             print_char_x_times(a, x);
@@ -3267,7 +3269,8 @@ static void emit_microspacing_spaces(uint8_t a, uint8_t x)
  * @return true when no more output remains (the 6502 returned C set;
  *         print_loop's bcs c8f0a), false on success.
  */
-static bool prepare_output_line(addr_t ptr5, addr_t* macro_cursor)
+static bool prepare_output_line(
+    addr_t ptr5, addr_t* macro_cursor, addr_t* cursor)
 {
     uint8_t a;
 
@@ -3289,19 +3292,16 @@ static bool prepare_output_line(addr_t ptr5, addr_t* macro_cursor)
         goto c91a3;
 c9188_normal_entry:
     //     lda ptr5
-    a = (uint8_t)(ptr5 & 0xff);
     //     sta input_buffer_ptr+1
-    l0080 = a;
-    //     sta ((uint8_t*)&tmp01)[0]
-    ((uint8_t*)&tmp01)[0] = a;
     //     lda ptr5+1
-    a = (uint8_t)(ptr5 >> 8);
     //     sta l0081
-    l0081 = a;
-    //     sta ((uint8_t*)&tmp01)[1]
-    ((uint8_t*)&tmp01)[1] = a;
+    // (16-bit copy: *cursor = ptr5, with the low/high bytes duplicated into
+    //  l0080/l0081)
+    l0080 = (uint8_t)(ptr5 & 0xff);
+    l0081 = (uint8_t)(ptr5 >> 8);
+    *cursor = ptr5;
     //     jsr sub_c9241
-    if (read_next_output_line(ptr5) == READ_BLOCK_DONE)
+    if (read_next_output_line(ptr5, cursor) == READ_BLOCK_DONE)
     {
         //     bcs return_26 (C=1 conveyed as a true return)
         return true;
@@ -3375,10 +3375,10 @@ c91c2:
     y = (uint8_t)(ptr1 >> 8);
     // c91d0:
 c91d0:
-    tmp01 = (addr_t)(y) << 8 | a;
+    *cursor = (addr_t)(y) << 8 | a;
     //     sta current_format_line_ptr
     //     sty current_format_line_ptr+1
-    current_format_line_ptr = tmp01;
+    current_format_line_ptr = *cursor;
     //     clc
     // return_26:
     //     rts
@@ -3523,7 +3523,7 @@ static enum parse_register_result_t parse_register_reference(uint8_t a)
     return PARSE_REGISTER_OTHER;
 }
 
-static read_block_status_t read_next_output_line(addr_t limit)
+static read_block_status_t read_next_output_line(addr_t limit, addr_t* cursor)
 {
     uint8_t a;
     uint8_t a2;
@@ -3539,7 +3539,7 @@ static read_block_status_t read_next_output_line(addr_t limit)
     //     beq c9260
     if (a == 0)
     {
-        return read_block_from_file(&tmp01, limit);
+        return read_block_from_file(cursor, limit);
     } //     ldy #0
     uint8_t y = 0;
     // loop_c9247:
@@ -3548,9 +3548,9 @@ static read_block_status_t read_next_output_line(addr_t limit)
         a2 = ram[printer_ptr6 + y];
         if (a2 == 0)
             return READ_BLOCK_DONE;
-        ram[tmp01 + y] = a2;
+        ram[(*cursor) + y] = a2;
         printer_ptr6++;
-        tmp01++;
+        (*cursor)++;
     } while (a2 != 0x0d);
     //     clc
     // return_27:
