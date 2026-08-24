@@ -4009,12 +4009,11 @@ static void move_to_previous_line(void)
 static void move_cursor_up(uint8_t x)
 {
     addr_t tmp01;
-    uint8_t y;
     addr_t tmp23;
 
-    uint8_t a;
-
     // sub_ca071
+    // (the 6502 held the candidate line in the YA register pair; use a real
+    //  16-bit variable instead)
     // sub_ca071:
     //     inc cursor_moved_flag
     cursor_moved_flag++;
@@ -4022,28 +4021,20 @@ static void move_cursor_up(uint8_t x)
     l0080 = x;
     //     jsr write_line_back_to_document_safely
     write_line_back_to_document_safely();
-    //     lda current_line_ptr
-    a = (uint8_t)(current_line_ptr & 0xff);
-    //     ldy current_line_ptr+1
-    y = (uint8_t)((current_line_ptr >> 8) & 0xff);
+    //     lda current_line_ptr / ldy current_line_ptr+1
+    addr_t line = current_line_ptr;
     // ca07c:
     while (1)
     {
         //     sta ((uint8_t*)&tmp23)[0]
-        tmp23 = (addr_t)(y) << 8 | a;
-        if (!find_previous_line((addr_t)(y) << 8 | a, &tmp01))
+        tmp23 = line;
+        if (!find_previous_line(line, &tmp01))
         {
             // ca093:
-            //     lda ((uint8_t*)&tmp23)[0]
-            a = ((uint8_t*)&tmp23)[0];
-            //     ldy ((uint8_t*)&tmp23)[1]
-            y = ((uint8_t*)&tmp23)[1];
+            line = tmp23;
             break;
         }
-        //     lda ((uint8_t*)&tmp01)[0]
-        a = ((uint8_t*)&tmp01)[0];
-        //     ldy ((uint8_t*)&tmp01)[1]
-        y = ((uint8_t*)&tmp01)[1];
+        line = tmp01;
         //     ldx input_buffer_offset+1
         x = l0080;
         //     bmi ca07c
@@ -4058,7 +4049,7 @@ static void move_cursor_up(uint8_t x)
     }
     // ca097:
     //     sta current_line_ptr
-    current_line_ptr = (addr_t)(y) << 8 | a;
+    current_line_ptr = line;
     //     sty current_line_ptr+1
     //     rts
 }
@@ -4066,9 +4057,10 @@ static void move_cursor_up(uint8_t x)
 static void move_cursor_down(uint8_t x)
 {
     addr_t tmp01;
-    uint8_t a;
 
     // sub_ca0af
+    // (the 6502 held the candidate line in the YA register pair; use a real
+    //  16-bit variable instead)
     // sub_ca0af:
     //     inc cursor_moved_flag
     cursor_moved_flag++;
@@ -4076,33 +4068,25 @@ static void move_cursor_down(uint8_t x)
     l0080 = x;
     //     jsr write_line_back_to_document_safely
     write_line_back_to_document_safely();
-    //     lda current_line_ptr
-    a = (uint8_t)(current_line_ptr & 0xff);
-    //     ldy current_line_ptr+1
-    y = (uint8_t)((current_line_ptr >> 8) & 0xff);
+    //     lda current_line_ptr / ldy current_line_ptr+1
+    addr_t line = current_line_ptr;
     // ca0ba:
     while (1)
     {
         //     jsr sub_cab1a
-        if (advance_to_next_line((addr_t)(y) << 8 | a, &tmp01))
+        if (advance_to_next_line(line, &tmp01))
         {
             // ca0d2:
-            //     lda ((uint8_t*)&tmp01)[0]
-            a = ((uint8_t*)&tmp01)[0];
-            //     ldy ((uint8_t*)&tmp01)[1]
-            y = ((uint8_t*)&tmp01)[1];
+            line = tmp01;
             break;
         }
-        //     tya
-        //     ldy ((uint8_t*)&tmp01)[1]
-        //     clc
-        //     adc ((uint8_t*)&tmp01)[0]
+        //     tya / ldy tmp01[1] / clc / adc tmp01[0]
+        // (advance_to_next_line -> find_next_line leaves the offset past the
+        //  CR in the global y register; use it to reach the next line start)
         {
             uint16_t sum = (uint16_t)y + ((uint8_t*)&tmp01)[0];
-            y = ((uint8_t*)&tmp01)[1];
-            a = (uint8_t)(sum & 0xff);
-            if (sum > 0xff)
-                y++;
+            uint8_t new_y = ((uint8_t*)&tmp01)[1] + (sum > 0xff ? 1 : 0);
+            line = (addr_t)(new_y) << 8 | (uint8_t)(sum & 0xff);
         }
         // ca0c8:
         //     ldx input_buffer_offset+1
@@ -4120,7 +4104,7 @@ static void move_cursor_down(uint8_t x)
     }
     // ca0d6:
     //     sta current_line_ptr
-    current_line_ptr = (addr_t)(y) << 8 | a;
+    current_line_ptr = line;
     //     sty current_line_ptr+1
     //     rts
 }
@@ -6154,6 +6138,10 @@ void redraw_editor(void)
     // status and cursor
     uint8_t saved_status_line_needs_redrawing_flag;
 
+    // (the 6502 held the line being drawn in the YA register pair; use a real
+    //  16-bit variable instead)
+    addr_t draw;
+
     // redraw_editor:                                                    (5206)
     //     jsr cursor_off                                                (5207)
     cursor_off();
@@ -6246,40 +6234,33 @@ ca2dc:
 ca2e0:
     //     ldx #0 (5267)
     x = 0;
-    //     lda l0011 (5268)
-    a = (uint8_t)(top_of_screen_line_ptr & 0xff);
-    //     ldy l0012 (5269)
-    y = (uint8_t)(top_of_screen_line_ptr >> 8);
+    //     lda l0011 / ldy l0012  (folded into the walk variable)
+    addr_t walk = top_of_screen_line_ptr;
     // ca2e6: (5270)
 ca2e6:
     //     inx (5271)
     x++;
     //     cpy ptr6+1 (5272)
     //     cmp ptr6 (5274)
-    // (16-bit comparison: (y << 8 | a) == editor_ptr6)
-    if ((((addr_t)(y) << 8) | a) == editor_ptr6)
+    // (16-bit comparison: walk == editor_ptr6)
+    if (walk == editor_ptr6)
     {
         l003d = x;
     }
     //     cpy current_line_ptr+1 (5278)
     //     cmp current_line_ptr (5280)
-    // (16-bit comparison: (y << 8 | a) == current_line_ptr)
-    if ((((addr_t)(y) << 8) | a) == current_line_ptr)
+    // (16-bit comparison: walk == current_line_ptr)
+    if (walk == current_line_ptr)
         goto ca313;
     // ca2f9: (5282)
     //     jsr sub_cab1a (5283)
-    if (advance_to_next_line((addr_t)(y) << 8 | a, &tmp01))
+    if (advance_to_next_line(walk, &tmp01))
         goto ca313;
     //     beq ca313 (5284)
-    //     tya (5285)
-    //     ldy ((uint8_t*)&tmp01)[1] (5286)
-    //     clc (5287)
-    //     adc ((uint8_t*)&tmp01)[0] (5288)
-    //     bcc ca307 (5289)
-    // (16-bit arithmetic: tmp01 += y; result kept in a/y for the loop)
+    //     tya / ldy tmp01[1] / clc / adc tmp01[0]
+    // (tmp01 += y; y holds the offset past the CR left by find_next_line)
     tmp01 += y;
-    a = (uint8_t)tmp01;
-    y = (uint8_t)(tmp01 >> 8);
+    walk = tmp01;
     //     cpx screen_height (5292)
     //     beq ca2e6 (5293)
     if (x <= screen_maxrow)
@@ -6323,20 +6304,18 @@ ca313:
     a = l0033;
     //     sta ruler_stack_ptr (5317)
     ruler_index_ptr = a;
-    //     ldy l0012 (5318)
-    y = (uint8_t)(top_of_screen_line_ptr >> 8);
-    //     lda l0011 (5319)
-    a = (uint8_t)(top_of_screen_line_ptr & 0xff);
+    //     ldy l0012 / lda l0011  (these loaded bytes are clobbered by
+    //     advance_to_next_line's scan; y is left holding the offset past the
+    //     CR, which is what the following addition needs)
     //     jsr sub_cab1a (5320)
     advance_to_next_line(top_of_screen_line_ptr, &tmp01);
     //     tya (5321)
-    a = y;
     //     clc (5322)
     //     adc l0011 (5323)
     //     sta l0011 (5324)
     //     bcc ca348 (5325)
     // (16-bit arithmetic: top_of_screen_line_ptr += y)
-    top_of_screen_line_ptr += a;
+    top_of_screen_line_ptr += y;
     //     ldy #SCREEN_SCROLLUP (5328) jsr SCREEN (5329)
     screen_scrollup();
     //     ldx #0 (5330) ldy screen_height (5331) jsr set_cursor_position (5332)
@@ -6455,12 +6434,9 @@ ca395:
     x = a;
     //     inx (5384)
     x++;
-    //     lda ptr6 (5385)
-    a = (uint8_t)(editor_ptr6 & 0xff);
-    //     ldy ptr6+1 (5386)
-    y = (uint8_t)(editor_ptr6 >> 8);
-    //     bne ca3c1 (5387)
-    if (y != 0)
+    //     lda ptr6 / ldy ptr6+1 / bne ca3c1
+    draw = editor_ptr6;
+    if ((editor_ptr6 >> 8) != 0)
         goto ca3c1;
     // ca3b2: (5388)
 ca3b2:
@@ -6470,10 +6446,8 @@ ca3b2:
     //     lda #1 (5391)
     //     sta l0082 (5392)
     l0082 = 1;
-    //     lda l0011 (5393)
-    a = (uint8_t)(top_of_screen_line_ptr & 0xff);
-    //     ldy l0012 (5394)
-    y = (uint8_t)(top_of_screen_line_ptr >> 8);
+    //     lda l0011 / ldy l0012
+    draw = top_of_screen_line_ptr;
     //     ldx screen_height (5395)
     x = screen_maxrow;
     // ca3c1: (5396)
@@ -6485,7 +6459,7 @@ ca3c1:
     {
         //     jsr sub_ca486 (5399)
         struct render_state rs = {.line = l0082};
-        draw_line(&rs, ((uint16_t)y << 8) | a);
+        draw_line(&rs, draw);
         //     lda ((uint8_t*)&tmp01)[0] (5400)
         a = ((uint8_t*)&tmp01)[0];
         //     ldy ((uint8_t*)&tmp01)[1] (5401)
@@ -6503,6 +6477,7 @@ ca3c1:
         tmp01 += y;
         a = (uint8_t)tmp01;
         y = (uint8_t)(tmp01 >> 8);
+        draw = tmp01;
         //     inc l0082 (5411)
         l0082++;
         //     dec l0081 (5412)
@@ -7707,8 +7682,7 @@ static void set_xpos_to_line_length(void)
 
 static uint8_t compute_display_start_line(void)
 {
-    addr_t tmp23;
-    uint8_t x;
+    uint8_t x, a;
     addr_t tmp01;
 
     // sub_ca44e
@@ -7738,10 +7712,14 @@ static uint8_t compute_display_start_line(void)
             x = ypos;
         }
     }
-    //     lda current_line_ptr
-    a = (uint8_t)(current_line_ptr & 0xff);
-    //     ldy current_line_ptr+1
-    y = (uint8_t)(current_line_ptr >> 8);
+    //     lda current_line_ptr / ldy current_line_ptr+1
+    // (the 6502 carried the candidate line in the YA register pair.  Here
+    //  `line` holds it: after a successful find_previous_line it is advanced
+    //  to the previous line (left in tmp01), and on failure/early-exit it is
+    //  the starting line.  In all cases the top-of-screen line is the final
+    //  value of `line` — i.e. tmp01 after a success, or the starting line on
+    //  failure/early-exit.)
+    addr_t line = current_line_ptr;
     // loop_ca465:
     for (;;)
     {
@@ -7750,26 +7728,17 @@ static uint8_t compute_display_start_line(void)
         //     beq ca479
         if (x == 0)
             goto ca479;
-        //     sta ((uint8_t*)&tmp23)[0]
-        tmp23 = (addr_t)(y) << 8 | a;
-        if (!find_previous_line((addr_t)(y) << 8 | a, &tmp01))
+        //     sta tmp2 / sty tmp3 / jsr sub_cab37 (find_previous_line)
+        if (!find_previous_line(line, &tmp01))
             break;
-        //     lda ((uint8_t*)&tmp01)[0]
-        a = ((uint8_t*)&tmp01)[0];
-        //     ldy ((uint8_t*)&tmp01)[1]
-        y = ((uint8_t*)&tmp01)[1];
-        //     bcs loop_ca465
+        //     lda tmp0 / ldy tmp1 / bcs loop_ca465
+        line = tmp01;
         continue;
     }
-    //     lda ((uint8_t*)&tmp23)[0]
-    a = ((uint8_t*)&tmp23)[0];
-    //     ldy ((uint8_t*)&tmp23)[1]
-    y = ((uint8_t*)&tmp23)[1];
     // ca479:
 ca479:
-    //     sta l0011
-    //     sty l0012
-    top_of_screen_line_ptr = ((addr_t)y << 8) | a;
+    //     sta top_of_screen_line_ptr / sty top_of_screen_line_ptr+1
+    top_of_screen_line_ptr = line;
     //     lda ruler_stack_ptr
     a = ruler_index_ptr;
     //     sta l0033
@@ -7793,7 +7762,8 @@ static void advance_to_next_char(struct render_state* rs)
     //     jsr process_current_document_character
     y = rs->pos;
     l0039 = rs->char_width;
-    a = process_current_document_character(rs->line_ptr, &x, &y, &rs->prev_is_tab);
+    a = process_current_document_character(
+        rs->line_ptr, &x, &y, &rs->prev_is_tab);
     rs->ch = a;
     rs->pos = y;
     rs->width = x;

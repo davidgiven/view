@@ -3307,13 +3307,15 @@ c9188_normal_entry:
         //     bcs return_26 (C=1 conveyed as a true return)
         return 0;
     }
-    //     lda ptr5
-    a = (uint8_t)(read_limit & 0xff);
-    //     ldy ptr5+1
-    y = (uint8_t)(read_limit >> 8);
-    //     bne c91d0
-    if (y != 0)
-        goto c91d0;
+    //     lda ptr5 / ldy ptr5+1 / bne c91d0
+    // (high byte of read_limit nonzero: no macro to execute; the result is
+    //  just read_limit itself)
+    if (read_limit != 0)
+    {
+        cursor = read_limit;
+        current_format_line_ptr = cursor;
+        return cursor;
+    }
     // c91a3:
 c91a3:
     //     ldy #0
@@ -3370,15 +3372,9 @@ c91c2:
     //     bcc c91cc
     // (16-bit arithmetic: (*macro_cursor) += y)
     (*macro_cursor) += a;
-    //     lda ptr1
-    a = (uint8_t)(ptr1 & 0xff);
-    //     ldy ptr1+1
-    y = (uint8_t)(ptr1 >> 8);
+    //     lda ptr1 / ldy ptr1+1 (folded via c91d0)
     // c91d0:
-c91d0:
-    cursor = (addr_t)(y) << 8 | a;
-    //     sta current_format_line_ptr
-    //     sty current_format_line_ptr+1
+    cursor = ptr1;
     current_format_line_ptr = cursor;
     //     clc
     // return_26:

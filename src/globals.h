@@ -37,6 +37,14 @@ typedef enum
 
 // 6502 CPU register globals
 extern uint8_t a, x, y;
+
+// Encapsulates the scan-offset scratch value (the 6502's Y register) that
+// the line-navigation helpers pass between themselves and their callers.
+struct edit_state
+{
+    uint8_t y;
+};
+
 extern uint8_t ram[65536];
 
 // Printer driver struct
