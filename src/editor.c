@@ -4082,12 +4082,9 @@ static void move_cursor_down(uint8_t x)
         }
         //     tya / ldy tmp01[1] / clc / adc tmp01[0]
         // (advance_to_next_line -> find_next_line leaves the offset past the
-        //  CR in the global y register; use it to reach the next line start)
-        {
-            uint16_t sum = (uint16_t)y + ((uint8_t*)&tmp01)[0];
-            uint8_t new_y = ((uint8_t*)&tmp01)[1] + (sum > 0xff ? 1 : 0);
-            line = (addr_t)(new_y) << 8 | (uint8_t)(sum & 0xff);
-        }
+        //  CR in the global y register; the next line starts there, so the
+        //  16-bit addition is simply line += y)
+        line = line + y;
         // ca0c8:
         //     ldx input_buffer_offset+1
         x = l0080;
@@ -4952,14 +4949,9 @@ c8b9f:
     //     sta doc_ptr2+1
     //     bcc c8b7b
     //     bcs c8bdf
-    // (16-bit arithmetic: doc_ptr2 = tmp89 + 3; c8bdf increments the high
-    //  byte if the low-byte addition carried)
+    // (16-bit arithmetic: doc_ptr2 = tmp89 + 3)
     doc_ptr2 = tmp89 + 3;
-    if (((uint8_t)(tmp89 & 0xff) + 3) <= 0xff)
-    {
-        return scan_document_for_next_line();
-    }
-    goto c8bdf;
+    return scan_document_for_next_line();
 
 c8bb7:
     // c8bb7:
@@ -5005,21 +4997,13 @@ c8bbc:
 c8bdb:
     // c8bdb:
     //     inc doc_ptr2+0
-    doc_ptr2++;
     //     bne c8b7b
-    if ((uint8_t)(doc_ptr2 & 0xff) != 0)
-    {
-        return scan_document_for_next_line();
-    }
-c8bdf:
     // c8bdf:
     //     inc doc_ptr2+1
     //     bne c8b7b
-    if (doc_ptr2 != 0)
-    {
-        return scan_document_for_next_line();
-    }
-    return false;
+    // (16-bit arithmetic: doc_ptr2++)
+    doc_ptr2++;
+    return scan_document_for_next_line();
 c8be3:
     // c8be3:
     //     lda l0083
@@ -6362,20 +6346,11 @@ ca360:
     //     cmp hscroll_pos (5351)
     if (a < hscroll_pos)
         goto ca381;
-    //     lda hscroll_pos (5353)
-    a = hscroll_pos;
-    //     clc (5354)
-    //     adc screen_width (5355)
-    //     sbc #3 (5356)
-    // (C_in for the adc is 0 (clc); the sbc reuses the adc's carry-out)
-    {
-        int sum = (int)hscroll_pos + screen_maxcolumn;
-        int carry = (sum > 0xff);
-        int diff = sum - 3 - (1 - carry);
-        a = (uint8_t)diff;
-    }
-    //     cmp l0072 (5357)
-    if (a >= l0072)
+    //     lda hscroll_pos / clc / adc screen_width / sbc #3 / cmp l0072 (5357)
+    // (the 8-bit sequence just tests whether the cursor x (l0072) is still
+    //  within the visible right edge (hscroll_pos + screen_width, less a
+    //  4-column margin for the borrow); do the comparison directly)
+    if ((int)l0072 <= (int)hscroll_pos + (int)screen_maxcolumn - 4)
         goto ca395;
     //     bcs ca395 (5358)
     // ca381: (5359)

@@ -2142,16 +2142,13 @@ c90e2:
     //     sec
     //     sbc l0046
     //     beq c9101
-    // (16-bit arithmetic: d = ruler_right_stop - l0047, then subtract
-    //  l0045 and recover the borrow with adc #0, so the result is
-    //  ((d - l0045) & 0xff) + (d >= l0045 ? 1 : 0); c9101 is reached
-    //  iff that final byte equals l0046)
+    // (check whether the remaining width matches the microspacing
+    //  accumulator; the 6502 does d = ruler_right_stop - l0047, then
+    //  sbc l0045 / adc #0 to recover the borrow)
     int d = ruler_right_stop - l0047;
     if (d < 0)
         goto c90f8;
-    int diff = d - l0045;
-    uint8_t t = (uint8_t)((diff & 0xff) + (diff >= 0 ? 1 : 0));
-    if (t == l0046)
+    if ((uint8_t)(d - l0045 + (d >= l0045)) == l0046)
         goto c9101;
     // c90f8:
 c90f8:
