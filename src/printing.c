@@ -1891,6 +1891,7 @@ static void microspace_word_processor(void)
     uint8_t a;
     uint8_t x;
     addr_t tmp89;
+    uint32_t accum = 0;
 
     // microspace_word_processor
     // Pseudocode: Processes words for microspaced justification during printing
@@ -1901,12 +1902,8 @@ static void microspace_word_processor(void)
     // c9034:
     //     ldx #0
     x = 0;
-    //     stx l0044
-    l0044 = 0;
-    //     stx l0046
-    l0046 = 0;
-    //     stx l0045
-    l0045 = 0;
+    //     stx l0044 / stx l0046 / stx l0045
+    accum = 0;
     //     stx l0047
     l0047 = 0;
     //     stx l0039
@@ -2030,7 +2027,7 @@ c908c:
     // c9090:
 c9090:
     //     inc l0046
-    l0046++;
+    accum += 0x100;
     // c9092:
 c9092:
     //     cmp #9
@@ -2059,18 +2056,14 @@ c90a0:
         //     lda #0
         //     sta l0083
         l0083 = 0;
-        //     sta l0046
-        l0046 = 0;
+        //     sta l0046 / sta l0044 / sta l0045
+        accum = 0;
         //     sta l0048
         l0048 = 0;
         //     sta l0042
         l0042 = 0;
         //     sta l0043
         l0043 = 0;
-        //     sta l0044
-        l0044 = 0;
-        //     sta l0045
-        l0045 = 0;
         //     pla
         a = saved_a2;
     }
@@ -2100,15 +2093,9 @@ c90b6:
     //     lda l0045
     //     adc l0043
     //     sta l0045
-    // (24-bit addition: the (l0045, l0046, l0044) accumulator is
-    //  incremented by l0048 in its two low bytes and l0043 in its high byte)
-    {
-        uint32_t acc = ((uint32_t)l0045 << 16) | ((uint32_t)l0046 << 8) | l0044;
-        acc += ((uint32_t)l0043 << 16) | ((uint32_t)l0048 << 8) | l0048;
-        l0044 = (uint8_t)acc;
-        l0046 = (uint8_t)(acc >> 8);
-        l0045 = (uint8_t)(acc >> 16);
-    }
+    // (24-bit addition: acc is incremented by l0048 in its two low
+    //  bytes and l0043 in its high byte)
+    accum += ((uint32_t)l0043 << 16) | ((uint32_t)l0048 << 8) | l0048;
     //     lda #0
     a = 0;
     //     sta l0048
@@ -2123,7 +2110,7 @@ c90b6:
     // c90e2:
 c90e2:
     //     lda l0045
-    a = l0045;
+    a = accum >> 16;
 
     //     beq c90f8
     if (a == 0)
@@ -2148,7 +2135,8 @@ c90e2:
     int d = ruler_right_stop - l0047;
     if (d < 0)
         goto c90f8;
-    if ((uint8_t)(d - l0045 + (d >= l0045)) == l0046)
+    if ((uint8_t)(d - (accum >> 16) + (d >= (int)(accum >> 16))) ==
+        (uint8_t)((accum >> 8) & 0xFF))
         goto c9101;
     // c90f8:
 c90f8:
