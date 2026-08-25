@@ -1892,6 +1892,10 @@ static void microspace_word_processor(void)
     uint8_t x;
     addr_t tmp89;
     uint32_t accum = 0;
+    // l0042/l0043/l0047/l0048 are only used in this function (within
+    // printing.c) and in justify_edit_buffer (editor.c) — make them local
+    // to avoid global reuse confusion; l0039/l0083 are used elsewhere.
+    uint8_t l0042 = 0, l0043 = 0, l0047 = 0, l0048 = 0;
 
     // microspace_word_processor
     // Pseudocode: Processes words for microspaced justification during printing
