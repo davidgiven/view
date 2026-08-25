@@ -774,6 +774,7 @@ static void cf6_split_line_key(void)
 
 static void cf7_join_lines_key(void)
 {
+    addr_t tmp01;
     addr_t tmp45;
     // cf7_join_lines_key
 
@@ -2467,6 +2468,7 @@ static void q_command_key(void)
 
 uint8_t return_key(void)
 {
+    addr_t tmp01;
     // return_key
 
     // return_key: Carriage return: moves to next line at column 0
@@ -3339,6 +3341,7 @@ static void tab_key(void)
 
 static void advance_current_line_pointer(void)
 {
+    addr_t tmp01;
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     lda current_line_ptr

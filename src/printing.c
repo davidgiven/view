@@ -869,6 +869,7 @@ static void dm_fmt_cmd(void)
 
     uint8_t y;
 
+    addr_t tmp01;
     addr_t tmp67;
 
     // dm_fmt_cmd

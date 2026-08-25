@@ -541,7 +541,7 @@ void close_file(void)
     }
 }
 
-uint8_t create_default_ruler(uint16_t ruler_addr)
+uint8_t create_default_ruler(addr_t ruler_addr)
 {
     // create_default_ruler
     // Pseudocode: Creates a default ruler with tab stops every 6 columns
@@ -551,7 +551,7 @@ uint8_t create_default_ruler(uint16_t ruler_addr)
     // create_default_ruler:
     //     sta ((uint8_t*)&tmp01)[0]
     uint8_t x;
-    tmp01 = ruler_addr;
+    addr_t tmp01 = ruler_addr;
 
     //     lda #0
     //     tay                                                               ;
@@ -731,7 +731,7 @@ uint8_t initialise_document(void)
     y++;
     //     lda #0x0d
     //     sta (((uint8_t*)&tmp01)[0]),y
-    ram[tmp01 + y] = 0x0d;
+    ram[RAM_CURRENT_RULER_BUF + y] = 0x0d;
     //     ldy #0xff
     //     lda #<(just_before_current_ruler_buffer)
     uint8_t a = (uint8_t)(RAM_JUST_BEFORE_RULER_BUF & 0xff);

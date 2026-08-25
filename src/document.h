@@ -25,7 +25,7 @@ extern void ensure_cr_at_document_top(void);
 
 extern void close_file(void);
 
-extern uint8_t create_default_ruler(uint16_t ruler_addr);
+extern uint8_t create_default_ruler(addr_t ruler_addr);
 
 extern uint8_t get_byte_from_file(void);
 
