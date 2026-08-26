@@ -492,8 +492,7 @@ void load_current_ruler(uint8_t y)
     // (16-bit arithmetic: the two stacked bytes form the stored ruler
     //  pointer, high byte first; current_ruler_ptr = stored + 3)
     ruler_index_ptr = y;
-    current_ruler_ptr = ((addr_t)ram[oshwm + y] << 8) | ram[oshwm + y + 1];
-    current_ruler_ptr += 3;
+    current_ruler_ptr = ruler_index[y >> 1] + 3;
     // MULTIPLE ENTRY POINTS: pop_from_ruler_index, cab91
     //     (falls through to find_margins_of_current_ruler_buffer)
     find_margins_of_current_ruler_buffer();
@@ -734,15 +733,11 @@ uint8_t initialise_document(void)
     ram[RAM_CURRENT_RULER_BUF + y] = 0x0d;
     //     ldy #0xff
     //     lda #<(just_before_current_ruler_buffer)
-    uint8_t a = (uint8_t)(RAM_JUST_BEFORE_RULER_BUF & 0xff);
     //     sta (oshwm),y
-    ram[oshwm + 0xff] = a;
-    //     dey                                                               ;
-    //     Y=0xfe
+    //     dey
     //     lda #>(just_before_current_ruler_buffer)
-    a = (uint8_t)(RAM_JUST_BEFORE_RULER_BUF >> 8);
     //     sta (oshwm),y
-    ram[oshwm + 0xfe] = a;
+    ruler_index[0x7f] = RAM_JUST_BEFORE_RULER_BUF;
     //     jsr move_cursor_to_top_of_document
     move_cursor_to_top_of_document();
     //     jsr clear_cmd
@@ -1046,9 +1041,6 @@ void pop_from_ruler_index(void)
 
 void push_onto_ruler_index(addr_t tmp01)
 {
-    uint8_t a;
-    uint8_t a2;
-
     // push_onto_ruler_index
     // Pseudocode: Pushes current ruler position onto the ruler index
 
@@ -1060,19 +1052,9 @@ void push_onto_ruler_index(addr_t tmp01)
         //     inc status_line_needs_redrawing_flag
         status_line_needs_redrawing_flag++;
         //     ldy ruler_stack_ptr
-        stack_index = ruler_index_ptr;
-        //     dey
-        stack_index--;
-        //     lda ((uint8_t*)&tmp01)[0]
-        a = ((uint8_t*)&tmp01)[0];
-        //     sta (oshwm),y
-        ram[oshwm + stack_index] = a;
-        //     dey
-        stack_index--;
-        //     lda ((uint8_t*)&tmp01)[1]
-        a2 = ((uint8_t*)&tmp01)[1];
-        //     sta (oshwm),y
-        ram[oshwm + stack_index] = a2;
+        stack_index = ruler_index_ptr - 2;
+        //     sta (oshwm),y / sta (oshwm),y+1
+        ruler_index[stack_index >> 1] = tmp01;
         //     jsr cab91
         load_current_ruler(stack_index);
     }

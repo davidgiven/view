@@ -126,9 +126,7 @@ int main(void)
         y = 0;
         push_onto_ruler_index(ruler1_addr - 3);
 
-        uint8_t hi = ram[oshwm + 0xfe];
-        uint8_t lo = ram[oshwm + 0xff];
-        addr_t stored = (addr_t)(((addr_t)hi << 8) | lo);
+        addr_t stored = *(addr_t*)&ram[oshwm + 0xfe];
         ASSERT_EQ(ruler1_addr - 3,
             stored,
             "0x%04x",
