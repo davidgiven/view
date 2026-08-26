@@ -593,13 +593,38 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
-    def test_insert_line(self):
+    def test_insert_line_small(self):
         self._test_enter_editor_and_type(
-            b"abc" + CTRL_N + b"def",
+            b"abc" + CTRL_M + b"def" + CTRL_N + b"ghi",
             [
                 "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
-                "      def                                                                       ",
                 "   abc                                                                          ",
+                "      ghi                                                                       ",
+                "   def                                                                          ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_insert_line_medium(self):
+        self._test_enter_editor_and_type(
+            b"abcde" + CTRL_M + b"fghij" + CTRL_N + b"12345",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abcde                                                                        ",
+                "        12345                                                                   ",
+                "   fghij                                                                        ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_insert_line_large(self):
+        self._test_enter_editor_and_type(
+            b"abc" + CTRL_M + b"def" + CTRL_N + b"1234567",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   abc                                                                          ",
+                "      1234567                                                                   ",
+                "   def                                                                          ",
                 "********************************************************************************",
             ],
         )
