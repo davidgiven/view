@@ -867,15 +867,12 @@ static void cf8_mark_as_ruler_key(addr_t ptr1)
 
     uint8_t y;
     uint8_t a;
-    a = (uint8_t)(ptr1 & 0xff);
 
     //     sta current_format_line_ptr
 
     current_format_line_ptr = ptr1;
 
     //     lda ptr1+1
-
-    a = (uint8_t)(ptr1 >> 8);
 
     //     sta current_format_line_ptr+1
 
@@ -2709,11 +2706,7 @@ c9fab:
 
     //     lda current_line_ptr
 
-    a = (uint8_t)(current_line_ptr & 0xff);
-
     //     ldy current_line_ptr+1
-
-    y = (uint8_t)(current_line_ptr >> 8);
 
     //     jsr sub_cab1a
 
@@ -3291,15 +3284,11 @@ static void sf9_delete_command_key(void)
 
     //     lda current_edit_line_ptr
 
-    a = (uint8_t)(RAM_EDIT_BUFFER & 0xff);
-
     //     sta current_format_line_ptr
 
     current_format_line_ptr = RAM_EDIT_BUFFER;
 
     //     lda current_edit_line_ptr+1
-
-    a = (uint8_t)(RAM_EDIT_BUFFER >> 8);
 
     //     sta current_format_line_ptr+1
 
@@ -4564,7 +4553,6 @@ cad5d:
     {
         uint16_t marker_addr = current_line_ptr + a;
         markers_array[x] = marker_addr;
-        a = (uint8_t)(marker_addr >> 8);
     }
     //     rts
 }
@@ -6453,8 +6441,6 @@ ca3c1:
         //     bcc ca3d8 (5408)
         // (16-bit arithmetic: tmp01 += y; result kept in a/y for the loop)
         tmp01 += y;
-        a = (uint8_t)tmp01;
-        y = (uint8_t)(tmp01 >> 8);
         draw = tmp01;
         //     inc l0082 (5411)
         l0082++;
