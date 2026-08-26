@@ -135,6 +135,7 @@ addr_t ptr3; // PROVISIONAL: macro text pointer — walks through
 // X oshwm: .fill 2
 addr_t oshwm; // PROVISIONAL: OS high-water mark, base address for ruler stack
               // and document area
+addr_t ruler_index[128]; // ruler stack (was ram[oshwm] trick, now separate)
 // X l0021: .fill 1
 uint8_t l0021; // PROVISIONAL: remaining-lines counter on current page during
                // printing

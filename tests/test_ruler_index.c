@@ -14,6 +14,7 @@ extern addr_t tmp01;
 #define tmp1 (*((uint8_t*)&tmp01 + 1))
 extern uint8_t ruler_index_ptr;
 extern addr_t oshwm;
+extern addr_t ruler_index[128];
 extern addr_t current_ruler_ptr;
 extern uint8_t ruler_left_stop;
 extern uint8_t ruler_right_stop;
@@ -126,11 +127,11 @@ int main(void)
         y = 0;
         push_onto_ruler_index(ruler1_addr - 3);
 
-        addr_t stored = *(addr_t*)&ram[oshwm + 0xfe];
+        addr_t stored = ruler_index[0x7f];
         ASSERT_EQ(ruler1_addr - 3,
             stored,
             "0x%04x",
-            "index stores (ruler_addr - 3) at oshwm+0xfe, oshwm+0xff");
+            "index stores (ruler_addr - 3) at ruler_index[0x7f]");
     }
 
     {
