@@ -2328,9 +2328,13 @@ bool parse_decimal_number(int* value, uint8_t* y)
     // (no leading whitespace is guaranteed, and strtoul parses the value as
     //  unsigned, so no leading-sign/whitespace handling is needed: a leading
     //  non-digit yields end == start and value 0)
-    const char* start = (const char*)&ram[current_format_line_ptr + *y];
+    const char* start;
+    if (current_format_line_ptr == (addr_t)(uintptr_t)input_buffer)
+        start = (const char*)&input_buffer[*y];
+    else
+        start = (const char*)&ram[current_format_line_ptr + *y];
     char* end;
-    *value = (int)(addr_t)strtoul(start, &end, 10);
+    *value = (int)strtoul(start, &end, 10);
     bool parsed = (end != start);
     *y += (uint8_t)(end - start);
     return parsed;

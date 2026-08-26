@@ -125,7 +125,7 @@ extern void write_area_to_file(void);
 extern bool read_next_chunk_from_input_file(addr_t ptr);
 extern addr_t read_into_document(void);
 extern void reset_document_name_after_load(void);
-extern bool parse_integer_from_command(struct scan_state* scan);
+extern bool parse_integer_from_command(struct scan_state* scan, int* out);
 extern uint8_t l0021, l0031, l0038, l007a;
 
 #define RAM_CURRENT_RULER_BUF 0x05CF

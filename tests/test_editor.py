@@ -949,6 +949,21 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_field_32_space_acts_as_tab(self):
+        # FIELD 32 remaps space bar (0x20) to act like CTRL-I (tab, 0x09)
+        # via current_tab_key. Modelled on test_tab_key.
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("FIELD 32")
+        self.proc.read_until(b"=>", timeout=0.5)
+        self._test_enter_editor_and_type(
+            b"a b c d",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   a      b       c       d                                                     ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_k_command_key_extra_marker(self):
         expected = [
             "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",

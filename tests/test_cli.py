@@ -260,6 +260,16 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(first_ten, expected)
 
+    def test_field_27_shows_frump(self):
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("FIELD 27")
+        output = self.proc.read_until(b"=>", timeout=0.5)
+        self.assertIn(
+            b"Frump!",
+            output,
+            f"Expected 'Frump!' in output for FIELD 27, got: {repr(output)}",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

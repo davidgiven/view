@@ -8,7 +8,7 @@ addr_t parse_mark_from_command(struct scan_state* scan);
 // Forward declarations for CLI utilities
 void file_error(void);
 void file_not_found_error(void);
-bool parse_integer_from_command(struct scan_state* scan);
+bool parse_integer_from_command(struct scan_state* scan, int* out);
 void parse_marks_from_command(struct scan_state* scan);
 void reset_document_name_after_load(void);
 void set_document_name_to_filename_buffer(void);
@@ -34,9 +34,9 @@ static void save_cmd_write_cmd(struct scan_state* scan);
 static void load_cmd(struct scan_state* scan);
 static void read_cmd(struct scan_state* scan);
 static void mode_cmd(void);
-static void microspace_cmd(addr_t tmp89, struct scan_state* scan);
+static void microspace_cmd(struct scan_state* scan);
 static void setup_cmd(struct scan_state* scan);
-static void field_cmd(addr_t tmp89, struct scan_state* scan);
+static void field_cmd(struct scan_state* scan);
 static void count_cmd(struct scan_state* scan);
 static void format_cmd(struct scan_state* scan);
 static void new_cmd(void);
@@ -109,7 +109,7 @@ void execute_cli_command(uint8_t a, struct scan_state* scan)
             count_cmd(scan);
             break;
         case 10:
-            field_cmd(tmp89, scan);
+            field_cmd(scan);
             break;
         case 11:
             printer_cmd(scan);
@@ -121,7 +121,7 @@ void execute_cli_command(uint8_t a, struct scan_state* scan)
             clear_cmd();
             break;
         case 14:
-            microspace_cmd(tmp89, scan);
+            microspace_cmd(scan);
             break;
         case 15:
             fold_cmd(scan);
@@ -520,7 +520,7 @@ static void edit_cmd(struct scan_state* scan)
     file_edit_flags = 1;
 }
 
-static void field_cmd(addr_t tmp89, struct scan_state* scan)
+static void field_cmd(struct scan_state* scan)
 {
     // field_cmd
     // Pseudocode: Sets the tab key field width from parsed integer argument
@@ -530,13 +530,15 @@ static void field_cmd(addr_t tmp89, struct scan_state* scan)
     // field_cmd:
     //     jsr parse_integer_from_command
     //     beq c869b
-    if (!parse_integer_from_command(scan))
+    int value;
+    bool ok = parse_integer_from_command(scan, &value);
+    if (!ok)
     {
         return_to_cli_prompt();
         return;
     }
     //     lda ((uint8_t*)&tmp89)[0]
-    uint8_t a = ((uint8_t*)&tmp89)[0];
+    uint8_t a = value & 0xFF;
     //     cmp #0x1b
     if (a == 0x1b)
     {
@@ -744,7 +746,7 @@ static void load_cmd(struct scan_state* scan)
     return;
 }
 
-static void microspace_cmd(addr_t tmp89, struct scan_state* scan)
+static void microspace_cmd(struct scan_state* scan)
 {
     uint8_t a;
     uint8_t y;
@@ -758,13 +760,14 @@ static void microspace_cmd(addr_t tmp89, struct scan_state* scan)
     prepare_printer_driver();
     //     jsr parse_integer_from_command
     //     php
-    bool parsed = parse_integer_from_command(scan);
+    int value;
+    bool parsed = parse_integer_from_command(scan, &value);
     //     ldx #0x0a
     uint8_t x = 0x0a;
     //     beq c8608
     if (parsed)
     {
-        x = ((uint8_t*)&tmp89)[0];
+        x = value & 0xFF;
         if (x == 0)
             return;
     }
@@ -1802,7 +1805,7 @@ void file_not_found_error(void)
     return;
 }
 
-bool parse_integer_from_command(struct scan_state* scan)
+bool parse_integer_from_command(struct scan_state* scan, int* out)
 {
     // Pseudocode: Parses a decimal integer from the command input buffer
 
@@ -1822,7 +1825,8 @@ bool parse_integer_from_command(struct scan_state* scan)
     uint8_t y = scan->pos;
     int parsed;
     bool ok = parse_decimal_number(&parsed, &y);
-    tmp89 = (addr_t)parsed;
+    if (out)
+        *out = parsed;
     // (6502 returns Z set when no integer was parsed; the boolean mirrors
     //  that: true = an integer was parsed)
     return ok;
