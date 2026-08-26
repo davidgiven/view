@@ -393,7 +393,6 @@ static uint8_t process_header_footer_line(uint8_t x, uint8_t y)
     //     ldy #3
     y = 3;
     //     sty input_buffer_offset+1
-    l0080 = y;
     //     lda (current_format_line_ptr),y
     a = ram[current_format_line_ptr + y];
     //     sta l0083
@@ -961,12 +960,9 @@ c96a2:
     //     sta ((uint8_t*)&tmp01)[1]
     //     sta l0081
     //     sta current_format_line_ptr+1
-    // (16-bit copy: tmp01 = current_format_line_ptr = last_macro_ptr,
-    //  with l0080 = low byte, l0081 = high byte)
+    // (16-bit copy: tmp01 = current_format_line_ptr = last_macro_ptr)
     tmp01 = last_macro_ptr;
-    l0080 = (uint8_t)(last_macro_ptr & 0xff);
     current_format_line_ptr = last_macro_ptr;
-    l0081 = (uint8_t)(last_macro_ptr >> 8);
     //     jsr sub_c9241
     if (read_next_output_line(last_macro_ptr, &tmp01) == READ_BLOCK_DONE)
     //     bcc c96ce
@@ -2909,7 +2905,6 @@ static void render_header_or_footer(uint16_t yx)
     //     lda (((uint8_t*)&tmp45)[0]),y
     // (y is 0 throughout, so the first header/footer text byte is read
     // directly)
-    l0082 = 0;
     a = ram[tmp45];
     //     beq return_28
     if (a == 0)
