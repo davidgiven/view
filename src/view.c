@@ -803,12 +803,13 @@ c8598:
 bool check_area_memory(addr_t ptr2)
 {
     addr_t tmp45;
-    addr_t tmp67;
     uint8_t a;
 
     uint8_t y;
 
     uint8_t x;
+    uint16_t gap;
+    uint8_t l0082, l0083;
 
     // sub_c8a4f
     //  Ptrs:   ptr2
@@ -896,63 +897,35 @@ c8a87:
     //     lda doc_ptr2+1
     //     sbc ptr2+1
     //     sta l0081
-    {
-        uint16_t doc_ptr2_minus_ptr2 = doc_ptr2 - ptr2;
-        l0080 = (uint8_t)doc_ptr2_minus_ptr2;
-        l0081 = (uint8_t)(doc_ptr2_minus_ptr2 >> 8);
-    }
+    gap = doc_ptr2 - ptr2;
     //     ldx l0082
     x = l0082;
     //     tay
-    y = l0081;
-    if (y == 0)
+    if (gap < 256 && x >= gap)
     {
-        if (x >= l0080)
-        {
-            x = l0080;
-        }
+        x = gap;
     }
     // c8aa3:
     //     txa
     //     clc; adc ptr2; sta ((uint8_t*)&tmp45)[0]; lda ptr2+1; adc #0; sta
     //     ((uint8_t*)&tmp45)[1]
     tmp45 = ptr2 + x;
-    //     lda l0082
-    a = l0082;
-    //     sec; sbc input_buffer_offset+1; sta ((uint8_t*)&tmp67)[0]; lda #0;
-    //     sbc l0081; sta ((uint8_t*)&tmp67)[1]
-    // (only the subtraction's N flag is consumed, by the bmi below)
+    //     lda l0082 / sec; sbc l0080; sta tmp67; lda #0; sbc l0081
+    // (tmp67 = l0082 - gap as signed 16-bit) — three-way split:
+    // shrink (delta<0), no-change (delta==0), grow (delta>0)
+    int16_t delta = (int16_t)l0082 - (int16_t)gap;
+    if (delta < 0)
     {
-        uint16_t sub = (uint16_t)l0082 - ((uint16_t)l0081 << 8 | l0080);
-        tmp67 = sub;
-        //     bmi c8aca
-        if (sub & 0x8000)
-            goto c8aca;
+        addr_t tmp67 = -delta;
+        adjust_pointers(tmp45, tmp67);
     }
-    //     ora ((uint8_t*)&tmp67)[0]
-    a |= (uint8_t)tmp67;
-
-    //     beq c8ada
-    if (a == 0)
-        goto c8ada;
-    //     sta ((uint8_t*)&tmp67)[0]
-    ((uint8_t*)&tmp67)[0] = a;
-    //     jsr make_space_for_insertion
-    if (make_space_for_insertion(tmp45, tmp67))
-        goto c8ada; // bcc c8ada
-    //     rts (C=1 left set by the failure = memory full)
-    return true;
-
-c8aca:
-    // c8aca:
-    //     lda #0
-    a = 0;
-    //     sec; sbc ((uint8_t*)&tmp67)[0]; lda #0; sbc ((uint8_t*)&tmp67)[1]
-    //     (negate tmp67)
-    tmp67 = -tmp67;
-    //     jsr adjust_pointers
-    adjust_pointers(tmp45, tmp67);
-c8ada:
+    else if (delta > 0)
+    {
+        addr_t tmp67 = delta;
+        if (!make_space_for_insertion(tmp45, tmp67))
+            return true;
+    }
+    // delta==0 falls through
     // c8ada:
     //     ldy #0
     y = 0;
