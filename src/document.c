@@ -862,13 +862,11 @@ cac20:
     //     sty current_line_ptr+1
     current_line_ptr = cur;
     //     lda ((uint8_t*)&tmp89)[0]
-    a = ((uint8_t*)&tmp89)[0];
     //     sec
     //     sbc current_line_ptr
     //     tax
     // (sbc with C=1 is a plain subtraction; tax overwrites the flags)
-    a -= (uint8_t)(current_line_ptr & 0xff);
-    x = a;
+    x = (uint8_t)(tmp89 - current_line_ptr);
     //     ldy #0
     yy = 0;
     //     lda (current_line_ptr),y

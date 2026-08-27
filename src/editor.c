@@ -743,10 +743,6 @@ static void cf6_split_line_key(void)
         x++;
     }
 
-    //     ldy current_line_ptr+1
-
-    y = (uint8_t)(current_line_ptr >> 8);
-
     //     txa
 
     a = x;
@@ -759,7 +755,9 @@ static void cf6_split_line_key(void)
     //     iny
     //     bne c9de3
     // (16-bit arithmetic: current_line_ptr + x; if the sum wraps past
-    //  0xffff (y == 0 after the carry), fall through to f6_insert_line_key)
+    //  0xffff (y == 0 after the carry), fall through to f6_insert_line_key;
+    //  the preceding ldy current_line_ptr+1 high-byte load has no C
+    //  counterpart — the sum and its wrap are computed as uint32_t below)
     uint32_t sum = (uint32_t)current_line_ptr + x;
     if (sum > 0xffff)
     {
@@ -3188,8 +3186,9 @@ edit_command_loop:
     l0080 = y;
 
     //     sta (ptr1),y
-
-    ram[((uint16_t)(ptr1 >> 8) << 8) | ((ptr1 & 0xff) + y)] = a;
+    // (16-bit arithmetic: ram[ptr1 + y], with the carry across the low-byte
+    //  boundary handled by the plain 16-bit index)
+    ram[ptr1 + y] = a;
 
     //     cpy #2
 

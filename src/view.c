@@ -124,11 +124,11 @@ const struct printer_driver*
     printer_driver_ptr; // PROVISIONAL: function-pointer struct for printer
                         // backend dispatch
 // X first_macro_ptr: .fill 2
-addr_t first_macro_ptr; // PROVISIONAL: start of macro-definition linked list in
-                        // document memory
+struct macro* first_macro_ptr; // PROVISIONAL: start of macro-definition linked
+                               // list in document memory
 // X last_macro_ptr: .fill 2
-addr_t last_macro_ptr; // PROVISIONAL: end of macro-definition area where new
-                       // macros are appended
+struct macro* last_macro_ptr; // PROVISIONAL: end of macro-definition area where
+                              // new macros are appended
 // X ptr3: .fill 2
 addr_t ptr3; // PROVISIONAL: macro text pointer — walks through
              // currently-executing macro body

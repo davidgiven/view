@@ -8,6 +8,17 @@
 
 typedef uint16_t addr_t;
 
+// A macro definition stored in ram[].  Macros form a singly-linked list: a
+// node holds the address of the next macro (0 terminates the list) and the
+// two-character macro name; the macro body follows the header and is reached
+// through body[].
+struct macro
+{
+    addr_t next;
+    char name[2];
+    uint8_t body[0];
+};
+
 // Result of check_for_command_prefix / deref_and_check_for_command_prefix
 typedef enum
 {
@@ -67,7 +78,7 @@ extern uint8_t highlight_code[2];
 #define highlight1_code highlight_code[0]
 #define highlight2_code highlight_code[1]
 extern addr_t himem, top, page;
-extern addr_t first_macro_ptr, last_macro_ptr;
+extern struct macro *first_macro_ptr, *last_macro_ptr;
 extern addr_t ptr5, current_format_line_ptr;
 extern uint8_t header_text_maybe[0x42];
 extern uint8_t footer_text_maybe[0x42];

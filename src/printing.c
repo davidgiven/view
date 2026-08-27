@@ -869,7 +869,7 @@ static void dm_fmt_cmd(void)
     uint8_t y;
 
     addr_t tmp01;
-    addr_t tmp67;
+    struct macro* tmp67;
 
     // dm_fmt_cmd
     // Pseudocode: Defines a macro: stores macro name and position in linked
@@ -885,135 +885,127 @@ static void dm_fmt_cmd(void)
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda last_macro_ptr+1
     //     sta ((uint8_t*)&tmp67)[1]
+    // (tmp67 keeps the struct macro* of the node being built)
     tmp67 = last_macro_ptr;
     //     ldy #3
     y = 3;
     //     lda (current_format_line_ptr),y
-    a = ram[current_format_line_ptr + y];
+    uint8_t firstchar = ram[current_format_line_ptr + y];
     //     and #0xdf
-    a &= 0xdf;
+    firstchar &= 0xdf;
     //     sta l0084
-    l0084 = a;
     //     iny                                                               ;
     //     Y=0x04
     y++;
     //     lda (current_format_line_ptr),y
-    a = ram[current_format_line_ptr + y];
+    uint8_t secondchar = ram[current_format_line_ptr + y];
     //     jsr is_uppercase
     //     bcc c968d
-    if (isalpha(a))
-        goto c968d;
     //     lda #0x20 ; ' '
-    a = 0x20;
     //     bne c968f                                                         ;
     //     ALWAYS branch
-    goto c968f;
+    if (isalpha(secondchar))
+        secondchar &= 0xdf;
+    else
+        secondchar = 0x20;
 
     // c968d:
-c968d:
     //     and #0xdf
-    a &= 0xdf;
     // c968f:
-c968f:
     //     dey
-    y--;
     //     sta (last_macro_ptr),y
-    ram[last_macro_ptr + y] = a;
     //     dey
-    y--;
     //     lda l0084
-    a = l0084;
     //     sta (last_macro_ptr),y
-    ram[last_macro_ptr + y] = a;
+    // (the name occupies node offsets 2-3: [1] = second character, [0] = first)
+    last_macro_ptr->name[1] = secondchar;
+    last_macro_ptr->name[0] = firstchar;
     //     lda #4
-    a = 4;
     //     clc
     //     adc last_macro_ptr
     //     sta last_macro_ptr
     //     bcc c96a2
-    // (16-bit arithmetic: last_macro_ptr += 4)
-    last_macro_ptr += a;
-c96a2:
-    //     lda himem
-    //     sec
-    //     sbc last_macro_ptr
-    //     tax
-    //     lda himem+1
-    //     sbc last_macro_ptr+1
-    //     bne c96b8
+    // (the 6502 advances past the 4-byte node header to the body; the C
+    //  keeps last_macro_ptr at the node start and reaches the body via
+    //  ->body)
+
+    // c96a2: read macro-body lines, skipping any that are not an EM
+    // formatting-command line
+    for (;;)
     {
-        uint16_t diff = himem - last_macro_ptr;
-        x = (uint8_t)diff;
+        //     lda himem
+        //     sec
+        //     sbc last_macro_ptr
+        //     tax
+        //     lda himem+1
+        //     sbc last_macro_ptr+1
+        //     bne c96b8
+        intptr_t diff = (ram + himem) - (uint8_t*)(last_macro_ptr->body);
         if (diff < 0x97)
         {
-            {
-                display_not_enough_memory();
-                return;
-            }
+            display_not_enough_memory();
+            return;
         }
+        //     lda last_macro_ptr
+        //     sta ((uint8_t*)&tmp01)[0]
+        //     sta input_buffer_offset+1
+        //     sta current_format_line_ptr
+        //     lda last_macro_ptr+1
+        //     sta ((uint8_t*)&tmp01)[1]
+        //     sta l0081
+        //     sta current_format_line_ptr+1
+        // (16-bit copy: tmp01 = current_format_line_ptr = last_macro_ptr->body)
+        tmp01 = (addr_t)(last_macro_ptr->body - ram);
+        current_format_line_ptr = (addr_t)(last_macro_ptr->body - ram);
+        //     jsr sub_c9241
+        if (read_next_output_line((addr_t)(last_macro_ptr->body - ram),
+                &tmp01) == READ_BLOCK_DONE)
+        //     bcc c96ce
+        {
+            return;
+        }
+        //     ldy #0
+        y = 0;
+        //     lda (last_macro_ptr),y
+        a = last_macro_ptr->body[y];
+        //     jsr check_for_command_prefix
+        //     bne c96f8
+        //     jsr lookup_formatting_command
+        //     cpx #5
+        command_prefix_t cp = check_for_command_prefix(a);
+        if (cp != NO_COMMAND_PREFIX && lookup_formatting_command() == 5)
+            break;
+        // (c96f8: skip this line and read the next one)
+        //     lda tmp0
+        //     sta last_macro_ptr
+        //     lda tmp1
+        //     sta last_macro_ptr+1
+        //     bne c96a2
+        last_macro_ptr = (struct macro*)&ram[tmp01];
     }
-    //     lda last_macro_ptr
-    //     sta ((uint8_t*)&tmp01)[0]
-    //     sta input_buffer_offset+1
-    //     sta current_format_line_ptr
-    //     lda last_macro_ptr+1
-    //     sta ((uint8_t*)&tmp01)[1]
-    //     sta l0081
-    //     sta current_format_line_ptr+1
-    // (16-bit copy: tmp01 = current_format_line_ptr = last_macro_ptr)
-    tmp01 = last_macro_ptr;
-    current_format_line_ptr = last_macro_ptr;
-    //     jsr sub_c9241
-    if (read_next_output_line(last_macro_ptr, &tmp01) == READ_BLOCK_DONE)
-    //     bcc c96ce
-    {
-        return;
-    }
-    //     ldy #0
-    y = 0;
-    //     lda (last_macro_ptr),y
-    a = ram[last_macro_ptr + y];
-    //     jsr check_for_command_prefix
-    command_prefix_t cp = check_for_command_prefix(a);
-    //     bne c96f8
-    if (cp == NO_COMMAND_PREFIX)
-        goto c96f8;
-    //     jsr lookup_formatting_command
-    if (lookup_formatting_command() != 5)
-        goto c96f8;
-    //     cpx #5
     //     lda #4
     //     ldy #0
-    y = 0;
     //     sta (last_macro_ptr),y
-    ram[last_macro_ptr + y] = 4;
+    // (4 is the macro-body terminator byte, written at the body start)
+    last_macro_ptr->body[0] = 4;
     //     inc last_macro_ptr
-    last_macro_ptr++;
     //     bne add_macro_to_linked_list
     //     inc last_macro_ptr+1
     // add_macro_to_linked_list:
     //     lda #0
     //     sta (last_macro_ptr),y
-    ram[last_macro_ptr + y] = 0;
+    // (the 6502 advances one byte and writes the end-of-list marker at
+    //  body+1; the struct write zeroes it directly)
+    last_macro_ptr->body[1] = 0;
     //     lda last_macro_ptr
-    a = (uint8_t)(last_macro_ptr & 0xff);
     //     sta (((uint8_t*)&tmp67)[0]),y
-    ram[tmp67 + y] = a;
     //     iny
-    y++;
     //     lda last_macro_ptr+1
-    a = (uint8_t)((last_macro_ptr >> 8) & 0xff);
     //     sta (((uint8_t*)&tmp67)[0]),y
-    ram[tmp67 + y] = a;
+    // (16-bit write: the previous macro's next pointer = body + 1)
+    tmp67->next = (addr_t)(last_macro_ptr->body + 1 - ram);
     //     rts
     return;
-
-    // c96f8:
-c96f8:
-    last_macro_ptr = tmp01;
-    //     bne c96a2                                                         ;
-    //     ALWAYS branch
-    goto c96a2;
 }
 
 static void ht_fmt_cmd(void)
@@ -2399,7 +2391,6 @@ return_32:
 void print_document(struct scan_state* scan)
 {
     uint8_t a;
-    uint8_t y;
     addr_t ptr5;
     // print_document
     // print_document:
@@ -2428,8 +2419,8 @@ void print_document(struct scan_state* scan)
     //     sty first_macro_ptr+1
     //     sty last_macro_ptr+1
     // (16-bit arithmetic: first_macro_ptr = last_macro_ptr = ptr5 + 0x8d)
-    first_macro_ptr = ptr5 + 0x8d;
-    last_macro_ptr = ptr5 + 0x8d;
+    first_macro_ptr = (struct macro*)&ram[ptr5 + 0x8d];
+    last_macro_ptr = first_macro_ptr;
     //     lda #0
     a = 0;
     //     sta l0031
@@ -2440,9 +2431,9 @@ void print_document(struct scan_state* scan)
     printing_from_file_flag = a;
     //     tay                                                               ;
     //     Y=0x00
-    y = a;
     //     sta (last_macro_ptr),y
-    ram[last_macro_ptr + y] = a;
+    // (initialise the empty macro list: the first node's next pointer = 0)
+    last_macro_ptr->next = 0;
     current_ruler_ptr = RAM_CURRENT_RULER_BUF;
     //     jsr find_margins_of_current_ruler_buffer
     find_margins_of_current_ruler_buffer();
@@ -2491,8 +2482,8 @@ static void print_loop(addr_t ptr5)
     uint8_t x;
     addr_t ptr3 = 0; // set before first use (macro start); 0 placates GCC's
                      // cross-function uninitialised analysis
-    addr_t tmp67;
-    addr_t tmp89;
+    struct macro* macro;
+    uint8_t firstchar, secondchar;
     addr_t cursor; // current format-line address (was global tmp01)
 
     // print_loop
@@ -2579,13 +2570,14 @@ static void print_loop(addr_t ptr5)
         //     sta ((uint8_t*)&tmp67)[0]
         //     lda first_macro_ptr+1
         //     sta ((uint8_t*)&tmp67)[1]
-        tmp67 = first_macro_ptr;
+        // (macro walks the macro linked list; first_macro_ptr is the head)
+        macro = first_macro_ptr;
         //     ldy #1
         y = 1;
         //     lda (current_format_line_ptr),y
         a = ram[current_format_line_ptr + y];
-        //     sta ((uint8_t*)&tmp89)[0]
-        ((uint8_t*)&tmp89)[0] = a;
+        //     sta tmp8
+        firstchar = a;
         //     iny ; Y=0x02
         y++;
         //     lda (current_format_line_ptr),y
@@ -2598,53 +2590,40 @@ static void print_loop(addr_t ptr5)
         {
             a = 0x20;
         }
-        //     sta ((uint8_t*)&tmp89)[1]
-        ((uint8_t*)&tmp89)[1] = a;
+        //     sta tmp9
+        secondchar = a;
         // lookup_macro_name:
     lookup_macro_name_l:
         //     ldy #0
-        y = 0;
         //     lda (((uint8_t*)&tmp67)[0]),y
-        a = ram[tmp67 + y];
-
         //     beq c8f6b
-        if (a == 0)
+        // (the 6502 tests only the low byte of the next pointer for the
+        //  end-of-list marker)
+        if ((uint8_t)macro->next == 0)
             goto c8f6b_l;
         //     ldy #2
-        y = 2;
         //     lda (((uint8_t*)&tmp67)[0]),y
-        a = ram[tmp67 + y];
-        //     cmp ((uint8_t*)&tmp89)[0]
-        if (a != ((uint8_t*)&tmp89)[0])
+        //     cmp tmp8
+        if (macro->name[0] != firstchar)
             goto get_next_macro_in_linked_list_l;
         //     iny ; Y=0x03
-        y++;
         //     lda (((uint8_t*)&tmp67)[0]),y
-        a = ram[tmp67 + y];
-        //     cmp ((uint8_t*)&tmp89)[1]
-        if (a == ((uint8_t*)&tmp89)[1])
+        //     cmp tmp9
+        if (macro->name[1] == secondchar)
             goto c8fb9_l;
         // get_next_macro_in_linked_list:
     get_next_macro_in_linked_list_l:
         //     ldy #0
-        y = 0;
         //     lda (((uint8_t*)&tmp67)[0]),y
-        a = ram[tmp67 + y];
         //     pha
-        {
-            uint8_t saved_tmp = a;
-            //     iny ; Y=0x01
-            y++;
-            //     lda (((uint8_t*)&tmp67)[0]),y
-            a = ram[tmp67 + y];
-            //     sta ((uint8_t*)&tmp67)[1]
-            ((uint8_t*)&tmp67)[1] = a;
-            //     pla
-            a = saved_tmp;
-        }
+        //     iny ; Y=0x01
+        //     lda (((uint8_t*)&tmp67)[0]),y
+        //     sta ((uint8_t*)&tmp67)[1]
+        //     pla
         //     sta ((uint8_t*)&tmp67)[0]
-        ((uint8_t*)&tmp67)[0] = a;
         //     jmp lookup_macro_name
+        // (macro = the next-macro pointer stored at *macro)
+        macro = (struct macro*)&ram[macro->next];
         goto lookup_macro_name_l;
 
         // c8fb9:
@@ -2659,8 +2638,9 @@ static void print_loop(addr_t ptr5)
             return;
         }
         // (the macro body cursor persists across prepare_output_line calls,
-        //  so it lives here and is passed by reference)
-        ptr3 = tmp67 + 4;
+        //  so it lives here and is passed by reference; the body follows the
+        //  macro header via body[])
+        ptr3 = (addr_t)(macro->body - ram);
         macro_executing_flag = (uint8_t)(ptr3 >> 8);
         //     bne c900e
 
