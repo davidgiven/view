@@ -69,11 +69,6 @@ static bool evaluate_expression_from_fmt_cmd(uint16_t* result, uint8_t* y);
 static uint8_t get_current_fmt_cmd_byte(uint8_t* y);
 static uint8_t get_next_fmt_cmd_byte(uint8_t* y);
 
-enum formatting_command_index_t
-{
-    NO_FORMATTING_COMMAND = -1
-};
-
 enum parse_register_result_t
 {
     PARSE_REGISTER_MARKER,
@@ -81,7 +76,7 @@ enum parse_register_result_t
     PARSE_REGISTER_OTHER,
 };
 
-int lookup_formatting_command(void);
+enum formatting_command lookup_formatting_command(void);
 static void store_to_output_buffer(uint8_t a, addr_t tmp23);
 static uint8_t process_header_footer_line(uint8_t x, uint8_t y);
 static void write_output_buffer_to_format_line(uint8_t a);
@@ -973,7 +968,8 @@ static void dm_fmt_cmd(void)
         //     jsr lookup_formatting_command
         //     cpx #5
         command_prefix_t cp = check_for_command_prefix(a);
-        if (cp != NO_COMMAND_PREFIX && lookup_formatting_command() == 5)
+        if (cp != NO_COMMAND_PREFIX &&
+            lookup_formatting_command() == FORMATTING_COMMAND_EM)
             break;
         // (c96f8: skip this line and read the next one)
         //     lda tmp0
@@ -1090,7 +1086,7 @@ static const uint8_t commands_table[] =
 
 // Returns the index of the matched two-letter formatting command in
 // commands_table, or NO_FORMATTING_COMMAND if the letters don't match.
-int lookup_formatting_command(void)
+enum formatting_command lookup_formatting_command(void)
 {
     uint8_t char1;
     uint8_t char2;
@@ -1172,7 +1168,7 @@ int lookup_formatting_command(void)
  * the dispatched command reads/writes, used by the printing pipeline
  * after the call.
  */
-bool execute_formatting_command(uint8_t x)
+bool execute_formatting_command(enum formatting_command x)
 {
     uint8_t a;
 
@@ -1186,9 +1182,8 @@ bool execute_formatting_command(uint8_t x)
     a = x;
     //     ldy #0
     //     ldx #0
-    x = 0;
     //     stx l0030
-    formatted_line_written_flag = x;
+    formatted_line_written_flag = 0;
     //     jsr call_through_jumptable (call_through_jumptable_0, y=0)
     //     asl
     //     clc
@@ -1206,72 +1201,72 @@ bool execute_formatting_command(uint8_t x)
     //     jmp (((uint8_t*)&tmp67)[0])
     switch (a)
     {
-        case 0:
+        case FORMATTING_COMMAND_CE:
             ce_fmt_cmd();
             break;
-        case 1:
+        case FORMATTING_COMMAND_RJ:
             rj_fmt_cmd();
             break;
-        case 2:
+        case FORMATTING_COMMAND_DF:
             df_fmt_cmd();
             break;
-        case 3:
+        case FORMATTING_COMMAND_DH:
             dh_fmt_cmd();
             break;
-        case 4:
+        case FORMATTING_COMMAND_DM:
             dm_fmt_cmd();
             break;
-        case 5:
+        case FORMATTING_COMMAND_EM:
             break; // return_34 (no-op slot)
-        case 6:
+        case FORMATTING_COMMAND_SR:
             em_fmt_cmd();
             break;
-        case 7:
+        case FORMATTING_COMMAND_PE:
             pe_fmt_cmd();
             break;
-        case 8:
+        case FORMATTING_COMMAND_TM:
             tm_fmt_cmd();
             break;
-        case 9:
+        case FORMATTING_COMMAND_BM:
             bm_fmt_cmd();
             break;
-        case 10:
+        case FORMATTING_COMMAND_PL:
             pl_fmt_cmd();
             break;
-        case 11:
+        case FORMATTING_COMMAND_TS:
             ts_fmt_cmd();
             break;
-        case 12:
+        case FORMATTING_COMMAND_FO:
             fo_fmt_cmd();
             break;
-        case 13:
+        case FORMATTING_COMMAND_HE:
             he_fmt_cmd();
             break;
-        case 14:
+        case FORMATTING_COMMAND_HT:
             ht_fmt_cmd();
             break;
-        case 15:
+        case FORMATTING_COMMAND_HM:
             hm_fmt_cmd();
             break;
-        case 16:
+        case FORMATTING_COMMAND_FM:
             fm_fmt_cmd();
             break;
-        case 17:
+        case FORMATTING_COMMAND_LM:
             lm_fmt_cmd();
             break;
-        case 18:
+        case FORMATTING_COMMAND_LS:
             ls_fmt_cmd();
             break;
-        case 19:
+        case FORMATTING_COMMAND_OP:
             op_fmt_cmd();
             break;
-        case 20:
+        case FORMATTING_COMMAND_EP:
             ep_fmt_cmd();
             break;
-        case 21:
+        case FORMATTING_COMMAND_LJ:
             lj_fmt_cmd();
             break;
-        case 22:
+        case FORMATTING_COMMAND_PB:
             pb_fmt_cmd();
             break;
     }
@@ -2551,12 +2546,12 @@ static void print_loop(addr_t ptr5)
         // c8f6e:
     c8f6e_l:
         //     jsr lookup_formatting_command
-        int fmt_cmd_index = lookup_formatting_command();
+        enum formatting_command fmt_cmd_index = lookup_formatting_command();
         //     bmi c8f7a
         if (fmt_cmd_index == NO_FORMATTING_COMMAND)
             goto c8f7a_l;
         //     jsr execute_formatting_command
-        if (execute_formatting_command((uint8_t)fmt_cmd_index))
+        if (execute_formatting_command(fmt_cmd_index))
             goto c8f6b_l;
         //     beq c8f6b
         // c8fce_thunk:
