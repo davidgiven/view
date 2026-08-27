@@ -46,8 +46,7 @@ typedef enum
 #define JMP_CLI 1
 #define JMP_EDITOR 2
 
-// 6502 CPU register globals
-extern uint8_t a, x, y;
+// 6502 CPU register globals (a, x, y) removed — all functions now use locals.
 
 // Encapsulates the scan-offset scratch value (the 6502's Y register) that
 // the line-navigation helpers pass between themselves and their callers.

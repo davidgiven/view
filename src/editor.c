@@ -32,7 +32,7 @@ void adjust_pointers(addr_t tmp45, addr_t tmp67);
 static bool advance_to_next_doc_line(void);
 void beep(void);
 bool scan_document_for_next_line(void);
-static uint8_t insert_line_into_document(addr_t ptr);
+static void insert_line_into_document(addr_t ptr);
 static void update_line_length(void);
 void clamp_ptr6_to_document(void);
 void clear_screen(void);
@@ -66,7 +66,8 @@ void show_memory_full_error(void);
 void adjust_area_pointers(addr_t tmp67);
 static void append_to_output_buffer(uint8_t a);
 uint8_t upper_case_unless_folding(uint8_t a);
-static bool process_char_for_output(uint8_t y, bool carry_in, uint8_t* x);
+static bool process_char_for_output(
+    uint8_t y, bool carry_in, uint8_t* x, uint8_t* a);
 format_result_t format_paragraph(void);
 static bool find_next_word_boundary(uint8_t y);
 static bool insert_character_into_edit_buffer(uint8_t a);
@@ -106,13 +107,13 @@ static uint8_t control_key_to_ascii(uint8_t a);
 
 static void delete_edit_buffer_bytes_at_xpos(uint8_t x);
 
-static uint8_t enter_printable_character(void);
+static void enter_printable_character(void);
 
 static int prompt_for_marker(void);
 
 static bool reset_area_to_marks_1_2(void);
 
-static uint8_t insert_line_at_cursor(addr_t ptr);
+static void insert_line_at_cursor(addr_t ptr);
 
 static void move_to_previous_line(void);
 
@@ -226,6 +227,7 @@ void run_editor(void)
 
 void editor_loop_impl(void)
 {
+    uint8_t a, x;
     // editor_loop_impl
 
     screen_enter();
@@ -319,8 +321,8 @@ void editor_loop_impl(void)
                 goto c9b6a_;
 
             //     sty xpos
-
-            xpos = y;
+            // (the 6502's Y holds the line length from get_line_length)
+            xpos = line_len;
 
             //     bvc c9b84 ; ALWAYS branch
 
@@ -436,8 +438,7 @@ void editor_loop_impl(void)
         l0038 = a;
 
         //     tay
-
-        y = a;
+        // (dead in the C translation: Y is reloaded by the key handlers)
 
         //     bmi c9bbb  ; omitted to support high-bit control characters
 
@@ -455,7 +456,7 @@ void editor_loop_impl(void)
         //     bcc enter_printable_character
         if (a < 0x7f)
         {
-            a = enter_printable_character();
+            enter_printable_character();
             goto editor_loop;
         }
 
@@ -469,7 +470,7 @@ void editor_loop_impl(void)
                 goto editor_loop;
 
             case CTRL('M'):
-                x = return_key();
+                return_key();
                 goto editor_loop;
 
             case 0x7f:
@@ -801,8 +802,8 @@ static void cf7_join_lines_key(void)
     //     beq c9eda
 
     //     jsr check_for_command_prefix
-
-    command_prefix_t cp = check_for_command_prefix(a);
+    // (find_next_line leaves the byte after the CR at ram[tmp01 + y])
+    command_prefix_t cp = check_for_command_prefix(ram[tmp01 + y]);
 
     //     beq c9eda
 
@@ -2462,7 +2463,7 @@ static void q_command_key(void)
     return;
 }
 
-uint8_t return_key(void)
+void return_key(void)
 {
     addr_t tmp01;
     uint8_t y;
@@ -2491,7 +2492,7 @@ uint8_t return_key(void)
     if (!find_next_line(current_line_ptr, &tmp01, &y))
     {
         advance_current_line_pointer();
-        return x;
+        return;
     }
     //     bne c9d9b
 
@@ -2507,12 +2508,12 @@ uint8_t return_key(void)
 
     //     jsr sub_c9de1
 
-    x = insert_line_at_cursor(sum);
+    insert_line_at_cursor(sum);
 
     //     // falls through to c9d9b
 
     advance_current_line_pointer();
-    return x;
+    return;
 }
 
 // c9de3: Insert-line entry point used by cf6_split_line_key.
@@ -2648,6 +2649,7 @@ static void sf13_right_key(void)
 {
     addr_t tmp01;
     uint8_t a;
+    uint8_t x;
     uint8_t y;
     // sf13_right_key
 
@@ -2775,6 +2777,7 @@ loop_c9ff8:
         if (y >= line_len)
             goto ca00f;
         //     jsr process_current_document_character
+        uint8_t x;
         a = process_current_document_character(tmp01, &x, &y, &is_tab);
         //     cmp #0x20 ; ' '
         if (a != 0x20)
@@ -2790,6 +2793,7 @@ loop_c9ff8:
         if (y >= line_len)
             goto ca00f;
         //     jsr process_current_document_character
+        uint8_t x;
         a = process_current_document_character(tmp01, &x, &y, &is_tab);
         //     cmp #0x20 ; ' '
         if (a == 0x20)
@@ -3495,22 +3499,23 @@ cae98:
     return;
 }
 
-static uint8_t enter_printable_character(void)
+static void enter_printable_character(void)
 {
     addr_t tmp45;
     addr_t tmp67;
+    uint8_t x;
     // enter_printable_character
     // enter_printable_character:
     //     ldy xpos
     uint8_t y = xpos;
     //     cpy #0x84
     if (y >= MAX_LINE_LENGTH)
-        return a;
+        return;
     //     inc l006d
     edit_buffer_dirty_flag++;
     //     jsr sub_caef4
     if (adjust_margins_at_left_margin())
-        return a;
+        return;
     //     bcs c9bca
     //     lda current_edit_line_ptr
     tmp67 = RAM_EDIT_BUFFER;
@@ -3532,7 +3537,7 @@ static uint8_t enter_printable_character(void)
     if (x != 0)
         goto c9c00;
     //     lda (current_edit_line_ptr),y
-    a = ram[RAM_EDIT_BUFFER + y];
+    uint8_t a = ram[RAM_EDIT_BUFFER + y];
     //     cmp #9
     //     beq c9c00
     if (a == 9)
@@ -3549,14 +3554,15 @@ c9c00:
     //     jsr insert_edit_buffer_bytes_at_xpos
     if (!insert_edit_buffer_bytes_at_xpos(1))
     {
-        return a; // bcs c9c7f
+        return; // bcs c9c7f
     }
     // c9c09:
 c9c09:
     //     lda l0038
     a = l0038;
     //     sta (current_edit_line_ptr),y
-    ram[RAM_EDIT_BUFFER + y] = a;
+    // (the 6502 left y = the insert position, i.e. xpos)
+    ram[RAM_EDIT_BUFFER + xpos] = a;
     //     ldy l0074
     y = l0074;
     //     bne c9c14
@@ -3665,7 +3671,7 @@ c9c56:
     //     cmp #0x20 ; ' '
     //     beq c9c7f
     if (a == 0x20)
-        return a;
+        return;
     //     lda ruler_right_stop
     //     beq c9c7f
     if (ruler_right_stop == 0)
@@ -3676,20 +3682,20 @@ c9c56:
     //     lda format_mode_flag
     //     bne c9c7f
     if (format_mode_flag != 0)
-        return a;
+        return;
     //     lda #0
     //     sta ((uint8_t*)&tmp67)[1]
     ((uint8_t*)&tmp67)[1] = 0;
     //     tya
     //     beq c9c7f
     if (y == 0)
-        return a;
+        return;
     //     dey
     y--;
     //     cpy ruler_right_stop
     //     bcs c9c82
     if (y < ruler_right_stop)
-        return a;
+        return;
     // c9c82: (4202)
     //     jsr get_line_length (4203)
     l0083 = get_line_length();
@@ -3703,7 +3709,6 @@ c9c56:
     //     jsr draw_previous_word (4209)
     uint8_t word_boundary;
     bool is_start_of_line;
-    uint8_t x;
     draw_previous_word(&word_boundary, &is_start_of_line, &x);
     //     jsr sub_ca608 (4210)
     recalculate_cursor_xpos();
@@ -3888,12 +3893,12 @@ c9d30:
     //     jsr ca741
     clamp_ptr6_to_document();
     //     jsr return_key
-    x = return_key();
+    return_key();
     //     lda top_margin
     //     sta xpos
     xpos = top_margin;
     //     jmp editor_loop
-    return a;
+    return;
 }
 
 // MULTIPLE ENTRY POINTS: sf1_swap_case_key, f13_right_key
@@ -3971,16 +3976,13 @@ cad45:
     return true;
 }
 
-static uint8_t insert_line_at_cursor(addr_t ptr)
+static void insert_line_at_cursor(addr_t ptr)
 {
-    uint8_t x;
-
     // sub_c9de1:
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     falls through to c9de3
-    x = insert_line_into_document(ptr);
-    return x;
+    insert_line_into_document(ptr);
 }
 
 static void move_to_previous_line(void)
@@ -4398,6 +4400,7 @@ caf31:
 bool insert_edit_buffer_bytes_at_xpos(uint8_t x)
 {
     uint8_t a;
+    uint8_t y;
 
     // insert_edit_buffer_bytes_at_xpos
     // insert_edit_buffer_bytes_at_xpos: Inserts bytes at cursor position,
@@ -5121,7 +5124,7 @@ c8c3e:
     return true;
 }
 
-static uint8_t insert_line_into_document(addr_t ptr)
+static void insert_line_into_document(addr_t ptr)
 {
     addr_t tmp45;
     addr_t tmp67;
@@ -5137,11 +5140,11 @@ static uint8_t insert_line_into_document(addr_t ptr)
     {
         ram[tmp45] = 0x0d;
         clamp_ptr6_to_document();
-        return x;
+        return;
     }
     //     jmp ca941
     memory_full();
-    return x;
+    return;
 }
 
 static void update_line_length(void)
@@ -5570,6 +5573,7 @@ static void home_cursor(void)
 uint8_t justify_edit_buffer(addr_t ptr1)
 {
     addr_t tmp89;
+    uint8_t a;
     uint8_t y, x = 0;
 
     // Pseudocode: Word-spacing justification: distributes extra spaces between
@@ -5614,7 +5618,7 @@ c9847:
         goto c9871;
     //     clc
     //     jsr sub_c9936
-    bool is_zero = process_char_for_output(y, false, &x);
+    bool is_zero = process_char_for_output(y, false, &x, &a);
     //     beq c985c
     if (is_zero)
         goto c985c;
@@ -5635,7 +5639,7 @@ c985c:
 c9861:
     //     sec
     //     jsr sub_c9936
-    is_zero = process_char_for_output(y, true, &x);
+    is_zero = process_char_for_output(y, true, &x, &a);
     //     beq c985c
     if (is_zero)
         goto c985c;
@@ -6112,14 +6116,12 @@ ca63d:
 
 void redraw_editor(void)
 {
-    {
-    }
     // redraw_editor
     //  Ptrs:   ptr6
     // Pseudocode: Main screen update routine: scrolls, redraws lines, updates
     // status and cursor
     uint8_t saved_status_line_needs_redrawing_flag;
-    uint8_t y;
+    uint8_t a,x,y;
 
     // (the 6502 held the line being drawn in the YA register pair; use a real
     //  16-bit variable instead)
@@ -6908,7 +6910,8 @@ uint8_t upper_case_unless_folding(uint8_t a)
 }
 
 // Returns true if the resulting width accumulator is zero (the 6502's Z flag).
-static bool process_char_for_output(uint8_t y, bool carry_in, uint8_t* x)
+static bool process_char_for_output(
+    uint8_t y, bool carry_in, uint8_t* x, uint8_t* a)
 {
     // sub_c9936
     // Pseudocode: Processes a character from the edit line for output, handling
@@ -6918,38 +6921,38 @@ static bool process_char_for_output(uint8_t y, bool carry_in, uint8_t* x)
     //     ror l0083
     l0083 = (l0083 >> 1) | (carry_in ? 0x80 : 0);
     //     lda (current_edit_line_ptr),y
-    a = ram[RAM_EDIT_BUFFER + y];
+    (*a) = ram[RAM_EDIT_BUFFER + y];
     //     sta output_buffer,y
-    output_buffer[y] = a;
+    output_buffer[y] = (*a);
     //     cmp #9
-    if (a != 9)
+    if ((*a) != 9)
         goto c994a;
     //     bne c994a
     //     jsr sub_ca5ae
     {
         bool is_tab = false;
-        a = process_document_character(a, x, &is_tab);
+        (*a) = process_document_character((*a), x, &is_tab);
     }
     //     txa
-    a = *x;
+    (*a) = *x;
     //     clc
     //     adc l0039
     //     bne c995c
     // (adc with C=0 is a plain addition; Z means the result is zero)
-    a += l0039;
-    if (a != 0)
+    (*a) += l0039;
+    if ((*a) != 0)
         goto c995c;
     // c994a:
 c994a:
     //     cmp #0x0b
-    if (a != 0x0b)
+    if ((*a) != 0x0b)
         goto c9969;
     //     bne c9969
     //     lda ruler_left_stop
-    a = ruler_left_stop;
+    (*a) = ruler_left_stop;
 
     //     beq c9967
-    if (a == 0)
+    if ((*a) == 0)
         goto c9967;
     //     ldx l0039
     *x = l0039;
@@ -6960,36 +6963,36 @@ c994a:
         if (*x >= ruler_left_stop)
         {
             (*x)++;
-            a = *x;
+            (*a) = *x;
         }
     }
 c995c:
     //     sta l0039
-    l0039 = a;
+    l0039 = (*a);
     //     sty l0042
     l0042 = y;
     //     inc l0042
     l0042++;
     //     lda #0
-    a = 0;
+    (*a) = 0;
     //     sta l0046
-    l0046 = a;
+    l0046 = (*a);
     //     rts
     return true;
 
     // c9967:
 c9967:
     //     lda #0x20 ; ' '
-    a = 0x20;
+    (*a) = 0x20;
     // c9969:
 c9969:
     //     cmp #0x1b
-    if (a < 0x1b)
+    if ((*a) < 0x1b)
         goto c9967;
     //     bcc c9967
     //     cmp #0x20 ; ' '
     //     bcc return_49
-    if (a < 0x20)
+    if ((*a) < 0x20)
         return false;
     //     inc l0039
     l0039++;
@@ -7633,7 +7636,8 @@ static bool insert_character_into_edit_buffer(uint8_t a)
     if (!ok)
         return false;
     //     sta (current_edit_line_ptr),y
-    ram[RAM_EDIT_BUFFER + y] = a;
+    // (the 6502 left y = the insert position, i.e. xpos)
+    ram[RAM_EDIT_BUFFER + xpos] = a;
     //     inc l0074
     l0074++;
     // return_55:
@@ -8049,13 +8053,12 @@ static bool insert_byte_at_xpos(uint8_t y)
         if (ok)
         {
             //     ldy xpos
-            y = xpos;
             //     lda #0x0b
             a = 0x0b;
             //     sta (current_edit_line_ptr),y
-            ram[RAM_EDIT_BUFFER + y] = a;
+            // (the 6502 left y = the insert position, i.e. xpos)
+            ram[RAM_EDIT_BUFFER + xpos] = a;
             //     iny
-            y++;
         }
         // caef0:
         //     pla

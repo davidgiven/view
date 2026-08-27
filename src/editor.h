@@ -6,7 +6,7 @@
 extern void editor_loop_impl(void);
 extern void return_to_editor_loop(void);
 extern void esc_key(void);
-extern uint8_t return_key(void);
+extern void return_key(void);
 extern void f13_right_key(void);
 
 // Functions in view.c called by editor key handlers

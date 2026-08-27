@@ -8,7 +8,6 @@ typedef uint16_t addr_t;
 typedef uint16_t addr_t;
 
 extern uint8_t ram[65536];
-extern uint8_t a, x, y;
 extern addr_t tmp01;
 #define tmp0 (*((uint8_t*)&tmp01))
 #define tmp1 (*((uint8_t*)&tmp01 + 1))
@@ -67,10 +66,8 @@ int main(void)
         oshwm = 0x0800;
         ruler_index_ptr = 0;
         status_line_needs_redrawing_flag = 0;
-        a = x = y = 0;
         ruler_left_stop = ruler_right_stop = 0;
 
-        y = 0;
         push_onto_ruler_index(ruler1_addr - 3);
 
         ASSERT_EQ(0xfe,
@@ -86,7 +83,6 @@ int main(void)
     }
 
     {
-        y = 0;
         push_onto_ruler_index(ruler2_addr - 3);
 
         ASSERT_EQ(
@@ -124,7 +120,6 @@ int main(void)
     {
         oshwm = 0x0800;
         ruler_index_ptr = 0;
-        y = 0;
         push_onto_ruler_index(ruler1_addr - 3);
 
         addr_t stored = ruler_index[0x7f];
@@ -137,14 +132,12 @@ int main(void)
     {
         oshwm = 0x0800;
         ruler_index_ptr = 0;
-        a = x = y = 0;
         ruler_left_stop = ruler_right_stop = 0;
         screen_maxcolumn = 79;
 
         addr_t ruler_addr = 0x7200;
         create_default_ruler(ruler_addr);
 
-        y = 0;
         push_onto_ruler_index(ruler_addr - 3);
 
         ASSERT_EQ(0xfe, ruler_index_ptr, "%d", "ruler_index_ptr = 0xfe");
