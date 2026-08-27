@@ -3898,6 +3898,7 @@ c9d30:
 // 0-5, or MARKER_INVALID if the character read is not a valid marker.
 static int prompt_for_marker(void)
 {
+    uint8_t a;
     // Pseudocode: Prompts for a marker character and looks it up
 
     // prompt_for_marker:
@@ -6026,6 +6027,7 @@ static void recalculate_cursor_xpos(void)
     addr_t tmp01;
     uint8_t a;
     uint8_t x;
+    uint8_t y;
     // recalculate_cursor_xpos
     // Pseudocode: Recalculates cursor xpos from visual position accounting for
     // tabs and margins
@@ -8095,6 +8097,7 @@ void wipe_buffer(uint8_t a, addr_t ptr1)
 static bool write_line_back_to_document(void)
 {
     addr_t tmp45;
+    uint8_t a;
     uint8_t y;
     // write_line_back_to_document
     // sub_ca8b9:

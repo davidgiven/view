@@ -510,7 +510,9 @@ static void em_fmt_cmd(void)
     //     jsr evaluate_expression_from_fmt_cmd
     // (result returned as the 16-bit value; stored into the register)
     uint16_t reg_value;
-    evaluate_expression_from_fmt_cmd(&reg_value, &y, x);
+    // (x is the dispatch-time register value: execute_formatting_command's
+    //  ldx #0, so the register reference renders at output position 0)
+    evaluate_expression_from_fmt_cmd(&reg_value, &y, 0);
     *register_value = reg_value;
     //     ldy #0
     //     sta (((uint8_t*)&tmp01)[0]),y
@@ -529,11 +531,13 @@ static void pl_fmt_cmd(void)
     // ***************************************************************************************
     // pl_fmt_cmd:
     //     ldy #3
-    y = 3;
+    uint8_t y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y, x);
+    // (x is the dispatch-time register value: execute_formatting_command's
+    //  ldx #0, so the register reference renders at output position 0)
+    evaluate_expression_from_fmt_cmd(&value, &y, 0);
     page_length = value;
     //     sta page_length
     //     rts
@@ -549,7 +553,7 @@ static void ts_fmt_cmd(void)
     // ***************************************************************************************
     // ts_fmt_cmd:
     //     ldy #3
-    y = 3;
+    uint8_t y = 3;
     //     jsr parse_boolean_from_fmt_cmd
     //     bcs return_39 (C=1 conveyed as a true return)
     uint8_t flag_value;
@@ -560,7 +564,7 @@ static void ts_fmt_cmd(void)
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y, x);
+    evaluate_expression_from_fmt_cmd(&value, &y, 0);
     rhs_extra_margin = value;
     //     sta rhs_extra_margin
     // return_39:
@@ -576,11 +580,11 @@ static void tm_fmt_cmd(void)
     // ***************************************************************************************
     // tm_fmt_cmd:
     //     ldy #3
-    y = 3;
+    uint8_t y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y, x);
+    evaluate_expression_from_fmt_cmd(&value, &y, 0);
     top_margin = value;
     //     sta top_margin
     //     rts
@@ -595,11 +599,11 @@ static void bm_fmt_cmd(void)
     // ***************************************************************************************
     // bm_fmt_cmd:
     //     ldy #3
-    y = 3;
+    uint8_t y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y, x);
+    evaluate_expression_from_fmt_cmd(&value, &y, 0);
     bottom_margin = value;
     //     sta bottom_margin
     //     rts
@@ -614,11 +618,11 @@ static void hm_fmt_cmd(void)
     // ***************************************************************************************
     // hm_fmt_cmd:
     //     ldy #3
-    y = 3;
+    uint8_t y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y, x);
+    evaluate_expression_from_fmt_cmd(&value, &y, 0);
     header_margin = value;
     //     sta header_margin
     //     rts
@@ -633,11 +637,11 @@ static void fm_fmt_cmd(void)
     // ***************************************************************************************
     // fm_fmt_cmd:
     //     ldy #3
-    y = 3;
+    uint8_t y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y, x);
+    evaluate_expression_from_fmt_cmd(&value, &y, 0);
     footer_margin = value;
     //     sta footer_margin
     //     rts
@@ -652,11 +656,11 @@ static void lm_fmt_cmd(void)
     // ***************************************************************************************
     // lm_fmt_cmd:
     //     ldy #3
-    y = 3;
+    uint8_t y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y, x);
+    evaluate_expression_from_fmt_cmd(&value, &y, 0);
     left_margin = value;
     //     sta left_margin
     //     rts
@@ -671,11 +675,11 @@ static void ls_fmt_cmd(void)
     // ***************************************************************************************
     // ls_fmt_cmd:
     //     ldy #3
-    y = 3;
+    uint8_t y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y, x);
+    evaluate_expression_from_fmt_cmd(&value, &y, 0);
     line_spacing = value;
     //     sta line_spacing
     //     rts
@@ -692,10 +696,10 @@ static void pe_fmt_cmd(void)
     // ***************************************************************************************
     // pe_fmt_cmd:
     //     ldy #3
-    y = 3;
+    uint8_t y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y, x);
+    evaluate_expression_from_fmt_cmd(&value, &y, 0);
     threshold = value;
     //     tax
     //     beq page_eject_fmt
@@ -706,11 +710,11 @@ static void pe_fmt_cmd(void)
     }
     //     cmp l0021
     //     bcc return_40
-    if (a < l0021)
+    if (threshold < l0021)
         return;
     // (the 6502 cleared C on this exit; pe_fmt_cmd's caller never reads it)
     //     lda l0031
-    a = l0031;
+    uint8_t a = l0031;
 
     //     bne page_eject_fmt
     if (a != 0)
@@ -803,7 +807,7 @@ static void fo_fmt_cmd(void)
     // ***************************************************************************************
     // fo_fmt_cmd:
     //     ldy #3
-    y = 3;
+    uint8_t y = 3;
     //     jsr parse_boolean_from_fmt_cmd
     //     bcs return_41 (C=1 conveyed as a true return)
     uint8_t flag_value;
@@ -824,7 +828,7 @@ static void he_fmt_cmd(void)
     // ***************************************************************************************
     // he_fmt_cmd:
     //     ldy #3
-    y = 3;
+    uint8_t y = 3;
     //     jsr parse_boolean_from_fmt_cmd
     //     bcs return_42 (C=1 conveyed as a true return)
     uint8_t flag_value;
@@ -845,7 +849,7 @@ static void pb_fmt_cmd(void)
     // ***************************************************************************************
     // pb_fmt_cmd:
     //     ldy #3
-    y = 3;
+    uint8_t y = 3;
     //     jsr parse_boolean_from_fmt_cmd
     //     bcs return_43 (C=1 conveyed as a true return)
     uint8_t flag_value;
@@ -1654,8 +1658,8 @@ static void emit_to_output_buffer_callback(uint8_t digit)
         {
             l0082++;
         }
-        //     pla (restore a — but we didn't push it; keep the digit value)
-        a = digit;
+        //     pla (restore a — dead here: render_number_to_callback keeps its
+        //     own local a, so no caller reads the global a)
     }
     //     rts
     return;
@@ -1723,6 +1727,7 @@ static void set_rw_file_handle(uint8_t a)
 
 static void process_page_footer(void)
 {
+    uint8_t x;
     // c9263
     // Pseudocode: Handles page footer processing: prints footer, increments
     // page number
@@ -3005,6 +3010,7 @@ c9355:
 static void render_new_page(void)
 {
     uint8_t a;
+    uint8_t x;
     // render_new_page
     // Pseudocode: Renders a new page with headers, margins, page number prompt
 

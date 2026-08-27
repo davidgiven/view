@@ -553,7 +553,7 @@ uint8_t create_default_ruler(addr_t ruler_addr)
     //     tay                                                               ;
     //     Y=0x00
     uint8_t a;
-    y = 0;
+    uint8_t y = 0;
     // loop_cb0e7:
     for (;;)
     {

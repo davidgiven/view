@@ -467,7 +467,7 @@ int main(int argc, char* argv[])
     //     jsr system_init
     system_init();
     //     jsr initialise_document
-    a = initialise_document();
+    initialise_document();
     run_cli();
     return 0;
 }
@@ -475,23 +475,24 @@ int main(int argc, char* argv[])
 // run_editor moved to editor.c
 // sub_c8310.  *end is set if the byte is the delimiter (delimiter_char) or CR,
 // terminating the current token (the 6502's Z flag).
-static uint8_t read_next_command_byte(uint8_t y, bool* end)
+static uint8_t read_next_command_byte(uint8_t* y, bool* end)
 {
+    uint8_t a;
     // sub_c8310
     // sub_c8310:
     //     iny
-    y++;
+    (*y)++;
     //     lda input_buffer,y
-    a = input_buffer[y];
+    a = input_buffer[*y];
     //     sta l0084
-    l0084 = a;
+    // (the l0084 store is omitted — callers use the returned byte instead)
     //     cmp l007e
     //     beq return_2
     //     cmp #0x0d
     *end = (a == delimiter_char) || (a == 0x0d);
     // return_2:
     //     rts
-    return y;
+    return a;
 }
 
 void redraw_and_write_back(void)
@@ -571,6 +572,7 @@ static const uint8_t l83e0_table[] = {
 
 static uint8_t expand_escaped_string(uint8_t x, uint8_t y)
 {
+    uint8_t a;
     // expand_escaped_string
     // expand_escaped_string:
     //     stx l0083
@@ -581,7 +583,7 @@ c83a3:
     // c83a3:
     //     jsr sub_c8310
     bool end;
-    y = read_next_command_byte(y, &end);
+    a = read_next_command_byte(&y, &end);
     //     beq c83da
     if (end)
         goto c83da;
@@ -590,7 +592,7 @@ c83a3:
         goto c83ca;
     //     bne c83ca
     //     jsr sub_c8310
-    y = read_next_command_byte(y, &end);
+    a = read_next_command_byte(&y, &end);
     //     beq c83da
     if (end)
         goto c83da;
