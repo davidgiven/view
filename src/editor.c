@@ -774,6 +774,7 @@ static void cf7_join_lines_key(void)
 {
     addr_t tmp01;
     addr_t tmp45;
+    uint8_t y;
     // cf7_join_lines_key
 
     // cf7_join_lines_key: Joins current line with next line
@@ -791,7 +792,7 @@ static void cf7_join_lines_key(void)
     //     sta ((uint8_t*)&tmp01)[1]
 
     //     jsr sub_cab6e
-    if (find_next_line(current_line_ptr, &tmp01))
+    if (find_next_line(current_line_ptr, &tmp01, &y))
     {
         beep();
         return;
@@ -2464,6 +2465,7 @@ static void q_command_key(void)
 uint8_t return_key(void)
 {
     addr_t tmp01;
+    uint8_t y;
     // return_key
 
     // return_key: Carriage return: moves to next line at column 0
@@ -2486,7 +2488,7 @@ uint8_t return_key(void)
 
     //     sta ((uint8_t*)&tmp01)[1]
 
-    if (!find_next_line(current_line_ptr, &tmp01))
+    if (!find_next_line(current_line_ptr, &tmp01, &y))
     {
         advance_current_line_pointer();
         return x;
@@ -2646,6 +2648,7 @@ static void sf13_right_key(void)
 {
     addr_t tmp01;
     uint8_t a;
+    uint8_t y;
     // sf13_right_key
 
     // sf13_right_key: Moves cursor right by one word
@@ -2708,7 +2711,7 @@ c9fab:
 
     //     jsr sub_cab1a
 
-    if (advance_to_next_line(current_line_ptr, &tmp01))
+    if (advance_to_next_line(current_line_ptr, &tmp01, &y))
         return;
 
     //     beq return_58
@@ -3330,12 +3333,13 @@ static void tab_key(void)
 static void advance_current_line_pointer(void)
 {
     addr_t tmp01;
+    uint8_t y;
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     lda current_line_ptr
     //     ldy current_line_ptr+1
     //     jsr sub_cab1a
-    if (advance_to_next_line(current_line_ptr, &tmp01))
+    if (advance_to_next_line(current_line_ptr, &tmp01, &y))
         return;
     //     beq return_54
     //     tya
@@ -4049,6 +4053,7 @@ static void move_cursor_up(uint8_t x)
 static void move_cursor_down(uint8_t x)
 {
     addr_t tmp01;
+    uint8_t y;
 
     // sub_ca0af
     // (the 6502 held the candidate line in the YA register pair; use a real
@@ -4066,7 +4071,7 @@ static void move_cursor_down(uint8_t x)
     while (1)
     {
         //     jsr sub_cab1a
-        if (advance_to_next_line(line, &tmp01))
+        if (advance_to_next_line(line, &tmp01, &y))
         {
             // ca0d2:
             line = tmp01;
@@ -4791,6 +4796,7 @@ ca9f1:
 static bool advance_to_next_doc_line(void)
 {
     addr_t tmp01;
+    uint8_t y;
     // advance_to_next_line
     // c9a8d: Advance to next line in document
 
@@ -4799,7 +4805,7 @@ static bool advance_to_next_doc_line(void)
     //     lda current_line_ptr
     //     ldy current_line_ptr+1
     //     jsr sub_cab1a
-    bool end_of_document = find_next_line(current_line_ptr, &tmp01);
+    bool end_of_document = find_next_line(current_line_ptr, &tmp01, &y);
     //     sec
     //     beq c9aa5
     if (!end_of_document)
@@ -6113,6 +6119,7 @@ void redraw_editor(void)
     // Pseudocode: Main screen update routine: scrolls, redraws lines, updates
     // status and cursor
     uint8_t saved_status_line_needs_redrawing_flag;
+    uint8_t y;
 
     // (the 6502 held the line being drawn in the YA register pair; use a real
     //  16-bit variable instead)
@@ -6230,7 +6237,7 @@ ca2e6:
         goto ca313;
     // ca2f9: (5282)
     //     jsr sub_cab1a (5283)
-    if (advance_to_next_line(walk, &tmp01))
+    if (advance_to_next_line(walk, &tmp01, &y))
         goto ca313;
     //     beq ca313 (5284)
     //     tya / ldy tmp01[1] / clc / adc tmp01[0]
@@ -6284,7 +6291,7 @@ ca313:
     //     advance_to_next_line's scan; y is left holding the offset past the
     //     CR, which is what the following addition needs)
     //     jsr sub_cab1a (5320)
-    advance_to_next_line(top_of_screen_line_ptr, &tmp01);
+    advance_to_next_line(top_of_screen_line_ptr, &tmp01, &y);
     //     tya (5321)
     //     clc (5322)
     //     adc l0011 (5323)
@@ -6432,7 +6439,7 @@ ca3c1:
         //     ldy ((uint8_t*)&tmp01)[1] (5401)
         y = ((uint8_t*)&tmp01)[1];
         //     jsr sub_cab1a (5402)
-        if (advance_to_next_line(tmp01, &tmp01))
+        if (advance_to_next_line(tmp01, &tmp01, &y))
             goto ca422;
         //     beq ca422 (5403)
         //     tya (5404)

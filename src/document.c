@@ -633,7 +633,7 @@ unsigned int* get_register_address(uint8_t a)
     return &register_value_array[a - 0x41];
 }
 
-uint8_t initialise_document(void)
+void initialise_document(void)
 {
     uint8_t y;
 
@@ -741,7 +741,6 @@ uint8_t initialise_document(void)
     clear_cmd();
     //     (falls through to cb05a)
     ensure_cr_at_document_top();
-    return a;
 }
 
 // Returns the marker index 0-5, or MARKER_INVALID if the character is not a
@@ -777,6 +776,7 @@ void move_cursor_to_address(uint16_t addr)
     addr_t tmp01;
     uint8_t a;
     uint8_t x;
+    uint8_t y;
     uint8_t yy;
 
     // move_cursor_to_address
@@ -820,7 +820,7 @@ void move_cursor_to_address(uint16_t addr)
     do
     {
         //     sta ((uint8_t*)&tmp01)[0]
-        if (find_next_line(cur, &tmp01))
+        if (find_next_line(cur, &tmp01, &y))
             goto cac17;
         //     beq cac17
         //     tya
@@ -915,10 +915,10 @@ void move_cursor_to_top_of_document(void)
     load_current_ruler(0xfe);
 }
 
-// Skips to the next CR or zero terminator.  Sets the global y to the offset of
-// the byte past the CR (or of the NUL), and returns true if that byte is a NUL
-// (end of document) — the 6502's Z flag.
-bool find_next_line(addr_t start, addr_t* tmp01)
+// Skips to the next CR or zero terminator.  Sets *y to the offset of the byte
+// past the CR (or of the NUL), and returns true if that byte is a NUL (end of
+// document) — the 6502's Z flag.
+bool find_next_line(addr_t start, addr_t* tmp01, uint8_t* y)
 {
     *tmp01 = start;
     // find_next_line
@@ -927,7 +927,7 @@ bool find_next_line(addr_t start, addr_t* tmp01)
     // cab29:
     //     ldy #0
     uint8_t a;
-    y = 0;
+    *y = 0;
     // loop_cab2b:
     //     lda (((uint8_t*)&tmp01)[0]),y
     //     beq return_70
@@ -937,14 +937,14 @@ bool find_next_line(addr_t start, addr_t* tmp01)
     //     lda (((uint8_t*)&tmp01)[0]),y
     for (;;)
     {
-        a = ram[(*tmp01) + y];
+        a = ram[(*tmp01) + (*y)];
         if (a == 0)
             return true;
-        y++;
+        (*y)++;
         if (a == 0x0d)
             break;
     }
-    a = ram[(*tmp01) + y];
+    a = ram[(*tmp01) + (*y)];
     // return_70:
     //     rts
     return a == 0;
@@ -1078,7 +1078,7 @@ void reset_area_to_entire_document(void)
 // Finds the next line, handling a command/ruler prefix and pushing onto the
 // ruler index.  Returns true if the next line is the end of the document (the
 // 6502's Z flag, as left by find_next_line).
-bool advance_to_next_line(addr_t line, addr_t* tmp01)
+bool advance_to_next_line(addr_t line, addr_t* tmp01, uint8_t* y)
 {
     // Pseudocode: Finds next line in document, handling command prefix and
     // ruler stack
@@ -1090,10 +1090,10 @@ bool advance_to_next_line(addr_t line, addr_t* tmp01)
     // (inlined: Z = (ram[tmp01] == RULER_BYTE))
     if (ram[line] != RULER_BYTE)
     {
-        return find_next_line(line, tmp01);
+        return find_next_line(line, tmp01, y);
     }
     //     jsr cab29
-    bool end = find_next_line(line, tmp01);
+    bool end = find_next_line(line, tmp01, y);
     //     bne push_onto_ruler_stack
     if (!end)
     {

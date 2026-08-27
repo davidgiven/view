@@ -31,7 +31,7 @@ extern uint8_t get_byte_from_file(void);
 
 extern unsigned int* get_register_address(uint8_t a);
 
-extern uint8_t initialise_document(void);
+extern void initialise_document(void);
 
 enum marker_lookup_result_t
 {
@@ -44,7 +44,7 @@ extern void move_cursor_to_address(uint16_t addr);
 
 extern void move_cursor_to_top_of_document(void);
 
-extern bool find_next_line(addr_t start, addr_t* tmp01);
+extern bool find_next_line(addr_t start, addr_t* tmp01, uint8_t* y);
 
 extern bool find_previous_line(addr_t val, addr_t* tmp01);
 
@@ -58,6 +58,6 @@ extern void push_onto_ruler_index(addr_t tmp01);
 
 extern void reset_area_to_entire_document(void);
 
-extern bool advance_to_next_line(addr_t line, addr_t* tmp01);
+extern bool advance_to_next_line(addr_t line, addr_t* tmp01, uint8_t* y);
 
 #endif
