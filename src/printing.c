@@ -21,10 +21,10 @@ void bad_filename_error(void);
 static void set_rw_file_handle(uint8_t a);
 static void process_page_footer(void);
 static void print_output_buffer(void);
-static uint8_t scan_string_length(uint8_t y_start, addr_t tmp45);
+static uint8_t scan_string_length(uint8_t y_start, uint8_t* tmp45);
 void check_not_continuous_editing(void);
 void display_not_enough_memory(void);
-static void microspace_word_processor(void);
+static void microspace_word_processor(uint8_t* y);
 static void nested_macro_error(void);
 bool parse_decimal_number(int* value, uint8_t* y);
 bool parse_optional_filename_from_command(struct scan_state* scan);
@@ -34,7 +34,7 @@ static void print_loop(addr_t ptr5);
 static void print_newline(void);
 static void print_vertical_space(uint8_t x);
 read_block_status_t read_block_from_file(addr_t* cursor, addr_t limit);
-static void render_header_or_footer(uint16_t yx);
+static void render_header_or_footer(uint8_t* tmp45);
 static void render_new_page(void);
 bool scan_input_buffer(struct scan_state* state);
 static void start_microspacing_if_active(uint8_t a);
@@ -43,12 +43,12 @@ static addr_t prepare_output_line(addr_t read_limit, addr_t* macro_cursor);
 static enum parse_register_result_t parse_register_reference(uint8_t a);
 static read_block_status_t read_next_output_line(addr_t limit, addr_t* cursor);
 static void compute_lines_remaining_on_page(void);
-static addr_t compute_header_left_section(addr_t tmp45);
-static addr_t compute_header_middle_section(addr_t tmp45);
-static addr_t compute_header_odd_page_section(addr_t tmp45);
-static uint8_t get_line_width(addr_t tmp45);
+static uint8_t* compute_header_left_section(uint8_t* tmp45);
+static uint8_t* compute_header_middle_section(uint8_t* tmp45);
+static uint8_t* compute_header_odd_page_section(uint8_t* tmp45);
+static uint8_t get_line_width(uint8_t* tmp45);
 static uint8_t get_right_margin(void);
-static void copy_header_footer_text(addr_t tmp23);
+static uint8_t copy_header_footer_text(uint8_t* tmp23);
 static bool get_page_parity(void);
 static void output_left_margin(void);
 static uint8_t add_justification_spaces(uint8_t x);
@@ -78,8 +78,8 @@ enum parse_register_result_t
 };
 
 enum formatting_command lookup_formatting_command(void);
-static void store_to_output_buffer(uint8_t a, addr_t tmp23);
-static uint8_t process_header_footer_line(uint8_t x, uint8_t y);
+static void store_to_output_buffer(uint8_t a, uint8_t* tmp23);
+static uint8_t process_header_footer_line(uint8_t* tmp23);
 static void write_output_buffer_to_format_line(uint8_t a);
 void render_register(uint8_t a, uint8_t x);
 static void render_number_to_output_buffer(uint16_t value, uint8_t start_x);
@@ -359,7 +359,7 @@ c955e:
     goto c9537;
 }
 
-static void store_to_output_buffer(uint8_t a, addr_t tmp23)
+static void store_to_output_buffer(uint8_t a, uint8_t* tmp23)
 {
     // sub_c95b2
     // sub_c95b2:
@@ -367,20 +367,21 @@ static void store_to_output_buffer(uint8_t a, addr_t tmp23)
     uint8_t y;
     y = l0081;
     //     sta (((uint8_t*)&tmp23)[0]),y
-    ram[tmp23 + y] = a;
+    tmp23[y] = a;
     //     iny
     y++;
     //     sty l0081
     l0081 = y;
 }
 
-static uint8_t process_header_footer_line(uint8_t x, uint8_t y)
+static uint8_t process_header_footer_line(uint8_t* tmp23)
 {
     uint8_t a;
+    uint8_t y;
+    uint8_t x;
 
     // c9575
-    //     stx ((uint8_t*)&tmp23)[0]
-    addr_t tmp23 = (addr_t)(y) << 8 | x;
+    // (the 6502 passed the buffer address in YX; the C passes it directly)
     //     lda #0
     //     sta l0081
     l0081 = 0;
@@ -448,9 +449,6 @@ c95aa:
 
 static void df_fmt_cmd(void)
 {
-    uint8_t x;
-    uint8_t y;
-
     // Pseudocode: Stores footer text (shared code with dh_fmt_cmd)
 
     // ;
@@ -458,17 +456,11 @@ static void df_fmt_cmd(void)
     // df_fmt_cmd:
     //     ldx #<(footer_text_maybe)
     //     ldy #>(footer_text_maybe)
-    x = (uintptr_t)footer_text_maybe & 0xff;
-    y = (uintptr_t)footer_text_maybe >> 8;
-    process_header_footer_line(x, y);
+    process_header_footer_line(footer_text_maybe);
 }
 
 static void dh_fmt_cmd(void)
 {
-    uint8_t y;
-
-    uint8_t x;
-
     // Pseudocode: Stores header text (shared code with df_fmt_cmd)
 
     // ;
@@ -478,9 +470,7 @@ static void dh_fmt_cmd(void)
     //     ldy #>(header_text_maybe)
     //     bne c9575                                                         ;
     //     ALWAYS branch
-    x = (uintptr_t)header_text_maybe & 0xff;
-    y = (uintptr_t)header_text_maybe >> 8;
-    process_header_footer_line(x, y);
+    process_header_footer_line(header_text_maybe);
 }
 
 static void em_fmt_cmd(void)
@@ -1753,11 +1743,8 @@ static void process_page_footer(void)
     //     beq c927c
     if (a != 0)
     {
-        // (address in YX registers: x = low byte, y = high byte;
-        //  passed explicitly as the yx parameter)
-        x = (uint8_t)((uintptr_t)footer_text_maybe & 0xff);
-        uint8_t y = (uint8_t)((uintptr_t)footer_text_maybe >> 8);
-        render_header_or_footer((uint16_t)(y) << 8 | x);
+        // (the 6502 passed the buffer address in YX; the C passes it directly)
+        render_header_or_footer(footer_text_maybe);
     }
     //     jsr print_newline
     print_newline();
@@ -1818,7 +1805,7 @@ static void print_output_buffer(void)
     //     rts
 }
 
-static uint8_t scan_string_length(uint8_t y_start, addr_t tmp45)
+static uint8_t scan_string_length(uint8_t y_start, uint8_t* tmp45)
 {
     // c93b8:
     //     iny
@@ -1829,7 +1816,7 @@ static uint8_t scan_string_length(uint8_t y_start, addr_t tmp45)
     do
     {
         y++;
-        a = ram[tmp45 + y];
+        a = tmp45[y];
     } while ((int8_t)a >= 0);
     return y;
     //     rts
@@ -1877,7 +1864,7 @@ void display_not_enough_memory(void)
     // display_not_enough_memory
 }
 
-static void microspace_word_processor(void)
+static void microspace_word_processor(uint8_t* y)
 {
     uint8_t a;
     uint8_t x;
@@ -1920,7 +1907,7 @@ c9048:
     {
         uint8_t saved_a = a;
         //     lda (((uint8_t*)&tmp01)[0]),y
-        a = ram[tmp01 + y];
+        a = ram[tmp01 + (*y)];
         //     jsr sub_c9431
         convert_char_for_printing(a, &x, &is_tab);
         //     pla
@@ -1929,9 +1916,9 @@ c9048:
     //     tax
     x = a;
     //     lda (((uint8_t*)&tmp01)[0]),y
-    a = ram[tmp01 + y];
+    a = ram[tmp01 + (*y)];
     //     iny
-    y++;
+    (*y)++;
     //     cmp #0x1a
     if (a != 0x1a)
         goto c906f;
@@ -2176,15 +2163,15 @@ c9101:
     tmp89 = tmp89 / l0046;
     l0044 = (uint8_t)tmp89;
     //     ldy #0
-    y = 0;
+    (*y) = 0;
     //     sty l0039
-    l0039 = y;
+    l0039 = (*y);
     // c912b:
 c912b:
     //     lda output_buffer,y
-    a = output_buffer[y];
+    a = output_buffer[(*y)];
     //     iny
-    y++;
+    (*y)++;
     //     jsr sub_c9431
     a = convert_char_for_printing(a, &x, &is_tab);
     //     pha
@@ -2259,8 +2246,8 @@ c912b:
 c8fe6_inline:
     do
     {
-        a = ram[tmp01 + y];
-        y++;
+        a = ram[tmp01 + (*y)];
+        (*y)++;
         a = convert_char_for_printing(a, &x, &is_tab);
         print_char_x_times(a, x);
     } while (a != 0x0d);
@@ -2482,6 +2469,7 @@ static void print_loop(addr_t ptr5)
 {
     uint8_t a;
     uint8_t x;
+    uint8_t y;
     addr_t ptr3 = 0; // set before first use (macro start); 0 placates GCC's
                      // cross-function uninitialised analysis
     struct macro* macro;
@@ -2672,7 +2660,7 @@ static void print_loop(addr_t ptr5)
 
             if (a != 0)
             {
-                microspace_word_processor();
+                microspace_word_processor(&y);
                 continue;
             }
         }
@@ -2870,9 +2858,10 @@ c8cf2:
     //     rts
 }
 
-static void render_header_or_footer(uint16_t yx)
+static void render_header_or_footer(uint8_t* text)
 {
     uint8_t a;
+    uint8_t x;
     // render_header_or_footer
     // Pseudocode: Renders header or footer text with centering and
     // justification
@@ -2881,13 +2870,12 @@ static void render_header_or_footer(uint16_t yx)
     // ***************************************************************************************
     // render_header_or_footer:
     // (address passed in YX: high byte in y, low byte in x)
-    tmp45 = yx;
     //     ldy #0
     //     sty l0082
     //     lda (((uint8_t*)&tmp45)[0]),y
     // (y is 0 throughout, so the first header/footer text byte is read
     // directly)
-    a = ram[tmp45];
+    a = text[0];
     //     beq return_28
     if (a == 0)
         return;
@@ -2898,22 +2886,22 @@ static void render_header_or_footer(uint16_t yx)
     //     sta l0039
     l0039 = a;
     //     jsr sub_c9393
-    addr_t section_start = compute_header_left_section(tmp45);
+    uint8_t* section_start = compute_header_left_section(text);
     //     jsr sub_c93fd
     bool parity = get_page_parity();
     //     bcs c932e
     if (!parity)
     {
-        section_start = compute_header_odd_page_section(tmp45);
+        section_start = compute_header_odd_page_section(text);
     }
     //     jsr sub_c93c8
     copy_header_footer_text(section_start);
     //     jsr c937b
     print_output_buffer();
     //     jsr sub_c939b
-    section_start = compute_header_middle_section(tmp45);
+    section_start = compute_header_middle_section(text);
     //     jsr sub_c93c8
-    copy_header_footer_text(section_start);
+    x = copy_header_footer_text(section_start);
     //     txa
     a = x;
     //     beq c9355
@@ -2953,16 +2941,16 @@ c9355:
     //     jsr c937b
     print_output_buffer();
     //     jsr sub_c93a1
-    section_start = compute_header_odd_page_section(tmp45);
+    section_start = compute_header_odd_page_section(text);
     //     jsr sub_c93fd
     bool parity2 = get_page_parity();
     //     bcs c9363
     if (!parity2)
     {
-        section_start = compute_header_left_section(tmp45);
+        section_start = compute_header_left_section(text);
     }
     //     jsr sub_c93c8
-    copy_header_footer_text(section_start);
+    x = copy_header_footer_text(section_start);
     //     jsr sub_c93be
     a = get_right_margin();
     //     beq c937b
@@ -3085,11 +3073,8 @@ c92d4:
     //     beq c92e8
     if (a != 0)
     {
-        // (address in YX registers: x = low byte, y = high byte;
-        //  passed explicitly as the yx parameter)
-        x = (uint8_t)((uintptr_t)header_text_maybe & 0xff);
-        uint8_t y = (uint8_t)((uintptr_t)header_text_maybe >> 8);
-        render_header_or_footer((uint16_t)(y) << 8 | x);
+        // (the 6502 passed the buffer address in YX; the C passes it directly)
+        render_header_or_footer(header_text_maybe);
     }
     //     jsr print_newline
     print_newline();
@@ -3581,10 +3566,10 @@ c930d:
     return;
 }
 
-static addr_t compute_header_left_section(addr_t tmp45)
+static uint8_t* compute_header_left_section(uint8_t* tmp45)
 {
     uint8_t a;
-    addr_t tmp23;
+    uint8_t* tmp23;
 
     // sub_c9393:
     //     jsr sub_c93b6
@@ -3605,11 +3590,11 @@ static addr_t compute_header_left_section(addr_t tmp45)
     return tmp23;
 }
 
-static addr_t compute_header_middle_section(addr_t tmp45)
+static uint8_t* compute_header_middle_section(uint8_t* tmp45)
 {
     uint8_t y;
 
-    addr_t tmp23;
+    uint8_t* tmp23;
 
     // sub_c939b:
     //     jsr sub_c93b6
@@ -3630,7 +3615,7 @@ static addr_t compute_header_middle_section(addr_t tmp45)
     return tmp23;
 }
 
-static addr_t compute_header_odd_page_section(addr_t tmp45)
+static uint8_t* compute_header_odd_page_section(uint8_t* tmp45)
 {
     uint8_t a;
 
@@ -3639,7 +3624,7 @@ static addr_t compute_header_odd_page_section(addr_t tmp45)
     //     jsr c93b8
     // c93a7:
     uint8_t y = scan_string_length(get_line_width(tmp45), tmp45);
-    addr_t tmp23;
+    uint8_t* tmp23;
     y++;
     a = y;
     y--;
@@ -3656,7 +3641,7 @@ static addr_t compute_header_odd_page_section(addr_t tmp45)
     return tmp23;
 }
 
-static uint8_t get_line_width(addr_t tmp45)
+static uint8_t get_line_width(uint8_t* tmp45)
 {
     // sub_c93b6:
     //     ldy #0xff
@@ -3679,9 +3664,10 @@ static uint8_t get_right_margin(void)
     return l003a - 1;
 }
 
-static void copy_header_footer_text(addr_t tmp23)
+static uint8_t copy_header_footer_text(uint8_t* text)
 {
     uint8_t a;
+    uint8_t x = 0;
     uint8_t y = 0;
 
     // sub_c93c8
@@ -3690,64 +3676,62 @@ static void copy_header_footer_text(addr_t tmp23)
 
     // sub_c93c8:
     //     ldx #0
-    x = 0;
     //     ldy #0
-    // (Z from ldy #0 is clobbered by the following lda (tmp23),y)
+    // (Z from ldy #0 is clobbered by the following lda (text),y)
     y = 0;
     //     sty l0081
-    l0081 = y;
+    int l0081 = y;
     // c93ce:
-c93ce:
-    //     lda (((uint8_t*)&tmp23)[0]),y
-    a = ram[tmp23 + y];
-    if ((int8_t)a < 0)
-        goto c93e6;
-    //     jsr check_for_control_code
-    control_code_t cc = check_for_control_code(a);
-    //     bne c93d9
-    if (cc != NO_CONTROL_CODE)
+    for (;;)
     {
-        l0081++;
-    }
-    //     iny
-    y++;
-    //     cmp #0x7c ; '|'
-    if (a == 0x7c)
-        goto c93f2;
-    //     sta output_buffer,x
-    output_buffer[x] = a;
-    //     inx
-    x++;
-    //     cpx #MAX_LINE_LENGTH
-    if (x < MAX_LINE_LENGTH)
-        goto c93ce;
-    // c93e6:
-c93e6:
-    //     stx l0084
-    l0084 = x;
-    //     lda print_flags
-    a = print_flags;
-    if (((int8_t)a < 0))
-    {
-        a = x;
-        a -= l0081;
-        x = a;
-    }
-    //     rts
-    return;
+        //     lda (((uint8_t*)&text)[0]),y
+        a = text[y];
+        if ((int8_t)a < 0)
+            goto c93e6;
+        //     jsr check_for_control_code
+        control_code_t cc = check_for_control_code(a);
+        //     bne c93d9
+        if (cc != NO_CONTROL_CODE)
+            l0081++;
+        //     iny
+        y++;
+        //     cmp #0x7c ; '|'
+        if (a == 0x7c)
+            goto c93f2;
+        //     sta output_buffer,x
+        output_buffer[x] = a;
+        //     inx
+        x++;
+        //     cpx #MAX_LINE_LENGTH
+        if (x < MAX_LINE_LENGTH)
+            continue;
+        // c93e6:
+    c93e6:
+        //     stx l0084
+        l0084 = x;
+        //     lda print_flags
+        a = print_flags;
+        if (((int8_t)a < 0))
+        {
+            a = x;
+            a -= l0081;
+            x = a;
+        }
+        //     rts
+        return x;
 
-    // c93f2:
-c93f2:
-    //     lda (((uint8_t*)&tmp23)[0]),y
-    a = ram[tmp23 + y];
-    if ((int8_t)a < 0)
-        goto c93e6;
-    //     iny
-    y++;
-    //     jsr render_register
-    render_register(a, x);
-    //     jmp c93ce
-    goto c93ce;
+        // c93f2:
+    c93f2:
+        //     lda (((uint8_t*)&text)[0]),y
+        a = text[y];
+        if ((int8_t)a < 0)
+            goto c93e6;
+        //     iny
+        y++;
+        //     jsr render_register
+        render_register(a, x);
+        //     jmp c93ce
+    }
 }
 
 static bool get_page_parity(void)
