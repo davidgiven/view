@@ -65,7 +65,8 @@ static void write_output_buffer_to_format_line(uint8_t a);
 static bool parse_word_flag(addr_t ptr, uint8_t* y, uint8_t* value);
 static bool parse_boolean_from_fmt_cmd(uint8_t* y, uint8_t* value);
 static void page_eject_fmt(void);
-static bool evaluate_expression_from_fmt_cmd(uint16_t* result, uint8_t* y);
+static bool evaluate_expression_from_fmt_cmd(
+    uint16_t* result, uint8_t* y, uint8_t x);
 static uint8_t get_current_fmt_cmd_byte(uint8_t* y);
 static uint8_t get_next_fmt_cmd_byte(uint8_t* y);
 
@@ -509,7 +510,7 @@ static void em_fmt_cmd(void)
     //     jsr evaluate_expression_from_fmt_cmd
     // (result returned as the 16-bit value; stored into the register)
     uint16_t reg_value;
-    evaluate_expression_from_fmt_cmd(&reg_value, &y);
+    evaluate_expression_from_fmt_cmd(&reg_value, &y, x);
     *register_value = reg_value;
     //     ldy #0
     //     sta (((uint8_t*)&tmp01)[0]),y
@@ -532,7 +533,7 @@ static void pl_fmt_cmd(void)
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y);
+    evaluate_expression_from_fmt_cmd(&value, &y, x);
     page_length = value;
     //     sta page_length
     //     rts
@@ -559,7 +560,7 @@ static void ts_fmt_cmd(void)
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y);
+    evaluate_expression_from_fmt_cmd(&value, &y, x);
     rhs_extra_margin = value;
     //     sta rhs_extra_margin
     // return_39:
@@ -579,7 +580,7 @@ static void tm_fmt_cmd(void)
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y);
+    evaluate_expression_from_fmt_cmd(&value, &y, x);
     top_margin = value;
     //     sta top_margin
     //     rts
@@ -598,7 +599,7 @@ static void bm_fmt_cmd(void)
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y);
+    evaluate_expression_from_fmt_cmd(&value, &y, x);
     bottom_margin = value;
     //     sta bottom_margin
     //     rts
@@ -617,7 +618,7 @@ static void hm_fmt_cmd(void)
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y);
+    evaluate_expression_from_fmt_cmd(&value, &y, x);
     header_margin = value;
     //     sta header_margin
     //     rts
@@ -636,7 +637,7 @@ static void fm_fmt_cmd(void)
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y);
+    evaluate_expression_from_fmt_cmd(&value, &y, x);
     footer_margin = value;
     //     sta footer_margin
     //     rts
@@ -655,7 +656,7 @@ static void lm_fmt_cmd(void)
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y);
+    evaluate_expression_from_fmt_cmd(&value, &y, x);
     left_margin = value;
     //     sta left_margin
     //     rts
@@ -674,7 +675,7 @@ static void ls_fmt_cmd(void)
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y);
+    evaluate_expression_from_fmt_cmd(&value, &y, x);
     line_spacing = value;
     //     sta line_spacing
     //     rts
@@ -683,7 +684,7 @@ static void ls_fmt_cmd(void)
 
 static void pe_fmt_cmd(void)
 {
-    uint8_t x;
+    uint8_t threshold;
     // pe_fmt_cmd
     // Pseudocode: Forces page eject if remaining lines are less than value
 
@@ -694,11 +695,11 @@ static void pe_fmt_cmd(void)
     y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y);
-    x = value;
+    evaluate_expression_from_fmt_cmd(&value, &y, x);
+    threshold = value;
     //     tax
     //     beq page_eject_fmt
-    if (x == 0)
+    if (threshold == 0)
     {
         page_eject_fmt();
         return;
@@ -1043,7 +1044,7 @@ c9716:
 c9719:
     //     jsr evaluate_expression_from_fmt_cmd
     uint16_t value;
-    evaluate_expression_from_fmt_cmd(&value, &y);
+    evaluate_expression_from_fmt_cmd(&value, &y, x);
     a = value;
     //     sec
     //     sbc #1
@@ -1064,7 +1065,7 @@ c9725:
     uint8_t saved_a = a;
     //     jsr evaluate_expression_from_fmt_cmd
     addr_t highlight_value;
-    evaluate_expression_from_fmt_cmd(&highlight_value, &y);
+    evaluate_expression_from_fmt_cmd(&highlight_value, &y, x);
     //     pla
     a = saved_a;
     //     tax
@@ -1423,7 +1424,8 @@ c97ae:
 // path, and the return value is true when a term was parsed, false when
 // the argument was empty (the line byte at *y was nul, leaving the value
 // at its initialised 0).
-static bool evaluate_expression_from_fmt_cmd(uint16_t* result, uint8_t* y)
+static bool evaluate_expression_from_fmt_cmd(
+    uint16_t* result, uint8_t* y, uint8_t x)
 {
     uint8_t count;
     addr_t tmp45 = 0;
@@ -1444,102 +1446,102 @@ static bool evaluate_expression_from_fmt_cmd(uint16_t* result, uint8_t* y)
     // ***************************************************************************************
     // evaluate_expression_from_fmt_cmd:
     //     lda #0
-    a = 0;
+    uint8_t a = 0;
     //     sta ((uint8_t*)&tmp89)[0]
     //     sta ((uint8_t*)&tmp89)[1]
     tmp89 = 0;
     //     sta input_buffer_offset+1
     l0080 = a;
     // c97c0:
-c97c0:
-    //     jsr get_current_fmt_cmd_byte
-    a = get_current_fmt_cmd_byte(y);
-    //     beq c9821
-    if (a == 0)
+    for (;;)
     {
-        // empty argument: nothing parsed (the 6502 just returned tmp89=0)
-        *result = tmp89;
-        return false;
-    }
-    //     cmp #0x7c ; '|'
-    if (a != 0x7c)
-        goto c97d5;
-    //     jsr get_next_fmt_cmd_byte
-    a = get_next_fmt_cmd_byte(y);
-    //     beq c9821
-    if (a == 0)
-        goto c9821;
-    //     iny
-    (*y)++;
-    //     jsr render_register
-    render_register(a, x);
-    //     jmp c97dc
-    goto c97dc;
+        //     jsr get_current_fmt_cmd_byte
+        a = get_current_fmt_cmd_byte(y);
+        //     beq c9821
+        if (a == 0)
+        {
+            // empty argument: nothing parsed (the 6502 just returned tmp89=0)
+            *result = tmp89;
+            return false;
+        }
+        //     cmp #0x7c ; '|'
+        if (a == 0x7c)
+        {
+            //     jsr get_next_fmt_cmd_byte
+            a = get_next_fmt_cmd_byte(y);
+            //     beq c9821
+            if (a == 0)
+                goto c9821;
+            //     iny
+            (*y)++;
+            //     jsr render_register
+            render_register(a, x);
+            //     jmp c97dc
+        }
+        else
+        {
 
-    // c97d5:
-c97d5:
-    //     jsr ca6fe
-    int parsed;
-    parse_decimal_number(&parsed, y);
-    tmp89 = (addr_t)parsed;
-    // c97dc:
-c97dc:
-    //     ldx input_buffer_offset+1
-    count = l0080;
+            // c97d5:
+            //     jsr ca6fe
+            int parsed;
+            parse_decimal_number(&parsed, y);
+            tmp89 = (addr_t)parsed;
+            // c97dc:
+        }
+        //     ldx input_buffer_offset+1
+        count = l0080;
 
-    //     beq c9804
-    if (count == 0)
+        //     beq c9804
+        if (count == 0)
+            goto c9804;
+        //     lda #0
+        a = 0;
+        //     sta input_buffer_offset+1
+        l0080 = a;
+        //     dex
+        count--;
+
+        //     beq c97f7
+        if (count == 0)
+            goto c97f7;
+        //     lda ((uint8_t*)&tmp45)[0]
+        //     sec
+        //     sbc ((uint8_t*)&tmp89)[0]
+        // (the sec makes this a plain subtraction; its carry is dead — no
+        //  reader exists between here and the next flag write)
+        tmp89 = tmp45 - tmp89;
         goto c9804;
-    //     lda #0
-    a = 0;
-    //     sta input_buffer_offset+1
-    l0080 = a;
-    //     dex
-    count--;
 
-    //     beq c97f7
-    if (count == 0)
-        goto c97f7;
-    //     lda ((uint8_t*)&tmp45)[0]
-    a = ((uint8_t*)&tmp45)[0];
-    //     sec
-    //     sbc ((uint8_t*)&tmp89)[0]
-    // (the sec makes this a plain subtraction; its carry is dead — no
-    //  reader exists between here and the next flag write)
-    tmp89 = tmp45 - tmp89;
-    goto c9804;
+    c97f7:
+        tmp89 += tmp45;
 
-c97f7:
-    tmp89 += tmp45;
-
-c9804:
-    tmp45 = tmp89;
-    //     jsr get_current_fmt_cmd_byte
-    a = get_current_fmt_cmd_byte(y);
-    //     beq c9821
-    if (a == 0)
-        goto c9821;
-    //     ldx #1
-    count = 1;
-    //     cmp #0x2b ; '+'
-    //     beq c981c
-    if (a == 0x2b)
-        goto c981c;
-    //     inx                                                               ;
-    //     X=0x02
-    count++;
-    //     cmp #0x2d ; '-'
-    //     bne c9821
-    if (a != 0x2d)
-        goto c9821;
-    // c981c:
-c981c:
-    //     stx input_buffer_offset+1
-    l0080 = count;
-    //     iny
-    (*y)++;
-    //     bne c97c0
-    goto c97c0;
+    c9804:
+        tmp45 = tmp89;
+        //     jsr get_current_fmt_cmd_byte
+        a = get_current_fmt_cmd_byte(y);
+        //     beq c9821
+        if (a == 0)
+            goto c9821;
+        //     ldx #1
+        count = 1;
+        //     cmp #0x2b ; '+'
+        //     beq c981c
+        if (a == '+')
+            goto c981c;
+        //     inx ; X=0x02
+        count++;
+        //     cmp #0x2d ; '-'
+        //     bne c9821
+        if (a != '-')
+            goto c9821;
+        // c981c:
+    c981c:
+        //     stx input_buffer_offset+1
+        l0080 = count;
+        //     iny
+        (*y)++;
+        //     bne c97c0
+    }
     // c9821:
 c9821:
     //     lda ((uint8_t*)&tmp89)[0]
