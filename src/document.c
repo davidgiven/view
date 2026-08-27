@@ -301,9 +301,12 @@ c9488:
  * the tab offset (index of the first `*` ruler stop beyond l0039) on the tab
  * path.
  * @param[in,out] is_tab on entry, the previous character in the same walk's
- * tab-expansion status (the 6502's carry flag left by draw_char's SEC/CLC);
- * the indent path (ca5d9) uses it as the borrow-in for the ruler-stop SBC at
- * ca5f1.  On return, true if a tab expansion was performed (the C flag of the
+ * tab-expansion status (emulated from the 6502's SEC/CLC carry flag, but
+ * passed via the bool since sub_ca5ae starts with cmp #9 which clobbers the
+ * 6502 carry);
+ * the tab path (ca5e1) uses true as carry-in for ca5f1, the indent path
+ * (ca5d9) always uses false (reached via beq with C set).  On return, true
+ * if a tab expansion was performed (the C flag of the
  * 6502 sub_ca5ae), false otherwise.
  *
  * Reads the globals current_ruler_ptr, ruler_left_stop, l0039, l003a,
@@ -315,8 +318,6 @@ c9488:
  */
 uint8_t process_document_character(uint8_t a, uint8_t* x, bool* is_tab)
 {
-    bool carry_in;
-    bool no_borrow;
 
     // process_document_character
     // sub_ca5ae:
@@ -376,10 +377,10 @@ ca5d9:
         goto ca5d5;
     //     sty l0084
     //     bne ca5f1
-    // (The SBC at ca5f1 reads the carry-in left by the previous draw_char's
-    //  SEC/CLC — i.e. whether the previous character in this walk was a tab
-    //  expansion.  On entry is_tab holds that value.)
-    carry_in = *is_tab;
+    // (ca5d9 is reached via beq from cmp #0x0b with a==0x0b, so the 6502
+    //  carry is always set; the indent ruler path enters ca5f1 with
+    //  a decremented by 1 to account for the borrow)
+    a--;
     goto ca5f1;
 
 ca5e1:
@@ -409,24 +410,20 @@ ca5e1:
         //     tya
         a = tab_pos;
     }
-    // (The cmp #0x2a that matched sets carry, so the SBC at ca5f1 borrows 0.)
-    carry_in = true;
 ca5f1:
     //     sbc l0039
-    // (carry-in: prev_is_tab on the indent path, 1 on the tab path)
     {
-        uint16_t tmp_ = (uint16_t)a - l0039 - (carry_in ? 0 : 1);
-        no_borrow = (tmp_ <= 0xff);
-        a = (uint8_t)tmp_;
+        bool no_borrow = (a >= l0039);
+        a -= l0039;
+        //     tax
+        *x = a;
+        //     beq ca5f8
+        if (*x == 0)
+            goto ca5f8;
+        //     bcs ca5fa
+        if (no_borrow)
+            goto ca5fa;
     }
-    //     tax
-    *x = a;
-    //     beq ca5f8
-    if (*x == 0)
-        goto ca5f8;
-    //     bcs ca5fa
-    if (no_borrow)
-        goto ca5fa;
 ca5f8:
     //     ldx #1
     *x = 1;
