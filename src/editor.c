@@ -3910,7 +3910,7 @@ c9cf5:
         //     bne c9d0d
         uint8_t marker_index = find_marker_at_position(y_11, tmp67_3);
         if (marker_index == 0x0c)
-            goto c9d0d;
+            break;
         //     lda l0081
         //     clc
         //     adc ((uint8_t*)&tmp45)[0]
@@ -4403,7 +4403,7 @@ void draw_previous_word(
             line_base, char_width, &pos, &is_tab);
         //     cmp #0x20 ; ' '
         if (ch_1 == 0x20)
-            goto caf55;
+            break;
         //     beq caf55
         //     dey
         pos--;
@@ -7454,7 +7454,7 @@ c99b6:
         //     bne c99c7
         uint8_t idx = find_marker_at_position(y_2, tmp67);
         if (idx == 0x0c)
-            goto c99c7;
+            break;
         //     lda #0
         uint8_t a_4;
         a_4 = 0;
@@ -8053,7 +8053,7 @@ static uint8_t compute_display_start_line(void)
         x--;
         //     beq ca479
         if (x == 0)
-            goto ca479;
+            break;
         //     sta tmp2 / sty tmp3 / jsr sub_cab37 (find_previous_line)
 
         addr_t tmp01;
@@ -8212,7 +8212,7 @@ static void unpack_line(addr_t ptr1)
         a2 = ram[current_line_ptr + y_1];
         //     cmp #0x0d
         if (a2 == 0x0d)
-            goto caac8;
+            break;
         //     beq caac8
         //     sta (current_format_line_ptr),y
         ram[current_format_line_ptr + y_1] = a2;
@@ -8622,7 +8622,7 @@ ca919:
                 //     bne ca92f
                 uint8_t idx = find_marker_at_position(y_1, tmp67);
                 if (idx == 0x0c)
-                    goto ca92f;
+                    break;
                 //     tya
                 //     clc
                 //     adc current_line_ptr

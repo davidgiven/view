@@ -837,7 +837,7 @@ void move_cursor_to_address(uint16_t addr)
 
         uint8_t y;
         if (find_next_line(cur, &tmp01_1, &y))
-            goto cac17;
+            break;
         //     beq cac17
         //     tya
         //     ldy ((uint8_t*)&tmp01)[1]
@@ -855,7 +855,7 @@ void move_cursor_to_address(uint16_t addr)
         {
             if (cur == addr)
                 goto cac1d;
-            goto cac17;
+            break;
         }
         //     cabf6:
         //     jsr sub_cac41

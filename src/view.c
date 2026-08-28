@@ -781,18 +781,13 @@ addr_t read_into_document(void)
     read_block_status_t status = read_block_from_file(&cursor, space_limit);
     //     beq c8584
     //     bcs c8598
-    if (status == READ_BLOCK_EMPTY)
-        goto c8584;
-    if (status == READ_BLOCK_DONE)
-        goto c8598;
-    // c8584:
-c8584:
-    //     jsr print_inline_string
-    //     .ascii "Not all read in\r"
-    //     .byte 0
-    cli_putstring("Not all read in\n");
-    // c8598:
-c8598:
+    if (status != READ_BLOCK_DONE)
+    {
+        //     jsr print_inline_string
+        //     .ascii "Not all read in\r"
+        //     .byte 0
+        cli_putstring("Not all read in\n");
+    }
     //     lda ((uint8_t*)&tmp01)[0]
     addr_t tmp45_1;
     tmp45_1 = cursor;
@@ -1055,104 +1050,102 @@ c8b11:
     //     bne c8b6b
     if (x_3 != 0)
         goto c8b6b;
-c8b1f:
-    // c8b1f:
-    //     lda header_text_maybe,x
-    uint8_t a_6;
-    a_6 = header_text_maybe[x_3];
-    //     stx l0084
-    l0084 = x_3;
-    //     cmp #0x20 ; ' '
-    if (a_6 != 0x20)
-        goto c8b38;
-    //     bne c8b38
-    //     ldy input_buffer_offset+1
-    uint8_t y_2;
-    y_2 = l0080;
-    //     cpy l0048
-    if (y_2 >= l0048)
+    do
+    {
+        //     lda header_text_maybe,x
+        uint8_t a_6;
+        a_6 = header_text_maybe[x_3];
+        //     stx l0084
+        l0084 = x_3;
+        //     cmp #0x20 ; ' '
+        if (a_6 != 0x20)
+            goto c8b38;
+        //     bne c8b38
+        //     ldy input_buffer_offset+1
+        uint8_t y_2;
+        y_2 = l0080;
+        //     cpy l0048
+        if (y_2 >= l0048)
+            goto c8b47;
+        //     bcs c8b47
+        //     inc input_buffer_offset+1
+        l0080++;
+        //     lda output_buffer,y
+        a_6 = output_buffer[y_2];
+        //     beq c8b6a
+        if (a_6 == 0)
+            goto c8b6a;
+        //     dex
+        x_3--;
+        //     bcc c8b47
         goto c8b47;
-    //     bcs c8b47
-    //     inc input_buffer_offset+1
-    l0080++;
-    //     lda output_buffer,y
-    a_6 = output_buffer[y_2];
-    //     beq c8b6a
-    if (a_6 == 0)
-        goto c8b6a;
-    //     dex
-    x_3--;
-    //     bcc c8b47
-    goto c8b47;
 
-c8b38:
-    // c8b38:
-    //     cmp #1
-    if (a_6 != 1)
-        goto c8b47;
-    //     bne c8b47
-    //     ldy l0082
-    uint8_t y_3;
-    y_3 = l0082_1;
-    //     cpy l0049
-    if (y_3 >= l0049)
-        goto c8b6a;
-    //     bcs c8b6a
-    //     lda output_buffer,y
-    a_6 = output_buffer[y_3];
-    //     inc l0082
-    l0082_1++;
-c8b47:
-    // c8b47:
-    //     cmp #2
-    if (a_6 == 2)
-    {
-        a_6 = 0x20;
-    }
-    // c8b4d:
-    //     bit folding_flag
-    //     bmi c8b64
-    // (bit test: N = folding_flag & 0x80)
-    if (folding_flag & 0x80)
-        goto c8b64;
-    //     ldy print_xpos
-    uint8_t y_4;
-    y_4 = print_xpos;
-    //     bne c8b64
-    if (y_4 != 0)
-        goto c8b64;
-    //     jsr is_uppercase
-    //     bcs c8b64
-    if (isalpha(a_6))
-    {
-        a_6 |= 0x20;
-        uint8_t y_5;
-        y_5 = l0081;
-        if (y_5 != 0)
+    c8b38:
+        // c8b38:
+        //     cmp #1
+        if (a_6 != 1)
+            goto c8b47;
+        //     bne c8b47
+        //     ldy l0082
+        uint8_t y_3;
+        y_3 = l0082_1;
+        //     cpy l0049
+        if (y_3 >= l0049)
+            goto c8b6a;
+        //     bcs c8b6a
+        //     lda output_buffer,y
+        a_6 = output_buffer[y_3];
+        //     inc l0082
+        l0082_1++;
+    c8b47:
+        // c8b47:
+        //     cmp #2
+        if (a_6 == 2)
         {
-            l0081--;
-            a_6 &= 0xdf;
+            a_6 = 0x20;
         }
-    }
-c8b64:
-    // c8b64:
-    //     ldy l0083
-    uint8_t y_6;
-    y_6 = l0083;
-    //     sta (ptr2),y
-    ram[ptr2 + y_6] = a_6;
-    //     inc l0083
-    l0083++;
-c8b6a:
-    // c8b6a:
-    //     inx
-    x_3++;
-c8b6b:
-    // c8b6b:
-    //     cpx l004a
-    if (x_3 < l004a)
-        goto c8b1f;
-    //     bcc c8b1f
+        // c8b4d:
+        //     bit folding_flag
+        //     bmi c8b64
+        // (bit test: N = folding_flag & 0x80)
+        if (folding_flag & 0x80)
+            goto c8b64;
+        //     ldy print_xpos
+        uint8_t y_4;
+        y_4 = print_xpos;
+        //     bne c8b64
+        if (y_4 != 0)
+            goto c8b64;
+        //     jsr is_uppercase
+        //     bcs c8b64
+        if (isalpha(a_6))
+        {
+            a_6 |= 0x20;
+            uint8_t y_5;
+            y_5 = l0081;
+            if (y_5 != 0)
+            {
+                l0081--;
+                a_6 &= 0xdf;
+            }
+        }
+    c8b64:
+        // c8b64:
+        //     ldy l0083
+        uint8_t y_6;
+        y_6 = l0083;
+        //     sta (ptr2),y
+        ram[ptr2 + y_6] = a_6;
+        //     inc l0083
+        l0083++;
+    c8b6a:
+        // c8b6a:
+        //     inx
+        x_3++;
+    c8b6b:
+        // c8b6b:
+        //     cpx l004a
+    } while (x_3 < l004a);
     //     lda ptr2
     //     ldy ptr2+1
     //     jsr cac78
