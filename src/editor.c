@@ -4528,40 +4528,34 @@ void set_marker_to_here(uint8_t x)
     // set_marker_to_here: Sets marker at current cursor position
 
     //     jsr get_line_length
-    if (get_line_length() < xpos)
-        goto cad5d;
-    //     bcc cad5d
-    //     ldy #0
-    //     lda (current_format_line_ptr),y
-    a = ram[current_format_line_ptr + 0];
-    //     ldy xpos
-    // (Z from ldy xpos is clobbered by the following jsr)
-    y = xpos;
-    //     jsr check_for_command_prefix
-    command_prefix_t cp = check_for_command_prefix(a);
-
-    //     bne cad5c
-
-    if (cp != NO_COMMAND_PREFIX)
+    uint8_t len = get_line_length();
+    if (len >= xpos)
     {
-        y++;
-        y++;
-        y++;
+        //     bcc cad5d
+        //     ldy #0
+        //     lda (current_format_line_ptr),y
+        a = ram[current_format_line_ptr + 0];
+        //     ldy xpos
+        // (Z from ldy xpos is clobbered by the following jsr)
+        //     jsr check_for_command_prefix
+        command_prefix_t cp = check_for_command_prefix(a);
+
+        //     bne cad5c
+
+        len = xpos;
+        if (cp != NO_COMMAND_PREFIX)
+            len += 3;
+        //     tya
+        // cad5d:
     }
-    //     tya
-    a = y;
-    // cad5d:
-cad5d:
     //     clc
     //     adc current_line_ptr
     //     sta 0,x
     //     lda current_line_ptr+1
     //     adc #0
     //     sta 1,x
-    {
-        uint16_t marker_addr = current_line_ptr + a;
-        markers_array[x] = marker_addr;
-    }
+    uint16_t marker_addr = current_line_ptr + len;
+    markers_array[x] = marker_addr;
     //     rts
 }
 
@@ -6121,7 +6115,7 @@ void redraw_editor(void)
     // Pseudocode: Main screen update routine: scrolls, redraws lines, updates
     // status and cursor
     uint8_t saved_status_line_needs_redrawing_flag;
-    uint8_t a,x,y;
+    uint8_t a, x, y;
 
     // (the 6502 held the line being drawn in the YA register pair; use a real
     //  16-bit variable instead)

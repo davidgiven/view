@@ -1002,6 +1002,16 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_set_and_go_to_marker_after_end_of_line(self):
+        self._test_enter_editor_and_type(
+            b"hello world" + (KEY_RIGHT*5) + CTRL_K + b"1" + CTRL_Q + CTRL_S + CTRL_Q + b"1" + b"XYZ",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   hello worldXYZ                                                               ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_indent(self):
         self._test_enter_editor_and_type(
             CTRL_O + CTRL_S + b"       >" + CTRL_M + b"hello",
