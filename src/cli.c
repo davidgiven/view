@@ -161,7 +161,7 @@ void execute_cli_command(uint8_t a, struct scan_state* scan)
 
 static void change_cmd(struct scan_state* scan)
 {
-    addr_t ptr3;
+
     // change_cmd
     // Pseudocode: Replaces all occurrences of search string in document area,
     // reports change count
@@ -191,6 +191,7 @@ static void change_cmd(struct scan_state* scan)
     //     ldx #0
     //     stx ptr3
     //     stx ptr3+1
+    addr_t ptr3;
     ptr3 = 0;
     // loop_c82b3:
     for (;;)
@@ -239,6 +240,7 @@ void clear_cmd(void)
     // ***************************************************************************************
     // clear_cmd:
     //     ldx #0x0b
+
     uint8_t x;
     x = 0x0b;
     //     lda #0
@@ -304,11 +306,7 @@ static void cmd_err_no_target(void)
 
 static void count_cmd(struct scan_state* scan)
 {
-    addr_t tmp01;
     uint8_t a;
-    uint8_t x;
-    uint8_t y;
-    addr_t tmp89;
 
     // count_cmd
     // Pseudocode: Counts words in document area handling command prefixes and
@@ -330,10 +328,12 @@ static void count_cmd(struct scan_state* scan)
     //     sta ((uint8_t*)&tmp01)[0]
     //     lda area_start_ptr+1
     //     sta ((uint8_t*)&tmp01)[1]
+    addr_t tmp01;
     tmp01 = area_start_ptr;
     //     lda #0
     //     sta ((uint8_t*)&tmp89)[0]
     //     sta ((uint8_t*)&tmp89)[1]
+    addr_t tmp89;
     tmp89 = 0;
     //     sta l0083
     //     sta l0082
@@ -342,6 +342,7 @@ static void count_cmd(struct scan_state* scan)
     // c86b8:
 c86b8:
     //     ldy #0
+    uint8_t y;
     y = 0;
     //     jsr deref_and_check_for_command_prefix
     command_prefix_t cp = deref_and_check_for_command_prefix(y, tmp01);
@@ -349,6 +350,7 @@ c86b8:
     if (cp == NO_COMMAND_PREFIX)
         goto c86ea;
     //     ldx #0
+    uint8_t x;
     x = 0;
     //     iny
     y++;
@@ -363,17 +365,19 @@ c86b8:
         if (a != l8747_data[x])
             goto c86d1;
         //     lda (((uint8_t*)&tmp01)[0]),y
-        a = ram[tmp01 + y];
+        uint8_t a_1;
+        a_1 = ram[tmp01 + y];
         //     cmp l8748,x
-        if (a == l8747_data[x + 1])
+        if (a_1 == l8747_data[x + 1])
             goto c86df;
         // c86d1:
     c86d1:
         //     lda l8749,x
-        a = l8747_data[x + 2];
+        uint8_t a_2;
+        a_2 = l8747_data[x + 2];
 
         //     beq c86db
-        if (a == 0)
+        if (a_2 == 0)
             goto c86db;
         //     dey
         y--;
@@ -389,7 +393,8 @@ c86b8:
     // c86db:
 c86db:
     //     lda #0x80
-    a = 0x80;
+    uint8_t a_3;
+    a_3 = 0x80;
     //     bne c86ff                                                         ;
     //     ALWAYS branch
     goto c86ff;
@@ -410,24 +415,26 @@ c86df:
     // c86ea:
 c86ea:
     //     ldy #0
-    y = 0;
+    uint8_t y_1;
+    y_1 = 0;
     //     jsr process_current_document_character
     bool is_tab = false;
-    a = process_current_document_character(tmp01, &x, &y, &is_tab);
+    a_3 = process_current_document_character(tmp01, &x, &y_1, &is_tab);
     //     and #0x7f
-    a &= 0x7f;
+    a_3 &= 0x7f;
     //     ldx #0
     x = 0;
     //     ldy l0082
-    y = l0082;
-    if ((int8_t)y < 0)
+    uint8_t y_2;
+    y_2 = l0082;
+    if ((int8_t)y_2 < 0)
         goto c870d;
     //     cmp #0x0d
-    if (a == 0x0d)
+    if (a_3 == 0x0d)
         goto c8703;
     //     beq c8703
     //     cmp #0x20 ; ' '
-    if (a == 0x20)
+    if (a_3 == 0x20)
         goto c8703;
     //     beq c8703
     // c86ff:
@@ -440,10 +447,11 @@ c86ff:
     // c8703:
 c8703:
     //     ldy l0083
-    y = l0083;
+    uint8_t y_3;
+    y_3 = l0083;
 
     //     beq c870d
-    if (y != 0)
+    if (y_3 != 0)
     {
         tmp89++;
     }
@@ -451,15 +459,15 @@ c870d:
     //     stx l0083
     l0083 = x;
     //     cmp #0x0d
-    if (a == 0x0d)
+    if (a_3 == 0x0d)
     {
         l0082 = x;
     }
 c8715:
     //     ora l0082
-    a |= l0082;
+    a_3 |= l0082;
     //     sta l0082
-    l0082 = a;
+    l0082 = a_3;
     tmp01++;
     // c871f:
 c871f:
@@ -491,7 +499,6 @@ c871f:
 static void edit_cmd(struct scan_state* scan)
 {
     uint8_t a;
-    uint8_t x;
 
     // edit_cmd
     check_not_continuous_editing();
@@ -500,6 +507,7 @@ static void edit_cmd(struct scan_state* scan)
     open_input_file();
     parse_filename_from_command(scan);
     open_output_file();
+    uint8_t x;
     x = 0;
     input_file_empty_flag = x;
     do
@@ -530,6 +538,7 @@ static void field_cmd(struct scan_state* scan)
     // field_cmd:
     //     jsr parse_integer_from_command
     //     beq c869b
+
     int value;
     bool ok = parse_integer_from_command(scan, &value);
     if (!ok)
@@ -556,7 +565,7 @@ static void field_cmd(struct scan_state* scan)
 
 static void finish_cmd(void)
 {
-    uint8_t a;
+
     // finish_cmd
     // Pseudocode: Writes remaining document content to output file in chunks
 
@@ -580,6 +589,7 @@ static void finish_cmd(void)
         adjust_area_pointers(tmp67);
         move_cursor_to_top_of_document();
         ensure_cr_at_document_top();
+        uint8_t a;
         a = input_file_empty_flag;
         if (a != 0)
         {
@@ -596,7 +606,7 @@ static void finish_cmd(void)
 
 static void fold_cmd(struct scan_state* scan)
 {
-    uint8_t a;
+
     // fold_cmd
     // Pseudocode: Toggles folding on/off and displays current folding status
 
@@ -608,6 +618,7 @@ static void fold_cmd(struct scan_state* scan)
     if (scan_input_buffer(scan))
         goto c87b4;
     //     lda input_buffer,y
+    uint8_t a;
     a = input_buffer[scan->pos];
     //     cmp #'1'
     //     beq c87b2 (true → folding_flag = 0)
@@ -628,8 +639,9 @@ c87b4:
     cli_putstring("Folding ");
 
     //     lda folding_flag
-    a = folding_flag;
-    if (((int8_t)a < 0))
+    uint8_t a_1;
+    a_1 = folding_flag;
+    if (((int8_t)a_1 < 0))
     {
         cli_putstring("off\n");
         return_to_cli_prompt();
@@ -748,8 +760,7 @@ static void load_cmd(struct scan_state* scan)
 
 static void microspace_cmd(struct scan_state* scan)
 {
-    uint8_t a;
-    uint8_t y;
+
     // microspace_cmd
     // Pseudocode: Configures microspacing by querying printer driver
 
@@ -760,6 +771,7 @@ static void microspace_cmd(struct scan_state* scan)
     prepare_printer_driver();
     //     jsr parse_integer_from_command
     //     php
+
     int value;
     bool parsed = parse_integer_from_command(scan, &value);
     //     ldx #0x0a
@@ -776,8 +788,10 @@ static void microspace_cmd(struct scan_state* scan)
     //     jsr call_printer_driver
     // (the printer driver returns its status in the global y register;
     //  the y = 0 input setup is unused by the default driver)
+    uint8_t y;
     printer_driver_ptr->printer_getflags(&x, &y);
     //     tya
+    uint8_t a;
     a = y;
     //     and #1
     a &= 1;
@@ -812,7 +826,7 @@ static void mode_cmd(void)
 static void more_cmd(struct scan_state* scan)
 {
     uint8_t a;
-    uint8_t x;
+
     // more_cmd
     // Pseudocode: Appends more text from input file into document at current
     // cursor position
@@ -836,6 +850,7 @@ static void more_cmd(struct scan_state* scan)
     //     ldx l003a
     // loop_c84c4:
     uint8_t y = 0;
+    uint8_t x;
     x = l003a;
     do
     {
@@ -854,9 +869,10 @@ static void more_cmd(struct scan_state* scan)
     //     jsr check_for_at_least_150_bytes_free
     check_for_at_least_150_bytes_free();
     //     lda input_file_empty_flag
-    a = input_file_empty_flag;
+    uint8_t a_1;
+    a_1 = input_file_empty_flag;
     //     bne c84e8
-    if (a == 0)
+    if (a_1 == 0)
     {
         if (read_next_chunk_from_input_file(top))
         {
@@ -1024,7 +1040,7 @@ static void read_cmd(struct scan_state* scan)
 
 static void replace_cmd(struct scan_state* scan)
 {
-    uint8_t a;
+
     // replace_cmd
     // Pseudocode: Interactive search and replace prompting for each match
     // (Y)es/(O)K/(N)o
@@ -1060,6 +1076,7 @@ c832d:
     //     jsr draw_prompt_characters
     draw_prompt_characters('R', 'P');
     //     jsr flush_and_read_char
+    uint8_t a;
     a = screen_getchar();
     //     bcs return_2
     if (a == 0x1b)
@@ -1120,6 +1137,8 @@ static void save_cmd_write_cmd(struct scan_state* scan)
     //     zif eq
     if (!parse_optional_filename_from_command(scan))
     {
+        uint8_t ch;
+
         //         bit file_edit_flags
         // (the A value only affects BIT's Z flag, which is not checked here;
         //  V comes from file_edit_flags, so a constant is passed)
@@ -1134,7 +1153,7 @@ static void save_cmd_write_cmd(struct scan_state* scan)
 
         //         ldx #0
         uint8_t x = 0;
-        uint8_t ch;
+
         //         zrepeat
         do
         {
@@ -1232,11 +1251,7 @@ static void search_cmd(struct scan_state* scan)
 
 static void setup_cmd(struct scan_state* scan)
 {
-    uint8_t tmp6;
-    uint8_t tmp7;
-    uint8_t tmp8;
-    uint8_t a;
-    uint8_t y;
+
     // setup_cmd
     // Pseudocode: Parses flag letters and sets format_mode_flag,
     // justifying_flag, insert_mode_flag
@@ -1248,19 +1263,23 @@ static void setup_cmd(struct scan_state* scan)
     // c8681:
     static const uint8_t c8681_data[] = {0x00, 0x00, 0xff};
     //     ldx #1
+
     uint8_t x;
     x = 1;
     //     stx tmp6
+    uint8_t tmp6;
     tmp6 = x;
     //     dex                                                               ;
     //     X=0x00
     x--;
     //     stx tmp8
+    uint8_t tmp8;
     tmp8 = x;
     //     dex                                                               ;
     //     X=0xff
     x--;
     //     stx tmp7
+    uint8_t tmp7;
     tmp7 = x;
     // c8649:
 c8649:
@@ -1271,17 +1290,19 @@ c8649:
     //     and #0xdf
     scan->ch &= 0xdf;
     //     ldx #0
-    x = 0;
+    uint8_t x_1;
+    x_1 = 0;
     // loop_c8652:
     for (;;)
     {
         //     cmp c867d,x
-        if (scan->ch == c867d_data[x])
+        if (scan->ch == c867d_data[x_1])
             goto c8669;
         //     inx
-        x++;
+        x_1++;
         //     ldy c867d,x
-        y = c867d_data[x];
+        uint8_t y;
+        y = c867d_data[x_1];
         //     bne loop_c8652
         if (y != 0)
             continue;
@@ -1297,11 +1318,12 @@ c8649:
     // c8669:
 c8669:
     //     lda c8681,x
-    a = c8681_data[x];
+    uint8_t a;
+    a = c8681_data[x_1];
     //     sta tmp6,x
-    if (x == 0)
+    if (x_1 == 0)
         tmp6 = a;
-    else if (x == 1)
+    else if (x_1 == 1)
         tmp7 = a;
     else
         tmp8 = a;
@@ -1313,24 +1335,27 @@ c8669:
     // c8672:
 c8672:
     //     ldx #2
-    x = 2;
+    uint8_t x_2;
+    x_2 = 2;
     // loop_c8674:
     do
     {
-        if (x == 0)
-            a = tmp6;
-        else if (x == 1)
-            a = tmp7;
+        uint8_t a_1;
+
+        if (x_2 == 0)
+            a_1 = tmp6;
+        else if (x_2 == 1)
+            a_1 = tmp7;
         else
-            a = tmp8;
-        if (x == 0)
-            format_mode_flag = a;
-        else if (x == 1)
-            justifying_flag = a;
+            a_1 = tmp8;
+        if (x_2 == 0)
+            format_mode_flag = a_1;
+        else if (x_2 == 1)
+            justifying_flag = a_1;
         else
-            insert_mode_flag = a;
-        x--;
-    } while (!((int8_t)x < 0));
+            insert_mode_flag = a_1;
+        x_2--;
+    } while (!((int8_t)x_2 < 0));
     //     bpl loop_c8674
     //     bmi c869b                                                         ;
     //     ALWAYS branch
@@ -1405,8 +1430,8 @@ static void print_x_words_of_help(uint8_t x)
     // ***************************************************************************************
     // print_x_words_of_help:
     //     ldy #0
+
     uint8_t y;
-    uint8_t a;
     y = 0;
     // ca82e:
     //     jsr bdos_print_char
@@ -1419,6 +1444,7 @@ static void print_x_words_of_help(uint8_t x)
     //     bpl ca82e
     for (;;)
     {
+        uint8_t a;
         a = la83d[y];
         if (a == 0)
         {
@@ -1460,6 +1486,7 @@ void input_line_not_escaped(void)
     // (branch restructured: Mistake is printed when C is set or index >= 48)
     if (failed || l0082 >= 48)
         cli_putstring("Mistake\n");
+
     struct scan_state scan;
     execute_cli_command(l0080, &scan);
     //     jmp run_cli
@@ -1499,9 +1526,6 @@ void cli_handler_impl(void)
 
 void run_cli(void)
 {
-    uint8_t a;
-    uint8_t x;
-    uint8_t y;
 
     // run_cli
     screen_leave();
@@ -1527,14 +1551,16 @@ void run_cli(void)
     if ((file_edit_flags & 0x40))
         goto c816d;
     //     lda file_edit_flags
+    uint8_t a;
     a = file_edit_flags;
     //     ror
     //     bcc c816d
     if ((a & 1))
     {
         cli_putstring("Input file is ");
-        a = input_file_empty_flag;
-        if (a == 0)
+        uint8_t a_1;
+        a_1 = input_file_empty_flag;
+        if (a_1 == 0)
         {
             cli_putstring("not ");
         }
@@ -1542,10 +1568,11 @@ void run_cli(void)
     }
 c816d:
     //     lda printer_driver_name
-    a = printer_driver_name[0];
+    uint8_t a_2;
+    a_2 = printer_driver_name[0];
 
     //     beq c81b6
-    if (a == 0)
+    if (a_2 == 0)
         goto c81b6;
     //     jsr print_inline_string
     //     .ascii "Printer "
@@ -1553,6 +1580,7 @@ c816d:
     cli_putstring("Printer ");
 
     //     ldx #0
+    uint8_t x;
     x = 0;
     // loop_c819a:
     //     lda printer_driver_name,x
@@ -1563,18 +1591,20 @@ c816d:
     //     bne loop_c819a
     do
     {
-        a = printer_driver_name[x];
-        if (a == 0x0d)
+        uint8_t a_3;
+        a_3 = printer_driver_name[x];
+        if (a_3 == 0x0d)
             break;
-        cli_putchar(a);
+        cli_putchar(a_3);
         x++;
     } while (x != 0);
     // c81a7:
     //     lda microspacing_flag
-    a = microspacing_flag;
+    uint8_t a_4;
+    a_4 = microspacing_flag;
 
     //     beq c81b3
-    if (a != 0)
+    if (a_4 != 0)
     {
         cli_putstring(" (m)");
     }
@@ -1583,30 +1613,33 @@ c816d:
     // c81b6:
 c81b6:
     //     ldx #0
-    x = 0;
+    uint8_t x_1;
+    x_1 = 0;
     //     ldy #0
+    uint8_t y;
     y = 0;
     // c81ba:
 c81ba:
     //     lda markers_array+1,x
-    a = ((uint8_t*)markers_array)[x + 1];
+    uint8_t a_5;
+    a_5 = ((uint8_t*)markers_array)[x_1 + 1];
 
     //     beq c81e7
-    if (a == 0)
+    if (a_5 == 0)
         goto c81e7;
     //     tya
     //     bne c81db
     if (y != 0)
         goto c81db;
     //     stx l0083
-    l0083 = x;
+    l0083 = x_1;
     //     jsr print_inline_string
     //     .ascii "Marker(s) set "
     //     .byte 0
     cli_putstring("Marker(s) set ");
 
     //     ldx l0083
-    x = l0083;
+    x_1 = l0083;
     //     ldy #1
     y = 1;
     //     bne c81e0                                                         ;
@@ -1625,18 +1658,19 @@ c81e0:
     //     adc #0x31 ; '1'
     // (x is an even offset into markers_array, so lsr shifts out a 0 and
     //  the carry is 0: a = (x >> 1) + 0x31)
-    a = (x >> 1) + 0x31;
+    uint8_t a_6;
+    a_6 = (x_1 >> 1) + 0x31;
     //     jsr screen_putchar
-    screen_putchar(a);
+    screen_putchar(a_6);
     // c81e7:
 c81e7:
     //     inx
-    x++;
+    x_1++;
     //     inx
-    x++;
+    x_1++;
     //     cpx #0x0c
     //     bne c81ba
-    if (x != 0x0c)
+    if (x_1 != 0x0c)
         goto c81ba;
     //     tya
     //     beq c81f3
@@ -1652,6 +1686,8 @@ c81e7:
 // CLI command parser
 static bool parse_command(uint8_t* input_buffer_offset)
 {
+    uint8_t y;
+
     // parse_command
     //     .ascii "VIEW"
     //     .byte 0
@@ -1662,14 +1698,14 @@ static bool parse_command(uint8_t* input_buffer_offset)
     // ***************************************************************************************
     // parse_command:
     //     lda #0xff
-    uint8_t x;
+
     uint8_t a;
-    uint8_t y;
     a = 0xff;
     //     sta l0082
     l0082 = a;
     //     tax                                                               ;
     //     X=0xff
+    uint8_t x;
     x = a;
     // ca84c:
     for (;;)
@@ -1688,27 +1724,29 @@ static bool parse_command(uint8_t* input_buffer_offset)
             //     iny
             y++;
             //     lda (((uint8_t*)&tmp01)[0]),y
-            a = input_buffer[y];
+            uint8_t a_1;
+            a_1 = input_buffer[y];
             //     and #0xdf
-            a &= 0xdf;
+            a_1 &= 0xdf;
             //     sta l0084
-            l0084 = a;
+            l0084 = a_1;
             //     lda parser_table,x
-            a = parser_table[x];
+            uint8_t a_2;
+            a_2 = parser_table[x];
             //     beq ca890
-            if (a == 0)
+            if (a_2 == 0)
                 goto ca890;
             //     bmi ca87e
-            if (a & 0x80)
+            if (a_2 & 0x80)
                 goto ca87e;
             //     eor #0x5b ; '['
-            a ^= 0x5b;
+            a_2 ^= 0x5b;
             //     sta l0083
-            l0083 = a;
+            l0083 = a_2;
             //     and #0xdf
-            a &= 0xdf;
+            a_2 &= 0xdf;
             //     cmp l0084
-            if (a != l0084)
+            if (a_2 != l0084)
                 break;
             //     beq loop_ca851
         }
@@ -1718,26 +1756,29 @@ static bool parse_command(uint8_t* input_buffer_offset)
             //     inx
             x++;
             //     lda parser_table,x
-            a = parser_table[x];
+            uint8_t a_3;
+            a_3 = parser_table[x];
             //     beq ca890
-            if (a == 0)
+            if (a_3 == 0)
                 goto ca890;
             //     bpl loop_ca86a
-            if (!(a & 0x80))
+            if (!(a_3 & 0x80))
                 continue;
             break;
         }
         //     lda l0083
-        a = l0083;
+        uint8_t a_4;
+        a_4 = l0083;
         //     and #0x20 ; ' '
-        a &= 0x20;
+        a_4 &= 0x20;
         //     beq ca84c
-        if (a == 0)
+        if (a_4 == 0)
             continue;
         //     lda (((uint8_t*)&tmp01)[0]),y
-        a = input_buffer[y];
+        uint8_t a_5;
+        a_5 = input_buffer[y];
         //     cmp #0x30 ; '0'
-        if (a >= 0x30)
+        if (a_5 >= 0x30)
             continue;
         //     bcs ca84c
         break;
@@ -1745,11 +1786,12 @@ static bool parse_command(uint8_t* input_buffer_offset)
     // ca87e:
 ca87e:
     //     lda (((uint8_t*)&tmp01)[0]),y
-    a = input_buffer[y];
+    uint8_t a_6;
+    a_6 = input_buffer[y];
     //     cmp #0x30 ; '0'
-    if (a < 0x30)
+    if (a_6 < 0x30)
     {
-        delimiter_char = a;
+        delimiter_char = a_6;
         y++;
     }
     *input_buffer_offset = y;
@@ -1757,7 +1799,8 @@ ca87e:
     // (the 6502 copied the command index into Y here; callers now read
     //  l0082 directly)
     //     lda parser_table,x
-    a = parser_table[x];
+    uint8_t a_7;
+    a_7 = parser_table[x];
     //     clc
     //     rts
     return false;
@@ -1823,6 +1866,7 @@ bool parse_integer_from_command(struct scan_state* scan, int* out)
         return false;
     //     jmp ca6fe
     uint8_t y = scan->pos;
+
     int parsed;
     bool ok = parse_decimal_number(&parsed, &y);
     if (out)
@@ -1873,14 +1917,15 @@ void reset_document_name_after_load(void)
 
 void set_document_name_to_filename_buffer(void)
 {
+    uint8_t a;
+
     // set_document_name_to_filename_buffer
     // Pseudocode: Copies filename buffer to input filename buffer
 
     // set_document_name_to_filename_buffer:
     //     ldx #0
+
     uint8_t x;
-    uint8_t a;
-    uint8_t a2;
     x = 0;
     // loop_c88fa:
     do
@@ -1892,6 +1937,7 @@ void set_document_name_to_filename_buffer(void)
     //     bge loop_c88fa
     // return_9:
     //     lda #0x0d
+    uint8_t a2;
     a2 = 0x0d;
     //     sta input_filename-1, x
     input_filename[x - 1] = a2;

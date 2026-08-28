@@ -227,7 +227,7 @@ void run_editor(void)
 
 void editor_loop_impl(void)
 {
-    uint8_t a, x;
+    
     // editor_loop_impl
 
     screen_enter();
@@ -236,7 +236,8 @@ void editor_loop_impl(void)
     // dispatch
 
     for (;;)
-    {
+    {uint8_t a;
+
 
     editor_loop:
 
@@ -254,13 +255,14 @@ void editor_loop_impl(void)
             //     bne c9b44
 
             if (a == 0)
-            {
+            {uint8_t a_1;
+
                 {
                     uint8_t saved_a_ = a;
                     unpack_line(ptr1);
-                    a = saved_a_;
+                    a_1 = saved_a_;
                 }
-                edit_buffer_unpacked_flag = a;
+                edit_buffer_unpacked_flag = a_1;
             }
 
             //     jsr sub_ca608
@@ -269,15 +271,17 @@ void editor_loop_impl(void)
 
             //     lda ruler_left_stop
 
-            a = ruler_left_stop;
+uint8_t a_2;
+            a_2 = ruler_left_stop;
 
             //     beq c9b73
 
-            if (a == 0)
+            if (a_2 == 0)
                 goto c9b73_;
 
             //     ldx format_mode_flag
 
+uint8_t x;
             x = format_mode_flag;
 
             //     bmi c9b73
@@ -287,16 +291,17 @@ void editor_loop_impl(void)
 
             //     cmp l0072
 
-            if (a <= l0072)
+            if (a_2 <= l0072)
                 goto c9b73_;
 
             //     ldx cursor_moved_flag
 
-            x = cursor_moved_flag;
+uint8_t x_1;
+            x_1 = cursor_moved_flag;
 
             //     bne c9b6a
 
-            if (x != 0)
+            if (x_1 != 0)
                 goto c9b6a_;
 
             //     jsr get_line_length
@@ -305,7 +310,8 @@ void editor_loop_impl(void)
 
             //     lda format_mode_flag
 
-            a = format_mode_flag;
+uint8_t a_3;
+            a_3 = format_mode_flag;
 
             //     cpy xpos
 
@@ -332,11 +338,12 @@ void editor_loop_impl(void)
 
             //     lda ruler_left_stop
 
-            a = ruler_left_stop;
+uint8_t a_4;
+            a_4 = ruler_left_stop;
 
             //     sta l0072
 
-            l0072 = a;
+            l0072 = a_4;
 
             //     inc l0079
 
@@ -348,25 +355,27 @@ void editor_loop_impl(void)
 
             //     lda format_mode_flag
 
-            a = format_mode_flag;
+uint8_t a_5;
+            a_5 = format_mode_flag;
 
             //     and #0xbf
 
-            a &= 0xbf;
+            a_5 &= 0xbf;
 
             //     pha
 
             {
-                int y;
-                uint8_t saved_mod = a;
+                
+                uint8_t saved_mod = a_5;
 
                 //     jsr find_left_margin_stop
 
+int y;
                 y = find_left_margin_stop();
 
                 //     pla
 
-                a = saved_mod;
+                a_3 = saved_mod;
 
                 //     bcs c9b86
 
@@ -381,7 +390,7 @@ void editor_loop_impl(void)
 
             //     ora #0x40 ; '@'
 
-            a |= 0x40;
+            a_3 |= 0x40;
 
         c9b84_:
 
@@ -389,7 +398,7 @@ void editor_loop_impl(void)
 
             //     sta format_mode_flag
 
-            format_mode_flag = a;
+            format_mode_flag = a_3;
 
         c9b73_:
 
@@ -424,18 +433,19 @@ void editor_loop_impl(void)
 
         //     jsr read_char
 
-        a = screen_getchar();
+uint8_t a_6;
+        a_6 = screen_getchar();
 
         //     cmp current_tab_key
 
-        if (a == current_tab_key)
+        if (a_6 == current_tab_key)
         {
-            a = 9;
+            a_6 = 9;
         }
 
         //     sta l0038
 
-        l0038 = a;
+        l0038 = a_6;
 
         //     tay
         // (dead in the C translation: Y is reloaded by the key handlers)
@@ -446,7 +456,7 @@ void editor_loop_impl(void)
 
         //     cmp #0x20 ; ' '
 
-        if (a < 0x20)
+        if (a_6 < 0x20)
             goto enter_nonprintable_character;
 
         //     bcc enter_nonprintable_character
@@ -454,7 +464,7 @@ void editor_loop_impl(void)
         //     cmp #0x7f
 
         //     bcc enter_printable_character
-        if (a < 0x7f)
+        if (a_6 < 0x7f)
         {
             enter_printable_character();
             goto editor_loop;
@@ -462,7 +472,7 @@ void editor_loop_impl(void)
 
     enter_nonprintable_character:
 
-        switch (a)
+        switch (a_6)
         {
 
             case CTRL('['):
@@ -631,7 +641,8 @@ static void cf1_next_match_key(void)
 static void cf2_format_mode_key(void)
 {
 
-    uint8_t a;
+    
+uint8_t a;
     a = format_mode_flag;
 
     a &= 0xbf;
@@ -687,9 +698,9 @@ static void cf5_default_ruler_key(void)
 
 static void cf6_split_line_key(void)
 {
-    uint8_t a;
-    uint8_t x;
-    uint8_t y;
+    
+    
+    
 
     // cf6_split_line_key
 
@@ -705,6 +716,7 @@ static void cf6_split_line_key(void)
 
     //     cpy xpos
     // (get_line_length leaves Y = line length; bcc keeps it when Y < xpos)
+uint8_t y;
     y = line_len;
     if (line_len >= xpos)
     {
@@ -717,23 +729,27 @@ static void cf6_split_line_key(void)
 
     //     tya
 
+uint8_t a;
     a = y;
 
     //     tax
 
+uint8_t x;
     x = a;
 
     //     ldy #0
 
-    y = 0;
+uint8_t y_1;
+    y_1 = 0;
 
     //     lda (current_format_line_ptr),y
     // (Z from this lda is clobbered by the following jsr)
-    a = ram[current_format_line_ptr + y];
+uint8_t a_1;
+    a_1 = ram[current_format_line_ptr + y_1];
 
     //     jsr check_for_command_prefix
 
-    command_prefix_t cp = check_for_command_prefix(a);
+    command_prefix_t cp = check_for_command_prefix(a_1);
 
     //     bne c9dcd
 
@@ -746,7 +762,8 @@ static void cf6_split_line_key(void)
 
     //     txa
 
-    a = x;
+uint8_t a_2;
+    a_2 = x;
 
     //     ldy current_line_ptr+1
     //     txa
@@ -773,9 +790,9 @@ static void cf6_split_line_key(void)
 
 static void cf7_join_lines_key(void)
 {
-    addr_t tmp01;
-    addr_t tmp45;
-    uint8_t y;
+    
+    
+    
     // cf7_join_lines_key
 
     // cf7_join_lines_key: Joins current line with next line
@@ -793,6 +810,8 @@ static void cf7_join_lines_key(void)
     //     sta ((uint8_t*)&tmp01)[1]
 
     //     jsr sub_cab6e
+uint8_t y;
+addr_t tmp01;
     if (find_next_line(current_line_ptr, &tmp01, &y))
     {
         beep();
@@ -823,6 +842,7 @@ static void cf7_join_lines_key(void)
 
     //     adc current_line_ptr
 
+addr_t tmp45;
     tmp45 = current_line_ptr + y;
 
     //     lda #0
@@ -865,8 +885,8 @@ static void cf8_mark_as_ruler_key(addr_t ptr1)
 
     //     lda ptr1
 
-    uint8_t y;
-    uint8_t a;
+    
+    
 
     //     sta current_format_line_ptr
 
@@ -878,10 +898,12 @@ static void cf8_mark_as_ruler_key(addr_t ptr1)
 
     //     ldy #0
 
+uint8_t y;
     y = 0;
 
     //     lda #0x81
 
+uint8_t a;
     a = 0x81;
 
     //     sta (current_format_line_ptr),y
@@ -894,11 +916,12 @@ static void cf8_mark_as_ruler_key(addr_t ptr1)
 
     //     lda #0x2e ; '.'
 
-    a = 0x2e;
+uint8_t a_1;
+    a_1 = 0x2e;
 
     //     sta (current_format_line_ptr),y
 
-    ram[current_format_line_ptr + y] = a;
+    ram[current_format_line_ptr + y] = a_1;
 
     //     iny
 
@@ -906,11 +929,12 @@ static void cf8_mark_as_ruler_key(addr_t ptr1)
 
     //     lda #0x2e ; '.'
 
-    a = 0x2e;
+uint8_t a_2;
+    a_2 = 0x2e;
 
     //     sta (current_format_line_ptr),y
 
-    ram[current_format_line_ptr + y] = a;
+    ram[current_format_line_ptr + y] = a_2;
 
     //     inc l0074
 
@@ -918,13 +942,15 @@ static void cf8_mark_as_ruler_key(addr_t ptr1)
 
     //     lda l006e
 
-    a = edit_buffer_unpacked_flag;
+uint8_t a_3;
+    a_3 = edit_buffer_unpacked_flag;
 
     //     bmi c9f5f
 
-    if (!(a & 0x80))
+    if (!(a_3 & 0x80))
     {
-        a = 0x80;
+uint8_t a_4;
+        a_4 = 0x80;
         edit_buffer_unpacked_flag = 0x80;
         edit_buffer_dirty_flag++;
     }
@@ -936,10 +962,11 @@ static void cf8_mark_as_ruler_key(addr_t ptr1)
 }
 
 static void delete_key(void)
-{
-    uint8_t a;
-    uint8_t x;
-    uint8_t y;
+{uint8_t a_2;
+
+    
+    
+    
 
     // delete_key
 
@@ -947,6 +974,7 @@ static void delete_key(void)
 
     //     lda l0072
 
+uint8_t a;
     a = l0072;
 
     //     beq return_55
@@ -960,16 +988,18 @@ static void delete_key(void)
 
     //     ldy xpos
 
+uint8_t y;
     y = xpos;
 
     //     lda (current_edit_line_ptr),y
 
-    a = ram[RAM_EDIT_BUFFER + y];
+uint8_t a_1;
+    a_1 = ram[RAM_EDIT_BUFFER + y];
 
     //     pha
 
     {
-        uint8_t saved_a = a;
+        uint8_t saved_a = a_1;
 
         //     jsr f9_delete_char_key
 
@@ -977,17 +1007,18 @@ static void delete_key(void)
 
         //     pla
 
-        a = saved_a;
+        a_2 = saved_a;
     }
 
     //     cmp #0x0c
 
     //     bcc return_55
-    if (a < 0x0c)
+    if (a_2 < 0x0c)
         return;
 
     //     ldx insert_mode_flag
 
+uint8_t x;
     x = insert_mode_flag;
 
     if (x != 0)
@@ -1099,7 +1130,7 @@ static void f11_copy_key(void)
 
 static void f12_left_key(void)
 {
-    uint8_t y;
+    
 
     // f12_left_key
 
@@ -1107,6 +1138,7 @@ static void f12_left_key(void)
 
     //     ldy l0072
 
+uint8_t y;
     y = l0072;
 
     //     beq return_52
@@ -1129,7 +1161,8 @@ void f13_right_key(void)
 
     //     ldy xpos
 
-    uint8_t y;
+    
+uint8_t y;
     y = xpos;
 
     //     cpy #MAX_LINE_LENGTH
@@ -1182,7 +1215,7 @@ static void f14_down_key(void)
 
 static void f15_up_key(void)
 {
-    addr_t tmp01;
+    
     // f15_up_key
 
     // f15_up_key: Moves cursor to previous line, handling ruler stack
@@ -1193,6 +1226,7 @@ static void f15_up_key(void)
 
     //     lda current_line_ptr
 
+addr_t tmp01;
     if (!find_previous_line(current_line_ptr, &tmp01))
         return;
 
@@ -1255,8 +1289,8 @@ static void f2_bottom_of_text_key(void)
 
 static void f3_delete_to_eol_key(void)
 {
-    uint8_t x;
-    uint8_t a;
+    
+    
 
     // f3_delete_to_eol_key
 
@@ -1264,12 +1298,14 @@ static void f3_delete_to_eol_key(void)
 
     //     lda #MAX_LINE_LENGTH
 
+uint8_t a;
     a = MAX_LINE_LENGTH;
 
     //     sec
     //     sbc xpos
     // (sbc with C=1 in is a plain subtraction)
     a -= xpos;
+uint8_t x;
     x = a;
 
     //     tax
@@ -1334,13 +1370,13 @@ static void f6_insert_line_key(void)
 
 static void f7_delete_line_key(void)
 {
-    addr_t tmp01;
-    addr_t tmp45;
-    addr_t tmp67;
+    
+    
+    
 
-    uint8_t x;
-    uint8_t y;
-    uint8_t a;
+    
+    
+    
 
     // f7_delete_line_key
 
@@ -1362,10 +1398,12 @@ static void f7_delete_line_key(void)
 
     //     sta ((uint8_t*)&tmp45)[1]
 
+addr_t tmp45;
     tmp45 = current_line_ptr;
 
     //     ldx l003b
 
+uint8_t x;
     x = l003b;
 
     //     inx
@@ -1378,6 +1416,7 @@ static void f7_delete_line_key(void)
 
     //     sta ((uint8_t*)&tmp67)[1]
 
+addr_t tmp67;
     tmp67 = x;
 
     //     jsr adjust_pointers
@@ -1390,14 +1429,17 @@ static void f7_delete_line_key(void)
 
     //     ldy #0
 
+uint8_t y;
     y = 0;
 
     //     lda (current_line_ptr),y
 
+uint8_t a;
     a = ram[current_line_ptr + y];
 
     if (a == 0)
     {
+addr_t tmp01;
         find_previous_line(current_line_ptr, &tmp01);
         current_line_ptr = tmp01;
     }
@@ -1446,7 +1488,7 @@ static void f9_delete_char_key(void)
 
 static void k_command_key(void)
 {
-    uint8_t a;
+    
     // k_command_key
 
     // Pseudocode: K-command handler: prompts for K-key, looks up in k_key_table
@@ -1481,11 +1523,13 @@ static void k_command_key(void)
 
     flags_need_redrawing_flag++;
 
+uint8_t a;
     a = screen_getchar();
 
-    a = control_key_to_ascii(a);
+uint8_t a_1;
+    a_1 = control_key_to_ascii(a);
 
-    switch (a)
+    switch (a_1)
     {
 
         case 'M':
@@ -2277,7 +2321,7 @@ uint8_t parser_table[] = {
 
 static void o_command_key(void)
 {
-    uint8_t a;
+    
     // o_command_key
 
     // Pseudocode: O-command handler: prompts for O-key, looks up in o_key_table
@@ -2312,11 +2356,13 @@ static void o_command_key(void)
 
     flags_need_redrawing_flag++;
 
+uint8_t a;
     a = screen_getchar();
 
-    a = control_key_to_ascii(a);
+uint8_t a_1;
+    a_1 = control_key_to_ascii(a);
 
-    switch (a)
+    switch (a_1)
     {
 
         case 'J':
@@ -2365,7 +2411,7 @@ static void o_command_key(void)
 
 static void q_command_key(void)
 {
-    uint8_t a;
+    
     // q_command_key
 
     // Pseudocode: Q-command handler: prompts for Q-key, looks up in q_key_table
@@ -2400,11 +2446,13 @@ static void q_command_key(void)
 
     flags_need_redrawing_flag++;
 
+uint8_t a;
     a = screen_getchar();
 
-    a = control_key_to_ascii(a);
+uint8_t a_1;
+    a_1 = control_key_to_ascii(a);
 
-    switch (a)
+    switch (a_1)
     {
 
         case 'R':
@@ -2465,8 +2513,8 @@ static void q_command_key(void)
 
 void return_key(void)
 {
-    addr_t tmp01;
-    uint8_t y;
+    
+    
     // return_key
 
     // return_key: Carriage return: moves to next line at column 0
@@ -2489,6 +2537,8 @@ void return_key(void)
 
     //     sta ((uint8_t*)&tmp01)[1]
 
+uint8_t y;
+addr_t tmp01;
     if (!find_next_line(current_line_ptr, &tmp01, &y))
     {
         advance_current_line_pointer();
@@ -2622,9 +2672,12 @@ static void sf12_left_key(void)
 
     //     jsr draw_previous_word
 
-    uint8_t word_boundary;
-    bool is_start_of_line;
-    uint8_t x;
+    
+    
+    
+uint8_t x;
+_Bool is_start_of_line;
+uint8_t word_boundary;
     draw_previous_word(&word_boundary, &is_start_of_line, &x);
 
     //     bne return_57
@@ -2647,15 +2700,15 @@ static void sf12_left_key(void)
 
 static void sf13_right_key(void)
 {
-    addr_t tmp01;
-    uint8_t a;
-    uint8_t x;
-    uint8_t y;
+    
+    
+    
+    
     // sf13_right_key
 
     // sf13_right_key: Moves cursor right by one word
 
-    uint8_t line_len;
+    
 
 entry:
 
@@ -2667,10 +2720,12 @@ entry:
 
     //     sta ((uint8_t*)&tmp01)[1]
 
+addr_t tmp01;
     tmp01 = RAM_EDIT_BUFFER;
 
     //     jsr get_line_length
 
+uint8_t line_len;
     line_len = get_line_length();
 
     //     sty input_buffer_ptr+1
@@ -2689,6 +2744,7 @@ entry:
 
     //     ldy xpos
 
+uint8_t y;
     y = xpos;
 
     // loop_c9ff8:
@@ -2701,7 +2757,8 @@ c9fab:
 
     //     sty xpos
 
-    xpos = y;
+uint8_t y_1;
+    xpos = y_1;
 
     //     jsr ca93c
 
@@ -2713,13 +2770,14 @@ c9fab:
 
     //     jsr sub_cab1a
 
-    if (advance_to_next_line(current_line_ptr, &tmp01, &y))
+    if (advance_to_next_line(current_line_ptr, &tmp01, &y_1))
         return;
 
     //     beq return_58
 
     //     tya
-    a = y;
+uint8_t a;
+    a = y_1;
     //     clc
     //     adc current_line_ptr
     //     sta current_line_ptr
@@ -2748,20 +2806,23 @@ c9fab:
 
     //     sta ((uint8_t*)&tmp01)[0]
 
-    tmp01 = RAM_EDIT_BUFFER;
+addr_t tmp01_1;
+    tmp01_1 = RAM_EDIT_BUFFER;
 
     //     ldy xpos
 
-    y = 0;
+    y_1 = 0;
 
     //     jsr process_current_document_character
     bool is_tab = false;
-    a = process_current_document_character(tmp01, &x, &y, &is_tab);
+uint8_t x;
+uint8_t a_1;
+    a_1 = process_current_document_character(tmp01_1, &x, &y_1, &is_tab);
 
     //     cmp #0x20 ; ' '
 
     //     bne return_58
-    if (a != 0x20)
+    if (a_1 != 0x20)
         return;
 
     //     (fall through — line starts with space, scan forward as usual)
@@ -2778,9 +2839,10 @@ loop_c9ff8:
             goto ca00f;
         //     jsr process_current_document_character
         uint8_t x;
-        a = process_current_document_character(tmp01, &x, &y, &is_tab);
+uint8_t a_2;
+        a_2 = process_current_document_character(tmp01, &x, &y, &is_tab);
         //     cmp #0x20 ; ' '
-        if (a != 0x20)
+        if (a_2 != 0x20)
             continue;
         //     bne loop_c9ff8
         break;
@@ -2794,9 +2856,10 @@ loop_c9ff8:
             goto ca00f;
         //     jsr process_current_document_character
         uint8_t x;
-        a = process_current_document_character(tmp01, &x, &y, &is_tab);
+uint8_t a_3;
+        a_3 = process_current_document_character(tmp01, &x, &y, &is_tab);
         //     cmp #0x20 ; ' '
-        if (a == 0x20)
+        if (a_3 == 0x20)
             continue;
         //     beq loop_ca003
         break;
@@ -2824,7 +2887,7 @@ static void set_marker_common(uint8_t a);
 
 static void sf14_down_key(void)
 {
-    uint8_t x;
+    
 
     // sf14_down_key:
 
@@ -2834,6 +2897,7 @@ static void sf14_down_key(void)
 
     //     inc l006f
 
+uint8_t x;
     x = screen_maxrow;
 
     l0079++;
@@ -2845,12 +2909,13 @@ static void sf14_down_key(void)
 
 static void sf15_up_key(void)
 {
-    uint8_t x;
+    
 
     // sf15_up_key:
 
     //     ldx screen_height
 
+uint8_t x;
     x = screen_maxrow;
 
     //     inc l0079
@@ -2866,7 +2931,7 @@ static void sf15_up_key(void)
 
 static void sf1_swap_case_key(void)
 {
-    uint8_t y;
+    
 
     // sf1_swap_case_key
 
@@ -2874,11 +2939,13 @@ static void sf1_swap_case_key(void)
 
     //     ldy xpos
 
-    uint8_t a;
+    
+uint8_t y;
     y = xpos;
 
     //     lda (current_edit_line_ptr),y
 
+uint8_t a;
     a = ram[RAM_EDIT_BUFFER + y];
 
     //     jsr is_uppercase
@@ -2909,7 +2976,7 @@ static void sf1_swap_case_key(void)
 
 static void sf2_release_margins_key(void)
 {
-    int y;
+    
 
     // sf2_release_margins_key:
 
@@ -2923,6 +2990,7 @@ static void sf2_release_margins_key(void)
 
     //     jsr find_left_margin_stop
 
+int y;
     y = find_left_margin_stop();
 
     //     bcs f4_beginning_of_line_key
@@ -2944,8 +3012,8 @@ static void sf2_release_margins_key(void)
 
 static void sf3_delete_to_char_key(void)
 {
-    uint8_t a;
-    uint8_t y;
+    
+    
 
     // sf3_delete_to_char_key
 
@@ -2953,6 +3021,7 @@ static void sf3_delete_to_char_key(void)
 
     flags_need_redrawing_flag++;
 
+uint8_t a;
     a = screen_getchar();
 
     // (branch restructured: 0xa0 -> 0x1c, 0xa1 -> 0x1d, control/high -> beep)
@@ -2978,6 +3047,7 @@ static void sf3_delete_to_char_key(void)
 
         l0074++;
 
+uint8_t y;
         y = xpos;
 
         uint8_t start_x = y;
@@ -2986,9 +3056,10 @@ static void sf3_delete_to_char_key(void)
         bool found_match = false;
         while (y < MAX_LINE_LENGTH)
         {
-            a = ram[RAM_EDIT_BUFFER + y];
+uint8_t a_1;
+            a_1 = ram[RAM_EDIT_BUFFER + y];
             y++;
-            if (a == search_char)
+            if (a_1 == search_char)
             {
                 found_match = true;
                 break;
@@ -3002,9 +3073,10 @@ static void sf3_delete_to_char_key(void)
         // loop_ca13d: scan forward to find end of matching sequence
         while (y < MAX_LINE_LENGTH)
         {
-            a = ram[RAM_EDIT_BUFFER + y];
+uint8_t a_2;
+            a_2 = ram[RAM_EDIT_BUFFER + y];
             y++;
-            if (a != search_char)
+            if (a_2 != search_char)
                 break;
         }
 
@@ -3101,8 +3173,8 @@ static void sf7_set_marker_key(void)
 
 static void sf8_edit_command_key(addr_t ptr1)
 {
-    uint8_t a;
-    uint8_t y;
+    
+    
     // sf8_edit_command_key
     //  Ptrs:   ptr1
 
@@ -3123,6 +3195,7 @@ static void sf8_edit_command_key(addr_t ptr1)
 
     //     lda #0
 
+uint8_t a;
     a = 0;
 
     //     sta input_buffer_offset+1
@@ -3145,43 +3218,45 @@ edit_command_loop:
 
     //     jsr read_char
 
-    a = screen_getchar();
+uint8_t a_1;
+    a_1 = screen_getchar();
 
     //     cmp #0x0d
 
-    if (a == 0x0d)
+    if (a_1 == 0x0d)
         goto finished_editing_command;
 
     //     beq finished_editing_command
 
     //     and #0xdf
 
-    a &= 0xdf;
+    a_1 &= 0xdf;
 
     //     cmp #0x41 ; 'A'
 
-    if (a < 0x41)
+    if (a_1 < 0x41)
         goto edit_command_loop;
 
     //     bcc edit_command_loop
 
     //     cmp #0x5b ; '['
 
-    if (a >= 0x5b)
+    if (a_1 >= 0x5b)
         goto edit_command_loop;
 
     //     bcs edit_command_loop
 
     //     sta l0081
 
-    l0081 = a;
+    l0081 = a_1;
 
     //     jsr screen_putchar
 
-    screen_putchar(a);
+    screen_putchar(a_1);
 
     //     ldy input_buffer_offset+1
 
+uint8_t y;
     y = l0080;
 
     //     iny
@@ -3195,7 +3270,7 @@ edit_command_loop:
     //     sta (ptr1),y
     // (16-bit arithmetic: ram[ptr1 + y], with the carry across the low-byte
     //  boundary handled by the plain 16-bit index)
-    ram[ptr1 + y] = a;
+    ram[ptr1 + y] = a_1;
 
     //     cpy #2
 
@@ -3206,11 +3281,12 @@ edit_command_loop:
 
     //     lda #0
 
-    a = 0;
+uint8_t a_2;
+    a_2 = 0;
 
     //     sta input_buffer_offset+1
 
-    l0080 = a;
+    l0080 = a_2;
 
     //     beq edit_command_loop
 
@@ -3222,11 +3298,12 @@ finished_editing_command:
 
     //     lda l0081
 
-    a = l0081;
+uint8_t a_3;
+    a_3 = l0081;
 
     //     beq return_56
 
-    if (a == 0)
+    if (a_3 == 0)
         return;
 
     //     lda ptr1
@@ -3255,8 +3332,8 @@ finished_editing_command:
 
 static void sf9_delete_command_key(void)
 {
-    uint8_t a;
-    uint8_t y;
+    
+    
 
     // sf9_delete_command_key
 
@@ -3265,10 +3342,12 @@ static void sf9_delete_command_key(void)
 
     //     ldy #0
 
+uint8_t y;
     y = 0;
 
     //     lda (current_format_line_ptr),y
 
+uint8_t a;
     a = ram[current_format_line_ptr + y];
 
     //     jsr check_for_command_prefix
@@ -3282,11 +3361,12 @@ static void sf9_delete_command_key(void)
 
     //     tya
 
-    a = y;
+uint8_t a_1;
+    a_1 = y;
 
     //     sta (current_format_line_ptr),y
 
-    ram[current_format_line_ptr + y] = a;
+    ram[current_format_line_ptr + y] = a_1;
 
     //     lda current_edit_line_ptr
 
@@ -3336,13 +3416,15 @@ static void tab_key(void)
 
 static void advance_current_line_pointer(void)
 {
-    addr_t tmp01;
-    uint8_t y;
+    
+    
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     lda current_line_ptr
     //     ldy current_line_ptr+1
     //     jsr sub_cab1a
+uint8_t y;
+addr_t tmp01;
     if (advance_to_next_line(current_line_ptr, &tmp01, &y))
         return;
     //     beq return_54
@@ -3390,8 +3472,8 @@ static uint8_t control_key_to_ascii(uint8_t a)
 
 static void delete_edit_buffer_bytes_at_xpos(uint8_t x)
 {
-    uint8_t a;
-    uint8_t y;
+    
+    
 
     // delete_edit_buffer_bytes_at_xpos
     // delete_edit_buffer_bytes_at_xpos: Deletes N bytes at cursor position,
@@ -3407,8 +3489,10 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t x)
     //     sta ((uint8_t*)&tmp67)[1]
     addr_t tmp67 = RAM_EDIT_BUFFER;
     //     ldy xpos
+uint8_t y;
     y = xpos;
     //     tya
+uint8_t a;
     a = y;
     //     clc
     //     adc input_buffer_offset+1
@@ -3453,10 +3537,11 @@ cae98:
     if (y < MAX_LINE_LENGTH + 1)
         goto cae78;
     //     lda xpos
-    a = xpos;
+uint8_t a_1;
+    a_1 = xpos;
     //     cmp #0x84
     //     bcs return_78
-    if (a >= MAX_LINE_LENGTH)
+    if (a_1 >= MAX_LINE_LENGTH)
     { /* return_78: */
         return;
     }
@@ -3501,9 +3586,9 @@ cae98:
 
 static void enter_printable_character(void)
 {
-    addr_t tmp45;
-    addr_t tmp67;
-    uint8_t x;
+    
+    
+    
     // enter_printable_character
     // enter_printable_character:
     //     ldy xpos
@@ -3518,12 +3603,14 @@ static void enter_printable_character(void)
         return;
     //     bcs c9bca
     //     lda current_edit_line_ptr
+addr_t tmp67;
     tmp67 = RAM_EDIT_BUFFER;
     //     ldy xpos
-    y = xpos;
+uint8_t y_1;
+    y_1 = xpos;
     //     jsr sub_ca536
     //     bne c9bf2
-    uint8_t idx = find_marker_at_position(y, tmp67);
+    uint8_t idx = find_marker_at_position(y_1, tmp67);
     if (idx != 0x0c)
     {
         if (idx < 4)
@@ -3532,12 +3619,13 @@ static void enter_printable_character(void)
         }
     }
     //     ldx insert_mode_flag
+uint8_t x;
     x = insert_mode_flag;
     //     bne c9c00
     if (x != 0)
         goto c9c00;
     //     lda (current_edit_line_ptr),y
-    uint8_t a = ram[RAM_EDIT_BUFFER + y];
+    uint8_t a = ram[RAM_EDIT_BUFFER + y_1];
     //     cmp #9
     //     beq c9c00
     if (a == 9)
@@ -3559,63 +3647,68 @@ c9c00:
     // c9c09:
 c9c09:
     //     lda l0038
-    a = l0038;
+uint8_t a_1;
+    a_1 = l0038;
     //     sta (current_edit_line_ptr),y
     // (the 6502 left y = the insert position, i.e. xpos)
-    ram[RAM_EDIT_BUFFER + xpos] = a;
+    ram[RAM_EDIT_BUFFER + xpos] = a_1;
     //     ldy l0074
-    y = l0074;
+uint8_t y_2;
+    y_2 = l0074;
     //     bne c9c14
-    if (y == 0)
+    if (y_2 == 0)
     {
-        screen_putchar(a);
+        screen_putchar(a_1);
     }
     //     inc xpos
     xpos++;
     //     jsr ca684
     update_line_length();
     //     ldy #0
-    y = 0;
+uint8_t y_3;
+    y_3 = 0;
     //     sty l0039
     l0039 = 0;
     // c9c1d:
 c9c1d:
     //     lda (current_edit_line_ptr),y
-    a = ram[RAM_EDIT_BUFFER + y];
+uint8_t a_2;
+    a_2 = ram[RAM_EDIT_BUFFER + y_3];
     //     iny
-    y++;
+    y_3++;
     //     cpy xpos
     //     bcs c9c56
-    if (y > xpos)
+    if (y_3 > xpos)
         goto c9c56;
     //     cmp #9
     //     bne c9c31
-    if (a != 9)
+    if (a_2 != 9)
         goto c9c31;
     //     jsr sub_ca5ae
     {
         bool is_tab = false;
-        a = process_document_character(a, &x, &is_tab);
+uint8_t a_3;
+        a_3 = process_document_character(a_2, &x, &is_tab);
     }
     //     txa
-    a = x;
+    a_2 = x;
     //     clc
     //     adc l0039
-    a += l0039;
+    a_2 += l0039;
     //     bne c9c43
-    if (a != 0)
+    if (a_2 != 0)
         goto c9c43;
     // c9c31:
 c9c31:
     //     cmp #0x0b
     //     bne c9c4a
-    if (a != 0x0b)
+    if (a_2 != 0x0b)
         goto c9c4a;
     //     lda ruler_left_stop
-    a = ruler_left_stop;
+    a_2 = ruler_left_stop;
 
     //     beq c9c48
-    if (a == 0)
+    if (a_2 == 0)
         goto c9c48;
     //     ldx l0039
     x = l0039;
@@ -3625,27 +3718,27 @@ c9c31:
         if (x >= ruler_left_stop)
         {
             x++;
-            a = x;
+            a_2 = x;
         }
     }
 c9c43:
     //     sta l0039
-    l0039 = a;
+    l0039 = a_2;
     //     jmp c9c1d
     goto c9c1d;
     // c9c48:
 c9c48:
     //     lda #0x20 ; ' '
-    a = 0x20;
+    a_2 = 0x20;
     // c9c4a:
 c9c4a:
     //     cmp #0x1b
     //     bcc c9c48
-    if (a < 0x1b)
+    if (a_2 < 0x1b)
         goto c9c48;
     //     cmp #0x20
     //     bcc c9c1d
-    if (a < 0x20)
+    if (a_2 < 0x20)
         goto c9c1d;
     //     inc l0039
     l0039++;
@@ -3654,23 +3747,26 @@ c9c4a:
     // c9c56:
 c9c56:
     //     ldy l0039
-    y = l0039;
+uint8_t y_4;
+    y_4 = l0039;
     //     cpy l003a
-    if (y < l003a)
+    if (y_4 < l003a)
     {
         //     lda (current_ruler_ptr),y
-        a = ram[current_ruler_ptr + y];
+uint8_t a_4;
+        a_4 = ram[current_ruler_ptr + y_4];
         //     and #0xdf
-        a &= 0xdf;
+        a_4 &= 0xdf;
         //     cmp #0x42 ; 'B'
-        if (a == 0x42)
+        if (a_4 == 0x42)
             beep();
     }
     //     lda l0038
-    a = l0038;
+uint8_t a_5;
+    a_5 = l0038;
     //     cmp #0x20 ; ' '
     //     beq c9c7f
-    if (a == 0x20)
+    if (a_5 == 0x20)
         return;
     //     lda ruler_right_stop
     //     beq c9c7f
@@ -3685,16 +3781,17 @@ c9c56:
         return;
     //     lda #0
     //     sta ((uint8_t*)&tmp67)[1]
-    ((uint8_t*)&tmp67)[1] = 0;
+addr_t tmp67_1;
+    ((uint8_t*)&tmp67_1)[1] = 0;
     //     tya
     //     beq c9c7f
-    if (y == 0)
+    if (y_4 == 0)
         return;
     //     dey
-    y--;
+    y_4--;
     //     cpy ruler_right_stop
     //     bcs c9c82
-    if (y < ruler_right_stop)
+    if (y_4 < ruler_right_stop)
         return;
     // c9c82: (4202)
     //     jsr get_line_length (4203)
@@ -3703,66 +3800,77 @@ c9c56:
     //     sta top_margin (4206)
     top_margin = 0;
     //     ldy xpos (4207)
-    y = xpos;
+uint8_t y_5;
+    y_5 = xpos;
     //     sty input_buffer_ptr+1 (4208)
-    input_buffer_offset = y;
+    input_buffer_offset = y_5;
     //     jsr draw_previous_word (4209)
-    uint8_t word_boundary;
-    bool is_start_of_line;
+    
+    
+_Bool is_start_of_line;
+uint8_t word_boundary;
     draw_previous_word(&word_boundary, &is_start_of_line, &x);
     //     jsr sub_ca608 (4210)
     recalculate_cursor_xpos();
     //     lda l0072 (4211)
-    a = l0072;
+uint8_t a_6;
+    a_6 = l0072;
     //     cmp ruler_left_stop (4212)
     //     beq c9c9d (4213) bcs c9ca2 (4214)
     // c9c9d: (4215)
     //     ldy input_buffer_ptr+1, dey, sty xpos (4216-4218)
-    if (a == ruler_left_stop)
+    if (a_6 == ruler_left_stop)
     {
-        y = input_buffer_offset;
-        y--;
-        xpos = y;
+uint8_t y_6;
+        y_6 = input_buffer_offset;
+        y_6--;
+        xpos = y_6;
         goto c9ca2;
     }
-    if (a < ruler_left_stop)
+    if (a_6 < ruler_left_stop)
     {
         {
-            y = input_buffer_offset;
-            y--;
-            xpos = y;
+uint8_t y_7;
+            y_7 = input_buffer_offset;
+            y_7--;
+            xpos = y_7;
         }
     }
 c9ca2:
     //     lda input_buffer_ptr+1 (4220)
-    a = input_buffer_offset;
+uint8_t a_7;
+    a_7 = input_buffer_offset;
     //     sec (4221)
     //     sbc xpos (4222)
     //     sta top_margin (4223)
-    a -= xpos;
-    top_margin = a;
+    a_7 -= xpos;
+    top_margin = a_7;
     //     lda l0083 (4224)
-    a = l0083;
+uint8_t a_8;
+    a_8 = l0083;
     //     sec (4225)
     //     sbc xpos (4226)
     //     sta l0083 (4227)
-    a -= xpos;
-    l0083 = a;
+    a_8 -= xpos;
+    l0083 = a_8;
     //     tay (4228)
-    y = a;
+uint8_t y_8;
+    y_8 = a_8;
     //     iny (4229)
-    y++;
+    y_8++;
     //     lda ruler_left_stop (4230)
-    a = ruler_left_stop;
+uint8_t a_9;
+    a_9 = ruler_left_stop;
 
     //     beq c9cb9 (4231)
-    if (a != 0)
+    if (a_9 != 0)
     {
         top_margin++;
-        y++;
+        y_8++;
     }
     //     sty ((uint8_t*)&tmp67)[0] (4235)
-    ((uint8_t*)&tmp67)[0] = y;
+addr_t tmp67_2;
+    ((uint8_t*)&tmp67_2)[0] = y_8;
     //     lda current_line_ptr (4236)
     //     sec (4237)
     //     adc l003b (4238)
@@ -3770,9 +3878,10 @@ c9ca2:
     //     lda current_line_ptr+1 (4240)
     //     adc #0 (4241)
     //     sta ((uint8_t*)&tmp45)[1] (4242)
+addr_t tmp45;
     tmp45 = current_line_ptr + l003b + 1;
     //     jsr make_space_for_insertion (4243)
-    if (make_space_for_insertion(tmp45, tmp67))
+    if (make_space_for_insertion(tmp45, tmp67_2))
         goto c9cd0; // bcc c9cd0
     //     jmp ca941 (4245)
     show_memory_full_error();
@@ -3780,7 +3889,8 @@ c9ca2:
     // c9cd0: (4247)
 c9cd0:
     //     ldy #0 (4248)
-    y = 0;
+uint8_t y_9;
+    y_9 = 0;
     //     lda ruler_left_stop
     //     beq c9cdb
     if (ruler_left_stop != 0)
@@ -3789,36 +3899,40 @@ c9cd0:
         //     sta (((uint8_t*)&tmp45)[0]),y
         ram[tmp45] = 0x0b;
         //     iny ; Y=0x01
-        y = 1;
+        y_9 = 1;
     }
     // c9cdb:
     //     sty l0081
-    l0081 = y;
+    l0081 = y_9;
     //     lda current_edit_line_ptr
-    tmp67 = RAM_EDIT_BUFFER;
+addr_t tmp67_3;
+    tmp67_3 = RAM_EDIT_BUFFER;
     //     ldy xpos
-    y = xpos;
+uint8_t y_10;
+    y_10 = xpos;
     //     dey
-    y--;
+    y_10--;
     //     lda (current_edit_line_ptr),y
-    a = ram[RAM_EDIT_BUFFER + y];
+uint8_t a_10;
+    a_10 = ram[RAM_EDIT_BUFFER + y_10];
     //     cmp #0x20 ; ' '
     //     bne c9cf2
-    if (a == 0x20)
+    if (a_10 == 0x20)
     {
         //     lda #0x10
         //     sta (current_edit_line_ptr),y
-        ram[RAM_EDIT_BUFFER + y] = 0x10;
+        ram[RAM_EDIT_BUFFER + y_10] = 0x10;
     }
     // c9cf2:
     //     iny
-    y++;
+    y_10++;
     //     sty l0082
-    l0082 = y;
+    l0082 = y_10;
     // c9cf5:
 c9cf5:
     //     ldy l0082
-    y = l0082;
+uint8_t y_11;
+    y_11 = l0082;
     //     inc l0082
     l0082++;
     // loop_c9cf9:
@@ -3826,7 +3940,7 @@ c9cf5:
     {
         //     jsr sub_ca536
         //     bne c9d0d
-        uint8_t marker_index = find_marker_at_position(y, tmp67);
+        uint8_t marker_index = find_marker_at_position(y_11, tmp67_3);
         if (marker_index == 0x0c)
             goto c9d0d;
         //     lda l0081
@@ -3848,36 +3962,40 @@ c9cf5:
     // c9d0d:
 c9d0d:
     //     lda l0083
-    a = l0083;
+uint8_t a_11;
+    a_11 = l0083;
     //     bne c9d28
-    if (a != 0)
+    if (a_11 != 0)
         goto c9d28;
     //     lda #0x0d
-    a = 0x0d;
+uint8_t a_12;
+    a_12 = 0x0d;
     //     bne c9d30                                                         ;
     //     ALWAYS branch
     goto c9d30;
     // c9d28:
 c9d28:
     //     lda (current_edit_line_ptr),y
-    a = ram[RAM_EDIT_BUFFER + y];
+uint8_t a_13;
+    a_13 = ram[RAM_EDIT_BUFFER + y_11];
     //     pha
     {
-        uint8_t saved = a;
+        uint8_t saved = a_13;
         //     lda #0x10
         //     sta (current_edit_line_ptr),y
-        ram[RAM_EDIT_BUFFER + y] = 0x10;
+        ram[RAM_EDIT_BUFFER + y_11] = 0x10;
         //     pla
-        a = saved;
+        a_12 = saved;
     }
     // c9d30:
 c9d30:
     //     ldy l0081
-    y = l0081;
+uint8_t y_12;
+    y_12 = l0081;
     //     inc l0081
     l0081++;
     //     sta (((uint8_t*)&tmp45)[0]),y
-    ram[tmp45 + y] = a;
+    ram[tmp45 + y_12] = a_12;
     //     dec l0083
     l0083--;
     //     bpl c9cf5
@@ -3907,7 +4025,7 @@ c9d30:
 // 0-5, or MARKER_INVALID if the character read is not a valid marker.
 static int prompt_for_marker(void)
 {
-    uint8_t a;
+    
     // Pseudocode: Prompts for a marker character and looks it up
 
     // prompt_for_marker:
@@ -3918,6 +4036,7 @@ static int prompt_for_marker(void)
     //     inc flags_need_redrawing_flag
     flags_need_redrawing_flag++;
     //     jsr read_char
+uint8_t a;
     a = screen_getchar();
     //     jsr lookup_marker
     return lookup_marker(a);
@@ -3928,7 +4047,7 @@ static int prompt_for_marker(void)
 // area) — the 6502's carry flag.
 static bool reset_area_to_marks_1_2(void)
 {
-    uint8_t x;
+    
     // reset_area_to_marks_1_2
     // reset_area_to_marks_1_2: Sets area to markers 1 and 2, then adjusts
     // doc_ptr1
@@ -3963,6 +4082,7 @@ static bool reset_area_to_marks_1_2(void)
         area_end_ptr = markers_array[idx2];
         // (doc_ptr1 aliases markers_array[8]; set_marker_to_here now takes the
         //  element index, so divide the byte offset by the element size)
+uint8_t x;
         x = ((uint8_t*)&doc_ptr1 - (uint8_t*)markers_array) / sizeof(addr_t);
         set_marker_to_here(x);
         area_status_t status = sanitise_area();
@@ -3987,11 +4107,12 @@ static void insert_line_at_cursor(addr_t ptr)
 
 static void move_to_previous_line(void)
 {
-    addr_t tmp01;
+    
     // c9f80:
     //     jsr write_line_back_to_document_safely
     write_line_back_to_document_safely();
     //     lda current_line_ptr
+addr_t tmp01;
     if (!find_previous_line(current_line_ptr, &tmp01))
         return;
     //     bcc return_56
@@ -4006,8 +4127,8 @@ static void move_to_previous_line(void)
 
 static void move_cursor_up(uint8_t x)
 {
-    addr_t tmp01;
-    addr_t tmp23;
+    
+    
 
     // sub_ca071
     // (the 6502 held the candidate line in the YA register pair; use a real
@@ -4025,7 +4146,9 @@ static void move_cursor_up(uint8_t x)
     while (1)
     {
         //     sta ((uint8_t*)&tmp23)[0]
+addr_t tmp23;
         tmp23 = line;
+addr_t tmp01;
         if (!find_previous_line(line, &tmp01))
         {
             // ca093:
@@ -4054,8 +4177,8 @@ static void move_cursor_up(uint8_t x)
 
 static void move_cursor_down(uint8_t x)
 {
-    addr_t tmp01;
-    uint8_t y;
+    
+    
 
     // sub_ca0af
     // (the 6502 held the candidate line in the YA register pair; use a real
@@ -4073,6 +4196,8 @@ static void move_cursor_down(uint8_t x)
     while (1)
     {
         //     jsr sub_cab1a
+uint8_t y;
+addr_t tmp01;
         if (advance_to_next_line(line, &tmp01, &y))
         {
             // ca0d2:
@@ -4107,9 +4232,9 @@ static void move_cursor_down(uint8_t x)
 
 static void check_pointer_in_area(void)
 {
-    addr_t tmp45;
-    addr_t tmp23;
-    addr_t tmp89;
+    
+    
+    
 
     // sub_ca1cc
     //     lda doc_ptr1 / ldy doc_ptr1+1
@@ -4128,13 +4253,16 @@ static void check_pointer_in_area(void)
         uint16_t diff = area_end_ptr - area_start_ptr;
         tmp67 = diff;
     }
+addr_t tmp45;
     tmp45 = doc_ptr1;
     if (!make_space_for_insertion(tmp45, tmp67))
     {
         show_memory_full_error();
         longjmp(env, JMP_EDITOR);
     }
+addr_t tmp89;
     tmp89 = area_start_ptr;
+addr_t tmp23;
     tmp23 = tmp45;
     // ca219:
     while (1)
@@ -4178,7 +4306,7 @@ static void tab_highlight_common(uint8_t a)
 
 void enter_editor_mode(void)
 {
-    uint8_t x;
+    
     screen_enter();
     // enter_editor_mode: Enters editor mode: clears screen, resets state
     // variables
@@ -4193,6 +4321,7 @@ void enter_editor_mode(void)
     //     sta l006e
     edit_buffer_unpacked_flag = 0;
     //     ldx screen_height
+uint8_t x;
     x = screen_maxrow;
     // loop_cb0a8:
     do
@@ -4201,7 +4330,8 @@ void enter_editor_mode(void)
         x--;
     } while (!(x & 0x80));
     //     ldx #2
-    x = 2;
+uint8_t x_1;
+    x_1 = 2;
     //     stx l0073
     l0073 = 2;
     //     stx status_line_needs_redrawing_flag
@@ -4246,10 +4376,11 @@ void set_format_mode_bit7(void)
  */
 void draw_previous_word(
     uint8_t* word_boundary, bool* is_start_of_line, uint8_t* char_width)
-{
-    addr_t line_base;
-    uint8_t ch;
-    uint8_t pos;
+{uint8_t ch;
+
+    
+    
+    
     // draw_previous_word
     // draw_previous_word: Moves cursor back to start of previous word
 
@@ -4257,8 +4388,10 @@ void draw_previous_word(
     //     sta ((uint8_t*)&tmp01)[0]
     //     lda current_edit_line_ptr+1
     //     sta ((uint8_t*)&tmp01)[1]
+addr_t line_base;
     line_base = RAM_EDIT_BUFFER;
     //     ldy xpos
+uint8_t pos;
     pos = xpos;
     bool is_tab = false;
     //     beq caf55
@@ -4290,10 +4423,11 @@ void draw_previous_word(
         //     dey
         pos--;
         //     jsr process_current_document_character
-        ch = process_current_document_character(
+uint8_t ch_1;
+        ch_1 = process_current_document_character(
             line_base, char_width, &pos, &is_tab);
         //     cmp #0x20 ; ' '
-        if (ch == 0x20)
+        if (ch_1 == 0x20)
             goto caf55;
         //     beq caf55
         //     dey
@@ -4308,23 +4442,25 @@ caf55:
     //     sty xpos
     xpos = pos;
     //     jsr process_current_document_character
-    ch = process_current_document_character(
+uint8_t ch_2;
+    ch_2 = process_current_document_character(
         line_base, char_width, &pos, &is_tab);
     //     dey
     pos--;
     // (the 6502 returns the boundary character in A and Z = (y == 0))
-    *word_boundary = ch;
+    *word_boundary = ch_2;
     *is_start_of_line = (pos == 0);
 }
 
 bool adjust_margins_at_left_margin(void)
 {
-    uint8_t a;
-    uint8_t y;
+    
+    
     // sub_caef4
     // sub_caef4: Handles margin/folding adjustments when typing at left margin
 
     //     lda format_mode_flag
+uint8_t a;
     a = format_mode_flag;
     //     and #0x81
     a &= 0x81;
@@ -4338,20 +4474,23 @@ bool adjust_margins_at_left_margin(void)
     //     jsr get_line_length
     uint8_t line_len = get_line_length();
     //     lda xpos
-    a = xpos;
+uint8_t a_1;
+    a_1 = xpos;
     //     sta l0083
-    l0083 = a;
+    l0083 = a_1;
     //     sty xpos
     xpos = line_len;
     //     jsr sub_ca608
     recalculate_cursor_xpos();
     //     lda l0072
-    a = l0072;
+uint8_t a_2;
+    a_2 = l0072;
     //     cmp ruler_left_stop
-    if (a < ruler_left_stop)
+    if (a_2 < ruler_left_stop)
         goto caf19;
     //     bcc caf19
     //     ldy l0083
+uint8_t y;
     y = l0083;
     //     sty xpos
     xpos = y;
@@ -4363,7 +4502,8 @@ bool adjust_margins_at_left_margin(void)
     // caf19:
 caf19:
     //     lda l0083
-    a = l0083;
+uint8_t a_3;
+    a_3 = l0083;
     //     ldy xpos
     y = xpos;
     //     cpy l0083
@@ -4376,12 +4516,12 @@ caf19:
     //  Otherwise the carry into the following adc is 1: a += xpos + 1)
     if (l0083 < ruler_left_stop)
         goto caf2a;
-    a = l0083 - ruler_left_stop + xpos + 1;
+    a_3 = l0083 - ruler_left_stop + xpos + 1;
     //     adc xpos
     // caf28:
 caf28:
     //     sta xpos
-    xpos = a;
+    xpos = a_3;
     // caf2a:
 caf2a:
     //     jsr sub_caedd
@@ -4399,14 +4539,15 @@ caf31:
 
 bool insert_edit_buffer_bytes_at_xpos(uint8_t x)
 {
-    uint8_t a;
-    uint8_t y;
+    
+    
 
     // insert_edit_buffer_bytes_at_xpos
     // insert_edit_buffer_bytes_at_xpos: Inserts bytes at cursor position,
     // shifting existing content right
 
     //     lda xpos
+uint8_t a;
     a = xpos;
     //     cmp #MAX_LINE_LENGTH
     //     bcs cae03
@@ -4418,20 +4559,21 @@ bool insert_edit_buffer_bytes_at_xpos(uint8_t x)
     //     stx input_buffer_offset+1
     l0080 = x;
     //     jsr get_line_length
-    a = get_line_length();
+uint8_t a_1;
+    a_1 = get_line_length();
     //     clc
     //     adc input_buffer_offset+1
     //     bcs cae03
     // (adc with C=0 is a plain addition; carry means overflow)
-    a += l0080;
-    if (a < l0080)
+    a_1 += l0080;
+    if (a_1 < l0080)
     {
         beep();
         return false;
     }
     //     cmp #0x85
     //     bcs cae03
-    if (a >= MAX_LINE_LENGTH + 1)
+    if (a_1 >= MAX_LINE_LENGTH + 1)
     {
         beep();
         return false;
@@ -4444,6 +4586,7 @@ bool insert_edit_buffer_bytes_at_xpos(uint8_t x)
     //     sta ((uint8_t*)&tmp67)[1]
     addr_t tmp67 = RAM_EDIT_BUFFER;
     //     ldy #0x84
+uint8_t y;
     y = MAX_LINE_LENGTH;
     // cae27:
 cae27:
@@ -4452,17 +4595,18 @@ cae27:
     //     ldx #0
     x = 0;
     //     tya
-    a = y;
+uint8_t a_2;
+    a_2 = y;
     //     clc
     //     adc input_buffer_offset+1
     //     bcs cae35
     // (adc with C=0 is a plain addition; carry means overflow)
-    a += l0080;
-    if (a >= l0080)
+    a_2 += l0080;
+    if (a_2 >= l0080)
     {
-        if (a < MAX_LINE_LENGTH)
+        if (a_2 < MAX_LINE_LENGTH)
         {
-            x = a;
+            x = a_2;
         }
     }
     //     stx l0081
@@ -4522,7 +4666,7 @@ cae52:
 
 void set_marker_to_here(uint8_t x)
 {
-    uint8_t a;
+    
     uint8_t y;
     // set_marker_to_here
     // set_marker_to_here: Sets marker at current cursor position
@@ -4534,6 +4678,7 @@ void set_marker_to_here(uint8_t x)
         //     bcc cad5d
         //     ldy #0
         //     lda (current_format_line_ptr),y
+uint8_t a;
         a = ram[current_format_line_ptr + 0];
         //     ldy xpos
         // (Z from ldy xpos is clobbered by the following jsr)
@@ -4560,13 +4705,14 @@ void set_marker_to_here(uint8_t x)
 }
 
 void split_line_at_wrap(addr_t tmp89)
-{
-    addr_t tmp45;
-    addr_t tmp67;
-    uint8_t a;
-    uint8_t y;
+{uint8_t a_3;
 
-    uint8_t x;
+    
+    
+    
+    
+
+    
 
     // cac78
     // Pseudocode: Splits a line at the word wrap position, inserting CR for new
@@ -4579,16 +4725,20 @@ void split_line_at_wrap(addr_t tmp89)
 cac7b:
     //     lda #0
     //     sta l0083
+uint8_t a;
     a = 0;
     l0083 = 0;
     //     ldx #0x85
+uint8_t x;
     x = MAX_LINE_LENGTH + 1;
     //     ldy #1
+uint8_t y;
     y = 1;
     //     lda (((uint8_t*)&tmp89)[0]),y
-    a = ram[tmp89 + y];
+uint8_t a_1;
+    a_1 = ram[tmp89 + y];
     //     jsr check_for_command_prefix
-    command_prefix_t cp = check_for_command_prefix(a);
+    command_prefix_t cp = check_for_command_prefix(a_1);
 
     //     bne cac8d
 
@@ -4603,15 +4753,16 @@ cac7b:
     // cac8f:
 cac8f:
     //     lda (((uint8_t*)&tmp89)[0]),y
-    a = ram[tmp89 + y];
+uint8_t a_2;
+    a_2 = ram[tmp89 + y];
     //     iny
     y++;
     //     cmp #0x20 ; ' '
-    if (a == 0x20)
+    if (a_2 == 0x20)
         goto cac9a;
     //     beq cac9a
     //     cmp #0x1a
-    if (a != 0x1a)
+    if (a_2 != 0x1a)
         goto cac9c;
     //     bne cac9c
     // cac9a:
@@ -4622,7 +4773,7 @@ cac9a:
 cac9c:
     //     cmp #0x0d
     //     beq return_73
-    if (a == 0x0d)
+    if (a_2 == 0x0d)
         return;
     //     cpy l0084
     //     beq cac8f
@@ -4637,10 +4788,10 @@ cac9c:
     //     txa
     if (l0083 == 0)
     {
-        a = l0084;
+        a_3 = l0084;
         goto cacad;
     }
-    a = l0083;
+    a_3 = l0083;
     // cacad:
 cacad:
     //     clc
@@ -4651,21 +4802,25 @@ cacad:
     //     adc #0
     //     sta ((uint8_t*)&tmp45)[1]
     //     sta ((uint8_t*)&tmp89)[1]
-    tmp45 = tmp89 + a;
+addr_t tmp45;
+    tmp45 = tmp89 + a_3;
     tmp89 = tmp45;
     //     lda #1
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda #0
     //     sta ((uint8_t*)&tmp67)[1]
+addr_t tmp67;
     tmp67 = 1;
     //     jsr make_space_for_insertion
     make_space_for_insertion(tmp45, tmp67);
     //     lda #0x0d
-    a = 0x0d;
+uint8_t a_4;
+    a_4 = 0x0d;
     //     ldy #0
-    y = 0;
+uint8_t y_1;
+    y_1 = 0;
     //     sta (((uint8_t*)&tmp45)[0]),y
-    ram[tmp45 + y] = a;
+    ram[tmp45 + y_1] = a_4;
     tmp89 = tmp45;
     //     bne cac7b
     if (((uint8_t*)&tmp89)[1] != 0)
@@ -4675,14 +4830,16 @@ cacad:
 
 void adjust_pointers(addr_t tmp45, addr_t tmp67)
 {
-    addr_t tmp23;
+    
 
     // adjust_pointers
-    uint8_t x;
+    
     // adjust_pointers: (6372)
+addr_t tmp23;
     tmp23 = tmp45;
     tmp89 = tmp45 + tmp67;
     //     ldx #0 (6382)
+uint8_t x;
     x = 0;
     // ca9c3: (6383)
 ca9c3:
@@ -4792,8 +4949,8 @@ ca9f1:
  */
 static bool advance_to_next_doc_line(void)
 {
-    addr_t tmp01;
-    uint8_t y;
+    
+    
     // advance_to_next_line
     // c9a8d: Advance to next line in document
 
@@ -4802,6 +4959,8 @@ static bool advance_to_next_doc_line(void)
     //     lda current_line_ptr
     //     ldy current_line_ptr+1
     //     jsr sub_cab1a
+uint8_t y;
+addr_t tmp01;
     bool end_of_document = find_next_line(current_line_ptr, &tmp01, &y);
     //     sec
     //     beq c9aa5
@@ -4877,15 +5036,16 @@ void beep(void)
 // final ldx #0).
 bool scan_document_for_next_line(void)
 {
-    uint8_t a;
-    uint8_t y;
-    uint8_t x;
+    
+    
+    
 
-    addr_t tmp89;
+    
 
     // c8b7b
     // c8b7b:
     //     lda l007a
+uint8_t a;
     a = l007a;
     //     beq c8b78
     // c8b78:
@@ -4893,11 +5053,13 @@ bool scan_document_for_next_line(void)
     if (a == 0)
         return false;
     //     lda #0x14
-    a = 0x14;
+uint8_t a_1;
+    a_1 = 0x14;
     //     sta l0048
-    l0048 = a;
+    l0048 = a_1;
     //     ldx #0
     // (the 6502's ldx #0 overwrites Z before any branch reads it)
+uint8_t x;
     x = 0;
     //     stx l0049
     l0049 = x;
@@ -4907,6 +5069,7 @@ bool scan_document_for_next_line(void)
     //     sta ((uint8_t*)&tmp89)[0]
     //     lda doc_ptr2+1
     //     sta ((uint8_t*)&tmp89)[1]
+addr_t tmp89;
     tmp89 = doc_ptr2;
 c8b91:
     // c8b91:
@@ -4926,12 +5089,14 @@ c8b91:
 c8b9f:
     // c8b9f:
     //     ldy #0
+uint8_t y;
     y = 0;
     //     lda (((uint8_t*)&tmp89)[0]),y
     // (Z from this lda is clobbered by the following jsr)
-    a = ram[tmp89];
+uint8_t a_2;
+    a_2 = ram[tmp89];
     //     jsr check_for_command_prefix
-    command_prefix_t cp = check_for_command_prefix(a);
+    command_prefix_t cp = check_for_command_prefix(a_2);
     //     bne c8bb7
     if (cp == NO_COMMAND_PREFIX)
         goto c8bb7;
@@ -4950,42 +5115,45 @@ c8b9f:
 c8bb7:
     // c8bb7:
     //     jsr sub_c8c5f
-    a = upper_case_unless_folding(a);
+uint8_t a_3;
+    a_3 = upper_case_unless_folding(a_2);
     //     sta l0083
-    l0083 = a;
+    l0083 = a_3;
 c8bbc:
     // c8bbc:
     //     iny
     y++;
     //     lda (((uint8_t*)&tmp89)[0]),y
-    a = ram[tmp89 + y];
+uint8_t a_4;
+    a_4 = ram[tmp89 + y];
     //     beq c8bdb
-    if (a == 0)
+    if (a_4 == 0)
         goto c8bdb;
     //     jsr check_for_command_prefix
-    command_prefix_t cp2 = check_for_command_prefix(a);
+    command_prefix_t cp2 = check_for_command_prefix(a_4);
     //     beq c8bdb
     if (cp2 != NO_COMMAND_PREFIX)
         goto c8bdb;
     //     lda header_text_maybe,x
     // (Z from this lda is clobbered by the following cmp #0x20)
-    a = header_text_maybe[x];
+uint8_t a_5;
+    a_5 = header_text_maybe[x];
     //     cmp #0x20 ; ' '
-    if (a == 0x20)
+    if (a_5 == 0x20)
         goto c8bf7;
     //     beq c8bf7
     //     cmp #1
-    if (a == 1)
+    if (a_5 == 1)
         goto c8be3;
     //     beq c8be3
     //     cmp #2
-    if (a == 2)
+    if (a_5 == 2)
     {
-        a = 0x20;
+        a_5 = 0x20;
     }
     // c8bd7:
     //     cmp l0083
-    if (a == l0083)
+    if (a_5 == l0083)
         goto c8c33;
     //     beq c8c33
 c8bdb:
@@ -5001,15 +5169,17 @@ c8bdb:
 c8be3:
     // c8be3:
     //     lda l0083
-    a = l0083;
+uint8_t a_6;
+    a_6 = l0083;
     //     stx l0084
     l0084 = x;
     //     ldx l0049
-    x = l0049;
+uint8_t x_1;
+    x_1 = l0049;
     //     cpx #0x14
-    if (x < 0x14)
+    if (x_1 < 0x14)
     {
-        output_buffer[x] = a;
+        output_buffer[x_1] = a_6;
         l0049++;
     }
     // c8bf2:
@@ -5023,40 +5193,43 @@ c8bf7:
     //     stx l0084
     l0084 = x;
     //     lda l0083
-    a = l0083;
+uint8_t a_7;
+    a_7 = l0083;
     //     cmp #0x20 ; ' '
-    if (a == 0x20)
+    if (a_7 == 0x20)
         goto c8c23;
     //     beq c8c23
     //     cmp #9
-    if (a == 9)
+    if (a_7 == 9)
         goto c8c23;
     //     beq c8c23
     //     cmp #0x0b
-    if (a == 0x0b)
+    if (a_7 == 0x0b)
         goto c8c23;
     //     beq c8c23
     //     cmp #0x1a
-    if (a == 0x1a)
+    if (a_7 == 0x1a)
         goto c8c23;
     //     beq c8c23
     //     cmp #0x0d
-    if (a == 0x0d)
+    if (a_7 == 0x0d)
         goto c8c23;
     //     beq c8c23
     //     lda l0081
-    a = l0081;
+uint8_t a_8;
+    a_8 = l0081;
     //     beq c8bdb
-    if (a == 0)
+    if (a_8 == 0)
         goto c8bdb;
     //     jsr sub_c8c51
     // (inlined: append_to_output_buffer(0))
     append_to_output_buffer(0);
     //     lda #0
     // (Z from this lda is clobbered by the following ldx l0084)
-    a = 0;
+uint8_t a_9;
+    a_9 = 0;
     //     sta l0081
-    l0081 = a;
+    l0081 = a_9;
     //     ldx l0084
     x = l0084;
     //     inx
@@ -5071,11 +5244,11 @@ c8bf7:
 c8c23:
     // c8c23:
     //     jsr sub_c8c53
-    append_to_output_buffer(a);
+    append_to_output_buffer(a_7);
     //     ldx l0084
     x = l0084;
     //     sta l0081
-    l0081 = a;
+    l0081 = a_7;
 loop_c8c2a:
     // loop_c8c2a:
     //     inc ((uint8_t*)&tmp89)[0]
@@ -5114,20 +5287,23 @@ c8c3e:
     ptr2 = doc_ptr2;
     doc_ptr2 = tmp89;
     //     ldx #0
-    x = 0;
+uint8_t x_2;
+    x_2 = 0;
     return true;
 }
 
 static void insert_line_into_document(addr_t ptr)
 {
-    addr_t tmp45;
-    addr_t tmp67;
+    
+    
     //     sta ((uint8_t*)&tmp45)[0]
+addr_t tmp45;
     tmp45 = ptr;
     //     lda #1
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda #0
     //     sta ((uint8_t*)&tmp67)[1]
+addr_t tmp67;
     tmp67 = 1;
     //     jsr make_space_for_insertion
     if (make_space_for_insertion(tmp45, tmp67))
@@ -5147,10 +5323,12 @@ static void update_line_length(void)
 
     // ca684:
     //     ldx ypos
-    uint8_t x;
-    uint8_t a;
+    
+    
+uint8_t x;
     x = ypos;
     //     lda screen_width
+uint8_t a;
     a = screen_maxcolumn;
     //     sta line_lengths,x
     line_lengths[x] = a;
@@ -5334,8 +5512,8 @@ ca4bc:
 
 uint8_t draw_prompt_characters(uint8_t x, uint8_t y)
 {
-    addr_t tmp23;
-    uint8_t a;
+    
+    
 
     // draw_prompt_characters: Draws two inverted prompt characters at top-left
     // On entry: x, y = prompt characters
@@ -5343,6 +5521,7 @@ uint8_t draw_prompt_characters(uint8_t x, uint8_t y)
     // On exit: cursor position restored
 
     //     stx ((uint8_t*)&tmp23)[0]
+addr_t tmp23;
     tmp23 = (addr_t)(y) << 8 | x;
     //     jsr save_cursor_position
     save_cursor_position();
@@ -5351,16 +5530,19 @@ uint8_t draw_prompt_characters(uint8_t x, uint8_t y)
     //     jsr home_cursor
     home_cursor();
     //     jsr set_inverted_text_if_not_mode_7
+uint8_t a;
     a = STYLE_REVERSE;
     screen_setstyle(a);
     //     lda ((uint8_t*)&tmp23)[0]
-    a = (uint8_t)((uint8_t*)&tmp23)[0];
+uint8_t a_1;
+    a_1 = (uint8_t)((uint8_t*)&tmp23)[0];
     //     jsr screen_putchar
-    screen_putchar(a);
+    screen_putchar(a_1);
     //     lda ((uint8_t*)&tmp23)[1]
-    a = (uint8_t)((uint8_t*)&tmp23)[1];
+uint8_t a_2;
+    a_2 = (uint8_t)((uint8_t*)&tmp23)[1];
     //     jsr screen_putchar
-    screen_putchar(a);
+    screen_putchar(a_2);
     //     jsr set_normal_text_if_not_mode_7
     screen_setstyle(0);
     //     lda #0x20 ; ' '
@@ -5368,7 +5550,7 @@ uint8_t draw_prompt_characters(uint8_t x, uint8_t y)
     screen_putchar(0x20);
     //     jsr restore_cursor_position
     restore_cursor_position(tmp45);
-    return a;
+    return a_2;
     // cursor_on:
     // cursor_off:
     //     rts
@@ -5410,15 +5592,17 @@ static void draw_status_word(void)
 
     // sub_ca651:
     //     lda #0
-    uint8_t x;
-    uint8_t a;
+    
+    
     //     sta flags_need_redrawing_flag
     flags_need_redrawing_flag = 0;
     //     jsr home_cursor
     home_cursor();
     //     ldx #0x46 ; 'F'
+uint8_t x;
     x = 0x46;
     //     lda format_mode_flag
+uint8_t a;
     a = format_mode_flag;
     //     beq ca666
     if (a != 0)
@@ -5431,25 +5615,29 @@ static void draw_status_word(void)
         }
     }
     //     txa
-    a = x;
+uint8_t a_1;
+    a_1 = x;
     //     jsr screen_putchar
-    screen_putchar(a);
+    screen_putchar(a_1);
     //     lda #0x4a ; 'J'
-    a = 0x4a;
+uint8_t a_2;
+    a_2 = 0x4a;
     //     ldx justifying_flag
-    x = justifying_flag;
+uint8_t x_1;
+    x_1 = justifying_flag;
     //     beq ca672
-    if (x != 0)
+    if (x_1 != 0)
     {
-        a = 0x20;
+        a_2 = 0x20;
     }
     //     jsr screen_putchar
-    screen_putchar(a);
+    screen_putchar(a_2);
     //     lda #0x49 ; 'I'
     //     ldx insert_mode_flag
-    x = insert_mode_flag;
+uint8_t x_2;
+    x_2 = insert_mode_flag;
     //     bne ca681
-    if (x != 0)
+    if (x_2 != 0)
     {
         home_cursor();
         return;
@@ -5462,9 +5650,11 @@ static void draw_status_word(void)
 }
 
 static uint8_t get_line_length(void)
-{
-    uint8_t a;
-    uint8_t y;
+{command_prefix_t cp_1;
+uint8_t a_3;
+
+    
+    
 
     // get_line_length
     // Pseudocode: Returns the length of the current edit line
@@ -5474,6 +5664,7 @@ static uint8_t get_line_length(void)
     // get_line_length:
     //     ldy #0
     //     lda (current_format_line_ptr),y
+uint8_t a;
     a = ram[current_format_line_ptr + 0];
     //     jsr check_for_command_prefix
     command_prefix_t cp = check_for_command_prefix(a);
@@ -5481,6 +5672,7 @@ static uint8_t get_line_length(void)
     {
         command_prefix_t saved_cp = cp;
         //     ldy #0x84
+uint8_t y;
         y = MAX_LINE_LENGTH;
         // loop_caafb:
         for (;;)
@@ -5488,15 +5680,17 @@ static uint8_t get_line_length(void)
             //     dey
             y--;
             //     lda (current_edit_line_ptr),y
-            a = ram[RAM_EDIT_BUFFER + y];
+uint8_t a_1;
+            a_1 = ram[RAM_EDIT_BUFFER + y];
             //     cmp #0x10
-            if (a != 0x10)
+            if (a_1 != 0x10)
                 goto cab06;
             //     bne cab06
             //     tya
-            a = y;
+uint8_t a_2;
+            a_2 = y;
             //     bne loop_caafb
-            if (a != 0)
+            if (a_2 != 0)
                 continue;
             break;
         }
@@ -5507,16 +5701,16 @@ static uint8_t get_line_length(void)
         //     iny
         y++;
         //     tya
-        a = y; //     plp
-        cp = saved_cp;
+        a_3 = y; //     plp
+        cp_1 = saved_cp;
     }
     //     bne return_69
-    if (cp != NO_COMMAND_PREFIX)
+    if (cp_1 != NO_COMMAND_PREFIX)
     {
-        a += 3;
+        a_3 += 3;
     }
     //     rts
-    return a;
+    return a_3;
 }
 
 static void go_to_marker(uint8_t x)
@@ -5566,15 +5760,16 @@ static void home_cursor(void)
 
 uint8_t justify_edit_buffer(addr_t ptr1)
 {
-    addr_t tmp89;
-    uint8_t a;
-    uint8_t y, x = 0;
+    
+    
+    uint8_t x = 0;
 
     // Pseudocode: Word-spacing justification: distributes extra spaces between
     // words
 
     // justify_edit_buffer:
     //     lda justifying_flag
+uint8_t a;
     a = justifying_flag;
     if (a != 0)
         return x;
@@ -5586,14 +5781,16 @@ uint8_t justify_edit_buffer(addr_t ptr1)
     //     sta l0042
     l0042 = a;
     //     lda ruler_right_stop
-    a = ruler_right_stop;
+uint8_t a_1;
+    a_1 = ruler_right_stop;
 
     //     beq return_47
-    if (a == 0)
+    if (a_1 == 0)
         return x;
     //     jsr get_line_length
     l0043 = get_line_length();
     //     ldy #0
+uint8_t y;
     y = 0;
     //     beq c9861                                                         ;
     //     ALWAYS branch
@@ -5602,9 +5799,9 @@ uint8_t justify_edit_buffer(addr_t ptr1)
     // c9847:
 c9847:
     //     lda l0039
-    a = l0039;
+    a_1 = l0039;
     //     sta l0084
-    l0084 = a;
+    l0084 = a_1;
     //     iny
     y++;
     //     cpy l0043
@@ -5612,12 +5809,12 @@ c9847:
         goto c9871;
     //     clc
     //     jsr sub_c9936
-    bool is_zero = process_char_for_output(y, false, &x, &a);
+    bool is_zero = process_char_for_output(y, false, &x, &a_1);
     //     beq c985c
     if (is_zero)
         goto c985c;
     //     cmp #0x20 ; ' '
-    if (a != 0x20)
+    if (a_1 != 0x20)
         goto c9847;
     //     bne c9847
     //     inc l0046
@@ -5633,12 +5830,13 @@ c985c:
 c9861:
     //     sec
     //     jsr sub_c9936
-    is_zero = process_char_for_output(y, true, &x, &a);
+_Bool is_zero_1;
+    is_zero_1 = process_char_for_output(y, true, &x, &a_1);
     //     beq c985c
-    if (is_zero)
+    if (is_zero_1)
         goto c985c;
     //     cmp #0x20 ; ' '
-    if (a != 0x20)
+    if (a_1 != 0x20)
         goto c9847;
     //     beq c985c                                                         ;
     //     ALWAYS branch
@@ -5655,20 +5853,22 @@ c986d:
     // c9871:
 c9871:
     //     lda l0046
-    a = l0046;
+uint8_t a_2;
+    a_2 = l0046;
 
     //     beq return_47
-    if (a == 0)
+    if (a_2 == 0)
         return x;
     //     lda ruler_right_stop
-    a = ruler_right_stop;
+uint8_t a_3;
+    a_3 = ruler_right_stop;
     //     sec
     //     sbc l0084
     //     bcc return_47
     // (C=1: plain subtraction; if it borrows, abort)
-    if (a < l0084)
+    if (a_3 < l0084)
         return x;
-    a -= l0084;
+    a_3 -= l0084;
     //     adc #0
     //     tax
     //     adc l0043
@@ -5678,174 +5878,197 @@ c9871:
     // (the 6502 chains adc/sbc only to stay within 8 bits; in C this is one
     //  value: if the line already reaches the margin, the slack to distribute
     //  is MAX_LINE_LENGTH - l0043)
-    x = (uint8_t)(a + 1);
-    uint8_t extra = (uint8_t)(a + 1 + l0043);
+uint8_t x_1;
+    x_1 = (uint8_t)(a_3 + 1);
+    uint8_t extra = (uint8_t)(a_3 + 1 + l0043);
     if (extra >= MAX_LINE_LENGTH)
     {
         l0084 = (uint8_t)(extra - MAX_LINE_LENGTH);
-        x = (uint8_t)(x - l0084);
+        x_1 = (uint8_t)(x_1 - l0084);
     }
     //     stx l0082
-    l0082 = x;
+    l0082 = x_1;
     //     stx ((uint8_t*)&tmp89)[0]
     //     lda #0
     //     sta ((uint8_t*)&tmp89)[1]
-    tmp89 = x;
+addr_t tmp89;
+    tmp89 = x_1;
     //     jsr sub_cadf0
     //     sta l0045
-    a = tmp89 % l0046;
-    tmp89 = tmp89 / l0046;
-    l0045 = a;
+uint8_t a_4;
+    a_4 = tmp89 % l0046;
+addr_t tmp89_1;
+    tmp89_1 = tmp89 / l0046;
+    l0045 = a_4;
     //     lda ((uint8_t*)&tmp89)[0]
-    a = ((uint8_t*)&tmp89)[0];
+uint8_t a_5;
+    a_5 = ((uint8_t*)&tmp89_1)[0];
     //     sta l0044
-    l0044 = a;
+    l0044 = a_5;
     //     ldy #0
-    y = 0;
+uint8_t y_1;
+    y_1 = 0;
     //     ldx l0046
-    x = l0046;
+uint8_t x_2;
+    x_2 = l0046;
     //     tya                                                               ;
     //     A=0x00
-    a = y;
+uint8_t a_6;
+    a_6 = y_1;
     // loop_c98a2:
     //     sta input_buffer,y
     do
     {
-        input_buffer[y] = a;
-        y++;
-        x--;
-    } while (x != 0);
+        input_buffer[y_1] = a_6;
+        y_1++;
+        x_2--;
+    } while (x_2 != 0);
     //     ldy print_xpos
-    y = print_xpos;
+uint8_t y_2;
+    y_2 = print_xpos;
     //     iny
-    y++;
+    y_2++;
     //     cpy l0046
-    if (y >= l0046)
+    if (y_2 >= l0046)
     {
-        y = 1;
+        y_2 = 1;
     }
     //     dey
-    y--;
+    y_2--;
     //     ldx l0046
-    x = l0046;
+uint8_t x_3;
+    x_3 = l0046;
     // c98b5:
 c98b5:
     //     lda l0045
-    a = l0045;
+uint8_t a_7;
+    a_7 = l0045;
 
     //     beq c98bd
-    if (a != 0)
+    if (a_7 != 0)
     {
-        a = 1;
+        a_7 = 1;
         l0045--;
     }
     //     clc
     //     adc l0044
     // (plain addition: a += l0044)
-    a += l0044;
+    a_7 += l0044;
     //     sta input_buffer,y
-    input_buffer[y] = a;
+    input_buffer[y_2] = a_7;
     //     lda l0082
-    a = l0082;
+uint8_t a_8;
+    a_8 = l0082;
     //     sec
     //     sbc input_buffer,y
     // (sec makes this a plain 8-bit subtraction; the result's Z flag is tested
     //  by the following beq, so compare directly instead of via php/plp)
-    a = a - input_buffer[y];
+uint8_t a_9;
+    a_9 = a_8 - input_buffer[y_2];
     //     sta l0082
-    l0082 = a;
+    l0082 = a_9;
     //     iny
-    y++;
+    y_2++;
     //     cpy l0046
     //     bcc c98d3
-    if (y >= l0046)
+    if (y_2 >= l0046)
     {
-        y = 0;
+        y_2 = 0;
     }
     //     beq c98d9
-    if (a == 0)
+    if (a_9 == 0)
         goto c98d9;
     //     dex
-    x--;
+    x_3--;
     //     bne c98b5
-    if (x != 0)
+    if (x_3 != 0)
         goto c98b5;
     // c98d9:
 c98d9:
     //     sty print_xpos
-    print_xpos = y;
+    print_xpos = y_2;
     //     ldy #0
-    y = 0;
+uint8_t y_3;
+    y_3 = 0;
     //     sty l0081
-    l0081 = y;
+    l0081 = y_3;
     //     sty l0039
-    l0039 = y;
+    l0039 = y_3;
     //     lda #0x1a
     //     jsr wipe_buffer
     wipe_buffer(0x1a, ptr1);
     //     lda l0042
-    a = l0042;
+uint8_t a_10;
+    a_10 = l0042;
 
     //     beq c98f6
-    if (a == 0)
+    if (a_10 == 0)
         goto c98f6;
     //     ldy #0
-    y = 0;
+uint8_t y_4;
+    y_4 = 0;
     // loop_c98ec:
     //     lda output_buffer,y
     do
     {
-        a = output_buffer[y];
-        ram[RAM_EDIT_BUFFER + y] = a;
-        y++;
-    } while (y != l0042);
+uint8_t a_11;
+        a_11 = output_buffer[y_4];
+        ram[RAM_EDIT_BUFFER + y_4] = a_11;
+        y_4++;
+    } while (y_4 != l0042);
     //     bne loop_c98ec
     // c98f6:
 c98f6:
     //     ldy l0042
-    y = l0042;
+uint8_t y_5;
+    y_5 = l0042;
     //     ldx l0042
-    x = l0042;
+uint8_t x_4;
+    x_4 = l0042;
     // c98fa:
 c98fa:
     //     lda output_buffer,x
-    a = output_buffer[x];
+uint8_t a_12;
+    a_12 = output_buffer[x_4];
     //     cmp #0x20 ; ' '
-    if (a != 0x20)
+    if (a_12 != 0x20)
         goto c9920;
     //     bne c9920
     //     lda l0081
-    a = l0081;
+uint8_t a_13;
+    a_13 = l0081;
 
     //     beq c991c
-    if (a == 0)
+    if (a_13 == 0)
         goto c991c;
     //     sty l0084
-    l0084 = y;
+    l0084 = y_5;
     //     ldy l0039
-    y = l0039;
+uint8_t y_6;
+    y_6 = l0039;
     //     cpy l0046
     //     lda #0
     //     bcs c9912
-    if (y < l0046)
+    if (y_6 < l0046)
     {
-        a = input_buffer[y];
+        a_13 = input_buffer[y_6];
     }
     //     clc
     //     adc l0084
-    a += l0084;
+    a_13 += l0084;
     //     inc l0039
     l0039++;
     //     tay
-    y = a;
+    y_5 = a_13;
     //     lda #0
-    a = 0;
+uint8_t a_14;
+    a_14 = 0;
     //     sta l0081
-    l0081 = a;
+    l0081 = a_14;
     // c991c:
 c991c:
     //     lda #0x20 ; ' '
-    a = 0x20;
+    a_12 = 0x20;
     //     bne c9922                                                         ;
     //     ALWAYS branch
     goto c9922;
@@ -5857,37 +6080,38 @@ c9920:
     // c9922:
 c9922:
     //     sta (current_edit_line_ptr),y
-    ram[RAM_EDIT_BUFFER + y] = a;
+    ram[RAM_EDIT_BUFFER + y_5] = a_12;
     //     iny
-    y++;
+    y_5++;
     //     inx
-    x++;
+    x_4++;
     //     cpx l0043
-    if (x != l0043)
+    if (x_4 != l0043)
         goto c98fa;
     //     bne c98fa
     //     lda #0x10
-    a = 0x10;
+uint8_t a_15;
+    a_15 = 0x10;
     // loop_c992c:
     //     cpy #0x84
     while (1)
     {
-        if (y >= MAX_LINE_LENGTH)
-            return x;
-        ram[RAM_EDIT_BUFFER + y] = a;
-        y++;
+        if (y_5 >= MAX_LINE_LENGTH)
+            return x_4;
+        ram[RAM_EDIT_BUFFER + y_5] = a_15;
+        y_5++;
     }
     // return_48:
     //     rts
-    return x;
+    return x_4;
 }
 
 bool make_space_for_insertion(addr_t tmp45, addr_t tmp67)
 {
-    addr_t tmp89;
-    addr_t tmp23;
+    
+    
 
-    uint8_t x;
+    
     // make_space_for_insertion: Shifts content up to make space for insertion
     // (6437) On entry: ((uint8_t*)&tmp45)[0]:((uint8_t*)&tmp45)[1] = block
     // base, ((uint8_t*)&tmp67)[0]:((uint8_t*)&tmp67)[1] = size, top = current
@@ -5911,12 +6135,15 @@ bool make_space_for_insertion(addr_t tmp45, addr_t tmp67)
     //     stx top (6455) sty top+1 (6456)
     // (16-bit arithmetic: tmp23 = top, then tmp89 = top + tmp67;
     //  if that exceeds himem there is not enough space)
+addr_t tmp23;
     tmp23 = top;
+addr_t tmp89;
     tmp89 = top + tmp67;
     if (tmp89 >= himem)
         return false;
     top = tmp89;
     //     ldx #0 (6457)
+uint8_t x;
     x = 0;
     // loop_caa38: (6458)
     for (;;)
@@ -6022,16 +6249,18 @@ uint8_t process_current_document_character(
     uint8_t a = ram[tmp01 + *y];
     //     iny
     (*y)++;
-    a = process_document_character(a, x, is_tab);
-    return a;
+uint8_t a_1;
+    a_1 = process_document_character(a, x, is_tab);
+    return a_1;
 }
 
 static void recalculate_cursor_xpos(void)
-{
-    addr_t tmp01;
-    uint8_t a;
-    uint8_t x;
-    uint8_t y;
+{uint8_t x;
+
+    
+    
+    
+    
     // recalculate_cursor_xpos
     // Pseudocode: Recalculates cursor xpos from visual position accounting for
     // tabs and margins
@@ -6041,8 +6270,10 @@ static void recalculate_cursor_xpos(void)
     //     sta ((uint8_t*)&tmp01)[0]
     //     lda current_edit_line_ptr+1
     //     sta ((uint8_t*)&tmp01)[1]
+addr_t tmp01;
     tmp01 = RAM_EDIT_BUFFER;
     //     lda l0079
+uint8_t a;
     a = l0079;
     // (The SBC at ca5f1 in process_document_character uses the previous
     //  character's tab status as its borrow-in; propagate it across the walk.)
@@ -6051,6 +6282,7 @@ static void recalculate_cursor_xpos(void)
         goto ca624;
     //     bne ca624
     //     tay
+uint8_t y;
     y = a;
     // loop_ca615:
     for (;;)
@@ -6062,7 +6294,8 @@ static void recalculate_cursor_xpos(void)
         //     sta l0039
         l0039 = a;
         //     jsr process_current_document_character
-        a = process_current_document_character(tmp01, &x, &y, &is_tab);
+uint8_t a_1;
+        a_1 = process_current_document_character(tmp01, &x, &y, &is_tab);
         //     txa
         a = x;
         //     clc
@@ -6082,12 +6315,14 @@ ca624:
     l0079 = a;
     //     tay                                                               ;
     //     Y=0x00
-    y = a;
+uint8_t y_1;
+    y_1 = a;
     // loop_ca629:
     do
     {
         l0039 = a;
-        a = process_current_document_character(tmp01, &x, &y, &is_tab);
+uint8_t a_2;
+        a_2 = process_current_document_character(tmp01, &x, &y_1, &is_tab);
         a = x;
         a += l0039;
     } while (a < l0072);
@@ -6095,10 +6330,10 @@ ca624:
     if (a != l0072)
     {
         a = l0039;
-        y--;
+        y_1--;
     }
     //     sty xpos
-    xpos = y;
+    xpos = y_1;
     // ca63d:
 ca63d:
     //     sta l0072
@@ -6114,35 +6349,40 @@ void redraw_editor(void)
     //  Ptrs:   ptr6
     // Pseudocode: Main screen update routine: scrolls, redraws lines, updates
     // status and cursor
-    uint8_t saved_status_line_needs_redrawing_flag;
-    uint8_t a, x, y;
+    
+    
 
     // (the 6502 held the line being drawn in the YA register pair; use a real
     //  16-bit variable instead)
-    addr_t draw;
+    
 
     // redraw_editor:                                                    (5206)
     //     jsr cursor_off                                                (5207)
     cursor_off();
     //     lda ruler_stack_ptr                                           (5208)
+uint8_t a;
     a = ruler_index_ptr;
     //     sta l0034                                                     (5209)
     l0034 = a;
     //     lda l0076                                                     (5210)
-    a = status_line_needs_redrawing_flag;
+uint8_t a_1;
+    a_1 = status_line_needs_redrawing_flag;
     //     sta input_buffer_ptr+1                                        (5211)
-    saved_status_line_needs_redrawing_flag = a;
+uint8_t saved_status_line_needs_redrawing_flag;
+    saved_status_line_needs_redrawing_flag = a_1;
     //     lda l006e                                                     (5212)
-    a = edit_buffer_unpacked_flag;
+uint8_t a_2;
+    a_2 = edit_buffer_unpacked_flag;
     //     beq ca28e                                                     (5213)
-    if (a == 0)
+    if (a_2 == 0)
         goto ca28e;
     //     lda l0073                                                     (5214)
-    a = l0073;
+uint8_t a_3;
+    a_3 = l0073;
     //     ora l006f                                                     (5215)
-    a |= l006f;
+    a_3 |= l006f;
     //     bne ca28e                                                     (5216)
-    if (a != 0)
+    if (a_3 != 0)
         goto ca28e;
     //     jmp ca360                                                     (5217)
     goto ca360;
@@ -6159,14 +6399,16 @@ ca28e:
     // ca29c: (5227)
 ca29c:
     //     lda l006f (5228)
-    a = l006f;
+uint8_t a_4;
+    a_4 = l006f;
     //     bne ca30d (5229)
-    if (a != 0)
+    if (a_4 != 0)
         goto ca30d;
     //     lda l0033 (5230)
-    a = l0033;
+uint8_t a_5;
+    a_5 = l0033;
     //     sta ruler_stack_ptr (5231)
-    ruler_index_ptr = a;
+    ruler_index_ptr = a_5;
     //     ldy l0012 (5232) lda l0011 (5233) cpy top+1 (5234) bcc ca2b2 (5235)
     //     bne ca30d (5236) cmp top (5237) bcs ca30d (5238)
     if (top_of_screen_line_ptr >= top)
@@ -6184,14 +6426,16 @@ ca29c:
     //     sty l0012 (5247) sta l0011 (5248)
     top_of_screen_line_ptr = tmp01;
     //     ldx screen_height (5249)
+uint8_t x;
     x = screen_maxrow;
     // loop_ca2c7: (5250)
     do
     {
         x--;
-        a = line_lengths[x];
+uint8_t a_6;
+        a_6 = line_lengths[x];
         x++;
-        line_lengths[x] = a;
+        line_lengths[x] = a_6;
         x--;
     } while (x != 0);
     //     ldy #SCREEN_SCROLLDOWN (5257) jsr SCREEN (5258)
@@ -6199,6 +6443,7 @@ ca29c:
     //     jsr home_cursor (5259)
     screen_setcursor(0, 1);
     //     ldy #1 (5260)
+uint8_t y;
     y = 1;
     //     jmp ca351 (5261)
     goto ca351;
@@ -6206,25 +6451,27 @@ ca29c:
     // ca2dc: (5263)
 ca2dc:
     //     lda l0033 (5264)
-    a = l0033;
+uint8_t a_7;
+    a_7 = l0033;
     //     sta ruler_stack_ptr (5265)
-    ruler_index_ptr = a;
+    ruler_index_ptr = a_7;
     // ca2e0: (5266)
 ca2e0:
     //     ldx #0 (5267)
-    x = 0;
+uint8_t x_1;
+    x_1 = 0;
     //     lda l0011 / ldy l0012  (folded into the walk variable)
     addr_t walk = top_of_screen_line_ptr;
     // ca2e6: (5270)
 ca2e6:
     //     inx (5271)
-    x++;
+    x_1++;
     //     cpy ptr6+1 (5272)
     //     cmp ptr6 (5274)
     // (16-bit comparison: walk == editor_ptr6)
     if (walk == editor_ptr6)
     {
-        l003d = x;
+        l003d = x_1;
     }
     //     cpy current_line_ptr+1 (5278)
     //     cmp current_line_ptr (5280)
@@ -6233,68 +6480,76 @@ ca2e6:
         goto ca313;
     // ca2f9: (5282)
     //     jsr sub_cab1a (5283)
-    if (advance_to_next_line(walk, &tmp01, &y))
+uint8_t y_1;
+    if (advance_to_next_line(walk, &tmp01, &y_1))
         goto ca313;
     //     beq ca313 (5284)
     //     tya / ldy tmp01[1] / clc / adc tmp01[0]
     // (tmp01 += y; y holds the offset past the CR left by find_next_line)
-    tmp01 += y;
+    tmp01 += y_1;
     walk = tmp01;
     //     cpx screen_height (5292)
     //     beq ca2e6 (5293)
-    if (x <= screen_maxrow)
+    if (x_1 <= screen_maxrow)
         goto ca2e6;
     // ca30d: (5295)
 ca30d:
     //     jsr sub_ca44e (5296)
-    x = compute_display_start_line();
+uint8_t x_2;
+    x_2 = compute_display_start_line();
     //     jmp ca2e0 (5297)
     goto ca2e0;
 
     // ca313: (5299)
 ca313:
     //     cpx screen_height (5300)
-    if (x <= screen_maxrow)
+    if (x_1 <= screen_maxrow)
         goto ca35e;
     //     lda l006f (5303)
-    a = l006f;
+uint8_t a_8;
+    a_8 = l006f;
     //     bne ca30d (5304)
-    if (a != 0)
+    if (a_8 != 0)
         goto ca30d;
     //     ldx #0 (5305)
-    x = 0;
+uint8_t x_3;
+    x_3 = 0;
     // loop_ca31f: (5306)
     do
     {
-        a = line_lengths[x + 1];
-        line_lengths[x] = a;
-        x++;
-    } while (x != screen_maxrow);
+uint8_t a_9;
+        a_9 = line_lengths[x_3 + 1];
+        line_lengths[x_3] = a_9;
+        x_3++;
+    } while (x_3 != screen_maxrow);
     //     bne loop_ca31f (5311)
     //     dec l003d (5312)
     l003d--;
     //     ldx #0 (5313)
-    x = 0;
+uint8_t x_4;
+    x_4 = 0;
     //     lda screen_width (5314)
-    a = screen_maxcolumn;
+uint8_t a_10;
+    a_10 = screen_maxcolumn;
     //     sta line_lengths,x (5315)
-    line_lengths[x] = a;
+    line_lengths[x_4] = a_10;
     //     lda l0033 (5316)
-    a = l0033;
+uint8_t a_11;
+    a_11 = l0033;
     //     sta ruler_stack_ptr (5317)
-    ruler_index_ptr = a;
+    ruler_index_ptr = a_11;
     //     ldy l0012 / lda l0011  (these loaded bytes are clobbered by
     //     advance_to_next_line's scan; y is left holding the offset past the
     //     CR, which is what the following addition needs)
     //     jsr sub_cab1a (5320)
-    advance_to_next_line(top_of_screen_line_ptr, &tmp01, &y);
+    advance_to_next_line(top_of_screen_line_ptr, &tmp01, &y_1);
     //     tya (5321)
     //     clc (5322)
     //     adc l0011 (5323)
     //     sta l0011 (5324)
     //     bcc ca348 (5325)
     // (16-bit arithmetic: top_of_screen_line_ptr += y)
-    top_of_screen_line_ptr += y;
+    top_of_screen_line_ptr += y_1;
     //     ldy #SCREEN_SCROLLUP (5328) jsr SCREEN (5329)
     screen_scrollup();
     //     ldx #0 (5330) ldy screen_height (5331) jsr set_cursor_position (5332)
@@ -6306,21 +6561,23 @@ ca313:
     // ca351: (5333)
 ca351:
     //     lda ruler_stack_ptr (5334)
-    a = ruler_index_ptr;
+uint8_t a_12;
+    a_12 = ruler_index_ptr;
     //     sta l0033 (5335)
-    l0033 = a;
+    l0033 = a_12;
     //     inc input_buffer_ptr+1 (5336)
     saved_status_line_needs_redrawing_flag++;
     //     inc l0074 (5337)
     l0074++;
     //     tya (5338)
-    a = y;
+uint8_t a_13;
+    a_13 = y;
     //     tax (5339)
-    x = a;
+    x_1 = a_13;
     // ca35e: (5340)
 ca35e:
     //     stx ypos (5341)
-    ypos = x;
+    ypos = x_1;
     // ca360: (5342)
 ca360:
     //     ldy l0034 (5343)
@@ -6331,15 +6588,17 @@ ca360:
     //     jsr sub_ca608 (5346)
     recalculate_cursor_xpos();
     //     lda screen_width (5347)
-    a = screen_maxcolumn;
+uint8_t a_14;
+    a_14 = screen_maxcolumn;
     //     lsr (5348)
-    a >>= 1;
+    a_14 >>= 1;
     //     sta l0083 (5349)
-    l0083 = a;
+    l0083 = a_14;
     //     lda l0072 (5350)
-    a = l0072;
+uint8_t a_15;
+    a_15 = l0072;
     //     cmp hscroll_pos (5351)
-    if (a < hscroll_pos)
+    if (a_15 < hscroll_pos)
         goto ca381;
     //     lda hscroll_pos / clc / adc screen_width / sbc #3 / cmp l0072 (5357)
     // (the 8-bit sequence just tests whether the cursor x (l0072) is still
@@ -6351,60 +6610,68 @@ ca360:
     // ca381: (5359)
 ca381:
     //     lda l0072 (5360)
-    a = l0072;
+uint8_t a_16;
+    a_16 = l0072;
     //     sec (5361)
     //     sbc l0083 (5362)
     //     bcs ca38a (5363)
     // (sbc with C=1 is a plain subtraction; the borrow selects 0)
-    if (a < l0083)
+    if (a_16 < l0083)
     {
-        a = 0;
+        a_16 = 0;
     }
     else
     {
-        a -= l0083;
+        a_16 -= l0083;
     }
     //     sta hscroll_pos (5366)
-    hscroll_pos = a;
+    hscroll_pos = a_16;
     //     lda #1 (5367)
-    a = 1;
+uint8_t a_17;
+    a_17 = 1;
     //     sta l0073 (5368)
-    l0073 = a;
+    l0073 = a_17;
     //     sta input_buffer_ptr+1 (5369)
-    saved_status_line_needs_redrawing_flag = a;
+    saved_status_line_needs_redrawing_flag = a_17;
     //     jsr ca93c (5370)
     write_line_back_to_document_safely();
     // ca395: (5371)
 ca395:
     //     lda input_buffer_ptr+1 (5372)
-    a = saved_status_line_needs_redrawing_flag;
+uint8_t a_18;
+    a_18 = saved_status_line_needs_redrawing_flag;
     //     sta l0076 (5373)
-    status_line_needs_redrawing_flag = a;
+    status_line_needs_redrawing_flag = a_18;
     //     lda l0073 (5374)
-    a = l0073;
+uint8_t a_19;
+    a_19 = l0073;
     //     beq ca3e7 (5375)
-    if (a == 0)
+    if (a_19 == 0)
         goto ca3e7;
     //     bpl ca3b2 (5376)
-    if ((int8_t)a >= 0)
+    if ((int8_t)a_19 >= 0)
         goto ca3b2;
     //     lda l003d (5377)
-    a = l003d;
+uint8_t a_20;
+    a_20 = l003d;
     //     bmi ca3b2 (5378)
-    if ((int8_t)a < 0)
+    if ((int8_t)a_20 < 0)
         goto ca3b2;
     //     sta l0082 (5379)
-    l0082 = a;
+    l0082 = a_20;
     //     lda screen_height (5380)
-    a = screen_maxrow;
+uint8_t a_21;
+    a_21 = screen_maxrow;
     //     sec (5381)
     //     sbc l003d (5382)
-    a -= l003d;
+    a_21 -= l003d;
     //     tax (5383)
-    x = a;
+uint8_t x_5;
+    x_5 = a_21;
     //     inx (5384)
-    x++;
+    x_5++;
     //     lda ptr6 / ldy ptr6+1 / bne ca3c1
+addr_t draw;
     draw = editor_ptr6;
     if ((editor_ptr6 >> 8) != 0)
         goto ca3c1;
@@ -6419,11 +6686,11 @@ ca3b2:
     //     lda l0011 / ldy l0012
     draw = top_of_screen_line_ptr;
     //     ldx screen_height (5395)
-    x = screen_maxrow;
+    x_5 = screen_maxrow;
     // ca3c1: (5396)
 ca3c1:
     //     stx l0081 (5397)
-    l0081 = x;
+    l0081 = x_5;
     // loop_ca3c3: (5398)
     for (;;)
     {
@@ -6431,11 +6698,13 @@ ca3c1:
         struct render_state rs = {.line = l0082};
         draw_line(&rs, draw);
         //     lda ((uint8_t*)&tmp01)[0] (5400)
-        a = ((uint8_t*)&tmp01)[0];
+uint8_t a_22;
+        a_22 = ((uint8_t*)&tmp01)[0];
         //     ldy ((uint8_t*)&tmp01)[1] (5401)
-        y = ((uint8_t*)&tmp01)[1];
+uint8_t y_2;
+        y_2 = ((uint8_t*)&tmp01)[1];
         //     jsr sub_cab1a (5402)
-        if (advance_to_next_line(tmp01, &tmp01, &y))
+        if (advance_to_next_line(tmp01, &tmp01, &y_2))
             goto ca422;
         //     beq ca422 (5403)
         //     tya (5404)
@@ -6444,7 +6713,7 @@ ca3c1:
         //     adc ((uint8_t*)&tmp01)[0] (5407)
         //     bcc ca3d8 (5408)
         // (16-bit arithmetic: tmp01 += y; result kept in a/y for the loop)
-        tmp01 += y;
+        tmp01 += y_2;
         draw = tmp01;
         //     inc l0082 (5411)
         l0082++;
@@ -6458,9 +6727,10 @@ ca3c1:
     // ca3de: (5414)
 ca3de:
     //     lda #0 (5415)
-    a = 0;
+uint8_t a_23;
+    a_23 = 0;
     //     sta l0074 (5416)
-    l0074 = a;
+    l0074 = a_23;
     //     ldy l0034 (5417)
     //     jsr cab91 (5418)
     load_current_ruler(l0034);
@@ -6473,32 +6743,37 @@ ca3e7:
     //     jsr draw_ruler (5422)
     draw_ruler();
     //     lda l0074 (5423)
-    a = l0074;
+uint8_t a_24;
+    a_24 = l0074;
     //     beq ca3ff (5424)
-    if (a != 0)
+    if (a_24 != 0)
     {
-        a = ypos;
-        l0082 = a;
-        struct render_state rs = {.line = l0082};
-        draw_line(&rs, current_format_line_ptr);
+uint8_t a_25;
+        a_25 = ypos;
+        l0082 = a_25;
+        struct render_state rs_1 = {.line = l0082};
+        draw_line(&rs_1, current_format_line_ptr);
     }
     //     lda flags_need_redrawing_flag (5431)
-    a = flags_need_redrawing_flag;
+uint8_t a_26;
+    a_26 = flags_need_redrawing_flag;
     //     beq ca406 (5432)
-    if (a != 0)
+    if (a_26 != 0)
     {
         draw_status_word();
     }
     //     lda l0072 (5435)
-    a = l0072;
+uint8_t a_27;
+    a_27 = l0072;
     //     sec (5436)
     //     sbc hscroll_pos (5437)
     //     clc (5438)
     //     adc #3 (5439)
-    a -= hscroll_pos;
-    a += 3;
+    a_27 -= hscroll_pos;
+    a_27 += 3;
     //     tax (5440)
-    x = a;
+uint8_t x_6;
+    x_6 = a_27;
     //     ldy #0 (5441)
     //     sty l0073 (5442)
     l0073 = 0;
@@ -6507,11 +6782,12 @@ ca3e7:
     //     sty l006f (5444)
     l006f = 0;
     //     dey (5445)
-    y = -1;
+uint8_t y_3;
+    y_3 = -1;
     //     sty ptr6+1 (5446)
-    editor_ptr6 = (editor_ptr6 & 0x00ff) | ((uint16_t)y << 8);
+    editor_ptr6 = (editor_ptr6 & 0x00ff) | ((uint16_t)y_3 << 8);
     //     ldy ypos (5447) jsr set_cursor_position (5448)
-    screen_setcursor(x, ypos);
+    screen_setcursor(x_6, ypos);
     //     jmp cursor_on (5449)
     cursor_on();
     return;
@@ -6524,26 +6800,31 @@ ca422:
     if (l0081 == 0)
         goto ca3de;
     //     ldx l0082 (5454)
-    x = l0082;
+uint8_t x_7;
+    x_7 = l0082;
     //     lda screen_width (5455)
-    a = screen_maxcolumn + 1;
+uint8_t a_28;
+    a_28 = screen_maxcolumn + 1;
     //     sta line_lengths+1,x (5456)
-    line_lengths[x + 1] = a;
+    line_lengths[x_7 + 1] = a_28;
     //     sta l0083 (5457)
-    l0083 = a;
+    l0083 = a_28;
     //     lda #0x2a ; '*' (5458)
-    a = 0x2a;
+uint8_t a_29;
+    a_29 = 0x2a;
     // loop_ca431: (5459)
     do
     {
         l0082++;
         screen_setcursor(0, l0082);
-        clear_to_eol(a, l0082);
-        a = l0083;
-        line_lengths[l0082] = a;
-        a = 0;
-        l0083 = a;
-        a = 0x20;
+        clear_to_eol(a_29, l0082);
+uint8_t a_30;
+        a_30 = l0083;
+        line_lengths[l0082] = a_30;
+uint8_t a_31;
+        a_31 = 0;
+        l0083 = a_31;
+        a_29 = 0x20;
         l0081--;
     } while (l0081 != 0);
     //     beq ca3de (5472)
@@ -6552,7 +6833,7 @@ ca422:
 
 static void render_char(struct render_state* rs)
 {
-    addr_t tmp67;
+    
     // render_char
     // ca4e9: Renders character to screen with attribute handling.
     //
@@ -6563,11 +6844,12 @@ static void render_char(struct render_state* rs)
     //   is reset to NORMAL if x (the marker index / screen column, as
     //   left by the flow above) is zero.  CR and NUL are replaced with
     //   space.
-    uint8_t a;
-    uint8_t x;
+    
+    
     uint8_t char_to_render = rs->ch;
 
     //     ldx l0082
+uint8_t x;
     x = rs->line;
     //     lda line_lengths,x
     if (line_lengths[x] != 0)
@@ -6577,9 +6859,10 @@ static void render_char(struct render_state* rs)
     }
     // ca4f4:
     //     ldx l0083
-    x = rs->col;
+uint8_t x_1;
+    x_1 = rs->col;
     //     cpx screen_width
-    if (x >= screen_maxcolumn)
+    if (x_1 >= screen_maxcolumn)
     {
         rs->ch = char_to_render;
         return;
@@ -6587,32 +6870,35 @@ static void render_char(struct render_state* rs)
     //     inc l0083
     rs->col++;
     //     tya
+uint8_t a;
     a = rs->pos;
     //     beq ca514
     if (a == 0)
         goto ca514;
     //     dey
     //     jsr sub_ca536
+addr_t tmp67;
     tmp67 = rs->line_ptr;
-    x = find_marker_at_position(rs->pos - 1, tmp67);
+    x_1 = find_marker_at_position(rs->pos - 1, tmp67);
     //     iny
     //     cpx #4
-    if (x >= 4)
+    if (x_1 >= 4)
         goto ca514;
     //     tax
-    x = 0;
+    x_1 = 0;
     //     bmi ca523
-    if (x & 0x80)
+    if (x_1 & 0x80)
     {
         rs->ch = char_to_render;
         goto ca523;
     }
     //     bne ca514
-    if (x != 0)
+    if (x_1 != 0)
         goto ca514;
     //     pla
-    a = STYLE_REVERSE;
-    screen_setstyle(a);
+uint8_t a_1;
+    a_1 = STYLE_REVERSE;
+    screen_setstyle(a_1);
 ca514:
     a = char_to_render;
     //     jsr check_for_control_code
@@ -6640,7 +6926,7 @@ ca523:
     screen_putchar(a);
     //     txa  (use x for the style-reset decision)
     //     bne ca532
-    if (x == 0)
+    if (x_1 == 0)
     {
         screen_setstyle(0);
     }
@@ -6650,7 +6936,7 @@ ca523:
 
 static void render_xchar(struct render_state* rs)
 {
-    uint8_t x;
+    
 
     // render_xchar: Renders a character to screen with style/attribute handling
 
@@ -6658,6 +6944,7 @@ static void render_xchar(struct render_state* rs)
     rs->char_width++;
     //     stx l0084
     //     ldx input_buffer_offset+1
+uint8_t x;
     x = rs->buf_off;
     //     inc input_buffer_offset+1
     rs->buf_off++;
@@ -6679,7 +6966,7 @@ static void restore_cursor_position(addr_t tmp45)
 
 area_status_t sanitise_area(void)
 {
-    addr_t tmp67;
+    
 
     // sanitise_area
     // sanitise_area:
@@ -6712,6 +6999,7 @@ area_status_t sanitise_area(void)
     //     lda area_end_ptr+1
     //     sbc area_start_ptr+1
     //     sta ((uint8_t*)&tmp67)[1]
+addr_t tmp67;
     tmp67 = area_end_ptr - area_start_ptr;
     //     bne return_10
     if (tmp67 != 0)
@@ -6767,9 +7055,10 @@ static void set_marker_common(uint8_t a)
 }
 
 void show_memory_full_error(void)
-{
-    uint8_t a;
-    uint8_t x;
+{uint8_t a_5;
+
+    
+    
 
     // show_memory_full_error
     // show_memory_full_error (sub_ca94a): Memory full error handler
@@ -6778,15 +7067,17 @@ void show_memory_full_error(void)
     // Uses: a, x, y, line_lengths
 
     //     jsr cursor_off
-    uint8_t y;
+    
     cursor_off();
     //     ldx #3
     //     ldy #0
     screen_setcursor(3, 0);
     //     jsr set_inverted_text_if_not_mode_7
+uint8_t a;
     a = STYLE_REVERSE;
     screen_setstyle(a);
     //     ldy screen_width
+uint8_t y;
     y = screen_maxcolumn;
     //     sty line_lengths
     line_lengths[0] = y;
@@ -6805,48 +7096,53 @@ void show_memory_full_error(void)
     //     dey
     //     bne loop_ca962
     // (loop restructured)
+uint8_t x;
     x = 0;
     for (;;)
     {
-        a = la995_data[x];
-        if (a == 0)
+uint8_t a_1;
+        a_1 = la995_data[x];
+        if (a_1 == 0)
             break;
         x++;
         y--;
         if (y == 0)
             break;
-        screen_putchar(a);
+        screen_putchar(a_1);
     }
     // ca96e:
     //     jsr set_normal_text_if_not_mode_7
     screen_setstyle(0);
     //     tya
-    a = y;
+uint8_t a_2;
+    a_2 = y;
     //     beq ca97c
-    if (a == 0)
+    if (a_2 == 0)
         goto ca97c;
     //     lda #0x20 ; ' '
-    a = 0x20;
+uint8_t a_3;
+    a_3 = 0x20;
     // loop_ca976:
     do
     {
-        screen_putchar(a);
+        screen_putchar(a_3);
         y--;
     } while (y != 0);
     // ca97c:
 ca97c:
     //     lda #0
-    a = 0;
+uint8_t a_4;
+    a_4 = 0;
     //     sta l006e
-    edit_buffer_unpacked_flag = a;
+    edit_buffer_unpacked_flag = a_4;
     //     jsr clear_cmd
     clear_cmd();
     // loop_ca983:
     do
     {
         beep();
-        a = screen_getchar();
-    } while (a != 0x1b);
+        a_5 = screen_getchar();
+    } while (a_5 != 0x1b);
     //     jsr cursor_on
     cursor_on();
     //     lda #1
@@ -6859,12 +7155,13 @@ ca97c:
 
 void adjust_area_pointers(addr_t tmp67)
 {
-    addr_t tmp45;
+    
     // sub_c89d3:
     //     lda area_start_ptr
     //     sta ((uint8_t*)&tmp45)[0]
     //     lda area_start_ptr+1
     //     sta ((uint8_t*)&tmp45)[1]
+addr_t tmp45;
     tmp45 = area_start_ptr;
     //     jsr adjust_pointers
     adjust_pointers(tmp45, tmp67);
@@ -6879,7 +7176,8 @@ static void append_to_output_buffer(uint8_t a)
 {
     // sub_c8c53:
     //     ldx l0048
-    uint8_t x;
+    
+uint8_t x;
     x = l0048;
     //     cpx #MAX_LINE_LENGTH
     //     bcs return_13
@@ -7011,11 +7309,13 @@ c9969:
  *         the document (6502 C=1), otherwise FORMAT_OK.
  */
 format_result_t format_paragraph(void)
-{
-    uint8_t a;
-    addr_t tmp67;
-    uint8_t x;
-    uint8_t y;
+{uint8_t x;
+uint8_t a_15;
+
+    
+    
+    
+    
     bool at_end = false; // C from the final advance_to_next_line (c9a8d)
     // sub_c9977
     // PROVISIONAL: Main line formatting routine — reads source line, handles
@@ -7034,6 +7334,7 @@ format_result_t format_paragraph(void)
     print_xpos = 4;
     //     ldy #0
     // (Z from ldy #0 is clobbered by the following lda (current_line_ptr),y)
+uint8_t y;
     y = 0;
     //     sty input_buffer_offset
     input_buffer_offset = y;
@@ -7043,6 +7344,7 @@ format_result_t format_paragraph(void)
     // (0x80/0x81). PROVISIONAL: If so, skip this line and return (paragraph
     // boundary reached).
     //      lda (current_line_ptr),y
+uint8_t a;
     a = ram[current_line_ptr + y];
     //     jsr check_for_command_prefix
     command_prefix_t cp = check_for_command_prefix(a);
@@ -7057,20 +7359,22 @@ format_result_t format_paragraph(void)
     //  c998a:
 c998a:
     //     lda format_mode_flag
-    a = format_mode_flag;
+uint8_t a_1;
+    a_1 = format_mode_flag;
     //     and #0x81
-    a &= 0x81;
+    a_1 &= 0x81;
 
     //     bne c9974
-    if (a != 0)
+    if (a_1 != 0)
     {
         return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
     }
     //     lda ruler_right_stop
-    a = ruler_right_stop;
+uint8_t a_2;
+    a_2 = ruler_right_stop;
 
     //     beq c9974
-    if (a == 0)
+    if (a_2 == 0)
     {
         return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
     }
@@ -7079,7 +7383,7 @@ c998a:
     //     bcc c9974
     // (sbc with C=1 in is a plain subtraction; if it borrows, bail out.
     //  Otherwise the carry into the following adc is 1: adc #1 adds 2)
-    if (a < ruler_left_stop)
+    if (a_2 < ruler_left_stop)
     {
         return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
     }
@@ -7087,9 +7391,10 @@ c998a:
     // l0080.
     //      adc #1
     // (carry is 1, so this is a + 2)
-    a = a - ruler_left_stop + 2;
+uint8_t a_3;
+    a_3 = a_2 - ruler_left_stop + 2;
     //     sta input_buffer_offset+1
-    l0080 = a;
+    l0080 = a_3;
     // PROVISIONAL: Wipe the edit buffer with 0x10 (soft spaces) and set up
     // ((uint8_t*)&tmp67)[0]/((uint8_t*)&tmp67)[1] = current_line_ptr.
     //      lda #0x10
@@ -7099,22 +7404,24 @@ c998a:
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda current_line_ptr+1
     //     sta ((uint8_t*)&tmp67)[1]
+addr_t tmp67;
     tmp67 = current_line_ptr;
     // PROVISIONAL: Zero working variables: l0047 (character index), l0039
     // (column counter), PROVISIONAL: l0038 (soft-hyphen/break flag), l0046
     // (word-start flag), bottom_margin.
     //      ldy #0
-    y = 0;
+uint8_t y_1;
+    y_1 = 0;
     //     sty l0047
-    l0047 = y;
+    l0047 = y_1;
     //     sty l0039
-    l0039 = y;
+    l0039 = y_1;
     //     sty l0038
-    l0038 = y;
+    l0038 = y_1;
     //     sty l0046
-    l0046 = y;
+    l0046 = y_1;
     //     sty bottom_margin
-    bottom_margin = y;
+    bottom_margin = y_1;
     // PROVISIONAL: Save current buffer index in l0048. Then scan forward
     // through the source line, PROVISIONAL: processing any marker-prefix bytes
     // detected by sub_ca536. Increments line_format_status for PROVISIONAL:
@@ -7122,19 +7429,21 @@ c998a:
     //  c99b6:
 c99b6:
     //     sty l0048
-    l0048 = y;
+    l0048 = y_1;
     //     ldy l0047
-    y = l0047;
+uint8_t y_2;
+    y_2 = l0047;
     // loop_c99ba:
     for (;;)
     {
         //     jsr sub_ca536
         //     bne c99c7
-        uint8_t idx = find_marker_at_position(y, tmp67);
+        uint8_t idx = find_marker_at_position(y_2, tmp67);
         if (idx == 0x0c)
             goto c99c7;
         //     lda #0
-        a = 0;
+uint8_t a_4;
+        a_4 = 0;
         //     sta markers_array+1,x
         markers_array[idx / 2] &= 0x00ff;
         //     inc l007e
@@ -7154,34 +7463,37 @@ c99c7:
     //  c99c9:
 c99c9:
     //     lda (current_line_ptr),y
-    a = ram[current_line_ptr + y];
+uint8_t a_5;
+    a_5 = ram[current_line_ptr + y_2];
     //     iny
-    y++;
+    y_2++;
     //     sty l0047
-    l0047 = y;
+    l0047 = y_2;
     // PROVISIONAL: Tab (0x09): process via process_document_character to
     // compute tab width, PROVISIONAL: subtract 1 (x--) and add to column
     // counter l0039.
     //      cmp #9
-    if (a != 9)
+    if (a_5 != 9)
         goto c99e0;
     //     bne c99e0
     //     jsr sub_ca5ae
     {
         bool is_tab = false;
-        a = process_document_character(a, &x, &is_tab);
+uint8_t a_6;
+        a_6 = process_document_character(a_5, &x, &is_tab);
     }
     //     dex
     x--;
     //     txa
-    a = x;
+uint8_t a_7;
+    a_7 = x;
     //     clc
     //     adc l0039
-    a += l0039;
+    a_7 += l0039;
     //     sta l0039
-    l0039 = a;
+    l0039 = a_7;
     //     lda #9
-    a = 9;
+    a_5 = 9;
     //     bne c9a21                                                         ;
     //     ALWAYS branch
     goto c9a21;
@@ -7189,7 +7501,7 @@ c99c9:
     // c99e0:
 c99e0:
     //     cmp #0x1a
-    if (a != 0x1a)
+    if (a_5 != 0x1a)
         goto c99ee;
     //     bne c99ee
     // PROVISIONAL: Soft hyphen / break marker (0x1a): if l0046 (word-start
@@ -7199,13 +7511,14 @@ c99e0:
     //  c99e4:
 c99e4:
     //     lda l0046
-    a = l0046;
-    if (a != 0)
+uint8_t a_8;
+    a_8 = l0046;
+    if (a_8 != 0)
         goto c99c9;
     //     bne c99c9
     //     ldx #0xff
     //     lda #0x20 ; ' '
-    a = 0x20;
+    a_5 = 0x20;
     //     bne c9a2e                                                         ;
     //     ALWAYS branch
     goto c9a2e;
@@ -7219,7 +7532,7 @@ c99e4:
     // it.
 c99ee:
     //     cmp #0x0b
-    if (a != 0x0b)
+    if (a_5 != 0x0b)
         goto c9a11;
     //     bne c9a11
     //     ldx input_buffer_offset
@@ -7228,33 +7541,36 @@ c99ee:
         goto c99e4;
     //     bne c99e4
     //     lda l0038
-    a = l0038;
-    if (a != 0)
+uint8_t a_9;
+    a_9 = l0038;
+    if (a_9 != 0)
         goto c99e4;
     //     bne c99e4
     //     inc l0038
     l0038++;
     //     lda ruler_left_stop
-    a = ruler_left_stop;
+uint8_t a_10;
+    a_10 = ruler_left_stop;
 
     //     beq c99c9
-    if (a == 0)
+    if (a_10 == 0)
         goto c99c9;
     //     ldx l0039
-    x = l0039;
+uint8_t x_1;
+    x_1 = l0039;
     //     cpx ruler_left_stop
-    if (x < ruler_left_stop)
+    if (x_1 < ruler_left_stop)
     {
-        l0039 = a;
+        l0039 = a_10;
         l0039--;
     }
     //     clc
     //     adc input_buffer_offset+1
-    a += l0080;
+    a_10 += l0080;
     //     sta input_buffer_offset+1
-    l0080 = a;
+    l0080 = a_10;
     //     lda #0x0b
-    a = 0x0b;
+    a_5 = 0x0b;
     // c9a11:
     // PROVISIONAL: CR (0x0d) — end of source line. If y == 0 after decrement,
     // the buffer is PROVISIONAL: empty; advance to next document line.
@@ -7263,24 +7579,24 @@ c99ee:
     // and advance. Otherwise, insert a space at the break.
 c9a11:
     //     cmp #0x0d
-    if (a != 0x0d)
+    if (a_5 != 0x0d)
         goto c9a21;
     //     bne c9a21
     //     dey
-    y--;
+    y_2--;
 
     //     beq c9a8d
-    if (y == 0)
+    if (y_2 == 0)
     {
         return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
     }
     //     jsr sub_c9ac1
-    if (find_next_word_boundary(y))
+    if (find_next_word_boundary(y_2))
         goto c9a87; // bcs c9a87
     //     lda #0x20 ; ' '
-    a = 0x20;
+    a_5 = 0x20;
     //     sta input_buffer_offset
-    input_buffer_offset = a;
+    input_buffer_offset = a_5;
     // c9a21:
     // PROVISIONAL: Track word-start state. If the current character is a space
     // (0x20), set x=1 PROVISIONAL: (word-start flag). If l0046 already
@@ -7288,11 +7604,11 @@ c9a11:
     // (c9a40) — this is a multi-space gap, keep only the first.
 c9a21:
     //     ldy l0048
-    y = l0048;
+    y_1 = l0048;
     //     ldx #0
     x = 0;
     //     cmp #0x20 ; ' '
-    if (a != 0x20)
+    if (a_5 != 0x20)
         goto c9a2e;
     //     bne c9a2e
     //     inx                                                               ;
@@ -7307,12 +7623,12 @@ c9a21:
     //  c9a2e:
 c9a2e:
     //     ldy l0048
-    y = l0048;
+    y_1 = l0048;
     //     sta (current_edit_line_ptr),y
-    ram[RAM_EDIT_BUFFER + y] = a;
+    ram[RAM_EDIT_BUFFER + y_1] = a_5;
     //     cmp #0x20 ; ' '
     //     bne c9a38
-    if (a == 0x20)
+    if (a_5 == 0x20)
     {
         //     ror bottom_margin
         // (carry-in is 1 from the cmp #0x20 with a == 0x20; the result
@@ -7320,9 +7636,9 @@ c9a2e:
         bottom_margin = (uint8_t)(bottom_margin >> 1) | 0x80;
     }
     //     iny
-    y++;
+    y_1++;
     //     jsr check_for_control_code
-    control_code_t cc = check_for_control_code(a);
+    control_code_t cc = check_for_control_code(a_5);
     //     beq c9a40
     if (cc == NO_CONTROL_CODE)
     {
@@ -7338,22 +7654,24 @@ c9a40:
     if (old_l0046_high)
         goto c9a58;
     //     cmp #0x20 ; ' '
-    if (a == 0x20)
+    if (a_5 == 0x20)
         goto c9a58;
     //     beq c9a58
     //     cpy #0x85
-    if (y >= MAX_LINE_LENGTH + 1)
+    if (y_1 >= MAX_LINE_LENGTH + 1)
         goto c9a60;
     //     lda bottom_margin
-    a = bottom_margin;
+uint8_t a_11;
+    a_11 = bottom_margin;
 
     //     beq c9a58
-    if (a == 0)
+    if (a_11 == 0)
         goto c9a58;
     //     lda l0039
-    a = l0039;
+uint8_t a_12;
+    a_12 = l0039;
     //     cmp input_buffer_offset+1
-    if (a >= l0080)
+    if (a_12 >= l0080)
         goto c9a60;
     //     bcs c9a60
     // PROVISIONAL: Clamp buffer index to max 0x85 (133). Loop back to process
@@ -7361,9 +7679,9 @@ c9a40:
     //  c9a58:
 c9a58:
     //     cpy #0x86
-    if (y >= 0x86)
+    if (y_1 >= 0x86)
     {
-        y--;
+        y_1--;
     }
     //     jmp c99b6
     goto c99b6;
@@ -7383,20 +7701,22 @@ c9a60:
     do
     {
         l0047--;
-        y--;
+        y_1--;
 
-        if (y == 0)
+        if (y_1 == 0)
         {
             return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
         }
-        a = ram[RAM_EDIT_BUFFER + y];
+uint8_t a_13;
+        a_13 = ram[RAM_EDIT_BUFFER + y_1];
         {
-            uint8_t saved_a = a;
-            a = 0x10;
-            ram[RAM_EDIT_BUFFER + y] = a;
-            a = saved_a;
+            uint8_t saved_a = a_13;
+uint8_t a_14;
+            a_14 = 0x10;
+            ram[RAM_EDIT_BUFFER + y_1] = a_14;
+            a_15 = saved_a;
         }
-    } while (a != 0x20);
+    } while (a_15 != 0x20);
     //     sec
     //     ror input_buffer_offset
     // (dead: the rotated value is never read again, and the ror's Z/N flags
@@ -7410,7 +7730,8 @@ c9a60:
     if (flush_formatted_line())
         return FORMAT_MEMORY_FULL;
     //     jsr c9a8d
-    at_end = advance_to_next_doc_line();
+_Bool at_end_1;
+    at_end_1 = advance_to_next_doc_line();
     //     beq c9aa5
     if (line_format_status == 0)
         goto c9aa5;
@@ -7429,7 +7750,7 @@ c9a87:
     if (flush_formatted_line())
         return FORMAT_MEMORY_FULL;
     //     (fall through to c9a8d in 6502 — no jsr)
-    at_end = advance_to_next_doc_line();
+    at_end_1 = advance_to_next_doc_line();
     //     (c9a8d/c9aa5 merged into advance_to_next_line; return directly to
     //     caller)
     goto c9aa5;
@@ -7442,16 +7763,16 @@ c9aa5:
     // (the 6502 sets Z from line_format_status here for its caller; callers
     //  now test line_format_status == 0 directly)
     //     rts
-    return at_end ? FORMAT_AT_END : FORMAT_OK;
+    return at_end_1 ? FORMAT_AT_END : FORMAT_OK;
 }
 
 static bool find_next_word_boundary(uint8_t y)
 {
-    addr_t tmp89;
-    addr_t tmp45;
+    
+    
 
-    uint8_t a;
-    uint8_t x;
+    
+    
 
     // sub_c9ac1
     // Pseudocode: Finds next word boundary for line wrapping, returns carry if
@@ -7459,6 +7780,7 @@ static bool find_next_word_boundary(uint8_t y)
 
     // sub_c9ac1:
     //     tya
+uint8_t a;
     a = y;
     //     sec
     //     adc current_line_ptr
@@ -7470,7 +7792,9 @@ static bool find_next_word_boundary(uint8_t y)
     //     sta ((uint8_t*)&tmp45)[1]
     // (16-bit arithmetic: the sec before the adc adds 1, so
     //  tmp89 = tmp45 = current_line_ptr + y + 1)
+addr_t tmp89;
     tmp89 = current_line_ptr + a + 1;
+addr_t tmp45;
     tmp45 = tmp89;
     //     ldy #0
     y = 0;
@@ -7479,23 +7803,25 @@ static bool find_next_word_boundary(uint8_t y)
     // c9ad5:
 c9ad5:
     //     lda (((uint8_t*)&tmp45)[0]),y
-    a = ram[tmp45 + y];
+uint8_t a_1;
+    a_1 = ram[tmp45 + y];
     //     beq c9b2f
-    if (a == 0)
+    if (a_1 == 0)
         goto c9b2f;
     //     jsr check_for_command_prefix
-    command_prefix_t cp = check_for_command_prefix(a);
+    command_prefix_t cp = check_for_command_prefix(a_1);
     //     beq c9b2f
     if (cp != NO_COMMAND_PREFIX)
         goto c9b2f;
     //     cmp #0x0d
-    if (a == 0x0d)
+    if (a_1 == 0x0d)
         goto c9b2f;
     //     beq c9b2f
     //     tya
-    a = y;
+uint8_t a_2;
+    a_2 = y;
     //     bne c9b06
-    if (a != 0)
+    if (a_2 != 0)
         goto c9b06;
     //     sty l0084
     l0084 = y;
@@ -7512,21 +7838,22 @@ c9ae9:
     // c9aef:
 c9aef:
     //     lda (((uint8_t*)&tmp89)[0]),y
-    a = ram[tmp89 + y];
+uint8_t a_3;
+    a_3 = ram[tmp89 + y];
     //     beq c9b06
-    if (a == 0)
+    if (a_3 == 0)
         goto c9b06;
     //     cmp #0x0d
-    if (a == 0x0d)
+    if (a_3 == 0x0d)
         goto c9b06;
     //     beq c9b06
     //     cmp #9
-    if (a == 9)
+    if (a_3 == 9)
         goto c9b2f;
     //     beq c9b2f
     //     cmp #0x0b
     //     bne c9ae9
-    if (a == 0x0b)
+    if (a_3 == 0x0b)
     {
         //     rol l0084
         //     sec
@@ -7536,31 +7863,35 @@ c9aef:
         l0084 |= 0x80;
         //     bcs c9ae9
         // (a >= 0x0b holds on this path, so the bcs is always taken)
-        if (a >= 0x0b)
+        if (a_3 >= 0x0b)
             goto c9ae9;
     }
     // c9b06:
 c9b06:
     //     lda (((uint8_t*)&tmp45)[0]),y
-    a = ram[tmp45 + y];
+uint8_t a_4;
+    a_4 = ram[tmp45 + y];
     //     cmp #0x20 ; ' '
-    if (a != 0x20)
+    if (a_4 != 0x20)
         goto c9b1a;
     //     bne c9b1a
     //     ldx ruler_left_stop
+uint8_t x;
     x = ruler_left_stop;
     //     beq c9b2f
     if (x == 0)
         goto c9b2f;
     //     ldx l0084
-    x = l0084;
+uint8_t x_1;
+    x_1 = l0084;
     //     beq c9b2f
-    if (x == 0)
+    if (x_1 == 0)
         goto c9b2f;
     //     ldx l0083
-    x = l0083;
+uint8_t x_2;
+    x_2 = l0083;
     //     bne c9b2f
-    if (x != 0)
+    if (x_2 != 0)
         goto c9b2f;
     //     beq c9b20                                                         ;
     //     ALWAYS branch
@@ -7570,10 +7901,10 @@ c9b06:
 c9b1a:
     //     cmp #0x0b
     //     bne c9b23
-    if (a != 0x0b)
+    if (a_4 != 0x0b)
         goto c9b23;
     //     sta l0083
-    l0083 = a;
+    l0083 = a_4;
     // c9b20:
 c9b20:
     //     iny
@@ -7584,19 +7915,22 @@ c9b20:
     // c9b23:
 c9b23:
     //     lda ruler_left_stop
-    a = ruler_left_stop;
+uint8_t a_5;
+    a_5 = ruler_left_stop;
     //     beq c9b31
-    if (a == 0)
+    if (a_5 == 0)
         goto c9b31;
     //     lda l0084
-    a = l0084;
+uint8_t a_6;
+    a_6 = l0084;
     //     beq c9b31
-    if (a == 0)
+    if (a_6 == 0)
         goto c9b31;
     //     lda l0083
-    a = l0083;
+uint8_t a_7;
+    a_7 = l0083;
     //     bne c9b31
-    if (a != 0)
+    if (a_7 != 0)
         goto c9b31;
     // c9b2f:
 c9b2f:
@@ -7613,8 +7947,9 @@ c9b31:
 
 // Returns false if the insert failed (out of memory).
 static bool insert_character_into_edit_buffer(uint8_t a)
-{
-    bool ok;
+{_Bool ok;
+
+    
 
     // sub_c9e22:
     //     pha
@@ -7652,32 +7987,36 @@ static void set_xpos_to_line_length(void)
 
 static uint8_t compute_display_start_line(void)
 {
-    uint8_t x, a;
-    addr_t tmp01;
+    
+    
 
     // sub_ca44e
     // sub_ca44e: Computes starting line for display based on screen position
 
     //     lda l0034
+uint8_t a;
     a = l0034;
     //     sta ruler_stack_ptr
     ruler_index_ptr = a;
     //     lda screen_height
-    a = screen_maxrow;
+uint8_t a_1;
+    a_1 = screen_maxrow;
     //     sta l0073
-    l0073 = a;
+    l0073 = a_1;
     //     lsr
-    a >>= 1;
+    a_1 >>= 1;
     //     tax
-    x = a;
+uint8_t x;
+    x = a_1;
     //     inx
     x++;
     //     lda l006f
-    a = l006f;
+uint8_t a_2;
+    a_2 = l006f;
     //     bmi ca461
-    if (!(a & 0x80))
+    if (!(a_2 & 0x80))
     {
-        if (a != 0)
+        if (a_2 != 0)
         {
             x = ypos;
         }
@@ -7699,6 +8038,7 @@ static uint8_t compute_display_start_line(void)
         if (x == 0)
             goto ca479;
         //     sta tmp2 / sty tmp3 / jsr sub_cab37 (find_previous_line)
+addr_t tmp01;
         if (!find_previous_line(line, &tmp01))
             break;
         //     lda tmp0 / ldy tmp1 / bcs loop_ca465
@@ -7710,28 +8050,33 @@ ca479:
     //     sta top_of_screen_line_ptr / sty top_of_screen_line_ptr+1
     top_of_screen_line_ptr = line;
     //     lda ruler_stack_ptr
-    a = ruler_index_ptr;
+uint8_t a_3;
+    a_3 = ruler_index_ptr;
     //     sta l0033
-    l0033 = a;
+    l0033 = a_3;
     //     lda l0034
-    a = l0034;
+uint8_t a_4;
+    a_4 = l0034;
     //     sta ruler_stack_ptr
-    ruler_index_ptr = a;
+    ruler_index_ptr = a_4;
     return x;
     //     rts
 }
 
 static void advance_to_next_char(struct render_state* rs)
 {
-    uint8_t a;
-    uint8_t x;
-    uint8_t y;
+    
+    
+    
     // Advance to the next document character.  The shared
     // process_current_document_character() reads/writes the simulated
     // registers, so synchronise the render state around the call.
     //     jsr process_current_document_character
+uint8_t y;
     y = rs->pos;
     l0039 = rs->char_width;
+uint8_t x;
+uint8_t a;
     a = process_current_document_character(
         rs->line_ptr, &x, &y, &rs->prev_is_tab);
     rs->ch = a;
@@ -7753,8 +8098,8 @@ static void advance_to_next_char_and_render(struct render_state* rs)
 
 static uint8_t find_marker_at_position(uint8_t y, addr_t tmp67)
 {
-    addr_t tmp89;
-    uint8_t x;
+    
+    
 
     // sub_ca536
     // Pseudocode: Checks if a position in the edit line corresponds to a marker
@@ -7762,8 +8107,10 @@ static uint8_t find_marker_at_position(uint8_t y, addr_t tmp67)
     // position matches a marker, or 0x0c if it does not
 
     // sub_ca536:
+addr_t tmp89;
     tmp89 = tmp67 + y;
     //     ldx #0
+uint8_t x;
     x = 0;
     // loop_ca544:
     for (;;)
@@ -7802,10 +8149,10 @@ ca558:
 
 static void unpack_line(addr_t ptr1)
 {
-    uint8_t a;
-    uint8_t a2;
+    
+    
 
-    uint8_t y;
+    
 
     // unpack_line
     // unpack_line:
@@ -7815,8 +8162,10 @@ static void unpack_line(addr_t ptr1)
     //     jsr sub_caf5f
     clear_format_mode_bit7();
     //     ldy #0
+uint8_t y;
     y = 0;
     //     lda (current_line_ptr),y
+uint8_t a;
     a = ram[current_line_ptr + y];
     //     ldx current_edit_line_ptr
     //     ldy current_edit_line_ptr+1
@@ -7836,38 +8185,40 @@ static void unpack_line(addr_t ptr1)
     current_format_line_ptr =
         (cp != NO_COMMAND_PREFIX) ? ptr1 : RAM_EDIT_BUFFER;
     //     ldy #0
-    y = 0;
+uint8_t y_1;
+    y_1 = 0;
     // loop_caabd:
     for (;;)
     {
         //     lda (current_line_ptr),y
-        a2 = ram[current_line_ptr + y];
+uint8_t a2;
+        a2 = ram[current_line_ptr + y_1];
         //     cmp #0x0d
         if (a2 == 0x0d)
             goto caac8;
         //     beq caac8
         //     sta (current_format_line_ptr),y
-        ram[current_format_line_ptr + y] = a2;
+        ram[current_format_line_ptr + y_1] = a2;
         //     iny
-        y++;
+        y_1++;
         //     bne loop_caabd
-        if (y != 0)
+        if (y_1 != 0)
             continue;
         break;
     }
     // caac8:
 caac8:
     //     sty l003b
-    l003b = y;
+    l003b = y_1;
     // return_68:
     //     rts
 }
 
 static void update_markers_to_format_buffer(void)
 {
-    addr_t tmp67;
-    uint8_t y;
-    uint8_t a;
+    
+    
+    
 
     // sub_caacb: Updates marker positions to point into format buffer instead
     // of document buffer
@@ -7876,8 +8227,10 @@ static void update_markers_to_format_buffer(void)
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda current_line_ptr+1
     //     sta ((uint8_t*)&tmp67)[1]
+addr_t tmp67;
     tmp67 = current_line_ptr;
     //     ldy #0
+uint8_t y;
     y = 0;
     // caad5:
 caad5:
@@ -7904,6 +8257,7 @@ caad5:
     // caae8:
 caae8:
     //     lda (current_line_ptr),y
+uint8_t a;
     a = ram[current_line_ptr + y];
     //     cmp #0x0d
     //     beq return_68
@@ -7942,14 +8296,15 @@ void check_for_embedded_ruler(addr_t tmp01)
 
 static void find_line_start(addr_t tmp89)
 {
-    uint8_t a;
-    uint8_t y;
+    
+    
 
     // sub_cac50
     // Pseudocode: Finds the start of current line by scanning backward for CR
 
     tmp89--;
     //     ldy #0
+uint8_t y;
     y = 0;
     // cac5c:
     //     lda (((uint8_t*)&tmp89)[0]),y
@@ -7958,6 +8313,7 @@ static void find_line_start(addr_t tmp89)
     // (loop restructured)
     while (1)
     {
+uint8_t a;
         a = ram[tmp89 + y];
         if (a == 0x0d)
             break;
@@ -7982,8 +8338,9 @@ static void find_line_start(addr_t tmp89)
 static int find_left_margin_stop(void)
 {
     //     lda ruler_left_stop
-    uint8_t a;
+    
     uint8_t y = 0;
+uint8_t a;
     a = ruler_left_stop;
     //     beq caed4
     if (a == 0)
@@ -7993,12 +8350,13 @@ static int find_left_margin_stop(void)
     do
     {
         //     lda (current_edit_line_ptr),y
-        a = ram[RAM_EDIT_BUFFER + y];
+uint8_t a_1;
+        a_1 = ram[RAM_EDIT_BUFFER + y];
         //     iny
         y++;
         //     cmp #0x0b
         //     beq caed4
-        if (a == 0x0b)
+        if (a_1 == 0x0b)
             goto caed4;
         //     cpy #0x84
         //     bcc loop_caec8
@@ -8028,12 +8386,15 @@ static void insert_at_left_margin(void)
 }
 
 static bool insert_byte_at_xpos(uint8_t y)
-{
-    uint8_t a;
-    bool ok;
+{_Bool ok;
+uint8_t a_2;
+
+    
+    
 
     // sub_caedd:
     //     lda xpos
+uint8_t a;
     a = xpos;
     //     pha
     {
@@ -8048,18 +8409,19 @@ static bool insert_byte_at_xpos(uint8_t y)
         {
             //     ldy xpos
             //     lda #0x0b
-            a = 0x0b;
+uint8_t a_1;
+            a_1 = 0x0b;
             //     sta (current_edit_line_ptr),y
             // (the 6502 left y = the insert position, i.e. xpos)
-            ram[RAM_EDIT_BUFFER + xpos] = a;
+            ram[RAM_EDIT_BUFFER + xpos] = a_1;
             //     iny
         }
         // caef0:
         //     pla
-        a = saved_a;
+        a_2 = saved_a;
     }
     //     sta xpos
-    xpos = a;
+    xpos = a_2;
     //     rts
     return ok;
 }
@@ -8099,30 +8461,35 @@ void wipe_buffer(uint8_t a, addr_t ptr1)
 }
 
 static bool write_line_back_to_document(void)
-{
-    addr_t tmp45;
-    uint8_t a;
-    uint8_t y;
+{uint8_t a_9;
+
+    
+    
+    
     // write_line_back_to_document
     // sub_ca8b9:
     // write_line_back_to_document:
     //     lda l006e
     //     beq ca93a
+uint8_t a;
     a = edit_buffer_unpacked_flag;
 
     if (a == 0)
         goto ca93a;
     //     lda current_line_ptr
     //     sta ((uint8_t*)&tmp45)[0]
+addr_t tmp45;
     tmp45 = current_line_ptr;
     //     ldy #0
+uint8_t y;
     y = 0;
     //     sty ((uint8_t*)&tmp67)[1]
     ((uint8_t*)&tmp67)[1] = y;
     //     jsr get_line_length
     l0083 = get_line_length();
     //     lda l003b
-    a = l003b;
+uint8_t a_1;
+    a_1 = l003b;
     //     sec
     //     sbc l0083
     //     bcc ca8df
@@ -8130,15 +8497,15 @@ static bool write_line_back_to_document(void)
     // (sbc with C=1 is a plain subtraction; a holds a - l0083 on all
     //  paths, and the borrow/zero flags select the branch)
     {
-        uint8_t minuend = a;
-        a -= l0083;
+        uint8_t minuend = a_1;
+        a_1 -= l0083;
         if (minuend < l0083)
             goto ca8df; // borrow: a < l0083
-        if (a == 0)
+        if (a_1 == 0)
             goto ca8ed;
     }
     //     sta ((uint8_t*)&tmp67)[0]
-    ((uint8_t*)&tmp67)[0] = a;
+    ((uint8_t*)&tmp67)[0] = a_1;
     //     jsr adjust_pointers
     adjust_pointers(tmp45, tmp67);
     //     jmp ca8ed
@@ -8147,15 +8514,16 @@ static bool write_line_back_to_document(void)
     // ca8df:
 ca8df:
     //     sta l0084
-    l0084 = a;
+    l0084 = a_1;
     //     lda #0
     // (Z from this lda is clobbered by the following sbc l0084)
-    a = 0;
+uint8_t a_2;
+    a_2 = 0;
     //     sec
     //     sbc l0084
-    a -= l0084;
+    a_2 -= l0084;
     //     sta ((uint8_t*)&tmp67)[0]
-    ((uint8_t*)&tmp67)[0] = a;
+    ((uint8_t*)&tmp67)[0] = a_2;
     //     jsr make_space_for_insertion
     if (!make_space_for_insertion(tmp45, tmp67))
         return true; // bcs return_66 — out of memory, write failed
@@ -8163,22 +8531,25 @@ ca8df:
     // ca8ed:
 ca8ed:
     //     lda l006e
-    a = edit_buffer_unpacked_flag;
-    if (((int8_t)a < 0))
+uint8_t a_3;
+    a_3 = edit_buffer_unpacked_flag;
+    if (((int8_t)a_3 < 0))
     {
-        a = edit_buffer_dirty_flag;
+uint8_t a_4;
+        a_4 = edit_buffer_dirty_flag;
 
-        if (a != 0)
+        if (a_4 != 0)
         {
             clamp_ptr6_to_document();
         }
     }
     //     ldy #0
-    y = 0;
+uint8_t y_1;
+    y_1 = 0;
     //     sty l006d
-    edit_buffer_dirty_flag = y;
+    edit_buffer_dirty_flag = y_1;
     //     sty l006e
-    edit_buffer_unpacked_flag = y;
+    edit_buffer_unpacked_flag = y_1;
     //     lda current_format_line_ptr
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda current_format_line_ptr+1
@@ -8192,33 +8563,37 @@ ca8ed:
     // ca90a:
 ca90a:
     //     txa
-    a = x;
-    if (a != 0)
+uint8_t a_5;
+    a_5 = x;
+    if (a_5 != 0)
         goto ca911;
     //     bne ca911
     //     lda #0x0d
-    a = 0x0d;
+uint8_t a_6;
+    a_6 = 0x0d;
     //     bne ca919
     goto ca919;
 
     // ca911:
 ca911:
     //     lda (current_format_line_ptr),y
-    a = ram[current_format_line_ptr + y];
+    a_6 = ram[current_format_line_ptr + y_1];
     //     cmp #0x10
-    if (a == 0x10)
+    if (a_6 == 0x10)
     {
-        a = 0x20;
+        a_6 = 0x20;
     }
 ca919:
     //     pha
-    {
-        uint8_t saved_a = a;
+    {uint8_t a_8;
+
+        uint8_t saved_a = a_6;
         //     txa
-        a = x;
+uint8_t a_7;
+        a_7 = x;
         //     pha
         {
-            uint8_t saved_x = a;
+            uint8_t saved_x = a_7;
 
             // loop_ca91c:
             // loop_ca91c:
@@ -8226,7 +8601,7 @@ ca919:
             {
                 //     jsr sub_ca536
                 //     bne ca92f
-                uint8_t idx = find_marker_at_position(y, tmp67);
+                uint8_t idx = find_marker_at_position(y_1, tmp67);
                 if (idx == 0x0c)
                     goto ca92f;
                 //     tya
@@ -8237,7 +8612,7 @@ ca919:
                 //     adc #0
                 //     sta markers_array+1,x
                 // (16-bit arithmetic: val = current_line_ptr + y)
-                uint16_t val = current_line_ptr + y;
+                uint16_t val = current_line_ptr + y_1;
                 markers_array[idx / 2] = val;
                 //     bne loop_ca91c
                 if ((uint8_t)(val >> 8) != 0)
@@ -8247,21 +8622,21 @@ ca919:
             // ca92f:
         ca92f:
             //     pla
-            a = saved_x;
+            a_8 = saved_x;
         }
         //     tax
-        x = a;
+        x = a_8;
         //     pla
-        a = saved_a;
+        a_9 = saved_a;
     }
     //     sta (current_line_ptr),y
-    ram[current_line_ptr + y] = a;
+    ram[current_line_ptr + y_1] = a_9;
     //     iny
-    y++;
+    y_1++;
     //     dex
     x--;
     //     cmp #0x0d
-    if (a != 0x0d)
+    if (a_9 != 0x0d)
         goto ca90a;
 
     // ca93a:

@@ -84,6 +84,7 @@ command_prefix_t deref_and_check_for_command_prefix(uint8_t y, addr_t tmp01)
 {
     // deref_and_check_for_command_prefix:
     //     lda (((uint8_t*)&tmp01)[0]),y
+
     uint8_t a;
     a = ram[tmp01 + y];
     return check_for_command_prefix(a);
@@ -94,7 +95,7 @@ command_prefix_t deref_and_check_for_command_prefix(uint8_t y, addr_t tmp01)
 
 void display_document_file_state(void)
 {
-    uint8_t y;
+    uint8_t a_1;
 
     // display_document_file_state
     // display_document_file_state:
@@ -111,6 +112,7 @@ void display_document_file_state(void)
     if (a == 0)
         goto c8a21;
     //     ldy #0
+    uint8_t y;
     y = 0;
     // loop_c89fa:
     //     lda input_filename,y
@@ -121,10 +123,10 @@ void display_document_file_state(void)
     // (loop restructured)
     for (;;)
     {
-        a = input_filename[y];
-        if (a == 0x0d)
+        a_1 = input_filename[y];
+        if (a_1 == 0x0d)
             break;
-        cli_putchar(a);
+        cli_putchar(a_1);
         y++;
     }
     // c8a07:
@@ -147,13 +149,13 @@ void display_document_file_state(void)
     // (loop restructured)
     for (;;)
     {
-        a = output_filename[y];
+        a_1 = output_filename[y];
         y++;
     c8a19:
         // c8a19:
         //     jsr bdos_print_char
-        cli_putchar(a);
-        if (a == 0x0d)
+        cli_putchar(a_1);
+        if (a_1 == 0x0d)
             break;
     }
     //     rts
@@ -181,7 +183,7 @@ void find_margins_of_current_ruler_buffer(void)
     //     ldy #0
     //     sty ruler_right_stop
     //     sty ruler_left_stop
-    uint8_t a;
+
     uint8_t y = 0;
     ruler_right_stop = 0;
     ruler_left_stop = 0;
@@ -189,6 +191,7 @@ void find_margins_of_current_ruler_buffer(void)
     do
     {
         //     lda (current_ruler_ptr),y
+        uint8_t a;
         a = ram[current_ruler_ptr + y];
         //     cmp #0x3e ; '>'
         if (a == 0x3e)
@@ -521,9 +524,10 @@ cb06c:
     //     sta (page),y
     ram[page + y] = a;
     //     tya
-    a = y;
+    uint8_t a_1;
+    a_1 = y;
     //     sta (top),y
-    ram[top + y] = a;
+    ram[top + y] = a_1;
     // return_85:
     //     rts
 }
@@ -539,6 +543,8 @@ void close_file(void)
 
 uint8_t create_default_ruler(addr_t ruler_addr)
 {
+    uint8_t a;
+
     // create_default_ruler
     // Pseudocode: Creates a default ruler with tab stops every 6 columns
 
@@ -546,13 +552,13 @@ uint8_t create_default_ruler(addr_t ruler_addr)
     // ***************************************************************************************
     // create_default_ruler:
     //     sta ((uint8_t*)&tmp01)[0]
-    uint8_t x;
+
     addr_t tmp01 = ruler_addr;
 
     //     lda #0
     //     tay                                                               ;
     //     Y=0x00
-    uint8_t a;
+
     uint8_t y = 0;
     // loop_cb0e7:
     for (;;)
@@ -567,23 +573,26 @@ uint8_t create_default_ruler(addr_t ruler_addr)
             //     iny
             y++;
             //     tya
-            a = y;
+            uint8_t a_1;
+            a_1 = y;
             //     tax
-            x = a;
+            uint8_t x;
+            x = a_1;
             //     inx
             x++;
             //     clc
             //     adc #6
-            a += 6;
+            a_1 += 6;
             //     cmp screen_width
-            if (a == screen_maxcolumn)
+            if (a_1 == screen_maxcolumn)
                 goto cb0ff;
             //     txa
-            a = x;
+            uint8_t a_2;
+            a_2 = x;
             //     and #7
-            a &= 7;
+            a_2 &= 7;
             //     bne loop_cb0e7
-            if (a != 0)
+            if (a_2 != 0)
                 break;
             //     lda #0x2a ; '*'
             a = 0x2a;
@@ -594,9 +603,10 @@ uint8_t create_default_ruler(addr_t ruler_addr)
     // cb0ff:
 cb0ff:
     //     lda #0x3c ; '<'
-    a = 0x3c;
+    uint8_t a_3;
+    a_3 = 0x3c;
     //     sta (((uint8_t*)&tmp01)[0]),y
-    ram[tmp01 + y] = a;
+    ram[tmp01 + y] = a_3;
     //     rts
     return y;
 }
@@ -635,12 +645,11 @@ unsigned int* get_register_address(uint8_t a)
 
 void initialise_document(void)
 {
-    uint8_t y;
 
     // initialise_document
     // initialise_document:
     //     lda #0
-    addr_t tmp89;
+
     //     sta printer_driver_name
     printer_driver_name[0] = 0;
     //     sta format_mode_flag
@@ -685,6 +694,7 @@ void initialise_document(void)
     //     sty page+1
     page = oshwm + 0x101;
     //     ldy #0
+    uint8_t y;
     y = 0;
     //     sty file_edit_flags
     file_edit_flags = y;
@@ -700,6 +710,7 @@ void initialise_document(void)
     //     lda page+1
     //     sbc #0
     //     sta ((uint8_t*)&tmp89)[1]
+    addr_t tmp89;
     tmp89 = page - 1;
     //     lda #0x0d
     //     sta (((uint8_t*)&tmp89)[0]),y
@@ -722,12 +733,13 @@ void initialise_document(void)
     ptr1 = RAM_CURRENT_LINE_BUF;
     current_format_line_ptr = RAM_EDIT_BUFFER;
     //     lda #<(current_ruler_buffer)
-    y = create_default_ruler(RAM_CURRENT_RULER_BUF);
+    uint8_t y_1;
+    y_1 = create_default_ruler(RAM_CURRENT_RULER_BUF);
     //     iny
-    y++;
+    y_1++;
     //     lda #0x0d
     //     sta (((uint8_t*)&tmp01)[0]),y
-    ram[RAM_CURRENT_RULER_BUF + y] = 0x0d;
+    ram[RAM_CURRENT_RULER_BUF + y_1] = 0x0d;
     //     ldy #0xff
     //     lda #<(just_before_current_ruler_buffer)
     //     sta (oshwm),y
@@ -774,10 +786,7 @@ int lookup_marker(uint8_t a)
 void move_cursor_to_address(uint16_t addr)
 {
     addr_t tmp01;
-    uint8_t a;
-    uint8_t x;
-    uint8_t y;
-    uint8_t yy;
+    addr_t tmp01_1;
 
     // move_cursor_to_address
     // move_cursor_to_address:
@@ -820,7 +829,8 @@ void move_cursor_to_address(uint16_t addr)
     do
     {
         //     sta ((uint8_t*)&tmp01)[0]
-        if (find_next_line(cur, &tmp01, &y))
+        uint8_t y;
+        if (find_next_line(cur, &tmp01_1, &y))
             goto cac17;
         //     beq cac17
         //     tya
@@ -828,7 +838,7 @@ void move_cursor_to_address(uint16_t addr)
         //     clc
         //     adc ((uint8_t*)&tmp01)[0]
         //     bcc cac0b
-        cur = tmp01 + y;
+        cur = tmp01_1 + y;
         //     cpy ((uint8_t*)&tmp89)[1]
         //     bcc cabf6
         //     bne cac17
@@ -843,19 +853,19 @@ void move_cursor_to_address(uint16_t addr)
         }
         //     cabf6:
         //     jsr sub_cac41
-        check_for_embedded_ruler(tmp01);
+        check_for_embedded_ruler(tmp01_1);
     } while (1);
     // cac17:
 cac17:
     //     lda ((uint8_t*)&tmp01)[0]
     //     ldy ((uint8_t*)&tmp01)[1]
     //     bne cac20
-    cur = tmp01;
+    cur = tmp01_1;
     goto cac20;
     // cac1d:
 cac1d:
     //     jsr sub_cac41
-    check_for_embedded_ruler(tmp01);
+    check_for_embedded_ruler(tmp01_1);
     // cac20:
 cac20:
     //     sta current_line_ptr
@@ -866,22 +876,26 @@ cac20:
     //     sbc current_line_ptr
     //     tax
     // (sbc with C=1 is a plain subtraction; tax overwrites the flags)
+    uint8_t x;
     x = (uint8_t)(tmp89 - current_line_ptr);
     //     ldy #0
+    uint8_t yy;
     yy = 0;
     //     lda (current_line_ptr),y
+    uint8_t a;
     a = ram[current_line_ptr + yy];
     //     jsr check_for_command_prefix
     command_prefix_t cp = check_for_command_prefix(a);
     //     bne cac3e
     if (cp != NO_COMMAND_PREFIX)
     {
-        a = x;
+        uint8_t a_1;
+        a_1 = x;
         x = 0;
-        if (a >= 3)
+        if (a_1 >= 3)
         {
-            a -= 3;
-            x = a;
+            a_1 -= 3;
+            x = a_1;
         }
     }
     //     stx xpos
@@ -920,13 +934,15 @@ void move_cursor_to_top_of_document(void)
 // document) — the 6502's Z flag.
 bool find_next_line(addr_t start, addr_t* tmp01, uint8_t* y)
 {
+    uint8_t a;
+
     *tmp01 = start;
     // find_next_line
     // Pseudocode: Skips to next CR or zero terminator in memory
 
     // cab29:
     //     ldy #0
-    uint8_t a;
+
     *y = 0;
     // loop_cab2b:
     //     lda (((uint8_t*)&tmp01)[0]),y
@@ -944,10 +960,11 @@ bool find_next_line(addr_t start, addr_t* tmp01, uint8_t* y)
         if (a == 0x0d)
             break;
     }
-    a = ram[(*tmp01) + (*y)];
+    uint8_t a_1;
+    a_1 = ram[(*tmp01) + (*y)];
     // return_70:
     //     rts
-    return a == 0;
+    return a_1 == 0;
 }
 
 // Returns false if tmp01 is already at the start of the document (no previous
@@ -955,6 +972,7 @@ bool find_next_line(addr_t start, addr_t* tmp01, uint8_t* y)
 bool find_previous_line(addr_t val, addr_t* tmp01)
 {
     uint8_t a;
+
     // find_previous_line
     // sub_cab37:
     //     sec
@@ -1016,7 +1034,6 @@ void open_output_file(void)
 
 void pop_from_ruler_index(void)
 {
-    uint8_t y;
 
     // Pseudocode: Pops ruler position from the ruler index
 
@@ -1024,6 +1041,7 @@ void pop_from_ruler_index(void)
     //     inc status_line_needs_redrawing_flag
     status_line_needs_redrawing_flag++;
     //     ldy ruler_stack_ptr
+    uint8_t y;
     y = ruler_index_ptr;
     //     iny
     y++;
@@ -1043,10 +1061,11 @@ void push_onto_ruler_index(addr_t tmp01)
     //     tya
     //     pha
     {
-        uint8_t stack_index;
+
         //     inc status_line_needs_redrawing_flag
         status_line_needs_redrawing_flag++;
         //     ldy ruler_stack_ptr
+        uint8_t stack_index;
         stack_index = ruler_index_ptr - 2;
         //     sta (oshwm),y / sta (oshwm),y+1
         ruler_index[stack_index >> 1] = tmp01;
