@@ -480,6 +480,7 @@ static uint8_t read_next_command_byte(uint8_t* y, bool* end)
     //     iny
     (*y)++;
     //     lda input_buffer,y
+
     uint8_t a;
     a = input_buffer[*y];
     //     sta l0084
@@ -520,10 +521,12 @@ void setup_area_pointers(addr_t ptr2)
     //     sta ((uint8_t*)&tmp89)[0]
     //     lda ptr2+1
     //     sta ((uint8_t*)&tmp89)[1]
+
     addr_t tmp89;
     tmp89 = ptr2;
     //     ldy #0
     //     ldx #0
+
     uint8_t x;
     x = 0;
     // c837d:
@@ -536,6 +539,7 @@ void setup_area_pointers(addr_t ptr2)
         goto c8398;
     // c8389:
     //     lda (((uint8_t*)&tmp89)[0]),y
+
     uint8_t a;
     a = ram[tmp89];
     //     cmp #0x0d
@@ -583,8 +587,8 @@ c83a3:
     // c83a3:
     //     jsr sub_c8310
 
-    _Bool end;
     uint8_t a;
+    _Bool end;
     a = read_next_command_byte(&y, &end);
     //     beq c83da
     if (end)
@@ -678,6 +682,7 @@ cli_cmd_status_t process_cli_command(struct scan_state* scan)
     {
         // (base index comes from l007a, set by reset_command_parse_state)
         uint8_t y = input_buffer_offset + 1;
+
         uint8_t x;
         x = expand_escaped_string(l007a, y);
         l004a = x;
@@ -710,6 +715,7 @@ bool reset_command_parse_state(struct scan_state* scan)
     // sub_c8412
     // sub_c8412:
     //     ldx #0
+
     uint8_t x;
     x = 0;
     //     stx l007a
@@ -756,6 +762,7 @@ addr_t read_into_document(void)
 
     //     lda area_start_ptr
     //     sta ((uint8_t*)&tmp45)[0]
+
     addr_t tmp45;
     tmp45 = area_start_ptr;
     //     jsr move_cursor_to_address
@@ -797,6 +804,7 @@ c8598:
     //     sbc ((uint8_t*)&tmp01)[1]
     //     sta ((uint8_t*)&tmp67)[1]
     // (16-bit subtraction: tmp67 = space_limit - tmp01)
+
     addr_t tmp67;
     tmp67 = space_limit - cursor;
     //     jsr adjust_pointers
@@ -815,25 +823,27 @@ c8598:
  */
 bool check_area_memory(addr_t ptr2)
 {
-    uint8_t a_4;
     uint8_t a_3;
-
-    uint8_t l0082, l0083;
+    uint8_t a_4;
 
     // sub_c8a4f
     //  Ptrs:   ptr2
     // sub_c8a4f:
     //     lda #0
+
     uint8_t a;
     a = 0;
     //     sta l0082
+    uint8_t l0082;
     l0082 = a;
     //     sta l0081
     l0081 = a;
     //     ldy #0x14
+
     uint8_t y;
     y = 0x14;
     //     ldx l007a
+
     uint8_t x;
     x = l007a;
     //     bne c8a87
@@ -911,6 +921,7 @@ c8a87:
     //     lda doc_ptr2+1
     //     sbc ptr2+1
     //     sta l0081
+
     uint16_t gap;
     gap = doc_ptr2 - ptr2;
     //     ldx l0082
@@ -925,6 +936,7 @@ c8a87:
     //     txa
     //     clc; adc ptr2; sta ((uint8_t*)&tmp45)[0]; lda ptr2+1; adc #0; sta
     //     ((uint8_t*)&tmp45)[1]
+
     addr_t tmp45;
     tmp45 = ptr2 + x_1;
     //     lda l0082 / sec; sbc l0080; sta tmp67; lda #0; sbc l0081
@@ -1032,6 +1044,7 @@ c8b11:
     uint8_t l0082_1;
     l0082_1 = 0;
     //     stx l0083
+    uint8_t l0083;
     l0083 = 0;
     //     ldx #0x14
     //     stx input_buffer_offset+1
@@ -1208,6 +1221,7 @@ void write_area_to_file(void)
     //     sta ((uint8_t*)&tmp89)[0]
     //     lda area_start_ptr+1
     //     sta ((uint8_t*)&tmp89)[1]
+
     addr_t tmp89;
     tmp89 = area_start_ptr;
 
@@ -1218,6 +1232,7 @@ void write_area_to_file(void)
         // (y is only set as a side effect of the 6502's indexed dereference;
         //  the C reads ram[tmp89] directly and no caller reads y afterwards)
         //         lda (((uint8_t*)&tmp89)[0]),y
+
         uint8_t a;
         a = ram[tmp89];
         //         jsr put_byte_to_file
@@ -1239,6 +1254,7 @@ static addr_t compute_space_common(addr_t ptr, addr_t tmp89)
     addr_t tmp01 = ptr;
     //     jsr compute_bytes_free
     //     stx ((uint8_t*)&tmp67)[0]
+
     addr_t tmp67;
     tmp67 = (addr_t)compute_bytes_free();
     //     lsr ((uint8_t*)&tmp89)[1]; ror ((uint8_t*)&tmp89)[0]; lsr

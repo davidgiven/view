@@ -191,6 +191,7 @@ static void change_cmd(struct scan_state* scan)
     //     ldx #0
     //     stx ptr3
     //     stx ptr3+1
+
     addr_t ptr3;
     ptr3 = 0;
     // loop_c82b3:
@@ -306,7 +307,6 @@ static void cmd_err_no_target(void)
 
 static void count_cmd(struct scan_state* scan)
 {
-    uint8_t a;
 
     // count_cmd
     // Pseudocode: Counts words in document area handling command prefixes and
@@ -328,11 +328,13 @@ static void count_cmd(struct scan_state* scan)
     //     sta ((uint8_t*)&tmp01)[0]
     //     lda area_start_ptr+1
     //     sta ((uint8_t*)&tmp01)[1]
+
     addr_t tmp01;
     tmp01 = area_start_ptr;
     //     lda #0
     //     sta ((uint8_t*)&tmp89)[0]
     //     sta ((uint8_t*)&tmp89)[1]
+
     addr_t tmp89;
     tmp89 = 0;
     //     sta l0083
@@ -342,6 +344,7 @@ static void count_cmd(struct scan_state* scan)
     // c86b8:
 c86b8:
     //     ldy #0
+
     uint8_t y;
     y = 0;
     //     jsr deref_and_check_for_command_prefix
@@ -350,6 +353,7 @@ c86b8:
     if (cp == NO_COMMAND_PREFIX)
         goto c86ea;
     //     ldx #0
+
     uint8_t x;
     x = 0;
     //     iny
@@ -358,6 +362,7 @@ c86b8:
     for (;;)
     {
         //     lda (((uint8_t*)&tmp01)[0]),y
+        uint8_t a;
         a = ram[tmp01 + y];
         //     iny
         y++;
@@ -507,6 +512,7 @@ static void edit_cmd(struct scan_state* scan)
     open_input_file();
     parse_filename_from_command(scan);
     open_output_file();
+
     uint8_t x;
     x = 0;
     input_file_empty_flag = x;
@@ -589,6 +595,7 @@ static void finish_cmd(void)
         adjust_area_pointers(tmp67);
         move_cursor_to_top_of_document();
         ensure_cr_at_document_top();
+
         uint8_t a;
         a = input_file_empty_flag;
         if (a != 0)
@@ -618,6 +625,7 @@ static void fold_cmd(struct scan_state* scan)
     if (scan_input_buffer(scan))
         goto c87b4;
     //     lda input_buffer,y
+
     uint8_t a;
     a = input_buffer[scan->pos];
     //     cmp #'1'
@@ -788,9 +796,11 @@ static void microspace_cmd(struct scan_state* scan)
     //     jsr call_printer_driver
     // (the printer driver returns its status in the global y register;
     //  the y = 0 input setup is unused by the default driver)
+
     uint8_t y;
     printer_driver_ptr->printer_getflags(&x, &y);
     //     tya
+
     uint8_t a;
     a = y;
     //     and #1
@@ -825,7 +835,6 @@ static void mode_cmd(void)
 
 static void more_cmd(struct scan_state* scan)
 {
-    uint8_t a;
 
     // more_cmd
     // Pseudocode: Appends more text from input file into document at current
@@ -850,10 +859,12 @@ static void more_cmd(struct scan_state* scan)
     //     ldx l003a
     // loop_c84c4:
     uint8_t y = 0;
+
     uint8_t x;
     x = l003a;
     do
     {
+        uint8_t a;
         a = ram[current_ruler_ptr + y];
         current_ruler_buffer[y] = a;
         y++;
@@ -1076,6 +1087,7 @@ c832d:
     //     jsr draw_prompt_characters
     draw_prompt_characters('R', 'P');
     //     jsr flush_and_read_char
+
     uint8_t a;
     a = screen_getchar();
     //     bcs return_2
@@ -1267,18 +1279,21 @@ static void setup_cmd(struct scan_state* scan)
     uint8_t x;
     x = 1;
     //     stx tmp6
+
     uint8_t tmp6;
     tmp6 = x;
     //     dex                                                               ;
     //     X=0x00
     x--;
     //     stx tmp8
+
     uint8_t tmp8;
     tmp8 = x;
     //     dex                                                               ;
     //     X=0xff
     x--;
     //     stx tmp7
+
     uint8_t tmp7;
     tmp7 = x;
     // c8649:
@@ -1301,6 +1316,7 @@ c8649:
         //     inx
         x_1++;
         //     ldy c867d,x
+
         uint8_t y;
         y = c867d_data[x_1];
         //     bne loop_c8652
@@ -1318,6 +1334,7 @@ c8649:
     // c8669:
 c8669:
     //     lda c8681,x
+
     uint8_t a;
     a = c8681_data[x_1];
     //     sta tmp6,x
@@ -1444,6 +1461,7 @@ static void print_x_words_of_help(uint8_t x)
     //     bpl ca82e
     for (;;)
     {
+
         uint8_t a;
         a = la83d[y];
         if (a == 0)
@@ -1551,6 +1569,7 @@ void run_cli(void)
     if ((file_edit_flags & 0x40))
         goto c816d;
     //     lda file_edit_flags
+
     uint8_t a;
     a = file_edit_flags;
     //     ror
@@ -1580,6 +1599,7 @@ c816d:
     cli_putstring("Printer ");
 
     //     ldx #0
+
     uint8_t x;
     x = 0;
     // loop_c819a:
@@ -1616,6 +1636,7 @@ c81b6:
     uint8_t x_1;
     x_1 = 0;
     //     ldy #0
+
     uint8_t y;
     y = 0;
     // c81ba:
@@ -1705,6 +1726,7 @@ static bool parse_command(uint8_t* input_buffer_offset)
     l0082 = a;
     //     tax                                                               ;
     //     X=0xff
+
     uint8_t x;
     x = a;
     // ca84c:
@@ -1937,6 +1959,7 @@ void set_document_name_to_filename_buffer(void)
     //     bge loop_c88fa
     // return_9:
     //     lda #0x0d
+
     uint8_t a2;
     a2 = 0x0d;
     //     sta input_filename-1, x
