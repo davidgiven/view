@@ -1907,9 +1907,8 @@ void set_document_name_to_filename_buffer(void)
     // return_9:
     //     lda #0x0d
 
-    uint8_t a2 = 0x0d;
     //     sta input_filename-1, x
-    input_filename[x - 1] = a2;
+    input_filename[x - 1] = 0x0d;
     //     rts
     return;
 

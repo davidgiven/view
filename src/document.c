@@ -598,9 +598,8 @@ uint8_t create_default_ruler(addr_t ruler_addr)
     // cb0ff:
 cb0ff:
     //     lda #0x3c ; '<'
-    uint8_t a_3 = 0x3c;
     //     sta (((uint8_t*)&tmp01)[0]),y
-    ram[tmp01 + y] = a_3;
+    ram[tmp01 + y] = 0x3c;
     //     rts
     return y;
 }
@@ -873,10 +872,9 @@ cac20:
     uint8_t x = (uint8_t)(tmp89 - current_line_ptr);
     //     ldy #0
 
-    uint8_t yy = 0;
     //     lda (current_line_ptr),y
 
-    uint8_t a = ram[current_line_ptr + yy];
+    uint8_t a = ram[current_line_ptr + 0];
     //     jsr check_for_command_prefix
     command_prefix_t cp = check_for_command_prefix(a);
     //     bne cac3e

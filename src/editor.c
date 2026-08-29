@@ -28,7 +28,7 @@ struct render_state
 };
 
 // Editor-only functions
-void adjust_pointers(addr_t tmp45, addr_t tmp67);
+addr_t adjust_pointers(addr_t tmp45, addr_t tmp67);
 static bool advance_to_next_doc_line(void);
 void beep(void);
 bool scan_document_for_next_line(void);
@@ -78,7 +78,7 @@ static uint8_t find_marker_at_position(uint8_t y, addr_t tmp67);
 static void unpack_line(addr_t ptr1);
 static void update_markers_to_format_buffer(void);
 void check_for_embedded_ruler(addr_t tmp01);
-static void find_line_start(addr_t tmp89);
+static addr_t find_line_start(addr_t tmp89);
 static int find_left_margin_stop(void);
 static void insert_at_left_margin(void);
 static bool insert_byte_at_xpos(uint8_t y);
@@ -832,7 +832,7 @@ static void cf7_join_lines_key(void)
 
     //     jsr adjust_pointers
 
-    adjust_pointers(tmp45, 1);
+    tmp89 = adjust_pointers(tmp45, 1);
 
     //     lda current_line_ptr
     //     ldy current_line_ptr+1
@@ -1364,7 +1364,7 @@ static void f7_delete_line_key(void)
 
     //     jsr adjust_pointers
 
-    adjust_pointers(tmp45, tmp67);
+    tmp89 = adjust_pointers(tmp45, tmp67);
 
     //     jsr cb05a
 
@@ -4570,7 +4570,7 @@ void split_line_at_wrap(addr_t tmp89)
 
     // cac78:
     //     jsr sub_cac50
-    find_line_start(tmp89);
+    tmp89 = find_line_start(tmp89);
     // cac7b:
 cac7b:
     //     lda #0
@@ -4673,7 +4673,7 @@ cacad:
     return;
 }
 
-void adjust_pointers(addr_t tmp45, addr_t tmp67)
+addr_t adjust_pointers(addr_t tmp45, addr_t tmp67)
 {
 
     // adjust_pointers
@@ -4681,7 +4681,7 @@ void adjust_pointers(addr_t tmp45, addr_t tmp67)
     // adjust_pointers: (6372)
 
     addr_t tmp23 = tmp45;
-    tmp89 = tmp45 + tmp67;
+    addr_t local_tmp89 = tmp45 + tmp67;
     //     ldx #0 (6382)
 
     uint8_t x = 0;
@@ -4707,7 +4707,7 @@ ca9c3:
         addr_t pa_val = ((addr_t*)&pointer_array)[x];
         if (pa_val < tmp45)
             goto ca9f1;
-        if (pa_val < tmp89)
+        if (pa_val < local_tmp89)
             goto ca9db;
         goto ca9e7;
     }
@@ -4758,8 +4758,8 @@ ca9f1:
     //  NUL-terminated region at tmp89 down to tmp23, including the 0x00
     //  terminator; the page wrap in the asm is a plain contiguous copy)
     {
-        size_t copy_len = strlen((char*)&ram[tmp89]) + 1;
-        memmove(&ram[tmp23], &ram[tmp89], copy_len);
+        size_t copy_len = strlen((char*)&ram[local_tmp89]) + 1;
+        memmove(&ram[tmp23], &ram[local_tmp89], copy_len);
         // caa08: (6427)
         //     tya (6428)
         //     clc (6429)
@@ -4772,6 +4772,7 @@ ca9f1:
         top = tmp23 + copy_len - 1;
     }
     //     rts (6435)
+    return local_tmp89;
 }
 
 /**
@@ -6911,7 +6912,7 @@ void adjust_area_pointers(addr_t tmp67)
 
     addr_t tmp45 = area_start_ptr;
     //     jsr adjust_pointers
-    adjust_pointers(tmp45, tmp67);
+    tmp89 = adjust_pointers(tmp45, tmp67);
     //     lda ((uint8_t*)&tmp45)[0]
     //     ldy ((uint8_t*)&tmp45)[1]
     //     jmp cac78
@@ -7991,7 +7992,7 @@ void check_for_embedded_ruler(addr_t tmp01)
     return;
 }
 
-static void find_line_start(addr_t tmp89)
+static addr_t find_line_start(addr_t tmp89)
 {
 
     // sub_cac50
@@ -8018,10 +8019,9 @@ static void find_line_start(addr_t tmp89)
             break;
     }
     // cac6f:
-    tmp67 = tmp89;
     // return_73:
     //     rts
-    return;
+    return tmp89;
 }
 
 /**
@@ -8195,7 +8195,7 @@ static bool write_line_back_to_document(void)
     //     sta ((uint8_t*)&tmp67)[0]
     ((uint8_t*)&tmp67)[0] = a_1;
     //     jsr adjust_pointers
-    adjust_pointers(tmp45, tmp67);
+    tmp89 = adjust_pointers(tmp45, tmp67);
     //     jmp ca8ed
     goto ca8ed;
 

@@ -788,7 +788,7 @@ addr_t read_into_document(void)
 
     addr_t tmp67 = space_limit - cursor;
     //     jsr adjust_pointers
-    adjust_pointers(tmp45_1, tmp67);
+    tmp89 = adjust_pointers(tmp45_1, tmp67);
     // (the 6502 left the post-read cursor in tmp01; load_cmd uses it for top)
     return cursor;
 }
@@ -917,7 +917,7 @@ c8a87:
     if (delta < 0)
     {
         addr_t tmp67 = -delta;
-        adjust_pointers(tmp45, tmp67);
+        tmp89 = adjust_pointers(tmp45, tmp67);
     }
     else if (delta > 0)
     {

@@ -976,9 +976,8 @@ static void dm_fmt_cmd(void)
             return;
         }
         //     ldy #0
-        uint8_t y_1 = 0;
         //     lda (last_macro_ptr),y
-        uint8_t a_1 = last_macro_ptr->body[y_1];
+        uint8_t a_1 = last_macro_ptr->body[0];
         //     jsr check_for_command_prefix
         //     bne c96f8
         //     jsr lookup_formatting_command
@@ -1517,9 +1516,8 @@ static bool evaluate_expression_from_fmt_cmd(
         if (count == 0)
             goto c9804;
         //     lda #0
-        uint8_t a_3 = 0;
         //     sta input_buffer_offset+1
-        l0080 = a_3;
+        l0080 = 0;
         //     dex
         count--;
 
@@ -2009,9 +2007,8 @@ c906f:
     //     inc l0043
     l0043_1++;
     //     lda #0
-    uint8_t a_7 = 0;
     //     sta l0042
-    l0042_1 = a_7;
+    l0042_1 = 0;
     //     beq c9048                                                         ;
     //     ALWAYS branch
     goto c9048;
@@ -2159,9 +2156,8 @@ c90e2:
 c90f8:
     //     lda #0
 
-    uint8_t a_13 = 0;
     //     sta l0039
-    l0039 = a_13;
+    l0039 = 0;
     //     ldy input_buffer_offset+1
     //     jmp c8fe6
     goto c8fe6_inline;
@@ -2564,9 +2560,8 @@ static void print_loop(addr_t ptr5)
         if (cp == NO_COMMAND_PREFIX)
             goto c8fce_thunk_l;
         //     ldy #3
-        uint8_t y_1 = 3;
         //     sty input_buffer_ptr+1
-        l0080 = y_1;
+        l0080 = 3;
         //     jsr sub_cab6e
         //     bne c8f6e
         // (inlined: Z = (ram[tmp01] == RULER_BYTE))
@@ -2703,9 +2698,8 @@ static void print_loop(addr_t ptr5)
         //     jsr sub_c9407
         output_left_margin();
         //     lda #0
-        uint8_t a_6 = 0;
         //     sta l0039
-        l0039 = a_6;
+        l0039 = 0;
         //     ldy input_buffer_ptr+1
         uint8_t y_4 = l0080;
         //     lda print_flags
@@ -2822,9 +2816,8 @@ c8c95:
     if (cp == NO_COMMAND_PREFIX)
         goto c8c95;
     //     ldx #0xfd
-    uint8_t x_1 = 0xfd;
     //     stx l0083
-    l0083 = x_1;
+    l0083 = 0xfd;
 c8caf:
     // c8caf:
     //     cmp #0x20 ; ' '
@@ -3417,9 +3410,8 @@ c91da:
     //     sta l0083
     l0083 = a_3;
     //     lda #0
-    uint8_t a_4 = 0;
     //     sta l0082
-    l0082 = a_4;
+    l0082 = 0;
     //     ldy #2
     uint8_t y_1 = 2;
     // loop_c91f1:
@@ -3934,9 +3926,8 @@ static void reset_print_registers(void)
     //     sta macro_executing_flag
     macro_executing_flag = a;
     //     lda #0x42 ; 'B'
-    uint8_t a_1 = 0x42;
     //     sta page_length
-    page_length = a_1;
+    page_length = 0x42;
     //     lda #1
     uint8_t a_2 = 1;
     //     sta footers_enabled_flag
