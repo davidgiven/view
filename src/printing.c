@@ -1888,7 +1888,6 @@ void display_not_enough_memory(void)
     return;
     // return_6:
     //     rts
-    return;
 
     // MULTIPLE ENTRY POINTS: check_for_at_least_150_bytes_free,
     // display_not_enough_memory
@@ -2682,7 +2681,7 @@ static void print_loop(addr_t ptr5)
         //  so it lives here and is passed by reference; the body follows the
         //  macro header via body[])
         ptr3 = (addr_t)(macro->body - ram);
-        macro_executing_flag = (uint8_t)(ptr3 >> 8);
+        macro_executing_flag = (ptr3 != 0);
         //     bne c900e
 
         if (macro_executing_flag != 0)

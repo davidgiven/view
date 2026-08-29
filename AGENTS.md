@@ -15,12 +15,6 @@ root has a `.clang-format` config.
 
 - Use Javadoc-style (`/** ... */`) comments above functions, with `@param`
   / `@return` tags where relevant.
-- Global `uint8_t` registers `a`, `x`, `y`, `sp`, `flags` simulate the
-  6502 processor state.  Many functions now declare their own locals
-  (e.g. `uint8_t a, y;`) or take them as parameters.  Callers still
-  depend on the globals being set correctly by callees.
-- The `flags` variable packs processor status bits:
-  `FLAG_C=0x01`, `FLAG_Z=0x02`, `FLAG_N=0x80`.
 - The `ram[65536]` array simulates the 64 KB address space.
 - Every `lda`, `ldx`, `ldy` instruction in 6502 sets Z and N flags.
   The C translation often omits the flag update; if a subsequent
@@ -29,16 +23,6 @@ root has a `.clang-format` config.
 - `cmp` is translated as a macro-like expression that updates `flags`.
 - `bcc`/`bcs`/`beq`/`bne`/`bmi`/`bpl` read `flags` to decide the
   branch.
-- Helper functions (`static inline` in `src/view.c:41-64`):
-
-  | Function | Behaviour |
-  |---|---|
-  | `set_flags(v)` | Sets `Z` if `v == 0`, `N` if bit 7 of `v` is set. Other flags unchanged. Used after any `lda`/`ldx`/`ldy` that the 6502 would set Z/N for. |
-  | `cmp(reg, v)` | Sets `Z` if `reg == v`, `N` if `(reg - v) & 0x80`, `C` if `reg >= v` (unsigned). Equivalent to 6502 `CMP`. |
-  | `adc(v)` | `a += v + C`. Sets `C` if result > 0xff, sets Z/N on result. Equivalent to 6502 `ADC`. |
-  | `sbc(v)` | `a -= v - (1-C)`. Sets `C` if result ≤ 0xff (no borrow). Sets Z/N on result. Equivalent to 6502 `SBC`. |
-
-  All four update `flags` in-place (other flag bits preserved).
 
 ## Build and test
 

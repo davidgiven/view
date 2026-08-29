@@ -6437,7 +6437,7 @@ ca395:
     //     lda ptr6 / ldy ptr6+1 / bne ca3c1
 
     addr_t draw = editor_ptr6;
-    if ((editor_ptr6 >> 8) != 0)
+    if (editor_ptr6 != 0)
         goto ca3c1;
     // ca3b2: (5388)
 ca3b2:
@@ -7866,10 +7866,9 @@ static void unpack_line(addr_t ptr1)
     clear_format_mode_bit7();
     //     ldy #0
 
-    uint8_t y = 0;
     //     lda (current_line_ptr),y
 
-    uint8_t a = ram[current_line_ptr + y];
+    uint8_t a = ram[current_line_ptr];
     //     ldx current_edit_line_ptr
     //     ldy current_edit_line_ptr+1
     //     jsr check_for_command_prefix
@@ -7878,9 +7877,7 @@ static void unpack_line(addr_t ptr1)
     if (cp != NO_COMMAND_PREFIX)
     {
         if (cp == RULER_PREFIX)
-        {
             edit_buffer_unpacked_flag = a;
-        }
         set_format_mode_bit7();
     }
     //     stx current_format_line_ptr
@@ -7949,7 +7946,7 @@ caad5:
     {
         uint16_t val = current_format_line_ptr + y;
         markers_array[idx / 2] = val;
-        if ((uint8_t)(val >> 8) != 0)
+        if (val != 0)
             goto caad5;
     }
     // caae8:
@@ -7982,9 +7979,7 @@ void check_for_embedded_ruler(addr_t tmp01)
     //     bne cac4c
     // (inlined: Z = (ram[tmp01] == RULER_BYTE))
     if (ram[tmp01] == RULER_BYTE)
-    {
         push_onto_ruler_index(tmp01);
-    }
     //     pla
     //     tay
     //     pla
@@ -7998,7 +7993,6 @@ static addr_t find_line_start(addr_t tmp89)
     // sub_cac50
     // Pseudocode: Finds the start of current line by scanning backward for CR
 
-    tmp89--;
     //     ldy #0
 
     uint8_t y = 0;
@@ -8009,13 +8003,9 @@ static addr_t find_line_start(addr_t tmp89)
     // (loop restructured)
     while (1)
     {
-
+        tmp89--;
         uint8_t a = ram[tmp89 + y];
         if (a == 0x0d)
-            break;
-        uint8_t old_low = (uint8_t)(tmp89 & 0xff);
-        tmp89--;
-        if (!(old_low > 0 || (uint8_t)(tmp89 >> 8) != 0))
             break;
     }
     // cac6f:
@@ -8038,28 +8028,28 @@ static int find_left_margin_stop(void)
 
     uint8_t a = ruler_left_stop;
     //     beq caed4
-    if (a == 0)
-        goto caed4;
-    //     ldy #0
-    // loop_caec8:
-    do
+    if (a != 0)
     {
-        //     lda (current_edit_line_ptr),y
-        uint8_t a_1 = ram[RAM_EDIT_BUFFER + y];
-        //     iny
-        y++;
-        //     cmp #0x0b
-        //     beq caed4
-        if (a_1 == 0x0b)
-            goto caed4;
-        //     cpy #0x84
-        //     bcc loop_caec8
-    } while (y < MAX_LINE_LENGTH);
-    //     cpy #0x84 set carry when Y >= MAX_LINE_LENGTH
-    return -1;
+        //     ldy #0
+        // loop_caec8:
+        do
+        {
+            //     lda (current_edit_line_ptr),y
+            uint8_t a_1 = ram[RAM_EDIT_BUFFER + y];
+            //     iny
+            y++;
+            //     cmp #0x0b
+            //     beq caed4
+            if (a_1 == 0x0b)
+                return y;
+            //     cpy #0x84
+            //     bcc loop_caec8
+        } while (y < MAX_LINE_LENGTH);
+        //     cpy #0x84 set carry when Y >= MAX_LINE_LENGTH
+        return -1;
 
-    // caed4:
-caed4:
+        // caed4:
+    }
     //     clc
     return y;
 }
@@ -8081,7 +8071,6 @@ static void insert_at_left_margin(void)
 
 static bool insert_byte_at_xpos(uint8_t y)
 {
-    uint8_t a_2;
     _Bool ok;
 
     // sub_caedd:
@@ -8089,30 +8078,25 @@ static bool insert_byte_at_xpos(uint8_t y)
 
     uint8_t a = xpos;
     //     pha
+    //     sty xpos
+    xpos = y;
+    //     ldx #1
+    //     jsr insert_edit_buffer_bytes_at_xpos
+    ok = insert_edit_buffer_bytes_at_xpos(1);
+    //     bcs caef0
+    if (ok)
     {
-        uint8_t saved_a = a;
-        //     sty xpos
-        xpos = y;
-        //     ldx #1
-        //     jsr insert_edit_buffer_bytes_at_xpos
-        ok = insert_edit_buffer_bytes_at_xpos(1);
-        //     bcs caef0
-        if (ok)
-        {
-            //     ldy xpos
-            //     lda #0x0b
-            uint8_t a_1 = 0x0b;
-            //     sta (current_edit_line_ptr),y
-            // (the 6502 left y = the insert position, i.e. xpos)
-            ram[RAM_EDIT_BUFFER + xpos] = a_1;
-            //     iny
-        }
-        // caef0:
-        //     pla
-        a_2 = saved_a;
+        //     ldy xpos
+        //     lda #0x0b
+        //     sta (current_edit_line_ptr),y
+        // (the 6502 left y = the insert position, i.e. xpos)
+        ram[RAM_EDIT_BUFFER + xpos] = 0x0b;
+        //     iny
     }
+    // caef0:
+    //     pla
     //     sta xpos
-    xpos = a_2;
+    xpos = a;
     //     rts
     return ok;
 }
@@ -8297,7 +8281,7 @@ ca919:
                 uint16_t val = current_line_ptr + y_1;
                 markers_array[idx / 2] = val;
                 //     bne loop_ca91c
-                if ((uint8_t)(val >> 8) != 0)
+                if (val != 0)
                     continue;
                 break;
             }
