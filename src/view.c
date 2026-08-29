@@ -558,8 +558,6 @@ c8398:
     //     inc l0074
     l0074++;
     //     txa
-    uint8_t a_1;
-    a_1 = x;
 
     //     beq return_3
     if (x == 0)

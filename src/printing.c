@@ -1656,8 +1656,6 @@ void render_register(uint8_t a, uint8_t x)
     unsigned int* register_value = get_register_address(a);
     //     sty ((uint8_t*)&tmp89)[0]
 
-    addr_t tmp89;
-    tmp89 = 0;
     if (register_value != NULL)
     {
         //     bit lada6
@@ -1965,11 +1963,9 @@ static void microspace_word_processor(uint8_t* y)
     uint8_t a_2;
     uint8_t a_21;
 
-    uint32_t accum = 0;
     // l0042/l0043/l0047/l0048 are only used in this function (within
     // printing.c) and in justify_edit_buffer (editor.c) — make them local
     // to avoid global reuse confusion; l0039/l0083 are used elsewhere.
-    uint8_t l0042 = 0, l0043 = 0, l0047 = 0, l0048 = 0;
 
     // microspace_word_processor
     // Pseudocode: Processes words for microspaced justification during printing
@@ -2904,7 +2900,6 @@ read_block_status_t read_block_from_file(addr_t* cursor, addr_t limit)
 
     // Set when the read ended on a NUL/EOF byte (as opposed to the destination
     // block filling up); distinguishes READ_BLOCK_DONE from READ_BLOCK_MORE.
-    bool eof = false;
 
     // read_block_from_file
     // read_block_from_file:
@@ -3126,8 +3121,7 @@ static void render_header_or_footer(uint8_t* text)
     {
         uint8_t x_1;
         x_1 = a_4 - l0081 - l0039;
-        uint8_t a_5;
-        a_5 = add_justification_spaces(x_1);
+        add_justification_spaces(x_1);
     }
 c9355:
     //     jsr c937b
@@ -3181,8 +3175,7 @@ c9355:
             uint8_t x_3;
             x_3 = a_6 - l0081 - l0039;
             x_3++;
-            uint8_t a_7;
-            a_7 = add_justification_spaces(x_3);
+            add_justification_spaces(x_3);
         }
     }
     // c937b:
@@ -3249,8 +3242,6 @@ static void render_new_page(void)
     // c92cf:
 c92cf:
     //     lda #0xc0
-    uint8_t a_2;
-    a_2 = 0xc0;
     //     jsr start_printing
     start_printing();
     // c92d4:
@@ -3895,7 +3886,6 @@ static uint8_t copy_header_footer_text(uint8_t* text)
 {
 
     uint8_t x = 0;
-    uint8_t y = 0;
 
     // sub_c93c8
     // Pseudocode: Copies header/footer text to output_buffer, expanding

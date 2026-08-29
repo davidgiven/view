@@ -1821,8 +1821,6 @@ ca87e:
     // (the 6502 copied the command index into Y here; callers now read
     //  l0082 directly)
     //     lda parser_table,x
-    uint8_t a_7;
-    a_7 = parser_table[x];
     //     clc
     //     rts
     return false;

@@ -862,7 +862,6 @@ void move_cursor_to_address(uint16_t addr)
         check_for_embedded_ruler(tmp01_1);
     } while (1);
     // cac17:
-cac17:
     //     lda ((uint8_t*)&tmp01)[0]
     //     ldy ((uint8_t*)&tmp01)[1]
     //     bne cac20

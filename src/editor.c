@@ -759,10 +759,6 @@ static void cf6_split_line_key(void)
     }
 
     //     txa
-
-    uint8_t a_2;
-    a_2 = x;
-
     //     ldy current_line_ptr+1
     //     txa
     //     clc
@@ -943,8 +939,6 @@ static void cf8_mark_as_ruler_key(addr_t ptr1)
 
     if (!(a_3 & 0x80))
     {
-        uint8_t a_4;
-        a_4 = 0x80;
         edit_buffer_unpacked_flag = 0x80;
         edit_buffer_dirty_flag++;
     }
@@ -3652,8 +3646,7 @@ c9c1d:
     //     jsr sub_ca5ae
     {
         bool is_tab = false;
-        uint8_t a_3;
-        a_3 = process_document_character(a_2, &x, &is_tab);
+    (void)    process_document_character(a_2, &x, &is_tab);
     }
     //     txa
     a_2 = x;
@@ -3928,7 +3921,6 @@ c9cf5:
         }
     }
     // c9d0d:
-c9d0d:
     //     lda l0083
 
     uint8_t a_11;
@@ -4305,10 +4297,7 @@ void enter_editor_mode(void)
         x--;
     } while (!(x & 0x80));
     //     ldx #2
-    uint8_t x_1;
-    x_1 = 2;
     //     stx l0073
-    l0073 = 2;
     //     stx status_line_needs_redrawing_flag
     status_line_needs_redrawing_flag = 2;
     flags_need_redrawing_flag = 1;
@@ -4644,6 +4633,7 @@ void set_marker_to_here(uint8_t x)
 {
 
     uint8_t y;
+    (void)y;
     // set_marker_to_here
     // set_marker_to_here: Sets marker at current cursor position
 
@@ -4697,8 +4687,6 @@ cac7b:
     //     lda #0
     //     sta l0083
 
-    uint8_t a;
-    a = 0;
     l0083 = 0;
     //     ldx #0x85
 
@@ -5263,8 +5251,6 @@ c8c3e:
     ptr2 = doc_ptr2;
     doc_ptr2 = tmp89;
     //     ldx #0
-    uint8_t x_2;
-    x_2 = 0;
     return true;
 }
 
@@ -6280,8 +6266,7 @@ static void recalculate_cursor_xpos(void)
         //     sta l0039
         l0039 = a;
         //     jsr process_current_document_character
-        uint8_t a_1;
-        a_1 = process_current_document_character(tmp01, &x, &y, &is_tab);
+        (void) process_current_document_character(tmp01, &x, &y, &is_tab);
         //     txa
         a = x;
         //     clc
@@ -6307,8 +6292,7 @@ ca624:
     do
     {
         l0039 = a;
-        uint8_t a_2;
-        a_2 = process_current_document_character(tmp01, &x, &y_1, &is_tab);
+        (void) process_current_document_character(tmp01, &x, &y_1, &is_tab);
         a = x;
         a += l0039;
     } while (a < l0072);
@@ -6482,8 +6466,7 @@ ca2e6:
     // ca30d: (5295)
 ca30d:
     //     jsr sub_ca44e (5296)
-    uint8_t x_2;
-    x_2 = compute_display_start_line();
+    (void) compute_display_start_line();
     //     jmp ca2e0 (5297)
     goto ca2e0;
 
@@ -6699,8 +6682,6 @@ ca3c1:
         draw_line(&rs, draw);
         //     lda ((uint8_t*)&tmp01)[0] (5400)
 
-        uint8_t a_22;
-        a_22 = ((uint8_t*)&tmp01)[0];
         //     ldy ((uint8_t*)&tmp01)[1] (5401)
         uint8_t y_2;
         y_2 = ((uint8_t*)&tmp01)[1];
@@ -7328,6 +7309,7 @@ format_result_t format_paragraph(void)
     uint8_t x;
 
     bool at_end = false; // C from the final advance_to_next_line (c9a8d)
+    (void)at_end;
     // sub_c9977
     // PROVISIONAL: Main line formatting routine — reads source line, handles
     // margins, tabs, wrapping. PROVISIONAL: Called from f0_format_block_key
@@ -7456,8 +7438,6 @@ c99b6:
         if (idx == 0x0c)
             break;
         //     lda #0
-        uint8_t a_4;
-        a_4 = 0;
         //     sta markers_array+1,x
         markers_array[idx / 2] &= 0x00ff;
         //     inc l007e
@@ -7468,7 +7448,6 @@ c99b6:
         break;
     }
     // c99c7:
-c99c7:
     // PROVISIONAL: Character processing loop. Reads one byte from the source
     // document line. PROVISIONAL: l0047 tracks the read position, l0048 tracks
     // the write position. PROVISIONAL: Handles tabs (0x09), soft hyphens /
@@ -7493,8 +7472,7 @@ c99c9:
     //     jsr sub_ca5ae
     {
         bool is_tab = false;
-        uint8_t a_6;
-        a_6 = process_document_character(a_5, &x, &is_tab);
+        (void) process_document_character(a_5, &x, &is_tab);
     }
     //     dex
     x--;
@@ -8064,7 +8042,6 @@ static uint8_t compute_display_start_line(void)
         continue;
     }
     // ca479:
-ca479:
     //     sta top_of_screen_line_ptr / sty top_of_screen_line_ptr+1
     top_of_screen_line_ptr = line;
     //     lda ruler_stack_ptr
@@ -8224,7 +8201,6 @@ static void unpack_line(addr_t ptr1)
         break;
     }
     // caac8:
-caac8:
     //     sty l003b
     l003b = y_1;
     // return_68:
@@ -8639,7 +8615,6 @@ ca919:
                 break;
             }
             // ca92f:
-        ca92f:
             //     pla
             a_8 = saved_x;
         }
