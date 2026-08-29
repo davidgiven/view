@@ -192,8 +192,7 @@ static void change_cmd(struct scan_state* scan)
     //     stx ptr3
     //     stx ptr3+1
 
-    addr_t ptr3;
-    ptr3 = 0;
+    addr_t ptr3 = 0;
     // loop_c82b3:
     for (;;)
     {
@@ -242,8 +241,7 @@ void clear_cmd(void)
     // clear_cmd:
     //     ldx #0x0b
 
-    uint8_t x;
-    x = 0x0b;
+    uint8_t x = 0x0b;
     //     lda #0
     // loop_cb095:
     do
@@ -329,14 +327,12 @@ static void count_cmd(struct scan_state* scan)
     //     lda area_start_ptr+1
     //     sta ((uint8_t*)&tmp01)[1]
 
-    addr_t tmp01;
-    tmp01 = area_start_ptr;
+    addr_t tmp01 = area_start_ptr;
     //     lda #0
     //     sta ((uint8_t*)&tmp89)[0]
     //     sta ((uint8_t*)&tmp89)[1]
 
-    addr_t tmp89;
-    tmp89 = 0;
+    addr_t tmp89 = 0;
     //     sta l0083
     //     sta l0082
     l0083 = 0;
@@ -345,8 +341,7 @@ static void count_cmd(struct scan_state* scan)
 c86b8:
     //     ldy #0
 
-    uint8_t y;
-    y = 0;
+    uint8_t y = 0;
     //     jsr deref_and_check_for_command_prefix
     command_prefix_t cp = deref_and_check_for_command_prefix(y, tmp01);
     //     bne c86ea
@@ -354,32 +349,28 @@ c86b8:
         goto c86ea;
     //     ldx #0
 
-    uint8_t x;
-    x = 0;
+    uint8_t x = 0;
     //     iny
     y++;
     // loop_c86c2:
     for (;;)
     {
         //     lda (((uint8_t*)&tmp01)[0]),y
-        uint8_t a;
-        a = ram[tmp01 + y];
+        uint8_t a = ram[tmp01 + y];
         //     iny
         y++;
         //     cmp l8747,x
         if (a != l8747_data[x])
             goto c86d1;
         //     lda (((uint8_t*)&tmp01)[0]),y
-        uint8_t a_1;
-        a_1 = ram[tmp01 + y];
+        uint8_t a_1 = ram[tmp01 + y];
         //     cmp l8748,x
         if (a_1 == l8747_data[x + 1])
             goto c86df;
         // c86d1:
     c86d1:
         //     lda l8749,x
-        uint8_t a_2;
-        a_2 = l8747_data[x + 2];
+        uint8_t a_2 = l8747_data[x + 2];
 
         //     beq c86db
         if (a_2 == 0)
@@ -398,8 +389,7 @@ c86b8:
     // c86db:
 c86db:
     //     lda #0x80
-    uint8_t a_3;
-    a_3 = 0x80;
+    uint8_t a_3 = 0x80;
     //     bne c86ff                                                         ;
     //     ALWAYS branch
     goto c86ff;
@@ -420,8 +410,7 @@ c86df:
     // c86ea:
 c86ea:
     //     ldy #0
-    uint8_t y_1;
-    y_1 = 0;
+    uint8_t y_1 = 0;
     //     jsr process_current_document_character
     bool is_tab = false;
     a_3 = process_current_document_character(tmp01, &x, &y_1, &is_tab);
@@ -430,8 +419,7 @@ c86ea:
     //     ldx #0
     x = 0;
     //     ldy l0082
-    uint8_t y_2;
-    y_2 = l0082;
+    uint8_t y_2 = l0082;
     if ((int8_t)y_2 < 0)
         goto c870d;
     //     cmp #0x0d
@@ -452,8 +440,7 @@ c86ff:
     // c8703:
 c8703:
     //     ldy l0083
-    uint8_t y_3;
-    y_3 = l0083;
+    uint8_t y_3 = l0083;
 
     //     beq c870d
     if (y_3 != 0)
@@ -513,8 +500,7 @@ static void edit_cmd(struct scan_state* scan)
     parse_filename_from_command(scan);
     open_output_file();
 
-    uint8_t x;
-    x = 0;
+    uint8_t x = 0;
     input_file_empty_flag = x;
     do
     {
@@ -596,8 +582,7 @@ static void finish_cmd(void)
         move_cursor_to_top_of_document();
         ensure_cr_at_document_top();
 
-        uint8_t a;
-        a = input_file_empty_flag;
+        uint8_t a = input_file_empty_flag;
         if (a != 0)
         {
             close_input_output_files();
@@ -626,8 +611,7 @@ static void fold_cmd(struct scan_state* scan)
         goto c87b4;
     //     lda input_buffer,y
 
-    uint8_t a;
-    a = input_buffer[scan->pos];
+    uint8_t a = input_buffer[scan->pos];
     //     cmp #'1'
     //     beq c87b2 (true → folding_flag = 0)
     if (a == '1')
@@ -647,8 +631,7 @@ c87b4:
     cli_putstring("Folding ");
 
     //     lda folding_flag
-    uint8_t a_1;
-    a_1 = folding_flag;
+    uint8_t a_1 = folding_flag;
     if (((int8_t)a_1 < 0))
     {
         cli_putstring("off\n");
@@ -801,8 +784,7 @@ static void microspace_cmd(struct scan_state* scan)
     printer_driver_ptr->printer_getflags(&x, &y);
     //     tya
 
-    uint8_t a;
-    a = y;
+    uint8_t a = y;
     //     and #1
     a &= 1;
 
@@ -860,12 +842,10 @@ static void more_cmd(struct scan_state* scan)
     // loop_c84c4:
     uint8_t y = 0;
 
-    uint8_t x;
-    x = l003a;
+    uint8_t x = l003a;
     do
     {
-        uint8_t a;
-        a = ram[current_ruler_ptr + y];
+        uint8_t a = ram[current_ruler_ptr + y];
         current_ruler_buffer[y] = a;
         y++;
         x--;
@@ -880,8 +860,7 @@ static void more_cmd(struct scan_state* scan)
     //     jsr check_for_at_least_150_bytes_free
     check_for_at_least_150_bytes_free();
     //     lda input_file_empty_flag
-    uint8_t a_1;
-    a_1 = input_file_empty_flag;
+    uint8_t a_1 = input_file_empty_flag;
     //     bne c84e8
     if (a_1 == 0)
     {
@@ -1088,8 +1067,7 @@ c832d:
     draw_prompt_characters('R', 'P');
     //     jsr flush_and_read_char
 
-    uint8_t a;
-    a = screen_getchar();
+    uint8_t a = screen_getchar();
     //     bcs return_2
     if (a == 0x1b)
         return;
@@ -1276,26 +1254,22 @@ static void setup_cmd(struct scan_state* scan)
     static const uint8_t c8681_data[] = {0x00, 0x00, 0xff};
     //     ldx #1
 
-    uint8_t x;
-    x = 1;
+    uint8_t x = 1;
     //     stx tmp6
 
-    uint8_t tmp6;
-    tmp6 = x;
+    uint8_t tmp6 = x;
     //     dex                                                               ;
     //     X=0x00
     x--;
     //     stx tmp8
 
-    uint8_t tmp8;
-    tmp8 = x;
+    uint8_t tmp8 = x;
     //     dex                                                               ;
     //     X=0xff
     x--;
     //     stx tmp7
 
-    uint8_t tmp7;
-    tmp7 = x;
+    uint8_t tmp7 = x;
     // c8649:
 c8649:
     //     jsr sub_c8e33
@@ -1305,8 +1279,7 @@ c8649:
     //     and #0xdf
     scan->ch &= 0xdf;
     //     ldx #0
-    uint8_t x_1;
-    x_1 = 0;
+    uint8_t x_1 = 0;
     // loop_c8652:
     for (;;)
     {
@@ -1317,8 +1290,7 @@ c8649:
         x_1++;
         //     ldy c867d,x
 
-        uint8_t y;
-        y = c867d_data[x_1];
+        uint8_t y = c867d_data[x_1];
         //     bne loop_c8652
         if (y != 0)
             continue;
@@ -1335,8 +1307,7 @@ c8649:
 c8669:
     //     lda c8681,x
 
-    uint8_t a;
-    a = c8681_data[x_1];
+    uint8_t a = c8681_data[x_1];
     //     sta tmp6,x
     if (x_1 == 0)
         tmp6 = a;
@@ -1352,8 +1323,7 @@ c8669:
     // c8672:
 c8672:
     //     ldx #2
-    uint8_t x_2;
-    x_2 = 2;
+    uint8_t x_2 = 2;
     // loop_c8674:
     do
     {
@@ -1448,8 +1418,7 @@ static void print_x_words_of_help(uint8_t x)
     // print_x_words_of_help:
     //     ldy #0
 
-    uint8_t y;
-    y = 0;
+    uint8_t y = 0;
     // ca82e:
     //     jsr bdos_print_char
     //     iny
@@ -1462,8 +1431,7 @@ static void print_x_words_of_help(uint8_t x)
     for (;;)
     {
 
-        uint8_t a;
-        a = la83d[y];
+        uint8_t a = la83d[y];
         if (a == 0)
         {
             a = 0x20;
@@ -1570,15 +1538,13 @@ void run_cli(void)
         goto c816d;
     //     lda file_edit_flags
 
-    uint8_t a;
-    a = file_edit_flags;
+    uint8_t a = file_edit_flags;
     //     ror
     //     bcc c816d
     if ((a & 1))
     {
         cli_putstring("Input file is ");
-        uint8_t a_1;
-        a_1 = input_file_empty_flag;
+        uint8_t a_1 = input_file_empty_flag;
         if (a_1 == 0)
         {
             cli_putstring("not ");
@@ -1587,8 +1553,7 @@ void run_cli(void)
     }
 c816d:
     //     lda printer_driver_name
-    uint8_t a_2;
-    a_2 = printer_driver_name[0];
+    uint8_t a_2 = printer_driver_name[0];
 
     //     beq c81b6
     if (a_2 == 0)
@@ -1600,8 +1565,7 @@ c816d:
 
     //     ldx #0
 
-    uint8_t x;
-    x = 0;
+    uint8_t x = 0;
     // loop_c819a:
     //     lda printer_driver_name,x
     //     cmp #0x0d
@@ -1611,8 +1575,7 @@ c816d:
     //     bne loop_c819a
     do
     {
-        uint8_t a_3;
-        a_3 = printer_driver_name[x];
+        uint8_t a_3 = printer_driver_name[x];
         if (a_3 == 0x0d)
             break;
         cli_putchar(a_3);
@@ -1620,8 +1583,7 @@ c816d:
     } while (x != 0);
     // c81a7:
     //     lda microspacing_flag
-    uint8_t a_4;
-    a_4 = microspacing_flag;
+    uint8_t a_4 = microspacing_flag;
 
     //     beq c81b3
     if (a_4 != 0)
@@ -1633,17 +1595,14 @@ c816d:
     // c81b6:
 c81b6:
     //     ldx #0
-    uint8_t x_1;
-    x_1 = 0;
+    uint8_t x_1 = 0;
     //     ldy #0
 
-    uint8_t y;
-    y = 0;
+    uint8_t y = 0;
     // c81ba:
 c81ba:
     //     lda markers_array+1,x
-    uint8_t a_5;
-    a_5 = ((uint8_t*)markers_array)[x_1 + 1];
+    uint8_t a_5 = ((uint8_t*)markers_array)[x_1 + 1];
 
     //     beq c81e7
     if (a_5 == 0)
@@ -1679,8 +1638,7 @@ c81e0:
     //     adc #0x31 ; '1'
     // (x is an even offset into markers_array, so lsr shifts out a 0 and
     //  the carry is 0: a = (x >> 1) + 0x31)
-    uint8_t a_6;
-    a_6 = (x_1 >> 1) + 0x31;
+    uint8_t a_6 = (x_1 >> 1) + 0x31;
     //     jsr screen_putchar
     screen_putchar(a_6);
     // c81e7:
@@ -1720,15 +1678,13 @@ static bool parse_command(uint8_t* input_buffer_offset)
     // parse_command:
     //     lda #0xff
 
-    uint8_t a;
-    a = 0xff;
+    uint8_t a = 0xff;
     //     sta l0082
     l0082 = a;
     //     tax                                                               ;
     //     X=0xff
 
-    uint8_t x;
-    x = a;
+    uint8_t x = a;
     // ca84c:
     for (;;)
     {
@@ -1746,15 +1702,13 @@ static bool parse_command(uint8_t* input_buffer_offset)
             //     iny
             y++;
             //     lda (((uint8_t*)&tmp01)[0]),y
-            uint8_t a_1;
-            a_1 = input_buffer[y];
+            uint8_t a_1 = input_buffer[y];
             //     and #0xdf
             a_1 &= 0xdf;
             //     sta l0084
             l0084 = a_1;
             //     lda parser_table,x
-            uint8_t a_2;
-            a_2 = parser_table[x];
+            uint8_t a_2 = parser_table[x];
             //     beq ca890
             if (a_2 == 0)
                 goto ca890;
@@ -1778,8 +1732,7 @@ static bool parse_command(uint8_t* input_buffer_offset)
             //     inx
             x++;
             //     lda parser_table,x
-            uint8_t a_3;
-            a_3 = parser_table[x];
+            uint8_t a_3 = parser_table[x];
             //     beq ca890
             if (a_3 == 0)
                 goto ca890;
@@ -1789,16 +1742,14 @@ static bool parse_command(uint8_t* input_buffer_offset)
             break;
         }
         //     lda l0083
-        uint8_t a_4;
-        a_4 = l0083;
+        uint8_t a_4 = l0083;
         //     and #0x20 ; ' '
         a_4 &= 0x20;
         //     beq ca84c
         if (a_4 == 0)
             continue;
         //     lda (((uint8_t*)&tmp01)[0]),y
-        uint8_t a_5;
-        a_5 = input_buffer[y];
+        uint8_t a_5 = input_buffer[y];
         //     cmp #0x30 ; '0'
         if (a_5 >= 0x30)
             continue;
@@ -1808,8 +1759,7 @@ static bool parse_command(uint8_t* input_buffer_offset)
     // ca87e:
 ca87e:
     //     lda (((uint8_t*)&tmp01)[0]),y
-    uint8_t a_6;
-    a_6 = input_buffer[y];
+    uint8_t a_6 = input_buffer[y];
     //     cmp #0x30 ; '0'
     if (a_6 < 0x30)
     {
@@ -1945,8 +1895,7 @@ void set_document_name_to_filename_buffer(void)
     // set_document_name_to_filename_buffer:
     //     ldx #0
 
-    uint8_t x;
-    x = 0;
+    uint8_t x = 0;
     // loop_c88fa:
     do
     {
@@ -1958,8 +1907,7 @@ void set_document_name_to_filename_buffer(void)
     // return_9:
     //     lda #0x0d
 
-    uint8_t a2;
-    a2 = 0x0d;
+    uint8_t a2 = 0x0d;
     //     sta input_filename-1, x
     input_filename[x - 1] = a2;
     //     rts

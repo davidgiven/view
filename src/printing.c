@@ -92,12 +92,10 @@ static void write_output_buffer_to_format_line(uint8_t a)
     // c950f:
     //     ldy #3
 
-    uint8_t y;
-    y = 3;
+    uint8_t y = 3;
     //     tax
 
-    uint8_t x;
-    x = a;
+    uint8_t x = a;
 
     //     beq c951c
     if (x == 0)
@@ -171,8 +169,7 @@ static void ce_fmt_cmd(void)
     //     sta l0084
     l0084 = a;
     //     lda ruler_right_stop
-    uint8_t a_1;
-    a_1 = ruler_right_stop;
+    uint8_t a_1 = ruler_right_stop;
 
     //     beq c950f
     if (a_1 == 0)
@@ -219,8 +216,7 @@ static void rj_fmt_cmd(void)
     //     jsr expand_line
     //     bcc c9529 (C=0 ⟺ nothing expanded; both bail paths set C)
 
-    uint8_t x;
-    x = expand_line();
+    uint8_t x = expand_line();
     if (x == 0)
         return;
     // (the 6502's bail path branched into c9529, setting C; no caller of
@@ -231,8 +227,7 @@ static void rj_fmt_cmd(void)
     x--;
     //     lda #0
 
-    uint8_t a;
-    a = 0;
+    uint8_t a = 0;
     //     cpx ruler_right_stop
     //     bcs c950f
     if (x >= ruler_right_stop)
@@ -243,8 +238,7 @@ static void rj_fmt_cmd(void)
     //     stx l0083
     l0083 = x;
     //     lda ruler_right_stop
-    uint8_t a_1;
-    a_1 = ruler_right_stop;
+    uint8_t a_1 = ruler_right_stop;
     //     sec
     //     sbc l0083
     a_1 -= l0083;
@@ -278,18 +272,15 @@ static uint8_t expand_line(void)
     // expand_line:
     //     ldx #0
 
-    uint8_t x;
-    x = 0;
+    uint8_t x = 0;
     //     stx l0083
     l0083 = x;
     //     ldy #3
 
-    uint8_t y;
-    y = 3;
+    uint8_t y = 3;
     //     jsr get_current_fmt_cmd_byte
 
-    uint8_t a;
-    a = get_current_fmt_cmd_byte(&y);
+    uint8_t a = get_current_fmt_cmd_byte(&y);
     //     clc
     //     beq return_37
     if (a == 0)
@@ -338,8 +329,7 @@ c9537:
     // c9555:
 c9555:
     //     lda print_flags
-    uint8_t a_2;
-    a_2 = print_flags;
+    uint8_t a_2 = print_flags;
     if (!(a_2 & 0x80))
         return x; // C=1 from the cmp #0x0d that reached c9555
     //     bpl return_37
@@ -378,8 +368,7 @@ static void store_to_output_buffer(uint8_t a, uint8_t* tmp23)
     // sub_c95b2:
     //     ldy l0081
 
-    uint8_t y;
-    y = l0081;
+    uint8_t y = l0081;
     //     sta (((uint8_t*)&tmp23)[0]),y
     tmp23[y] = a;
     //     iny
@@ -401,19 +390,16 @@ static uint8_t process_header_footer_line(uint8_t* tmp23)
     l007a = 0;
     //     ldy #3
 
-    uint8_t y;
-    y = 3;
+    uint8_t y = 3;
     //     sty input_buffer_offset+1
     //     lda (current_format_line_ptr),y
 
-    uint8_t a;
-    a = ram[current_format_line_ptr + y];
+    uint8_t a = ram[current_format_line_ptr + y];
     //     sta l0083
     l0083 = a;
     //     ldx #0x3f ; '?'
 
-    uint8_t x;
-    x = 0x3f;
+    uint8_t x = 0x3f;
     // loop_c9589:
     for (;;)
     {
@@ -502,12 +488,10 @@ static void em_fmt_cmd(void)
     // em_fmt_cmd:
     //     ldy #3
 
-    uint8_t y;
-    y = 3;
+    uint8_t y = 3;
     //     jsr get_current_fmt_cmd_byte
 
-    uint8_t a;
-    a = get_current_fmt_cmd_byte(&y);
+    uint8_t a = get_current_fmt_cmd_byte(&y);
     //     beq return_38
     if (a == 0)
         return;
@@ -725,8 +709,7 @@ static void pe_fmt_cmd(void)
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &y, 0);
 
-    uint8_t threshold;
-    threshold = value;
+    uint8_t threshold = value;
     //     tax
     //     beq page_eject_fmt
     if (threshold == 0)
@@ -901,8 +884,7 @@ static void dm_fmt_cmd(void)
     // dm_fmt_cmd:
     //     lda macro_executing_flag
 
-    uint8_t a;
-    a = macro_executing_flag;
+    uint8_t a = macro_executing_flag;
     if (a != 0)
         return;
     //     bne return_42
@@ -916,8 +898,7 @@ static void dm_fmt_cmd(void)
     tmp67 = last_macro_ptr;
     //     ldy #3
 
-    uint8_t y;
-    y = 3;
+    uint8_t y = 3;
     //     lda (current_format_line_ptr),y
     uint8_t firstchar = ram[current_format_line_ptr + y];
     //     and #0xdf
@@ -985,8 +966,7 @@ static void dm_fmt_cmd(void)
         //     sta current_format_line_ptr+1
         // (16-bit copy: tmp01 = current_format_line_ptr = last_macro_ptr->body)
 
-        addr_t tmp01;
-        tmp01 = (addr_t)(last_macro_ptr->body - ram);
+        addr_t tmp01 = (addr_t)(last_macro_ptr->body - ram);
         current_format_line_ptr = (addr_t)(last_macro_ptr->body - ram);
         //     jsr sub_c9241
         if (read_next_output_line((addr_t)(last_macro_ptr->body - ram),
@@ -996,11 +976,9 @@ static void dm_fmt_cmd(void)
             return;
         }
         //     ldy #0
-        uint8_t y_1;
-        y_1 = 0;
+        uint8_t y_1 = 0;
         //     lda (last_macro_ptr),y
-        uint8_t a_1;
-        a_1 = last_macro_ptr->body[y_1];
+        uint8_t a_1 = last_macro_ptr->body[y_1];
         //     jsr check_for_command_prefix
         //     bne c96f8
         //     jsr lookup_formatting_command
@@ -1055,12 +1033,10 @@ static void ht_fmt_cmd(void)
     // ht_fmt_cmd:
     //     ldy #3
 
-    uint8_t y;
-    y = 3;
+    uint8_t y = 3;
     //     jsr get_current_fmt_cmd_byte
 
-    uint8_t a;
-    a = get_current_fmt_cmd_byte(&y);
+    uint8_t a = get_current_fmt_cmd_byte(&y);
     //     beq return_44
     if (a == 0)
         return;
@@ -1109,14 +1085,11 @@ c9725:
     addr_t highlight_value;
     evaluate_expression_from_fmt_cmd(&highlight_value, &y, x);
     //     pla
-    uint8_t a_1;
-    a_1 = saved_a;
+    uint8_t a_1 = saved_a;
     //     tax
-    uint8_t x_1;
-    x_1 = a_1;
+    uint8_t x_1 = a_1;
     //     lda ((uint8_t*)&tmp89)[0]
-    uint8_t a_2;
-    a_2 = (uint8_t)highlight_value;
+    uint8_t a_2 = (uint8_t)highlight_value;
     //     sta highlight1_code,x
     highlight_code[x_1] = a_2;
     // return_44:
@@ -1143,43 +1116,35 @@ enum formatting_command lookup_formatting_command(void)
     // lookup_formatting_command:
     //     ldy #2
 
-    uint8_t y;
-    y = 2;
+    uint8_t y = 2;
     //     lda (current_format_line_ptr),y
 
-    uint8_t a;
-    a = ram[current_format_line_ptr + y];
+    uint8_t a = ram[current_format_line_ptr + y];
     //     sta tmp3                     ; second command letter
 
-    uint8_t char2;
-    char2 = a;
+    uint8_t char2 = a;
     //     dey                                                               ;
     //     Y=0x01
     y--;
     //     lda (current_format_line_ptr),y
-    uint8_t a_1;
-    a_1 = ram[current_format_line_ptr + y];
+    uint8_t a_1 = ram[current_format_line_ptr + y];
     //     sta tmp2                     ; first command letter
 
-    uint8_t char1;
-    char1 = a_1;
+    uint8_t char1 = a_1;
     //     dey                                                               ;
     //     Y=0x00
     y--;
     //     ldx #0
     // (the 6502 uses x for the command index; the C returns it)
 
-    int index;
-    index = 0;
+    int index = 0;
     // loop_c973e:
     do
     {
-        uint8_t a_2;
-        a_2 = char1;
+        uint8_t a_2 = char1;
         if (a_2 == commands_table[y])
         {
-            uint8_t a_3;
-            a_3 = char2;
+            uint8_t a_3 = char2;
             if (a_3 == commands_table[y + 1])
             {
                 return index;
@@ -1234,8 +1199,7 @@ bool execute_formatting_command(enum formatting_command x)
     // execute_formatting_command:
     //     txa
 
-    uint8_t a;
-    a = x;
+    uint8_t a = x;
     //     ldy #0
     //     ldx #0
     //     stx l0030
@@ -1351,8 +1315,7 @@ static bool parse_boolean_from_fmt_cmd(uint8_t* y, uint8_t* value)
     // parse_boolean_from_fmt_cmd:
     //     jsr get_current_fmt_cmd_byte
 
-    uint8_t a;
-    a = get_current_fmt_cmd_byte(y);
+    uint8_t a = get_current_fmt_cmd_byte(y);
     //     sec
     // (C=1 pre-set for the empty-argument return; conveyed as true)
     *value = a;
@@ -1388,12 +1351,10 @@ static bool parse_word_flag(addr_t ptr, uint8_t* y, uint8_t* value)
     // sub_c976c:
     //     lda (((uint8_t*)&tmp89)[0]),y
 
-    uint8_t a;
-    a = ram[ptr + *y];
+    uint8_t a = ram[ptr + *y];
     //     tax
 
-    uint8_t x;
-    x = a;
+    uint8_t x = a;
     //     lda #1
     //     cpx #0x31 ; '1'
     if (x == 0x31)
@@ -1418,26 +1379,22 @@ c9783:
     //     sty l0084
     l0084 = *y;
     //     ldx #0xff
-    uint8_t x_1;
-    x_1 = 0xff;
+    uint8_t x_1 = 0xff;
     // c9788:
 c9788:
     //     iny
     (*y)++;
     //     lda (((uint8_t*)&tmp89)[0]),y
-    uint8_t a_1;
-    a_1 = ram[ptr + *y];
+    uint8_t a_1 = ram[ptr + *y];
     //     jsr to_uppercase
-    uint8_t a_2;
-    a_2 = toupper(a_1);
+    uint8_t a_2 = toupper(a_1);
     //     inx
     x_1++;
     //     cmp l97b0,x
     if (a_2 == l97b0_data[x_1])
         goto c9788;
     //     lda l97b0,x
-    uint8_t a_3;
-    a_3 = l97b0_data[x_1];
+    uint8_t a_3 = l97b0_data[x_1];
     if ((int8_t)a_3 < 0)
         goto c97ae;
     //     cmp #0x20 ; ' '
@@ -1512,16 +1469,14 @@ static bool evaluate_expression_from_fmt_cmd(
     //     sta ((uint8_t*)&tmp89)[0]
     //     sta ((uint8_t*)&tmp89)[1]
 
-    addr_t tmp89;
-    tmp89 = 0;
+    addr_t tmp89 = 0;
     //     sta input_buffer_offset+1
     l0080 = a;
     // c97c0:
     for (;;)
     {
         //     jsr get_current_fmt_cmd_byte
-        uint8_t a_1;
-        a_1 = get_current_fmt_cmd_byte(y);
+        uint8_t a_1 = get_current_fmt_cmd_byte(y);
         //     beq c9821
         if (a_1 == 0)
         {
@@ -1533,8 +1488,7 @@ static bool evaluate_expression_from_fmt_cmd(
         if (a_1 == 0x7c)
         {
             //     jsr get_next_fmt_cmd_byte
-            uint8_t a_2;
-            a_2 = get_next_fmt_cmd_byte(y);
+            uint8_t a_2 = get_next_fmt_cmd_byte(y);
             //     beq c9821
             if (a_2 == 0)
                 goto c9821;
@@ -1557,15 +1511,13 @@ static bool evaluate_expression_from_fmt_cmd(
         }
         //     ldx input_buffer_offset+1
 
-        uint8_t count;
-        count = l0080;
+        uint8_t count = l0080;
 
         //     beq c9804
         if (count == 0)
             goto c9804;
         //     lda #0
-        uint8_t a_3;
-        a_3 = 0;
+        uint8_t a_3 = 0;
         //     sta input_buffer_offset+1
         l0080 = a_3;
         //     dex
@@ -1588,14 +1540,12 @@ static bool evaluate_expression_from_fmt_cmd(
     c9804:
         tmp45 = tmp89;
         //     jsr get_current_fmt_cmd_byte
-        uint8_t a_4;
-        a_4 = get_current_fmt_cmd_byte(y);
+        uint8_t a_4 = get_current_fmt_cmd_byte(y);
         //     beq c9821
         if (a_4 == 0)
             goto c9821;
         //     ldx #1
-        uint8_t count_1;
-        count_1 = 1;
+        uint8_t count_1 = 1;
         //     cmp #0x2b ; '+'
         //     beq c981c
         if (a_4 == '+')
@@ -1666,8 +1616,7 @@ void render_register(uint8_t a, uint8_t x)
         //     iny ; Y=&01
         //     lda (tmp6),y
         //     sta tmp9
-        addr_t tmp89_1;
-        tmp89_1 = *register_value;
+        addr_t tmp89_1 = *register_value;
         render_number_to_output_buffer(tmp89_1, x);
     }
     //     clv
@@ -1747,8 +1696,7 @@ void render_number_to_screen(uint16_t val)
     // render_number_to_screen:
     //     stx ((uint8_t*)&tmp89)[0]
 
-    addr_t tmp89;
-    tmp89 = val;
+    addr_t tmp89 = val;
     //     lda #<(bdos_print_char)
     //     ldy #>(bdos_print_char)
     // Fall through to render_number_to_callback in original 6502
@@ -1765,8 +1713,7 @@ static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t))
     for (char* p = buf; *p; p++)
     {
 
-        uint8_t a;
-        a = *p - '0';
+        uint8_t a = *p - '0';
         a |= 0x30;
         cb(a);
     }
@@ -1812,19 +1759,16 @@ static void process_page_footer(void)
     //     ldx l0021                                                         ;
     //     X=number of lines
 
-    uint8_t x;
-    x = l0021;
+    uint8_t x = l0021;
     //     jsr print_vertical_space
     print_vertical_space(x);
     //     ldx footer_margin                                                 ;
     //     X=number of lines
-    uint8_t x_1;
-    x_1 = footer_margin;
+    uint8_t x_1 = footer_margin;
     //     jsr print_vertical_space
     print_vertical_space(x_1);
     //     lda footers_enabled_flag
-    uint8_t a_1;
-    a_1 = footers_enabled_flag;
+    uint8_t a_1 = footers_enabled_flag;
     //     beq c927c
     if (a_1 != 0)
     {
@@ -1835,8 +1779,7 @@ static void process_page_footer(void)
     print_newline();
     //     ldx bottom_margin                                                 ;
     //     X=number of lines
-    uint8_t x_2;
-    x_2 = bottom_margin;
+    uint8_t x_2 = bottom_margin;
     //     jsr print_vertical_space
     print_vertical_space(x_2);
     // c9284:
@@ -1863,12 +1806,10 @@ static void print_output_buffer(void)
     // c937b:
     //     ldy #0
 
-    uint8_t y;
-    y = 0;
+    uint8_t y = 0;
     //     ldx l0084
 
-    uint8_t x;
-    x = l0084;
+    uint8_t x = l0084;
     //     beq return_28
     if (x == 0)
         return;
@@ -1878,14 +1819,11 @@ static void print_output_buffer(void)
     {
         uint8_t a_3;
 
-        uint8_t a;
-        a = x;
+        uint8_t a = x;
         {
             uint8_t saved_x = a;
-            uint8_t a_1;
-            a_1 = output_buffer[y];
-            uint8_t a_2;
-            a_2 = convert_char_for_printing(a_1, &x, &is_tab);
+            uint8_t a_1 = output_buffer[y];
+            uint8_t a_2 = convert_char_for_printing(a_1, &x, &is_tab);
             print_char(a_2);
             y++;
             a_3 = saved_x;
@@ -1976,25 +1914,19 @@ static void microspace_word_processor(uint8_t* y)
     // c9034:
     //     ldx #0
 
-    uint8_t x;
-    x = 0;
+    uint8_t x = 0;
     //     stx l0044 / stx l0046 / stx l0045
-    uint32_t accum_1;
-    accum_1 = 0;
+    uint32_t accum_1 = 0;
     //     stx l0047
-    uint8_t l0047_1;
-    l0047_1 = 0;
+    uint8_t l0047_1 = 0;
     //     stx l0039
     l0039 = 0;
     //     stx l0048
-    uint8_t l0048_1;
-    l0048_1 = 0;
+    uint8_t l0048_1 = 0;
     //     stx l0042
-    uint8_t l0042_1;
-    l0042_1 = 0;
+    uint8_t l0042_1 = 0;
     //     stx l0043
-    uint8_t l0043_1;
-    l0043_1 = 0;
+    uint8_t l0043_1 = 0;
     //     stx l0083
     l0083 = 0;
     bool is_tab = false;
@@ -2002,14 +1934,12 @@ static void microspace_word_processor(uint8_t* y)
 c9048:
     //     txa
 
-    uint8_t a;
-    a = x;
+    uint8_t a = x;
     //     pha
     {
         uint8_t saved_a = a;
         //     lda (((uint8_t*)&tmp01)[0]),y
-        uint8_t a_1;
-        a_1 = ram[tmp01 + (*y)];
+        uint8_t a_1 = ram[tmp01 + (*y)];
         //     jsr sub_c9431
         convert_char_for_printing(a_1, &x, &is_tab);
         //     pla
@@ -2018,8 +1948,7 @@ c9048:
     //     tax
     x = a_2;
     //     lda (((uint8_t*)&tmp01)[0]),y
-    uint8_t a_3;
-    a_3 = ram[tmp01 + (*y)];
+    uint8_t a_3 = ram[tmp01 + (*y)];
     //     iny
     (*y)++;
     //     cmp #0x1a
@@ -2031,8 +1960,7 @@ c9048:
     if (!(l0083 & 0x80))
         goto c9064;
     //     lda l0048
-    uint8_t a_4;
-    a_4 = l0048_1;
+    uint8_t a_4 = l0048_1;
     //     beq c906b
     if (a_4 == 0)
         goto c906b;
@@ -2044,8 +1972,7 @@ c9048:
     // c9064:
 c9064:
     //     lda l0039
-    uint8_t a_5;
-    a_5 = l0039;
+    uint8_t a_5 = l0039;
     //     sta l0047
     l0047_1 = a_5;
     //     jmp c908c
@@ -2072,8 +1999,7 @@ c906f:
     if (!(l0083 & 0x80))
         goto c9064;
     //     lda l0042
-    uint8_t a_6;
-    a_6 = l0042_1;
+    uint8_t a_6 = l0042_1;
     //     beq c908a
     if (a_6 == 0)
         goto c908a;
@@ -2083,8 +2009,7 @@ c906f:
     //     inc l0043
     l0043_1++;
     //     lda #0
-    uint8_t a_7;
-    a_7 = 0;
+    uint8_t a_7 = 0;
     //     sta l0042
     l0042_1 = a_7;
     //     beq c9048                                                         ;
@@ -2139,8 +2064,7 @@ c90a0:
         uint8_t saved_a2 = a_3;
         //     lda l0039
         // (Z from this lda is clobbered by the following lda #0)
-        uint8_t a_8;
-        a_8 = l0039;
+        uint8_t a_8 = l0039;
         //     sta l0047
         l0047_1 = a_8;
         //     lda #0
@@ -2170,8 +2094,7 @@ c90b6:
     if (a_3 == 0x20)
         goto c9048;
     //     lda l0048
-    uint8_t a_9;
-    a_9 = l0048_1;
+    uint8_t a_9 = l0048_1;
     //     beq c9048
     if (a_9 == 0)
         goto c9048;
@@ -2189,8 +2112,7 @@ c90b6:
     accum_1 += ((uint32_t)l0043_1 << 16) | ((uint32_t)l0048_1 << 8) | l0048_1;
     //     lda #0
 
-    uint8_t a_10;
-    a_10 = 0;
+    uint8_t a_10 = 0;
     //     sta l0048
     l0048_1 = a_10;
     //     sta l0042
@@ -2204,16 +2126,14 @@ c90b6:
 c90e2:
     //     lda l0045
 
-    uint8_t a_11;
-    a_11 = accum_1 >> 16;
+    uint8_t a_11 = accum_1 >> 16;
 
     //     beq c90f8
     if (a_11 == 0)
         goto c90f8;
     //     lda ruler_right_stop
 
-    uint8_t a_12;
-    a_12 = ruler_right_stop;
+    uint8_t a_12 = ruler_right_stop;
 
     //     beq c90f8
     if (a_12 == 0)
@@ -2239,8 +2159,7 @@ c90e2:
 c90f8:
     //     lda #0
 
-    uint8_t a_13;
-    a_13 = 0;
+    uint8_t a_13 = 0;
     //     sta l0039
     l0039 = a_13;
     //     ldy input_buffer_offset+1
@@ -2267,8 +2186,7 @@ c9101:
     //     sta tmp8
     // (shift-add multiply: tmp89 = l0045 * microspacing_flag)
 
-    addr_t tmp89;
-    tmp89 = (uint16_t)l0045 * microspacing_flag;
+    addr_t tmp89 = (uint16_t)l0045 * microspacing_flag;
     //     lda l0044
     //     sta l0046
     l0046 = l0044;
@@ -2279,8 +2197,7 @@ c9101:
     // (16-bit division by 8-bit: l0044 = tmp89 / l0046,
     //  l0045 = tmp89 % l0046)
     l0045 = tmp89 % l0046;
-    addr_t tmp89_1;
-    tmp89_1 = tmp89 / l0046;
+    addr_t tmp89_1 = tmp89 / l0046;
     l0044 = (uint8_t)tmp89_1;
     //     ldy #0
     (*y) = 0;
@@ -2290,21 +2207,18 @@ c9101:
 c912b:
     //     lda output_buffer,y
 
-    uint8_t a_14;
-    a_14 = output_buffer[(*y)];
+    uint8_t a_14 = output_buffer[(*y)];
     //     iny
     (*y)++;
     //     jsr sub_c9431
 
-    uint8_t a_15;
-    a_15 = convert_char_for_printing(a_14, &x, &is_tab);
+    uint8_t a_15 = convert_char_for_printing(a_14, &x, &is_tab);
     //     pha
     {
         uint8_t saved_a3 = a_15;
         //     lda l0039
 
-        uint8_t a_16;
-        a_16 = l0039;
+        uint8_t a_16 = l0039;
         //     cmp l0047
         //     beq c913b
         if (a_16 == l0047_1)
@@ -2316,8 +2230,7 @@ c912b:
     c913b:
         //     pla
 
-        uint8_t a_17;
-        a_17 = saved_a3;
+        uint8_t a_17 = saved_a3;
         //     jsr c9426
         print_char_x_times(a_17, x);
         //     jmp c9163
@@ -2332,8 +2245,7 @@ c912b:
             goto c915b;
         //     lda microspacing_flag
 
-        uint8_t a_18;
-        a_18 = microspacing_flag;
+        uint8_t a_18 = microspacing_flag;
         //     clc
         //     adc l0044
         a_18 += l0044;
@@ -2341,8 +2253,7 @@ c912b:
         x = a_18;
         //     lda l0045
 
-        uint8_t a_19;
-        a_19 = l0045;
+        uint8_t a_19 = l0045;
         //     beq c9154
         if (a_19 != 0)
         {
@@ -2379,8 +2290,7 @@ c8fe6_inline:
     do
     {
 
-        uint8_t a_20;
-        a_20 = ram[tmp01 + (*y)];
+        uint8_t a_20 = ram[tmp01 + (*y)];
         (*y)++;
         a_21 = convert_char_for_printing(a_20, &x, &is_tab);
         print_char_x_times(a_21, x);
@@ -2391,8 +2301,7 @@ c8fe6_inline:
     register_value_array['L' - 'A']++;
 c8ffb_inline:
     //     ldx line_spacing
-    uint8_t x_1;
-    x_1 = line_spacing;
+    uint8_t x_1 = line_spacing;
     //     lda l0021
     //     clc
     //     sbc line_spacing
@@ -2400,8 +2309,7 @@ c8ffb_inline:
     // (clc forces C=0, so the sbc subtracts line_spacing + 1; the borrow
     //  branch is taken when l0021 <= line_spacing)
 
-    uint8_t a_22;
-    a_22 = l0021 - line_spacing - 1;
+    uint8_t a_22 = l0021 - line_spacing - 1;
     if (l0021 <= line_spacing)
     {
         a_22 = 0;
@@ -2538,8 +2446,7 @@ void print_document(struct scan_state* scan)
     //     tay
     // (16-bit arithmetic: ptr5 = top + 3)
 
-    addr_t ptr5;
-    ptr5 = top + 3;
+    addr_t ptr5 = top + 3;
     //     txa
     //     adc #0x8d
     //     bcc c8edb
@@ -2553,8 +2460,7 @@ void print_document(struct scan_state* scan)
     last_macro_ptr = first_macro_ptr;
     //     lda #0
 
-    uint8_t a;
-    a = 0;
+    uint8_t a = 0;
     //     sta l0031
     l0031 = a;
     //     sta print_xpos
@@ -2591,8 +2497,7 @@ c8f0d:
         goto c8f0d;
     }
     //     lda l0031
-    uint8_t a_1;
-    a_1 = l0031;
+    uint8_t a_1 = l0031;
     if ((int8_t)a_1 >= 0)
         return;
     //     bpl return_23
@@ -2628,8 +2533,7 @@ static void print_loop(addr_t ptr5)
 
         //     lda l0031
 
-        uint8_t a;
-        a = l0031;
+        uint8_t a = l0031;
 
         //     beq c8f3b
         if (a != 0)
@@ -2643,8 +2547,7 @@ static void print_loop(addr_t ptr5)
         //     jsr sub_c9188
         //     bcs c8f0a (C=1 conveyed as a true return)
 
-        addr_t cursor;
-        cursor = prepare_output_line(ptr5, &ptr3);
+        addr_t cursor = prepare_output_line(ptr5, &ptr3);
         if (cursor == 0)
             return;
         //     jsr sub_c916a
@@ -2652,8 +2555,7 @@ static void print_loop(addr_t ptr5)
         //     ldy #0
         // (Z from ldy #0 is clobbered by the following jsr)
 
-        uint8_t y;
-        y = 0;
+        uint8_t y = 0;
         //     sty input_buffer_ptr+1
         l0080 = y;
         //     jsr deref_and_check_for_command_prefix
@@ -2662,8 +2564,7 @@ static void print_loop(addr_t ptr5)
         if (cp == NO_COMMAND_PREFIX)
             goto c8fce_thunk_l;
         //     ldy #3
-        uint8_t y_1;
-        y_1 = 3;
+        uint8_t y_1 = 3;
         //     sty input_buffer_ptr+1
         l0080 = y_1;
         //     jsr sub_cab6e
@@ -2672,12 +2573,10 @@ static void print_loop(addr_t ptr5)
         if (ram[cursor] != RULER_BYTE)
             goto c8f6e_l;
         //     ldy #3
-        uint8_t y_2;
-        y_2 = 3;
+        uint8_t y_2 = 3;
         //     ldx #0
 
-        uint8_t x;
-        x = 0;
+        uint8_t x = 0;
         // loop_c8f5d:
         do
         {
@@ -2720,19 +2619,15 @@ static void print_loop(addr_t ptr5)
         struct macro* macro;
         macro = first_macro_ptr;
         //     ldy #1
-        uint8_t y_3;
-        y_3 = 1;
+        uint8_t y_3 = 1;
         //     lda (current_format_line_ptr),y
-        uint8_t a_2;
-        a_2 = ram[current_format_line_ptr + y_3];
+        uint8_t a_2 = ram[current_format_line_ptr + y_3];
         //     sta tmp8
-        uint8_t firstchar;
-        firstchar = a_2;
+        uint8_t firstchar = a_2;
         //     iny ; Y=0x02
         y_3++;
         //     lda (current_format_line_ptr),y
-        uint8_t a_3;
-        a_3 = ram[current_format_line_ptr + y_3];
+        uint8_t a_3 = ram[current_format_line_ptr + y_3];
         //     jsr is_uppercase
         // (the 6502 is_uppercase returns C=0 for A-Z/a-z, i.e. what
         //  isalpha() tests; C=1 otherwise)
@@ -2742,8 +2637,7 @@ static void print_loop(addr_t ptr5)
             a_3 = 0x20;
         }
         //     sta tmp9
-        uint8_t secondchar;
-        secondchar = a_3;
+        uint8_t secondchar = a_3;
         // lookup_macro_name:
     lookup_macro_name_l:
         //     ldy #0
@@ -2781,8 +2675,7 @@ static void print_loop(addr_t ptr5)
         // c8fb9:
     c8fb9_l:
         //     lda macro_executing_flag
-        uint8_t a_4;
-        a_4 = macro_executing_flag;
+        uint8_t a_4 = macro_executing_flag;
 
         //     bne nested_macro_error
         if (a_4 != 0)
@@ -2802,8 +2695,7 @@ static void print_loop(addr_t ptr5)
         // c8fce:
     c8fce_l:
         //     lda l0031
-        uint8_t a_5;
-        a_5 = l0031;
+        uint8_t a_5 = l0031;
         if (a_5 == 0)
         {
             render_new_page();
@@ -2811,20 +2703,16 @@ static void print_loop(addr_t ptr5)
         //     jsr sub_c9407
         output_left_margin();
         //     lda #0
-        uint8_t a_6;
-        a_6 = 0;
+        uint8_t a_6 = 0;
         //     sta l0039
         l0039 = a_6;
         //     ldy input_buffer_ptr+1
-        uint8_t y_4;
-        y_4 = l0080;
+        uint8_t y_4 = l0080;
         //     lda print_flags
-        uint8_t a_7;
-        a_7 = print_flags;
+        uint8_t a_7 = print_flags;
         if (((int8_t)a_7 < 0))
         {
-            uint8_t a_8;
-            a_8 = microspacing_flag;
+            uint8_t a_8 = microspacing_flag;
 
             if (a_8 != 0)
             {
@@ -2834,8 +2722,7 @@ static void print_loop(addr_t ptr5)
         }
         do
         {
-            uint8_t a_9;
-            a_9 = ram[cursor + y_4];
+            uint8_t a_9 = ram[cursor + y_4];
             y_4++;
             a_10 = convert_char_for_printing(a_9, &x, &is_tab);
             print_char_x_times(a_10, x);
@@ -2853,8 +2740,7 @@ static void print_loop(addr_t ptr5)
         // (clc forces C=0, so the sbc subtracts line_spacing + 1; the borrow
         //  branch is taken when l0021 <= line_spacing)
 
-        uint8_t a_11;
-        a_11 = l0021 - line_spacing - 1;
+        uint8_t a_11 = l0021 - line_spacing - 1;
         if (l0021 <= line_spacing)
         {
             a_11 = 0;
@@ -2905,8 +2791,7 @@ read_block_status_t read_block_from_file(addr_t* cursor, addr_t limit)
     // read_block_from_file:
     //     lda #0
 
-    uint8_t a;
-    a = 0;
+    uint8_t a = 0;
     //     sta l0083
     l0083 = a;
     //     sta l0084
@@ -2914,8 +2799,7 @@ read_block_status_t read_block_from_file(addr_t* cursor, addr_t limit)
 c8c95:
     // c8c95:
     //     jsr get_byte_from_file
-    uint8_t a_1;
-    a_1 = get_byte_from_file();
+    uint8_t a_1 = get_byte_from_file();
     //     beq c8cf2
     if (a_1 == 0)
     {
@@ -2928,8 +2812,7 @@ c8c95:
         goto c8caf;
     //     ldx l0084
 
-    uint8_t x;
-    x = l0084;
+    uint8_t x = l0084;
     //     bne c8c95
     if (x != 0)
         goto c8c95;
@@ -2939,8 +2822,7 @@ c8c95:
     if (cp == NO_COMMAND_PREFIX)
         goto c8c95;
     //     ldx #0xfd
-    uint8_t x_1;
-    x_1 = 0xfd;
+    uint8_t x_1 = 0xfd;
     //     stx l0083
     l0083 = x_1;
 c8caf:
@@ -2968,8 +2850,7 @@ c8caf:
 c8cc8:
     // c8cc8:
     //     ldx #1
-    uint8_t x_2;
-    x_2 = 1;
+    uint8_t x_2 = 1;
     //     cmp #0x0d
     if (a_1 == 0x0d)
         goto c8cdb;
@@ -2977,8 +2858,7 @@ c8cc8:
     x_2--;
     //     ldy l0083
 
-    uint8_t y;
-    y = l0083;
+    uint8_t y = l0083;
     //     cpy #0x84
     if (y == MAX_LINE_LENGTH)
     {
@@ -3015,8 +2895,7 @@ c8cdb:
 c8cf2:
     // c8cf2:
     //     lda l0084
-    uint8_t a_2;
-    a_2 = l0084;
+    uint8_t a_2 = l0084;
     //     beq c8cfa
     if (a_2 != 0)
     {
@@ -3024,8 +2903,7 @@ c8cf2:
     }
     // c8cfa:
     //     lda l0082
-    uint8_t a_3;
-    a_3 = l0082;
+    uint8_t a_3 = l0082;
     // (return: EMPTY if l0082 == 0, else eof selects DONE vs block-full MORE)
     if (a_3 == 0)
         return READ_BLOCK_EMPTY;
@@ -3052,16 +2930,14 @@ static void render_header_or_footer(uint8_t* text)
     // (y is 0 throughout, so the first header/footer text byte is read
     // directly)
 
-    uint8_t a;
-    a = text[0];
+    uint8_t a = text[0];
     //     beq return_28
     if (a == 0)
         return;
     //     jsr sub_c9407
     output_left_margin();
     //     lda #0
-    uint8_t a_1;
-    a_1 = 0;
+    uint8_t a_1 = 0;
     //     sta l0039
     l0039 = a_1;
     //     jsr sub_c9393
@@ -3078,31 +2954,26 @@ static void render_header_or_footer(uint8_t* text)
     //     jsr c937b
     print_output_buffer();
     //     jsr sub_c939b
-    uint8_t* section_start_1;
-    section_start_1 = compute_header_middle_section(text);
+    uint8_t* section_start_1 = compute_header_middle_section(text);
     //     jsr sub_c93c8
 
-    uint8_t x;
-    x = copy_header_footer_text(section_start_1);
+    uint8_t x = copy_header_footer_text(section_start_1);
     //     txa
-    uint8_t a_2;
-    a_2 = x;
+    uint8_t a_2 = x;
     //     beq c9355
     if (a_2 == 0)
         goto c9355;
     //     dex
     x--;
     //     txa
-    uint8_t a_3;
-    a_3 = x;
+    uint8_t a_3 = x;
     //     lsr
     // (flags not used: get_right_margin sets them fresh; plain shift)
     a_3 >>= 1;
     //     sta l0081
     l0081 = a_3;
     //     jsr sub_c93be
-    uint8_t a_4;
-    a_4 = get_right_margin();
+    uint8_t a_4 = get_right_margin();
     //     beq c9355
     if (a_4 == 0)
         goto c9355;
@@ -3119,16 +2990,14 @@ static void render_header_or_footer(uint8_t* text)
     //  the count a - l0081 - l0039)
     if (a_4 >= l0081 + l0039)
     {
-        uint8_t x_1;
-        x_1 = a_4 - l0081 - l0039;
+        uint8_t x_1 = a_4 - l0081 - l0039;
         add_justification_spaces(x_1);
     }
 c9355:
     //     jsr c937b
     print_output_buffer();
     //     jsr sub_c93a1
-    uint8_t* section_start_2;
-    section_start_2 = compute_header_odd_page_section(text);
+    uint8_t* section_start_2 = compute_header_odd_page_section(text);
     //     jsr sub_c93fd
     bool parity2 = get_page_parity();
     //     bcs c9363
@@ -3137,11 +3006,9 @@ c9355:
         section_start_2 = compute_header_left_section(text);
     }
     //     jsr sub_c93c8
-    uint8_t x_2;
-    x_2 = copy_header_footer_text(section_start_2);
+    uint8_t x_2 = copy_header_footer_text(section_start_2);
     //     jsr sub_c93be
-    uint8_t a_6;
-    a_6 = get_right_margin();
+    uint8_t a_6 = get_right_margin();
     //     beq c937b
     //     stx l0081
     //     sec
@@ -3172,8 +3039,7 @@ c9355:
         //  the count a - l0081 - l0039)
         if (a_6 >= l0081 + l0039)
         {
-            uint8_t x_3;
-            x_3 = a_6 - l0081 - l0039;
+            uint8_t x_3 = a_6 - l0081 - l0039;
             x_3++;
             add_justification_spaces(x_3);
         }
@@ -3196,8 +3062,7 @@ static void render_new_page(void)
     // render_new_page:
     //     lda #0x81
 
-    uint8_t a;
-    a = 0x81;
+    uint8_t a = 0x81;
     //     sta l0031
     l0031 = a;
     //     bit print_flags
@@ -3220,8 +3085,7 @@ static void render_new_page(void)
     cli_putstring("..");
 
     //     jsr flush_and_read_char
-    uint8_t a_1;
-    a_1 = screen_getchar();
+    uint8_t a_1 = screen_getchar();
     //     and #0xdf
     a_1 &= 0xdf;
     //     cmp #0x4d ; 'M'
@@ -3247,8 +3111,7 @@ c92cf:
     // c92d4:
 c92d4:
     //     lda l0038
-    uint8_t a_3;
-    a_3 = l0038;
+    uint8_t a_3 = l0038;
     //     beq c92f0
     if (a_3 == 0)
     {
@@ -3258,13 +3121,11 @@ c92d4:
     //     ldx top_margin                                                    ;
     //     X=number of lines
 
-    uint8_t x;
-    x = top_margin;
+    uint8_t x = top_margin;
     //     jsr print_vertical_space
     print_vertical_space(x);
     //     lda headers_enabled_flag
-    uint8_t a_4;
-    a_4 = headers_enabled_flag;
+    uint8_t a_4 = headers_enabled_flag;
     //     beq c92e8
     if (a_4 != 0)
     {
@@ -3275,8 +3136,7 @@ c92d4:
     print_newline();
     //     ldx header_margin                                                 ;
     //     X=number of lines
-    uint8_t x_1;
-    x_1 = header_margin;
+    uint8_t x_1 = header_margin;
     //     jsr print_vertical_space
     print_vertical_space(x_1);
     // c92f0: fall-through to shared routine
@@ -3357,14 +3217,12 @@ static void start_microspacing_if_active(uint8_t a)
     // sub_c916a:
     //     ldx print_flags
 
-    uint8_t x;
-    x = print_flags;
+    uint8_t x = print_flags;
     //     bpl return_25
     if (!(x & 0x80))
         return;
     //     ldx microspacing_flag
-    uint8_t x_1;
-    x_1 = microspacing_flag;
+    uint8_t x_1 = microspacing_flag;
     //     bne c9177
     if (x_1 == 0)
         return;
@@ -3438,8 +3296,7 @@ addr_t prepare_output_line(addr_t read_limit, addr_t* macro_cursor)
     // sub_c9188:
     //     lda macro_executing_flag
 
-    uint8_t a;
-    a = macro_executing_flag;
+    uint8_t a = macro_executing_flag;
     //     bne c91a3
     if (a != 0)
         goto c91a3;
@@ -3453,8 +3310,7 @@ c9188_normal_entry:
     //  reader of those bytes re-initialises them first, so the stores are
     //  omitted.)
 
-    addr_t cursor;
-    cursor = read_limit;
+    addr_t cursor = read_limit;
     //     jsr sub_c9241
     if (read_next_output_line(read_limit, &cursor) == READ_BLOCK_DONE)
     {
@@ -3466,8 +3322,7 @@ c9188_normal_entry:
     //  just read_limit itself)
     if (read_limit != 0)
     {
-        addr_t cursor_1;
-        cursor_1 = read_limit;
+        addr_t cursor_1 = read_limit;
         current_format_line_ptr = cursor_1;
         return cursor_1;
     }
@@ -3475,19 +3330,16 @@ c9188_normal_entry:
 c91a3:
     //     ldy #0
 
-    uint8_t y;
-    y = 0;
+    uint8_t y = 0;
     //     ldx #0
 
-    uint8_t x;
-    x = 0;
+    uint8_t x = 0;
     // c91a7:
 c91a7:
     for (;;)
     {
         //     lda ((*macro_cursor)),y
-        uint8_t a_1;
-        a_1 = ram[(*macro_cursor) + y];
+        uint8_t a_1 = ram[(*macro_cursor) + y];
         //     cmp #4
         //     beq c9184
         if (a_1 == 4)
@@ -3525,8 +3377,7 @@ c91a7:
     // c91c2:
 c91c2:
     //     tya
-    uint8_t a_2;
-    a_2 = y;
+    uint8_t a_2 = y;
     //     clc
     //     adc (*macro_cursor)
     //     sta (*macro_cursor)
@@ -3535,8 +3386,7 @@ c91c2:
     (*macro_cursor) += a_2;
     //     lda ptr1 / ldy ptr1+1 (folded via c91d0)
     // c91d0:
-    addr_t cursor_2;
-    cursor_2 = ptr1;
+    addr_t cursor_2 = ptr1;
     current_format_line_ptr = cursor_2;
     //     clc
     // return_26:
@@ -3548,8 +3398,7 @@ c91da:
     //     iny
     y++;
     //     lda ((*macro_cursor)),y
-    uint8_t a_3;
-    a_3 = ram[(*macro_cursor) + y];
+    uint8_t a_3 = ram[(*macro_cursor) + y];
     //     sec
     //     sbc #0x30 ; '0'
     //     bcc c9225
@@ -3568,13 +3417,11 @@ c91da:
     //     sta l0083
     l0083 = a_3;
     //     lda #0
-    uint8_t a_4;
-    a_4 = 0;
+    uint8_t a_4 = 0;
     //     sta l0082
     l0082 = a_4;
     //     ldy #2
-    uint8_t y_1;
-    y_1 = 2;
+    uint8_t y_1 = 2;
     // loop_c91f1:
 loop_c91f1:
     //     dec l0083
@@ -3586,8 +3433,7 @@ c91f5:
     //     iny
     y_1++;
     //     lda (ptr5),y
-    uint8_t a_5;
-    a_5 = ram[read_limit + y_1];
+    uint8_t a_5 = ram[read_limit + y_1];
     //     cmp #0x0d
     //     beq c9223
     if (a_5 == 0x0d)
@@ -3615,8 +3461,7 @@ c9209:
     //     iny
     y_1++;
     //     lda (ptr5),y
-    uint8_t a_6;
-    a_6 = ram[read_limit + y_1];
+    uint8_t a_6 = ram[read_limit + y_1];
     //     cmp #0x0d
     //     beq c9223
     if (a_6 == 0x0d)
@@ -3699,8 +3544,7 @@ static read_block_status_t read_next_output_line(addr_t limit, addr_t* cursor)
     // sub_c9241:
     //     lda printing_from_file_flag
 
-    uint8_t a;
-    a = printing_from_file_flag;
+    uint8_t a = printing_from_file_flag;
     //     beq c9260
     if (a == 0)
     {
@@ -3735,12 +3579,10 @@ static void compute_lines_remaining_on_page(void)
     // c92f0:
     //     ldx page_length
 
-    uint8_t x;
-    x = page_length;
+    uint8_t x = page_length;
     //     lda l0038
 
-    uint8_t a;
-    a = l0038;
+    uint8_t a = l0038;
 
     //     beq c930d
     if (a == 0)
@@ -3748,8 +3590,7 @@ static void compute_lines_remaining_on_page(void)
     //     ldx #1
     x = 1;
     //     lda page_length
-    uint8_t a_1;
-    a_1 = page_length;
+    uint8_t a_1 = page_length;
     //     clc
     //     sbc top_margin
     //     bcc c930d
@@ -3789,8 +3630,7 @@ static uint8_t* compute_header_left_section(uint8_t* tmp45)
     get_line_width(tmp45);
     //     lda #0
 
-    uint8_t a;
-    a = 0;
+    uint8_t a = 0;
     //     jmp c93aa
     {
         // c93aa:
@@ -3811,8 +3651,7 @@ static uint8_t* compute_header_middle_section(uint8_t* tmp45)
     // sub_c939b:
     //     jsr sub_c93b6
 
-    uint8_t y;
-    y = get_line_width(tmp45);
+    uint8_t y = get_line_width(tmp45);
     //     jmp c93a7
     // c93a7:
     //     iny
@@ -3826,8 +3665,7 @@ static uint8_t* compute_header_middle_section(uint8_t* tmp45)
     //     adc #0
     //     sta ((uint8_t*)&tmp23)[1]
 
-    uint8_t* tmp23;
-    tmp23 = tmp45 + y + 1;
+    uint8_t* tmp23 = tmp45 + y + 1;
     return tmp23;
 }
 
@@ -3843,8 +3681,7 @@ static uint8_t* compute_header_odd_page_section(uint8_t* tmp45)
 
     y++;
 
-    uint8_t a;
-    a = y;
+    uint8_t a = y;
     y--;
     // c93aa:
     {
@@ -3896,8 +3733,7 @@ static uint8_t copy_header_footer_text(uint8_t* text)
     //     ldy #0
     // (Z from ldy #0 is clobbered by the following lda (text),y)
 
-    uint8_t y_1;
-    y_1 = 0;
+    uint8_t y_1 = 0;
     //     sty l0081
     int l0081 = y_1;
     // c93ce:
@@ -3905,8 +3741,7 @@ static uint8_t copy_header_footer_text(uint8_t* text)
     {
         //     lda (((uint8_t*)&text)[0]),y
 
-        uint8_t a;
-        a = text[y_1];
+        uint8_t a = text[y_1];
         if ((int8_t)a < 0)
             goto c93e6;
         //     jsr check_for_control_code
@@ -3931,12 +3766,10 @@ static uint8_t copy_header_footer_text(uint8_t* text)
         //     stx l0084
         l0084 = x;
         //     lda print_flags
-        uint8_t a_1;
-        a_1 = print_flags;
+        uint8_t a_1 = print_flags;
         if (((int8_t)a_1 < 0))
         {
-            uint8_t a_2;
-            a_2 = x;
+            uint8_t a_2 = x;
             a_2 -= l0081;
             x = a_2;
         }
@@ -3946,8 +3779,7 @@ static uint8_t copy_header_footer_text(uint8_t* text)
         // c93f2:
     c93f2:
         //     lda (((uint8_t*)&text)[0]),y
-        uint8_t a_3;
-        a_3 = text[y_1];
+        uint8_t a_3 = text[y_1];
         if ((int8_t)a_3 < 0)
             goto c93e6;
         //     iny
@@ -3986,13 +3818,11 @@ static void output_left_margin(void)
     //     jsr sub_c93fd
     bool parity = get_page_parity();
     //     lda left_margin
-    uint8_t a;
-    a = left_margin;
+    uint8_t a = left_margin;
     //     bcc c9415
     if (parity)
     {
-        uint8_t x;
-        x = two_sided_flag;
+        uint8_t x = two_sided_flag;
 
         if (x != 0)
         {
@@ -4000,11 +3830,9 @@ static void output_left_margin(void)
         }
     }
     //     tax
-    uint8_t x_1;
-    x_1 = a;
+    uint8_t x_1 = a;
     //     lda #0x20 ; ' '
-    uint8_t a_1;
-    a_1 = 0x20;
+    uint8_t a_1 = 0x20;
     //     bne c9426                                                         ;
     //     ALWAYS branch
     print_char_x_times(a_1, x_1);
@@ -4023,8 +3851,7 @@ static uint8_t add_justification_spaces(uint8_t x)
     //     sta l0039
     l0039 = a;
     //     lda #0x20 ; ' '
-    uint8_t a_1;
-    a_1 = 0x20;
+    uint8_t a_1 = 0x20;
     //     bne c9426                                                         ;
     //     ALWAYS branch
     print_char_x_times(a_1, x);
@@ -4087,8 +3914,7 @@ static void reset_print_registers(void)
     // sub_cb104:
     //     lda #0
 
-    uint8_t a;
-    a = 0;
+    uint8_t a = 0;
     //     ldx #0x33 ; '3'
     // loop_cb108:
     //     sta register_value_array,x
@@ -4108,13 +3934,11 @@ static void reset_print_registers(void)
     //     sta macro_executing_flag
     macro_executing_flag = a;
     //     lda #0x42 ; 'B'
-    uint8_t a_1;
-    a_1 = 0x42;
+    uint8_t a_1 = 0x42;
     //     sta page_length
     page_length = a_1;
     //     lda #1
-    uint8_t a_2;
-    a_2 = 1;
+    uint8_t a_2 = 1;
     //     sta footers_enabled_flag
     footers_enabled_flag = a_2;
     //     sta headers_enabled_flag
@@ -4127,8 +3951,7 @@ static void reset_print_registers(void)
     register_value_array['L' - 'A'] = a_2;
     //     ldy #0x80
 
-    uint8_t y;
-    y = 0x80;
+    uint8_t y = 0x80;
     //     sty highlight1_code
     highlight1_code = y;
     //     iny                                                               ;
@@ -4137,8 +3960,7 @@ static void reset_print_registers(void)
     //     sty highlight2_code
     highlight2_code = y;
     //     lda #4
-    uint8_t a_3;
-    a_3 = 4;
+    uint8_t a_3 = 4;
     //     sta top_margin
     top_margin = a_3;
     //     sta bottom_margin
@@ -4199,8 +4021,7 @@ void stop_printing(void)
     // stop_printing:
     //     lda print_flags
 
-    uint8_t a;
-    a = print_flags;
+    uint8_t a = print_flags;
     if (((int8_t)a < 0))
     {
         // (The 6502 clears bit 7 by rolling left into C, clearing C, and
