@@ -5414,23 +5414,20 @@ static void draw_status_word(void)
         }
     }
     //     txa
-    uint8_t a_1 = x;
     //     jsr screen_putchar
-    screen_putchar(a_1);
+    screen_putchar(x);
     //     lda #0x4a ; 'J'
     uint8_t a_2 = 0x4a;
     //     ldx justifying_flag
-    uint8_t x_1 = justifying_flag;
     //     beq ca672
-    if (x_1 != 0)
+    if (justifying_flag != 0)
         a_2 = 0x20;
     //     jsr screen_putchar
     screen_putchar(a_2);
     //     lda #0x49 ; 'I'
     //     ldx insert_mode_flag
-    uint8_t x_2 = insert_mode_flag;
     //     bne ca681
-    if (x_2 != 0)
+    if (insert_mode_flag != 0)
     {
         home_cursor();
         return;
