@@ -965,12 +965,11 @@ c8af3:
     // c8af3:
     //     pha
     {
-        uint8_t saved_a_ = a_3;
         //     lda #0
         //     sta print_xpos
         print_xpos = 0;
         //     pla
-        a_4 = saved_a_;
+        a_4 = a_3;
     }
     //     and #0x20 ; ' '
     a_4 &= 0x20;

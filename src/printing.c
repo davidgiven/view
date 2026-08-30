@@ -1075,13 +1075,12 @@ c9719:
     // c9725:
 c9725:
     //     pha
-    uint8_t saved_a = a;
     //     jsr evaluate_expression_from_fmt_cmd
 
     addr_t highlight_value;
     evaluate_expression_from_fmt_cmd(&highlight_value, &y, x);
     //     pla
-    uint8_t a_1 = saved_a;
+    uint8_t a_1 = a;
     //     tax
     uint8_t x_1 = a_1;
     //     lda ((uint8_t*)&tmp89)[0]
@@ -1920,13 +1919,12 @@ c9048:
     uint8_t a = x;
     //     pha
     {
-        uint8_t saved_a = a;
         //     lda (((uint8_t*)&tmp01)[0]),y
         uint8_t a_1 = ram[tmp01 + (*y)];
         //     jsr sub_c9431
         convert_char_for_printing(a_1, &x, &is_tab);
         //     pla
-        a_2 = saved_a;
+        a_2 = a;
     }
     //     tax
     x = a_2;
@@ -2043,7 +2041,6 @@ c9092:
 c90a0:
     //     pha
     {
-        uint8_t saved_a2 = a_3;
         //     lda l0039
         // (Z from this lda is clobbered by the following lda #0)
         uint8_t a_8 = l0039;
@@ -2061,7 +2058,7 @@ c90a0:
         //     sta l0043
         l0043_1 = 0;
         //     pla
-        a_3 = saved_a2;
+        a_3 = a_3;
     }
     // c90b6:
 c90b6:
@@ -2196,7 +2193,6 @@ c912b:
     uint8_t a_15 = convert_char_for_printing(a_14, &x, &is_tab);
     //     pha
     {
-        uint8_t saved_a3 = a_15;
         //     lda l0039
 
         uint8_t a_16 = l0039;
@@ -2211,7 +2207,7 @@ c912b:
     c913b:
         //     pla
 
-        uint8_t a_17 = saved_a3;
+        uint8_t a_17 = a_15;
         //     jsr c9426
         print_char_x_times(a_17, x);
         //     jmp c9163
@@ -2220,7 +2216,7 @@ c912b:
         // c9142:
     c9142:
         //     pla
-        a_17 = saved_a3;
+        a_17 = a_15;
         //     cmp #0x20 ; ' '
         if (a_17 != 0x20)
             goto c915b;
@@ -2841,9 +2837,8 @@ c8cc8:
     if (y == MAX_LINE_LENGTH)
     {
         {
-            uint8_t saved_a_ = a_1;
             write_cr_to_memory(&tmp01);
-            a_1 = saved_a_;
+            a_1 = a_1;
         }
         x_2++;
     }

@@ -258,9 +258,8 @@ void editor_loop_impl(void)
                 uint8_t a_1;
 
                 {
-                    uint8_t saved_a_ = a;
                     unpack_line(ptr1);
-                    a_1 = saved_a_;
+                    a_1 = a;
                 }
                 edit_buffer_unpacked_flag = a_1;
             }
@@ -360,15 +359,13 @@ void editor_loop_impl(void)
 
             {
 
-                uint8_t saved_mod = a_5;
-
                 //     jsr find_left_margin_stop
 
                 int y = find_left_margin_stop();
 
                 //     pla
 
-                a_3 = saved_mod;
+                a_3 = a_5;
 
                 //     bcs c9b86
 
@@ -960,7 +957,6 @@ static void delete_key(void)
     //     pha
 
     {
-        uint8_t saved_a = a_1;
 
         //     jsr f9_delete_char_key
 
@@ -968,7 +964,7 @@ static void delete_key(void)
 
         //     pla
 
-        a_2 = saved_a;
+        a_2 = a_1;
     }
 
     //     cmp #0x0c
@@ -1038,13 +1034,9 @@ static void f0_format_block_key(void)
 
     //     pha
 
-    uint8_t saved_l0073 = l0073;
-
     //     lda l003d
 
     //     pha
-
-    uint8_t saved_l003d = l003d;
 
     //     jsr ca741
 
@@ -1064,8 +1056,8 @@ static void f0_format_block_key(void)
     // (the sec/clc dance just computes C = (line_format_status != 0))
     if (line_format_status == 0)
     {
-        l003d = saved_l003d;
-        l0073 = saved_l0073;
+        l003d = l003d;
+        l0073 = l0073;
     }
 
     //     rts
@@ -4136,7 +4128,6 @@ static void check_pointer_in_area(void)
         if ((tmp89) == area_end_ptr)
             break;
     }
-    addr_t saved_tmp67 = tmp67;
     doc_ptr1 = tmp45;
     //     lda tmp2 / ldy tmp3 / sec / sbc #1 / bcs ca24d / dey
     uint16_t adjusted = (tmp23)-1;
@@ -4144,7 +4135,7 @@ static void check_pointer_in_area(void)
     split_line_at_wrap(adjusted);
     //     lda doc_ptr1 / ldy doc_ptr1+1 / jsr split_line_at_wrap
     split_line_at_wrap(doc_ptr1);
-    tmp67 = saved_tmp67;
+    tmp67 = tmp67;
     l0073 = 1;
     cursor_moved_flag = 1;
 }
@@ -5432,9 +5423,7 @@ static void draw_status_word(void)
     uint8_t x_1 = justifying_flag;
     //     beq ca672
     if (x_1 != 0)
-    {
         a_2 = 0x20;
-    }
     //     jsr screen_putchar
     screen_putchar(a_2);
     //     lda #0x49 ; 'I'
@@ -5455,9 +5444,6 @@ static void draw_status_word(void)
 
 static uint8_t get_line_length(void)
 {
-    uint8_t a_3;
-    command_prefix_t cp_1;
-
     // get_line_length
     // Pseudocode: Returns the length of the current edit line
 
@@ -5467,45 +5453,39 @@ static uint8_t get_line_length(void)
     //     ldy #0
     //     lda (current_format_line_ptr),y
 
-    uint8_t a = ram[current_format_line_ptr + 0];
+    uint8_t a = ram[current_format_line_ptr];
     //     jsr check_for_command_prefix
     command_prefix_t cp = check_for_command_prefix(a);
     //     php
-    {
-        command_prefix_t saved_cp = cp;
-        //     ldy #0x84
+    //     ldy #0x84
 
-        uint8_t y = MAX_LINE_LENGTH;
-        // loop_caafb:
-        do
-        {
-            //     dey
-            y--;
-            //     lda (current_edit_line_ptr),y
-            uint8_t a_1 = ram[RAM_EDIT_BUFFER + y];
-            //     cmp #0x10
-            if (a_1 != 0x10)
-                goto cab06;
-            //     bne cab06
-            //     tya
-        } while (y != 0);
+    uint8_t y = MAX_LINE_LENGTH;
+    // loop_caafb:
+    do
+    {
         //     dey
         y--;
-        // cab06:
-    cab06:
-        //     iny
-        y++;
+        //     lda (current_edit_line_ptr),y
+        uint8_t a_1 = ram[RAM_EDIT_BUFFER + y];
+        //     cmp #0x10
+        if (a_1 != 0x10)
+            goto cab06;
+        //     bne cab06
         //     tya
-        a_3 = y; //     plp
-        cp_1 = saved_cp;
-    }
+    } while (y != 0);
+    //     dey
+    y--;
+    // cab06:
+cab06:
+    //     iny
+    y++;
+    //     tya
+    //     plp
     //     bne return_69
-    if (cp_1 != NO_COMMAND_PREFIX)
-    {
-        a_3 += 3;
-    }
+    if (cp != NO_COMMAND_PREFIX)
+        y += 3;
     //     rts
-    return a_3;
+    return y;
 }
 
 static void go_to_marker(uint8_t x)
@@ -7410,11 +7390,10 @@ c9a60:
 
         uint8_t a_13 = ram[RAM_EDIT_BUFFER + y_1];
         {
-            uint8_t saved_a = a_13;
 
             uint8_t a_14 = 0x10;
             ram[RAM_EDIT_BUFFER + y_1] = a_14;
-            a_15 = saved_a;
+            a_15 = a_13;
         }
     } while (a_15 != 0x20);
     //     sec
@@ -7639,12 +7618,11 @@ static bool insert_character_into_edit_buffer(uint8_t a)
     // sub_c9e22:
     //     pha
     {
-        uint8_t saved_a = a;
         //     ldx #1
         //     jsr insert_edit_buffer_bytes_at_xpos
         ok = insert_edit_buffer_bytes_at_xpos(1);
         //     pla
-        a = saved_a;
+        a = a;
     }
     //     bcs return_55
     if (!ok)
@@ -8222,7 +8200,6 @@ ca919:
         uint8_t a_7 = x;
         //     pha
         {
-            uint8_t saved_x = a_7;
 
             // loop_ca91c:
             // loop_ca91c:
@@ -8248,7 +8225,7 @@ ca919:
             } while (val != 0);
             // ca92f:
             //     pla
-            a_8 = saved_x;
+            a_8 = a_7;
         }
         //     tax
         x = a_8;
