@@ -668,7 +668,7 @@ cli_cmd_status_t process_cli_command(struct scan_state* scan)
         return CLI_CMD_NO_TARGET; // c8410: no command
     //     jsr sub_c8e33
     //     beq c8402
-    if (!scan_input_buffer(scan))
+    if (!scan_input_buffer(input_buffer, scan))
     {
         // (base index comes from l007a, set by reset_command_parse_state)
         uint8_t x = expand_escaped_string(l007a, input_buffer_offset + 1);
@@ -709,7 +709,7 @@ bool reset_command_parse_state(struct scan_state* scan)
     l004a = x;
     //     jsr sub_c8e33
     //     beq return_5
-    if (scan_input_buffer(scan))
+    if (scan_input_buffer(input_buffer, scan))
         return true; // Z set (no command)
     //     ldx #0
     //     jsr expand_escaped_string
@@ -1296,9 +1296,9 @@ static void system_init(void)
 {
     himem = 0xffff;
     oshwm = 0x0800;
-    uint16_t size_ = screen_getsize();
-    screen_maxcolumn = (uint8_t)(size_ & 0xff);
-    screen_maxrow = (uint8_t)(size_ >> 8);
+    uint16_t size = screen_getsize();
+    screen_maxcolumn = (uint8_t)(size & 0xff);
+    screen_maxrow = (uint8_t)(size >> 8);
     if (screen_maxrow > MAX_LINES - 1)
         screen_maxrow = MAX_LINES - 1;
     if (screen_maxcolumn > MAX_COLUMNS - 1)

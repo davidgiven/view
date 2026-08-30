@@ -253,7 +253,7 @@ typedef enum
 
 extern read_block_status_t read_block_from_file(addr_t* cursor, addr_t limit);
 
-extern bool scan_input_buffer(struct scan_state* state);
+extern bool scan_input_buffer(uint8_t* buffer, struct scan_state* state);
 extern void check_for_embedded_ruler(addr_t tmp01);
 
 // Functions moved to printing.c still called from view.c/other modules

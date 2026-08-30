@@ -192,7 +192,7 @@ static void change_cmd(struct scan_state* scan)
     //     stx ptr3
     //     stx ptr3+1
 
-    addr_t ptr3 = 0;
+    int ptr3 = 0;
     // loop_c82b3:
     for (;;)
     {
@@ -332,7 +332,7 @@ static void count_cmd(struct scan_state* scan)
     //     sta ((uint8_t*)&tmp89)[0]
     //     sta ((uint8_t*)&tmp89)[1]
 
-    addr_t tmp89 = 0;
+    int tmp89 = 0;
     //     sta l0083
     //     sta l0082
     l0083 = 0;
@@ -598,7 +598,7 @@ static void fold_cmd(struct scan_state* scan)
     // fold_cmd:
     //     jsr sub_c8e33
     //     beq c87b4
-    if (scan_input_buffer(scan))
+    if (scan_input_buffer(input_buffer, scan))
         goto c87b4;
     //     lda input_buffer,y
 
@@ -694,8 +694,7 @@ c8787:
     //     lda #0xff
     //     lda #0xff
     //     sta l0012
-    top_of_screen_line_ptr =
-        (top_of_screen_line_ptr & 0x00ff) | ((addr_t)0xff << 8);
+    top_of_screen_line_ptr = 0xff00;
     // c878b:
 c878b:
     //     jsr bdos_print_newline
@@ -1263,7 +1262,7 @@ static void setup_cmd(struct scan_state* scan)
 c8649:
     //     jsr sub_c8e33
     //     beq c8672
-    if (scan_input_buffer(scan))
+    if (scan_input_buffer(input_buffer, scan))
         goto c8672;
     //     and #0xdf
     scan->ch &= 0xdf;
@@ -1514,7 +1513,7 @@ void run_cli(void)
     cli_putstring("\n\nBytes free ");
 
     //     jsr compute_bytes_free
-    render_number_to_screen((addr_t)compute_bytes_free());
+    render_number_to_screen(compute_bytes_free());
     //     jsr bdos_print_newline
     cli_putchar('\n');
     //     jsr display_document_file_state
@@ -1810,16 +1809,19 @@ bool parse_integer_from_command(struct scan_state* scan, int* out)
     //     sta current_format_line_ptr
     //     lda #>(input_buffer)
     //     sta current_format_line_ptr+1
-    current_format_line_ptr = (addr_t)(uintptr_t)input_buffer;
     //     jsr sub_c8e33
     //     beq return_8
-    if (scan_input_buffer(scan))
+    if (scan_input_buffer(input_buffer, scan))
         return false;
     //     jmp ca6fe
     uint8_t y = scan->pos;
 
-    int parsed;
-    bool ok = parse_decimal_number(&parsed, &y);
+    const char* start = (const char*)&input_buffer[y];
+    char* end;
+    int parsed = (int)strtoul(start, &end, 10);
+    bool ok = (end != start);
+    // y is advanced locally as in ca6fe; callers do not read it back
+    (void)y;
     if (out)
         *out = parsed;
     // (6502 returns Z set when no integer was parsed; the boolean mirrors
@@ -1921,7 +1923,7 @@ addr_t parse_mark_from_command(struct scan_state* scan)
     // parse_mark_from_command:
     //     jsr sub_c8e33
     //     beq return_12
-    if (scan_input_buffer(scan))
+    if (scan_input_buffer(input_buffer, scan))
         return 0;
     //     iny
     scan->pos++;

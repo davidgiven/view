@@ -2483,8 +2483,7 @@ static void sf0_move_block_key(void)
 
     uint8_t x = 0xff;
 
-    top_of_screen_line_ptr =
-        (top_of_screen_line_ptr & 0x00ff) | ((addr_t)x << 8);
+    top_of_screen_line_ptr = 0xff00;
 
     l006f = x;
 
@@ -6396,7 +6395,7 @@ ca3e7:
     l006f = 0;
     //     dey (5445)
     //     sty ptr6+1 (5446)
-    editor_ptr6 = (editor_ptr6 & 0x00ff) | ((uint16_t)0xFF << 8);
+    editor_ptr6 = 0xff00;
     //     ldy ypos (5447) jsr set_cursor_position (5448)
     screen_setcursor(a_27, ypos);
     //     jmp cursor_on (5449)

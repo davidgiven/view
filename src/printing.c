@@ -36,7 +36,7 @@ static void print_vertical_space(uint8_t x);
 read_block_status_t read_block_from_file(addr_t* cursor, addr_t limit);
 static void render_header_or_footer(uint8_t* tmp45);
 static void render_new_page(void);
-bool scan_input_buffer(struct scan_state* state);
+bool scan_input_buffer(uint8_t* buffer, struct scan_state* state);
 static void start_microspacing_if_active(uint8_t a);
 static void emit_microspacing_spaces(uint8_t a, uint8_t x);
 static addr_t prepare_output_line(addr_t read_limit, addr_t* macro_cursor);
@@ -1432,7 +1432,7 @@ static bool evaluate_expression_from_fmt_cmd(
     uint16_t* result, uint8_t* y, uint8_t x)
 {
 
-    addr_t tmp45 = 0;
+    int tmp45 = 0;
 
     // evaluate_expression_from_fmt_cmd
     // Pseudocode: Evaluates arithmetic expression with +, - and register
@@ -1453,7 +1453,7 @@ static bool evaluate_expression_from_fmt_cmd(
     //     sta ((uint8_t*)&tmp89)[0]
     //     sta ((uint8_t*)&tmp89)[1]
 
-    addr_t tmp89 = 0;
+    int tmp89 = 0;
     //     sta input_buffer_offset+1
     l0080 = a;
     // c97c0:
@@ -2331,7 +2331,7 @@ bool parse_optional_filename_from_command(struct scan_state* scan)
     // parse_optional_filename_from_command:
     //     jsr sub_c8e33
     //     beq return_19
-    if (scan_input_buffer(scan))
+    if (scan_input_buffer(input_buffer, scan))
         return false; // no filename
     //     ldx #0
     uint8_t x = 0;
@@ -2434,7 +2434,7 @@ void print_document(struct scan_state* scan)
     find_margins_of_current_ruler_buffer();
     //     jsr sub_c8e33
     //     bne c8f0d
-    if (!scan_input_buffer(scan))
+    if (!scan_input_buffer(input_buffer, scan))
         goto c8f0d;
     //     inc printing_from_file_flag
     printing_from_file_flag++;
@@ -3074,7 +3074,7 @@ c92d4:
 }
 
 /**
- * scan_input_buffer: Scans input_buffer from input_buffer_offset looking for
+ * scan_input_buffer: Scans buffer from input_buffer_offset looking for
  * the next character that is not the delimiter delimiter_char.
  *
  * Advances the scan position past any run of delimiter characters and stops at
@@ -3082,12 +3082,13 @@ c92d4:
  * character) or
  * at the end of the command line.
  *
+ * @param buffer the text to parse (e.g. input_buffer)
  * @param state On return holds the scan result (see struct scan_state):
  *              state->ch is the character at the scan position (the first
  *              non-delimiter character, or 0x0d if the end of the line was
  *              reached first, or delimiter_char itself when delimiter_char ==
  *              0x0d); state->pos
- * is its index into input_buffer (input_buffer_offset advanced past any
+ * is its index into buffer (input_buffer_offset advanced past any
  * delimiters).
  * @return true if the Z flag would be set, i.e. no non-delimiter character was
  *         found (no mark); false if a non-delimiter character was found.
@@ -3096,7 +3097,7 @@ c92d4:
  * mark position is known (e.g. parse_mark_from_command does state->pos++ then
  * input_buffer_offset = state->pos).
  */
-bool scan_input_buffer(struct scan_state* state)
+bool scan_input_buffer(uint8_t* buffer, struct scan_state* state)
 {
     // sub_c8e33
     // sub_c8e33:
@@ -3114,7 +3115,7 @@ bool scan_input_buffer(struct scan_state* state)
     while (1)
     {
         //     lda input_buffer,y
-        state->ch = input_buffer[state->pos];
+        state->ch = buffer[state->pos];
         //     cmp #0x0d
         //     beq return_20
         if (state->ch == 0x0d)
