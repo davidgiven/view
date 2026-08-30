@@ -772,7 +772,6 @@ addr_t read_into_document(void)
         cli_putstring("Not all read in\n");
     }
     //     lda ((uint8_t*)&tmp01)[0]
-    addr_t tmp45_1 = cursor;
     //     lda ptr5
     //     sec
     //     sbc ((uint8_t*)&tmp01)[0]
@@ -784,7 +783,7 @@ addr_t read_into_document(void)
 
     addr_t tmp67 = space_limit - cursor;
     //     jsr adjust_pointers
-    tmp89 = adjust_pointers(tmp45_1, tmp67);
+    tmp89 = adjust_pointers(cursor, tmp67);
     // (the 6502 left the post-read cursor in tmp01; load_cmd uses it for top)
     return cursor;
 }
@@ -843,11 +842,9 @@ c8a5b:
 c8a6c:
     // c8a6c:
     //     cmp #0x20 ; ' '
-    if (a_1 != 0x20)
-        goto c8a84;
     //     bne c8a84
     //     cpy l0048
-    if (y >= l0048)
+    if (a_1 != 0x20 || y >= l0048)
         goto c8a84;
     //     bcs c8a84
     // loop_c8a74:
@@ -1046,13 +1043,12 @@ c8b11:
             goto c8b47;
         //     bne c8b47
         //     ldy l0082
-        uint8_t y_3 = l0082_1;
         //     cpy l0049
-        if (y_3 >= l0049)
+        if (l0082_1 >= l0049)
             goto c8b6a;
         //     bcs c8b6a
         //     lda output_buffer,y
-        a_6 = output_buffer[y_3];
+        a_6 = output_buffer[l0082_1];
         //     inc l0082
         l0082_1++;
     c8b47:
@@ -1066,11 +1062,9 @@ c8b11:
         //     bit folding_flag
         //     bmi c8b64
         // (bit test: N = folding_flag & 0x80)
-        if (folding_flag & 0x80)
-            goto c8b64;
         //     ldy print_xpos
         //     bne c8b64
-        if (print_xpos != 0)
+        if (folding_flag & 0x80 || print_xpos != 0)
             goto c8b64;
         //     jsr is_uppercase
         //     bcs c8b64
@@ -1289,8 +1283,7 @@ void check_continuous_editing(void)
     //     bit file_edit_flags
     if (!((file_edit_flags & 0x40)))
     {
-        uint8_t a = file_edit_flags;
-        if (a & 1)
+        if (file_edit_flags & 1)
             return;
     }
     //     jsr display_document_file_state

@@ -106,9 +106,8 @@ void display_document_file_state(void)
     cli_putstring("Editing ");
 
     //     lda file_edit_flags
-    uint8_t a = file_edit_flags;
     //     beq c8a21
-    if (a == 0)
+    if (file_edit_flags == 0)
         goto c8a21;
     //     ldy #0
 
@@ -520,9 +519,8 @@ cb06c:
     //     sta (page),y
     ram[page + y] = a;
     //     tya
-    uint8_t a_1 = y;
     //     sta (top),y
-    ram[top + y] = a_1;
+    ram[top + y] = y;
     // return_85:
     //     rts
 }

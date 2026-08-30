@@ -419,11 +419,9 @@ c86ea:
     if ((int8_t)l0082 < 0)
         goto c870d;
     //     cmp #0x0d
-    if (a_3 == 0x0d)
-        goto c8703;
     //     beq c8703
     //     cmp #0x20 ; ' '
-    if (a_3 == 0x20)
+    if (a_3 == 0x0d || a_3 == 0x20)
         goto c8703;
     //     beq c8703
     // c86ff:
@@ -576,8 +574,7 @@ static void finish_cmd(void)
         move_cursor_to_top_of_document();
         ensure_cr_at_document_top();
 
-        uint8_t a = input_file_empty_flag;
-        if (a != 0)
+        if (input_file_empty_flag != 0)
         {
             close_input_output_files();
             return;
@@ -625,8 +622,7 @@ c87b4:
     cli_putstring("Folding ");
 
     //     lda folding_flag
-    uint8_t a_1 = folding_flag;
-    if (((int8_t)a_1 < 0))
+    if (((int8_t)folding_flag < 0))
     {
         cli_putstring("off\n");
         return_to_cli_prompt();
@@ -854,9 +850,8 @@ static void more_cmd(struct scan_state* scan)
     //     jsr check_for_at_least_150_bytes_free
     check_for_at_least_150_bytes_free();
     //     lda input_file_empty_flag
-    uint8_t a_1 = input_file_empty_flag;
     //     bne c84e8
-    if (a_1 == 0)
+    if (input_file_empty_flag == 0)
     {
         if (read_next_chunk_from_input_file(top))
         {
@@ -1572,10 +1567,9 @@ c816d:
     } while (x != 0);
     // c81a7:
     //     lda microspacing_flag
-    uint8_t a_4 = microspacing_flag;
 
     //     beq c81b3
-    if (a_4 != 0)
+    if (microspacing_flag != 0)
     {
         cli_putstring(" (m)");
     }

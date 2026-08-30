@@ -329,8 +329,7 @@ c9537:
     // c9555:
 c9555:
     //     lda print_flags
-    uint8_t a_2 = print_flags;
-    if (!(a_2 & 0x80))
+    if (!(print_flags & 0x80))
         return x; // C=1 from the cmp #0x0d that reached c9555
     //     bpl return_37
     //     txa
@@ -706,24 +705,22 @@ static void pe_fmt_cmd(void)
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &y, 0);
 
-    uint8_t threshold = value;
     //     tax
     //     beq page_eject_fmt
-    if (threshold == 0)
+    if (value == 0)
     {
         page_eject_fmt();
         return;
     }
     //     cmp l0021
     //     bcc return_40
-    if (threshold < l0021)
+    if (value < l0021)
         return;
     // (the 6502 cleared C on this exit; pe_fmt_cmd's caller never reads it)
     //     lda l0031
-    uint8_t a = l0031;
 
     //     bne page_eject_fmt
-    if (a != 0)
+    if (l0031 != 0)
     {
         page_eject_fmt();
         return;
@@ -881,8 +878,7 @@ static void dm_fmt_cmd(void)
     // dm_fmt_cmd:
     //     lda macro_executing_flag
 
-    uint8_t a = macro_executing_flag;
-    if (a != 0)
+    if (macro_executing_flag != 0)
         return;
     //     bne return_42
     //     lda last_macro_ptr
@@ -1080,13 +1076,11 @@ c9725:
     addr_t highlight_value;
     evaluate_expression_from_fmt_cmd(&highlight_value, &y, x);
     //     pla
-    uint8_t a_1 = a;
     //     tax
-    uint8_t x_1 = a_1;
     //     lda ((uint8_t*)&tmp89)[0]
     uint8_t a_2 = (uint8_t)highlight_value;
     //     sta highlight1_code,x
-    highlight_code[x_1] = a_2;
+    highlight_code[a] = a_2;
     // return_44:
     //     rts
     return;
@@ -1117,7 +1111,6 @@ enum formatting_command lookup_formatting_command(void)
     uint8_t a = ram[current_format_line_ptr + y];
     //     sta tmp3                     ; second command letter
 
-    uint8_t char2 = a;
     //     dey                                                               ;
     //     Y=0x01
     y--;
@@ -1125,7 +1118,6 @@ enum formatting_command lookup_formatting_command(void)
     uint8_t a_1 = ram[current_format_line_ptr + y];
     //     sta tmp2                     ; first command letter
 
-    uint8_t char1 = a_1;
     //     dey                                                               ;
     //     Y=0x00
     y--;
@@ -1136,9 +1128,9 @@ enum formatting_command lookup_formatting_command(void)
     // loop_c973e:
     do
     {
-        if (char1 == commands_table[y])
+        if (a_1 == commands_table[y])
         {
-            if (char2 == commands_table[y + 1])
+            if (a == commands_table[y + 1])
             {
                 return index;
             }
@@ -1192,7 +1184,6 @@ bool execute_formatting_command(enum formatting_command x)
     // execute_formatting_command:
     //     txa
 
-    uint8_t a = x;
     //     ldy #0
     //     ldx #0
     //     stx l0030
@@ -1212,7 +1203,7 @@ bool execute_formatting_command(enum formatting_command x)
     //     lda (((uint8_t*)&tmp89)[0]),y
     //     sta ((uint8_t*)&tmp67)[1]
     //     jmp (((uint8_t*)&tmp67)[0])
-    switch (a)
+    switch (x)
     {
         case FORMATTING_COMMAND_CE:
             ce_fmt_cmd();
@@ -1659,11 +1650,10 @@ static void emit_to_output_buffer_callback(uint8_t digit)
         //     tax
         // (the work uses a local x, so the caller's x register is
         //  preserved without an explicit save/restore)
-        uint8_t x = l0082;
-        //     sta output_buffer,x
-        output_buffer[x] = digit;
+        //     sta output_buffer,l0082
+        output_buffer[l0082] = digit;
         //     cpx #MAX_LINE_LENGTH-2
-        if (x < MAX_LINE_LENGTH - 2)
+        if (l0082 < MAX_LINE_LENGTH - 2)
         {
             l0082++;
         }
@@ -1749,17 +1739,14 @@ static void process_page_footer(void)
     {
         //     ldx l0021 ; X=number of lines
 
-        uint8_t x = l0021;
         //     jsr print_vertical_space
-        print_vertical_space(x);
+        print_vertical_space(l0021);
         //     ldx footer_margin ; X=number of lines
-        uint8_t x_1 = footer_margin;
         //     jsr print_vertical_space
-        print_vertical_space(x_1);
+        print_vertical_space(footer_margin);
         //     lda footers_enabled_flag
-        uint8_t a_1 = footers_enabled_flag;
         //     beq c927c
-        if (a_1 != 0)
+        if (footers_enabled_flag != 0)
         {
             // (the 6502 passed the buffer address in YX; the C passes it
             // directly)
@@ -1768,9 +1755,8 @@ static void process_page_footer(void)
         //     jsr print_newline
         print_newline();
         //     ldx bottom_margin ; X=number of lines
-        uint8_t x_2 = bottom_margin;
         //     jsr print_vertical_space
-        print_vertical_space(x_2);
+        print_vertical_space(bottom_margin);
         // c9284:
     }
     //     inc register_value_p
@@ -1846,10 +1832,9 @@ void check_not_continuous_editing(void)
     if ((file_edit_flags & 0x40))
         return;
     //     lda file_edit_flags
-    uint8_t a = file_edit_flags;
     //     ror
     //     bcc return_20
-    if (!(a & 1))
+    if (!(file_edit_flags & 1))
         return;
     //     bcs c8e5d                                                         ;
     //     ALWAYS branch
@@ -2023,10 +2008,8 @@ c9090:
     // c9092:
 c9092:
     //     cmp #9
-    if (a_3 == 9)
-        goto c90a0;
     //     cmp #0x0b
-    if (a_3 == 0x0b)
+    if (a_3 == 9 || a_3 == 0x0b)
         goto c90a0;
     //     sec
     //     ror l0083
@@ -2471,8 +2454,7 @@ c8f0d:
         goto c8f0d;
     }
     //     lda l0031
-    uint8_t a_1 = l0031;
-    if ((int8_t)a_1 >= 0)
+    if ((int8_t)l0031 >= 0)
         return;
     //     bpl return_23
     //     jmp c9263
@@ -2596,7 +2578,6 @@ static void print_loop(addr_t ptr5)
         //     lda (current_format_line_ptr),y
         uint8_t a_2 = ram[current_format_line_ptr + y_3];
         //     sta tmp8
-        uint8_t firstchar = a_2;
         //     iny ; Y=0x02
         y_3++;
         //     lda (current_format_line_ptr),y
@@ -2610,7 +2591,6 @@ static void print_loop(addr_t ptr5)
             a_3 = 0x20;
         }
         //     sta tmp9
-        uint8_t secondchar = a_3;
         // lookup_macro_name:
     lookup_macro_name_l:
         //     ldy #0
@@ -2623,12 +2603,12 @@ static void print_loop(addr_t ptr5)
         //     ldy #2
         //     lda (((uint8_t*)&tmp67)[0]),y
         //     cmp tmp8
-        if (macro->name[0] != firstchar)
+        if (macro->name[0] != a_2)
             goto get_next_macro_in_linked_list_l;
         //     iny ; Y=0x03
         //     lda (((uint8_t*)&tmp67)[0]),y
         //     cmp tmp9
-        if (macro->name[1] == secondchar)
+        if (macro->name[1] == a_3)
             goto c8fb9_l;
         // get_next_macro_in_linked_list:
     get_next_macro_in_linked_list_l:
@@ -2648,10 +2628,9 @@ static void print_loop(addr_t ptr5)
         // c8fb9:
     c8fb9_l:
         //     lda macro_executing_flag
-        uint8_t a_4 = macro_executing_flag;
 
         //     bne nested_macro_error
-        if (a_4 != 0)
+        if (macro_executing_flag != 0)
         {
             nested_macro_error();
             return;
@@ -2668,8 +2647,7 @@ static void print_loop(addr_t ptr5)
         // c8fce:
     c8fce_l:
         //     lda l0031
-        uint8_t a_5 = l0031;
-        if (a_5 == 0)
+        if (l0031 == 0)
         {
             render_new_page();
         }
@@ -2681,12 +2659,10 @@ static void print_loop(addr_t ptr5)
         //     ldy input_buffer_ptr+1
         uint8_t y_4 = l0080;
         //     lda print_flags
-        uint8_t a_7 = print_flags;
-        if (((int8_t)a_7 < 0))
+        if (((int8_t)print_flags < 0))
         {
-            uint8_t a_8 = microspacing_flag;
 
-            if (a_8 != 0)
+            if (microspacing_flag != 0)
             {
                 microspace_word_processor(&y_4);
                 continue;
@@ -2784,9 +2760,8 @@ c8c95:
         goto c8caf;
     //     ldx l0084
 
-    uint8_t x = l0084;
     //     bne c8c95
-    if (x != 0)
+    if (l0084 != 0)
         goto c8c95;
     //     jsr check_for_command_prefix
     command_prefix_t cp = check_for_command_prefix(a_1);
@@ -2804,16 +2779,10 @@ c8caf:
     //     jsr check_for_control_code
     control_code_t cc = check_for_control_code(a_1);
     //     beq c8cc8
-    if (cc != NO_CONTROL_CODE)
-        goto c8cc8;
     //     cmp #0x1a
-    if (a_1 == 0x1a)
-        goto c8cc8;
     //     cmp #0x0d
-    if (a_1 == 0x0d)
-        goto c8cc8;
     //     cmp #0x0b
-    if (a_1 == 0x0b)
+    if (cc != NO_CONTROL_CODE || a_1 == 0x1a || a_1 == 0x0d || a_1 == 0x0b)
         goto c8cc8;
     //     cmp #9
     if (a_1 != 9)
@@ -2829,9 +2798,8 @@ c8cc8:
     x_2--;
     //     ldy l0083
 
-    uint8_t y = l0083;
     //     cpy #0x84
-    if (y == MAX_LINE_LENGTH)
+    if (l0083 == MAX_LINE_LENGTH)
     {
         {
             write_cr_to_memory(&tmp01);
@@ -2848,8 +2816,6 @@ c8cdb:
     //     txa
 
     //     beq c8c95
-    if (x_2 == 0)
-        goto c8c95;
     //     lda ((uint8_t*)&tmp01)[1]
     //     cmp l0081
     //     bcc c8c95
@@ -2857,7 +2823,7 @@ c8cdb:
     //     lda ((uint8_t*)&tmp01)[0]
     //     cmp input_buffer_offset+1
     // (16-bit comparison: tmp01 < limit)
-    if (*cursor < limit)
+    if (x_2 == 0 || *cursor < limit)
         goto c8c95;
     // c8cf1:
     //     clc
@@ -2865,17 +2831,15 @@ c8cdb:
 c8cf2:
     // c8cf2:
     //     lda l0084
-    uint8_t a_2 = l0084;
     //     beq c8cfa
-    if (a_2 != 0)
+    if (l0084 != 0)
     {
         write_cr_to_memory(cursor);
     }
     // c8cfa:
     //     lda l0082
-    uint8_t a_3 = l0082;
     // (return: EMPTY if l0082 == 0, else eof selects DONE vs block-full MORE)
-    if (a_3 == 0)
+    if (l0082 == 0)
         return READ_BLOCK_EMPTY;
     if (eof_1)
         return READ_BLOCK_DONE;
@@ -2929,9 +2893,8 @@ static void render_header_or_footer(uint8_t* text)
 
     uint8_t x = copy_header_footer_text(section_start_1);
     //     txa
-    uint8_t a_2 = x;
     //     beq c9355
-    if (a_2 == 0)
+    if (x == 0)
         goto c9355;
     //     dex
     x--;
@@ -3081,9 +3044,8 @@ c92cf:
     // c92d4:
 c92d4:
     //     lda l0038
-    uint8_t a_3 = l0038;
     //     beq c92f0
-    if (a_3 == 0)
+    if (l0038 == 0)
     {
         compute_lines_remaining_on_page();
         return;
@@ -3091,13 +3053,11 @@ c92d4:
     //     ldx top_margin                                                    ;
     //     X=number of lines
 
-    uint8_t x = top_margin;
     //     jsr print_vertical_space
-    print_vertical_space(x);
+    print_vertical_space(top_margin);
     //     lda headers_enabled_flag
-    uint8_t a_4 = headers_enabled_flag;
     //     beq c92e8
-    if (a_4 != 0)
+    if (headers_enabled_flag != 0)
     {
         // (the 6502 passed the buffer address in YX; the C passes it directly)
         render_header_or_footer(header_text_maybe);
@@ -3106,9 +3066,8 @@ c92d4:
     print_newline();
     //     ldx header_margin                                                 ;
     //     X=number of lines
-    uint8_t x_1 = header_margin;
     //     jsr print_vertical_space
-    print_vertical_space(x_1);
+    print_vertical_space(header_margin);
     // c92f0: fall-through to shared routine
     compute_lines_remaining_on_page();
     return;
@@ -3187,21 +3146,19 @@ static void start_microspacing_if_active(uint8_t a)
     // sub_c916a:
     //     ldx print_flags
 
-    uint8_t x = print_flags;
     //     bpl return_25
-    if (!(x & 0x80))
+    if (!(print_flags & 0x80))
         return;
     //     ldx microspacing_flag
-    uint8_t x_1 = microspacing_flag;
     //     bne c9177
-    if (x_1 == 0)
+    if (microspacing_flag == 0)
         return;
     // c9177:
     //     jsr sub_c9445
     print_alignment_spaces(a);
     //     pha
     //     stx l0043
-    l0043 = x_1;
+    l0043 = microspacing_flag;
     //     lda #9
     printer_driver_ptr->printer_microspace();
     //     pla
@@ -3292,9 +3249,8 @@ c9188_normal_entry:
     //  just read_limit itself)
     if (read_limit != 0)
     {
-        addr_t cursor_1 = read_limit;
-        current_format_line_ptr = cursor_1;
-        return cursor_1;
+        current_format_line_ptr = read_limit;
+        return read_limit;
     }
     // c91a3:
 c91a3:
@@ -3347,21 +3303,19 @@ c91a7:
     // c91c2:
 c91c2:
     //     tya
-    uint8_t a_2 = y;
     //     clc
     //     adc (*macro_cursor)
     //     sta (*macro_cursor)
     //     bcc c91cc
     // (16-bit arithmetic: (*macro_cursor) += y)
-    (*macro_cursor) += a_2;
+    (*macro_cursor) += y;
     //     lda ptr1 / ldy ptr1+1 (folded via c91d0)
     // c91d0:
-    addr_t cursor_2 = ptr1;
-    current_format_line_ptr = cursor_2;
+    current_format_line_ptr = ptr1;
     //     clc
     // return_26:
     //     rts
-    return cursor_2;
+    return ptr1;
 
     // c91da:
 c91da:
@@ -3411,10 +3365,8 @@ c91f5:
     {
         enum parse_register_result_t r = parse_register_reference(a_5);
         //     beq c91f5
-        if (r == PARSE_REGISTER_MARKER)
-            goto c91f5;
         //     bvs c91f5
-        if (r == PARSE_REGISTER_VALUE)
+        if (r == PARSE_REGISTER_MARKER || r == PARSE_REGISTER_VALUE)
             goto c91f5;
     }
     //     cmp #0x2c ; ','
@@ -3513,9 +3465,8 @@ static read_block_status_t read_next_output_line(addr_t limit, addr_t* cursor)
     // sub_c9241:
     //     lda printing_from_file_flag
 
-    uint8_t a = printing_from_file_flag;
     //     beq c9260
-    if (a == 0)
+    if (printing_from_file_flag == 0)
     {
         return read_block_from_file(cursor, limit);
     } //     ldy #0
@@ -3551,10 +3502,8 @@ static void compute_lines_remaining_on_page(void)
     uint8_t x = page_length;
     //     lda l0038
 
-    uint8_t a = l0038;
-
     //     beq c930d
-    if (a == 0)
+    if (l0038 == 0)
         goto c930d;
     //     ldx #1
     x = 1;
@@ -3735,8 +3684,7 @@ static uint8_t copy_header_footer_text(uint8_t* text)
         //     stx l0084
         l0084 = x;
         //     lda print_flags
-        uint8_t a_1 = print_flags;
-        if (((int8_t)a_1 < 0))
+        if (((int8_t)print_flags < 0))
         {
             uint8_t a_2 = x;
             a_2 -= l0081;
@@ -3791,20 +3739,18 @@ static void output_left_margin(void)
     //     bcc c9415
     if (parity)
     {
-        uint8_t x = two_sided_flag;
 
-        if (x != 0)
+        if (two_sided_flag != 0)
         {
             a += rhs_extra_margin;
         }
     }
     //     tax
-    uint8_t x_1 = a;
     //     lda #0x20 ; ' '
     uint8_t a_1 = 0x20;
     //     bne c9426                                                         ;
     //     ALWAYS branch
-    print_char_x_times(a_1, x_1);
+    print_char_x_times(a_1, a);
 }
 
 static uint8_t add_justification_spaces(uint8_t x)
@@ -3989,8 +3935,7 @@ void stop_printing(void)
     // stop_printing:
     //     lda print_flags
 
-    uint8_t a = print_flags;
-    if (((int8_t)a < 0))
+    if (((int8_t)print_flags < 0))
     {
         // (The 6502 clears bit 7 by rolling left into C, clearing C, and
         //  rolling right again; the input C value is irrelevant.)
