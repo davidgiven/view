@@ -1273,6 +1273,7 @@ bool execute_formatting_command(enum formatting_command x)
         case FORMATTING_COMMAND_PB:
             pb_fmt_cmd();
             break;
+        case NO_FORMATTING_COMMAND:
     }
     //     ldx l0030
     //     rts

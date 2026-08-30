@@ -139,6 +139,7 @@ extern bool parse_integer_from_command(struct scan_state* scan, int* out);
 extern uint8_t l0021, l0031, l0038, l007a;
 
 #define RAM_CURRENT_RULER_BUF 0x05CF
+#define RAM_MAX 0xffff
 
 // Emulated register values for A-Z (originally stored in 6502 RAM at 0x0798)
 extern unsigned int register_value_array[26];

@@ -2481,11 +2481,9 @@ static void sf0_move_block_key(void)
 
     check_pointer_in_area();
 
-    uint8_t x = 0xff;
+    top_of_screen_line_ptr = RAM_MAX;
 
-    top_of_screen_line_ptr = 0xff00;
-
-    l006f = x;
+    l006f = 0xff;
 
     adjust_area_pointers(tmp67);
 
@@ -4812,17 +4810,16 @@ bool scan_document_for_next_line(void)
     if (l007a == 0)
         return false;
     //     lda #0x14
-    uint8_t a_1 = 0x14;
     //     sta l0048
-    l0048 = a_1;
+    l0048 = 0x14;
     //     ldx #0
     // (the 6502's ldx #0 overwrites Z before any branch reads it)
 
     uint8_t x = 0;
     //     stx l0049
-    l0049 = x;
+    l0049 = 0;
     //     stx l0081
-    l0081 = x;
+    l0081 = 0;
     //     lda doc_ptr2+0
     //     sta ((uint8_t*)&tmp89)[0]
     //     lda doc_ptr2+1
@@ -4839,13 +4836,12 @@ c8b91:
     //     cmp doc_ptr3
     //     bcs signal_no_more_document
     // (16-bit comparison: tmp89 < doc_ptr3)
-    if (!(tmp89 < doc_ptr3))
+    if (tmp89 >= doc_ptr3)
     {
         // c8b78:
         //     lda #0xff
         return false;
     }
-c8b9f:
     // c8b9f:
     //     ldy #0
 
@@ -4856,7 +4852,7 @@ c8b9f:
     //     jsr check_for_command_prefix
     command_prefix_t cp = check_for_command_prefix(a_2);
     //     bne c8bb7
-    if (!(cp == NO_COMMAND_PREFIX))
+    if (cp != NO_COMMAND_PREFIX)
     {
         //     lda ((uint8_t*)&tmp89)[0]
         //     clc
@@ -4870,112 +4866,110 @@ c8b9f:
         doc_ptr2 = tmp89 + 3;
         return scan_document_for_next_line();
     }
-c8bb7:
     // c8bb7:
     //     jsr sub_c8c5f
-    uint8_t a_3 = upper_case_unless_folding(a_2);
+    l0083 = upper_case_unless_folding(a_2);
     //     sta l0083
-    l0083 = a_3;
-c8bbc:
-    // c8bbc:
-    //     iny
-    y++;
-    //     lda (((uint8_t*)&tmp89)[0]),y
-    uint8_t a_4 = ram[tmp89 + y];
-    //     beq c8bdb
-    if (a_4 == 0)
-        goto c8bdb;
-    //     jsr check_for_command_prefix
-    command_prefix_t cp2 = check_for_command_prefix(a_4);
-    //     beq c8bdb
-    if (cp2 != NO_COMMAND_PREFIX)
-        goto c8bdb;
-    //     lda header_text_maybe,x
-    // (Z from this lda is clobbered by the following cmp #0x20)
-    uint8_t a_5 = header_text_maybe[x];
-    //     cmp #0x20 ; ' '
-    if (a_5 == 0x20)
-        goto c8bf7;
-    //     beq c8bf7
-    //     cmp #1
-    if (a_5 == 1)
-        goto c8be3;
-    //     beq c8be3
-    //     cmp #2
-    if (a_5 == 2)
+    do
     {
-        a_5 = 0x20;
-    }
-    // c8bd7:
-    //     cmp l0083
-    if (a_5 == l0083)
+        // c8bbc:
+        //     iny
+        y++;
+        //     lda (((uint8_t*)&tmp89)[0]),y
+        uint8_t a_4 = ram[tmp89 + y];
+        //     beq c8bdb
+        if (a_4 == 0)
+            goto c8bdb;
+        //     jsr check_for_command_prefix
+        command_prefix_t cp2 = check_for_command_prefix(a_4);
+        //     beq c8bdb
+        if (cp2 != NO_COMMAND_PREFIX)
+            goto c8bdb;
+        //     lda header_text_maybe,x
+        // (Z from this lda is clobbered by the following cmp #0x20)
+        uint8_t a_5 = header_text_maybe[x];
+        //     cmp #0x20 ; ' '
+        if (a_5 == 0x20)
+            goto c8bf7;
+        //     beq c8bf7
+        //     cmp #1
+        if (a_5 == 1)
+            goto c8be3;
+        //     beq c8be3
+        //     cmp #2
+        if (a_5 == 2)
+        {
+            a_5 = 0x20;
+        }
+        // c8bd7:
+        //     cmp l0083
+        if (a_5 == l0083)
+            goto c8c33;
+        //     beq c8c33
+    c8bdb:
+        // c8bdb:
+        //     inc doc_ptr2+0
+        //     bne c8b7b
+        // c8bdf:
+        //     inc doc_ptr2+1
+        //     bne c8b7b
+        // (16-bit arithmetic: doc_ptr2++)
+        doc_ptr2++;
+        return scan_document_for_next_line();
+    c8be3:
+        // c8be3:
+        //     lda l0083
+        //     stx l0084
+        l0084 = x;
+        //     ldx l0049
+        //     cpx #0x14
+        if (l0049 < 0x14)
+        {
+            output_buffer[l0049] = l0083;
+            l0049++;
+        }
+        // c8bf2:
+        //     ldx l0084
+        x = l0084;
+        //     jmp c8c33
         goto c8c33;
-    //     beq c8c33
-c8bdb:
-    // c8bdb:
-    //     inc doc_ptr2+0
-    //     bne c8b7b
-    // c8bdf:
-    //     inc doc_ptr2+1
-    //     bne c8b7b
-    // (16-bit arithmetic: doc_ptr2++)
-    doc_ptr2++;
-    return scan_document_for_next_line();
-c8be3:
-    // c8be3:
-    //     lda l0083
-    //     stx l0084
-    l0084 = x;
-    //     ldx l0049
-    //     cpx #0x14
-    if (l0049 < 0x14)
-    {
-        output_buffer[l0049] = l0083;
-        l0049++;
-    }
-    // c8bf2:
-    //     ldx l0084
-    x = l0084;
-    //     jmp c8c33
-    goto c8c33;
 
-c8bf7:
-    // c8bf7:
-    //     stx l0084
-    l0084 = x;
-    //     lda l0083
-    //     cmp #0x20 ; ' '
-    //     beq c8c23
-    //     cmp #9
-    //     beq c8c23
-    //     cmp #0x0b
-    //     beq c8c23
-    //     cmp #0x1a
-    //     beq c8c23
-    //     cmp #0x0d
-    if (l0083 == 0x20 || l0083 == 9 || l0083 == 0x0b || l0083 == 0x1a ||
-        l0083 == 0x0d)
-        goto c8c23;
-    //     beq c8c23
-    //     lda l0081
-    //     beq c8bdb
-    if (l0081 == 0)
-        goto c8bdb;
-    //     jsr sub_c8c51
-    // (inlined: append_to_output_buffer(0))
-    append_to_output_buffer(0);
-    //     lda #0
-    // (Z from this lda is clobbered by the following ldx l0084)
-    uint8_t a_9 = 0;
-    //     sta l0081
-    l0081 = a_9;
-    //     ldx l0084
-    x = l0084;
-    //     inx
-    x++;
-    //     cpx l007a
-    if (x < l007a)
-        goto c8bbc;
+    c8bf7:
+        // c8bf7:
+        //     stx l0084
+        l0084 = x;
+        //     lda l0083
+        //     cmp #0x20 ; ' '
+        //     beq c8c23
+        //     cmp #9
+        //     beq c8c23
+        //     cmp #0x0b
+        //     beq c8c23
+        //     cmp #0x1a
+        //     beq c8c23
+        //     cmp #0x0d
+        if (l0083 == 0x20 || l0083 == 9 || l0083 == 0x0b || l0083 == 0x1a ||
+            l0083 == 0x0d)
+            goto c8c23;
+        //     beq c8c23
+        //     lda l0081
+        //     beq c8bdb
+        if (l0081 == 0)
+            goto c8bdb;
+        //     jsr sub_c8c51
+        // (inlined: append_to_output_buffer(0))
+        append_to_output_buffer(0);
+        //     lda #0
+        // (Z from this lda is clobbered by the following ldx l0084)
+        uint8_t a_9 = 0;
+        //     sta l0081
+        l0081 = a_9;
+        //     ldx l0084
+        x = l0084;
+        //     inx
+        x++;
+        //     cpx l007a
+    } while (x < l007a);
     //     bcc c8bbc
     //     bcs c8c3e
     goto c8c3e;
@@ -5187,29 +5181,30 @@ void draw_line(struct render_state* rs, uint16_t addr)
     //     ldy #3
     //     lda hscroll_pos
     if (f == NO_COMMAND_PREFIX || hscroll_pos != 0)
-        goto ca4b4;
-    //     bne ca4b4
-    //     ldy #1
-    rs->pos = 1;
-    //     jsr sub_ca4d7
-    advance_to_next_char_and_render(rs);
-    //     jsr sub_ca4d7
-    advance_to_next_char_and_render(rs);
-    //     lda #0x20 ; ' '
-    rs->ch = 0x20;
-    //     bne ca4bc
-    goto ca4bc;
+    {
+        //     lda #0x20 ; ' '
+        rs->ch = 0x20;
+        //     jsr ca4e9
+        render_char(rs);
+        //     jsr ca4e9
+        render_char(rs);
+    }
+    else
+    {
+        //     bne ca4b4
+        //     ldy #1
+        rs->pos = 1;
+        //     jsr sub_ca4d7
+        advance_to_next_char_and_render(rs);
+        //     jsr sub_ca4d7
+        advance_to_next_char_and_render(rs);
+        //     lda #0x20 ; ' '
+        rs->ch = 0x20;
+        //     bne ca4bc
+    }
 
     // ca4b4:
-ca4b4:
-    //     lda #0x20 ; ' '
-    rs->ch = 0x20;
-    //     jsr ca4e9
-    render_char(rs);
-    //     jsr ca4e9
-    render_char(rs);
-// ca4bc:
-ca4bc:
+    // ca4bc:
     //     jsr ca4e9
     render_char(rs);
     // loop_ca4bf:
@@ -5220,7 +5215,7 @@ ca4bc:
     //     lda #0x20 ; ' '
     //     jsr sub_ca597
     // (loop restructured)
-    while (1)
+    do
     {
         advance_to_next_char(rs);
         do
@@ -5228,9 +5223,7 @@ ca4bc:
             render_xchar(rs);
             rs->width--;
         } while (rs->width != 0);
-        if (rs->ch == 0x0d)
-            break;
-    }
+    } while (rs->ch != 0x0d);
     clear_to_eol(0x20, rs->line);
     clear_to_eol(0x20, rs->line);
     //     lda l0083
@@ -6395,7 +6388,7 @@ ca3e7:
     l006f = 0;
     //     dey (5445)
     //     sty ptr6+1 (5446)
-    editor_ptr6 = 0xff00;
+    editor_ptr6 = RAM_MAX;
     //     ldy ypos (5447) jsr set_cursor_position (5448)
     screen_setcursor(a_27, ypos);
     //     jmp cursor_on (5449)

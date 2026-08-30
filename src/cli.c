@@ -694,7 +694,7 @@ c8787:
     //     lda #0xff
     //     lda #0xff
     //     sta l0012
-    top_of_screen_line_ptr = 0xff00;
+    top_of_screen_line_ptr = RAM_MAX;
     // c878b:
 c878b:
     //     jsr bdos_print_newline

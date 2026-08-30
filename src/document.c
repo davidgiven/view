@@ -905,7 +905,7 @@ void move_cursor_to_top_of_document(void)
     xpos = 0;
     //     ldy #0xfe
     //     sty l0012
-    top_of_screen_line_ptr = 0xfe00;
+    top_of_screen_line_ptr = RAM_MAX;
     //     sty ruler_stack_ptr
     ruler_index_ptr = 0xfe;
     //     sty l0033
