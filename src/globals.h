@@ -295,7 +295,7 @@ typedef enum
 
 extern format_result_t format_paragraph(void);
 extern void print_document(struct scan_state* scan);
-extern uint8_t draw_prompt_characters(uint8_t x, uint8_t y);
+extern void draw_prompt_characters(uint8_t x, uint8_t y);
 extern void show_memory_full_error(void);
 extern void bad_filename_error(void);
 extern void clear_screen(void);

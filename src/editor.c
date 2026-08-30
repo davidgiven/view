@@ -40,7 +40,7 @@ static void clear_to_eol(uint8_t a, uint8_t line);
 static void cursor_off(void);
 static void cursor_on(void);
 void draw_line(struct render_state* rs, uint16_t addr);
-uint8_t draw_prompt_characters(uint8_t x, uint8_t y);
+void draw_prompt_characters(uint8_t x, uint8_t y);
 static void draw_ruler(void);
 static void draw_status_word(void);
 static uint8_t get_line_length(void);
@@ -3743,8 +3743,6 @@ c9ca2:
         y_8++;
     }
     //     sty ((uint8_t*)&tmp67)[0] (4235)
-    addr_t tmp67_2;
-    ((uint8_t*)&tmp67_2)[0] = y_8;
     //     lda current_line_ptr (4236)
     //     sec (4237)
     //     adc l003b (4238)
@@ -3755,7 +3753,7 @@ c9ca2:
 
     addr_t tmp45 = current_line_ptr + l003b + 1;
     //     jsr make_space_for_insertion (4243)
-    if (make_space_for_insertion(tmp45, tmp67_2))
+    if (make_space_for_insertion(tmp45, y_8))
         goto c9cd0; // bcc c9cd0
     //     jmp ca941 (4245)
     show_memory_full_error();
@@ -5335,7 +5333,7 @@ ca4bc:
     //     rts
 }
 
-uint8_t draw_prompt_characters(uint8_t x, uint8_t y)
+void draw_prompt_characters(uint8_t x, uint8_t y)
 {
 
     // draw_prompt_characters: Draws two inverted prompt characters at top-left
@@ -5345,7 +5343,6 @@ uint8_t draw_prompt_characters(uint8_t x, uint8_t y)
 
     //     stx ((uint8_t*)&tmp23)[0]
 
-    addr_t tmp23 = (addr_t)(y) << 8 | x;
     //     jsr save_cursor_position
     save_cursor_position();
     //     jsr cursor_off
@@ -5357,13 +5354,11 @@ uint8_t draw_prompt_characters(uint8_t x, uint8_t y)
     uint8_t a = STYLE_REVERSE;
     screen_setstyle(a);
     //     lda ((uint8_t*)&tmp23)[0]
-    uint8_t a_1 = (uint8_t)((uint8_t*)&tmp23)[0];
     //     jsr screen_putchar
-    screen_putchar(a_1);
+    screen_putchar(x);
     //     lda ((uint8_t*)&tmp23)[1]
-    uint8_t a_2 = (uint8_t)((uint8_t*)&tmp23)[1];
     //     jsr screen_putchar
-    screen_putchar(a_2);
+    screen_putchar(y);
     //     jsr set_normal_text_if_not_mode_7
     screen_setstyle(0);
     //     lda #0x20 ; ' '
@@ -5371,7 +5366,6 @@ uint8_t draw_prompt_characters(uint8_t x, uint8_t y)
     screen_putchar(0x20);
     //     jsr restore_cursor_position
     restore_cursor_position(tmp45);
-    return a_2;
     // cursor_on:
     // cursor_off:
     //     rts
@@ -6464,7 +6458,7 @@ ca3c1:
         //     lda ((uint8_t*)&tmp01)[0] (5400)
 
         //     ldy ((uint8_t*)&tmp01)[1] (5401)
-        uint8_t y_2 = ((uint8_t*)&tmp01)[1];
+        uint8_t y_2 = 0;
         //     jsr sub_cab1a (5402)
         if (advance_to_next_line(tmp01, &tmp01, &y_2))
             goto ca422;
@@ -7060,8 +7054,6 @@ format_result_t format_paragraph(void)
     uint8_t a_15;
     uint8_t x;
 
-    bool at_end = false; // C from the final advance_to_next_line (c9a8d)
-    (void)at_end;
     // sub_c9977
     // PROVISIONAL: Main line formatting routine — reads source line, handles
     // margins, tabs, wrapping. PROVISIONAL: Called from f0_format_block_key

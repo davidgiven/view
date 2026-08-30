@@ -1750,38 +1750,35 @@ static void process_page_footer(void)
 
     // c9263:
     //     lda l0038
-    uint8_t a = l0038;
     //     beq c9284
-    if (a == 0)
-        goto c9284;
-    //     ldx l0021                                                         ;
-    //     X=number of lines
-
-    uint8_t x = l0021;
-    //     jsr print_vertical_space
-    print_vertical_space(x);
-    //     ldx footer_margin                                                 ;
-    //     X=number of lines
-    uint8_t x_1 = footer_margin;
-    //     jsr print_vertical_space
-    print_vertical_space(x_1);
-    //     lda footers_enabled_flag
-    uint8_t a_1 = footers_enabled_flag;
-    //     beq c927c
-    if (a_1 != 0)
+    if (l0038 != 0)
     {
-        // (the 6502 passed the buffer address in YX; the C passes it directly)
-        render_header_or_footer(footer_text_maybe);
+        //     ldx l0021 ; X=number of lines
+
+        uint8_t x = l0021;
+        //     jsr print_vertical_space
+        print_vertical_space(x);
+        //     ldx footer_margin ; X=number of lines
+        uint8_t x_1 = footer_margin;
+        //     jsr print_vertical_space
+        print_vertical_space(x_1);
+        //     lda footers_enabled_flag
+        uint8_t a_1 = footers_enabled_flag;
+        //     beq c927c
+        if (a_1 != 0)
+        {
+            // (the 6502 passed the buffer address in YX; the C passes it
+            // directly)
+            render_header_or_footer(footer_text_maybe);
+        }
+        //     jsr print_newline
+        print_newline();
+        //     ldx bottom_margin ; X=number of lines
+        uint8_t x_2 = bottom_margin;
+        //     jsr print_vertical_space
+        print_vertical_space(x_2);
+        // c9284:
     }
-    //     jsr print_newline
-    print_newline();
-    //     ldx bottom_margin                                                 ;
-    //     X=number of lines
-    uint8_t x_2 = bottom_margin;
-    //     jsr print_vertical_space
-    print_vertical_space(x_2);
-    // c9284:
-c9284:
     //     inc register_value_p
     //     bne c928c
     //     inc register_value_p+1
@@ -1815,25 +1812,17 @@ static void print_output_buffer(void)
     bool is_tab = false;
     do
     {
-        uint8_t a_3;
-
-        uint8_t a = x;
-        {
-            uint8_t saved_x = a;
-            uint8_t a_1 = output_buffer[y];
-            uint8_t a_2 = convert_char_for_printing(a_1, &x, &is_tab);
-            print_char(a_2);
-            y++;
-            a_3 = saved_x;
-        }
-        x = a_3;
+        uint8_t x_2 = x;
+        uint8_t a_2 = convert_char_for_printing(output_buffer[y], &x_2, &is_tab);
+        print_char(a_2);
+        y++;
         x--;
     } while (x != 0);
     // return_28:
     //     rts
 }
 
-static uint8_t scan_string_length(uint8_t y_start, uint8_t* tmp45)
+static uint8_t scan_string_length(uint8_t y, uint8_t* tmp45)
 {
     uint8_t a;
 
@@ -1842,7 +1831,6 @@ static uint8_t scan_string_length(uint8_t y_start, uint8_t* tmp45)
     //     lda (((uint8_t*)&tmp45)[0]),y
     //     bpl c93b8
 
-    uint8_t y = y_start;
     do
     {
         y++;
