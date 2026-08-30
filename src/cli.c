@@ -353,7 +353,7 @@ c86b8:
     //     iny
     y++;
     // loop_c86c2:
-    for (;;)
+    do
     {
         //     lda (((uint8_t*)&tmp01)[0]),y
         uint8_t a = ram[tmp01 + y];
@@ -382,10 +382,7 @@ c86b8:
         //     inx
         x++;
         //     bne loop_c86c2
-        if (x != 0)
-            continue;
-        break;
-    }
+    } while (x != 0);
     // c86db:
 c86db:
     //     lda #0x80
@@ -1281,7 +1278,8 @@ c8649:
     //     ldx #0
     uint8_t x_1 = 0;
     // loop_c8652:
-    for (;;)
+    uint8_t y;
+    do
     {
         //     cmp c867d,x
         if (scan->ch == c867d_data[x_1])
@@ -1290,12 +1288,9 @@ c8649:
         x_1++;
         //     ldy c867d,x
 
-        uint8_t y = c867d_data[x_1];
+        y = c867d_data[x_1];
         //     bne loop_c8652
-        if (y != 0)
-            continue;
-        break;
-    }
+    } while (y != 0);
     //     jsr print_inline_string
     //     .ascii "Bad flag"
     //     .byte 0xff
@@ -1727,20 +1722,18 @@ static bool parse_command(uint8_t* input_buffer_offset)
             //     beq loop_ca851
         }
         // loop_ca86a:
-        for (;;)
+        uint8_t a_3;
+        do
         {
             //     inx
             x++;
             //     lda parser_table,x
-            uint8_t a_3 = parser_table[x];
+            a_3 = parser_table[x];
             //     beq ca890
             if (a_3 == 0)
                 goto ca890;
             //     bpl loop_ca86a
-            if (!(a_3 & 0x80))
-                continue;
-            break;
-        }
+        } while (!(a_3 & 0x80));
         //     lda l0083
         uint8_t a_4 = l0083;
         //     and #0x20 ; ' '

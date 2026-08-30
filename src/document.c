@@ -393,7 +393,7 @@ ca5e1:
     {
         uint8_t tab_pos = l0039;
         // loop_ca5e5:
-        for (;;)
+        do
         {
             //     iny
             tab_pos++;
@@ -405,10 +405,7 @@ ca5e1:
             a = ram[current_ruler_ptr + tab_pos];
             //     cmp #0x2a ; '*'
             //     bne loop_ca5e5
-            if (a != 0x2a)
-                continue;
-            break;
-        }
+        } while (a != 0x2a);
         //     tya
         a = tab_pos;
     }

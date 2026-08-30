@@ -401,7 +401,7 @@ static uint8_t process_header_footer_line(uint8_t* tmp23)
 
     uint8_t x = 0x3f;
     // loop_c9589:
-    for (;;)
+    do
     {
         //     iny
         y++;
@@ -435,10 +435,7 @@ static uint8_t process_header_footer_line(uint8_t* tmp23)
         //     dex
         x--;
         //     bne loop_c9589
-        if (x != 0)
-            continue;
-        break;
-    }
+    } while (x != 0);
 c95aa:
     //     lda #0x80
     //     jsr sub_c95b2
@@ -1813,7 +1810,8 @@ static void print_output_buffer(void)
     do
     {
         uint8_t x_2 = x;
-        uint8_t a_2 = convert_char_for_printing(output_buffer[y], &x_2, &is_tab);
+        uint8_t a_2 =
+            convert_char_for_printing(output_buffer[y], &x_2, &is_tab);
         print_char(a_2);
         y++;
         x--;

@@ -4012,7 +4012,7 @@ static void move_cursor_up(uint8_t x)
     //     lda current_line_ptr / ldy current_line_ptr+1
     addr_t line = current_line_ptr;
     // ca07c:
-    while (1)
+    do
     {
         //     sta ((uint8_t*)&tmp23)[0]
 
@@ -4034,10 +4034,7 @@ static void move_cursor_up(uint8_t x)
         //     dec input_buffer_offset+1
         l0080--;
         //     bne ca07c
-        if (l0080 != 0)
-            continue;
-        break;
-    }
+    } while (l0080 != 0);
     // ca097:
     //     sta current_line_ptr
     current_line_ptr = line;
@@ -4279,7 +4276,7 @@ void draw_previous_word(
         break;
     }
     // loop_caf4a:
-    for (;;)
+    do
     {
         //     dey
         pos--;
@@ -4294,10 +4291,7 @@ void draw_previous_word(
         //     dey
         pos--;
         //     bne loop_caf4a
-        if (pos != 0)
-            continue;
-        break;
-    }
+    } while (pos != 0);
     // caf55:
 caf55:
     //     sty xpos
@@ -5483,7 +5477,7 @@ static uint8_t get_line_length(void)
 
         uint8_t y = MAX_LINE_LENGTH;
         // loop_caafb:
-        for (;;)
+        do
         {
             //     dey
             y--;
@@ -5494,12 +5488,7 @@ static uint8_t get_line_length(void)
                 goto cab06;
             //     bne cab06
             //     tya
-            uint8_t a_2 = y;
-            //     bne loop_caafb
-            if (a_2 != 0)
-                continue;
-            break;
-        }
+        } while (y != 0);
         //     dey
         y--;
         // cab06:
@@ -5928,7 +5917,7 @@ bool make_space_for_insertion(addr_t tmp45, addr_t tmp67)
 
     uint8_t x = 0;
     // loop_caa38: (6458)
-    for (;;)
+    do
     {
         //     ldy __begin_pointer_array+1,x (6459)
         //     lda __begin_pointer_array+0,x (6460)
@@ -5956,10 +5945,7 @@ bool make_space_for_insertion(addr_t tmp45, addr_t tmp67)
         //     cpx #22 (6476)
         // (the 6502 steps x by two bytes per entry; x counts elements here)
         x++;
-        if (x != sizeof(pointer_array) / sizeof(addr_t))
-            continue;
-        break;
-    }
+    } while (x != sizeof(pointer_array) / sizeof(addr_t));
     // caa57: (6478)
     //     lda ((uint8_t*)&tmp23)[0] (6479)
     //     sec (6480)
@@ -6063,7 +6049,7 @@ static void recalculate_cursor_xpos(void)
 
     uint8_t y = a;
     // loop_ca615:
-    for (;;)
+    do
     {
         //     cpy xpos
         if (y == xpos)
@@ -6080,10 +6066,7 @@ static void recalculate_cursor_xpos(void)
         //     bcc loop_ca615
         // (adc with C=0 is a plain addition; carry means overflow)
         a += l0039;
-        if (a >= l0039)
-            continue;
-        break;
-    }
+    } while (a >= l0039);
     // ca624:
 ca624:
     //     lda #0
@@ -6450,7 +6433,7 @@ ca3c1:
     //     stx l0081 (5397)
     l0081 = x_5;
     // loop_ca3c3: (5398)
-    for (;;)
+    do
     {
         //     jsr sub_ca486 (5399)
         struct render_state rs = {.line = l0082};
@@ -6476,10 +6459,7 @@ ca3c1:
         //     dec l0081 (5412)
         l0081--;
         //     bne loop_ca3c3 (5413)
-        if (l0081 != 0)
-            continue;
-        break;
-    }
+    } while (l0081 != 0);
     // ca3de: (5414)
 ca3de:
     //     lda #0 (5415)
@@ -7166,7 +7146,7 @@ c99b6:
     //     ldy l0047
     uint8_t y_2 = l0047;
     // loop_c99ba:
-    for (;;)
+    do
     {
         //     jsr sub_ca536
         //     bne c99c7
@@ -7179,10 +7159,7 @@ c99b6:
         //     inc l007e
         line_format_status++;
         //     bne loop_c99ba
-        if (line_format_status != 0)
-            continue;
-        break;
-    }
+    } while (line_format_status != 0);
     // c99c7:
     // PROVISIONAL: Character processing loop. Reads one byte from the source
     // document line. PROVISIONAL: l0047 tracks the read position, l0048 tracks
@@ -7812,7 +7789,7 @@ static uint8_t find_marker_at_position(uint8_t y, addr_t tmp67)
 
     uint8_t x = 0;
     // loop_ca544:
-    for (;;)
+    do
     {
         //     lda ((uint8_t*)&tmp89)[1]
         //     cmp markers_array+1,x
@@ -7831,10 +7808,7 @@ static uint8_t find_marker_at_position(uint8_t y, addr_t tmp67)
         //     inx
         x++;
         //     cpx #0x0c
-        if (x != 0x0c)
-            continue;
-        break;
-    }
+    } while (x != 0x0c);
     //     txa
     //     rts
     return 0x0c;
@@ -7879,7 +7853,7 @@ static void unpack_line(addr_t ptr1)
     //     ldy #0
     uint8_t y_1 = 0;
     // loop_caabd:
-    for (;;)
+    do
     {
         //     lda (current_line_ptr),y
 
@@ -7893,10 +7867,7 @@ static void unpack_line(addr_t ptr1)
         //     iny
         y_1++;
         //     bne loop_caabd
-        if (y_1 != 0)
-            continue;
-        break;
-    }
+    } while (y_1 != 0);
     // caac8:
     //     sty l003b
     l003b = y_1;
@@ -8255,7 +8226,8 @@ ca919:
 
             // loop_ca91c:
             // loop_ca91c:
-            for (;;)
+            uint16_t val;
+            do
             {
                 //     jsr sub_ca536
                 //     bne ca92f
@@ -8270,13 +8242,10 @@ ca919:
                 //     adc #0
                 //     sta markers_array+1,x
                 // (16-bit arithmetic: val = current_line_ptr + y)
-                uint16_t val = current_line_ptr + y_1;
+                val = current_line_ptr + y_1;
                 markers_array[idx / 2] = val;
                 //     bne loop_ca91c
-                if (val != 0)
-                    continue;
-                break;
-            }
+            } while (val != 0);
             // ca92f:
             //     pla
             a_8 = saved_x;

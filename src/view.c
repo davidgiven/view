@@ -939,7 +939,7 @@ c8a87:
     //     ldx input_buffer_offset+1
     uint8_t x_2 = l0080;
     // loop_c8ae4:
-    for (;;)
+    do
     {
         //     lda (ptr2),y
         a_3 = ram[ptr2 + y_1];
@@ -957,10 +957,7 @@ c8a87:
         //     dex
         x_2--;
         //     bne loop_c8ae4
-        if (x_2 != 0)
-            continue;
-        break;
-    }
+    } while (x_2 != 0);
     //     beq c8b11
     goto c8b11;
 
