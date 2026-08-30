@@ -1136,11 +1136,9 @@ enum formatting_command lookup_formatting_command(void)
     // loop_c973e:
     do
     {
-        uint8_t a_2 = char1;
-        if (a_2 == commands_table[y])
+        if (char1 == commands_table[y])
         {
-            uint8_t a_3 = char2;
-            if (a_3 == commands_table[y + 1])
+            if (char2 == commands_table[y + 1])
             {
                 return index;
             }
@@ -2175,8 +2173,7 @@ c9101:
     // (16-bit division by 8-bit: l0044 = tmp89 / l0046,
     //  l0045 = tmp89 % l0046)
     l0045 = tmp89 % l0046;
-    addr_t tmp89_1 = tmp89 / l0046;
-    l0044 = (uint8_t)tmp89_1;
+    l0044 = (uint8_t)(tmp89 / l0046);
     //     ldy #0
     (*y) = 0;
     //     sty l0039

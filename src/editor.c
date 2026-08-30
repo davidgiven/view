@@ -5466,9 +5466,8 @@ static uint8_t get_line_length(void)
         //     dey
         y--;
         //     lda (current_edit_line_ptr),y
-        uint8_t a_1 = ram[RAM_EDIT_BUFFER + y];
         //     cmp #0x10
-        if (a_1 != 0x10)
+        if (ram[RAM_EDIT_BUFFER + y] != 0x10)
             goto cab06;
         //     bne cab06
         //     tya
@@ -6444,9 +6443,8 @@ ca3c1:
 ca3de:
     //     lda #0 (5415)
 
-    uint8_t a_23 = 0;
     //     sta l0074 (5416)
-    l0074 = a_23;
+    l0074 = 0;
     //     ldy l0034 (5417)
     //     jsr cab91 (5418)
     load_current_ruler(l0034);
@@ -6460,21 +6458,18 @@ ca3e7:
     draw_ruler();
     //     lda l0074 (5423)
 
-    uint8_t a_24 = l0074;
     //     beq ca3ff (5424)
-    if (a_24 != 0)
+    if (l0074 != 0)
     {
 
-        uint8_t a_25 = ypos;
-        l0082 = a_25;
+        l0082 = ypos;
         struct render_state rs_1 = {.line = l0082};
         draw_line(&rs_1, current_format_line_ptr);
     }
     //     lda flags_need_redrawing_flag (5431)
 
-    uint8_t a_26 = flags_need_redrawing_flag;
     //     beq ca406 (5432)
-    if (a_26 != 0)
+    if (flags_need_redrawing_flag != 0)
     {
         draw_status_word();
     }
@@ -6488,7 +6483,6 @@ ca3e7:
     a_27 -= hscroll_pos;
     a_27 += 3;
     //     tax (5440)
-    uint8_t x_6 = a_27;
     //     ldy #0 (5441)
     //     sty l0073 (5442)
     l0073 = 0;
@@ -6497,11 +6491,10 @@ ca3e7:
     //     sty l006f (5444)
     l006f = 0;
     //     dey (5445)
-    uint8_t y_3 = -1;
     //     sty ptr6+1 (5446)
-    editor_ptr6 = (editor_ptr6 & 0x00ff) | ((uint16_t)y_3 << 8);
+    editor_ptr6 = (editor_ptr6 & 0x00ff) | ((uint16_t)0xFF << 8);
     //     ldy ypos (5447) jsr set_cursor_position (5448)
-    screen_setcursor(x_6, ypos);
+    screen_setcursor(a_27, ypos);
     //     jmp cursor_on (5449)
     cursor_on();
     return;

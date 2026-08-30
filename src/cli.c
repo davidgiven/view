@@ -416,8 +416,7 @@ c86ea:
     //     ldx #0
     x = 0;
     //     ldy l0082
-    uint8_t y_2 = l0082;
-    if ((int8_t)y_2 < 0)
+    if ((int8_t)l0082 < 0)
         goto c870d;
     //     cmp #0x0d
     if (a_3 == 0x0d)
@@ -437,10 +436,8 @@ c86ff:
     // c8703:
 c8703:
     //     ldy l0083
-    uint8_t y_3 = l0083;
-
     //     beq c870d
-    if (y_3 != 0)
+    if (l0083 != 0)
     {
         tmp89++;
     }
@@ -1522,8 +1519,7 @@ void run_cli(void)
     cli_putstring("\n\nBytes free ");
 
     //     jsr compute_bytes_free
-    int free_bytes = compute_bytes_free();
-    render_number_to_screen((addr_t)free_bytes);
+    render_number_to_screen((addr_t)compute_bytes_free());
     //     jsr bdos_print_newline
     cli_putchar('\n');
     //     jsr display_document_file_state
@@ -1533,14 +1529,12 @@ void run_cli(void)
         goto c816d;
     //     lda file_edit_flags
 
-    uint8_t a = file_edit_flags;
     //     ror
     //     bcc c816d
-    if ((a & 1))
+    if ((file_edit_flags & 1))
     {
         cli_putstring("Input file is ");
-        uint8_t a_1 = input_file_empty_flag;
-        if (a_1 == 0)
+        if (input_file_empty_flag == 0)
         {
             cli_putstring("not ");
         }

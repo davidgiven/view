@@ -18,6 +18,7 @@ void screen_enter(void)
 {
     log_call("screen_enter()");
 }
+
 void screen_leave(void)
 {
     log_call("screen_leave()");
@@ -53,9 +54,8 @@ void screen_setstyle(uint8_t a)
 
 uint16_t screen_getsize(void)
 {
-    uint16_t size = (uint16_t)(23 << 8) | 79;
     log_call("screen_getsize() -> (%d,%d)", 23, 79);
-    return size;
+    return (uint16_t)(23 << 8) | 79;
 }
 
 void screen_clear(void)

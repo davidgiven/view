@@ -597,9 +597,8 @@ c83a3:
     if (end)
         goto c83da;
     //     jsr to_uppercase
-    uint8_t a_2 = toupper(a_1);
     //     sta l0082
-    l0082 = a_2;
+    l0082 = toupper(a_1);
     //     ldx #0xfe
     x = 0xfe;
     // loop_c83b8:
@@ -672,18 +671,15 @@ cli_cmd_status_t process_cli_command(struct scan_state* scan)
     if (!scan_input_buffer(scan))
     {
         // (base index comes from l007a, set by reset_command_parse_state)
-        uint8_t y = input_buffer_offset + 1;
-
-        uint8_t x = expand_escaped_string(l007a, y);
+        uint8_t x = expand_escaped_string(l007a, input_buffer_offset + 1);
         l004a = x;
     }
     // c8402:
     //     jsr parse_marks_from_command
     parse_marks_from_command(scan);
     //     jsr sanitise_area
-    area_status_t status = sanitise_area();
     //     beq return_4
-    if (status == AREA_EMPTY)
+    if (sanitise_area() == AREA_EMPTY)
     {
         return CLI_CMD_NO_STRING; // sec + Z set: no string
     }
@@ -921,8 +917,7 @@ c8a87:
     }
     else if (delta > 0)
     {
-        addr_t tmp67_1 = delta;
-        if (!make_space_for_insertion(tmp45, tmp67_1))
+        if (!make_space_for_insertion(tmp45, delta))
             return true;
     }
     // delta==0 falls through
@@ -1074,17 +1069,15 @@ c8b11:
         if (folding_flag & 0x80)
             goto c8b64;
         //     ldy print_xpos
-        uint8_t y_4 = print_xpos;
         //     bne c8b64
-        if (y_4 != 0)
+        if (print_xpos != 0)
             goto c8b64;
         //     jsr is_uppercase
         //     bcs c8b64
         if (isalpha(a_6))
         {
             a_6 |= 0x20;
-            uint8_t y_5 = l0081;
-            if (y_5 != 0)
+            if (l0081 != 0)
             {
                 l0081--;
                 a_6 &= 0xdf;
@@ -1093,9 +1086,8 @@ c8b11:
     c8b64:
         // c8b64:
         //     ldy l0083
-        uint8_t y_6 = l0083;
         //     sta (ptr2),y
-        ram[ptr2 + y_6] = a_6;
+        ram[ptr2 + l0083] = a_6;
         //     inc l0083
         l0083++;
     c8b6a:
