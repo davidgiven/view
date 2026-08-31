@@ -136,7 +136,9 @@ extern bool read_next_chunk_from_input_file(addr_t ptr);
 extern addr_t read_into_document(void);
 extern void reset_document_name_after_load(void);
 extern bool parse_integer_from_command(struct scan_state* scan, int* out);
-extern uint8_t l0021, l0031, l0038, l007a;
+extern uint8_t l0021, l0031, l007a;
+extern uint8_t editor_current_key;
+extern uint8_t page_break_flag;
 
 #define RAM_CURRENT_RULER_BUF 0x05CF
 #define RAM_MAX 0xffff
@@ -219,7 +221,6 @@ extern uint8_t l0073;
 extern uint8_t ruler_index_ptr;
 extern addr_t oshwm;
 extern addr_t ruler_index[128];
-extern uint8_t l0076;
 #define RAM_CURRENT_LINE_BUF 0x0545
 #define RAM_EDIT_BUFFER 0x0548
 #define RAM_JUST_BEFORE_RULER_BUF 0x05CC

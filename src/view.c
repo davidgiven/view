@@ -150,9 +150,10 @@ uint8_t l0033; // PROVISIONAL: saved ruler_index_ptr during editor scroll-up
                // operations
 // X l0034: .fill 1
 uint8_t l0034; // PROVISIONAL: saved ruler_index_ptr during editor redraw
-// X l0038: .fill 1
-uint8_t l0038; // PROVISIONAL: page-break flag in print path; stores current key
-               // in editor input
+// X l0038: .fill 1  (6502 zero-page byte; split into two C variables by role)
+uint8_t editor_current_key; // current key code in editor input loop (part of
+                            // 6502 l0038)
+uint8_t page_break_flag; // page-break flag in print path (part of 6502 l0038)
 // X l0039: .fill 1
 uint8_t l0039; // PROVISIONAL: column-position counter used in formatting,
                // tab-handling, and cursor recalculation
@@ -241,9 +242,8 @@ uint8_t flags_need_redrawing_flag; // PROVISIONAL: non-zero triggers redrawing
 uint8_t status_line_needs_redrawing_flag; // PROVISIONAL: non-zero triggers
                                           // redrawing of ruler status line
 // X l0076: .fill 1
-uint8_t
-    l0076; // PROVISIONAL: unused/reserved variable (zeroed in init, never read)
-// X ypos: .fill 1
+// (removed: unused/reserved byte, previously l0076 - zeroed in init, never
+// read) X ypos: .fill 1
 uint8_t ypos; // PROVISIONAL: current Y (row) position on screen for cursor
               // addressing
 // X print_xpos: .fill 1

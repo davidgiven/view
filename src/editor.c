@@ -418,7 +418,7 @@ void editor_loop_impl(void)
 
         //     sta l0038
 
-        l0038 = a_6;
+        editor_current_key = a_6;
 
         //     tay
         // (dead in the C translation: Y is reloaded by the key handlers)
@@ -3473,7 +3473,7 @@ c9c00:
     // c9c09:
 c9c09:
     //     lda l0038
-    uint8_t a_1 = l0038;
+    uint8_t a_1 = editor_current_key;
     //     sta (current_edit_line_ptr),y
     // (the 6502 left y = the insert position, i.e. xpos)
     ram[RAM_EDIT_BUFFER + xpos] = a_1;
@@ -3581,7 +3581,7 @@ c9c56:
             beep();
     }
     //     lda l0038
-    uint8_t a_5 = l0038;
+    uint8_t a_5 = editor_current_key;
     //     cmp #0x20 ; ' '
     //     beq c9c7f
     if (a_5 == 0x20)
@@ -5772,7 +5772,6 @@ c9922:
 
 bool make_space_for_insertion(addr_t tmp45, addr_t tmp67)
 {
-
     // make_space_for_insertion: Shifts content up to make space for insertion
     // (6437) On entry: ((uint8_t*)&tmp45)[0]:((uint8_t*)&tmp45)[1] = block
     // base, ((uint8_t*)&tmp67)[0]:((uint8_t*)&tmp67)[1] = size, top = current
@@ -6983,16 +6982,18 @@ c998a:
 
     addr_t tmp67 = current_line_ptr;
     // PROVISIONAL: Zero working variables: l0047 (character index), l0039
-    // (column counter), PROVISIONAL: l0038 (soft-hyphen/break flag), l0046
+    // (column counter), local soft-hyphen/break flag (was l0038), l0046
     // (word-start flag), bottom_margin.
     //      ldy #0
     uint8_t y_1 = 0;
+    uint8_t soft_hyphen_flag =
+        0; // was l0038 in 6502, now local to format_paragraph
     //     sty l0047
     l0047 = y_1;
     //     sty l0039
     l0039 = y_1;
     //     sty l0038
-    l0038 = y_1;
+    soft_hyphen_flag = y_1;
     //     sty l0046
     l0046 = y_1;
     //     sty bottom_margin
@@ -7102,11 +7103,11 @@ c99ee:
     x = input_buffer_offset;
     //     bne c99e4
     //     lda l0038
-    if (x != 0 || l0038 != 0)
+    if (x != 0 || soft_hyphen_flag != 0)
         goto c99e4;
     //     bne c99e4
     //     inc l0038
-    l0038++;
+    soft_hyphen_flag++;
     //     lda ruler_left_stop
 
     uint8_t a_10 = ruler_left_stop;

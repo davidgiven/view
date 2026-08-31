@@ -661,7 +661,6 @@ void initialise_document(void)
     l0073 = 0;
     l0074 = 0;
     flags_need_redrawing_flag = 0;
-    l0076 = 0;
     ypos = 0;
     print_xpos = 0;
     l0079 = 0;

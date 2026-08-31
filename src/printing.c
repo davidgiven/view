@@ -862,7 +862,7 @@ static void pb_fmt_cmd(void)
     if (parse_boolean_from_fmt_cmd(&y, &flag_value))
         return;
     //     sta l0038
-    l0038 = flag_value;
+    page_break_flag = flag_value;
     // return_43:
     //     rts
     return;
@@ -1736,7 +1736,7 @@ static void process_page_footer(void)
     // c9263:
     //     lda l0038
     //     beq c9284
-    if (l0038 != 0)
+    if (page_break_flag != 0)
     {
         //     ldx l0021 ; X=number of lines
 
@@ -3046,7 +3046,7 @@ c92cf:
 c92d4:
     //     lda l0038
     //     beq c92f0
-    if (l0038 == 0)
+    if (page_break_flag == 0)
     {
         compute_lines_remaining_on_page();
         return;
@@ -3505,7 +3505,7 @@ static void compute_lines_remaining_on_page(void)
     //     lda l0038
 
     //     beq c930d
-    if (l0038 == 0)
+    if (page_break_flag == 0)
         goto c930d;
     //     ldx #1
     x = 1;
@@ -3860,7 +3860,7 @@ static void reset_print_registers(void)
     //     sta headers_enabled_flag
     headers_enabled_flag = a_2;
     //     sta l0038
-    l0038 = a_2;
+    page_break_flag = a_2;
     //     sta register_value_p
     //     sta register_value_l
     register_value_array['P' - 'A'] = a_2;
