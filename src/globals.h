@@ -264,12 +264,15 @@ extern void beep(void);
 
 // Missing printing globals
 extern uint8_t rw_file_handle;
-extern uint8_t l0044;
-extern uint8_t l0045;
+extern uint8_t print_extra_space_accum;
+extern uint8_t justify_extra_space_accum;
+extern uint8_t print_running_total_accum;
+extern uint8_t justify_running_total_accum;
 extern uint8_t l0047;
 extern uint8_t l0048;
-extern uint8_t l0042;
-extern uint8_t l0043;
+extern uint8_t justify_overflow_counter;
+extern uint8_t print_last_microspacing;
+extern uint8_t justify_line_length;
 extern uint8_t printing_from_file_flag;
 extern addr_t editor_ptr6;
 extern addr_t printer_ptr6;

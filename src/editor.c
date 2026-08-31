@@ -5463,7 +5463,7 @@ uint8_t justify_edit_buffer(addr_t ptr1)
     //     sta l0039
     l0039 = a;
     //     sta l0042
-    l0042 = a;
+    justify_overflow_counter = a;
     //     lda ruler_right_stop
     uint8_t a_1 = ruler_right_stop;
 
@@ -5471,7 +5471,7 @@ uint8_t justify_edit_buffer(addr_t ptr1)
     if (a_1 == 0)
         return x;
     //     jsr get_line_length
-    l0043 = get_line_length();
+    justify_line_length = get_line_length();
     //     ldy #0
 
     uint8_t y = 0;
@@ -5488,7 +5488,7 @@ c9847:
     //     iny
     y++;
     //     cpy l0043
-    if (y == l0043)
+    if (y == justify_line_length)
         goto c9871;
     //     clc
     //     jsr sub_c9936
@@ -5507,7 +5507,7 @@ c985c:
     //     iny
     y++;
     //     cpy l0043
-    if (y == l0043)
+    if (y == justify_line_length)
         goto c986d;
     // c9861:
 c9861:
@@ -5560,7 +5560,7 @@ c9871:
     //  value: if the line already reaches the margin, the slack to distribute
     //  is MAX_LINE_LENGTH - l0043)
     uint8_t x_1 = (uint8_t)(a_3 + 1);
-    uint8_t extra = (uint8_t)(a_3 + 1 + l0043);
+    uint8_t extra = (uint8_t)(a_3 + 1 + justify_line_length);
     if (extra >= MAX_LINE_LENGTH)
     {
         l0084 = (uint8_t)(extra - MAX_LINE_LENGTH);
@@ -5577,11 +5577,11 @@ c9871:
     //     sta l0045
     uint8_t a_4 = tmp89 % l0046;
     addr_t tmp89_1 = tmp89 / l0046;
-    l0045 = a_4;
+    justify_running_total_accum = a_4;
     //     lda ((uint8_t*)&tmp89)[0]
     uint8_t a_5 = ((uint8_t*)&tmp89_1)[0];
     //     sta l0044
-    l0044 = a_5;
+    justify_extra_space_accum = a_5;
     //     ldy #0
     uint8_t y_1 = 0;
     //     ldx l0046
@@ -5613,18 +5613,18 @@ c9871:
     // c98b5:
 c98b5:
     //     lda l0045
-    uint8_t a_7 = l0045;
+    uint8_t a_7 = justify_running_total_accum;
 
     //     beq c98bd
     if (a_7 != 0)
     {
         a_7 = 1;
-        l0045--;
+        justify_running_total_accum--;
     }
     //     clc
     //     adc l0044
     // (plain addition: a += l0044)
-    a_7 += l0044;
+    a_7 += justify_extra_space_accum;
     //     sta input_buffer,y
     input_buffer[y_2] = a_7;
     //     lda l0082
@@ -5667,7 +5667,7 @@ c98d9:
     wipe_buffer(0x1a, ptr1);
     //     lda l0042
 
-    uint8_t a_10 = l0042;
+    uint8_t a_10 = justify_overflow_counter;
 
     //     beq c98f6
     if (a_10 == 0)
@@ -5682,14 +5682,14 @@ c98d9:
         uint8_t a_11 = output_buffer[y_4];
         ram[RAM_EDIT_BUFFER + y_4] = a_11;
         y_4++;
-    } while (y_4 != l0042);
+    } while (y_4 != justify_overflow_counter);
     //     bne loop_c98ec
     // c98f6:
 c98f6:
     //     ldy l0042
-    uint8_t y_5 = l0042;
+    uint8_t y_5 = justify_overflow_counter;
     //     ldx l0042
-    uint8_t x_4 = l0042;
+    uint8_t x_4 = justify_overflow_counter;
     // c98fa:
 c98fa:
     //     lda output_buffer,x
@@ -5750,7 +5750,7 @@ c9922:
     //     inx
     x_4++;
     //     cpx l0043
-    if (x_4 != l0043)
+    if (x_4 != justify_line_length)
         goto c98fa;
     //     bne c98fa
     //     lda #0x10
@@ -6845,9 +6845,9 @@ c995c:
     //     sta l0039
     l0039 = (*a);
     //     sty l0042
-    l0042 = y;
+    justify_overflow_counter = y;
     //     inc l0042
-    l0042++;
+    justify_overflow_counter++;
     //     lda #0
     (*a) = 0;
     //     sta l0046

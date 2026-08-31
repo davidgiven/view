@@ -174,17 +174,27 @@ uint8_t xpos; // PROVISIONAL: cursor horizontal column position (0-based) on the
 uint8_t input_file_empty_flag; // PROVISIONAL: flag indicating whether the input
                                // file was found to be empty
 // X l0042: .fill 1
-uint8_t l0042; // PROVISIONAL: word-break overflow counter in
-               // microspace_word_processor
-// X l0043: .fill 1
-uint8_t l0043; // PROVISIONAL: soft-hyphen / break-position counter in
-               // microspace_word_processor
-// X l0044: .fill 1
-uint8_t l0044; // PROVISIONAL: inter-word extra-space accumulator in microspaced
-               // justification
-// X l0045: .fill 1
-uint8_t l0045; // PROVISIONAL: running-total accumulator for distributing extra
-               // spacing in microspaced justification
+uint8_t justify_overflow_counter; // word-break overflow counter in editor
+                                  // justification (part of 6502 l0042, printing
+                                  // uses local l0042_1 in microspace)
+// X l0043: .fill 1  (6502 zero-page byte; split into two C variables by role)
+uint8_t
+    print_last_microspacing; // last microspacing value sent to printer (part of
+                             // 6502 l0043 in microspace_word_processor)
+uint8_t justify_line_length; // line length for justification overflow check
+                             // (part of 6502 l0043 in editor justify)
+// X l0044: .fill 1  (6502 zero-page byte; split into two C variables by role)
+uint8_t print_extra_space_accum;   // inter-word extra-space accumulator in
+                                   // microspaced justification printing path
+                                   // (part of 6502 l0044)
+uint8_t justify_extra_space_accum; // inter-word extra-space accumulator in
+                                   // editor justification (part of 6502 l0044)
+// X l0045: .fill 1  (6502 zero-page byte; split into two C variables by role)
+uint8_t print_running_total_accum; // running-total accumulator for distributing
+                                   // extra spacing in microspaced justification
+                                   // printing path (part of 6502 l0045)
+uint8_t justify_running_total_accum; // running-total accumulator in editor
+                                     // justification (part of 6502 l0045)
 // X l0046: .fill 1
 uint8_t l0046; // PROVISIONAL: non-space character counter on current line
                // during microspaced word processing

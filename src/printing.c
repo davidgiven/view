@@ -2146,18 +2146,18 @@ c9101:
     //     sta tmp8
     // (shift-add multiply: tmp89 = l0045 * microspacing_flag)
 
-    addr_t tmp89 = (uint16_t)l0045 * microspacing_flag;
+    addr_t tmp89 = (uint16_t)print_running_total_accum * microspacing_flag;
     //     lda l0044
     //     sta l0046
-    l0046 = l0044;
+    l0046 = print_extra_space_accum;
     //     jsr sub_cadf0
     //     sta l0045
     //     lda tmp8
     //     sta l0044
     // (16-bit division by 8-bit: l0044 = tmp89 / l0046,
     //  l0045 = tmp89 % l0046)
-    l0045 = tmp89 % l0046;
-    l0044 = (uint8_t)(tmp89 / l0046);
+    print_running_total_accum = tmp89 % l0046;
+    print_extra_space_accum = (uint8_t)(tmp89 / l0046);
     //     ldy #0
     (*y) = 0;
     //     sty l0039
@@ -2206,17 +2206,17 @@ c912b:
         uint8_t a_18 = microspacing_flag;
         //     clc
         //     adc l0044
-        a_18 += l0044;
+        a_18 += print_extra_space_accum;
         //     tax
         x = a_18;
         //     lda l0045
 
-        uint8_t a_19 = l0045;
+        uint8_t a_19 = print_running_total_accum;
         //     beq c9154
         if (a_19 != 0)
         {
             x++;
-            l0045--;
+            print_running_total_accum--;
         }
         //     jsr sub_c9173
         emit_microspacing_spaces(a_19, x);
@@ -3160,7 +3160,7 @@ static void start_microspacing_if_active(uint8_t a)
     print_alignment_spaces(a);
     //     pha
     //     stx l0043
-    l0043 = microspacing_flag;
+    print_last_microspacing = microspacing_flag;
     //     lda #9
     printer_driver_ptr->printer_microspace();
     //     pla
@@ -3183,14 +3183,14 @@ static void emit_microspacing_spaces(uint8_t a, uint8_t x)
     // sub_c9173:
     //     cpx l0043
     //     beq return_25
-    if (x == l0043)
+    if (x == print_last_microspacing)
         return;
     // c9177:
     //     jsr sub_c9445
     print_alignment_spaces(a);
     //     pha
     //     stx l0043
-    l0043 = x;
+    print_last_microspacing = x;
     //     lda #9
     printer_driver_ptr->printer_microspace();
     //     pla
