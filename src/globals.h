@@ -84,6 +84,10 @@ extern uint8_t footer_text_maybe[0x42];
 extern uint8_t output_buffer[];
 extern uint8_t formatted_line_written_flag;
 extern uint8_t l0039;
+extern uint8_t l0074;
+extern uint8_t l0047;
+extern uint8_t justify_nonspace_counter;
+extern uint8_t print_micro_divisor;
 extern uint8_t l0080, l0081, l0082, l0083, l0084;
 extern addr_t tmp01, tmp23, tmp45, tmp67, tmp89;
 
@@ -198,7 +202,6 @@ extern uint8_t xpos;
 extern uint8_t flags_need_redrawing_flag;
 #define CTRL(c) ((uint8_t)((c) & 0x1f))
 
-extern uint8_t l0074;
 extern uint8_t l0084;
 extern uint8_t l003b;
 extern uint8_t delimiter_char;
@@ -268,8 +271,8 @@ extern uint8_t print_extra_space_accum;
 extern uint8_t justify_extra_space_accum;
 extern uint8_t print_running_total_accum;
 extern uint8_t justify_running_total_accum;
-extern uint8_t l0047;
-extern uint8_t l0048;
+extern uint8_t cli_l0048;
+extern uint8_t editor_l0048;
 extern uint8_t justify_overflow_counter;
 extern uint8_t print_last_microspacing;
 extern uint8_t justify_line_length;
@@ -278,7 +281,10 @@ extern addr_t editor_ptr6;
 extern addr_t printer_ptr6;
 extern uint8_t parser_table[];
 
-extern uint8_t l0049;
+extern uint8_t cli_l0049;
+extern uint8_t editor_l0049;
+extern uint8_t cli_l004a;
+extern uint8_t editor_l004a;
 extern addr_t ptr2;
 
 extern bool scan_document_for_next_line(void);

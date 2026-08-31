@@ -201,15 +201,20 @@ uint8_t l0046; // PROVISIONAL: non-space character counter on current line
 // X l0047: .fill 1
 uint8_t l0047; // PROVISIONAL: saved word-break position (column) for
                // line-breaking in justification
-// X l0048: .fill 1
-uint8_t l0048; // PROVISIONAL: output-buffer write index in header/footer
-               // rendering; block-advance flag in justification
-// X l0049: .fill 1
-uint8_t l0049; // PROVISIONAL: output-buffer cell/field position counter in
-               // header/footer register-substitution rendering
-// X l004a: .fill 1
-uint8_t l004a; // PROVISIONAL: upper-bound loop limit in header/footer rendering
-               // (total expanded-text length)
+// X l0048: .fill 1  (6502 zero-page byte; split into two C variables by role)
+uint8_t cli_l0048; // output-buffer write index for CLI check_area (part of 6502
+                   // l0048)
+uint8_t editor_l0048; // output-buffer write index / block-advance flag for
+                      // editor justification (part of 6502 l0048)
+// X l0049: .fill 1  (6502 zero-page byte; split into two C variables by role)
+uint8_t cli_l0049; // header/footer cell/field position for CLI check_area (part
+                   // of 6502 l0049)
+uint8_t editor_l0049; // header/footer cell/field position for editor (part of
+                      // 6502 l0049)
+// X l004a: .fill 1  (6502 zero-page byte; split into two C variables by role)
+uint8_t cli_l004a; // upper-bound loop limit for CLI header/footer (part of 6502
+                   // l004a)
+uint8_t editor_l004a; // upper-bound loop limit for editor (part of 6502 l004a)
 // X ptr2: .fill 2
 addr_t ptr2; // PROVISIONAL: working pointer into document body — used as
              // source/dest in search/replace/convert
@@ -682,7 +687,7 @@ cli_cmd_status_t process_cli_command(struct scan_state* scan)
     {
         // (base index comes from l007a, set by reset_command_parse_state)
         uint8_t x = expand_escaped_string(l007a, input_buffer_offset + 1);
-        l004a = x;
+        cli_l004a = x;
     }
     // c8402:
     //     jsr parse_marks_from_command
@@ -716,7 +721,7 @@ bool reset_command_parse_state(struct scan_state* scan)
     //     stx l007a
     l007a = x;
     //     stx l004a
-    l004a = x;
+    cli_l004a = x;
     //     jsr sub_c8e33
     //     beq return_5
     if (scan_input_buffer(input_buffer, scan))
@@ -841,7 +846,7 @@ c8a5b:
     //     lda l0081
     a_1 = l0081;
     //     cmp l0049
-    if (a_1 >= l0049)
+    if (a_1 >= cli_l0049)
         goto c8a86;
     //     bcs c8a86
     //     inc l0081
@@ -854,7 +859,7 @@ c8a6c:
     //     cmp #0x20 ; ' '
     //     bne c8a84
     //     cpy l0048
-    if (a_1 != 0x20 || y >= l0048)
+    if (a_1 != 0x20 || y >= cli_l0048)
         goto c8a84;
     //     bcs c8a84
     // loop_c8a74:
@@ -872,7 +877,7 @@ c8a6c:
         //     inc l0082
         l0082++;
         //     cpy l0048
-        if (y >= l0048)
+        if (y >= cli_l0048)
             break;
         //     bcc loop_c8a74
     }
@@ -889,7 +894,7 @@ c8a86:
 c8a87:
     // c8a87:
     //     cpx l004a
-    if (x < l004a)
+    if (x < cli_l004a)
         goto c8a5b;
     //     lda doc_ptr2+0
     //     sec
@@ -1031,7 +1036,7 @@ c8b11:
         //     ldy input_buffer_offset+1
         uint8_t y_2 = l0080;
         //     cpy l0048
-        if (y_2 >= l0048)
+        if (y_2 >= cli_l0048)
             goto c8b47;
         //     bcs c8b47
         //     inc input_buffer_offset+1
@@ -1054,7 +1059,7 @@ c8b11:
         //     bne c8b47
         //     ldy l0082
         //     cpy l0049
-        if (l0082_1 >= l0049)
+        if (l0082_1 >= cli_l0049)
             goto c8b6a;
         //     bcs c8b6a
         //     lda output_buffer,y
@@ -1101,7 +1106,7 @@ c8b11:
     c8b6b:
         // c8b6b:
         //     cpx l004a
-    } while (x_3 < l004a);
+    } while (x_3 < cli_l004a);
     //     lda ptr2
     //     ldy ptr2+1
     //     jsr cac78

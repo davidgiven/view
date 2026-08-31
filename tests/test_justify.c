@@ -61,7 +61,7 @@ static void init_globals(const char* text, uint8_t jf, uint8_t rstop)
     ruler_left_stop = 0;
     ruler_right_stop = rstop;
 
-    l0039 = l0042 = l0046 = 0;
+    l0039 = l0046 = 0;
     l0081 = l0082 = l0083 = l0084 = 0;
     tmp8 = tmp9 = 0;
     print_xpos = 4;
