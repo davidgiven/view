@@ -6,7 +6,7 @@
 
 extern command_prefix_t check_for_command_prefix(uint8_t ch);
 extern control_code_t check_for_control_code(uint8_t a);
-extern int compute_bytes_free(void);
+extern ptrdiff_t compute_bytes_free(void);
 extern command_prefix_t deref_and_check_for_command_prefix(
     uint8_t y, addr_t tmp01);
 extern void display_document_file_state(void);

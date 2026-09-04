@@ -3,6 +3,7 @@
 #include "printing.h"
 #include "io.h"
 #include <stdlib.h>
+#include <string.h>
 addr_t parse_mark_from_command(struct scan_state* scan);
 
 // Forward declarations for CLI utilities
@@ -234,15 +235,13 @@ void clear_cmd(void)
     // ***************************************************************************************
     // clear_cmd:
     //     ldx #0x0b
-    uint8_t x = 0x0b;
     //     lda #0
     // loop_cb095:
-    do
-    {
-        ((uint8_t*)markers_array)[x] = 0;
-        x--;
-    } while (!(x & 0x80));
+    //     sta markers_array,x
+    //     dex
+    //     bpl loop_cb095
     //     rts
+    memset(markers_array, 0, sizeof(markers_array));
     return;
 }
 

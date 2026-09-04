@@ -60,7 +60,7 @@ bool read_first_chunk_from_input_file(void);
 // flags.C=0
 bool read_next_chunk_from_input_file(addr_t ptr);
 static addr_t compute_space_available(addr_t ptr);
-static addr_t compute_space_common(addr_t ptr, addr_t tmp89);
+static addr_t compute_space_common(addr_t ptr, ptrdiff_t tmp89);
 control_code_t check_for_control_code(uint8_t a);
 
 static void system_init(void);
@@ -771,7 +771,7 @@ addr_t read_into_document(void)
     //     sbc ((uint8_t*)&tmp01)[1]
     //     sta ((uint8_t*)&tmp67)[1]
     // (16-bit subtraction: tmp67 = space_limit - tmp01)
-    addr_t tmp67 = space_limit - cursor;
+    ptrdiff_t tmp67 = space_limit - cursor;
     //     jsr adjust_pointers
     tmp89 = adjust_pointers(cursor, tmp67);
     // (the 6502 left the post-read cursor in tmp01; load_cmd uses it for top)
@@ -876,7 +876,7 @@ c8a87:
     //     lda doc_ptr2+1
     //     sbc ptr2+1
     //     sta l0081
-    uint16_t gap = doc_ptr2 - ptr2;
+    ptrdiff_t gap = doc_ptr2 - ptr2;
     //     ldx l0082
     uint8_t x_1 = l0082;
     //     tay
@@ -890,10 +890,10 @@ c8a87:
     //     lda l0082 / sec; sbc l0080; sta tmp67; lda #0; sbc l0081
     // (tmp67 = l0082 - gap as signed 16-bit) — three-way split:
     // shrink (delta<0), no-change (delta==0), grow (delta>0)
-    int16_t delta = (int16_t)l0082 - (int16_t)gap;
+    ptrdiff_t delta = (ptrdiff_t)l0082 - gap;
     if (delta < 0)
     {
-        addr_t tmp67 = -delta;
+        ptrdiff_t tmp67 = -delta;
         tmp89 = adjust_pointers(tmp45, tmp67);
     }
     else if (delta > 0)
@@ -1147,7 +1147,7 @@ void write_area_to_file(void)
     //     rts
 }
 
-static addr_t compute_space_common(addr_t ptr, addr_t tmp89)
+static addr_t compute_space_common(addr_t ptr, ptrdiff_t tmp89)
 {
     // compute_space_common
     // c8daf:
@@ -1155,14 +1155,10 @@ static addr_t compute_space_common(addr_t ptr, addr_t tmp89)
     addr_t tmp01 = ptr;
     //     jsr compute_bytes_free
     //     stx ((uint8_t*)&tmp67)[0]
-    addr_t tmp67 = (addr_t)compute_bytes_free();
+    ptrdiff_t tmp67 = compute_bytes_free();
     //     lsr ((uint8_t*)&tmp89)[1]; ror ((uint8_t*)&tmp89)[0]; lsr
     //     ((uint8_t*)&tmp89)[1]; ror ((uint8_t*)&tmp89)[0]
-    {
-        uint16_t t = tmp89;
-        t >>= 2;
-        tmp89 = t;
-    }
+    tmp89 >>= 2;
     //     lda ((uint8_t*)&tmp89)[1]; cmp #4
     // (16-bit comparison: tmp89 >= 0x0400)
     // c8dce (the clamp's C flag supplies the SBC borrow-in, so the
@@ -1206,7 +1202,7 @@ static addr_t compute_space_available(addr_t ptr)
     //     pla
     //     tay
     //     pla
-    return compute_space_common(ptr, (addr_t)compute_bytes_free());
+    return compute_space_common(ptr, compute_bytes_free());
 }
 
 static addr_t compute_required_space_for_insertion(addr_t ptr)

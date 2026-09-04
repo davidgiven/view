@@ -28,7 +28,7 @@ struct render_state
 };
 
 // Editor-only functions
-addr_t adjust_pointers(addr_t tmp45, addr_t tmp67);
+addr_t adjust_pointers(addr_t tmp45, ptrdiff_t tmp67);
 static bool advance_to_next_doc_line(void);
 void beep(void);
 bool scan_document_for_next_line(void);
@@ -48,7 +48,7 @@ static void go_to_marker(uint8_t x);
 static void go_to_marker_n(uint8_t marker);
 static void home_cursor(void);
 uint8_t justify_edit_buffer(addr_t ptr1);
-bool make_space_for_insertion(addr_t tmp45, addr_t tmp67);
+bool make_space_for_insertion(addr_t tmp45, ptrdiff_t tmp67);
 static void memory_full(void);
 uint8_t process_current_document_character(
     addr_t tmp01, uint8_t* x, uint8_t* y, bool* is_tab);
@@ -63,7 +63,7 @@ static void save_cursor_position(void);
 static void set_marker(uint8_t x);
 static void set_marker_common(uint8_t a);
 void show_memory_full_error(void);
-void adjust_area_pointers(addr_t tmp67);
+void adjust_area_pointers(ptrdiff_t tmp67);
 static void append_to_output_buffer(uint8_t a);
 uint8_t upper_case_unless_folding(uint8_t a);
 static bool process_char_for_output(
@@ -3257,7 +3257,7 @@ static void check_pointer_in_area(void)
     }
     move_cursor_to_address(area_start_ptr);
     {
-        uint16_t diff = area_end_ptr - area_start_ptr;
+        ptrdiff_t diff = area_end_ptr - area_start_ptr;
         tmp67 = diff;
     }
     addr_t tmp45 = doc_ptr1;
@@ -3759,7 +3759,7 @@ void split_line_at_wrap(addr_t tmp89)
     return;
 }
 
-addr_t adjust_pointers(addr_t tmp45, addr_t tmp67)
+addr_t adjust_pointers(addr_t tmp45, ptrdiff_t tmp67)
 {
     // adjust_pointers
     // adjust_pointers: (6372)
@@ -4862,7 +4862,7 @@ c98f6:
     return x_4;
 }
 
-bool make_space_for_insertion(addr_t tmp45, addr_t tmp67)
+bool make_space_for_insertion(addr_t tmp45, ptrdiff_t tmp67)
 {
     // make_space_for_insertion: Shifts content up to make space for insertion
     // (6437) On entry: ((uint8_t*)&tmp45)[0]:((uint8_t*)&tmp45)[1] = block
@@ -5609,7 +5609,7 @@ area_status_t sanitise_area(void)
     //     lda area_end_ptr+1
     //     sbc area_start_ptr+1
     //     sta ((uint8_t*)&tmp67)[1]
-    addr_t tmp67 = area_end_ptr - area_start_ptr;
+    ptrdiff_t tmp67 = area_end_ptr - area_start_ptr;
     //     bne return_10
     if (tmp67 != 0)
         return AREA_NOT_EMPTY;
@@ -5744,7 +5744,7 @@ ca97c:
     //     rts
 }
 
-void adjust_area_pointers(addr_t tmp67)
+void adjust_area_pointers(ptrdiff_t tmp67)
 {
     // sub_c89d3:
     //     lda area_start_ptr
