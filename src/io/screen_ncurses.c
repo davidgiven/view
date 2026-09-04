@@ -90,9 +90,7 @@ uint8_t screen_getchar(void)
 void screen_setcursor(uint8_t xpos, uint8_t ypos)
 {
     if (ncurses_active)
-    {
         move(ypos, xpos);
-    }
 }
 
 uint16_t screen_getcursor(void)
@@ -174,7 +172,5 @@ void screen_scrolldown(void)
 void screen_enablecursor(bool on)
 {
     if (ncurses_active)
-    {
         curs_set(on ? 1 : 0);
-    }
 }

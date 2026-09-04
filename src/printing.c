@@ -91,25 +91,22 @@ static void write_output_buffer_to_format_line(uint8_t a)
     // c950f_impl
     // c950f:
     //     ldy #3
-
     uint8_t y = 3;
     //     tax
-
     uint8_t x = a;
-
-    //     beq c951c
-    if (x == 0)
-        goto c951c;
-    //     lda #0x20 ; ' '
-    a = 0x20;
-    // loop_c9516:
-    //     sta (current_format_line_ptr),y
-    do
+    if (!(x == 0))
     {
-        ram[current_format_line_ptr + y] = a;
-        y++;
-        x--;
-    } while (x != 0);
+        //     lda #0x20 ; ' '
+        a = 0x20;
+        // loop_c9516:
+        //     sta (current_format_line_ptr),y
+        do
+        {
+            ram[current_format_line_ptr + y] = a;
+            y++;
+            x--;
+        } while (x != 0);
+    }
 c951c:
     do
     {
@@ -133,7 +130,6 @@ static void lj_fmt_cmd(void)
 {
     // lj_fmt_cmd
     // Pseudocode: Left-justifies the current format line
-
     // ;
     // ***************************************************************************************
     // lj_fmt_cmd:
@@ -152,7 +148,6 @@ static void ce_fmt_cmd(void)
 {
     // ce_fmt_cmd
     // Pseudocode: Centers the current format line
-
     // ;
     // ***************************************************************************************
     // ce_fmt_cmd:
@@ -170,7 +165,6 @@ static void ce_fmt_cmd(void)
     l0084 = a;
     //     lda ruler_right_stop
     uint8_t a_1 = ruler_right_stop;
-
     //     beq c950f
     if (a_1 == 0)
     {
@@ -206,16 +200,13 @@ static void ce_fmt_cmd(void)
 
 static void rj_fmt_cmd(void)
 {
-
     // rj_fmt_cmd
     // Pseudocode: Right-justifies the current format line
-
     // ;
     // ***************************************************************************************
     // rj_fmt_cmd:
     //     jsr expand_line
     //     bcc c9529 (C=0 ⟺ nothing expanded; both bail paths set C)
-
     uint8_t x = expand_line();
     if (x == 0)
         return;
@@ -226,7 +217,6 @@ static void rj_fmt_cmd(void)
     //     dex
     x--;
     //     lda #0
-
     uint8_t a = 0;
     //     cpx ruler_right_stop
     //     bcs c950f
@@ -262,24 +252,19 @@ static void rj_fmt_cmd(void)
 static uint8_t expand_line(void)
 {
     uint8_t a_1;
-
     // expand_line
     // Pseudocode: Expands a format line into output_buffer, handling register
     // references via |
-
     // ;
     // ***************************************************************************************
     // expand_line:
     //     ldx #0
-
     uint8_t x = 0;
     //     stx l0083
     l0083 = x;
     //     ldy #3
-
     uint8_t y = 3;
     //     jsr get_current_fmt_cmd_byte
-
     uint8_t a = get_current_fmt_cmd_byte(&y);
     //     clc
     //     beq return_37
@@ -306,9 +291,7 @@ c9537:
             control_code_t cc = check_for_control_code(a_1);
             //     bne c9548
             if (cc != NO_CONTROL_CODE)
-            {
                 l0083++;
-            }
             //     inx
             x++;
             //     cmp #0x0d
@@ -330,7 +313,8 @@ c9537:
 c9555:
     //     lda print_flags
     if (!(print_flags & 0x80))
-        return x; // C=1 from the cmp #0x0d that reached c9555
+        return x;
+    // C=1 from the cmp #0x0d that reached c9555
     //     bpl return_37
     //     txa
     //     sbc l0083
@@ -342,7 +326,6 @@ c9555:
     // return_37:
     //     rts
     return x;
-
     // c955e:
 c955e:
     //     lda (current_format_line_ptr),y
@@ -366,7 +349,6 @@ static void store_to_output_buffer(uint8_t a, uint8_t* tmp23)
     // sub_c95b2
     // sub_c95b2:
     //     ldy l0081
-
     uint8_t y = l0081;
     //     sta (((uint8_t*)&tmp23)[0]),y
     tmp23[y] = a;
@@ -379,7 +361,6 @@ static void store_to_output_buffer(uint8_t a, uint8_t* tmp23)
 static uint8_t process_header_footer_line(uint8_t* tmp23)
 {
     uint8_t a_1;
-
     // c9575
     // (the 6502 passed the buffer address in YX; the C passes it directly)
     //     lda #0
@@ -388,16 +369,13 @@ static uint8_t process_header_footer_line(uint8_t* tmp23)
     //     sta l007a
     l007a = 0;
     //     ldy #3
-
     uint8_t y = 3;
     //     sty input_buffer_offset+1
     //     lda (current_format_line_ptr),y
-
     uint8_t a = ram[current_format_line_ptr + y];
     //     sta l0083
     l0083 = a;
     //     ldx #0x3f ; '?'
-
     uint8_t x = 0x3f;
     // loop_c9589:
     do
@@ -417,7 +395,9 @@ static uint8_t process_header_footer_line(uint8_t* tmp23)
         //     jsr sub_c95b2
         // (branch restructured: |= 0x80 when a is 0x0d, or equals l0083)
         if (a_1 == 0x0d)
+        {
             a_1 |= 0x80;
+        }
         else
         {
             if (a_1 < 0x1b)
@@ -450,7 +430,6 @@ c95aa:
 static void df_fmt_cmd(void)
 {
     // Pseudocode: Stores footer text (shared code with dh_fmt_cmd)
-
     // ;
     // ***************************************************************************************
     // df_fmt_cmd:
@@ -462,7 +441,6 @@ static void df_fmt_cmd(void)
 static void dh_fmt_cmd(void)
 {
     // Pseudocode: Stores header text (shared code with df_fmt_cmd)
-
     // ;
     // ***************************************************************************************
     // dh_fmt_cmd:
@@ -475,18 +453,14 @@ static void dh_fmt_cmd(void)
 
 static void em_fmt_cmd(void)
 {
-
     // em_fmt_cmd
     // Pseudocode: Evaluates expression and stores result in a register
-
     // ;
     // ***************************************************************************************
     // em_fmt_cmd:
     //     ldy #3
-
     uint8_t y = 3;
     //     jsr get_current_fmt_cmd_byte
-
     uint8_t a = get_current_fmt_cmd_byte(&y);
     //     beq return_38
     if (a == 0)
@@ -500,10 +474,8 @@ static void em_fmt_cmd(void)
         return;
     //     jsr evaluate_expression_from_fmt_cmd
     // (result returned as the 16-bit value; stored into the register)
-
     // (x is the dispatch-time register value: execute_formatting_command's
     //  ldx #0, so the register reference renders at output position 0)
-
     uint16_t reg_value;
     evaluate_expression_from_fmt_cmd(&reg_value, &y, 0);
     *register_value = reg_value;
@@ -519,7 +491,6 @@ static void em_fmt_cmd(void)
 static void pl_fmt_cmd(void)
 {
     // Pseudocode: Sets page_length from format command expression
-
     // ;
     // ***************************************************************************************
     // pl_fmt_cmd:
@@ -527,10 +498,8 @@ static void pl_fmt_cmd(void)
     uint8_t y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
-
     // (x is the dispatch-time register value: execute_formatting_command's
     //  ldx #0, so the register reference renders at output position 0)
-
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &y, 0);
     page_length = value;
@@ -543,7 +512,6 @@ static void ts_fmt_cmd(void)
 {
     // ts_fmt_cmd
     // Pseudocode: Sets two_sided_flag and rhs_extra_margin from format command
-
     // ;
     // ***************************************************************************************
     // ts_fmt_cmd:
@@ -551,7 +519,6 @@ static void ts_fmt_cmd(void)
     uint8_t y = 3;
     //     jsr parse_boolean_from_fmt_cmd
     //     bcs return_39 (C=1 conveyed as a true return)
-
     uint8_t flag_value;
     if (parse_boolean_from_fmt_cmd(&y, &flag_value))
         return;
@@ -559,7 +526,6 @@ static void ts_fmt_cmd(void)
     two_sided_flag = flag_value;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
-
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &y, 0);
     rhs_extra_margin = value;
@@ -572,7 +538,6 @@ static void ts_fmt_cmd(void)
 static void tm_fmt_cmd(void)
 {
     // Pseudocode: Sets top_margin from format command expression
-
     // ;
     // ***************************************************************************************
     // tm_fmt_cmd:
@@ -580,7 +545,6 @@ static void tm_fmt_cmd(void)
     uint8_t y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
-
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &y, 0);
     top_margin = value;
@@ -592,7 +556,6 @@ static void tm_fmt_cmd(void)
 static void bm_fmt_cmd(void)
 {
     // Pseudocode: Sets bottom_margin from format command expression
-
     // ;
     // ***************************************************************************************
     // bm_fmt_cmd:
@@ -600,7 +563,6 @@ static void bm_fmt_cmd(void)
     uint8_t y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
-
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &y, 0);
     bottom_margin = value;
@@ -612,7 +574,6 @@ static void bm_fmt_cmd(void)
 static void hm_fmt_cmd(void)
 {
     // Pseudocode: Sets header_margin from format command expression
-
     // ;
     // ***************************************************************************************
     // hm_fmt_cmd:
@@ -620,7 +581,6 @@ static void hm_fmt_cmd(void)
     uint8_t y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
-
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &y, 0);
     header_margin = value;
@@ -632,7 +592,6 @@ static void hm_fmt_cmd(void)
 static void fm_fmt_cmd(void)
 {
     // Pseudocode: Sets footer_margin from format command expression
-
     // ;
     // ***************************************************************************************
     // fm_fmt_cmd:
@@ -640,7 +599,6 @@ static void fm_fmt_cmd(void)
     uint8_t y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
-
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &y, 0);
     footer_margin = value;
@@ -652,7 +610,6 @@ static void fm_fmt_cmd(void)
 static void lm_fmt_cmd(void)
 {
     // Pseudocode: Sets left_margin from format command expression
-
     // ;
     // ***************************************************************************************
     // lm_fmt_cmd:
@@ -660,7 +617,6 @@ static void lm_fmt_cmd(void)
     uint8_t y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
-
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &y, 0);
     left_margin = value;
@@ -672,7 +628,6 @@ static void lm_fmt_cmd(void)
 static void ls_fmt_cmd(void)
 {
     // Pseudocode: Sets line_spacing from format command expression
-
     // ;
     // ***************************************************************************************
     // ls_fmt_cmd:
@@ -680,7 +635,6 @@ static void ls_fmt_cmd(void)
     uint8_t y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
     //     jsr evaluate_expression_from_fmt_cmd
-
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &y, 0);
     line_spacing = value;
@@ -691,20 +645,16 @@ static void ls_fmt_cmd(void)
 
 static void pe_fmt_cmd(void)
 {
-
     // pe_fmt_cmd
     // Pseudocode: Forces page eject if remaining lines are less than value
-
     // ;
     // ***************************************************************************************
     // pe_fmt_cmd:
     //     ldy #3
     uint8_t y = 3;
     //     jsr evaluate_expression_from_fmt_cmd
-
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &y, 0);
-
     //     tax
     //     beq page_eject_fmt
     if (value == 0)
@@ -718,7 +668,6 @@ static void pe_fmt_cmd(void)
         return;
     // (the 6502 cleared C on this exit; pe_fmt_cmd's caller never reads it)
     //     lda l0031
-
     //     bne page_eject_fmt
     if (l0031 != 0)
     {
@@ -785,7 +734,6 @@ static void page_eject_fmt(void)
     // page_eject_fmt
     // Pseudocode: Performs page eject by rendering new page and moving to sheet
     // bottom
-
     //     jsr page_eject_fmt
     // ;
     // ***************************************************************************************
@@ -805,7 +753,6 @@ static void page_eject_fmt(void)
 static void fo_fmt_cmd(void)
 {
     // Pseudocode: Sets footers_enabled_flag from boolean format argument
-
     // ;
     // ***************************************************************************************
     // fo_fmt_cmd:
@@ -813,7 +760,6 @@ static void fo_fmt_cmd(void)
     uint8_t y = 3;
     //     jsr parse_boolean_from_fmt_cmd
     //     bcs return_41 (C=1 conveyed as a true return)
-
     uint8_t flag_value;
     if (parse_boolean_from_fmt_cmd(&y, &flag_value))
         return;
@@ -827,7 +773,6 @@ static void fo_fmt_cmd(void)
 static void he_fmt_cmd(void)
 {
     // Pseudocode: Sets headers_enabled_flag from boolean format argument
-
     // ;
     // ***************************************************************************************
     // he_fmt_cmd:
@@ -835,7 +780,6 @@ static void he_fmt_cmd(void)
     uint8_t y = 3;
     //     jsr parse_boolean_from_fmt_cmd
     //     bcs return_42 (C=1 conveyed as a true return)
-
     uint8_t flag_value;
     if (parse_boolean_from_fmt_cmd(&y, &flag_value))
         return;
@@ -849,7 +793,6 @@ static void he_fmt_cmd(void)
 static void pb_fmt_cmd(void)
 {
     // Pseudocode: Sets page break flag l0038 from boolean format argument
-
     // ;
     // ***************************************************************************************
     // pb_fmt_cmd:
@@ -857,7 +800,6 @@ static void pb_fmt_cmd(void)
     uint8_t y = 3;
     //     jsr parse_boolean_from_fmt_cmd
     //     bcs return_43 (C=1 conveyed as a true return)
-
     uint8_t flag_value;
     if (parse_boolean_from_fmt_cmd(&y, &flag_value))
         return;
@@ -870,14 +812,11 @@ static void pb_fmt_cmd(void)
 
 static void dm_fmt_cmd(void)
 {
-
     // dm_fmt_cmd
     // Pseudocode: Defines a macro: stores macro name and position in linked
     // list
-
     // dm_fmt_cmd:
     //     lda macro_executing_flag
-
     if (macro_executing_flag != 0)
         return;
     //     bne return_42
@@ -886,11 +825,9 @@ static void dm_fmt_cmd(void)
     //     lda last_macro_ptr+1
     //     sta ((uint8_t*)&tmp67)[1]
     // (tmp67 keeps the struct macro* of the node being built)
-
     struct macro* tmp67;
     tmp67 = last_macro_ptr;
     //     ldy #3
-
     uint8_t y = 3;
     //     lda (current_format_line_ptr),y
     uint8_t firstchar = ram[current_format_line_ptr + y];
@@ -911,7 +848,6 @@ static void dm_fmt_cmd(void)
         secondchar &= 0xdf;
     else
         secondchar = 0x20;
-
     // c968d:
     //     and #0xdf
     // c968f:
@@ -931,7 +867,6 @@ static void dm_fmt_cmd(void)
     // (the 6502 advances past the 4-byte node header to the body; the C
     //  keeps last_macro_ptr at the node start and reaches the body via
     //  ->body)
-
     // c96a2: read macro-body lines, skipping any that are not an EM
     // formatting-command line
     for (;;)
@@ -958,13 +893,11 @@ static void dm_fmt_cmd(void)
         //     sta l0081
         //     sta current_format_line_ptr+1
         // (16-bit copy: tmp01 = current_format_line_ptr = last_macro_ptr->body)
-
         addr_t tmp01 = (addr_t)(last_macro_ptr->body - ram);
         current_format_line_ptr = (addr_t)(last_macro_ptr->body - ram);
         //     jsr sub_c9241
         if (read_next_output_line((addr_t)(last_macro_ptr->body - ram),
                 &tmp01) == READ_BLOCK_DONE)
-        //     bcc c96ce
         {
             return;
         }
@@ -978,7 +911,9 @@ static void dm_fmt_cmd(void)
         command_prefix_t cp = check_for_command_prefix(a_1);
         if (cp != NO_COMMAND_PREFIX &&
             lookup_formatting_command() == FORMATTING_COMMAND_EM)
+        {
             break;
+        }
         // (c96f8: skip this line and read the next one)
         //     lda tmp0
         //     sta last_macro_ptr
@@ -1014,34 +949,29 @@ static void dm_fmt_cmd(void)
 
 static void ht_fmt_cmd(void)
 {
-
     // ht_fmt_cmd
     // Pseudocode: Sets highlight codes (highlight1_code, highlight2_code) from
     // format command
-
     //     bne c96a2
     // ;
     // ***************************************************************************************
     // ht_fmt_cmd:
     //     ldy #3
-
     uint8_t y = 3;
     //     jsr get_current_fmt_cmd_byte
-
     uint8_t a = get_current_fmt_cmd_byte(&y);
     //     beq return_44
     if (a == 0)
         return;
     //     tax
     uint8_t x = a;
-    //     lda #0
-    //     cpx #0x2d ; '-'
-    if (x == 0x2d)
-        goto c9716;
-    //     lda #1
-    //     cpx #0x2a ; '*'
-    if (x != 0x2a)
-        goto c9719;
+    if (!(x == 0x2d))
+    {
+        //     lda #1
+        //     cpx #0x2a ; '*'
+        if (x != 0x2a)
+            goto c9719;
+    }
     // c9716:
 c9716:
     //     iny
@@ -1051,7 +981,6 @@ c9716:
     // c9719:
 c9719:
     //     jsr evaluate_expression_from_fmt_cmd
-
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &y, x);
     a = value;
@@ -1072,7 +1001,6 @@ c9719:
 c9725:
     //     pha
     //     jsr evaluate_expression_from_fmt_cmd
-
     addr_t highlight_value;
     evaluate_expression_from_fmt_cmd(&highlight_value, &y, x);
     //     pla
@@ -1097,33 +1025,26 @@ static const uint8_t commands_table[] =
 enum formatting_command lookup_formatting_command(void)
 {
     uint8_t a_4;
-
     // Pseudocode: Looks up two-letter formatting command in commands_table
-
     // ;
     // ***************************************************************************************
     // lookup_formatting_command:
     //     ldy #2
-
     uint8_t y = 2;
     //     lda (current_format_line_ptr),y
-
     uint8_t a = ram[current_format_line_ptr + y];
     //     sta tmp3                     ; second command letter
-
     //     dey                                                               ;
     //     Y=0x01
     y--;
     //     lda (current_format_line_ptr),y
     uint8_t a_1 = ram[current_format_line_ptr + y];
     //     sta tmp2                     ; first command letter
-
     //     dey                                                               ;
     //     Y=0x00
     y--;
     //     ldx #0
     // (the 6502 uses x for the command index; the C returns it)
-
     int index = 0;
     // loop_c973e:
     do
@@ -1131,9 +1052,7 @@ enum formatting_command lookup_formatting_command(void)
         if (a_1 == commands_table[y])
         {
             if (a == commands_table[y + 1])
-            {
                 return index;
-            }
         }
         index++;
         y++;
@@ -1175,15 +1094,12 @@ enum formatting_command lookup_formatting_command(void)
  */
 bool execute_formatting_command(enum formatting_command x)
 {
-
     // Pseudocode: Executes a formatting command by index through the format
     // jump table
-
     // ;
     // ***************************************************************************************
     // execute_formatting_command:
     //     txa
-
     //     ldy #0
     //     ldx #0
     //     stx l0030
@@ -1292,14 +1208,11 @@ bool execute_formatting_command(enum formatting_command x)
  */
 static bool parse_boolean_from_fmt_cmd(uint8_t* y, uint8_t* value)
 {
-
     // Pseudocode: Parses a boolean (ON/OFF/1/0) from format command argument
-
     // ;
     // ***************************************************************************************
     // parse_boolean_from_fmt_cmd:
     //     jsr get_current_fmt_cmd_byte
-
     uint8_t a = get_current_fmt_cmd_byte(y);
     //     sec
     // (C=1 pre-set for the empty-argument return; conveyed as true)
@@ -1309,7 +1222,6 @@ static bool parse_boolean_from_fmt_cmd(uint8_t* y, uint8_t* value)
     //     lda current_format_line_ptr
     //     ldx current_format_line_ptr+1
     // (the 6502 passes the pointer in XA; the C passes it as an argument)
-
     // MULTIPLE ENTRY POINTS: parse_boolean_from_fmt_cmd, sub_c976c
     return parse_word_flag(current_format_line_ptr, y, value);
 }
@@ -1325,30 +1237,26 @@ static const uint8_t l97b0_data[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
  */
 static bool parse_word_flag(addr_t ptr, uint8_t* y, uint8_t* value)
 {
-
+    uint8_t a_2;
     // sub_c976c
     // Pseudocode: Parses word-based flag (ON/OFF/YES/NO) from format command
     // On entry: ptr = the format-command line (the 6502 passes it in XA),
     //           *y = cursor position into the line (advanced as the word is
     //           consumed).
     // x is a scratch index into the word table.
-
     // sub_c976c:
     //     lda (((uint8_t*)&tmp89)[0]),y
-
     uint8_t a = ram[ptr + *y];
     //     tax
-
     uint8_t x = a;
-    //     lda #1
-    //     cpx #0x31 ; '1'
-    if (x == 0x31)
-        goto c977f;
-    //     lda #0
-    a = 0;
-    //     cpx #0x30 ; '0'
-    if (x != 0x30)
-        goto c9783;
+    if (!(x == 0x31))
+    {
+        //     lda #0
+        a = 0;
+        //     cpx #0x30 ; '0'
+        if (x != 0x30)
+            goto c9783;
+    }
     // c977f:
 c977f:
     //     clc
@@ -1365,50 +1273,52 @@ c9783:
     l0084 = *y;
     //     ldx #0xff
     uint8_t x_1 = 0xff;
-    // c9788:
 c9788:
-    //     iny
-    (*y)++;
-    //     lda (((uint8_t*)&tmp89)[0]),y
-    uint8_t a_1 = ram[ptr + *y];
-    //     jsr to_uppercase
-    uint8_t a_2 = toupper(a_1);
-    //     inx
-    x_1++;
-    //     cmp l97b0,x
-    if (a_2 == l97b0_data[x_1])
-        goto c9788;
-    //     lda l97b0,x
-    uint8_t a_3 = l97b0_data[x_1];
-    if ((int8_t)a_3 < 0)
-        goto c97ae;
-    //     cmp #0x20 ; ' '
-    //     bcc return_46
-    if (a_3 < 0x20)
+    do
     {
-        *value = a_3;
-        return false; // C clear (a < 0x20): word matched
-    }
-    // loop_c979d:
-    for (;;)
-    {
+        // c9788:
+        //     iny
+        (*y)++;
+        //     lda (((uint8_t*)&tmp89)[0]),y
+        uint8_t a_1 = ram[ptr + *y];
+        //     jsr to_uppercase
+        a_2 = toupper(a_1);
         //     inx
         x_1++;
-        //     lda l97b0,x
-        a_3 = l97b0_data[x_1];
-        if ((int8_t)a_3 < 0)
-            goto c97ae;
+    } while (a_2 == l97b0_data[x_1]);
+    //     lda l97b0,x
+    uint8_t a_3 = l97b0_data[x_1];
+    if (!((int8_t)a_3 < 0))
+    {
         //     cmp #0x20 ; ' '
-        if (a_3 >= 0x20)
-            continue;
-        //     ldy l0084
-        *y = l0084;
-        //     lda l97b1,x
-        a_3 = l97b0_data[x_1 + 1];
-        if ((int8_t)a_3 >= 0)
-            goto c9788;
-        //     bpl c9788
-        break;
+        //     bcc return_46
+        if (a_3 < 0x20)
+        {
+            *value = a_3;
+            return false;
+            // C clear (a < 0x20): word matched
+        }
+        // loop_c979d:
+        for (;;)
+        {
+            //     inx
+            x_1++;
+            //     lda l97b0,x
+            a_3 = l97b0_data[x_1];
+            if ((int8_t)a_3 < 0)
+                goto c97ae;
+            //     cmp #0x20 ; ' '
+            if (a_3 >= 0x20)
+                continue;
+            //     ldy l0084
+            *y = l0084;
+            //     lda l97b1,x
+            a_3 = l97b0_data[x_1 + 1];
+            if ((int8_t)a_3 >= 0)
+                goto c9788;
+            //     bpl c9788
+            break;
+        }
     }
     // c97ae:
 c97ae:
@@ -1416,7 +1326,6 @@ c97ae:
     // (C=1 conveyed as a true return = parse error)
     *value = a_3;
     return true;
-
     // MULTIPLE ENTRY POINTS: parse_boolean_from_fmt_cmd, sub_c976c
 }
 
@@ -1432,20 +1341,16 @@ c97ae:
 static bool evaluate_expression_from_fmt_cmd(
     uint16_t* result, uint8_t* y, uint8_t x)
 {
-
     int tmp45 = 0;
-
     // evaluate_expression_from_fmt_cmd
     // Pseudocode: Evaluates arithmetic expression with +, - and register
     // references
-
     // l97b0:
     //     .byte 0x4f
     // l97b1:
     //     .byte 0x4e, 1
     //     .ascii "OFF"
     //     .byte 0, 0xff
-
     // ;
     // ***************************************************************************************
     // evaluate_expression_from_fmt_cmd:
@@ -1453,7 +1358,6 @@ static bool evaluate_expression_from_fmt_cmd(
     uint8_t a = 0;
     //     sta ((uint8_t*)&tmp89)[0]
     //     sta ((uint8_t*)&tmp89)[1]
-
     int tmp89 = 0;
     //     sta input_buffer_offset+1
     l0080 = a;
@@ -1485,42 +1389,36 @@ static bool evaluate_expression_from_fmt_cmd(
         }
         else
         {
-
             // c97d5:
             //     jsr ca6fe
-
             int parsed;
             parse_decimal_number(&parsed, y);
             tmp89 = (addr_t)parsed;
             // c97dc:
         }
         //     ldx input_buffer_offset+1
-
         uint8_t count = l0080;
-
-        //     beq c9804
-        if (count == 0)
-            goto c9804;
-        //     lda #0
-        //     sta input_buffer_offset+1
-        l0080 = 0;
-        //     dex
-        count--;
-
-        //     beq c97f7
-        if (count == 0)
-            goto c97f7;
-        //     lda ((uint8_t*)&tmp45)[0]
-        //     sec
-        //     sbc ((uint8_t*)&tmp89)[0]
-        // (the sec makes this a plain subtraction; its carry is dead — no
-        //  reader exists between here and the next flag write)
-        tmp89 = tmp45 - tmp89;
-        goto c9804;
-
-    c97f7:
-        tmp89 += tmp45;
-
+        if (!(count == 0))
+        {
+            //     lda #0
+            //     sta input_buffer_offset+1
+            l0080 = 0;
+            //     dex
+            count--;
+            if (!(count == 0))
+            {
+                //     lda ((uint8_t*)&tmp45)[0]
+                //     sec
+                //     sbc ((uint8_t*)&tmp89)[0]
+                // (the sec makes this a plain subtraction; its carry is dead —
+                // no
+                //  reader exists between here and the next flag write)
+                tmp89 = tmp45 - tmp89;
+                goto c9804;
+            }
+        c97f7:
+            tmp89 += tmp45;
+        }
     c9804:
         tmp45 = tmp89;
         //     jsr get_current_fmt_cmd_byte
@@ -1530,16 +1428,15 @@ static bool evaluate_expression_from_fmt_cmd(
             goto c9821;
         //     ldx #1
         uint8_t count_1 = 1;
-        //     cmp #0x2b ; '+'
-        //     beq c981c
-        if (a_4 == '+')
-            goto c981c;
-        //     inx ; X=0x02
-        count_1++;
-        //     cmp #0x2d ; '-'
-        //     bne c9821
-        if (a_4 != '-')
-            goto c9821;
+        if (!(a_4 == '+'))
+        {
+            //     inx ; X=0x02
+            count_1++;
+            //     cmp #0x2d ; '-'
+            //     bne c9821
+            if (a_4 != '-')
+                goto c9821;
+        }
         // c981c:
     c981c:
         //     stx input_buffer_offset+1
@@ -1565,9 +1462,11 @@ static uint8_t get_current_fmt_cmd_byte(uint8_t* y)
     {
         uint8_t val = ram[current_format_line_ptr + *y];
         if (val == 0x0d)
-            return 0; // Z set
+            return 0;
+        // Z set
         if (val != 0x20)
-            return val; // Z clear
+            return val;
+        // Z clear
         (*y)++;
     }
 }
@@ -1582,14 +1481,12 @@ static uint8_t get_next_fmt_cmd_byte(uint8_t* y)
 
 void render_register(uint8_t a, uint8_t x)
 {
-
     // render_register
     // render_register:
     //     jsr get_register_address
     //     bcs cada2
     unsigned int* register_value = get_register_address(a);
     //     sty ((uint8_t*)&tmp89)[0]
-
     if (register_value != NULL)
     {
         //     bit lada6
@@ -1612,7 +1509,6 @@ void render_register(uint8_t a, uint8_t x)
 static void render_number_to_output_buffer(uint16_t value, uint8_t start_x)
 {
     // Pseudocode: Renders a 16-bit number to the output buffer using callback
-
     // ;
     // ***************************************************************************************
     // ; On Entry:
@@ -1636,11 +1532,9 @@ static void emit_to_output_buffer_callback(uint8_t digit)
 {
     // emit_to_output_buffer_callback
     // Pseudocode: Callback that writes a digit character to the output buffer
-
     // la69a:
     // la69b = la69a+1
     //     .word emit_to_output_buffer_callback
-
     //     pha
     // (digit value is in a at entry — set by render_number_to_callback)
     {
@@ -1655,9 +1549,7 @@ static void emit_to_output_buffer_callback(uint8_t digit)
         output_buffer[l0082] = digit;
         //     cpx #MAX_LINE_LENGTH-2
         if (l0082 < MAX_LINE_LENGTH - 2)
-        {
             l0082++;
-        }
         //     pla (restore a — dead here: render_number_to_callback keeps its
         //     own local a, so no caller reads the global a)
     }
@@ -1667,9 +1559,7 @@ static void emit_to_output_buffer_callback(uint8_t digit)
 
 void render_number_to_screen(uint16_t val)
 {
-
     // Pseudocode: Renders a 16-bit number to screen via bdos_print_char
-
     // ;
     // ***************************************************************************************
     // ; On Entry:
@@ -1678,7 +1568,6 @@ void render_number_to_screen(uint16_t val)
     // ***************************************************************************************
     // render_number_to_screen:
     //     stx ((uint8_t*)&tmp89)[0]
-
     addr_t tmp89 = val;
     //     lda #<(bdos_print_char)
     //     ldy #>(bdos_print_char)
@@ -1688,14 +1577,11 @@ void render_number_to_screen(uint16_t val)
 
 static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t))
 {
-
     // Pseudocode: Render 16-bit number as decimal via callback
-
     char buf[6];
     snprintf(buf, sizeof(buf), "%u", (unsigned int)value);
     for (char* p = buf; *p; p++)
     {
-
         uint8_t a = *p - '0';
         a |= 0x30;
         cb(a);
@@ -1728,18 +1614,15 @@ static void set_rw_file_handle(uint8_t a)
 
 static void process_page_footer(void)
 {
-
     // c9263
     // Pseudocode: Handles page footer processing: prints footer, increments
     // page number
-
     // c9263:
     //     lda l0038
     //     beq c9284
     if (page_break_flag != 0)
     {
         //     ldx l0021 ; X=number of lines
-
         //     jsr print_vertical_space
         print_vertical_space(l0021);
         //     ldx footer_margin ; X=number of lines
@@ -1777,14 +1660,11 @@ static void process_page_footer(void)
 
 static void print_output_buffer(void)
 {
-
     // c937b
     // c937b:
     //     ldy #0
-
     uint8_t y = 0;
     //     ldx l0084
-
     uint8_t x = l0084;
     //     beq return_28
     if (x == 0)
@@ -1807,12 +1687,10 @@ static void print_output_buffer(void)
 static uint8_t scan_string_length(uint8_t y, uint8_t* tmp45)
 {
     uint8_t a;
-
     // c93b8:
     //     iny
     //     lda (((uint8_t*)&tmp45)[0]),y
     //     bpl c93b8
-
     do
     {
         y++;
@@ -1826,7 +1704,6 @@ void check_not_continuous_editing(void)
 {
     // Pseudocode: Verifies not in continuous editing mode, shows file state if
     // editing
-
     // check_not_continuous_editing:
     //     bit file_edit_flags
     //     bvs return_20
@@ -1845,7 +1722,6 @@ void check_not_continuous_editing(void)
 void display_not_enough_memory(void)
 {
     // Pseudocode: Displays Not enough memory error and stops printing
-
     // display_not_enough_memory:
     //     jsr stop_printing
     stop_printing();
@@ -1857,29 +1733,24 @@ void display_not_enough_memory(void)
     return;
     // return_6:
     //     rts
-
     // MULTIPLE ENTRY POINTS: check_for_at_least_150_bytes_free,
     // display_not_enough_memory
 }
 
 static void microspace_word_processor(uint8_t* y)
 {
+    uint8_t a_3;
     uint8_t a_2;
     uint8_t a_21;
-
     // l0042/l0043/l0047/l0048 are only used in this function (within
     // printing.c) and in justify_edit_buffer (editor.c) — make them local
     // to avoid global reuse confusion; l0039/l0083 are used elsewhere.
-
     // microspace_word_processor
     // Pseudocode: Processes words for microspaced justification during printing
-
     // return_24:
     //     rts
-
     // c9034:
     //     ldx #0
-
     uint8_t x = 0;
     //     stx l0044 / stx l0046 / stx l0045
     uint32_t accum_1 = 0;
@@ -1896,90 +1767,85 @@ static void microspace_word_processor(uint8_t* y)
     //     stx l0083
     l0083 = 0;
     bool is_tab = false;
-    // c9048:
 c9048:
-    //     txa
-
-    uint8_t a = x;
-    //     pha
+    do
     {
+        // c9048:
+        //     txa
+        uint8_t a = x;
+        //     pha
+        {
+            //     lda (((uint8_t*)&tmp01)[0]),y
+            uint8_t a_1 = ram[tmp01 + (*y)];
+            //     jsr sub_c9431
+            convert_char_for_printing(a_1, &x, &is_tab);
+            //     pla
+            a_2 = a;
+        }
+        //     tax
+        x = a_2;
         //     lda (((uint8_t*)&tmp01)[0]),y
-        uint8_t a_1 = ram[tmp01 + (*y)];
-        //     jsr sub_c9431
-        convert_char_for_printing(a_1, &x, &is_tab);
-        //     pla
-        a_2 = a;
-    }
-    //     tax
-    x = a_2;
-    //     lda (((uint8_t*)&tmp01)[0]),y
-    uint8_t a_3 = ram[tmp01 + (*y)];
-    //     iny
-    (*y)++;
-    //     cmp #0x1a
-    if (a_3 != 0x1a)
-        goto c906f;
-    //     bit l0083
-    //     bpl c9064
-    // (bit test: N = l0083 & 0x80)
-    if (!(l0083 & 0x80))
-        goto c9064;
-    //     lda l0048
-    uint8_t a_4 = l0048_1;
-    //     beq c906b
-    if (a_4 == 0)
-        goto c906b;
-    //     inc l0043
-    l0043_1++;
-    if (l0043_1 != 0)
-        goto c9048;
-    //     bne c9048
-    // c9064:
+        a_3 = ram[tmp01 + (*y)];
+        //     iny
+        (*y)++;
+        //     cmp #0x1a
+        if (a_3 != 0x1a)
+            goto c906f;
+        //     bit l0083
+        //     bpl c9064
+        // (bit test: N = l0083 & 0x80)
+        if (!(l0083 & 0x80))
+            break;
+        //     lda l0048
+        uint8_t a_4 = l0048_1;
+        //     beq c906b
+        if (a_4 == 0)
+            goto c906b;
+        //     inc l0043
+        l0043_1++;
+    } while (l0043_1 != 0);
 c9064:
-    //     lda l0039
-    uint8_t a_5 = l0039;
-    //     sta l0047
-    l0047_1 = a_5;
-    //     jmp c908c
-    goto c908c;
-
-    // c906b:
-c906b:
-    //     lda #0x20 ; ' '
-    a_3 = 0x20;
-    //     dec l0042
-    l0042_1--;
-    // c906f:
-c906f:
-    //     cmp #0x20 ; ' '
-    //     bcc c9092
-    if (a_3 < 0x20)
-        goto c9092;
-    //     bne c9090
-    if (a_3 != 0x20)
-        goto c9090;
-    //     bit l0083
-    //     bpl c9064
-    // (bit test: N = l0083 & 0x80)
-    if (!(l0083 & 0x80))
-        goto c9064;
+    do
+    {
+        //     bne c9048
+        // c9064:
+        //     lda l0039
+        uint8_t a_5 = l0039;
+        //     sta l0047
+        l0047_1 = a_5;
+        //     jmp c908c
+        goto c908c;
+        // c906b:
+    c906b:
+        //     lda #0x20 ; ' '
+        a_3 = 0x20;
+        //     dec l0042
+        l0042_1--;
+        // c906f:
+    c906f:
+        //     cmp #0x20 ; ' '
+        //     bcc c9092
+        if (a_3 < 0x20)
+            goto c9092;
+        //     bne c9090
+        if (a_3 != 0x20)
+            goto c9090;
+    } while (!(l0083 & 0x80));
     //     lda l0042
     uint8_t a_6 = l0042_1;
     //     beq c908a
     if (a_6 == 0)
         goto c908a;
-    //     bmi c9087
-    if (a_6 & 0x80)
-        goto c9087;
-    //     inc l0043
-    l0043_1++;
-    //     lda #0
-    //     sta l0042
-    l0042_1 = 0;
-    //     beq c9048                                                         ;
-    //     ALWAYS branch
-    goto c9048;
-
+    if (!(a_6 & 0x80))
+    {
+        //     inc l0043
+        l0043_1++;
+        //     lda #0
+        //     sta l0042
+        l0042_1 = 0;
+        //     beq c9048 ; ALWAYS branch
+        goto c9048;
+    }
     // c9087:
 c9087:
     //     clc
@@ -2001,46 +1867,41 @@ c908c:
     //     bne c90b6                                                         ;
     //     ALWAYS branch
     goto c90b6;
-
     // c9090:
 c9090:
     //     inc l0046
     accum_1 += 0x100;
-    // c9092:
+// c9092:
+//     cmp #9
+//     cmp #0x0b
 c9092:
-    //     cmp #9
-    //     cmp #0x0b
-    if (a_3 == 9 || a_3 == 0x0b)
-        goto c90a0;
-    //     sec
-    //     ror l0083
-    // (the ror result is never read before l0083 is overwritten, and the
-    //  result flags are dead too — the statement is a no-op)
-    //     jmp c90b6
-    goto c90b6;
-
-    // c90a0:
-c90a0:
-    //     pha
+    if (!(a_3 == 9 || a_3 == 0x0b))
     {
-        //     lda l0039
-        // (Z from this lda is clobbered by the following lda #0)
-        uint8_t a_8 = l0039;
-        //     sta l0047
-        l0047_1 = a_8;
-        //     lda #0
-        //     sta l0083
-        l0083 = 0;
-        //     sta l0046 / sta l0044 / sta l0045
-        accum_1 = 0;
-        //     sta l0048
-        l0048_1 = 0;
-        //     sta l0042
-        l0042_1 = 0;
-        //     sta l0043
-        l0043_1 = 0;
-        //     pla
-        a_3 = a_3;
+        // c90a0:
+        //     pha
+    }
+    else
+    {
+        {
+            //     lda l0039
+            // (Z from this lda is clobbered by the following lda #0)
+            uint8_t a_8 = l0039;
+            //     sta l0047
+            l0047_1 = a_8;
+            //     lda #0
+            //     sta l0083
+            l0083 = 0;
+            //     sta l0046 / sta l0044 / sta l0045
+            accum_1 = 0;
+            //     sta l0048
+            l0048_1 = 0;
+            //     sta l0042
+            l0042_1 = 0;
+            //     sta l0043
+            l0043_1 = 0;
+            //     pla
+            a_3 = a_3;
+        }
     }
     // c90b6:
 c90b6:
@@ -2048,84 +1909,79 @@ c90b6:
     output_buffer[x] = a_3;
     //     inx
     x++;
-    //     cmp #0x0d
-    if (a_3 == 0x0d)
-        goto c90e2;
-    //     cmp #0x20 ; ' '
-    if (a_3 == 0x20)
+    if (!(a_3 == 0x0d))
+    {
+        //     cmp #0x20 ; ' '
+        if (a_3 == 0x20)
+            goto c9048;
+        //     lda l0048
+        uint8_t a_9 = l0048_1;
+        //     beq c9048
+        if (a_9 == 0)
+            goto c9048;
+        //     clc
+        //     adc l0044
+        //     sta l0044
+        //     lda l0046
+        //     adc l0048
+        //     sta l0046
+        //     lda l0045
+        //     adc l0043
+        //     sta l0045
+        // (24-bit addition: acc is incremented by l0048 in its two low
+        //  bytes and l0043 in its high byte)
+        accum_1 +=
+            ((uint32_t)l0043_1 << 16) | ((uint32_t)l0048_1 << 8) | l0048_1;
+        //     lda #0
+        uint8_t a_10 = 0;
+        //     sta l0048
+        l0048_1 = a_10;
+        //     sta l0042
+        l0042_1 = a_10;
+        //     sta l0043
+        l0043_1 = a_10;
+        //     jmp c9048
         goto c9048;
-    //     lda l0048
-    uint8_t a_9 = l0048_1;
-    //     beq c9048
-    if (a_9 == 0)
-        goto c9048;
-    //     clc
-    //     adc l0044
-    //     sta l0044
-    //     lda l0046
-    //     adc l0048
-    //     sta l0046
-    //     lda l0045
-    //     adc l0043
-    //     sta l0045
-    // (24-bit addition: acc is incremented by l0048 in its two low
-    //  bytes and l0043 in its high byte)
-    accum_1 += ((uint32_t)l0043_1 << 16) | ((uint32_t)l0048_1 << 8) | l0048_1;
-    //     lda #0
-
-    uint8_t a_10 = 0;
-    //     sta l0048
-    l0048_1 = a_10;
-    //     sta l0042
-    l0042_1 = a_10;
-    //     sta l0043
-    l0043_1 = a_10;
-    //     jmp c9048
-    goto c9048;
-
+    }
     // c90e2:
 c90e2:
     //     lda l0045
-
     uint8_t a_11 = accum_1 >> 16;
-
-    //     beq c90f8
-    if (a_11 == 0)
-        goto c90f8;
-    //     lda ruler_right_stop
-
-    uint8_t a_12 = ruler_right_stop;
-
-    //     beq c90f8
-    if (a_12 == 0)
-        goto c90f8;
-    //     sec
-    //     sbc l0047
-    //     bcc c90f8
-    //     sbc l0045
-    //     adc #0
-    //     sec
-    //     sbc l0046
-    //     beq c9101
-    // (check whether the remaining width matches the microspacing
-    //  accumulator; the 6502 does d = ruler_right_stop - l0047, then
-    //  sbc l0045 / adc #0 to recover the borrow)
-    int d = ruler_right_stop - l0047_1;
-    if (d < 0)
-        goto c90f8;
-    if ((uint8_t)(d - (accum_1 >> 16) + (d >= (int)(accum_1 >> 16))) ==
-        (uint8_t)((accum_1 >> 8) & 0xFF))
-        goto c9101;
+    if (!(a_11 == 0))
+    {
+        //     lda ruler_right_stop
+        uint8_t a_12 = ruler_right_stop;
+        //     beq c90f8
+        if (a_12 == 0)
+            goto c90f8;
+        //     sec
+        //     sbc l0047
+        //     bcc c90f8
+        //     sbc l0045
+        //     adc #0
+        //     sec
+        //     sbc l0046
+        //     beq c9101
+        // (check whether the remaining width matches the microspacing
+        //  accumulator; the 6502 does d = ruler_right_stop - l0047, then
+        //  sbc l0045 / adc #0 to recover the borrow)
+        int d = ruler_right_stop - l0047_1;
+        if (d < 0)
+            goto c90f8;
+        if ((uint8_t)(d - (accum_1 >> 16) + (d >= (int)(accum_1 >> 16))) ==
+            (uint8_t)((accum_1 >> 8) & 0xFF))
+        {
+            goto c9101;
+        }
+    }
     // c90f8:
 c90f8:
     //     lda #0
-
     //     sta l0039
     l0039 = 0;
     //     ldy input_buffer_offset+1
     //     jmp c8fe6
     goto c8fe6_inline;
-
     // c9101:
 c9101:
     //     lda #0
@@ -2145,7 +2001,6 @@ c9101:
     //     bne loop_c9107
     //     sta tmp8
     // (shift-add multiply: tmp89 = l0045 * microspacing_flag)
-
     addr_t tmp89 = (uint16_t)print_running_total_accum * microspacing_flag;
     //     lda l0044
     //     sta l0046
@@ -2165,72 +2020,63 @@ c9101:
     // c912b:
 c912b:
     //     lda output_buffer,y
-
     uint8_t a_14 = output_buffer[(*y)];
     //     iny
     (*y)++;
     //     jsr sub_c9431
-
     uint8_t a_15 = convert_char_for_printing(a_14, &x, &is_tab);
     //     pha
     {
         //     lda l0039
-
         uint8_t a_16 = l0039;
-        //     cmp l0047
-        //     beq c913b
-        if (a_16 == l0047_1)
-            goto c913b;
-        //     bcs c9142
-        if (a_16 >= l0047_1)
-            goto c9142;
+        if (!(a_16 == l0047_1))
+        {
+            //     bcs c9142
+            if (a_16 >= l0047_1)
+                goto c9142;
+        }
         // c913b:
     c913b:
         //     pla
-
         uint8_t a_17 = a_15;
         //     jsr c9426
         print_char_x_times(a_17, x);
         //     jmp c9163
         goto c9163;
-
         // c9142:
     c9142:
         //     pla
         a_17 = a_15;
-        //     cmp #0x20 ; ' '
-        if (a_17 != 0x20)
-            goto c915b;
-        //     lda microspacing_flag
-
-        uint8_t a_18 = microspacing_flag;
-        //     clc
-        //     adc l0044
-        a_18 += print_extra_space_accum;
-        //     tax
-        x = a_18;
-        //     lda l0045
-
-        uint8_t a_19 = print_running_total_accum;
-        //     beq c9154
-        if (a_19 != 0)
+        if (!(a_17 != 0x20))
         {
-            x++;
-            print_running_total_accum--;
+            //     lda microspacing_flag
+            uint8_t a_18 = microspacing_flag;
+            //     clc
+            //     adc l0044
+            a_18 += print_extra_space_accum;
+            //     tax
+            x = a_18;
+            //     lda l0045
+            uint8_t a_19 = print_running_total_accum;
+            //     beq c9154
+            if (a_19 != 0)
+            {
+                x++;
+                print_running_total_accum--;
+            }
+            //     jsr sub_c9173
+            emit_microspacing_spaces(a_19, x);
+            //     lda #0x20 ; ' '
+            a_17 = 0x20;
+            // c915b:
+            //     ldx microspacing_flag
         }
-        //     jsr sub_c9173
-        emit_microspacing_spaces(a_19, x);
-        //     lda #0x20 ; ' '
-        a_17 = 0x20;
-        //     bne c9160 ; ALWAYS branch
-        goto c9160;
-
-        // c915b:
-    c915b:
-        //     ldx microspacing_flag
-        x = microspacing_flag;
-        //     jsr sub_c9173
-        emit_microspacing_spaces(a_17, x);
+        else
+        {
+            x = microspacing_flag;
+            //     jsr sub_c9173
+            emit_microspacing_spaces(a_17, x);
+        }
         // c9160:
     c9160:
         //     jsr print_char
@@ -2243,11 +2089,9 @@ c912b:
         //     jmp c8ffb
         goto c8ffb_inline;
     }
-
 c8fe6_inline:
     do
     {
-
         uint8_t a_20 = ram[tmp01 + (*y)];
         (*y)++;
         a_21 = convert_char_for_printing(a_20, &x, &is_tab);
@@ -2266,7 +2110,6 @@ c8ffb_inline:
     //     bcs c9009_inline
     // (clc forces C=0, so the sbc subtracts line_spacing + 1; the borrow
     //  branch is taken when l0021 <= line_spacing)
-
     uint8_t a_22 = l0021 - line_spacing - 1;
     if (l0021 <= line_spacing)
     {
@@ -2303,19 +2146,16 @@ static void nested_macro_error(void)
 bool parse_decimal_number(int* value, uint8_t* y)
 {
     const char* start;
-
     // ca6fe - Parse decimal number from format command line
     // On entry: *y = index into current_format_line_ptr
     // On exit:  *value = parsed value, *y = advanced past digits
     // (no leading whitespace is guaranteed, and strtoul parses the value as
     //  unsigned, so no leading-sign/whitespace handling is needed: a leading
     //  non-digit yields end == start and value 0)
-
     if (current_format_line_ptr == (addr_t)(uintptr_t)input_buffer)
         start = (const char*)&input_buffer[*y];
     else
         start = (const char*)&ram[current_format_line_ptr + *y];
-
     char* end;
     *value = (int)strtoul(start, &end, 10);
     bool parsed = (end != start);
@@ -2328,12 +2168,12 @@ bool parse_optional_filename_from_command(struct scan_state* scan)
     // parse_optional_filename_from_command
     // Pseudocode: Parses optional filename from input buffer into
     // filename_buffer
-
     // parse_optional_filename_from_command:
     //     jsr sub_c8e33
     //     beq return_19
     if (scan_input_buffer(input_buffer, scan))
-        return false; // no filename
+        return false;
+    // no filename
     //     ldx #0
     uint8_t x = 0;
     while (1)
@@ -2366,16 +2206,15 @@ bool parse_optional_filename_from_command(struct scan_state* scan)
 
 static void print_char_x_times(uint8_t a, uint8_t x)
 {
-    // c9426: Print character in A, X times. If X==0, return immediately.
-    //     beq return_32
-    if (x == 0)
-        goto return_32;
-    // loop_c942a:
-    do
+    if (!(x == 0))
     {
-        print_char(a);
-        x--;
-    } while (x != 0);
+        // loop_c942a:
+        do
+        {
+            print_char(a);
+            x--;
+        } while (x != 0);
+    }
     //     bne loop_c942a
     // return_32:
 return_32:
@@ -2385,7 +2224,6 @@ return_32:
 
 void print_document(struct scan_state* scan)
 {
-
     // print_document
     // print_document:
     //     jsr check_not_continuous_editing
@@ -2403,7 +2241,6 @@ void print_document(struct scan_state* scan)
     //     sta ptr5+1
     //     tay
     // (16-bit arithmetic: ptr5 = top + 3)
-
     addr_t ptr5 = top + 3;
     //     txa
     //     adc #0x8d
@@ -2417,7 +2254,6 @@ void print_document(struct scan_state* scan)
     first_macro_ptr = (struct macro*)&ram[ptr5 + 0x8d];
     last_macro_ptr = first_macro_ptr;
     //     lda #0
-
     uint8_t a = 0;
     //     sta l0031
     l0031 = a;
@@ -2433,15 +2269,14 @@ void print_document(struct scan_state* scan)
     current_ruler_ptr = RAM_CURRENT_RULER_BUF;
     //     jsr find_margins_of_current_ruler_buffer
     find_margins_of_current_ruler_buffer();
-    //     jsr sub_c8e33
-    //     bne c8f0d
-    if (!scan_input_buffer(input_buffer, scan))
+    if (!(!scan_input_buffer(input_buffer, scan)))
+    {
+        //     inc printing_from_file_flag
+        printing_from_file_flag++;
+        printer_ptr6 = page;
+        print_loop(ptr5);
         goto c8f0d;
-    //     inc printing_from_file_flag
-    printing_from_file_flag++;
-    printer_ptr6 = page;
-    print_loop(ptr5);
-    goto c8f0d;
+    }
     // c8f0a:
     // c8f0d:
 c8f0d:
@@ -2461,10 +2296,8 @@ c8f0d:
     //     jmp c9263
     process_page_footer();
     return;
-
     // return_23:
     //     rts
-
     // c8f1a:
     //     jsr stop_printing
     //     jsr bdos_print_newline
@@ -2473,37 +2306,31 @@ c8f0d:
 
 static void print_loop(addr_t ptr5)
 {
-
-    addr_t ptr3 = 0; // set before first use (macro start); 0 placates GCC's
-                     // cross-function uninitialised analysis
-
+    uint8_t x;
+    enum formatting_command fmt_cmd_index;
+    addr_t ptr3 = 0;
+    // set before first use (macro start); 0 placates GCC's
+    // cross-function uninitialised analysis
     // current format-line address (was global tmp01)
-
     // print_loop
     // c8f30:
     bool is_tab = false;
+c8f30:
     while (1)
     {
         uint8_t a_10;
-
         uint8_t a_1;
-
         //     lda l0031
-
         uint8_t a = l0031;
-
         //     beq c8f3b
         if (a != 0)
         {
             a = l0021;
             if (a == 0)
-            {
                 process_page_footer();
-            }
         }
         //     jsr sub_c9188
         //     bcs c8f0a (C=1 conveyed as a true return)
-
         addr_t cursor = prepare_output_line(ptr5, &ptr3);
         if (cursor == 0)
             return;
@@ -2511,59 +2338,50 @@ static void print_loop(addr_t ptr5)
         start_microspacing_if_active(a);
         //     ldy #0
         // (Z from ldy #0 is clobbered by the following jsr)
-
         uint8_t y = 0;
         //     sty input_buffer_ptr+1
         l0080 = y;
         //     jsr deref_and_check_for_command_prefix
         command_prefix_t cp = deref_and_check_for_command_prefix(y, cursor);
-        //     bne c8fce_thunk
-        if (cp == NO_COMMAND_PREFIX)
-            goto c8fce_thunk_l;
-        //     ldy #3
-        //     sty input_buffer_ptr+1
-        l0080 = 3;
-        //     jsr sub_cab6e
-        //     bne c8f6e
-        // (inlined: Z = (ram[tmp01] == RULER_BYTE))
-        if (ram[cursor] != RULER_BYTE)
-            goto c8f6e_l;
-        //     ldy #3
-        uint8_t y_2 = 3;
-        //     ldx #0
-
-        uint8_t x = 0;
-        // loop_c8f5d:
-        do
+        if (!(cp == NO_COMMAND_PREFIX))
         {
-            a_1 = ram[cursor + y_2];
-            current_ruler_buffer[x] = a_1;
-            y_2++;
-            x++;
-        } while (a_1 != 0x0d);
-        //     jsr find_margins_of_current_ruler_buffer
-        find_margins_of_current_ruler_buffer();
-        // c8f6b:
-    c8f6b_l:
-        //     jmp c900e
-        continue;
-
-        // c8f6e:
-    c8f6e_l:
-        //     jsr lookup_formatting_command
-        enum formatting_command fmt_cmd_index = lookup_formatting_command();
-        //     bmi c8f7a
-        if (fmt_cmd_index == NO_FORMATTING_COMMAND)
-            goto c8f7a_l;
-        //     jsr execute_formatting_command
-        if (execute_formatting_command(fmt_cmd_index))
-            goto c8f6b_l;
+            //     ldy #3
+            //     sty input_buffer_ptr+1
+            l0080 = 3;
+            //     jsr sub_cab6e
+            //     bne c8f6e
+            // (inlined: Z = (ram[tmp01] == RULER_BYTE))
+            if (ram[cursor] != RULER_BYTE)
+                goto c8f6e_l;
+            //     ldy #3
+            uint8_t y_2 = 3;
+            //     ldx #0
+            x = 0;
+            // loop_c8f5d:
+            do
+            {
+                a_1 = ram[cursor + y_2];
+                current_ruler_buffer[x] = a_1;
+                y_2++;
+                x++;
+            } while (a_1 != 0x0d);
+            //     jsr find_margins_of_current_ruler_buffer
+            find_margins_of_current_ruler_buffer();
+        c8f6b_l:
+            goto c8f30; // was continue / jmp c900e -> jmp c8f30
+        c8f6e_l:
+            fmt_cmd_index = lookup_formatting_command();
+            //     bmi c8f7a
+            if (fmt_cmd_index == NO_FORMATTING_COMMAND)
+                goto c8f7a_l;
+            if (execute_formatting_command(fmt_cmd_index))
+                goto c8f6b_l;
+        }
         //     beq c8f6b
         // c8fce_thunk:
     c8fce_thunk_l:
         //     bne c8fce ; ALWAYS branch
         goto c8fce_l;
-
         // c8f7a:
     c8f7a_l:
         //     lda first_macro_ptr
@@ -2571,7 +2389,6 @@ static void print_loop(addr_t ptr5)
         //     lda first_macro_ptr+1
         //     sta ((uint8_t*)&tmp67)[1]
         // (macro walks the macro linked list; first_macro_ptr is the head)
-
         struct macro* macro;
         macro = first_macro_ptr;
         //     ldy #1
@@ -2588,9 +2405,7 @@ static void print_loop(addr_t ptr5)
         //  isalpha() tests; C=1 otherwise)
         //     bcc c8f92
         if (!isalpha(a_3))
-        {
             a_3 = 0x20;
-        }
         //     sta tmp9
         // lookup_macro_name:
     lookup_macro_name_l:
@@ -2601,16 +2416,14 @@ static void print_loop(addr_t ptr5)
         //  end-of-list marker)
         if ((uint8_t)macro->next == 0)
             goto c8f6b_l;
-        //     ldy #2
-        //     lda (((uint8_t*)&tmp67)[0]),y
-        //     cmp tmp8
-        if (macro->name[0] != a_2)
-            goto get_next_macro_in_linked_list_l;
-        //     iny ; Y=0x03
-        //     lda (((uint8_t*)&tmp67)[0]),y
-        //     cmp tmp9
-        if (macro->name[1] == a_3)
-            goto c8fb9_l;
+        if (!(macro->name[0] != a_2))
+        {
+            //     iny ; Y=0x03
+            //     lda (((uint8_t*)&tmp67)[0]),y
+            //     cmp tmp9
+            if (macro->name[1] == a_3)
+                goto c8fb9_l;
+        }
         // get_next_macro_in_linked_list:
     get_next_macro_in_linked_list_l:
         //     ldy #0
@@ -2625,11 +2438,9 @@ static void print_loop(addr_t ptr5)
         // (macro = the next-macro pointer stored at *macro)
         macro = (struct macro*)&ram[macro->next];
         goto lookup_macro_name_l;
-
         // c8fb9:
     c8fb9_l:
         //     lda macro_executing_flag
-
         //     bne nested_macro_error
         if (macro_executing_flag != 0)
         {
@@ -2642,16 +2453,13 @@ static void print_loop(addr_t ptr5)
         ptr3 = (addr_t)(macro->body - ram);
         macro_executing_flag = (ptr3 != 0);
         //     bne c900e
-
         if (macro_executing_flag != 0)
             continue;
         // c8fce:
     c8fce_l:
         //     lda l0031
         if (l0031 == 0)
-        {
             render_new_page();
-        }
         //     jsr sub_c9407
         output_left_margin();
         //     lda #0
@@ -2662,7 +2470,6 @@ static void print_loop(addr_t ptr5)
         //     lda print_flags
         if (((int8_t)print_flags < 0))
         {
-
             if (microspacing_flag != 0)
             {
                 microspace_word_processor(&y_4);
@@ -2688,7 +2495,6 @@ static void print_loop(addr_t ptr5)
         //     bcs c9009
         // (clc forces C=0, so the sbc subtracts line_spacing + 1; the borrow
         //  branch is taken when l0021 <= line_spacing)
-
         uint8_t a_11 = l0021 - line_spacing - 1;
         if (l0021 <= line_spacing)
         {
@@ -2716,7 +2522,6 @@ static void print_newline(void)
 static void print_vertical_space(uint8_t x)
 {
     // Pseudocode: Prints X number of blank lines (newlines)
-
     // ;
     // ***************************************************************************************
     // ; On Entry:
@@ -2731,39 +2536,35 @@ static void print_vertical_space(uint8_t x)
 
 read_block_status_t read_block_from_file(addr_t* cursor, addr_t limit)
 {
+    uint8_t a_1;
     _Bool eof_1;
-
     // Set when the read ended on a NUL/EOF byte (as opposed to the destination
     // block filling up); distinguishes READ_BLOCK_DONE from READ_BLOCK_MORE.
-
     // read_block_from_file
     // read_block_from_file:
     //     lda #0
-
     uint8_t a = 0;
     //     sta l0083
     l0083 = a;
     //     sta l0084
     l0084 = a;
 c8c95:
-    // c8c95:
-    //     jsr get_byte_from_file
-    uint8_t a_1 = get_byte_from_file();
-    //     beq c8cf2
-    if (a_1 == 0)
+    do
     {
-        eof_1 = true;
-        goto c8cf2;
-    }
-    //     ldy #0
-    //     cmp #0x7f
-    if (a_1 < 0x7f)
-        goto c8caf;
-    //     ldx l0084
-
-    //     bne c8c95
-    if (l0084 != 0)
-        goto c8c95;
+        // c8c95:
+        //     jsr get_byte_from_file
+        a_1 = get_byte_from_file();
+        //     beq c8cf2
+        if (a_1 == 0)
+        {
+            eof_1 = true;
+            goto c8cf2;
+        }
+        //     ldy #0
+        //     cmp #0x7f
+        if (a_1 < 0x7f)
+            goto c8caf;
+    } while (l0084 != 0);
     //     jsr check_for_command_prefix
     command_prefix_t cp = check_for_command_prefix(a_1);
     //     bne c8c95
@@ -2772,41 +2573,41 @@ c8c95:
     //     ldx #0xfd
     //     stx l0083
     l0083 = 0xfd;
+// c8caf:
+//     cmp #0x20 ; ' '
 c8caf:
-    // c8caf:
-    //     cmp #0x20 ; ' '
-    if (a_1 >= 0x20)
-        goto c8cc8;
-    //     jsr check_for_control_code
-    control_code_t cc = check_for_control_code(a_1);
-    //     beq c8cc8
-    //     cmp #0x1a
-    //     cmp #0x0d
-    //     cmp #0x0b
-    if (cc != NO_CONTROL_CODE || a_1 == 0x1a || a_1 == 0x0d || a_1 == 0x0b)
-        goto c8cc8;
-    //     cmp #9
-    if (a_1 != 9)
-        goto c8c95;
+    if (!(a_1 >= 0x20))
+    {
+        //     jsr check_for_control_code
+        control_code_t cc = check_for_control_code(a_1);
+        //     beq c8cc8
+        //     cmp #0x1a
+        //     cmp #0x0d
+        //     cmp #0x0b
+        if (cc != NO_CONTROL_CODE || a_1 == 0x1a || a_1 == 0x0d || a_1 == 0x0b)
+            goto c8cc8;
+        //     cmp #9
+        if (a_1 != 9)
+            goto c8c95;
+    }
 c8cc8:
     // c8cc8:
     //     ldx #1
     uint8_t x_2 = 1;
-    //     cmp #0x0d
-    if (a_1 == 0x0d)
-        goto c8cdb;
-    //     dex
-    x_2--;
-    //     ldy l0083
-
-    //     cpy #0x84
-    if (l0083 == MAX_LINE_LENGTH)
+    if (!(a_1 == 0x0d))
     {
+        //     dex
+        x_2--;
+        //     ldy l0083
+        //     cpy #0x84
+        if (l0083 == MAX_LINE_LENGTH)
         {
-            write_cr_to_memory(&tmp01);
-            a_1 = a_1;
+            {
+                write_cr_to_memory(&tmp01);
+                a_1 = a_1;
+            }
+            x_2++;
         }
-        x_2++;
     }
 c8cdb:
     // c8cdb:
@@ -2815,7 +2616,6 @@ c8cdb:
     //     jsr write_byte_to_memory
     write_byte_to_memory(cursor, a_1);
     //     txa
-
     //     beq c8c95
     //     lda ((uint8_t*)&tmp01)[1]
     //     cmp l0081
@@ -2834,9 +2634,7 @@ c8cf2:
     //     lda l0084
     //     beq c8cfa
     if (l0084 != 0)
-    {
         write_cr_to_memory(cursor);
-    }
     // c8cfa:
     //     lda l0082
     // (return: EMPTY if l0082 == 0, else eof selects DONE vs block-full MORE)
@@ -2850,11 +2648,9 @@ c8cf2:
 
 static void render_header_or_footer(uint8_t* text)
 {
-
     // render_header_or_footer
     // Pseudocode: Renders header or footer text with centering and
     // justification
-
     // ;
     // ***************************************************************************************
     // render_header_or_footer:
@@ -2864,7 +2660,6 @@ static void render_header_or_footer(uint8_t* text)
     //     lda (((uint8_t*)&tmp45)[0]),y
     // (y is 0 throughout, so the first header/footer text byte is read
     // directly)
-
     uint8_t a = text[0];
     //     beq return_28
     if (a == 0)
@@ -2881,9 +2676,7 @@ static void render_header_or_footer(uint8_t* text)
     bool parity = get_page_parity();
     //     bcs c932e
     if (!parity)
-    {
         section_start = compute_header_odd_page_section(text);
-    }
     //     jsr sub_c93c8
     copy_header_footer_text(section_start);
     //     jsr c937b
@@ -2891,41 +2684,39 @@ static void render_header_or_footer(uint8_t* text)
     //     jsr sub_c939b
     uint8_t* section_start_1 = compute_header_middle_section(text);
     //     jsr sub_c93c8
-
     uint8_t x = copy_header_footer_text(section_start_1);
-    //     txa
-    //     beq c9355
-    if (x == 0)
-        goto c9355;
-    //     dex
-    x--;
-    //     txa
-    uint8_t a_3 = x;
-    //     lsr
-    // (flags not used: get_right_margin sets them fresh; plain shift)
-    a_3 >>= 1;
-    //     sta l0081
-    l0081 = a_3;
-    //     jsr sub_c93be
-    uint8_t a_4 = get_right_margin();
-    //     beq c9355
-    if (a_4 == 0)
-        goto c9355;
-    //     lsr
-    // (flags not used; plain shift)
-    a_4 >>= 1;
-    //     sec
-    //     sbc l0081
-    //     bcc c9355
-    //     sbc l0039
-    //     bcc c9355
-    // (the two sbc subtractions are equivalent to a C comparison:
-    //  reach add_justification_spaces iff a >= l0081 + l0039, with
-    //  the count a - l0081 - l0039)
-    if (a_4 >= l0081 + l0039)
+    if (!(x == 0))
     {
-        uint8_t x_1 = a_4 - l0081 - l0039;
-        add_justification_spaces(x_1);
+        //     dex
+        x--;
+        //     txa
+        uint8_t a_3 = x;
+        //     lsr
+        // (flags not used: get_right_margin sets them fresh; plain shift)
+        a_3 >>= 1;
+        //     sta l0081
+        l0081 = a_3;
+        //     jsr sub_c93be
+        uint8_t a_4 = get_right_margin();
+        //     beq c9355
+        if (a_4 == 0)
+            goto c9355;
+        //     lsr
+        // (flags not used; plain shift)
+        a_4 >>= 1;
+        //     sec
+        //     sbc l0081
+        //     bcc c9355
+        //     sbc l0039
+        //     bcc c9355
+        // (the two sbc subtractions are equivalent to a C comparison:
+        //  reach add_justification_spaces iff a >= l0081 + l0039, with
+        //  the count a - l0081 - l0039)
+        if (a_4 >= l0081 + l0039)
+        {
+            uint8_t x_1 = a_4 - l0081 - l0039;
+            add_justification_spaces(x_1);
+        }
     }
 c9355:
     //     jsr c937b
@@ -2936,9 +2727,7 @@ c9355:
     bool parity2 = get_page_parity();
     //     bcs c9363
     if (!parity2)
-    {
         section_start_2 = compute_header_left_section(text);
-    }
     //     jsr sub_c93c8
     uint8_t x_2 = copy_header_footer_text(section_start_2);
     //     jsr sub_c93be
@@ -2987,61 +2776,52 @@ c9355:
 
 static void render_new_page(void)
 {
-
     // render_new_page
     // Pseudocode: Renders a new page with headers, margins, page number prompt
-
     // ;
     // ***************************************************************************************
     // render_new_page:
     //     lda #0x81
-
     uint8_t a = 0x81;
     //     sta l0031
     l0031 = a;
-    //     bit print_flags
-    //     bvc c92d4
-    // (bit test: V = print_flags & 0x40)
-    if (!(print_flags & 0x40))
-        goto c92d4;
-    //     jsr stop_printing
-    stop_printing();
-    //     jsr print_inline_string
-    //     .ascii "\rPage "
-    //     .byte 0
-    cli_putstring("\nPage ");
-
-    //     ldx register_value_p
-    render_number_to_screen(register_value_array['P' - 'A']);
-    //     jsr print_inline_string
-    //     .ascii ".."
-    //     .byte 0
-    cli_putstring("..");
-
-    //     jsr flush_and_read_char
-    uint8_t a_1 = screen_getchar();
-    //     and #0xdf
-    a_1 &= 0xdf;
-    //     cmp #0x4d ; 'M'
-    //     beq c92d4
-    if (a_1 == 0x4d)
-        goto c92d4;
-    //     cmp #0x51 ; 'Q'
-    //     bne c92cf
-    if (a_1 != 0x51)
-        goto c92cf;
-    // c92cc: (Q pressed — stop printing)
-    //     jmp c8f1a
-    stop_printing();
-    cli_putchar('\n');
-    return_to_cli_prompt();
-    return;
-
-    // c92cf:
-c92cf:
-    //     lda #0xc0
-    //     jsr start_printing
-    start_printing();
+    if (print_flags & 0x40)
+    {
+        //     jsr stop_printing
+        stop_printing();
+        //     jsr print_inline_string
+        //     .ascii "\rPage "
+        //     .byte 0
+        cli_putstring("\nPage ");
+        //     ldx register_value_p
+        render_number_to_screen(register_value_array['P' - 'A']);
+        //     jsr print_inline_string
+        //     .ascii ".."
+        //     .byte 0
+        cli_putstring("..");
+        //     jsr flush_and_read_char
+        uint8_t a_1 = screen_getchar();
+        //     and #0xdf
+        a_1 &= 0xdf;
+        //     cmp #0x4d ; 'M'
+        //     beq c92d4
+        if (a_1 == 0x4d)
+            goto c92d4;
+        if (!(a_1 != 0x51))
+        {
+            // c92cc: (Q pressed — stop printing)
+            //     jmp c8f1a
+            stop_printing();
+            cli_putchar('\n');
+            return_to_cli_prompt();
+            return;
+        }
+        // c92cf:
+    c92cf:
+        //     lda #0xc0
+        //     jsr start_printing
+        start_printing();
+    }
     // c92d4:
 c92d4:
     //     lda l0038
@@ -3053,7 +2833,6 @@ c92d4:
     }
     //     ldx top_margin                                                    ;
     //     X=number of lines
-
     //     jsr print_vertical_space
     print_vertical_space(top_margin);
     //     lda headers_enabled_flag
@@ -3109,7 +2888,8 @@ bool scan_input_buffer(uint8_t* buffer, struct scan_state* state)
     state->ch = delimiter_char;
     if (state->ch == 0x0d)
     {
-        return true; // Z set (no mark)
+        return true;
+        // Z set (no mark)
     }
     //     ldy input_buffer_offset
     // loop_c8e3b:
@@ -3121,13 +2901,15 @@ bool scan_input_buffer(uint8_t* buffer, struct scan_state* state)
         //     beq return_20
         if (state->ch == 0x0d)
         {
-            return true; // Z set (no mark)
+            return true;
+            // Z set (no mark)
         }
         //     cmp l007e
         //     bne return_20
         if (state->ch != delimiter_char)
         {
-            return false; // Z clear (mark found)
+            return false;
+            // Z clear (mark found)
         }
         //     iny
         state->pos++;
@@ -3136,18 +2918,16 @@ bool scan_input_buffer(uint8_t* buffer, struct scan_state* state)
             break;
     }
     //     rts (falls through to check_not_continuous_editing in 6502)
-    return true; // Z set (scan position wrapped past the buffer)
+    return true;
+    // Z set (scan position wrapped past the buffer)
 }
 
 static void start_microspacing_if_active(uint8_t a)
 {
-
     // Pseudocode: Checks if printer is active and starts microspacing if
     // supported
-
     // sub_c916a:
     //     ldx print_flags
-
     //     bpl return_25
     if (!(print_flags & 0x80))
         return;
@@ -3179,7 +2959,6 @@ static void emit_microspacing_spaces(uint8_t a, uint8_t x)
 {
     // Pseudocode: Emits spaces for microspacing by calling printer driver with
     // spacing count
-
     // sub_c9173:
     //     cpx l0043
     //     beq return_25
@@ -3214,53 +2993,49 @@ static void emit_microspacing_spaces(uint8_t a, uint8_t x)
  */
 addr_t prepare_output_line(addr_t read_limit, addr_t* macro_cursor)
 {
-
+    uint8_t a_5;
     // sub_c9188
     //  Ptrs:   ptr1, (*macro_cursor), read_limit
     // c9184:
     //     lda #0
     //     sta macro_executing_flag
     // (handled inline below)
-
     // sub_c9188:
     //     lda macro_executing_flag
-
     uint8_t a = macro_executing_flag;
-    //     bne c91a3
-    if (a != 0)
-        goto c91a3;
-c9188_normal_entry:
-    //     lda ptr5
-    //     sta input_buffer_ptr+1
-    //     lda ptr5+1
-    //     sta l0081
-    // (16-bit copy: *cursor = read_limit.  The 6502 also stored the low/high
-    //  bytes into input_buffer_ptr+1 (l0080) and l0081; every reachable
-    //  reader of those bytes re-initialises them first, so the stores are
-    //  omitted.)
-
-    addr_t cursor = read_limit;
-    //     jsr sub_c9241
-    if (read_next_output_line(read_limit, &cursor) == READ_BLOCK_DONE)
+    if (!(a != 0))
     {
-        //     bcs return_26 (C=1 conveyed as a true return)
-        return 0;
-    }
-    //     lda ptr5 / ldy ptr5+1 / bne c91d0
-    // (high byte of read_limit nonzero: no macro to execute; the result is
-    //  just read_limit itself)
-    if (read_limit != 0)
-    {
-        current_format_line_ptr = read_limit;
-        return read_limit;
+    c9188_normal_entry:
+        //     lda ptr5
+        //     sta input_buffer_ptr+1
+        //     lda ptr5+1
+        //     sta l0081
+        // (16-bit copy: *cursor = read_limit.  The 6502 also stored the
+        // low/high
+        //  bytes into input_buffer_ptr+1 (l0080) and l0081; every reachable
+        //  reader of those bytes re-initialises them first, so the stores are
+        //  omitted.)
+        addr_t cursor = read_limit;
+        //     jsr sub_c9241
+        if (read_next_output_line(read_limit, &cursor) == READ_BLOCK_DONE)
+        {
+            //     bcs return_26 (C=1 conveyed as a true return)
+            return 0;
+        }
+        //     lda ptr5 / ldy ptr5+1 / bne c91d0
+        // (high byte of read_limit nonzero: no macro to execute; the result is
+        //  just read_limit itself)
+        if (read_limit != 0)
+        {
+            current_format_line_ptr = read_limit;
+            return read_limit;
+        }
     }
     // c91a3:
 c91a3:
     //     ldy #0
-
     uint8_t y = 0;
     //     ldx #0
-
     uint8_t x = 0;
     // c91a7:
 c91a7:
@@ -3301,7 +3076,6 @@ c91a7:
             //     bne loop_c91b2 ; ALWAYS branch
         }
     }
-
     // c91c2:
 c91c2:
     //     tya
@@ -3318,105 +3092,97 @@ c91c2:
     // return_26:
     //     rts
     return ptr1;
-
     // c91da:
 c91da:
     //     iny
     y++;
     //     lda ((*macro_cursor)),y
     uint8_t a_3 = ram[(*macro_cursor) + y];
-    //     sec
-    //     sbc #0x30 ; '0'
-    //     bcc c9225
-    // (sbc with C=1 is a plain subtraction; borrow means non-digit)
-    if (a_3 < 0x30)
-        goto c9225;
-    a_3 -= 0x30;
-    //     cmp #0x0a
-    //     bcs c9225
-    if (a_3 >= 0x0a)
-        goto c9225;
-    //     iny
-    y++;
-    //     sty l0084
-    l0084 = y;
-    //     sta l0083
-    l0083 = a_3;
-    //     lda #0
-    //     sta l0082
-    l0082 = 0;
-    //     ldy #2
-    uint8_t y_1 = 2;
-    // loop_c91f1:
-loop_c91f1:
-    //     dec l0083
-    l0083--;
-    if ((int8_t)l0083 < 0)
-        goto c9209;
-    // c91f5:
-c91f5:
-    //     iny
-    y_1++;
-    //     lda (ptr5),y
-    uint8_t a_5 = ram[read_limit + y_1];
-    //     cmp #0x0d
-    //     beq c9223
-    if (a_5 == 0x0d)
-        goto c9223;
-    //     jsr sub_c9228
+    if (!(a_3 < 0x30))
     {
-        enum parse_register_result_t r = parse_register_reference(a_5);
-        //     beq c91f5
-        //     bvs c91f5
-        if (r == PARSE_REGISTER_MARKER || r == PARSE_REGISTER_VALUE)
-            goto c91f5;
+        a_3 -= 0x30;
+        //     cmp #0x0a
+        //     bcs c9225
+        if (a_3 >= 0x0a)
+            goto c9225;
+        //     iny
+        y++;
+        //     sty l0084
+        l0084 = y;
+        //     sta l0083
+        l0083 = a_3;
+        //     lda #0
+        //     sta l0082
+        l0082 = 0;
+        //     ldy #2
+        uint8_t y_1 = 2;
+        do
+        {
+            // loop_c91f1:
+            //     dec l0083
+            l0083--;
+            if ((int8_t)l0083 < 0)
+                goto c9209;
+            // c91f5:
+        c91f5:
+            //     iny
+            y_1++;
+            //     lda (ptr5),y
+            a_5 = ram[read_limit + y_1];
+            //     cmp #0x0d
+            //     beq c9223
+            if (a_5 == 0x0d)
+                goto c9223;
+            //     jsr sub_c9228
+            {
+                enum parse_register_result_t r = parse_register_reference(a_5);
+                //     beq c91f5
+                //     bvs c91f5
+                if (r == PARSE_REGISTER_MARKER || r == PARSE_REGISTER_VALUE)
+                    goto c91f5;
+            }
+        } while (a_5 == 0x2c);
+        //     bne c91f5 ; ALWAYS branch
+        goto c91f5;
+    c9209:
+        do
+        {
+            // c9209:
+            //     iny
+            y_1++;
+            //     lda (ptr5),y
+            uint8_t a_6 = ram[read_limit + y_1];
+            //     cmp #0x0d
+            //     beq c9223
+            if (a_6 == 0x0d)
+                break;
+            //     jsr sub_c9228
+            {
+                enum parse_register_result_t r_1 =
+                    parse_register_reference(a_6);
+                //     beq c9209
+                if (r_1 == PARSE_REGISTER_MARKER)
+                    continue;
+                //     bvs c921b
+                if (r_1 == PARSE_REGISTER_VALUE)
+                    goto c921b;
+            }
+            //     cmp #0x2c ; ','
+            //     beq c9223
+            if (a_6 == 0x2c)
+                break;
+            // c921b:
+        c921b:
+            //     sta current_line_buffer,x
+            ram[RAM_CURRENT_LINE_BUF + x] = a_6;
+            //     inx
+            x++;
+        } while (x < 0x82);
+        // c9223:
+    c9223:
+        //     ldy l0084
+        y = l0084;
     }
-    //     cmp #0x2c ; ','
-    //     beq loop_c91f1
-    if (a_5 == 0x2c)
-        goto loop_c91f1;
-    //     bne c91f5                                                         ;
-    //     ALWAYS branch
-    goto c91f5;
-
-    // c9209:
-c9209:
-    //     iny
-    y_1++;
-    //     lda (ptr5),y
-    uint8_t a_6 = ram[read_limit + y_1];
-    //     cmp #0x0d
-    //     beq c9223
-    if (a_6 == 0x0d)
-        goto c9223;
-    //     jsr sub_c9228
-    {
-        enum parse_register_result_t r_1 = parse_register_reference(a_6);
-        //     beq c9209
-        if (r_1 == PARSE_REGISTER_MARKER)
-            goto c9209;
-        //     bvs c921b
-        if (r_1 == PARSE_REGISTER_VALUE)
-            goto c921b;
-    }
-    //     cmp #0x2c ; ','
-    //     beq c9223
-    if (a_6 == 0x2c)
-        goto c9223;
-    // c921b:
-c921b:
-    //     sta current_line_buffer,x
-    ram[RAM_CURRENT_LINE_BUF + x] = a_6;
-    //     inx
-    x++;
-    //     cpx #0x82
-    //     bcc c9209
-    if (x < 0x82)
-        goto c9209;
-    // c9223:
-c9223:
-    //     ldy l0084
-    y = l0084;
     // c9225:
 c9225:
     //     jmp c91a7
@@ -3427,7 +3193,6 @@ static enum parse_register_result_t parse_register_reference(uint8_t a)
 {
     // sub_c9228
     // Pseudocode: Parses register reference markers (<, >, =) in format line
-
     // sub_c9228:
     //     cmp #0x3e ; '>'
     //     bne c9231
@@ -3435,7 +3200,8 @@ static enum parse_register_result_t parse_register_reference(uint8_t a)
     {
         a = 0;
         l0082 = a;
-        return PARSE_REGISTER_MARKER; // Z live
+        return PARSE_REGISTER_MARKER;
+        // Z live
     }
     //     cmp #0x3c ; '<'
     //     bne c923c
@@ -3443,13 +3209,15 @@ static enum parse_register_result_t parse_register_reference(uint8_t a)
     {
         a = 0x40;
         l0082 = a;
-        return PARSE_REGISTER_MARKER; // Z live
+        return PARSE_REGISTER_MARKER;
+        // Z live
     }
     //     bit l0082
     // (bit sets Z and V; Z is killed by the following set_flags, so V
     //  is the only surviving flag on this path)
     if (a & l0082)
-        return PARSE_REGISTER_VALUE; // V live
+        return PARSE_REGISTER_VALUE;
+    // V live
     //     ora #0
     //     rts
     return PARSE_REGISTER_OTHER;
@@ -3458,20 +3226,16 @@ static enum parse_register_result_t parse_register_reference(uint8_t a)
 static read_block_status_t read_next_output_line(addr_t limit, addr_t* cursor)
 {
     uint8_t a2;
-
     // sub_c9241
     //  Ptrs:   ptr6
     // Pseudocode: Reads next line from file buffer or calls
     // read_block_from_file for printing
-
     // sub_c9241:
     //     lda printing_from_file_flag
-
     //     beq c9260
     if (printing_from_file_flag == 0)
-    {
         return read_block_from_file(cursor, limit);
-    } //     ldy #0
+    //     ldy #0
     uint8_t y = 0;
     // loop_c9247:
     do
@@ -3487,7 +3251,6 @@ static read_block_status_t read_next_output_line(addr_t limit, addr_t* cursor)
     // return_27:
     //     rts
     return READ_BLOCK_MORE;
-
     // c9260:
     //     jmp read_block_from_file
 }
@@ -3497,43 +3260,39 @@ static void compute_lines_remaining_on_page(void)
     // sub_c92f0
     // sub_c92f0: Computes remaining lines on page = page_length minus margins
     // On exit: l0021 = result (at least 1 if any margin computation underflows)
-
     // c92f0:
     //     ldx page_length
-
     uint8_t x = page_length;
-    //     lda l0038
-
-    //     beq c930d
-    if (page_break_flag == 0)
-        goto c930d;
-    //     ldx #1
-    x = 1;
-    //     lda page_length
-    uint8_t a_1 = page_length;
-    //     clc
-    //     sbc top_margin
-    //     bcc c930d
-    if (a_1 < top_margin)
-        goto c930d;
-    a_1 -= top_margin;
-    //     sbc header_margin
-    //     bcc c930d
-    if (a_1 < header_margin)
-        goto c930d;
-    a_1 -= header_margin;
-    //     clc
-    //     sbc bottom_margin
-    //     bcc c930d
-    if (a_1 < bottom_margin)
-        goto c930d;
-    a_1 -= bottom_margin;
-    //     sbc footer_margin
-    //     bcc c930d
-    if (a_1 < footer_margin)
-        goto c930d;
-    a_1 -= footer_margin;
-    x = a_1;
+    if (!(page_break_flag == 0))
+    {
+        //     ldx #1
+        x = 1;
+        //     lda page_length
+        uint8_t a_1 = page_length;
+        //     clc
+        //     sbc top_margin
+        //     bcc c930d
+        if (a_1 < top_margin)
+            goto c930d;
+        a_1 -= top_margin;
+        //     sbc header_margin
+        //     bcc c930d
+        if (a_1 < header_margin)
+            goto c930d;
+        a_1 -= header_margin;
+        //     clc
+        //     sbc bottom_margin
+        //     bcc c930d
+        if (a_1 < bottom_margin)
+            goto c930d;
+        a_1 -= bottom_margin;
+        //     sbc footer_margin
+        //     bcc c930d
+        if (a_1 < footer_margin)
+            goto c930d;
+        a_1 -= footer_margin;
+        x = a_1;
+    }
 c930d:
     //     stx l0021
     l0021 = x;
@@ -3544,12 +3303,10 @@ c930d:
 static uint8_t* compute_header_left_section(uint8_t* tmp45)
 {
     uint8_t* tmp23;
-
     // sub_c9393:
     //     jsr sub_c93b6
     get_line_width(tmp45);
     //     lda #0
-
     uint8_t a = 0;
     //     jmp c93aa
     {
@@ -3567,10 +3324,8 @@ static uint8_t* compute_header_left_section(uint8_t* tmp45)
 
 static uint8_t* compute_header_middle_section(uint8_t* tmp45)
 {
-
     // sub_c939b:
     //     jsr sub_c93b6
-
     uint8_t y = get_line_width(tmp45);
     //     jmp c93a7
     // c93a7:
@@ -3584,7 +3339,6 @@ static uint8_t* compute_header_middle_section(uint8_t* tmp45)
     //     lda ((uint8_t*)&tmp45)[1]
     //     adc #0
     //     sta ((uint8_t*)&tmp23)[1]
-
     uint8_t* tmp23 = tmp45 + y + 1;
     return tmp23;
 }
@@ -3592,15 +3346,12 @@ static uint8_t* compute_header_middle_section(uint8_t* tmp45)
 static uint8_t* compute_header_odd_page_section(uint8_t* tmp45)
 {
     uint8_t* tmp23;
-
     // sub_c93a1:
     //     jsr sub_c93b6
     //     jsr c93b8
     // c93a7:
     uint8_t y = scan_string_length(get_line_width(tmp45), tmp45);
-
     y++;
-
     uint8_t a = y;
     y--;
     // c93aa:
@@ -3626,7 +3377,6 @@ static uint8_t get_line_width(uint8_t* tmp45)
 static uint8_t get_right_margin(void)
 {
     // Pseudocode: Returns ruler_right_stop or l003a-1 as the line width
-
     // sub_c93be:
     //     lda ruler_right_stop
     //     bne return_29
@@ -3641,18 +3391,15 @@ static uint8_t get_right_margin(void)
 
 static uint8_t copy_header_footer_text(uint8_t* text)
 {
-
+    uint8_t a_3;
     uint8_t x = 0;
-
     // sub_c93c8
     // Pseudocode: Copies header/footer text to output_buffer, expanding
     // register references
-
     // sub_c93c8:
     //     ldx #0
     //     ldy #0
     // (Z from ldy #0 is clobbered by the following lda (text),y)
-
     uint8_t y_1 = 0;
     //     sty l0081
     int l0081 = y_1;
@@ -3660,7 +3407,6 @@ static uint8_t copy_header_footer_text(uint8_t* text)
     for (;;)
     {
         //     lda (((uint8_t*)&text)[0]),y
-
         uint8_t a = text[y_1];
         if ((int8_t)a < 0)
             goto c93e6;
@@ -3681,26 +3427,26 @@ static uint8_t copy_header_footer_text(uint8_t* text)
         //     cpx #MAX_LINE_LENGTH
         if (x < MAX_LINE_LENGTH)
             continue;
-        // c93e6:
     c93e6:
-        //     stx l0084
-        l0084 = x;
-        //     lda print_flags
-        if (((int8_t)print_flags < 0))
+        do
         {
-            uint8_t a_2 = x;
-            a_2 -= l0081;
-            x = a_2;
-        }
-        //     rts
-        return x;
-
-        // c93f2:
-    c93f2:
-        //     lda (((uint8_t*)&text)[0]),y
-        uint8_t a_3 = text[y_1];
-        if ((int8_t)a_3 < 0)
-            goto c93e6;
+            // c93e6:
+            //     stx l0084
+            l0084 = x;
+            //     lda print_flags
+            if (((int8_t)print_flags < 0))
+            {
+                uint8_t a_2 = x;
+                a_2 -= l0081;
+                x = a_2;
+            }
+            //     rts
+            return x;
+            // c93f2:
+        c93f2:
+            //     lda (((uint8_t*)&text)[0]),y
+            a_3 = text[y_1];
+        } while ((int8_t)a_3 < 0);
         //     iny
         y_1++;
         //     jsr render_register
@@ -3713,7 +3459,6 @@ static bool get_page_parity(void)
 {
     // Pseudocode: Checks two_sided_flag and returns page parity for alternate
     // layout
-
     // sub_c93fd:
     //     sec
     //     lda two_sided_flag
@@ -3730,9 +3475,7 @@ static bool get_page_parity(void)
 
 static void output_left_margin(void)
 {
-
     // Pseudocode: Outputs left margin spaces, adjusting for two-sided printing
-
     // sub_c9407:
     //     jsr sub_c93fd
     bool parity = get_page_parity();
@@ -3741,11 +3484,8 @@ static void output_left_margin(void)
     //     bcc c9415
     if (parity)
     {
-
         if (two_sided_flag != 0)
-        {
             a += rhs_extra_margin;
-        }
     }
     //     tax
     //     lda #0x20 ; ' '
@@ -3758,7 +3498,6 @@ static void output_left_margin(void)
 static uint8_t add_justification_spaces(uint8_t x)
 {
     // Pseudocode: Adds extra spaces to x position for centering/justification
-
     // sub_c941a:
     //     txa
     uint8_t a = x;
@@ -3786,21 +3525,17 @@ static uint8_t add_justification_spaces(uint8_t x)
 static uint8_t convert_char_for_printing(uint8_t a, uint8_t* x, bool* is_tab)
 {
     // Pseudocode: Converts character for printing, updates x position counter
-
     // sub_c9431:
     //     jsr sub_ca5ae
     a = process_document_character(a, x, is_tab);
-    //     bit print_flags
-    if (!(print_flags & 0x80))
-        goto c943c;
-    //     ora #0
-    a |= 0;
-
-    //     bmi return_33                                                     ;
-    //     ALWAYS branch
-    if (a & 0x80)
-        goto return_33;
-
+    if (print_flags & 0x80)
+    {
+        //     ora #0
+        a |= 0;
+        //     bmi return_33 ; ALWAYS branch
+        if (a & 0x80)
+            goto return_33;
+    }
     // c943c:
 c943c:
     //     pha
@@ -3816,7 +3551,7 @@ c943c:
         //     pla
         a = saved_a;
     }
-// return_33:
+    // return_33:
 return_33:
     //     rts
     return a;
@@ -3824,13 +3559,10 @@ return_33:
 
 static void reset_print_registers(void)
 {
-
     // sub_cb104
     // Pseudocode: Resets formatting registers and default print settings
-
     // sub_cb104:
     //     lda #0
-
     uint8_t a = 0;
     //     ldx #0x33 ; '3'
     // loop_cb108:
@@ -3866,7 +3598,6 @@ static void reset_print_registers(void)
     register_value_array['P' - 'A'] = a_2;
     register_value_array['L' - 'A'] = a_2;
     //     ldy #0x80
-
     uint8_t y = 0x80;
     //     sty highlight1_code
     highlight1_code = y;
@@ -3927,16 +3658,13 @@ static void write_cr_to_memory(addr_t* cursor)
 // Printer driver setup (called from cli.c)
 void stop_printing(void)
 {
-
     // stop_printing
     // Pseudocode: Stops active printing by clearing print flags and calling
     // printer driver cleanup
-
     // ;
     // ***************************************************************************************
     // stop_printing:
     //     lda print_flags
-
     if (((int8_t)print_flags < 0))
     {
         // (The 6502 clears bit 7 by rolling left into C, clearing C, and
@@ -3954,7 +3682,6 @@ void stop_printing(void)
 void prepare_printer_driver(void)
 {
     // Pseudocode: Sets up printer driver pointer from name or default driver
-
     // ;
     // ***************************************************************************************
     // prepare_printer_driver:

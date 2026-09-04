@@ -458,7 +458,6 @@ int main(int argc, char* argv[])
     // main
     // Pseudocode: Program entry point with longjmp buffer for stack reset (txs
     // equivalent)
-
     // .text
     // .global main
     // main:
@@ -489,13 +488,11 @@ int main(int argc, char* argv[])
 // terminating the current token (the 6502's Z flag).
 static uint8_t read_next_command_byte(uint8_t* y, bool* end)
 {
-
     // sub_c8310
     // sub_c8310:
     //     iny
     (*y)++;
     //     lda input_buffer,y
-
     uint8_t a = input_buffer[*y];
     //     sta l0084
     // (the l0084 store is omitted — callers use the returned byte instead)
@@ -531,36 +528,25 @@ void setup_area_pointers(addr_t ptr2)
     //  Ptrs:   ptr2
     // sub_c8371:
     //     lda ptr2
-
     //     sta ((uint8_t*)&tmp89)[0]
     //     lda ptr2+1
     //     sta ((uint8_t*)&tmp89)[1]
-
     addr_t tmp89 = ptr2;
     //     ldy #0
     //     ldx #0
-
     uint8_t x = 0;
-    // c837d:
-    //     lda ((uint8_t*)&tmp89)[1]
-    //     cmp doc_ptr2+1
-    //     lda ((uint8_t*)&tmp89)[0]
-    //     cmp doc_ptr2+0
-    // (16-bit equality consolidated)
-    if (tmp89 == doc_ptr2)
-        goto c8398;
-    // c8389:
-    //     lda (((uint8_t*)&tmp89)[0]),y
-
-    uint8_t a = ram[tmp89];
-    //     cmp #0x0d
-    if (a == 0x0d)
+    if (!(tmp89 == doc_ptr2))
     {
-        x++;
+        // c8389:
+        //     lda (((uint8_t*)&tmp89)[0]),y
+        uint8_t a = ram[tmp89];
+        //     cmp #0x0d
+        if (a == 0x0d)
+            x++;
+        // c8390:
+        //     inc ((uint8_t*)&tmp89)[0]
+        tmp89++;
     }
-    // c8390:
-    //     inc ((uint8_t*)&tmp89)[0]
-    tmp89++;
     //     bne c837d
     //     inc ((uint8_t*)&tmp89)[1]
     //     bne c837d
@@ -569,7 +555,6 @@ c8398:
     //     inc l0074
     l0074++;
     //     txa
-
     //     beq return_3
     if (x == 0)
         return;
@@ -585,81 +570,77 @@ static const uint8_t l83e0_table[] = {
 
 static uint8_t expand_escaped_string(uint8_t x, uint8_t y)
 {
-
     // expand_escaped_string
     // expand_escaped_string:
     //     stx l0083
     l0083 = x;
     //     dey
     y--;
-c83a3:
-    // c83a3:
-    //     jsr sub_c8310
-
-    uint8_t a;
-    _Bool end;
-    a = read_next_command_byte(&y, &end);
-    //     beq c83da
-    if (end)
-        goto c83da;
-    //     cmp #0x5e ; '^'
-    if (a != 0x5e)
-        goto c83ca;
-    //     bne c83ca
-    //     jsr sub_c8310
-    uint8_t a_1 = read_next_command_byte(&y, &end);
-    //     beq c83da
-    if (end)
-        goto c83da;
-    //     jsr to_uppercase
-    //     sta l0082
-    l0082 = toupper(a_1);
-    //     ldx #0xfe
-    x = 0xfe;
-    // loop_c83b8:
-    for (;;)
+    do
     {
-        //     inx
-        //     inx
-        x += 2;
-        uint8_t idx = x >> 1;
-        //     lda escaped_char_table,x
-        uint8_t a_3 = escaped_char_table[idx];
-        //     bmi c83c8
-        if (a_3 & 0x80)
+        // c83a3:
+        //     jsr sub_c8310
+        uint8_t a;
+        _Bool end;
+        a = read_next_command_byte(&y, &end);
+        //     beq c83da
+        if (end)
             break;
-        //     cmp l0082
-        if (a_3 == l0082)
+        if (!(a != 0x5e))
         {
-            //     lda l83e0,x
-            a = l83e0_table[idx];
             //     bne c83ca
-            if (a != 0)
-                goto c83ca;
+            //     jsr sub_c8310
+            uint8_t a_1 = read_next_command_byte(&y, &end);
+            //     beq c83da
+            if (end)
+                break;
+            //     jsr to_uppercase
+            //     sta l0082
+            l0082 = toupper(a_1);
+            //     ldx #0xfe
+            x = 0xfe;
+            // loop_c83b8:
+            for (;;)
+            {
+                //     inx
+                //     inx
+                x += 2;
+                uint8_t idx = x >> 1;
+                //     lda escaped_char_table,x
+                uint8_t a_3 = escaped_char_table[idx];
+                //     bmi c83c8
+                if (a_3 & 0x80)
+                    break;
+                //     cmp l0082
+                if (a_3 == l0082)
+                {
+                    //     lda l83e0,x
+                    a = l83e0_table[idx];
+                    //     bne c83ca
+                    if (a != 0)
+                        goto c83ca;
+                }
+                //     bne loop_c83b8
+            }
+            // c83c8:
+            //     lda l0084
+            a = l0084;
         }
-        //     bne loop_c83b8
-    }
-    // c83c8:
-    //     lda l0084
-    a = l0084;
-c83ca:
-    // c83ca:
-    //     ldx l007a
-    x = l007a;
-    //     bne c83d1
-    if (x == 0)
-    {
-        a = upper_case_unless_folding(a);
-    }
-    // c83d1:
-    //     ldx l0083
-    x = l0083;
-    //     sta header_text_maybe,x
-    header_text_maybe[x] = a;
-    //     inc l0083
-    l0083++;
-    if (l0083 != 0)
-        goto c83a3;
+    c83ca:
+        // c83ca:
+        //     ldx l007a
+        x = l007a;
+        //     bne c83d1
+        if (x == 0)
+            a = upper_case_unless_folding(a);
+        // c83d1:
+        //     ldx l0083
+        x = l0083;
+        //     sta header_text_maybe,x
+        header_text_maybe[x] = a;
+        //     inc l0083
+        l0083++;
+    } while (l0083 != 0);
     //     bne c83a3
 c83da:
     // c83da:
@@ -674,13 +655,13 @@ c83da:
 
 cli_cmd_status_t process_cli_command(struct scan_state* scan)
 {
-
     // sub_c83f0
     // sub_c83f0:
     //     jsr sub_c8412
     //     beq c8410
     if (reset_command_parse_state(scan))
-        return CLI_CMD_NO_TARGET; // c8410: no command
+        return CLI_CMD_NO_TARGET;
+    // c8410: no command
     //     jsr sub_c8e33
     //     beq c8402
     if (!scan_input_buffer(input_buffer, scan))
@@ -696,7 +677,8 @@ cli_cmd_status_t process_cli_command(struct scan_state* scan)
     //     beq return_4
     if (sanitise_area() == AREA_EMPTY)
     {
-        return CLI_CMD_NO_STRING; // sec + Z set: no string
+        return CLI_CMD_NO_STRING;
+        // sec + Z set: no string
     }
     //     jsr sub_c8c7c
     // (inlined: doc_ptr2 = area_start_ptr; doc_ptr3 = area_end_ptr)
@@ -712,11 +694,9 @@ cli_cmd_status_t process_cli_command(struct scan_state* scan)
 
 bool reset_command_parse_state(struct scan_state* scan)
 {
-
     // sub_c8412
     // sub_c8412:
     //     ldx #0
-
     uint8_t x = 0;
     //     stx l007a
     l007a = x;
@@ -725,28 +705,27 @@ bool reset_command_parse_state(struct scan_state* scan)
     //     jsr sub_c8e33
     //     beq return_5
     if (scan_input_buffer(input_buffer, scan))
-        return true; // Z set (no command)
+        return true;
+    // Z set (no command)
     //     ldx #0
     //     jsr expand_escaped_string
     uint8_t x_1 = expand_escaped_string(0, scan->pos);
     //     stx l007a
     l007a = x_1;
     //     cpx #0
-    return x_1 == 0; // Z = (x == 0)
+    return x_1 == 0;
+    // Z = (x == 0)
     // return_5:
     //     rts
 }
 
 addr_t read_into_document(void)
 {
-
     // read_into_document
     //  Ptrs:   ptr5
     // 1: - shared entry point used by both load_cmd and read_cmd
-
     //     jsr check_for_at_least_150_bytes_free
     check_for_at_least_150_bytes_free();
-
     //     ldx #<input_buffer
     //     ldy #>input_buffer
     //     jsr select_file
@@ -755,13 +734,10 @@ addr_t read_into_document(void)
     //  select_file() in this translation uses inline x,y rather than the 6502's
     //  buffer-address convention, and the actual file selection is already done
     //  by parse_filename_from_command / open_input_file.)
-
     //     jsr open_input_file
     open_input_file();
-
     //     lda area_start_ptr
     //     sta ((uint8_t*)&tmp45)[0]
-
     addr_t tmp45 = area_start_ptr;
     //     jsr move_cursor_to_address
     move_cursor_to_address(area_start_ptr);
@@ -795,7 +771,6 @@ addr_t read_into_document(void)
     //     sbc ((uint8_t*)&tmp01)[1]
     //     sta ((uint8_t*)&tmp67)[1]
     // (16-bit subtraction: tmp67 = space_limit - tmp01)
-
     addr_t tmp67 = space_limit - cursor;
     //     jsr adjust_pointers
     tmp89 = adjust_pointers(cursor, tmp67);
@@ -815,82 +790,80 @@ bool check_area_memory(addr_t ptr2)
 {
     uint8_t a_3;
     uint8_t a_4;
-
     // sub_c8a4f
     //  Ptrs:   ptr2
     // sub_c8a4f:
     //     lda #0
-
     uint8_t a = 0;
     //     sta l0082
     uint8_t l0082 = a;
     //     sta l0081
     l0081 = a;
     //     ldy #0x14
-
     uint8_t y = 0x14;
     //     ldx l007a
-
     uint8_t x = l007a;
-    //     bne c8a87
-    if (x != 0)
-        goto c8a87;
-c8a5b:
-    // c8a5b:
-    //     lda header_text_maybe,x
-    uint8_t a_1 = header_text_maybe[x];
-    //     cmp #1
-    if (a_1 != 1)
-        goto c8a6c;
-    //     bne c8a6c
-    //     lda l0081
-    a_1 = l0081;
-    //     cmp l0049
-    if (a_1 >= cli_l0049)
-        goto c8a86;
-    //     bcs c8a86
-    //     inc l0081
-    l0081++;
-    if (l0081 != 0)
-        goto c8a84;
+    if (!(x != 0))
+    {
+    c8a5b:
+        // c8a5b:
+        //     lda header_text_maybe,x
+        uint8_t a_1 = header_text_maybe[x];
+        if (!(a_1 != 1))
+        {
+            //     bne c8a6c
+            //     lda l0081
+            a_1 = l0081;
+            //     cmp l0049
+            if (a_1 >= cli_l0049)
+                goto c8a86;
+            //     bcs c8a86
+            //     inc l0081
+            l0081++;
+            if (l0081 != 0)
+                goto c8a84;
+        }
     //     bne c8a84
-c8a6c:
     // c8a6c:
     //     cmp #0x20 ; ' '
     //     bne c8a84
     //     cpy l0048
-    if (a_1 != 0x20 || y >= cli_l0048)
-        goto c8a84;
-    //     bcs c8a84
-    // loop_c8a74:
-    while (1)
-    {
-        //     lda output_buffer,y
-        uint8_t a_2 = output_buffer[y];
-        //     php; iny; plp
-        // (the php/plp preserves Z across iny for the beq below; testing
-        //  a == 0 directly is equivalent)
-        y++;
-        //     beq c8a86
-        if (a_2 == 0)
-            goto c8a86;
+    c8a6c:
+        if (!(a_1 != 0x20 || y >= cli_l0048))
+        {
+            //     bcs c8a84
+            // loop_c8a74:
+            while (1)
+            {
+                //     lda output_buffer,y
+                uint8_t a_2 = output_buffer[y];
+                //     php; iny; plp
+                // (the php/plp preserves Z across iny for the beq below;
+                // testing
+                //  a == 0 directly is equivalent)
+                y++;
+                //     beq c8a86
+                if (a_2 == 0)
+                    goto c8a86;
+                //     inc l0082
+                l0082++;
+                //     cpy l0048
+                if (y >= cli_l0048)
+                    break;
+                //     bcc loop_c8a74
+            }
+            //     dec l0082
+            l0082--;
+        }
+    c8a84:
+        // c8a84:
         //     inc l0082
         l0082++;
-        //     cpy l0048
-        if (y >= cli_l0048)
-            break;
-        //     bcc loop_c8a74
+    c8a86:
+        // c8a86:
+        //     inx
+        x++;
     }
-    //     dec l0082
-    l0082--;
-c8a84:
-    // c8a84:
-    //     inc l0082
-    l0082++;
-c8a86:
-    // c8a86:
-    //     inx
-    x++;
 c8a87:
     // c8a87:
     //     cpx l004a
@@ -903,20 +876,16 @@ c8a87:
     //     lda doc_ptr2+1
     //     sbc ptr2+1
     //     sta l0081
-
     uint16_t gap = doc_ptr2 - ptr2;
     //     ldx l0082
     uint8_t x_1 = l0082;
     //     tay
     if (gap < 256 && x_1 >= gap)
-    {
         x_1 = gap;
-    }
     // c8aa3:
     //     txa
     //     clc; adc ptr2; sta ((uint8_t*)&tmp45)[0]; lda ptr2+1; adc #0; sta
     //     ((uint8_t*)&tmp45)[1]
-
     addr_t tmp45 = ptr2 + x_1;
     //     lda l0082 / sec; sbc l0080; sta tmp67; lda #0; sbc l0081
     // (tmp67 = l0082 - gap as signed 16-bit) — three-way split:
@@ -938,76 +907,72 @@ c8a87:
     uint8_t y_1 = 0;
     //     sty l0081
     l0081 = y_1;
-    //     bit print_xpos
-    //     bmi c8b11
-    // (bit test: N = print_xpos & 0x80)
-    if (print_xpos & 0x80)
-        goto c8b11;
-    //     ldx input_buffer_offset+1
-    uint8_t x_2 = l0080;
-    // loop_c8ae4:
-    do
+    if (!(print_xpos & 0x80))
     {
-        //     lda (ptr2),y
-        a_3 = ram[ptr2 + y_1];
-        //     iny
-        y_1++;
-        //     jsr is_uppercase
-        //     bcc c8af3
-        if (isalpha(a_3))
-            goto c8af3;
-        //     ror print_xpos
-        // (carry-in is 1: is_uppercase left C set on this fall-through; the
-        //  result C flag is dead — overwritten by jsr is_uppercase on the
-        //  loop-back and by cpx/cmp on the exit path)
-        print_xpos = (uint8_t)(print_xpos >> 1) | 0x80;
+        //     ldx input_buffer_offset+1
+        uint8_t x_2 = l0080;
+        // loop_c8ae4:
+        do
+        {
+            //     lda (ptr2),y
+            a_3 = ram[ptr2 + y_1];
+            //     iny
+            y_1++;
+            //     jsr is_uppercase
+            //     bcc c8af3
+            if (isalpha(a_3))
+                goto c8af3;
+            //     ror print_xpos
+            // (carry-in is 1: is_uppercase left C set on this fall-through; the
+            //  result C flag is dead — overwritten by jsr is_uppercase on the
+            //  loop-back and by cpx/cmp on the exit path)
+            print_xpos = (uint8_t)(print_xpos >> 1) | 0x80;
+            //     dex
+            x_2--;
+            //     bne loop_c8ae4
+        } while (x_2 != 0);
+        //     beq c8b11
+        goto c8b11;
+    c8af3:
+        // c8af3:
+        //     pha
+        {
+            //     lda #0
+            //     sta print_xpos
+            print_xpos = 0;
+            //     pla
+            a_4 = a_3;
+        }
+        //     and #0x20 ; ' '
+        a_4 &= 0x20;
+        if (a_4 != 0)
+            goto c8b11;
+        //     bne c8b11
+        //     inc l0081
+        l0081++;
         //     dex
         x_2--;
-        //     bne loop_c8ae4
-    } while (x_2 != 0);
-    //     beq c8b11
-    goto c8b11;
-
-c8af3:
-    // c8af3:
-    //     pha
-    {
-        //     lda #0
-        //     sta print_xpos
-        print_xpos = 0;
-        //     pla
-        a_4 = a_3;
+        if (!(x_2 == 0))
+        {
+            //     lda (ptr2),y
+            uint8_t a_5 = ram[ptr2 + y_1];
+            //     jsr is_uppercase
+            //     bcs c8b11
+            if (!isalpha(a_5))
+                goto c8b11;
+            //     and #0x20 ; ' '
+            a_5 &= 0x20;
+            if (a_5 != 0)
+                goto c8b11;
+        }
+        //     bne c8b11
+    c8b0d:
+        // c8b0d:
+        //     dec l0081
+        l0081--;
+        //     dec l0081
+        l0081--;
     }
-    //     and #0x20 ; ' '
-    a_4 &= 0x20;
-    if (a_4 != 0)
-        goto c8b11;
-    //     bne c8b11
-    //     inc l0081
-    l0081++;
-    //     dex
-    x_2--;
-
-    //     beq c8b0d
-    if (x_2 == 0)
-        goto c8b0d;
-    //     lda (ptr2),y
-    uint8_t a_5 = ram[ptr2 + y_1];
-    //     jsr is_uppercase
-    //     bcs c8b11
-    if (!isalpha(a_5))
-        goto c8b11;
-    //     and #0x20 ; ' '
-    a_5 &= 0x20;
-    if (a_5 != 0)
-        goto c8b11;
-    //     bne c8b11
-c8b0d:
-    // c8b0d:
-    //     dec l0081
-    l0081--;
-    //     dec l0081
-    l0081--;
 c8b11:
     // c8b11:
     //     ldx #0
@@ -1029,67 +994,59 @@ c8b11:
         uint8_t a_6 = header_text_maybe[x_3];
         //     stx l0084
         l0084 = x_3;
-        //     cmp #0x20 ; ' '
-        if (a_6 != 0x20)
-            goto c8b38;
-        //     bne c8b38
-        //     ldy input_buffer_offset+1
-        uint8_t y_2 = l0080;
-        //     cpy l0048
-        if (y_2 >= cli_l0048)
-            goto c8b47;
-        //     bcs c8b47
-        //     inc input_buffer_offset+1
-        l0080++;
-        //     lda output_buffer,y
-        a_6 = output_buffer[y_2];
-        //     beq c8b6a
-        if (a_6 == 0)
-            goto c8b6a;
-        //     dex
-        x_3--;
-        //     bcc c8b47
-        goto c8b47;
-
-    c8b38:
-        // c8b38:
-        //     cmp #1
-        if (a_6 != 1)
-            goto c8b47;
-        //     bne c8b47
-        //     ldy l0082
-        //     cpy l0049
-        if (l0082_1 >= cli_l0049)
-            goto c8b6a;
-        //     bcs c8b6a
-        //     lda output_buffer,y
-        a_6 = output_buffer[l0082_1];
-        //     inc l0082
-        l0082_1++;
+        if (!(a_6 != 0x20))
+        {
+            //     bne c8b38
+            //     ldy input_buffer_offset+1
+            uint8_t y_2 = l0080;
+            //     cpy l0048
+            if (y_2 >= cli_l0048)
+                goto c8b47;
+            //     bcs c8b47
+            //     inc input_buffer_offset+1
+            l0080++;
+            //     lda output_buffer,y
+            a_6 = output_buffer[y_2];
+            //     beq c8b6a
+            if (a_6 == 0)
+                goto c8b6a;
+            //     dex
+            x_3--;
+            // c8b38:
+            //     cmp #1
+        }
+        else
+        {
+            if (a_6 != 1)
+                goto c8b47;
+            //     bne c8b47
+            //     ldy l0082
+            //     cpy l0049
+            if (l0082_1 >= cli_l0049)
+                goto c8b6a;
+            //     bcs c8b6a
+            //     lda output_buffer,y
+            a_6 = output_buffer[l0082_1];
+            //     inc l0082
+            l0082_1++;
+        }
     c8b47:
         // c8b47:
         //     cmp #2
         if (a_6 == 2)
-        {
             a_6 = 0x20;
-        }
-        // c8b4d:
-        //     bit folding_flag
-        //     bmi c8b64
-        // (bit test: N = folding_flag & 0x80)
-        //     ldy print_xpos
-        //     bne c8b64
-        if (folding_flag & 0x80 || print_xpos != 0)
-            goto c8b64;
-        //     jsr is_uppercase
-        //     bcs c8b64
-        if (isalpha(a_6))
+        if (!(folding_flag & 0x80 || print_xpos != 0))
         {
-            a_6 |= 0x20;
-            if (l0081 != 0)
+            //     jsr is_uppercase
+            //     bcs c8b64
+            if (isalpha(a_6))
             {
-                l0081--;
-                a_6 &= 0xdf;
+                a_6 |= 0x20;
+                if (l0081 != 0)
+                {
+                    l0081--;
+                    a_6 &= 0xdf;
+                }
             }
         }
     c8b64:
@@ -1161,23 +1118,18 @@ bool read_first_chunk_from_input_file(void)
 
 void write_area_to_file(void)
 {
-
     // write_area_to_file
     // Pseudocode: Writes document area range to output file byte by byte
-
     // ; Does not include trailing zero!
     // write_area_to_file:
     //     jsr sanitise_area
     if (sanitise_area() == AREA_EMPTY)
         return;
-
     //     lda area_start_ptr
     //     sta ((uint8_t*)&tmp89)[0]
     //     lda area_start_ptr+1
     //     sta ((uint8_t*)&tmp89)[1]
-
     addr_t tmp89 = area_start_ptr;
-
     //     zrepeat
     do
     {
@@ -1185,13 +1137,11 @@ void write_area_to_file(void)
         // (y is only set as a side effect of the 6502's indexed dereference;
         //  the C reads ram[tmp89] directly and no caller reads y afterwards)
         //         lda (((uint8_t*)&tmp89)[0]),y
-
         uint8_t a = ram[tmp89];
         //         jsr put_byte_to_file
         // (inlined: fputc(a, file_ptr))
         fputc(a, file_ptr);
         tmp89++;
-
     } while (tmp89 != area_end_ptr);
     // return_17:
     //     rts
@@ -1202,11 +1152,9 @@ static addr_t compute_space_common(addr_t ptr, addr_t tmp89)
     // compute_space_common
     // c8daf:
     //     sta ((uint8_t*)&tmp01)[0]
-
     addr_t tmp01 = ptr;
     //     jsr compute_bytes_free
     //     stx ((uint8_t*)&tmp67)[0]
-
     addr_t tmp67 = (addr_t)compute_bytes_free();
     //     lsr ((uint8_t*)&tmp89)[1]; ror ((uint8_t*)&tmp89)[0]; lsr
     //     ((uint8_t*)&tmp89)[1]; ror ((uint8_t*)&tmp89)[0]
@@ -1275,7 +1223,6 @@ void parse_filename_from_command(struct scan_state* scan)
 {
     // Pseudocode: Parses mandatory filename, calls bad_filename_error if
     // missing
-
     // parse_filename_from_command:
     //     jsr parse_optional_filename_from_command
     //     beq bad_filename_error  ; Z=1 → no filename
@@ -1293,7 +1240,6 @@ void check_continuous_editing(void)
     // check_continuous_editing
     // Pseudocode: Verifies continuous editing is active, shows file state if
     // not
-
     // check_continuous_editing:
     //     bit file_edit_flags
     if (!((file_edit_flags & 0x40)))

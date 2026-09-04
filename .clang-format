@@ -33,6 +33,7 @@ KeepEmptyLinesAtTheStartOfBlocks: 'true'
 NamespaceIndentation: All
 PointerAlignment: Left
 ReflowComments: 'true'
+RemoveBracesLLVM: 'true'
 SortIncludes: 'false'
 SortUsingDeclarations: 'true'
 SpaceAfterTemplateKeyword: 'true'
