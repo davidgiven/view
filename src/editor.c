@@ -51,13 +51,13 @@ uint8_t justify_edit_buffer(addr_t ptr1);
 bool make_space_for_insertion(addr_t tmp45, ptrdiff_t tmp67);
 static void memory_full(void);
 uint8_t process_current_document_character(
-    addr_t tmp01, uint8_t* x, uint8_t* y, bool* is_tab);
+    uint8_t* ptr, uint8_t* x, uint8_t* y, bool* is_tab);
 static void recalculate_cursor_xpos(void);
 void redraw_editor(void);
 static void render_char(struct render_state* rs);
 static void advance_to_next_char(struct render_state* rs);
 static void render_xchar(struct render_state* rs);
-static void restore_cursor_position(addr_t tmp45);
+static void restore_cursor_position(uint16_t packed);
 area_status_t sanitise_area(void);
 static void save_cursor_position(void);
 static void set_marker(uint8_t x);
@@ -78,12 +78,12 @@ static uint8_t find_marker_at_position(uint8_t y, addr_t tmp67);
 static void unpack_line(addr_t ptr1);
 static void update_markers_to_format_buffer(void);
 void check_for_embedded_ruler(addr_t tmp01);
-static addr_t find_line_start(addr_t tmp89);
+static uint8_t* find_line_start(uint8_t* ptr);
 static int find_left_margin_stop(void);
 static void insert_at_left_margin(void);
 static bool insert_byte_at_xpos(uint8_t y);
 static void unpack_line_into_buffer(addr_t ptr1);
-void wipe_buffer(uint8_t a, addr_t ptr1);
+void wipe_buffer(uint8_t a, uint8_t* ptr);
 static bool write_line_back_to_document(void);
 void write_line_back_to_document_safely(void);
 
@@ -529,7 +529,7 @@ static void cf5_default_ruler_key(void)
     //     jsr cf8_mark_as_ruler_key
     cf8_mark_as_ruler_key(ptr1);
     //     lda current_edit_line_ptr
-    create_default_ruler(RAM_EDIT_BUFFER);
+    create_default_ruler(&ram[RAM_EDIT_BUFFER]);
 }
 
 static void cf6_split_line_key(void)
@@ -2131,7 +2131,7 @@ entry:
         uint8_t a_1;
         uint8_t x;
         a_1 = process_current_document_character(
-            RAM_EDIT_BUFFER, &x, &y_1, &is_tab);
+            &ram[RAM_EDIT_BUFFER], &x, &y_1, &is_tab);
         //     cmp #0x20 ; ' '
         //     bne return_58
         if (a_1 != 0x20)
@@ -2150,7 +2150,7 @@ loop_c9ff8:
         //     jsr process_current_document_character
         uint8_t x;
         uint8_t a_2 =
-            process_current_document_character(tmp01, &x, &y, &is_tab);
+            process_current_document_character(&ram[tmp01], &x, &y, &is_tab);
         //     cmp #0x20 ; ' '
         if (a_2 != 0x20)
             continue;
@@ -2167,7 +2167,7 @@ loop_c9ff8:
         //     jsr process_current_document_character
         uint8_t x;
         uint8_t a_3 =
-            process_current_document_character(tmp01, &x, &y, &is_tab);
+            process_current_document_character(&ram[tmp01], &x, &y, &is_tab);
         //     cmp #0x20 ; ' '
         if (a_3 == 0x20)
             continue;
@@ -3393,7 +3393,7 @@ void draw_previous_word(
             //     jsr process_current_document_character
             uint8_t ch;
             ch = process_current_document_character(
-                RAM_EDIT_BUFFER, char_width, &pos, &is_tab);
+                &ram[RAM_EDIT_BUFFER], char_width, &pos, &is_tab);
             //     dey
             pos--;
             //     cmp #0x20 ; ' '
@@ -3410,7 +3410,7 @@ void draw_previous_word(
             //     jsr process_current_document_character
             uint8_t ch_1;
             ch_1 = process_current_document_character(
-                RAM_EDIT_BUFFER, char_width, &pos, &is_tab);
+                &ram[RAM_EDIT_BUFFER], char_width, &pos, &is_tab);
             //     cmp #0x20 ; ' '
             if (ch_1 == 0x20)
                 break;
@@ -3427,7 +3427,7 @@ caf55:
     //     jsr process_current_document_character
     uint8_t ch_2;
     ch_2 = process_current_document_character(
-        RAM_EDIT_BUFFER, char_width, &pos, &is_tab);
+        &ram[RAM_EDIT_BUFFER], char_width, &pos, &is_tab);
     //     dey
     pos--;
     // (the 6502 returns the boundary character in A and Z = (y == 0))
@@ -3669,7 +3669,7 @@ void split_line_at_wrap(addr_t tmp89)
     // line
     // cac78:
     //     jsr sub_cac50
-    tmp89 = find_line_start(tmp89);
+    tmp89 = find_line_start(&ram[tmp89]) - ram;
     do
     {
         // cac7b:
@@ -4314,7 +4314,7 @@ void draw_line(struct render_state* rs, uint16_t addr)
     //     sty l0039
     rs->char_width = 0;
     //     jsr deref_and_check_for_command_prefix
-    command_prefix_t f = deref_and_check_for_command_prefix(0, tmp01);
+    command_prefix_t f = deref_and_check_for_command_prefix(0, &ram[tmp01]);
     //     bne ca4b4
     //     ldy #3
     //     lda hscroll_pos
@@ -4769,7 +4769,7 @@ c98d9:
     l0039 = y_3;
     //     lda #0x1a
     //     jsr wipe_buffer
-    wipe_buffer(0x1a, ptr1);
+    wipe_buffer(0x1a, &ram[ptr1]);
     //     lda l0042
     uint8_t a_10 = justify_overflow_counter;
     if (!(a_10 == 0))
@@ -4979,11 +4979,11 @@ static void memory_full(void)
 static const uint8_t la995_data[] = "Memory full - Press ESCAPE";
 
 uint8_t process_current_document_character(
-    addr_t tmp01, uint8_t* x, uint8_t* y, bool* is_tab)
+    uint8_t* ptr, uint8_t* x, uint8_t* y, bool* is_tab)
 {
     // draw_char:
     //     lda (((uint8_t*)&tmp01)[0]),y
-    uint8_t a = ram[tmp01 + *y];
+    uint8_t a = ptr[*y];
     //     iny
     (*y)++;
     uint8_t a_1 = process_document_character(a, x, is_tab);
@@ -5022,7 +5022,8 @@ static void recalculate_cursor_xpos(void)
             //     sta l0039
             l0039 = a;
             //     jsr process_current_document_character
-            (void)process_current_document_character(tmp01, &x, &y, &is_tab);
+            (void)process_current_document_character(
+                &ram[tmp01], &x, &y, &is_tab);
             //     txa
             a = x;
             //     clc
@@ -5045,7 +5046,8 @@ ca624:
     do
     {
         l0039 = a;
-        (void)process_current_document_character(tmp01, &x, &y_1, &is_tab);
+        (void)process_current_document_character(
+            &ram[tmp01], &x, &y_1, &is_tab);
         a = x;
         a += l0039;
     } while (a < l0072);
@@ -5568,12 +5570,12 @@ static void render_xchar(struct render_state* rs)
     render_char(rs);
 }
 
-static void restore_cursor_position(addr_t tmp45)
+static void restore_cursor_position(uint16_t packed)
 {
     // restore_cursor_position:
     //     ldx ((uint8_t*)&tmp45)[0]
     //     ldy ((uint8_t*)&tmp45)[1]
-    screen_setcursor(((uint8_t*)&tmp45)[0], ((uint8_t*)&tmp45)[1]);
+    screen_setcursor(packed & 0xff, packed >> 8);
 }
 
 area_status_t sanitise_area(void)
@@ -5962,7 +5964,7 @@ c998a:
     // ((uint8_t*)&tmp67)[0]/((uint8_t*)&tmp67)[1] = current_line_ptr.
     //      lda #0x10
     //     jsr wipe_buffer
-    wipe_buffer(0x10, ptr1);
+    wipe_buffer(0x10, &ram[ptr1]);
     //     lda current_line_ptr
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda current_line_ptr+1
@@ -6522,7 +6524,7 @@ static void advance_to_next_char(struct render_state* rs)
     uint8_t a;
     uint8_t x;
     a = process_current_document_character(
-        rs->line_ptr, &x, &y, &rs->prev_is_tab);
+        &ram[rs->line_ptr], &x, &y, &rs->prev_is_tab);
     rs->ch = a;
     rs->pos = y;
     rs->width = x;
@@ -6578,7 +6580,7 @@ static void unpack_line(addr_t ptr1)
     // unpack_line:
     //     lda #0x10
     //     jsr wipe_buffer
-    wipe_buffer(0x10, ptr1);
+    wipe_buffer(0x10, &ram[ptr1]);
     //     jsr sub_caf5f
     clear_format_mode_bit7();
     //     ldy #0
@@ -6695,7 +6697,7 @@ void check_for_embedded_ruler(addr_t tmp01)
     return;
 }
 
-static addr_t find_line_start(addr_t tmp89)
+static uint8_t* find_line_start(uint8_t* ptr)
 {
     // sub_cac50
     // Pseudocode: Finds the start of current line by scanning backward for CR
@@ -6708,15 +6710,15 @@ static addr_t find_line_start(addr_t tmp89)
     // (loop restructured)
     while (1)
     {
-        tmp89--;
-        uint8_t a = ram[tmp89 + y];
+        ptr--;
+        uint8_t a = ptr[y];
         if (a == 0x0d)
             break;
     }
     // cac6f:
     // return_73:
     //     rts
-    return tmp89;
+    return ptr;
 }
 
 /**
@@ -6813,7 +6815,7 @@ static void unpack_line_into_buffer(addr_t ptr1)
     unpack_line(ptr1);
 }
 
-void wipe_buffer(uint8_t a, addr_t ptr1)
+void wipe_buffer(uint8_t a, uint8_t* ptr)
 {
     // wipe_buffer:
     //     ldy #0
@@ -6827,7 +6829,7 @@ void wipe_buffer(uint8_t a, addr_t ptr1)
     //     bne loop_cab13
     do
     {
-        ram[ptr1 + y] = a;
+        ptr[y] = a;
         y++;
         x--;
     } while (x != 0);

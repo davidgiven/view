@@ -76,11 +76,11 @@ void check_for_at_least_150_bytes_free(void)
     display_not_enough_memory();
 }
 
-command_prefix_t deref_and_check_for_command_prefix(uint8_t y, addr_t tmp01)
+command_prefix_t deref_and_check_for_command_prefix(uint8_t y, uint8_t* ptr)
 {
     // deref_and_check_for_command_prefix:
     //     lda (((uint8_t*)&tmp01)[0]),y
-    uint8_t a = ram[tmp01 + y];
+    uint8_t a = ptr[y];
     return check_for_command_prefix(a);
 }
 
@@ -502,7 +502,7 @@ void close_file(void)
     }
 }
 
-uint8_t create_default_ruler(addr_t ruler_addr)
+uint8_t create_default_ruler(uint8_t* ruler_addr)
 {
     // create_default_ruler
     // Pseudocode: Creates a default ruler with tab stops every 6 columns
@@ -510,7 +510,7 @@ uint8_t create_default_ruler(addr_t ruler_addr)
     // ***************************************************************************************
     // create_default_ruler:
     //     sta ((uint8_t*)&tmp01)[0]
-    addr_t tmp01 = ruler_addr;
+    uint8_t* tmp01 = ruler_addr;
     //     lda #0
     //     tay                                                               ;
     //     Y=0x00
@@ -524,7 +524,7 @@ uint8_t create_default_ruler(addr_t ruler_addr)
         for (;;)
         {
             //     sta (((uint8_t*)&tmp01)[0]),y
-            ram[tmp01 + y] = a;
+            tmp01[y] = a;
             //     iny
             y++;
             //     tya
@@ -555,7 +555,7 @@ uint8_t create_default_ruler(addr_t ruler_addr)
 cb0ff:
     //     lda #0x3c ; '<'
     //     sta (((uint8_t*)&tmp01)[0]),y
-    ram[tmp01 + y] = 0x3c;
+    tmp01[y] = 0x3c;
     //     rts
     return y;
 }
@@ -676,7 +676,7 @@ void initialise_document(void)
     ptr1 = RAM_CURRENT_LINE_BUF;
     current_format_line_ptr = RAM_EDIT_BUFFER;
     //     lda #<(current_ruler_buffer)
-    uint8_t y_1 = create_default_ruler(RAM_CURRENT_RULER_BUF);
+    uint8_t y_1 = create_default_ruler(&ram[RAM_CURRENT_RULER_BUF]);
     //     iny
     y_1++;
     //     lda #0x0d

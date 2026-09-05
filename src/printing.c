@@ -62,7 +62,7 @@ static void write_cr_to_memory(addr_t* cursor);
 // Forward declarations within printing.c
 static uint8_t expand_line(void);
 static void write_output_buffer_to_format_line(uint8_t a);
-static bool parse_word_flag(addr_t ptr, uint8_t* y, uint8_t* value);
+static bool parse_word_flag(uint8_t* ptr, uint8_t* y, uint8_t* value);
 static bool parse_boolean_from_fmt_cmd(uint8_t* y, uint8_t* value);
 static void page_eject_fmt(void);
 static bool evaluate_expression_from_fmt_cmd(
@@ -1223,7 +1223,7 @@ static bool parse_boolean_from_fmt_cmd(uint8_t* y, uint8_t* value)
     //     ldx current_format_line_ptr+1
     // (the 6502 passes the pointer in XA; the C passes it as an argument)
     // MULTIPLE ENTRY POINTS: parse_boolean_from_fmt_cmd, sub_c976c
-    return parse_word_flag(current_format_line_ptr, y, value);
+    return parse_word_flag(&ram[current_format_line_ptr], y, value);
 }
 
 static const uint8_t l97b0_data[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
@@ -1235,7 +1235,7 @@ static const uint8_t l97b0_data[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
  *
  * @return true on parse error (the 6502's C set), false on success.
  */
-static bool parse_word_flag(addr_t ptr, uint8_t* y, uint8_t* value)
+static bool parse_word_flag(uint8_t* ptr, uint8_t* y, uint8_t* value)
 {
     uint8_t a_2;
     // sub_c976c
@@ -1246,7 +1246,7 @@ static bool parse_word_flag(addr_t ptr, uint8_t* y, uint8_t* value)
     // x is a scratch index into the word table.
     // sub_c976c:
     //     lda (((uint8_t*)&tmp89)[0]),y
-    uint8_t a = ram[ptr + *y];
+    uint8_t a = ptr[*y];
     //     tax
     uint8_t x = a;
     if (!(x == 0x31))
@@ -1280,7 +1280,7 @@ c9788:
         //     iny
         (*y)++;
         //     lda (((uint8_t*)&tmp89)[0]),y
-        uint8_t a_1 = ram[ptr + *y];
+        uint8_t a_1 = ptr[*y];
         //     jsr to_uppercase
         a_2 = toupper(a_1);
         //     inx
@@ -2342,7 +2342,8 @@ c8f30:
         //     sty input_buffer_ptr+1
         l0080 = y;
         //     jsr deref_and_check_for_command_prefix
-        command_prefix_t cp = deref_and_check_for_command_prefix(y, cursor);
+        command_prefix_t cp =
+            deref_and_check_for_command_prefix(y, &ram[cursor]);
         if (!(cp == NO_COMMAND_PREFIX))
         {
             //     ldy #3

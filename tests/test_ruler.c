@@ -10,7 +10,7 @@ extern addr_t tmp01;
 #define tmp0 (*((uint8_t*)&tmp01))
 #define tmp1 (*((uint8_t*)&tmp01 + 1))
 extern uint8_t screen_maxcolumn;
-extern void create_default_ruler(uint16_t ruler_addr);
+extern void create_default_ruler(uint8_t* ruler_addr);
 
 static int test_failures;
 
@@ -36,7 +36,7 @@ int main(void)
     screen_maxcolumn = 79;
     memset(ram, 0, sizeof(ram));
 
-    create_default_ruler(ruler_addr);
+    create_default_ruler(&ram[ruler_addr]);
 
     int ruler_len = screen_maxcolumn - 6;
     for (int i = 0; i < ruler_len; i++)

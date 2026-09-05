@@ -329,7 +329,7 @@ c86b8:
     //     ldy #0
     uint8_t y = 0;
     //     jsr deref_and_check_for_command_prefix
-    command_prefix_t cp = deref_and_check_for_command_prefix(y, tmp01);
+    command_prefix_t cp = deref_and_check_for_command_prefix(y, &ram[tmp01]);
     if (!(cp == NO_COMMAND_PREFIX))
     {
         //     ldx #0
@@ -390,7 +390,8 @@ c86b8:
         uint8_t y_1 = 0;
         //     jsr process_current_document_character
         bool is_tab = false;
-        a_3 = process_current_document_character(tmp01, &x, &y_1, &is_tab);
+        a_3 =
+            process_current_document_character(&ram[tmp01], &x, &y_1, &is_tab);
         //     and #0x7f
         a_3 &= 0x7f;
         //     ldx #0
@@ -616,7 +617,7 @@ static void format_cmd(struct scan_state* scan)
         clear_format_mode_bit7();
         //     lda #0x10
         //     jsr wipe_buffer
-        wipe_buffer(0x10, ptr1);
+        wipe_buffer(0x10, &ram[ptr1]);
         //     lda current_edit_line_ptr
         //     sta current_format_line_ptr
         //     lda current_edit_line_ptr+1
