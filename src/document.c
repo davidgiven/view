@@ -654,10 +654,9 @@ void initialise_document(void)
     //     lda page+1
     //     sbc #0
     //     sta ((uint8_t*)&tmp89)[1]
-    addr_t tmp89 = (page - &ram[0]) - 1;
     //     lda #0x0d
     //     sta (((uint8_t*)&tmp89)[0]),y
-    ram[tmp89] = 0x0d;
+    page[-1] = 0x0d;
     //     sta current_line_buffer + 0x89
     ram[RAM_CURRENT_LINE_BUF + MAX_LINE_LENGTH - 1] = 0x0d;
     //     lda page / sta top / lda page+1 / sta top+1

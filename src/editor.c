@@ -2832,8 +2832,6 @@ c9c56:
         return;
     //     lda #0
     //     sta ((uint8_t*)&tmp67)[1]
-    addr_t tmp67_1;
-    ((uint8_t*)&tmp67_1)[1] = 0;
     //     tya
     //     beq c9c7f
     if (y_4 == 0)
@@ -3103,8 +3101,7 @@ static bool reset_area_to_marks_1_2(void)
             // (doc_ptr1 aliases markers_array[8]; set_marker_to_here now takes
             // the
             //  element index, so divide the byte offset by the element size)
-            uint8_t x = ((uint8_t*)&doc_ptr1 - (uint8_t*)markers_array) /
-                        sizeof(addr_t);
+            uint8_t x = ((uint8_t*)&doc_ptr1 - (uint8_t*)markers_array) / 2;
             set_marker_to_here(x);
             area_status_t status = sanitise_area();
             if (status == AREA_NOT_EMPTY)

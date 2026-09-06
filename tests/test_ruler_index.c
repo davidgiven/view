@@ -8,18 +8,18 @@ typedef uint16_t addr_t;
 typedef uint16_t addr_t;
 
 extern uint8_t ram[65536];
-extern uint8_t *tmp01;
+extern uint8_t* tmp01;
 extern uint8_t ruler_index_ptr;
-extern uint8_t *oshwm;
+extern uint8_t* oshwm;
 extern addr_t ruler_index[128];
-extern uint8_t *current_ruler_ptr;
+extern uint8_t* current_ruler_ptr;
 extern uint8_t ruler_left_stop;
 extern uint8_t ruler_right_stop;
 extern uint8_t status_line_needs_redrawing_flag;
 extern uint8_t l003a;
 extern uint8_t screen_maxcolumn;
 
-void push_onto_ruler_index(uint8_t *ptr);
+void push_onto_ruler_index(uint8_t* ptr);
 void pop_from_ruler_index(void);
 void create_default_ruler(uint8_t* ruler_addr);
 
@@ -72,8 +72,8 @@ int main(void)
             ruler_index_ptr,
             "%d",
             "ruler_index_ptr decremented from 0 to 0xfe");
-        ASSERT_EQ(ruler1_addr,
-            current_ruler_ptr - &ram[0],
+        ASSERT_EQ((unsigned int)ruler1_addr,
+            (unsigned int)(current_ruler_ptr - &ram[0]),
             "0x%04x",
             "current_ruler_ptr points to ruler1");
         ASSERT_EQ(ruler_left_stop, 10, "%d", "ruler_left_stop = 10");
@@ -85,8 +85,8 @@ int main(void)
 
         ASSERT_EQ(
             0xfc, ruler_index_ptr, "%d", "ruler_index_ptr decremented to 0xfc");
-        ASSERT_EQ(ruler2_addr,
-            current_ruler_ptr - &ram[0],
+        ASSERT_EQ((unsigned int)ruler2_addr,
+            (unsigned int)(current_ruler_ptr - &ram[0]),
             "0x%04x",
             "current_ruler_ptr points to ruler2");
         ASSERT_EQ(ruler_left_stop, 5, "%d", "ruler_left_stop = 5");
@@ -100,8 +100,8 @@ int main(void)
             ruler_index_ptr,
             "%d",
             "ruler_index_ptr incremented back to 0xfe");
-        ASSERT_EQ(ruler1_addr,
-            current_ruler_ptr - &ram[0],
+        ASSERT_EQ((unsigned int)ruler1_addr,
+            (unsigned int)(current_ruler_ptr - &ram[0]),
             "0x%04x",
             "current_ruler_ptr restored to ruler1");
         ASSERT_EQ(ruler_left_stop, 10, "%d", "ruler_left_stop restored to 10");
@@ -121,8 +121,8 @@ int main(void)
         push_onto_ruler_index(&ram[ruler1_addr - 3]);
 
         addr_t stored = ruler_index[0x7f];
-        ASSERT_EQ(ruler1_addr - 3,
-            stored,
+        ASSERT_EQ((unsigned int)(ruler1_addr - 3),
+            (unsigned int)stored,
             "0x%04x",
             "index stores (ruler_addr - 3) at ruler_index[0x7f]");
     }

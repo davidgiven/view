@@ -1003,14 +1003,13 @@ c9719:
 c9725:
     //     pha
     //     jsr evaluate_expression_from_fmt_cmd
-    addr_t highlight_value;
+    uint16_t highlight_value;
     evaluate_expression_from_fmt_cmd(&highlight_value, &y, x);
     //     pla
     //     tax
     //     lda ((uint8_t*)&tmp89)[0]
-    uint8_t a_2 = (uint8_t)highlight_value;
     //     sta highlight1_code,x
-    highlight_code[a] = a_2;
+    highlight_code[a] = highlight_value;
     // return_44:
     //     rts
     return;
@@ -1395,7 +1394,7 @@ static bool evaluate_expression_from_fmt_cmd(
             //     jsr ca6fe
             int parsed;
             parse_decimal_number(&parsed, y);
-            tmp89 = (addr_t)parsed;
+            tmp89 = (uint16_t)parsed;
             // c97dc:
         }
         //     ldx input_buffer_offset+1
@@ -1499,8 +1498,7 @@ void render_register(uint8_t a, uint8_t x)
         //     iny ; Y=&01
         //     lda (tmp6),y
         //     sta tmp9
-        addr_t tmp89_1 = *register_value;
-        render_number_to_output_buffer(tmp89_1, x);
+        render_number_to_output_buffer(*register_value, x);
     }
     //     clv
     // (the 6502 clears V here, but no caller of render_register reads it)
@@ -1570,11 +1568,10 @@ void render_number_to_screen(uint16_t val)
     // ***************************************************************************************
     // render_number_to_screen:
     //     stx ((uint8_t*)&tmp89)[0]
-    addr_t tmp89 = val;
     //     lda #<(bdos_print_char)
     //     ldy #>(bdos_print_char)
     // Fall through to render_number_to_callback in original 6502
-    render_number_to_callback(tmp89, cli_putchar);
+    render_number_to_callback(val, cli_putchar);
 }
 
 static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t))
@@ -2003,7 +2000,7 @@ c9101:
     //     bne loop_c9107
     //     sta tmp8
     // (shift-add multiply: tmp89 = l0045 * microspacing_flag)
-    addr_t tmp89 = (uint16_t)print_running_total_accum * microspacing_flag;
+    uint16_t tmp89 = (uint16_t)print_running_total_accum * microspacing_flag;
     //     lda l0044
     //     sta l0046
     l0046 = print_extra_space_accum;
@@ -2154,7 +2151,7 @@ bool parse_decimal_number(int* value, uint8_t* y)
     // (no leading whitespace is guaranteed, and strtoul parses the value as
     //  unsigned, so no leading-sign/whitespace handling is needed: a leading
     //  non-digit yields end == start and value 0)
-    if (current_format_line_ptr == (addr_t)(uintptr_t)input_buffer)
+    if (current_format_line_ptr == input_buffer)
         start = (const char*)&input_buffer[*y];
     else
         start = (const char*)&current_format_line_ptr[*y];
