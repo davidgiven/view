@@ -16,7 +16,7 @@
 // through the pipeline.
 struct render_state
 {
-    addr_t line_ptr;    // tmp01: pointer into the current edit line
+    uint8_t* line_ptr;  // tmp01: pointer into the current edit line
     uint8_t pos;        // y: position in the edit line
     uint8_t col;        // l0083: current screen column
     uint8_t line;       // l0082: screen line number
@@ -4300,7 +4300,7 @@ void draw_line(struct render_state* rs, uint8_t* addr)
     // On entry:  rs->line = screen line number, addr = address of the
     // document line (also stored in rs->line_ptr)
     //     sta ((uint8_t*)&tmp01)[0]
-    rs->line_ptr = addr - &ram[0];
+    rs->line_ptr = addr;
     tmp01 = addr;
     //     ldx #0
     //     ldy l0082
@@ -5519,8 +5519,8 @@ static void render_char(struct render_state* rs)
     {
         //     dey
         //     jsr sub_ca536
-        addr_t tmp67 = rs->line_ptr;
-        x_1 = find_marker_at_position(rs->pos - 1, &ram[tmp67]);
+        uint8_t* tmp67 = rs->line_ptr;
+        x_1 = find_marker_at_position(rs->pos - 1, tmp67);
         //     iny
         //     cpx #4
         if (x_1 >= 4)
@@ -5613,9 +5613,9 @@ area_status_t sanitise_area(void)
         //     sty area_start_ptr+1
         //     stx area_end_ptr+1
         //     sta area_end_ptr
-        addr_t tmp = area_start_ptr - &ram[0];
+        uint8_t* tmp = area_start_ptr;
         area_start_ptr = area_end_ptr;
-        area_end_ptr = &ram[tmp];
+        area_end_ptr = tmp;
     }
     // c8977:
     //     lda area_end_ptr
@@ -5983,7 +5983,7 @@ c998a:
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda current_line_ptr+1
     //     sta ((uint8_t*)&tmp67)[1]
-    addr_t tmp67 = current_line_ptr - &ram[0];
+    uint8_t* tmp67 = current_line_ptr;
     // PROVISIONAL: Zero working variables: l0047 (character index), l0039
     // (column counter), local soft-hyphen/break flag (was l0038), l0046
     // (word-start flag), bottom_margin.
@@ -6016,7 +6016,7 @@ c99b6:
     {
         //     jsr sub_ca536
         //     bne c99c7
-        uint8_t idx = find_marker_at_position(y_2, &ram[tmp67]);
+        uint8_t idx = find_marker_at_position(y_2, tmp67);
         if (idx == 0x0c)
             break;
         //     lda #0
@@ -6313,8 +6313,8 @@ static bool find_next_word_boundary(uint8_t y)
     //     sta ((uint8_t*)&tmp45)[1]
     // (16-bit arithmetic: the sec before the adc adds 1, so
     //  tmp89 = tmp45 = current_line_ptr + y + 1)
-    addr_t tmp89 = (current_line_ptr - &ram[0]) + a + 1;
-    addr_t tmp45 = tmp89;
+    uint8_t* tmp89 = current_line_ptr + a + 1;
+    uint8_t* tmp45 = tmp89;
     //     ldy #0
     y = 0;
     //     sty l0083
@@ -6323,7 +6323,7 @@ static bool find_next_word_boundary(uint8_t y)
     {
         // c9ad5:
         //     lda (((uint8_t*)&tmp45)[0]),y
-        uint8_t a_1 = ram[tmp45 + y];
+        uint8_t a_1 = tmp45[y];
         //     beq c9b2f
         if (a_1 == 0)
             goto c9b2f;
@@ -6348,7 +6348,7 @@ static bool find_next_word_boundary(uint8_t y)
             // c9aef:
         c9aef:
             //     lda (((uint8_t*)&tmp89)[0]),y
-            uint8_t a_3 = ram[tmp89 + y];
+            uint8_t a_3 = tmp89[y];
             //     beq c9b06
             //     cmp #0x0d
             if (a_3 == 0 || a_3 == 0x0d)
@@ -6378,7 +6378,7 @@ static bool find_next_word_boundary(uint8_t y)
         // c9b06:
     c9b06:
         //     lda (((uint8_t*)&tmp45)[0]),y
-        uint8_t a_4 = ram[tmp45 + y];
+        uint8_t a_4 = tmp45[y];
         if (!(a_4 != 0x20))
         {
             //     bne c9b1a
@@ -6538,7 +6538,7 @@ static void advance_to_next_char(struct render_state* rs)
     uint8_t a;
     uint8_t x;
     a = process_current_document_character(
-        &ram[rs->line_ptr], &x, &y, &rs->prev_is_tab);
+        rs->line_ptr, &x, &y, &rs->prev_is_tab);
     rs->ch = a;
     rs->pos = y;
     rs->width = x;
@@ -6647,7 +6647,7 @@ static void update_markers_to_format_buffer(void)
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda current_line_ptr+1
     //     sta ((uint8_t*)&tmp67)[1]
-    addr_t tmp67 = current_line_ptr - &ram[0];
+    uint8_t* tmp67 = current_line_ptr;
     //     ldy #0
     uint8_t y = 0;
 caad5:
@@ -6656,7 +6656,7 @@ caad5:
         // caad5:
         //     jsr sub_ca536
         //     bne caae8
-        uint8_t idx = find_marker_at_position(y, &ram[tmp67]);
+        uint8_t idx = find_marker_at_position(y, tmp67);
         if (!(idx == 0x0c))
         {
             //     tya

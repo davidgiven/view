@@ -58,15 +58,15 @@ bool read_first_chunk_from_input_file(void);
 // Input:  a = document character, y = line offset (for tab stop lookup)
 // Output: a = character to render, x = screen width consumed, y preserved,
 // flags.C=0
-bool read_next_chunk_from_input_file(addr_t ptr);
-static addr_t compute_space_available(addr_t ptr);
-static addr_t compute_space_common(addr_t ptr, ptrdiff_t tmp89);
+bool read_next_chunk_from_input_file(uint8_t* ptr);
+static uint8_t* compute_space_available(uint8_t* ptr);
+static uint8_t* compute_space_common(uint8_t* ptr, ptrdiff_t tmp89);
 control_code_t check_for_control_code(uint8_t a);
 
 static void system_init(void);
 
 // Forward declarations for recently translated functions
-static addr_t compute_required_space_for_insertion(addr_t ptr);
+static uint8_t* compute_required_space_for_insertion(uint8_t* ptr);
 
 #include "io.h"
 
@@ -720,7 +720,7 @@ bool reset_command_parse_state(struct scan_state* scan)
     //     rts
 }
 
-addr_t read_into_document(void)
+uint8_t* read_into_document(void)
 {
     // read_into_document
     //  Ptrs:   ptr5
@@ -745,16 +745,15 @@ addr_t read_into_document(void)
     //     lda ((uint8_t*)&tmp45)[0]
     //     ldy ((uint8_t*)&tmp45)[1]
     //     jsr compute_required_space_for_insertion
-    addr_t space_limit = compute_required_space_for_insertion(tmp45 - &ram[0]);
+    uint8_t* space_limit = compute_required_space_for_insertion(tmp45);
     //     jsr make_space_for_insertion
     // (the 6502 leaves the clamped free-space size in tmp67; since
     //  space_limit = tmp45 + tmp67 - 0x8b, tmp67 = space_limit - tmp45 + 0x8b)
-    make_space_for_insertion(tmp45, space_limit - (tmp45 - &ram[0]) + 0x8b);
+    make_space_for_insertion(tmp45, space_limit - tmp45 + 0x8b);
     //     jsr read_block_from_file
     // (destination = the insertion point tmp45 explicitly)
-    addr_t cursor_addr = tmp45 - &ram[0];
-    read_block_status_t status =
-        read_block_from_file(&cursor_addr, space_limit);
+    uint8_t* cursor = tmp45;
+    read_block_status_t status = read_block_from_file(&cursor, space_limit);
     //     beq c8584
     //     bcs c8598
     if (status != READ_BLOCK_DONE)
@@ -773,11 +772,11 @@ addr_t read_into_document(void)
     //     sbc ((uint8_t*)&tmp01)[1]
     //     sta ((uint8_t*)&tmp67)[1]
     // (16-bit subtraction: tmp67 = space_limit - tmp01)
-    ptrdiff_t tmp67 = space_limit - cursor_addr;
+    ptrdiff_t tmp67 = space_limit - cursor;
     //     jsr adjust_pointers
-    tmp89 = adjust_pointers(&ram[cursor_addr], tmp67);
+    tmp89 = adjust_pointers(cursor, tmp67);
     // (the 6502 left the post-read cursor in tmp01; load_cmd uses it for top)
-    return cursor_addr;
+    return cursor;
 }
 
 /**
@@ -1077,17 +1076,17 @@ c8b11:
 
 // Returns true if the block read was empty (the 6502's Z flag, restored by
 // the php/plp around read_block_from_file).
-bool read_next_chunk_from_input_file(addr_t ptr)
+bool read_next_chunk_from_input_file(uint8_t* ptr)
 {
     // read_next_chunk_from_input_file
     // read_next_chunk_from_input_file:
     //     jsr sub_c8da2
-    addr_t space_limit = compute_space_available(ptr);
+    uint8_t* space_limit = compute_space_available(ptr);
     //     jsr select_file
     // (inlined: file_ptr = input_fp)
     file_ptr = input_fp;
     //     jsr read_block_from_file
-    addr_t cursor = ptr;
+    uint8_t* cursor = ptr;
     read_block_status_t status = read_block_from_file(&cursor, space_limit);
     //     php
     //     beq c8d39
@@ -1102,8 +1101,8 @@ bool read_next_chunk_from_input_file(addr_t ptr)
     //     tay                                                               ;
     //     Y=0x00
     //     sta (((uint8_t*)&tmp01)[0]),y
-    ram[cursor + 0] = 0;
-    top = &ram[cursor];
+    *cursor = 0;
+    top = cursor;
     //     plp
     //     rts
     return status == READ_BLOCK_EMPTY;
@@ -1115,7 +1114,7 @@ bool read_first_chunk_from_input_file(void)
     //     lda page
     //     ldy page+1
     //     jmp read_next_chunk_from_input_file
-    return read_next_chunk_from_input_file(page - &ram[0]);
+    return read_next_chunk_from_input_file(page);
 }
 
 void write_area_to_file(void)
@@ -1131,7 +1130,7 @@ void write_area_to_file(void)
     //     sta ((uint8_t*)&tmp89)[0]
     //     lda area_start_ptr+1
     //     sta ((uint8_t*)&tmp89)[1]
-    uint8_t* tmp89 = area_start_ptr;
+    addr_t tmp89 = area_start_ptr - &ram[0];
     //     zrepeat
     do
     {
@@ -1139,22 +1138,22 @@ void write_area_to_file(void)
         // (y is only set as a side effect of the 6502's indexed dereference;
         //  the C reads *tmp89 directly and no caller reads y afterwards)
         //         lda (((uint8_t*)&tmp89)[0]),y
-        uint8_t a = *tmp89;
+        uint8_t a = ram[tmp89];
         //         jsr put_byte_to_file
         // (inlined: fputc(a, file_ptr))
         fputc(a, file_ptr);
         tmp89++;
-    } while (tmp89 != area_end_ptr);
+    } while (&ram[tmp89] != area_end_ptr);
     // return_17:
     //     rts
 }
 
-static addr_t compute_space_common(addr_t ptr, ptrdiff_t tmp89)
+static uint8_t* compute_space_common(uint8_t* ptr, ptrdiff_t tmp89)
 {
     // compute_space_common
     // c8daf:
     //     sta ((uint8_t*)&tmp01)[0]
-    addr_t tmp01 = ptr;
+    uint8_t* tmp01 = ptr;
     //     jsr compute_bytes_free
     //     stx ((uint8_t*)&tmp67)[0]
     ptrdiff_t tmp67 = compute_bytes_free();
@@ -1192,7 +1191,7 @@ static addr_t compute_space_common(addr_t ptr, ptrdiff_t tmp89)
     return tmp01 + tmp67 - 0x8b;
 }
 
-static addr_t compute_space_available(addr_t ptr)
+static uint8_t* compute_space_available(uint8_t* ptr)
 {
     // sub_c8da2
     // sub_c8da2:
@@ -1207,7 +1206,7 @@ static addr_t compute_space_available(addr_t ptr)
     return compute_space_common(ptr, compute_bytes_free());
 }
 
-static addr_t compute_required_space_for_insertion(addr_t ptr)
+static uint8_t* compute_required_space_for_insertion(uint8_t* ptr)
 {
     // compute_required_space_for_insertion:
     //     ldx #0

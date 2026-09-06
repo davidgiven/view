@@ -138,8 +138,8 @@ typedef enum
 extern area_status_t sanitise_area(void);
 extern void parse_marks_from_command(struct scan_state* scan);
 extern void write_area_to_file(void);
-extern bool read_next_chunk_from_input_file(addr_t ptr);
-extern addr_t read_into_document(void);
+extern bool read_next_chunk_from_input_file(uint8_t* ptr);
+extern uint8_t* read_into_document(void);
 extern void reset_document_name_after_load(void);
 extern bool parse_integer_from_command(struct scan_state* scan, int* out);
 extern uint8_t l0021, l0031, l007a;
@@ -258,7 +258,8 @@ typedef enum
     READ_BLOCK_MORE   /* neither C nor Z: block filled to limit, more data */
 } read_block_status_t;
 
-extern read_block_status_t read_block_from_file(addr_t* cursor, addr_t limit);
+extern read_block_status_t read_block_from_file(
+    uint8_t** cursor, uint8_t* limit);
 
 extern bool scan_input_buffer(uint8_t* buffer, struct scan_state* state);
 extern void check_for_embedded_ruler(uint8_t* ptr);
