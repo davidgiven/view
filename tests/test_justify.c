@@ -15,12 +15,10 @@ extern uint8_t l0039, l0042, l0043, l0044, l0045, l0046;
 extern uint8_t l0081, l0082, l0083, l0084;
 extern uint8_t print_xpos;
 extern uint8_t input_buffer_offset;
-extern addr_t current_format_line_ptr;
-extern addr_t current_line_ptr;
-extern addr_t ptr1;
-extern addr_t tmp89;
-#define tmp8 (*((uint8_t*)&tmp89))
-#define tmp9 (*((uint8_t*)&tmp89 + 1))
+extern uint8_t *current_format_line_ptr;
+extern uint8_t *current_line_ptr;
+extern uint8_t *ptr1;
+extern uint8_t *tmp89;
 extern uint8_t output_buffer[132];
 extern uint8_t input_buffer[68];
 
@@ -53,9 +51,9 @@ static void setup_edit_buffer(const char* text)
 static void init_globals(const char* text, uint8_t jf, uint8_t rstop)
 {
     setup_edit_buffer(text);
-    current_format_line_ptr = BUFFER_ADDR;
-    current_line_ptr = BUFFER_ADDR;
-    ptr1 = BUFFER_ADDR;
+    current_format_line_ptr = &ram[BUFFER_ADDR];
+    current_line_ptr = &ram[BUFFER_ADDR];
+    ptr1 = &ram[BUFFER_ADDR];
 
     justifying_flag = jf;
     ruler_left_stop = 0;
@@ -63,7 +61,7 @@ static void init_globals(const char* text, uint8_t jf, uint8_t rstop)
 
     l0039 = l0046 = 0;
     l0081 = l0082 = l0083 = l0084 = 0;
-    tmp8 = tmp9 = 0;
+    tmp89 = NULL;
     print_xpos = 4;
     input_buffer_offset = 0;
     memset(output_buffer, 0, sizeof(output_buffer));

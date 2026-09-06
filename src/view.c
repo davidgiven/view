@@ -49,9 +49,9 @@ command_prefix_t check_for_command_prefix(uint8_t ch);
 
 bool reset_command_parse_state(struct scan_state* scan);
 cli_cmd_status_t process_cli_command(struct scan_state* scan);
-bool check_area_memory(addr_t ptr2);
+bool check_area_memory(uint8_t* ptr2);
 void redraw_and_write_back(void);
-void setup_area_pointers(addr_t ptr2);
+void setup_area_pointers(uint8_t* ptr2);
 void write_area_to_file(void);
 void run_editor(void);
 bool read_first_chunk_from_input_file(void);
@@ -82,19 +82,19 @@ uint8_t ram[65536];
 // X .section .zp, "zax", @nobits
 
 // X ptr1: .fill 2
-addr_t ptr1; // PROVISIONAL: working copy of current_format_line_ptr, used for
-             // editing/unpacking lines
+uint8_t* ptr1; // PROVISIONAL: working copy of current_format_line_ptr, used for
+               // editing/unpacking lines
 // X current_edit_line_ptr: .fill 2
 // X current_format_line_ptr: .fill 2
-addr_t current_format_line_ptr; // PROVISIONAL: points to line being
-                                // formatted/printed; aliased to
-                                // current_edit_line_ptr during editing
+uint8_t* current_format_line_ptr; // PROVISIONAL: points to line being
+                                  // formatted/printed; aliased to
+                                  // current_edit_line_ptr during editing
 // X current_ruler_ptr: .fill 2
-addr_t current_ruler_ptr; // PROVISIONAL: points to current ruler definition
-                          // (tab stops, margins) in ruler buffer
+uint8_t* current_ruler_ptr; // PROVISIONAL: points to current ruler definition
+                            // (tab stops, margins) in ruler buffer
 // X current_line_ptr: .fill 2
-addr_t current_line_ptr; // PROVISIONAL: cursor/position pointer that walks
-                         // through document memory
+uint8_t* current_line_ptr; // PROVISIONAL: cursor/position pointer that walks
+                           // through document memory
 // X page: .fill 2
 uint8_t*
     page; // PROVISIONAL: start (lowest address) of document text area in memory
@@ -105,18 +105,18 @@ uint8_t*
 uint8_t* himem; // PROVISIONAL: absolute upper bound of available RAM
 // X l0011: .fill 1
 // X l0012: .fill 1
-addr_t top_of_screen_line_ptr; // PROVISIONAL: document address of the first
-                               // visible line on screen
+uint8_t* top_of_screen_line_ptr; // PROVISIONAL: document address of the first
+                                 // visible line on screen
 // X ptr6: .fill 2
-addr_t editor_ptr6;  // PROVISIONAL: editor redraw pointer — the document line
-                     // to position the cursor on during redraw_editor (split
-                     // from the 6502's single ptr6)
-addr_t printer_ptr6; // PROVISIONAL: file/print read pointer — points to next
-                     // byte to read during printing/formatting (split from
-                     // the 6502's single ptr6)
+uint8_t* editor_ptr6;  // PROVISIONAL: editor redraw pointer — the document line
+                       // to position the cursor on during redraw_editor (split
+                       // from the 6502's single ptr6)
+uint8_t* printer_ptr6; // PROVISIONAL: file/print read pointer — points to next
+                       // byte to read during printing/formatting (split from
+                       // the 6502's single ptr6)
 // X ptr5: .fill 2
-addr_t ptr5; // PROVISIONAL: print-engine source pointer — next line/file-byte
-             // to print
+uint8_t* ptr5; // PROVISIONAL: print-engine source pointer — next line/file-byte
+               // to print
 // X printer_driver_ptr: .fill 2 (replaced by struct pointer)
 const struct printer_driver*
     printer_driver_ptr; // PROVISIONAL: function-pointer struct for printer
@@ -128,12 +128,12 @@ struct macro* first_macro_ptr; // PROVISIONAL: start of macro-definition linked
 struct macro* last_macro_ptr; // PROVISIONAL: end of macro-definition area where
                               // new macros are appended
 // X ptr3: .fill 2
-addr_t ptr3; // PROVISIONAL: macro text pointer — walks through
-             // currently-executing macro body
+uint8_t* ptr3; // PROVISIONAL: macro text pointer — walks through
+               // currently-executing macro body
 // X oshwm: .fill 2
 uint8_t* oshwm; // PROVISIONAL: OS high-water mark, base address for ruler stack
                 // and document area
-addr_t ruler_index[128]; // ruler stack (was ram[oshwm] trick, now separate)
+addr_t ruler_index[128]; // ruler stack (was oshwm[] trick, now separate)
 // X l0021: .fill 1
 uint8_t l0021; // PROVISIONAL: remaining-lines counter on current page during
                // printing
@@ -217,8 +217,8 @@ uint8_t cli_l004a; // upper-bound loop limit for CLI header/footer (part of 6502
                    // l004a)
 uint8_t editor_l004a; // upper-bound loop limit for editor (part of 6502 l004a)
 // X ptr2: .fill 2
-addr_t ptr2; // PROVISIONAL: working pointer into document body — used as
-             // source/dest in search/replace/convert
+uint8_t* ptr2; // PROVISIONAL: working pointer into document body — used as
+               // source/dest in search/replace/convert
 // X rw_file_handle: .fill 1
 uint8_t rw_file_handle; // PROVISIONAL: raw OS file handle returned by
                         // open_file() to editor on error
@@ -523,7 +523,7 @@ void redraw_and_write_back(void)
     //     jmp esc_key
 }
 
-void setup_area_pointers(addr_t ptr2)
+void setup_area_pointers(uint8_t* ptr2)
 {
     // sub_c8371
     //  Ptrs:   ptr2
@@ -532,7 +532,7 @@ void setup_area_pointers(addr_t ptr2)
     //     sta ((uint8_t*)&tmp89)[0]
     //     lda ptr2+1
     //     sta ((uint8_t*)&tmp89)[1]
-    addr_t tmp89 = ptr2;
+    uint8_t* tmp89 = ptr2;
     //     ldy #0
     //     ldx #0
     uint8_t x = 0;
@@ -540,7 +540,7 @@ void setup_area_pointers(addr_t ptr2)
     {
         // c8389:
         //     lda (((uint8_t*)&tmp89)[0]),y
-        uint8_t a = ram[tmp89];
+        uint8_t a = *tmp89;
         //     cmp #0x0d
         if (a == 0x0d)
             x++;
@@ -741,7 +741,7 @@ addr_t read_into_document(void)
     //     sta ((uint8_t*)&tmp45)[0]
     addr_t tmp45 = area_start_ptr - &ram[0];
     //     jsr move_cursor_to_address
-    move_cursor_to_address(area_start_ptr - &ram[0]);
+    move_cursor_to_address(area_start_ptr);
     //     lda ((uint8_t*)&tmp45)[0]
     //     ldy ((uint8_t*)&tmp45)[1]
     //     jsr compute_required_space_for_insertion
@@ -787,7 +787,7 @@ addr_t read_into_document(void)
  *         make_space_for_insertion failed), false otherwise (the 6502's
  *         explicit clc before rts).
  */
-bool check_area_memory(addr_t ptr2)
+bool check_area_memory(uint8_t* ptr2)
 {
     uint8_t a_3;
     uint8_t a_4;
@@ -877,7 +877,7 @@ c8a87:
     //     lda doc_ptr2+1
     //     sbc ptr2+1
     //     sta l0081
-    ptrdiff_t gap = doc_ptr2 - &ram[ptr2];
+    ptrdiff_t gap = doc_ptr2 - ptr2;
     //     ldx l0082
     uint8_t x_1 = l0082;
     //     tay
@@ -887,7 +887,7 @@ c8a87:
     //     txa
     //     clc; adc ptr2; sta ((uint8_t*)&tmp45)[0]; lda ptr2+1; adc #0; sta
     //     ((uint8_t*)&tmp45)[1]
-    addr_t tmp45 = ptr2 + x_1;
+    addr_t tmp45 = (ptr2 - &ram[0]) + x_1;
     //     lda l0082 / sec; sbc l0080; sta tmp67; lda #0; sbc l0081
     // (tmp67 = l0082 - gap as signed 16-bit) — three-way split:
     // shrink (delta<0), no-change (delta==0), grow (delta>0)
@@ -916,7 +916,7 @@ c8a87:
         do
         {
             //     lda (ptr2),y
-            a_3 = ram[ptr2 + y_1];
+            a_3 = ptr2[y_1];
             //     iny
             y_1++;
             //     jsr is_uppercase
@@ -956,7 +956,7 @@ c8a87:
         if (!(x_2 == 0))
         {
             //     lda (ptr2),y
-            uint8_t a_5 = ram[ptr2 + y_1];
+            uint8_t a_5 = ptr2[y_1];
             //     jsr is_uppercase
             //     bcs c8b11
             if (!isalpha(a_5))
@@ -1054,7 +1054,7 @@ c8b11:
         // c8b64:
         //     ldy l0083
         //     sta (ptr2),y
-        ram[ptr2 + l0083] = a_6;
+        ptr2[l0083] = a_6;
         //     inc l0083
         l0083++;
     c8b6a:
@@ -1068,7 +1068,7 @@ c8b11:
     //     lda ptr2
     //     ldy ptr2+1
     //     jsr cac78
-    split_line_at_wrap(tmp89 - &ram[0]);
+    split_line_at_wrap(tmp89);
     //     clc
     //     rts
     return false;
@@ -1136,7 +1136,7 @@ void write_area_to_file(void)
     {
         //         ldy #0
         // (y is only set as a side effect of the 6502's indexed dereference;
-        //  the C reads ram[tmp89] directly and no caller reads y afterwards)
+        //  the C reads *tmp89 directly and no caller reads y afterwards)
         //         lda (((uint8_t*)&tmp89)[0]),y
         uint8_t a = ram[tmp89];
         //         jsr put_byte_to_file

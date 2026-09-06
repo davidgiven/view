@@ -102,7 +102,7 @@ static void write_output_buffer_to_format_line(uint8_t a)
         //     sta (current_format_line_ptr),y
         do
         {
-            ram[current_format_line_ptr + y] = a;
+            current_format_line_ptr[y] = a;
             y++;
             x--;
         } while (x != 0);
@@ -111,7 +111,7 @@ c951c:
     do
     {
         a = output_buffer[x];
-        ram[current_format_line_ptr + y] = a;
+        current_format_line_ptr[y] = a;
         y++;
         x++;
     } while (a != 0x0d);
@@ -275,7 +275,7 @@ c9537:
     for (;;)
     {
         //     lda (current_format_line_ptr),y
-        a_1 = ram[current_format_line_ptr + y];
+        a_1 = current_format_line_ptr[y];
         //     iny
         y++;
         //     cmp #0x7c ; '|'
@@ -329,7 +329,7 @@ c9555:
     // c955e:
 c955e:
     //     lda (current_format_line_ptr),y
-    a_1 = ram[current_format_line_ptr + y];
+    a_1 = current_format_line_ptr[y];
     //     cmp #0x0d
     if (a_1 == 0x0d)
         goto c953e;
@@ -372,7 +372,7 @@ static uint8_t process_header_footer_line(uint8_t* tmp23)
     uint8_t y = 3;
     //     sty input_buffer_offset+1
     //     lda (current_format_line_ptr),y
-    uint8_t a = ram[current_format_line_ptr + y];
+    uint8_t a = current_format_line_ptr[y];
     //     sta l0083
     l0083 = a;
     //     ldx #0x3f ; '?'
@@ -385,7 +385,7 @@ static uint8_t process_header_footer_line(uint8_t* tmp23)
         //     sty l0082
         l0082 = y;
         //     lda (current_format_line_ptr),y
-        a_1 = ram[current_format_line_ptr + y];
+        a_1 = current_format_line_ptr[y];
         //     cmp #0x0d
         //     cmp #0x1b
         //     cmp l0083
@@ -830,7 +830,7 @@ static void dm_fmt_cmd(void)
     //     ldy #3
     uint8_t y = 3;
     //     lda (current_format_line_ptr),y
-    uint8_t firstchar = ram[current_format_line_ptr + y];
+    uint8_t firstchar = current_format_line_ptr[y];
     //     and #0xdf
     firstchar &= 0xdf;
     //     sta l0084
@@ -838,7 +838,7 @@ static void dm_fmt_cmd(void)
     //     Y=0x04
     y++;
     //     lda (current_format_line_ptr),y
-    uint8_t secondchar = ram[current_format_line_ptr + y];
+    uint8_t secondchar = current_format_line_ptr[y];
     //     jsr is_uppercase
     //     bcc c968d
     //     lda #0x20 ; ' '
@@ -894,7 +894,7 @@ static void dm_fmt_cmd(void)
         //     sta current_format_line_ptr+1
         // (16-bit copy: tmp01 = current_format_line_ptr = last_macro_ptr->body)
         addr_t tmp01 = (addr_t)(last_macro_ptr->body - ram);
-        current_format_line_ptr = (addr_t)(last_macro_ptr->body - ram);
+        current_format_line_ptr = last_macro_ptr->body;
         //     jsr sub_c9241
         if (read_next_output_line((addr_t)(last_macro_ptr->body - ram),
                 &tmp01) == READ_BLOCK_DONE)
@@ -1032,13 +1032,13 @@ enum formatting_command lookup_formatting_command(void)
     //     ldy #2
     uint8_t y = 2;
     //     lda (current_format_line_ptr),y
-    uint8_t a = ram[current_format_line_ptr + y];
+    uint8_t a = current_format_line_ptr[y];
     //     sta tmp3                     ; second command letter
     //     dey                                                               ;
     //     Y=0x01
     y--;
     //     lda (current_format_line_ptr),y
-    uint8_t a_1 = ram[current_format_line_ptr + y];
+    uint8_t a_1 = current_format_line_ptr[y];
     //     sta tmp2                     ; first command letter
     //     dey                                                               ;
     //     Y=0x00
@@ -1223,7 +1223,7 @@ static bool parse_boolean_from_fmt_cmd(uint8_t* y, uint8_t* value)
     //     ldx current_format_line_ptr+1
     // (the 6502 passes the pointer in XA; the C passes it as an argument)
     // MULTIPLE ENTRY POINTS: parse_boolean_from_fmt_cmd, sub_c976c
-    return parse_word_flag(&ram[current_format_line_ptr], y, value);
+    return parse_word_flag(current_format_line_ptr, y, value);
 }
 
 static const uint8_t l97b0_data[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
@@ -1460,7 +1460,7 @@ static uint8_t get_current_fmt_cmd_byte(uint8_t* y)
     // get_current_fmt_cmd_byte:
     while (1)
     {
-        uint8_t val = ram[current_format_line_ptr + *y];
+        uint8_t val = current_format_line_ptr[*y];
         if (val == 0x0d)
             return 0;
         // Z set
@@ -2152,10 +2152,10 @@ bool parse_decimal_number(int* value, uint8_t* y)
     // (no leading whitespace is guaranteed, and strtoul parses the value as
     //  unsigned, so no leading-sign/whitespace handling is needed: a leading
     //  non-digit yields end == start and value 0)
-    if (current_format_line_ptr == (addr_t)(uintptr_t)input_buffer)
+    if (current_format_line_ptr == input_buffer)
         start = (const char*)&input_buffer[*y];
     else
-        start = (const char*)&ram[current_format_line_ptr + *y];
+        start = (const char*)&current_format_line_ptr[*y];
     char* end;
     *value = (int)strtoul(start, &end, 10);
     bool parsed = (end != start);
@@ -2266,14 +2266,14 @@ void print_document(struct scan_state* scan)
     //     sta (last_macro_ptr),y
     // (initialise the empty macro list: the first node's next pointer = 0)
     last_macro_ptr->next = 0;
-    current_ruler_ptr = RAM_CURRENT_RULER_BUF;
+    current_ruler_ptr = &ram[RAM_CURRENT_RULER_BUF];
     //     jsr find_margins_of_current_ruler_buffer
     find_margins_of_current_ruler_buffer();
     if (!(!scan_input_buffer(input_buffer, scan)))
     {
         //     inc printing_from_file_flag
         printing_from_file_flag++;
-        printer_ptr6 = page - &ram[0];
+        printer_ptr6 = page;
         print_loop(ptr5);
         goto c8f0d;
     }
@@ -2351,7 +2351,7 @@ c8f30:
             l0080 = 3;
             //     jsr sub_cab6e
             //     bne c8f6e
-            // (inlined: Z = (ram[tmp01] == RULER_BYTE))
+            // (inlined: Z = (*tmp01 == RULER_BYTE))
             if (ram[cursor] != RULER_BYTE)
                 goto c8f6e_l;
             //     ldy #3
@@ -2395,12 +2395,12 @@ c8f30:
         //     ldy #1
         uint8_t y_3 = 1;
         //     lda (current_format_line_ptr),y
-        uint8_t a_2 = ram[current_format_line_ptr + y_3];
+        uint8_t a_2 = current_format_line_ptr[y_3];
         //     sta tmp8
         //     iny ; Y=0x02
         y_3++;
         //     lda (current_format_line_ptr),y
-        uint8_t a_3 = ram[current_format_line_ptr + y_3];
+        uint8_t a_3 = current_format_line_ptr[y_3];
         //     jsr is_uppercase
         // (the 6502 is_uppercase returns C=0 for A-Z/a-z, i.e. what
         //  isalpha() tests; C=1 otherwise)
@@ -3030,7 +3030,7 @@ addr_t prepare_output_line(addr_t read_limit, addr_t* macro_cursor)
         //  just read_limit itself)
         if (read_limit != 0)
         {
-            current_format_line_ptr = read_limit;
+            current_format_line_ptr = &ram[read_limit];
             return read_limit;
         }
     }
@@ -3094,7 +3094,7 @@ c91c2:
     //     clc
     // return_26:
     //     rts
-    return ptr1;
+    return ptr1 - &ram[0];
     // c91da:
 c91da:
     //     iny
@@ -3243,7 +3243,7 @@ static read_block_status_t read_next_output_line(addr_t limit, addr_t* cursor)
     // loop_c9247:
     do
     {
-        a2 = ram[printer_ptr6 + y];
+        a2 = printer_ptr6[y];
         if (a2 == 0)
             return READ_BLOCK_DONE;
         ram[(*cursor) + y] = a2;

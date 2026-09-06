@@ -6,9 +6,7 @@ typedef uint16_t addr_t;
 #include <stdio.h>
 
 extern uint8_t ram[65536];
-extern addr_t tmp01;
-#define tmp0 (*((uint8_t*)&tmp01))
-#define tmp1 (*((uint8_t*)&tmp01 + 1))
+extern uint8_t *tmp01;
 extern uint8_t screen_maxcolumn;
 extern void create_default_ruler(uint8_t* ruler_addr);
 

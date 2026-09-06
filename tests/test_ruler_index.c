@@ -8,20 +8,18 @@ typedef uint16_t addr_t;
 typedef uint16_t addr_t;
 
 extern uint8_t ram[65536];
-extern addr_t tmp01;
-#define tmp0 (*((uint8_t*)&tmp01))
-#define tmp1 (*((uint8_t*)&tmp01 + 1))
+extern uint8_t *tmp01;
 extern uint8_t ruler_index_ptr;
-extern addr_t oshwm;
+extern uint8_t *oshwm;
 extern addr_t ruler_index[128];
-extern addr_t current_ruler_ptr;
+extern uint8_t *current_ruler_ptr;
 extern uint8_t ruler_left_stop;
 extern uint8_t ruler_right_stop;
 extern uint8_t status_line_needs_redrawing_flag;
 extern uint8_t l003a;
 extern uint8_t screen_maxcolumn;
 
-void push_onto_ruler_index(addr_t tmp01);
+void push_onto_ruler_index(uint8_t *ptr);
 void pop_from_ruler_index(void);
 void create_default_ruler(uint8_t* ruler_addr);
 
@@ -63,19 +61,19 @@ int main(void)
     ram[ruler2_addr + 78] = 0x0d;
 
     {
-        oshwm = 0x0800;
+        oshwm = &ram[0x0800];
         ruler_index_ptr = 0;
         status_line_needs_redrawing_flag = 0;
         ruler_left_stop = ruler_right_stop = 0;
 
-        push_onto_ruler_index(ruler1_addr - 3);
+        push_onto_ruler_index(&ram[ruler1_addr - 3]);
 
         ASSERT_EQ(0xfe,
             ruler_index_ptr,
             "%d",
             "ruler_index_ptr decremented from 0 to 0xfe");
         ASSERT_EQ(ruler1_addr,
-            current_ruler_ptr,
+            current_ruler_ptr - &ram[0],
             "0x%04x",
             "current_ruler_ptr points to ruler1");
         ASSERT_EQ(ruler_left_stop, 10, "%d", "ruler_left_stop = 10");
@@ -83,12 +81,12 @@ int main(void)
     }
 
     {
-        push_onto_ruler_index(ruler2_addr - 3);
+        push_onto_ruler_index(&ram[ruler2_addr - 3]);
 
         ASSERT_EQ(
             0xfc, ruler_index_ptr, "%d", "ruler_index_ptr decremented to 0xfc");
         ASSERT_EQ(ruler2_addr,
-            current_ruler_ptr,
+            current_ruler_ptr - &ram[0],
             "0x%04x",
             "current_ruler_ptr points to ruler2");
         ASSERT_EQ(ruler_left_stop, 5, "%d", "ruler_left_stop = 5");
@@ -103,7 +101,7 @@ int main(void)
             "%d",
             "ruler_index_ptr incremented back to 0xfe");
         ASSERT_EQ(ruler1_addr,
-            current_ruler_ptr,
+            current_ruler_ptr - &ram[0],
             "0x%04x",
             "current_ruler_ptr restored to ruler1");
         ASSERT_EQ(ruler_left_stop, 10, "%d", "ruler_left_stop restored to 10");
@@ -118,9 +116,9 @@ int main(void)
     }
 
     {
-        oshwm = 0x0800;
+        oshwm = &ram[0x0800];
         ruler_index_ptr = 0;
-        push_onto_ruler_index(ruler1_addr - 3);
+        push_onto_ruler_index(&ram[ruler1_addr - 3]);
 
         addr_t stored = ruler_index[0x7f];
         ASSERT_EQ(ruler1_addr - 3,
@@ -130,7 +128,7 @@ int main(void)
     }
 
     {
-        oshwm = 0x0800;
+        oshwm = &ram[0x0800];
         ruler_index_ptr = 0;
         ruler_left_stop = ruler_right_stop = 0;
         screen_maxcolumn = 79;
@@ -138,7 +136,7 @@ int main(void)
         addr_t ruler_addr = 0x7200;
         create_default_ruler(&ram[ruler_addr]);
 
-        push_onto_ruler_index(ruler_addr - 3);
+        push_onto_ruler_index(&ram[ruler_addr - 3]);
 
         ASSERT_EQ(0xfe, ruler_index_ptr, "%d", "ruler_index_ptr = 0xfe");
         ASSERT_EQ(0, ruler_left_stop, "%d", "default ruler left_stop = 0");

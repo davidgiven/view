@@ -79,7 +79,7 @@ extern uint8_t highlight_code[2];
 #define highlight2_code highlight_code[1]
 extern uint8_t *himem, *top, *page;
 extern struct macro *first_macro_ptr, *last_macro_ptr;
-extern addr_t ptr5, current_format_line_ptr;
+extern uint8_t *ptr5, *current_format_line_ptr;
 extern uint8_t header_text_maybe[0x42];
 extern uint8_t footer_text_maybe[0x42];
 extern uint8_t output_buffer[];
@@ -120,9 +120,9 @@ typedef enum
 } cli_cmd_status_t;
 
 extern cli_cmd_status_t process_cli_command(struct scan_state* scan);
-extern bool check_area_memory(addr_t ptr2);
+extern bool check_area_memory(uint8_t* ptr2);
 extern void redraw_and_write_back(void);
-extern void setup_area_pointers(addr_t ptr2);
+extern void setup_area_pointers(uint8_t* ptr2);
 extern void esc_key(void);
 extern void parse_filename_from_command(struct scan_state* scan);
 extern void set_document_name_to_filename_buffer(void);
@@ -158,9 +158,9 @@ extern uint8_t print_xpos;
 extern uint8_t input_filename[];
 extern uint8_t output_filename[];
 extern uint8_t file_edit_flags;
-extern addr_t current_ruler_ptr;
-extern addr_t current_line_ptr;
-extern addr_t top_of_screen_line_ptr;
+extern uint8_t* current_ruler_ptr;
+extern uint8_t* current_line_ptr;
+extern uint8_t* top_of_screen_line_ptr;
 extern uint8_t l003a;
 extern uint8_t l0046;
 extern uint8_t input_file_empty_flag;
@@ -170,7 +170,7 @@ extern uint8_t input_buffer[];
 extern uint8_t microspacing_flag;
 extern uint8_t input_buffer_offset;
 extern uint8_t insert_mode_flag;
-extern addr_t ptr3;
+extern uint8_t* ptr3;
 
 // Pointer array struct (markers, area pointers, doc pointers)
 struct pointer_array_t
@@ -217,7 +217,7 @@ extern uint8_t hscroll_pos;
 extern uint8_t ypos;
 extern uint8_t screen_maxrow;
 extern uint8_t status_line_needs_redrawing_flag;
-extern addr_t ptr1;
+extern uint8_t* ptr1;
 extern uint8_t edit_buffer_dirty_flag;
 extern uint8_t line_lengths[];
 
@@ -261,7 +261,7 @@ typedef enum
 extern read_block_status_t read_block_from_file(addr_t* cursor, addr_t limit);
 
 extern bool scan_input_buffer(uint8_t* buffer, struct scan_state* state);
-extern void check_for_embedded_ruler(addr_t tmp01);
+extern void check_for_embedded_ruler(uint8_t* ptr);
 
 // Functions moved to printing.c still called from view.c/other modules
 extern void display_not_enough_memory(void);
@@ -279,15 +279,15 @@ extern uint8_t justify_overflow_counter;
 extern uint8_t print_last_microspacing;
 extern uint8_t justify_line_length;
 extern uint8_t printing_from_file_flag;
-extern addr_t editor_ptr6;
-extern addr_t printer_ptr6;
+extern uint8_t* editor_ptr6;
+extern uint8_t* printer_ptr6;
 extern uint8_t parser_table[];
 
 extern uint8_t cli_l0049;
 extern uint8_t editor_l0049;
 extern uint8_t cli_l004a;
 extern uint8_t editor_l004a;
-extern addr_t ptr2;
+extern uint8_t* ptr2;
 
 extern bool scan_document_for_next_line(void);
 extern uint8_t process_current_document_character(

@@ -612,17 +612,17 @@ static void format_cmd(struct scan_state* scan)
     {
         //     lda area_start_ptr
         //     jsr move_cursor_to_address
-        move_cursor_to_address(area_start_ptr - &ram[0]);
+        move_cursor_to_address(area_start_ptr);
         //     jsr sub_caf5f
         clear_format_mode_bit7();
         //     lda #0x10
         //     jsr wipe_buffer
-        wipe_buffer(0x10, &ram[ptr1]);
+        wipe_buffer(0x10, ptr1);
         //     lda current_edit_line_ptr
         //     sta current_format_line_ptr
         //     lda current_edit_line_ptr+1
         //     sta current_format_line_ptr+1
-        current_format_line_ptr = RAM_EDIT_BUFFER;
+        current_format_line_ptr = &ram[RAM_EDIT_BUFFER];
         do
         {
             // c876d:
@@ -637,13 +637,13 @@ static void format_cmd(struct scan_state* scan)
             //     lda #0x2e ; '.'
             //     jsr bdos_print_char
             cli_putchar(0x2e);
-        } while (&ram[current_line_ptr] < area_end_ptr);
+        } while (current_line_ptr < area_end_ptr);
         // c8787:
     c8787:
         //     lda #0xff
         //     lda #0xff
         //     sta l0012
-        top_of_screen_line_ptr = RAM_MAX;
+        top_of_screen_line_ptr = &ram[RAM_MAX];
     }
     // c878b:
 c878b:
@@ -761,7 +761,7 @@ static void more_cmd(struct scan_state* scan)
     //     jsr parse_marks_from_command
     parse_marks_from_command(scan);
     //     jsr move_cursor_to_address
-    move_cursor_to_address(area_start_ptr - &ram[0]);
+    move_cursor_to_address(area_start_ptr);
     //     jsr select_file
     // (inlined: file_ptr = output_fp)
     file_ptr = output_fp;
@@ -774,7 +774,7 @@ static void more_cmd(struct scan_state* scan)
     uint8_t x = l003a;
     do
     {
-        uint8_t a = ram[current_ruler_ptr + y];
+        uint8_t a = current_ruler_ptr[y];
         current_ruler_buffer[y] = a;
         y++;
         x--;
