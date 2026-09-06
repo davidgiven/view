@@ -175,12 +175,12 @@ extern addr_t ptr3;
 // Pointer array struct (markers, area pointers, doc pointers)
 struct pointer_array_t
 {
-    addr_t markers_array[6];
-    addr_t area_start_ptr;
-    addr_t area_end_ptr;
-    addr_t doc_ptr1;
-    addr_t doc_ptr2;
-    addr_t doc_ptr3;
+    uint8_t* markers_array[6];
+    uint8_t* area_start_ptr;
+    uint8_t* area_end_ptr;
+    uint8_t* doc_ptr1;
+    uint8_t* doc_ptr2;
+    uint8_t* doc_ptr3;
 };
 extern struct pointer_array_t pointer_array;
 #define markers_array pointer_array.markers_array
@@ -312,5 +312,5 @@ extern void draw_prompt_characters(uint8_t x, uint8_t y);
 extern void show_memory_full_error(void);
 extern void bad_filename_error(void);
 extern void clear_screen(void);
-extern addr_t parse_mark_from_command(struct scan_state* scan);
+extern uint8_t* parse_mark_from_command(struct scan_state* scan);
 #endif

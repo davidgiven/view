@@ -4,7 +4,7 @@
 #include "io.h"
 #include <stdlib.h>
 #include <string.h>
-addr_t parse_mark_from_command(struct scan_state* scan);
+uint8_t* parse_mark_from_command(struct scan_state* scan);
 
 // Forward declarations for CLI utilities
 void file_error(void);
@@ -315,7 +315,7 @@ static void count_cmd(struct scan_state* scan)
     //     sta ((uint8_t*)&tmp01)[0]
     //     lda area_start_ptr+1
     //     sta ((uint8_t*)&tmp01)[1]
-    addr_t tmp01 = area_start_ptr;
+    addr_t tmp01 = area_start_ptr - &ram[0];
     //     lda #0
     //     sta ((uint8_t*)&tmp89)[0]
     //     sta ((uint8_t*)&tmp89)[1]
@@ -436,7 +436,7 @@ c871f:
     //     ldy ((uint8_t*)&tmp01)[0]
     //     cpy area_end_ptr
     // (16-bit equality consolidated)
-    if (tmp01 != area_end_ptr)
+    if (&ram[tmp01] != area_end_ptr)
         goto c86b8;
     //     ldx ((uint8_t*)&tmp89)[0]
     render_number_to_screen(tmp89);
@@ -612,7 +612,7 @@ static void format_cmd(struct scan_state* scan)
     {
         //     lda area_start_ptr
         //     jsr move_cursor_to_address
-        move_cursor_to_address(area_start_ptr);
+        move_cursor_to_address(area_start_ptr - &ram[0]);
         //     jsr sub_caf5f
         clear_format_mode_bit7();
         //     lda #0x10
@@ -637,7 +637,7 @@ static void format_cmd(struct scan_state* scan)
             //     lda #0x2e ; '.'
             //     jsr bdos_print_char
             cli_putchar(0x2e);
-        } while (current_line_ptr < area_end_ptr);
+        } while (&ram[current_line_ptr] < area_end_ptr);
         // c8787:
     c8787:
         //     lda #0xff
@@ -761,7 +761,7 @@ static void more_cmd(struct scan_state* scan)
     //     jsr parse_marks_from_command
     parse_marks_from_command(scan);
     //     jsr move_cursor_to_address
-    move_cursor_to_address(area_start_ptr);
+    move_cursor_to_address(area_start_ptr - &ram[0]);
     //     jsr select_file
     // (inlined: file_ptr = output_fp)
     file_ptr = output_fp;
@@ -1705,17 +1705,17 @@ void parse_marks_from_command(struct scan_state* scan)
     //     jsr reset_area_to_entire_document
     reset_area_to_entire_document();
     //     jsr parse_mark_from_command
-    addr_t start_mark = parse_mark_from_command(scan);
+    uint8_t* start_mark = parse_mark_from_command(scan);
     //     beq return_11
-    if (start_mark == 0)
+    if (start_mark == NULL)
         return;
     //     sta area_start_ptr
     area_start_ptr = start_mark;
     //     sty area_start_ptr+1
     //     jsr parse_mark_from_command
-    addr_t end_mark = parse_mark_from_command(scan);
+    uint8_t* end_mark = parse_mark_from_command(scan);
     //     beq return_11
-    if (end_mark == 0)
+    if (end_mark == NULL)
         return;
     //     sta area_end_ptr
     area_end_ptr = end_mark;
@@ -1780,14 +1780,14 @@ void zero_terminate_filename_buffer(void)
     return;
 }
 
-addr_t parse_mark_from_command(struct scan_state* scan)
+uint8_t* parse_mark_from_command(struct scan_state* scan)
 {
     // parse_mark_from_command
     // parse_mark_from_command:
     //     jsr sub_c8e33
     //     beq return_12
     if (scan_input_buffer(input_buffer, scan))
-        return 0;
+        return NULL;
     //     iny
     scan->pos++;
     //     sty input_buffer_offset

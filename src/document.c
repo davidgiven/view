@@ -994,12 +994,12 @@ void reset_area_to_entire_document(void)
     // page)
     //     lda top
     //     sta area_start_ptr
-    area_start_ptr = top - &ram[0];
+    area_start_ptr = top;
     //     lda top+1
     //     sta area_start_ptr+1
     //     lda page
     //     sta area_end_ptr
-    area_end_ptr = page - &ram[0];
+    area_end_ptr = page;
     //     lda page+1
     //     sta area_end_ptr+1
     //     rts

@@ -739,9 +739,9 @@ addr_t read_into_document(void)
     open_input_file();
     //     lda area_start_ptr
     //     sta ((uint8_t*)&tmp45)[0]
-    addr_t tmp45 = area_start_ptr;
+    addr_t tmp45 = area_start_ptr - &ram[0];
     //     jsr move_cursor_to_address
-    move_cursor_to_address(area_start_ptr);
+    move_cursor_to_address(area_start_ptr - &ram[0]);
     //     lda ((uint8_t*)&tmp45)[0]
     //     ldy ((uint8_t*)&tmp45)[1]
     //     jsr compute_required_space_for_insertion
@@ -877,7 +877,7 @@ c8a87:
     //     lda doc_ptr2+1
     //     sbc ptr2+1
     //     sta l0081
-    ptrdiff_t gap = doc_ptr2 - ptr2;
+    ptrdiff_t gap = doc_ptr2 - &ram[ptr2];
     //     ldx l0082
     uint8_t x_1 = l0082;
     //     tay
@@ -1130,7 +1130,7 @@ void write_area_to_file(void)
     //     sta ((uint8_t*)&tmp89)[0]
     //     lda area_start_ptr+1
     //     sta ((uint8_t*)&tmp89)[1]
-    addr_t tmp89 = area_start_ptr;
+    addr_t tmp89 = area_start_ptr - &ram[0];
     //     zrepeat
     do
     {
@@ -1143,7 +1143,7 @@ void write_area_to_file(void)
         // (inlined: fputc(a, file_ptr))
         fputc(a, file_ptr);
         tmp89++;
-    } while (tmp89 != area_end_ptr);
+    } while (&ram[tmp89] != area_end_ptr);
     // return_17:
     //     rts
 }

@@ -74,7 +74,7 @@ static bool insert_character_into_edit_buffer(uint8_t a);
 static void set_xpos_to_line_length(void);
 static uint8_t compute_display_start_line(void);
 static void advance_to_next_char_and_render(struct render_state* rs);
-static uint8_t find_marker_at_position(uint8_t y, addr_t tmp67);
+static uint8_t find_marker_at_position(uint8_t y, uint8_t* ptr);
 static void unpack_line(addr_t ptr1);
 static void update_markers_to_format_buffer(void);
 void check_for_embedded_ruler(addr_t tmp01);
@@ -476,7 +476,7 @@ static void cf0_delete_block_key(void)
         beep();
         return;
     }
-    move_cursor_to_address(area_start_ptr);
+    move_cursor_to_address(area_start_ptr - &ram[0]);
     clamp_ptr6_to_document();
     adjust_area_pointers(tmp67);
     ensure_cr_at_document_top();
@@ -780,7 +780,7 @@ static void f11_copy_key(void)
         return;
     }
     check_pointer_in_area();
-    move_cursor_to_address(doc_ptr1);
+    move_cursor_to_address(doc_ptr1 - &ram[0]);
 }
 
 static void f12_left_key(void)
@@ -2006,7 +2006,7 @@ static void sf0_move_block_key(void)
     l006f = 0xff;
     adjust_area_pointers(tmp67);
     ensure_cr_at_document_top();
-    move_cursor_to_address(doc_ptr1);
+    move_cursor_to_address(doc_ptr1 - &ram[0]);
     clear_marks_1_2();
 }
 
@@ -2571,7 +2571,7 @@ cae78:
         // cae78:
         //     jsr sub_ca536
         //     bne cae98
-        x = find_marker_at_position(y, tmp67);
+        x = find_marker_at_position(y, &ram[tmp67]);
         if (!(x == 0x0c))
         {
             //     lda #0
@@ -2596,7 +2596,7 @@ cae78:
             //  ? RAM_EDIT_BUFFER + (y - l0080) : 0)
             uint16_t marker_val =
                 (y >= l0084) ? RAM_EDIT_BUFFER + (y - l0080) : 0;
-            markers_array[x / 2] = marker_val;
+            markers_array[x / 2] = marker_val ? &ram[marker_val] : NULL;
             //     jmp cae78
             continue;
         }
@@ -2675,7 +2675,7 @@ static void enter_printable_character(void)
     uint8_t y_1 = xpos;
     //     jsr sub_ca536
     //     bne c9bf2
-    uint8_t idx = find_marker_at_position(y_1, tmp67);
+    uint8_t idx = find_marker_at_position(y_1, &ram[tmp67]);
     if (idx != 0x0c)
     {
         if (idx < 4)
@@ -2974,7 +2974,7 @@ c9cd0:
         {
             //     jsr sub_ca536
             //     bne c9d0d
-            uint8_t marker_index = find_marker_at_position(y_11, tmp67_3);
+            uint8_t marker_index = find_marker_at_position(y_11, &ram[tmp67_3]);
             if (marker_index == 0x0c)
                 break;
             //     lda l0081
@@ -2988,7 +2988,7 @@ c9cd0:
             //  the bcc loop_c9cf9 continues while the address fits in 16 bits)
             {
                 uint16_t val = tmp45 + l0081;
-                markers_array[marker_index / 2] = val;
+                markers_array[marker_index / 2] = &ram[val];
                 if (tmp45 + (uint16_t)l0081 >= 0x10000)
                     break;
             }
@@ -3255,18 +3255,18 @@ static void check_pointer_in_area(void)
         beep();
         return;
     }
-    move_cursor_to_address(area_start_ptr);
+    move_cursor_to_address(area_start_ptr - &ram[0]);
     {
         ptrdiff_t diff = area_end_ptr - area_start_ptr;
         tmp67 = diff;
     }
-    addr_t tmp45 = doc_ptr1;
+    addr_t tmp45 = doc_ptr1 - &ram[0];
     if (!make_space_for_insertion(tmp45, tmp67))
     {
         show_memory_full_error();
         longjmp(env, JMP_EDITOR);
     }
-    addr_t tmp89 = area_start_ptr;
+    addr_t tmp89 = area_start_ptr - &ram[0];
     addr_t tmp23 = tmp45;
     // ca219:
     while (1)
@@ -3277,13 +3277,13 @@ static void check_pointer_in_area(void)
         if ((tmp89) == area_end_ptr)
             break;
     }
-    doc_ptr1 = tmp45;
+    doc_ptr1 = &ram[tmp45];
     //     lda tmp2 / ldy tmp3 / sec / sbc #1 / bcs ca24d / dey
     uint16_t adjusted = (tmp23)-1;
     //     jsr split_line_at_wrap
     split_line_at_wrap(adjusted);
     //     lda doc_ptr1 / ldy doc_ptr1+1 / jsr split_line_at_wrap
-    split_line_at_wrap(doc_ptr1);
+    split_line_at_wrap(doc_ptr1 - &ram[0]);
     tmp67 = tmp67;
     l0073 = 1;
     cursor_moved_flag = 1;
@@ -3576,7 +3576,7 @@ cae27:
     {
         //     jsr sub_ca536
         //     bne cae52
-        uint8_t idx = find_marker_at_position(y, tmp67);
+        uint8_t idx = find_marker_at_position(y, &ram[tmp67]);
         if (idx == 0x0c)
             goto cae52;
         //     lda l0081
@@ -3596,7 +3596,7 @@ cae27:
         // (16-bit store: markers_array[idx] = l0081
         //  ? RAM_EDIT_BUFFER + l0081 : 0)
         uint16_t marker_val = l0081 ? RAM_EDIT_BUFFER + l0081 : 0;
-        markers_array[idx / 2] = marker_val;
+        markers_array[idx / 2] = marker_val ? &ram[marker_val] : NULL;
         //     jmp loop_cae37
     }
     // cae52:
@@ -3657,7 +3657,7 @@ void set_marker_to_here(uint8_t x)
     //     adc #0
     //     sta 1,x
     uint16_t marker_addr = current_line_ptr + len;
-    markers_array[x] = marker_addr;
+    markers_array[x] = &ram[marker_addr];
     //     rts
 }
 
@@ -3787,10 +3787,10 @@ addr_t adjust_pointers(addr_t tmp45, ptrdiff_t tmp67)
         //  pointer_array[x] < tmp89 → ca9db (zero if marker, else subtract),
         //  else → ca9e7 (subtract))
         {
-            addr_t pa_val = ((addr_t*)&pointer_array)[x];
-            if (pa_val < tmp45)
+            uint8_t* pa_val = ((uint8_t**)&pointer_array)[x];
+            if (pa_val < &ram[tmp45])
                 goto ca9f1;
-            if (pa_val < local_tmp89)
+            if (pa_val < &ram[local_tmp89])
                 goto ca9db;
             goto ca9e7;
         }
@@ -3803,7 +3803,7 @@ addr_t adjust_pointers(addr_t tmp45, ptrdiff_t tmp67)
             //     lda #0 (6400)
             //     sta __begin_pointer_array+0,x (6401)
             //     sta __begin_pointer_array+1,x (6402)
-            ((addr_t*)&pointer_array)[x] = 0;
+            ((uint8_t**)&pointer_array)[x] = NULL;
             // ca9e7: (6405)
             //     sbc ((uint8_t*)&tmp67)[0] (6406)
             //     sta __begin_pointer_array+0,x (6407)
@@ -3818,7 +3818,7 @@ addr_t adjust_pointers(addr_t tmp45, ptrdiff_t tmp67)
         else
         ca9e7:
         {
-            ((addr_t*)&pointer_array)[x] -= tmp67;
+            ((uint8_t**)&pointer_array)[x] -= tmp67;
         }
             // ca9f1: (6411)
         ca9f1:
@@ -3827,7 +3827,7 @@ addr_t adjust_pointers(addr_t tmp45, ptrdiff_t tmp67)
             //     cpx #22 (6414)
             // (the 6502 steps x by two bytes per entry; x counts elements here)
             x++;
-    } while (x != sizeof(pointer_array) / sizeof(addr_t));
+    } while (x != sizeof(pointer_array) / sizeof(uint8_t*));
     // loop_ca9f7: (6416)
     //     ldy #0 (6417)
     // loop_ca9f9: (6418)
@@ -3983,7 +3983,7 @@ bool scan_document_for_next_line(void)
     //     sta ((uint8_t*)&tmp89)[0]
     //     lda doc_ptr2+1
     //     sta ((uint8_t*)&tmp89)[1]
-    addr_t tmp89 = doc_ptr2;
+    addr_t tmp89 = doc_ptr2 - &ram[0];
 c8b91:
     // c8b91:
     //     lda ((uint8_t*)&tmp89)[1]
@@ -3994,7 +3994,7 @@ c8b91:
     //     cmp doc_ptr3
     //     bcs signal_no_more_document
     // (16-bit comparison: tmp89 < doc_ptr3)
-    if (tmp89 >= doc_ptr3)
+    if (&ram[tmp89] >= doc_ptr3)
     {
         // c8b78:
         //     lda #0xff
@@ -4020,7 +4020,7 @@ c8b91:
         //     bcc c8b7b
         //     bcs c8bdf
         // (16-bit arithmetic: doc_ptr2 = tmp89 + 3)
-        doc_ptr2 = tmp89 + 3;
+        doc_ptr2 = &ram[tmp89 + 3];
         return scan_document_for_next_line();
     }
     // c8bb7:
@@ -4168,8 +4168,8 @@ c8c3e:
     // (16-bit copy: doc_ptr2 = tmp89; ptr2 = the previous doc_ptr2.  The
     //  6502 also returned the old address in YA for its callers, who now
     //  read ptr2 instead)
-    ptr2 = doc_ptr2;
-    doc_ptr2 = tmp89;
+    ptr2 = doc_ptr2 - &ram[0];
+    doc_ptr2 = &ram[tmp89];
     //     ldx #0
     return true;
 }
@@ -4525,7 +4525,7 @@ static void go_to_marker(uint8_t x)
     //     lda markers_array,x
     //     ldy markers_array+1,x
     //     jsr move_cursor_to_address
-    move_cursor_to_address(markers_array[x]);
+    move_cursor_to_address(markers_array[x] - &ram[0]);
     // ca035:
     //     lda #1
     //     sta l0073
@@ -4896,7 +4896,7 @@ bool make_space_for_insertion(addr_t tmp45, ptrdiff_t tmp67)
     // loop_caa38: (6458)
     do
     {
-        if (!(((addr_t*)&pointer_array)[x] < tmp45))
+        if (!(((uint8_t**)&pointer_array)[x] < &ram[tmp45]))
         {
             // caa46: (6466)
             //     clc (6467)
@@ -4906,7 +4906,7 @@ bool make_space_for_insertion(addr_t tmp45, ptrdiff_t tmp67)
             //     adc ((uint8_t*)&tmp67)[1] (6471)
             //     sta __begin_pointer_array+1,x (6472)
             // (16-bit addition: pointer_array[x] += tmp67)
-            ((addr_t*)&pointer_array)[x] += tmp67;
+            ((uint8_t**)&pointer_array)[x] += tmp67;
         }
         // caa51: (6473)
     caa51:
@@ -4915,7 +4915,7 @@ bool make_space_for_insertion(addr_t tmp45, ptrdiff_t tmp67)
         //     cpx #22 (6476)
         // (the 6502 steps x by two bytes per entry; x counts elements here)
         x++;
-    } while (x != sizeof(pointer_array) / sizeof(addr_t));
+    } while (x != sizeof(pointer_array) / sizeof(uint8_t*));
     // caa57: (6478)
     //     lda ((uint8_t*)&tmp23)[0] (6479)
     //     sec (6480)
@@ -5522,7 +5522,7 @@ static void render_char(struct render_state* rs)
         //     dey
         //     jsr sub_ca536
         addr_t tmp67 = rs->line_ptr;
-        x_1 = find_marker_at_position(rs->pos - 1, tmp67);
+        x_1 = find_marker_at_position(rs->pos - 1, &ram[tmp67]);
         //     iny
         //     cpx #4
         if (x_1 >= 4)
@@ -5615,9 +5615,9 @@ area_status_t sanitise_area(void)
         //     sty area_start_ptr+1
         //     stx area_end_ptr+1
         //     sta area_end_ptr
-        addr_t tmp = area_start_ptr;
+        addr_t tmp = area_start_ptr - &ram[0];
         area_start_ptr = area_end_ptr;
-        area_end_ptr = tmp;
+        area_end_ptr = &ram[tmp];
     }
     // c8977:
     //     lda area_end_ptr
@@ -5769,7 +5769,7 @@ void adjust_area_pointers(ptrdiff_t tmp67)
     //     sta ((uint8_t*)&tmp45)[0]
     //     lda area_start_ptr+1
     //     sta ((uint8_t*)&tmp45)[1]
-    addr_t tmp45 = area_start_ptr;
+    addr_t tmp45 = area_start_ptr - &ram[0];
     //     jsr adjust_pointers
     tmp89 = &ram[adjust_pointers(tmp45, tmp67)];
     //     lda ((uint8_t*)&tmp45)[0]
@@ -6018,12 +6018,12 @@ c99b6:
     {
         //     jsr sub_ca536
         //     bne c99c7
-        uint8_t idx = find_marker_at_position(y_2, tmp67);
+        uint8_t idx = find_marker_at_position(y_2, &ram[tmp67]);
         if (idx == 0x0c)
             break;
         //     lda #0
         //     sta markers_array+1,x
-        markers_array[idx / 2] &= 0x00ff;
+        markers_array[idx / 2] = 0;
         //     inc l007e
         line_format_status++;
         //     bne loop_c99ba
@@ -6557,14 +6557,14 @@ static void advance_to_next_char_and_render(struct render_state* rs)
     render_char(rs);
 }
 
-static uint8_t find_marker_at_position(uint8_t y, addr_t tmp67)
+static uint8_t find_marker_at_position(uint8_t y, uint8_t* ptr)
 {
     // sub_ca536
     // Pseudocode: Checks if a position in the edit line corresponds to a marker
     // On exit:  return value is the marker array index (0,2,...,10) if the
     // position matches a marker, or 0x0c if it does not
     // sub_ca536:
-    addr_t tmp89 = tmp67 + y;
+    uint8_t* tmp89 = ptr + y;
     //     ldx #0
     uint8_t x = 0;
     // loop_ca544:
@@ -6658,7 +6658,7 @@ caad5:
         // caad5:
         //     jsr sub_ca536
         //     bne caae8
-        uint8_t idx = find_marker_at_position(y, tmp67);
+        uint8_t idx = find_marker_at_position(y, &ram[tmp67]);
         if (!(idx == 0x0c))
         {
             //     tya
@@ -6674,7 +6674,7 @@ caad5:
             //  non-zero)
             {
                 uint16_t val = current_format_line_ptr + y;
-                markers_array[idx / 2] = val;
+                markers_array[idx / 2] = &ram[val];
                 if (val != 0)
                     continue;
             }
@@ -6962,7 +6962,7 @@ static bool write_line_back_to_document(void)
                     {
                         //     jsr sub_ca536
                         //     bne ca92f
-                        uint8_t idx = find_marker_at_position(y_1, tmp67);
+                        uint8_t idx = find_marker_at_position(y_1, &ram[tmp67]);
                         if (idx == 0x0c)
                             break;
                         //     tya
@@ -6974,7 +6974,7 @@ static bool write_line_back_to_document(void)
                         //     sta markers_array+1,x
                         // (16-bit arithmetic: val = current_line_ptr + y)
                         val = current_line_ptr + y_1;
-                        markers_array[idx / 2] = val;
+                        markers_array[idx / 2] = &ram[val];
                         //     bne loop_ca91c
                     } while (val != 0);
                     // ca92f:
