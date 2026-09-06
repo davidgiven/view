@@ -98,62 +98,57 @@ void display_document_file_state(void)
     //     .ascii "Editing "
     //     .byte 0
     cli_putstring("Editing ");
-    if (!(file_edit_flags == 0))
+    if (file_edit_flags == 0)
     {
-        //     ldy #0
-        uint8_t y = 0;
-        // loop_c89fa:
-        //     lda input_filename,y
-        //     cmp #0x0d
-        //     jsr bdos_print_char
-        //     iny
-        //     bne loop_c89fa
-        // (loop restructured)
-        for (;;)
-        {
-            a_1 = input_filename[y];
-            if (a_1 == 0x0d)
-                break;
-            cli_putchar(a_1);
-            y++;
-        }
-        // c8a07:
-        //     bit file_edit_flags
-        if ((file_edit_flags & 0x40))
-            goto c8a19;
-        //     jsr print_inline_string
-        //     .ascii " to "
-        //     .byte 0
-        cli_putstring(" to ");
-        //     ldy #0
-        y = 0;
-        // loop_c8a15:
-        //     lda output_filename,y
-        //     iny
-        //     jsr bdos_print_char
-        //     cmp #0x0d
-        //     bne loop_c8a15
-        // (loop restructured)
-        for (;;)
-        {
-            a_1 = output_filename[y];
-            y++;
-        c8a19:
-            // c8a19:
-            //     jsr bdos_print_char
-            cli_putchar(a_1);
-            if (a_1 == 0x0d)
-                break;
-        }
-        //     rts
+        cli_putstring("No File\n");
         return;
     }
-    // c8a21:
+
+    //     ldy #0
+    uint8_t y = 0;
+    // loop_c89fa:
+    //     lda input_filename,y
+    //     cmp #0x0d
+    //     jsr bdos_print_char
+    //     iny
+    //     bne loop_c89fa
+    // (loop restructured)
+    for (;;)
+    {
+        a_1 = input_filename[y];
+        if (a_1 == 0x0d)
+            break;
+        cli_putchar(a_1);
+        y++;
+    }
+    // c8a07:
+    //     bit file_edit_flags
+    if ((file_edit_flags & 0x40))
+        goto c8a19;
     //     jsr print_inline_string
-    //     .ascii "No File\r"
+    //     .ascii " to "
     //     .byte 0
-    cli_putstring("No File\n");
-    //     rts
+    cli_putstring(" to ");
+    //     ldy #0
+    y = 0;
+    // loop_c8a15:
+    //     lda output_filename,y
+    //     iny
+    //     jsr bdos_print_char
+    //     cmp #0x0d
+    //     bne loop_c8a15
+    // (loop restructured)
+    for (;;)
+    {
+        a_1 = output_filename[y];
+        y++;
+    c8a19:
+        // c8a19:
+        //     jsr bdos_print_char
+        cli_putchar(a_1);
+        if (a_1 == 0x0d)
+            break;
+    }
 }
 
 void find_margins_of_current_ruler_buffer(void)
@@ -204,22 +199,22 @@ void find_margins_of_current_ruler_buffer(void)
 
 void print_char(uint8_t a)
 {
-    if (!(a == 0x0d))
+    if (a == 0x20)
     {
-        //     cmp #0x20 ; ' '
-        //     bne c9468
-        if (a != 0x20)
-            goto c9468;
-        //     inc print_xpos
         print_xpos++;
         //     rts
         return;
     }
-    //     lda #0
-    //     sta print_xpos
-    print_xpos = 0;
-    //     lda #0x0d
-c9468:
+    if (a == 0x0d)
+    {
+        //     cmp #0x20 ; ' '
+        //     bne c9468
+        //     inc print_xpos
+        //     lda #0
+        //     sta print_xpos
+        print_xpos = 0;
+        //     lda #0x0d
+    }
     //     jsr sub_c9445
     print_alignment_spaces(a);
     print_char_just_to_screen(a);
@@ -296,16 +291,14 @@ uint8_t process_document_character(uint8_t a, uint8_t* x, bool* is_tab)
     if (!(a == 9))
     {
         //     cmp #0x10
-        if (a == 0x10)
+        if ((a == 0x10) || a == 0x1a)
             goto ca5d5;
         //     cmp #0x0b
         if (a == 0x0b)
             goto ca5d9;
         //     cmp #0x1a
         //     beq ca5d5
-        if (a == 0x1a)
-            goto ca5d5;
-        if (!(a < 0x1a))
+        if (a > 0x1a)
         {
             //     cmp #0x20 ; ' '
             //     bcs ca5d1
@@ -359,25 +352,23 @@ uint8_t process_document_character(uint8_t a, uint8_t* x, bool* is_tab)
     }
     else
     {
+        uint8_t tab_pos = l0039;
+        // loop_ca5e5:
+        do
         {
-            uint8_t tab_pos = l0039;
-            // loop_ca5e5:
-            do
-            {
-                //     iny
-                tab_pos++;
-                //     cpy l003a
-                //     bcs ca5f8
-                if (tab_pos >= l003a)
-                    goto ca5f8;
-                //     lda (current_ruler_ptr),y
-                a = current_ruler_ptr[tab_pos];
-                //     cmp #0x2a ; '*'
-                //     bne loop_ca5e5
-            } while (a != 0x2a);
-            //     tya
-            a = tab_pos;
-        }
+            //     iny
+            tab_pos++;
+            //     cpy l003a
+            //     bcs ca5f8
+            if (tab_pos >= l003a)
+                goto ca5f8;
+            //     lda (current_ruler_ptr),y
+            a = current_ruler_ptr[tab_pos];
+            //     cmp #0x2a ; '*'
+            //     bne loop_ca5e5
+        } while (a != 0x2a);
+        //     tya
+        a = tab_pos;
     }
     //     sbc l0039
     {
@@ -418,21 +409,19 @@ void print_alignment_spaces(uint8_t a)
     //     pha
     //     lda print_xpos
     a = print_xpos;
-    if (!(a == 0))
+    if (a == 0)
+        return;
+
+    //     lda #0x20 ; ' '
+    // loop_c944c:
+    do
     {
-        //     lda #0x20 ; ' '
-        a = 0x20;
-        // loop_c944c:
-        do
-        {
-            print_char_just_to_screen(a);
-            print_xpos--;
-        } while (print_xpos != 0);
-    }
+        print_char_just_to_screen(' ');
+        print_xpos--;
+    } while (print_xpos != 0);
     // c9453:
     //     pla
     //     rts
-    return;
 }
 
 void load_current_ruler(uint8_t y)
@@ -467,7 +456,6 @@ void ensure_cr_at_document_top(void)
         return;
     //     inc top
     top++;
-    if (!(top != 0)) {}
     //     inc top+1
     // (automatically handled by 16-bit top)
     // cb06c:
@@ -475,14 +463,12 @@ void ensure_cr_at_document_top(void)
     //     sty current_line_ptr+1
     current_line_ptr = page;
     //     ldy #0
-    uint8_t y = 0;
     //     lda #0x0d
-    uint8_t a = 0x0d;
     //     sta (page),y
-    page[y] = a;
+    page[0] = 0x0d;
     //     tya
     //     sta (top),y
-    top[y] = y;
+    top[0] = 0;
     // return_85:
     //     rts
 }
@@ -534,11 +520,9 @@ uint8_t create_default_ruler(uint8_t* ruler_addr)
             if (a_1 == screen_maxcolumn)
                 goto cb0ff;
             //     txa
-            uint8_t a_2 = x;
             //     and #7
-            a_2 &= 7;
             //     bne loop_cb0e7
-            if (a_2 != 0)
+            if (x & 7)
                 break;
             //     lda #0x2a ; '*'
             a = 0x2a;
@@ -582,7 +566,7 @@ unsigned int* get_register_address(uint8_t a)
     //     adc #0
     //     sta ((uint8_t*)&tmp67)[1]
     // (16-bit arithmetic: pointer = register_value_array + (a - 'A') * 2)
-    return &register_value_array[a - 0x41];
+    return &register_value_array[a - 'A'];
 }
 
 void initialise_document(void)
