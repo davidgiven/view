@@ -306,7 +306,6 @@ void editor_loop_impl(void)
                     //     sta format_mode_flag
                     format_mode_flag = a_3;
             }
-        c9b73_:
         c9b86_:
             //     pla (was: pop saved_fmt)
             //     cmp format_mode_flag
@@ -341,7 +340,6 @@ void editor_loop_impl(void)
                 goto editor_loop;
             }
         }
-    enter_nonprintable_character:
         switch (a_6)
         {
 
@@ -2034,7 +2032,6 @@ static void sf11_copy_key(void)
         } while (x != 0);
     }
     // ca0ef:
-ca0ef:
     //     jmp cf8_mark_as_ruler_key
     cf8_mark_as_ruler_key();
 }
@@ -2140,7 +2137,6 @@ entry:
         goto entry;
     }
     // loop_c9ff8:
-loop_c9ff8:
     for (;;)
     {
         //     cpy input_buffer_ptr+1
@@ -2564,7 +2560,6 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t x)
     //     clc
     //     adc input_buffer_offset+1
     a += l0080;
-cae78:
     do
     {
         //     sta l0084
@@ -2601,7 +2596,6 @@ cae78:
             continue;
         }
         // cae98:
-    cae98:
         //     iny
         y++;
     } while (y < MAX_LINE_LENGTH + 1);
@@ -2755,10 +2749,9 @@ c9c1d:
             if (a_2 != 0)
                 goto c9c43;
         }
-    // c9c31:
-    //     cmp #0x0b
-    //     bne c9c4a
-    c9c31:
+        // c9c31:
+        //     cmp #0x0b
+        //     bne c9c4a
         if (!(a_2 != 0x0b))
         {
             //     lda ruler_left_stop
@@ -2788,7 +2781,6 @@ c9c1d:
             a_2 = 0x20;
         }
         // c9c4a:
-    c9c4a:
         //     cmp #0x1b
         //     bcc c9c48
         if (a_2 < 0x1b)
@@ -2923,7 +2915,6 @@ c9ca2:
         longjmp(env, JMP_EDITOR);
     }
     // c9cd0: (4247)
-c9cd0:
     //     ldy #0 (4248)
     uint8_t y_9 = 0;
     //     lda ruler_left_stop
@@ -3015,7 +3006,6 @@ c9cd0:
             }
         }
         // c9d30:
-    c9d30:
         //     ldy l0081
         uint8_t y_12 = l0081;
         //     inc l0081
@@ -3108,7 +3098,6 @@ static bool reset_area_to_marks_1_2(void)
                 return false;
         }
     }
-cad45:
     //     sec
     // return_76:
     //     rts
@@ -3484,7 +3473,6 @@ bool adjust_margins_at_left_margin(void)
             }
             //     adc xpos
             // caf28:
-        caf28:
             //     sta xpos
             xpos = a_3;
         }
@@ -3498,7 +3486,6 @@ bool adjust_margins_at_left_margin(void)
         l0074++;
     }
     // caf31:
-caf31:
     //     clc
     // return_79:
     //     rts
@@ -3706,7 +3693,6 @@ void split_line_at_wrap(uint8_t* ptr)
             }
             //     bne cac9c
             // cac9a:
-        cac9a:
             //     sty l0083
             l0083 = y;
             // cac9c:
@@ -4263,7 +4249,6 @@ static void clear_to_eol(uint8_t a, uint8_t line)
         } while (line_lengths[line] != 0);
     }
     // return_62:
-return_62:
     //     rts
     return;
 }
@@ -4755,7 +4740,6 @@ c9871:
         x_3--;
     } while (x_3 != 0);
     // c98d9:
-c98d9:
     //     sty print_xpos
     print_xpos = y_2;
     //     ldy #0
@@ -4784,7 +4768,6 @@ c98d9:
     }
     //     bne loop_c98ec
     // c98f6:
-c98f6:
     //     ldy l0042
     uint8_t y_5 = justify_overflow_counter;
     //     ldx l0042
@@ -4823,7 +4806,6 @@ c98f6:
                 l0081 = a_14;
             }
             // c991c:
-        c991c:
             //     lda #0x20 ; ' '
             a_12 = 0x20;
             // c9920:
@@ -4834,7 +4816,6 @@ c98f6:
             l0081++;
         }
         // c9922:
-    c9922:
         //     sta (current_edit_line_ptr),y
         ram[RAM_EDIT_BUFFER + y_5] = a_12;
         //     iny
@@ -4906,7 +4887,6 @@ bool make_space_for_insertion(uint8_t* tmp45, ptrdiff_t tmp67)
             ((uint8_t**)&pointer_array)[x] += tmp67;
         }
         // caa51: (6473)
-    caa51:
         //     inx (6474)
         //     inx (6475)
         //     cpx #22 (6476)
@@ -5030,7 +5010,6 @@ static void recalculate_cursor_xpos(void)
         } while (a >= l0039);
     }
     // ca624:
-ca624:
     //     lda #0
     a = 0;
     //     sta l0079
@@ -5272,7 +5251,6 @@ void redraw_editor(void)
         ypos = x_1;
     }
         // ca360: (5342)
-    ca360:
         //     ldy l0034 (5343)
         //     jsr cab91 (5344)
         load_current_ruler(l0034);
@@ -5298,7 +5276,6 @@ void redraw_editor(void)
     }
     //     bcs ca395 (5358)
     // ca381: (5359)
-ca381:
     //     lda l0072 (5360)
     uint8_t a_16 = l0072;
     //     sec (5361)
@@ -5348,7 +5325,6 @@ ca395:
             goto ca3c1;
     }
     // ca3b2: (5388)
-ca3b2:
     //     ldy l0033 (5389)
     //     jsr cab91 (5390)
     load_current_ruler(l0033);
@@ -5734,7 +5710,6 @@ void show_memory_full_error(void)
         } while (y != 0);
     }
     // ca97c:
-ca97c:
     //     lda #0
     uint8_t a_4 = 0;
     //     sta l006e
@@ -5832,9 +5807,8 @@ static bool process_char_for_output(
         if ((*a) != 0)
             goto c995c;
     }
-// c994a:
-//     cmp #0x0b
-c994a:
+    // c994a:
+    //     cmp #0x0b
     if (!((*a) != 0x0b))
     {
         //     bne c9969
@@ -5873,7 +5847,6 @@ c994a:
         (*a) = 0x20;
     }
     // c9969:
-c9969:
     //     cmp #0x1b
     if ((*a) < 0x1b)
         goto c9967;
@@ -6062,7 +6035,6 @@ c99c9:
             goto c9a21;
         }
         // c99e0:
-    c99e0:
         //     cmp #0x1a
         if (a_5 != 0x1a)
             goto c99ee;
@@ -6399,18 +6371,16 @@ static bool find_next_word_boundary(uint8_t y)
             l0083 = a_4;
         }
         // c9b20:
-    c9b20:
         //     iny
         y++;
     } while (y != 0);
-// c9b23:
-//     lda ruler_left_stop
-//     beq c9b31
-//     lda l0084
-//     beq c9b31
-//     lda l0083
-//     bne c9b31
-c9b23:
+    // c9b23:
+    //     lda ruler_left_stop
+    //     beq c9b31
+    //     lda l0084
+    //     beq c9b31
+    //     lda l0083
+    //     bne c9b31
     if (!(ruler_left_stop == 0 || l0084 == 0 || l0083 != 0))
     {
         // c9b2f:
@@ -6420,7 +6390,6 @@ c9b23:
         return true;
     }
     // c9b31:
-c9b31:
     //     clc
     //     rts
     return false;
@@ -6568,7 +6537,6 @@ static uint8_t find_marker_at_position(uint8_t y, uint8_t* ptr)
         if (!(tmp89 != markers_array[x / 2]))
             goto ca558;
         // ca550:
-    ca550:
         //     inx
         x++;
         //     inx
@@ -6647,7 +6615,6 @@ static void update_markers_to_format_buffer(void)
     uint8_t* tmp67 = current_line_ptr;
     //     ldy #0
     uint8_t y = 0;
-caad5:
     do
     {
         // caad5:
@@ -6675,7 +6642,6 @@ caad5:
             }
         }
         // caae8:
-    caae8:
         //     lda (current_line_ptr),y
         uint8_t a = current_line_ptr[y];
         //     cmp #0x0d
@@ -6943,7 +6909,6 @@ static bool write_line_back_to_document(void)
                 if (a_6 == 0x10)
                     a_6 = 0x20;
             }
-        ca919:
             //     pha
             {
                 uint8_t a_8;
@@ -6990,7 +6955,6 @@ static bool write_line_back_to_document(void)
         } while (a_9 != 0x0d);
     }
     // ca93a:
-ca93a:
     //     clc
     // return_66:
     //     rts

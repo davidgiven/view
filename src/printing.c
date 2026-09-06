@@ -109,7 +109,6 @@ static void write_output_buffer_to_format_line(uint8_t a)
             x--;
         } while (x != 0);
     }
-c951c:
     do
     {
         a = output_buffer[x];
@@ -975,7 +974,6 @@ static void ht_fmt_cmd(void)
             goto c9719;
     }
     // c9716:
-c9716:
     //     iny
     y++;
     //     bne c9725
@@ -1259,7 +1257,6 @@ static bool parse_word_flag(uint8_t* ptr, uint8_t* y, uint8_t* value)
             goto c9783;
     }
     // c977f:
-c977f:
     //     clc
     // (C=0 conveyed as a false return)
     *value = a;
@@ -1417,7 +1414,6 @@ static bool evaluate_expression_from_fmt_cmd(
                 tmp89 = tmp45 - tmp89;
                 goto c9804;
             }
-        c97f7:
             tmp89 += tmp45;
         }
     c9804:
@@ -1439,7 +1435,6 @@ static bool evaluate_expression_from_fmt_cmd(
                 goto c9821;
         }
         // c981c:
-    c981c:
         //     stx input_buffer_offset+1
         l0080 = count_1;
         //     iny
@@ -1803,7 +1798,6 @@ c9048:
         //     inc l0043
         l0043_1++;
     } while (l0043_1 != 0);
-c9064:
     do
     {
         //     bne c9048
@@ -1846,7 +1840,6 @@ c9064:
         goto c9048;
     }
     // c9087:
-c9087:
     //     clc
     //     ror l0042
     // (the ror result is never read before l0042 is overwritten, and the
@@ -1943,7 +1936,6 @@ c90b6:
         goto c9048;
     }
     // c90e2:
-c90e2:
     //     lda l0045
     uint8_t a_11 = accum_1 >> 16;
     if (!(a_11 == 0))
@@ -2035,7 +2027,6 @@ c912b:
                 goto c9142;
         }
         // c913b:
-    c913b:
         //     pla
         uint8_t a_17 = a_15;
         //     jsr c9426
@@ -2077,7 +2068,6 @@ c912b:
             emit_microspacing_spaces(a_17, x);
         }
         // c9160:
-    c9160:
         //     jsr print_char
         print_char(a_17);
         // c9163:
@@ -2216,7 +2206,6 @@ static void print_char_x_times(uint8_t a, uint8_t x)
     }
     //     bne loop_c942a
     // return_32:
-return_32:
     //     rts
     return;
 }
@@ -2378,7 +2367,6 @@ c8f30:
         }
         //     beq c8f6b
         // c8fce_thunk:
-    c8fce_thunk_l:
         //     bne c8fce ; ALWAYS branch
         goto c8fce_l;
         // c8f7a:
@@ -2424,7 +2412,6 @@ c8f30:
                 goto c8fb9_l;
         }
         // get_next_macro_in_linked_list:
-    get_next_macro_in_linked_list_l:
         //     ldy #0
         //     lda (((uint8_t*)&tmp67)[0]),y
         //     pha
@@ -2608,7 +2595,6 @@ c8cc8:
             x_2++;
         }
     }
-c8cdb:
     // c8cdb:
     //     inc l0083
     l0083++;
@@ -2816,7 +2802,6 @@ static void render_new_page(void)
             return;
         }
         // c92cf:
-    c92cf:
         //     lda #0xc0
         //     jsr start_printing
         start_printing();
@@ -3031,7 +3016,6 @@ uint8_t* prepare_output_line(uint8_t* read_limit, uint8_t** macro_cursor)
         }
     }
     // c91a3:
-c91a3:
     //     ldy #0
     uint8_t y = 0;
     //     ldx #0
@@ -3537,7 +3521,6 @@ static uint8_t convert_char_for_printing(uint8_t a, uint8_t* x, bool* is_tab)
             goto return_33;
     }
     // c943c:
-c943c:
     //     pha
     {
         uint8_t saved_a = a;

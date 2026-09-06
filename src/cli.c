@@ -352,7 +352,6 @@ c86b8:
                     goto c86df;
             }
             // c86d1:
-        c86d1:
             //     lda l8749,x
             uint8_t a_2 = l8747_data[x + 2];
             //     beq c86db
@@ -409,13 +408,11 @@ c86b8:
             }
             //     bne c8715
             // c8703:
-        c8703:
             //     ldy l0083
             //     beq c870d
             if (l0083 != 0)
                 tmp89++;
         }
-    c870d:
         //     stx l0083
         l0083 = x;
         //     cmp #0x0d
@@ -429,7 +426,6 @@ c86b8:
         tmp01++;
     }
     // c871f:
-c871f:
     //     ldy ((uint8_t*)&tmp01)[1]
     //     cpy area_end_ptr+1
     //     ldy ((uint8_t*)&tmp01)[0]
@@ -638,14 +634,12 @@ static void format_cmd(struct scan_state* scan)
             cli_putchar(0x2e);
         } while (current_line_ptr < area_end_ptr);
         // c8787:
-    c8787:
         //     lda #0xff
         //     lda #0xff
         //     sta l0012
         top_of_screen_line_ptr = &ram[RAM_MAX];
     }
     // c878b:
-c878b:
     //     jsr bdos_print_newline
     cli_putchar('\n');
     //     jmp return_to_cli_prompt
@@ -1002,7 +996,6 @@ c832d:
     }
     //     bne c8356
     // c8349:
-c8349:
     //     stx print_xpos
     print_xpos = x;
     //     jsr sub_c8371
@@ -1216,7 +1209,6 @@ static void setup_cmd(struct scan_state* scan)
     } while (input_buffer_offset != 0);
     //     bne c8649
     // c8672:
-c8672:
     //     ldx #2
     uint8_t x_2 = 2;
     // loop_c8674:
@@ -1427,7 +1419,6 @@ void run_cli(void)
             cli_putstring("empty\n");
         }
     }
-c816d:
     //     lda printer_driver_name
     uint8_t a_2 = printer_driver_name[0];
     if (!(a_2 == 0))
@@ -1462,7 +1453,6 @@ c816d:
         cli_putchar('\n');
     }
     // c81b6:
-c81b6:
     //     ldx #0
     uint8_t x_1 = 0;
     //     ldy #0
@@ -1495,7 +1485,6 @@ c81b6:
                 screen_putchar(0x2c);
             }
             // c81e0:
-        c81e0:
             //     txa
             //     lsr
             //     adc #0x31 ; '1'
@@ -1507,7 +1496,6 @@ c81b6:
             screen_putchar(a_6);
         }
         // c81e7:
-    c81e7:
         //     inx
         x_1++;
         //     inx

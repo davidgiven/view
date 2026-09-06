@@ -551,7 +551,6 @@ void setup_area_pointers(uint8_t* ptr2)
     //     bne c837d
     //     inc ((uint8_t*)&tmp89)[1]
     //     bne c837d
-c8398:
     // c8398:
     //     inc l0074
     l0074++;
@@ -643,7 +642,6 @@ static uint8_t expand_escaped_string(uint8_t x, uint8_t y)
         l0083++;
     } while (l0083 != 0);
     //     bne c83a3
-c83da:
     // c83da:
     //     ldx l0083
     x = l0083;
@@ -824,12 +822,11 @@ bool check_area_memory(uint8_t* ptr2)
             if (l0081 != 0)
                 goto c8a84;
         }
-    //     bne c8a84
-    // c8a6c:
-    //     cmp #0x20 ; ' '
-    //     bne c8a84
-    //     cpy l0048
-    c8a6c:
+        //     bne c8a84
+        // c8a6c:
+        //     cmp #0x20 ; ' '
+        //     bne c8a84
+        //     cpy l0048
         if (!(a_1 != 0x20 || y >= cli_l0048))
         {
             //     bcs c8a84
@@ -865,7 +862,6 @@ bool check_area_memory(uint8_t* ptr2)
         //     inx
         x++;
     }
-c8a87:
     // c8a87:
     //     cpx l004a
     if (x < cli_l004a)
@@ -967,7 +963,6 @@ c8a87:
                 goto c8b11;
         }
         //     bne c8b11
-    c8b0d:
         // c8b0d:
         //     dec l0081
         l0081--;
@@ -1050,7 +1045,6 @@ c8b11:
                 }
             }
         }
-    c8b64:
         // c8b64:
         //     ldy l0083
         //     sta (ptr2),y

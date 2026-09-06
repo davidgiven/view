@@ -148,7 +148,6 @@ void display_document_file_state(void)
         //     rts
         return;
     }
-c8a21:
     // c8a21:
     //     jsr print_inline_string
     //     .ascii "No File\r"
@@ -216,7 +215,6 @@ void print_char(uint8_t a)
         //     rts
         return;
     }
-c9462:
     //     lda #0
     //     sta print_xpos
     print_xpos = 0;
@@ -260,7 +258,6 @@ void print_char_just_to_screen(uint8_t a)
         screen_setstyle(0);
         return;
     }
-c9488:
     //     jmp bdos_print_char
     if (a == 0x0d)
     {
@@ -382,7 +379,6 @@ uint8_t process_document_character(uint8_t a, uint8_t* x, bool* is_tab)
             a = tab_pos;
         }
     }
-ca5f1:
     //     sbc l0039
     {
         bool no_borrow = (a >= l0039);
@@ -434,7 +430,6 @@ void print_alignment_spaces(uint8_t a)
         } while (print_xpos != 0);
     }
     // c9453:
-c9453:
     //     pla
     //     rts
     return;
@@ -476,7 +471,6 @@ void ensure_cr_at_document_top(void)
     //     inc top+1
     // (automatically handled by 16-bit top)
     // cb06c:
-cb06c:
     //     sta current_line_ptr
     //     sty current_line_ptr+1
     current_line_ptr = page;
