@@ -28,7 +28,7 @@ struct render_state
 };
 
 // Editor-only functions
-addr_t adjust_pointers(addr_t tmp45, ptrdiff_t tmp67);
+uint8_t* adjust_pointers(uint8_t* tmp45, ptrdiff_t tmp67);
 static bool advance_to_next_doc_line(void);
 void beep(void);
 bool scan_document_for_next_line(void);
@@ -48,7 +48,7 @@ static void go_to_marker(uint8_t x);
 static void go_to_marker_n(uint8_t marker);
 static void home_cursor(void);
 uint8_t justify_edit_buffer(uint8_t* ptr);
-bool make_space_for_insertion(addr_t tmp45, ptrdiff_t tmp67);
+bool make_space_for_insertion(uint8_t* tmp45, ptrdiff_t tmp67);
 static void memory_full(void);
 uint8_t process_current_document_character(
     uint8_t* ptr, uint8_t* x, uint8_t* y, bool* is_tab);
@@ -621,13 +621,13 @@ static void cf7_join_lines_key(void)
     //     tya
     //     clc
     //     adc current_line_ptr
-    addr_t tmp45 = (current_line_ptr - &ram[0]) + y;
+    uint8_t* tmp45 = current_line_ptr + y;
     //     lda #0
     //     sta ((uint8_t*)&tmp67)[1]
     //     lda #1
     //     sta ((uint8_t*)&tmp67)[0]
     //     jsr adjust_pointers
-    tmp89 = &ram[adjust_pointers(tmp45, 1)];
+    tmp89 = adjust_pointers(tmp45, 1);
     //     lda current_line_ptr
     //     ldy current_line_ptr+1
     //     jsr cac78
@@ -941,7 +941,7 @@ static void f7_delete_line_key(void)
     //     sta ((uint8_t*)&tmp45)[0]
     //     lda current_line_ptr+1
     //     sta ((uint8_t*)&tmp45)[1]
-    addr_t tmp45 = current_line_ptr - &ram[0];
+    uint8_t* tmp45 = current_line_ptr;
     //     ldx l003b
     uint8_t x = l003b;
     //     inx
@@ -949,9 +949,9 @@ static void f7_delete_line_key(void)
     //     stx ((uint8_t*)&tmp67)[0]
     //     lda #0
     //     sta ((uint8_t*)&tmp67)[1]
-    addr_t tmp67 = x;
+    ptrdiff_t tmp67 = x;
     //     jsr adjust_pointers
-    tmp89 = &ram[adjust_pointers(tmp45, tmp67)];
+    tmp89 = adjust_pointers(tmp45, tmp67);
     //     jsr cb05a
     ensure_cr_at_document_top();
     //     ldy #0
@@ -2916,7 +2916,7 @@ c9ca2:
     //     lda current_line_ptr+1 (4240)
     //     adc #0 (4241)
     //     sta ((uint8_t*)&tmp45)[1] (4242)
-    addr_t tmp45 = (current_line_ptr - &ram[0]) + l003b + 1;
+    uint8_t* tmp45 = current_line_ptr + l003b + 1;
     if (!(make_space_for_insertion(tmp45, y_8)))
     {
         // bcc c9cd0
@@ -2934,7 +2934,7 @@ c9cd0:
     {
         //     lda #0x0b
         //     sta (((uint8_t*)&tmp45)[0]),y
-        ram[tmp45] = 0x0b;
+        *tmp45 = 0x0b;
         //     iny ; Y=0x01
         y_9 = 1;
     }
@@ -2987,9 +2987,9 @@ c9cd0:
             // (16-bit arithmetic: markers_array[marker_index] = tmp45 + l0081;
             //  the bcc loop_c9cf9 continues while the address fits in 16 bits)
             {
-                uint16_t val = tmp45 + l0081;
-                markers_array[marker_index / 2] = &ram[val];
-                if (tmp45 + (uint16_t)l0081 >= 0x10000)
+                uint8_t* val_ptr = tmp45 + l0081;
+                markers_array[marker_index / 2] = val_ptr;
+                if (tmp45 - &ram[0] + l0081 >= 0x10000)
                     break;
             }
         }
@@ -3023,7 +3023,7 @@ c9cd0:
         //     inc l0081
         l0081++;
         //     sta (((uint8_t*)&tmp45)[0]),y
-        ram[tmp45 + y_12] = a_12;
+        tmp45[y_12] = a_12;
         //     dec l0083
         l0083--;
     } while (!(l0083 & 0x80));
@@ -3260,7 +3260,7 @@ static void check_pointer_in_area(void)
         ptrdiff_t diff = area_end_ptr - area_start_ptr;
         tmp67 = diff;
     }
-    addr_t tmp45 = doc_ptr1 - &ram[0];
+    uint8_t* tmp45 = doc_ptr1;
     if (!make_space_for_insertion(tmp45, tmp67))
     {
         show_memory_full_error();
@@ -3277,7 +3277,7 @@ static void check_pointer_in_area(void)
         if (tmp89 == area_end_ptr)
             break;
     }
-    doc_ptr1 = &ram[tmp45];
+    doc_ptr1 = tmp45;
     //     lda tmp2 / ldy tmp3 / sec / sbc #1 / bcs ca24d / dey
     uint8_t* adjusted = tmp23 - 1;
     //     jsr split_line_at_wrap
@@ -3739,13 +3739,13 @@ void split_line_at_wrap(uint8_t* ptr)
         //     adc #0
         //     sta ((uint8_t*)&tmp45)[1]
         //     sta ((uint8_t*)&tmp89)[1]
-        addr_t tmp45 = (tmp89 - &ram[0]) + a_3;
-        tmp89 = &ram[tmp45];
+        uint8_t* tmp45 = tmp89 + a_3;
+        tmp89 = tmp45;
         //     lda #1
         //     sta ((uint8_t*)&tmp67)[0]
         //     lda #0
         //     sta ((uint8_t*)&tmp67)[1]
-        addr_t tmp67 = 1;
+        ptrdiff_t tmp67 = 1;
         //     jsr make_space_for_insertion
         make_space_for_insertion(tmp45, tmp67);
         //     lda #0x0d
@@ -3753,18 +3753,18 @@ void split_line_at_wrap(uint8_t* ptr)
         //     ldy #0
         uint8_t y_1 = 0;
         //     sta (((uint8_t*)&tmp45)[0]),y
-        ram[tmp45 + y_1] = a_4;
-        tmp89 = &ram[tmp45];
+        tmp45[y_1] = a_4;
+        tmp89 = tmp45;
     } while (((uint8_t*)&tmp89)[1] != 0);
     return;
 }
 
-addr_t adjust_pointers(addr_t tmp45, ptrdiff_t tmp67)
+uint8_t* adjust_pointers(uint8_t* tmp45, ptrdiff_t tmp67)
 {
     // adjust_pointers
     // adjust_pointers: (6372)
-    addr_t tmp23 = tmp45;
-    addr_t local_tmp89 = tmp45 + tmp67;
+    uint8_t* tmp23 = tmp45;
+    uint8_t* local_tmp89 = tmp45 + tmp67;
     //     ldx #0 (6382)
     uint8_t x = 0;
     do
@@ -3788,9 +3788,9 @@ addr_t adjust_pointers(addr_t tmp45, ptrdiff_t tmp67)
         //  else → ca9e7 (subtract))
         {
             uint8_t* pa_val = ((uint8_t**)&pointer_array)[x];
-            if (pa_val < &ram[tmp45])
+            if (pa_val < tmp45)
                 goto ca9f1;
-            if (pa_val < &ram[local_tmp89])
+            if (pa_val < local_tmp89)
                 goto ca9db;
             goto ca9e7;
         }
@@ -3843,8 +3843,8 @@ addr_t adjust_pointers(addr_t tmp45, ptrdiff_t tmp67)
     //  NUL-terminated region at tmp89 down to tmp23, including the 0x00
     //  terminator; the page wrap in the asm is a plain contiguous copy)
     {
-        size_t copy_len = strlen((char*)&ram[local_tmp89]) + 1;
-        memmove(&ram[tmp23], &ram[local_tmp89], copy_len);
+        size_t copy_len = strlen((char*)local_tmp89) + 1;
+        memmove(tmp23, local_tmp89, copy_len);
         // caa08: (6427)
         //     tya (6428)
         //     clc (6429)
@@ -3854,7 +3854,7 @@ addr_t adjust_pointers(addr_t tmp45, ptrdiff_t tmp67)
         //     adc #0 (6433)
         //     sta top+1 (6434)
         // (16-bit arithmetic: top = tmp23 + y = tmp23 + strlen)
-        top = &ram[tmp23 + copy_len - 1];
+        top = tmp23 + copy_len - 1;
     }
     //     rts (6435)
     return local_tmp89;
@@ -3983,7 +3983,7 @@ bool scan_document_for_next_line(void)
     //     sta ((uint8_t*)&tmp89)[0]
     //     lda doc_ptr2+1
     //     sta ((uint8_t*)&tmp89)[1]
-    addr_t tmp89 = doc_ptr2 - &ram[0];
+    uint8_t* tmp89 = doc_ptr2;
 c8b91:
     // c8b91:
     //     lda ((uint8_t*)&tmp89)[1]
@@ -3994,7 +3994,7 @@ c8b91:
     //     cmp doc_ptr3
     //     bcs signal_no_more_document
     // (16-bit comparison: tmp89 < doc_ptr3)
-    if (&ram[tmp89] >= doc_ptr3)
+    if (tmp89 >= doc_ptr3)
     {
         // c8b78:
         //     lda #0xff
@@ -4005,7 +4005,7 @@ c8b91:
     uint8_t y = 0;
     //     lda (((uint8_t*)&tmp89)[0]),y
     // (Z from this lda is clobbered by the following jsr)
-    uint8_t a_2 = ram[tmp89];
+    uint8_t a_2 = *tmp89;
     //     jsr check_for_command_prefix
     command_prefix_t cp = check_for_command_prefix(a_2);
     //     bne c8bb7
@@ -4020,7 +4020,7 @@ c8b91:
         //     bcc c8b7b
         //     bcs c8bdf
         // (16-bit arithmetic: doc_ptr2 = tmp89 + 3)
-        doc_ptr2 = &ram[tmp89 + 3];
+        doc_ptr2 = tmp89 + 3;
         return scan_document_for_next_line();
     }
     // c8bb7:
@@ -4033,7 +4033,7 @@ c8b91:
         //     iny
         y++;
         //     lda (((uint8_t*)&tmp89)[0]),y
-        uint8_t a_4 = ram[tmp89 + y];
+        uint8_t a_4 = tmp89[y];
         //     beq c8bdb
         if (a_4 == 0)
             goto c8bdb;
@@ -4169,7 +4169,7 @@ c8c3e:
     //  6502 also returned the old address in YA for its callers, who now
     //  read ptr2 instead)
     ptr2 = doc_ptr2;
-    doc_ptr2 = &ram[tmp89];
+    doc_ptr2 = tmp89;
     //     ldx #0
     return true;
 }
@@ -4177,16 +4177,16 @@ c8c3e:
 static void insert_line_into_document(uint8_t* ptr)
 {
     //     sta ((uint8_t*)&tmp45)[0]
-    addr_t tmp45 = ptr - &ram[0];
+    uint8_t* tmp45 = ptr;
     //     lda #1
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda #0
     //     sta ((uint8_t*)&tmp67)[1]
-    addr_t tmp67 = 1;
+    ptrdiff_t tmp67 = 1;
     //     jsr make_space_for_insertion
     if (make_space_for_insertion(tmp45, tmp67))
     {
-        ram[tmp45] = 0x0d;
+        *tmp45 = 0x0d;
         clamp_ptr6_to_document();
         return;
     }
@@ -4682,14 +4682,14 @@ c9871:
     //     stx ((uint8_t*)&tmp89)[0]
     //     lda #0
     //     sta ((uint8_t*)&tmp89)[1]
-    addr_t tmp89 = x_1;
+    uint16_t tmp89 = x_1;
     //     jsr sub_cadf0
     //     sta l0045
     uint8_t a_4 = tmp89 % l0046;
-    addr_t tmp89_1 = tmp89 / l0046;
+    uint16_t tmp89_1 = tmp89 / l0046;
     justify_running_total_accum = a_4;
     //     lda ((uint8_t*)&tmp89)[0]
-    uint8_t a_5 = ((uint8_t*)&tmp89_1)[0];
+    uint8_t a_5 = tmp89_1 & 0xff;
     //     sta l0044
     justify_extra_space_accum = a_5;
     //     ldy #0
@@ -4862,7 +4862,7 @@ c98f6:
     return x_4;
 }
 
-bool make_space_for_insertion(addr_t tmp45, ptrdiff_t tmp67)
+bool make_space_for_insertion(uint8_t* tmp45, ptrdiff_t tmp67)
 {
     // make_space_for_insertion: Shifts content up to make space for insertion
     // (6437) On entry: ((uint8_t*)&tmp45)[0]:((uint8_t*)&tmp45)[1] = block
@@ -4896,7 +4896,7 @@ bool make_space_for_insertion(addr_t tmp45, ptrdiff_t tmp67)
     // loop_caa38: (6458)
     do
     {
-        if (!(((uint8_t**)&pointer_array)[x] < &ram[tmp45]))
+        if (!(((uint8_t**)&pointer_array)[x] < tmp45))
         {
             // caa46: (6466)
             //     clc (6467)
@@ -4954,8 +4954,8 @@ bool make_space_for_insertion(addr_t tmp45, ptrdiff_t tmp67)
     //     beq caa57 (6514)
     // (byte shift consolidated into a single memmove: copies [tmp45, tmp23]
     //  inclusive, i.e. (top - base) + 1 bytes, to [tmp45 + tmp67, tmp89])
-    size_t copy_len = (size_t)(tmp23 - &ram[tmp45]) + 1;
-    memmove(&ram[tmp45 + tmp67], &ram[tmp45], copy_len);
+    size_t copy_len = (size_t)(tmp23 - tmp45) + 1;
+    memmove(tmp45 + tmp67, tmp45, copy_len);
     //     clc (6515)
     // return_67: (6516)
     //     rts (6517)
@@ -5070,7 +5070,7 @@ void redraw_editor(void)
 {
     uint8_t y_1;
     uint8_t x_5;
-    addr_t draw;
+    uint8_t* draw;
     // redraw_editor
     //  Ptrs:   ptr6
     // Pseudocode: Main screen update routine: scrolls, redraws lines, updates
@@ -5167,7 +5167,7 @@ void redraw_editor(void)
         //     ldx #0 (5267)
         uint8_t x_1 = 0;
         //     lda l0011 / ldy l0012  (folded into the walk variable)
-        addr_t walk = top_of_screen_line_ptr - &ram[0];
+        uint8_t* walk = top_of_screen_line_ptr;
         do
         {
             // ca2e6: (5270)
@@ -5176,18 +5176,18 @@ void redraw_editor(void)
             //     cpy ptr6+1 (5272)
             //     cmp ptr6 (5274)
             // (16-bit comparison: walk == editor_ptr6)
-            if (&ram[walk] == editor_ptr6)
+            if (walk == editor_ptr6)
                 l003d = x_1;
             //     cpy current_line_ptr+1 (5278)
             //     cmp current_line_ptr (5280)
             // (16-bit comparison: walk == current_line_ptr)
-            if (&ram[walk] == current_line_ptr)
+            if (walk == current_line_ptr)
                 goto ca313;
             // ca2f9: (5282)
             //     jsr sub_cab1a (5283)
             {
                 uint8_t* tmp01_off;
-                if (advance_to_next_line(&ram[walk], &tmp01_off, &y_1))
+                if (advance_to_next_line(walk, &tmp01_off, &y_1))
                     goto ca313;
                 tmp01 = tmp01_off;
             }
@@ -5196,7 +5196,7 @@ void redraw_editor(void)
             // (tmp01 += y; y holds the offset past the CR left by
             // find_next_line)
             tmp01 += y_1;
-            walk = tmp01 - &ram[0];
+            walk = tmp01;
         } while (x_1 <= screen_maxrow);
     ca30d:
         do
@@ -5346,7 +5346,7 @@ ca395:
         //     inx (5384)
         x_5++;
         //     lda ptr6 / ldy ptr6+1 / bne ca3c1
-        draw = editor_ptr6 - &ram[0];
+        draw = editor_ptr6;
         if (editor_ptr6 != NULL)
             goto ca3c1;
     }
@@ -5359,7 +5359,7 @@ ca3b2:
     //     sta l0082 (5392)
     l0082 = 1;
     //     lda l0011 / ldy l0012
-    draw = top_of_screen_line_ptr - &ram[0];
+    draw = top_of_screen_line_ptr;
     //     ldx screen_height (5395)
     x_5 = screen_maxrow;
     // ca3c1: (5396)
@@ -5371,7 +5371,7 @@ ca3c1:
     {
         //     jsr sub_ca486 (5399)
         struct render_state rs = {.line = l0082};
-        draw_line(&rs, &ram[draw]);
+        draw_line(&rs, draw);
         //     lda ((uint8_t*)&tmp01)[0] (5400)
         //     ldy ((uint8_t*)&tmp01)[1] (5401)
         uint8_t y_2 = 0;
@@ -5390,7 +5390,7 @@ ca3c1:
         //     bcc ca3d8 (5408)
         // (16-bit arithmetic: tmp01 += y; result kept in a/y for the loop)
         tmp01 += y_2;
-        draw = tmp01 - &ram[0];
+        draw = tmp01;
         //     inc l0082 (5411)
         l0082++;
         //     dec l0081 (5412)
@@ -5767,13 +5767,13 @@ void adjust_area_pointers(ptrdiff_t tmp67)
     //     sta ((uint8_t*)&tmp45)[0]
     //     lda area_start_ptr+1
     //     sta ((uint8_t*)&tmp45)[1]
-    addr_t tmp45 = area_start_ptr - &ram[0];
+    uint8_t* tmp45 = area_start_ptr;
     //     jsr adjust_pointers
-    tmp89 = &ram[adjust_pointers(tmp45, tmp67)];
+    tmp89 = adjust_pointers(tmp45, tmp67);
     //     lda ((uint8_t*)&tmp45)[0]
     //     ldy ((uint8_t*)&tmp45)[1]
     //     jmp cac78
-    split_line_at_wrap(&ram[tmp45]);
+    split_line_at_wrap(tmp45);
     return;
 }
 
@@ -6858,7 +6858,7 @@ static bool write_line_back_to_document(void)
     {
         //     lda current_line_ptr
         //     sta ((uint8_t*)&tmp45)[0]
-        addr_t tmp45 = current_line_ptr - &ram[0];
+        uint8_t* tmp45 = current_line_ptr;
         //     ldy #0
         uint8_t y = 0;
         //     sty ((uint8_t*)&tmp67)[1]
@@ -6887,7 +6887,7 @@ static bool write_line_back_to_document(void)
         //     sta ((uint8_t*)&tmp67)[0]
         ((uint8_t*)&tmp67)[0] = a_1;
         //     jsr adjust_pointers
-        tmp89 = &ram[adjust_pointers(tmp45, tmp67)];
+        tmp89 = adjust_pointers(tmp45, tmp67);
         //     jmp ca8ed
         goto ca8ed;
         // ca8df:

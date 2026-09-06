@@ -246,8 +246,8 @@ extern void write_line_back_to_document_safely(void);
 extern void clamp_ptr6_to_document(void);
 extern uint8_t upper_case_unless_folding(uint8_t a);
 extern area_status_t sanitise_area(void);
-extern bool make_space_for_insertion(addr_t tmp45, ptrdiff_t tmp67);
-extern addr_t adjust_pointers(addr_t tmp45, ptrdiff_t tmp67);
+extern bool make_space_for_insertion(uint8_t* tmp45, ptrdiff_t tmp67);
+extern uint8_t* adjust_pointers(uint8_t* tmp45, ptrdiff_t tmp67);
 extern bool parse_decimal_number(int* value, uint8_t* y);
 extern bool parse_optional_filename_from_command(struct scan_state* scan);
 

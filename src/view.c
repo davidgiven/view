@@ -739,21 +739,22 @@ addr_t read_into_document(void)
     open_input_file();
     //     lda area_start_ptr
     //     sta ((uint8_t*)&tmp45)[0]
-    addr_t tmp45 = area_start_ptr - &ram[0];
+    uint8_t* tmp45 = area_start_ptr;
     //     jsr move_cursor_to_address
     move_cursor_to_address(area_start_ptr);
     //     lda ((uint8_t*)&tmp45)[0]
     //     ldy ((uint8_t*)&tmp45)[1]
     //     jsr compute_required_space_for_insertion
-    addr_t space_limit = compute_required_space_for_insertion(tmp45);
+    addr_t space_limit = compute_required_space_for_insertion(tmp45 - &ram[0]);
     //     jsr make_space_for_insertion
     // (the 6502 leaves the clamped free-space size in tmp67; since
     //  space_limit = tmp45 + tmp67 - 0x8b, tmp67 = space_limit - tmp45 + 0x8b)
-    make_space_for_insertion(tmp45, space_limit - tmp45 + 0x8b);
+    make_space_for_insertion(tmp45, space_limit - (tmp45 - &ram[0]) + 0x8b);
     //     jsr read_block_from_file
     // (destination = the insertion point tmp45 explicitly)
-    addr_t cursor = tmp45;
-    read_block_status_t status = read_block_from_file(&cursor, space_limit);
+    addr_t cursor_addr = tmp45 - &ram[0];
+    read_block_status_t status =
+        read_block_from_file(&cursor_addr, space_limit);
     //     beq c8584
     //     bcs c8598
     if (status != READ_BLOCK_DONE)
@@ -772,11 +773,11 @@ addr_t read_into_document(void)
     //     sbc ((uint8_t*)&tmp01)[1]
     //     sta ((uint8_t*)&tmp67)[1]
     // (16-bit subtraction: tmp67 = space_limit - tmp01)
-    ptrdiff_t tmp67 = space_limit - cursor;
+    ptrdiff_t tmp67 = space_limit - cursor_addr;
     //     jsr adjust_pointers
-    tmp89 = &ram[adjust_pointers(cursor, tmp67)];
+    tmp89 = adjust_pointers(&ram[cursor_addr], tmp67);
     // (the 6502 left the post-read cursor in tmp01; load_cmd uses it for top)
-    return cursor;
+    return cursor_addr;
 }
 
 /**
@@ -887,7 +888,7 @@ c8a87:
     //     txa
     //     clc; adc ptr2; sta ((uint8_t*)&tmp45)[0]; lda ptr2+1; adc #0; sta
     //     ((uint8_t*)&tmp45)[1]
-    addr_t tmp45 = (ptr2 - &ram[0]) + x_1;
+    uint8_t* tmp45 = ptr2 + x_1;
     //     lda l0082 / sec; sbc l0080; sta tmp67; lda #0; sbc l0081
     // (tmp67 = l0082 - gap as signed 16-bit) — three-way split:
     // shrink (delta<0), no-change (delta==0), grow (delta>0)
@@ -895,7 +896,7 @@ c8a87:
     if (delta < 0)
     {
         ptrdiff_t tmp67 = -delta;
-        tmp89 = &ram[adjust_pointers(tmp45, tmp67)];
+        tmp89 = adjust_pointers(tmp45, tmp67);
     }
     else if (delta > 0)
     {
