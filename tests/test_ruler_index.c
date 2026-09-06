@@ -11,7 +11,7 @@ extern uint8_t ram[65536];
 extern uint8_t* tmp01;
 extern uint8_t ruler_index_ptr;
 extern uint8_t* oshwm;
-extern addr_t ruler_index[128];
+extern uint8_t* ruler_index[128];
 extern uint8_t* current_ruler_ptr;
 extern uint8_t ruler_left_stop;
 extern uint8_t ruler_right_stop;
@@ -120,9 +120,9 @@ int main(void)
         ruler_index_ptr = 0;
         push_onto_ruler_index(&ram[ruler1_addr - 3]);
 
-        addr_t stored = ruler_index[0x7f];
+        uint8_t* stored = ruler_index[0x7f];
         ASSERT_EQ((unsigned int)(ruler1_addr - 3),
-            (unsigned int)stored,
+            (unsigned int)(stored - &ram[0]),
             "0x%04x",
             "index stores (ruler_addr - 3) at ruler_index[0x7f]");
     }

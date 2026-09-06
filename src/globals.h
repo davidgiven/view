@@ -225,7 +225,7 @@ extern uint8_t l0073;
 
 extern uint8_t ruler_index_ptr;
 extern uint8_t* oshwm;
-extern addr_t ruler_index[128];
+extern uint8_t* ruler_index[128];
 #define RAM_CURRENT_LINE_BUF 0x0545
 #define RAM_EDIT_BUFFER 0x0548
 #define RAM_JUST_BEFORE_RULER_BUF 0x05CC

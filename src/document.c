@@ -453,7 +453,7 @@ void load_current_ruler(uint8_t y)
     // (16-bit arithmetic: the two stacked bytes form the stored ruler
     //  pointer, high byte first; current_ruler_ptr = stored + 3)
     ruler_index_ptr = y;
-    current_ruler_ptr = &ram[ruler_index[y >> 1] + 3];
+    current_ruler_ptr = ruler_index[y >> 1] ? ruler_index[y >> 1] + 3 : &ram[3];
     // MULTIPLE ENTRY POINTS: pop_from_ruler_index, cab91
     //     (falls through to find_margins_of_current_ruler_buffer)
     find_margins_of_current_ruler_buffer();
@@ -681,7 +681,7 @@ void initialise_document(void)
     //     dey
     //     lda #>(just_before_current_ruler_buffer)
     //     sta (oshwm),y
-    ruler_index[0x7f] = RAM_JUST_BEFORE_RULER_BUF;
+    ruler_index[0x7f] = &ram[RAM_JUST_BEFORE_RULER_BUF];
     //     jsr move_cursor_to_top_of_document
     move_cursor_to_top_of_document();
     //     jsr clear_cmd
@@ -973,7 +973,7 @@ void push_onto_ruler_index(uint8_t* ptr)
         //     ldy ruler_stack_ptr
         uint8_t stack_index = ruler_index_ptr - 2;
         //     sta (oshwm),y / sta (oshwm),y+1
-        ruler_index[stack_index >> 1] = ptr - &ram[0];
+        ruler_index[stack_index >> 1] = ptr;
         //     jsr cab91
         load_current_ruler(stack_index);
     }
