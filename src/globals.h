@@ -91,7 +91,7 @@ extern uint8_t justify_nonspace_counter;
 extern uint8_t print_micro_divisor;
 extern uint8_t l0080, l0081, l0082, l0083, l0084;
 extern uint8_t *tmp01, *tmp23, *tmp89;
-extern addr_t tmp45, tmp67;
+extern ptrdiff_t area_size;
 
 extern uint8_t print_flags, folding_flag, macro_executing_flag;
 extern uint8_t ruler_right_stop, ruler_left_stop;

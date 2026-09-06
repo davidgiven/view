@@ -534,7 +534,7 @@ static void finish_cmd(void)
         //     jsr put_byte_to_file
         // (inlined: fputc(0, file_ptr))
         fputc(0, file_ptr);
-        adjust_area_pointers(tmp67);
+        adjust_area_pointers(area_size);
         move_cursor_to_top_of_document();
         ensure_cr_at_document_top();
         if (input_file_empty_flag != 0)
@@ -776,7 +776,7 @@ static void more_cmd(struct scan_state* scan)
     //     sta current_ruler_buffer,y
     current_ruler_buffer[y] = 0x0d;
     //     jsr sub_c89d3
-    adjust_area_pointers(tmp67);
+    adjust_area_pointers(area_size);
     //     jsr move_cursor_to_top_of_document
     move_cursor_to_top_of_document();
     //     jsr check_for_at_least_150_bytes_free

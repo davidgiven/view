@@ -298,8 +298,7 @@ uint8_t l0084;  // PROVISIONAL: temporary column-position save/restore slot used
                 // during character rendering
 uint8_t* tmp01; // PROVISIONAL: combined 16-bit temporary (was tmp0:tmp1)
 uint8_t* tmp23; // PROVISIONAL: combined 16-bit temporary (was tmp2:tmp3)
-addr_t tmp45;   // PROVISIONAL: combined 16-bit temporary (was tmp4:tmp5)
-addr_t tmp67;   // PROVISIONAL: combined 16-bit temporary (was tmp6:tmp7)
+ptrdiff_t area_size;
 uint8_t* tmp89; // PROVISIONAL: combined 16-bit temporary (was tmp8:tmp9)
 // X file_ptr: .fill 2
 FILE* file_ptr; // PROVISIONAL: currently selected FILE* for file I/O (set to

@@ -110,6 +110,7 @@ int main(void)
     }
 
     {
+        ruler_index[0] = &ram[0];
         pop_from_ruler_index();
 
         ASSERT_EQ(0x00, ruler_index_ptr, "%d", "ruler_index_ptr back to 0");

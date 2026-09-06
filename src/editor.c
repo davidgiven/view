@@ -57,9 +57,7 @@ void redraw_editor(void);
 static void render_char(struct render_state* rs);
 static void advance_to_next_char(struct render_state* rs);
 static void render_xchar(struct render_state* rs);
-static void restore_cursor_position(uint16_t packed);
 area_status_t sanitise_area(void);
-static void save_cursor_position(void);
 static void set_marker(uint8_t x);
 static void set_marker_common(uint8_t a);
 void show_memory_full_error(void);
@@ -476,7 +474,7 @@ static void cf0_delete_block_key(void)
     }
     move_cursor_to_address(area_start_ptr);
     clamp_ptr6_to_document();
-    adjust_area_pointers(tmp67);
+    adjust_area_pointers(area_size);
     ensure_cr_at_document_top();
     clear_marks_1_2();
 }
@@ -2002,7 +2000,7 @@ static void sf0_move_block_key(void)
     check_pointer_in_area();
     top_of_screen_line_ptr = &ram[RAM_MAX];
     l006f = 0xff;
-    adjust_area_pointers(tmp67);
+    adjust_area_pointers(area_size);
     ensure_cr_at_document_top();
     move_cursor_to_address(doc_ptr1);
     clear_marks_1_2();
@@ -3242,12 +3240,9 @@ static void check_pointer_in_area(void)
         return;
     }
     move_cursor_to_address(area_start_ptr);
-    {
-        ptrdiff_t diff = area_end_ptr - area_start_ptr;
-        tmp67 = diff;
-    }
+    area_size = area_end_ptr - area_start_ptr;
     uint8_t* tmp45 = doc_ptr1;
-    if (!make_space_for_insertion(tmp45, tmp67))
+    if (!make_space_for_insertion(tmp45, area_size))
     {
         show_memory_full_error();
         longjmp(env, JMP_EDITOR);
@@ -3270,7 +3265,6 @@ static void check_pointer_in_area(void)
     split_line_at_wrap(adjusted);
     //     lda doc_ptr1 / ldy doc_ptr1+1 / jsr split_line_at_wrap
     split_line_at_wrap(doc_ptr1);
-    tmp67 = tmp67;
     l0073 = 1;
     cursor_moved_flag = 1;
 }
@@ -4359,7 +4353,7 @@ void draw_prompt_characters(uint8_t x, uint8_t y)
     // On exit: cursor position restored
     //     stx ((uint8_t*)&tmp23)[0]
     //     jsr save_cursor_position
-    save_cursor_position();
+    uint16_t saved_cursor_pos = screen_getcursor();
     //     jsr cursor_off
     cursor_off();
     //     jsr home_cursor
@@ -4378,7 +4372,7 @@ void draw_prompt_characters(uint8_t x, uint8_t y)
     //     jsr screen_putchar
     screen_putchar(0x20);
     //     jsr restore_cursor_position
-    restore_cursor_position(tmp45);
+    screen_setcursor(saved_cursor_pos & 0xff, saved_cursor_pos >> 8);
     // cursor_on:
     // cursor_off:
     //     rts
@@ -5557,14 +5551,6 @@ static void render_xchar(struct render_state* rs)
     render_char(rs);
 }
 
-static void restore_cursor_position(uint16_t packed)
-{
-    // restore_cursor_position:
-    //     ldx ((uint8_t*)&tmp45)[0]
-    //     ldy ((uint8_t*)&tmp45)[1]
-    screen_setcursor(packed & 0xff, packed >> 8);
-}
-
 area_status_t sanitise_area(void)
 {
     // sanitise_area
@@ -5605,20 +5591,6 @@ area_status_t sanitise_area(void)
     // return_10:
     //     rts
     return AREA_EMPTY;
-}
-
-static void save_cursor_position(void)
-{
-    // Pseudocode: Saves current cursor position via SCREEN call
-    // ;
-    // ***************************************************************************************
-    // save_cursor_position:
-    //     ldy #SCREEN_GETCURSOR
-    //     jsr SCREEN
-    uint16_t cursor_ = screen_getcursor();
-    //     sta ((uint8_t*)&tmp45)[0]
-    tmp45 = cursor_;
-    //     rts
 }
 
 static void set_marker(uint8_t x)
@@ -6823,9 +6795,8 @@ static bool write_line_back_to_document(void)
         //     sta ((uint8_t*)&tmp45)[0]
         uint8_t* tmp45 = current_line_ptr;
         //     ldy #0
-        uint8_t y = 0;
         //     sty ((uint8_t*)&tmp67)[1]
-        ((uint8_t*)&tmp67)[1] = y;
+        area_size = 0;
         //     jsr get_line_length
         l0083 = get_line_length();
         //     lda l003b
@@ -6848,9 +6819,9 @@ static bool write_line_back_to_document(void)
                 goto ca8ed;
         }
         //     sta ((uint8_t*)&tmp67)[0]
-        ((uint8_t*)&tmp67)[0] = a_1;
+        area_size = a_1;
         //     jsr adjust_pointers
-        tmp89 = adjust_pointers(tmp45, tmp67);
+        tmp89 = adjust_pointers(tmp45, area_size);
         //     jmp ca8ed
         goto ca8ed;
         // ca8df:
@@ -6864,9 +6835,9 @@ static bool write_line_back_to_document(void)
         //     sbc l0084
         a_2 -= l0084;
         //     sta ((uint8_t*)&tmp67)[0]
-        ((uint8_t*)&tmp67)[0] = a_2;
+        area_size = a_2;
         //     jsr make_space_for_insertion
-        if (!make_space_for_insertion(tmp45, tmp67))
+        if (!make_space_for_insertion(tmp45, area_size))
             return true;
         // bcs return_66 — out of memory, write failed
         // ca8ed:
@@ -6887,7 +6858,7 @@ static bool write_line_back_to_document(void)
         //     sta ((uint8_t*)&tmp67)[0]
         //     lda current_format_line_ptr+1
         //     sta ((uint8_t*)&tmp67)[1]
-        tmp67 = current_format_line_ptr - &ram[0];
+        area_size = current_format_line_ptr - &ram[0];
         //     ldx l0083
         uint8_t x = l0083;
         //     stx l003b
@@ -6911,38 +6882,33 @@ static bool write_line_back_to_document(void)
             }
             //     pha
             {
-                uint8_t a_8;
                 //     txa
                 //     pha
+                // loop_ca91c:
+                // loop_ca91c:
+                uint16_t val;
+                do
                 {
-                    // loop_ca91c:
-                    // loop_ca91c:
-                    uint16_t val;
-                    do
-                    {
-                        //     jsr sub_ca536
-                        //     bne ca92f
-                        uint8_t idx = find_marker_at_position(y_1, &ram[tmp67]);
-                        if (idx == 0x0c)
-                            break;
-                        //     tya
-                        //     clc
-                        //     adc current_line_ptr
-                        //     sta markers_array,x
-                        //     lda current_line_ptr+1
-                        //     adc #0
-                        //     sta markers_array+1,x
-                        // (16-bit arithmetic: val = current_line_ptr + y)
-                        val = (current_line_ptr - &ram[0]) + y_1;
-                        markers_array[idx / 2] = &ram[val];
-                        //     bne loop_ca91c
-                    } while (val != 0);
-                    // ca92f:
-                    //     pla
-                    a_8 = x;
-                }
+                    //     jsr sub_ca536
+                    //     bne ca92f
+                    uint8_t idx = find_marker_at_position(y_1, &ram[area_size]);
+                    if (idx == 0x0c)
+                        break;
+                    //     tya
+                    //     clc
+                    //     adc current_line_ptr
+                    //     sta markers_array,x
+                    //     lda current_line_ptr+1
+                    //     adc #0
+                    //     sta markers_array+1,x
+                    // (16-bit arithmetic: val = current_line_ptr + y)
+                    val = (current_line_ptr - &ram[0]) + y_1;
+                    markers_array[idx / 2] = &ram[val];
+                    //     bne loop_ca91c
+                } while (val != 0);
+                // ca92f:
+                //     pla
                 //     tax
-                x = a_8;
                 //     pla
                 a_9 = a_6;
             }
