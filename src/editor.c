@@ -2556,7 +2556,7 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t x)
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda current_edit_line_ptr+1
     //     sta ((uint8_t*)&tmp67)[1]
-    addr_t tmp67 = RAM_EDIT_BUFFER;
+    uint8_t* tmp67 = &ram[RAM_EDIT_BUFFER];
     //     ldy xpos
     uint8_t y = xpos;
     //     tya
@@ -2571,7 +2571,7 @@ cae78:
         // cae78:
         //     jsr sub_ca536
         //     bne cae98
-        x = find_marker_at_position(y, &ram[tmp67]);
+        x = find_marker_at_position(y, tmp67);
         if (!(x == 0x0c))
         {
             //     lda #0
@@ -2670,12 +2670,12 @@ static void enter_printable_character(void)
         return;
     //     bcs c9bca
     //     lda current_edit_line_ptr
-    addr_t tmp67 = RAM_EDIT_BUFFER;
+    uint8_t* tmp67 = &ram[RAM_EDIT_BUFFER];
     //     ldy xpos
     uint8_t y_1 = xpos;
     //     jsr sub_ca536
     //     bne c9bf2
-    uint8_t idx = find_marker_at_position(y_1, &ram[tmp67]);
+    uint8_t idx = find_marker_at_position(y_1, tmp67);
     if (idx != 0x0c)
     {
         if (idx < 4)
@@ -2942,7 +2942,7 @@ c9cd0:
     //     sty l0081
     l0081 = y_9;
     //     lda current_edit_line_ptr
-    addr_t tmp67_3 = RAM_EDIT_BUFFER;
+    uint8_t* tmp67_3 = &ram[RAM_EDIT_BUFFER];
     //     ldy xpos
     uint8_t y_10 = xpos;
     //     dey
@@ -2974,7 +2974,7 @@ c9cd0:
         {
             //     jsr sub_ca536
             //     bne c9d0d
-            uint8_t marker_index = find_marker_at_position(y_11, &ram[tmp67_3]);
+            uint8_t marker_index = find_marker_at_position(y_11, tmp67_3);
             if (marker_index == 0x0c)
                 break;
             //     lda l0081
@@ -3164,12 +3164,12 @@ static void move_cursor_up(uint8_t x)
     do
     {
         //     sta ((uint8_t*)&tmp23)[0]
-        addr_t tmp23 = line - &ram[0];
+        uint8_t* tmp23 = line;
         uint8_t* tmp01;
         if (!find_previous_line(line, &tmp01))
         {
             // ca093:
-            line = &ram[tmp23];
+            line = tmp23;
             break;
         }
         line = tmp01;
@@ -3266,22 +3266,22 @@ static void check_pointer_in_area(void)
         show_memory_full_error();
         longjmp(env, JMP_EDITOR);
     }
-    addr_t tmp89 = area_start_ptr - &ram[0];
-    addr_t tmp23 = tmp45;
+    uint8_t* tmp89 = area_start_ptr;
+    uint8_t* tmp23 = doc_ptr1;
     // ca219:
     while (1)
     {
-        ram[tmp23] = ram[tmp89];
+        *tmp23 = *tmp89;
         tmp23++;
         tmp89++;
-        if (&ram[tmp89] == area_end_ptr)
+        if (tmp89 == area_end_ptr)
             break;
     }
     doc_ptr1 = &ram[tmp45];
     //     lda tmp2 / ldy tmp3 / sec / sbc #1 / bcs ca24d / dey
-    uint16_t adjusted = (tmp23)-1;
+    uint8_t* adjusted = tmp23 - 1;
     //     jsr split_line_at_wrap
-    split_line_at_wrap(&ram[adjusted]);
+    split_line_at_wrap(adjusted);
     //     lda doc_ptr1 / ldy doc_ptr1+1 / jsr split_line_at_wrap
     split_line_at_wrap(doc_ptr1);
     tmp67 = tmp67;
@@ -3548,7 +3548,7 @@ bool insert_edit_buffer_bytes_at_xpos(uint8_t x)
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda current_edit_line_ptr+1
     //     sta ((uint8_t*)&tmp67)[1]
-    addr_t tmp67 = RAM_EDIT_BUFFER;
+    uint8_t* tmp67 = &ram[RAM_EDIT_BUFFER];
     //     ldy #0x84
     uint8_t y = MAX_LINE_LENGTH;
     // cae27:
@@ -3576,7 +3576,7 @@ cae27:
     {
         //     jsr sub_ca536
         //     bne cae52
-        uint8_t idx = find_marker_at_position(y, &ram[tmp67]);
+        uint8_t idx = find_marker_at_position(y, tmp67);
         if (idx == 0x0c)
             goto cae52;
         //     lda l0081
@@ -4886,11 +4886,11 @@ bool make_space_for_insertion(addr_t tmp45, ptrdiff_t tmp67)
     //     stx top (6455) sty top+1 (6456)
     // (16-bit arithmetic: tmp23 = top, then tmp89 = top + tmp67;
     //  if that exceeds himem there is not enough space)
-    addr_t tmp23 = top - &ram[0];
-    addr_t tmp89 = (top - &ram[0]) + tmp67;
-    if (tmp89 >= himem - &ram[0])
+    uint8_t* tmp23 = top;
+    uint8_t* tmp89 = top + tmp67;
+    if (tmp89 >= himem)
         return false;
-    top = &ram[tmp89];
+    top = tmp89;
     //     ldx #0 (6457)
     uint8_t x = 0;
     // loop_caa38: (6458)
@@ -4954,7 +4954,7 @@ bool make_space_for_insertion(addr_t tmp45, ptrdiff_t tmp67)
     //     beq caa57 (6514)
     // (byte shift consolidated into a single memmove: copies [tmp45, tmp23]
     //  inclusive, i.e. (top - base) + 1 bytes, to [tmp45 + tmp67, tmp89])
-    size_t copy_len = (size_t)(tmp23 - tmp45) + 1;
+    size_t copy_len = (size_t)(tmp23 - &ram[tmp45]) + 1;
     memmove(&ram[tmp45 + tmp67], &ram[tmp45], copy_len);
     //     clc (6515)
     // return_67: (6516)

@@ -315,7 +315,7 @@ static void count_cmd(struct scan_state* scan)
     //     sta ((uint8_t*)&tmp01)[0]
     //     lda area_start_ptr+1
     //     sta ((uint8_t*)&tmp01)[1]
-    addr_t tmp01 = area_start_ptr - &ram[0];
+    uint8_t* tmp01 = area_start_ptr;
     //     lda #0
     //     sta ((uint8_t*)&tmp89)[0]
     //     sta ((uint8_t*)&tmp89)[1]
@@ -329,7 +329,7 @@ c86b8:
     //     ldy #0
     uint8_t y = 0;
     //     jsr deref_and_check_for_command_prefix
-    command_prefix_t cp = deref_and_check_for_command_prefix(y, &ram[tmp01]);
+    command_prefix_t cp = deref_and_check_for_command_prefix(y, tmp01);
     if (!(cp == NO_COMMAND_PREFIX))
     {
         //     ldx #0
@@ -340,13 +340,13 @@ c86b8:
         do
         {
             //     lda (((uint8_t*)&tmp01)[0]),y
-            uint8_t a = ram[tmp01 + y];
+            uint8_t a = tmp01[y];
             //     iny
             y++;
             if (!(a != l8747_data[x]))
             {
                 //     lda (((uint8_t*)&tmp01)[0]),y
-                uint8_t a_1 = ram[tmp01 + y];
+                uint8_t a_1 = tmp01[y];
                 //     cmp l8748,x
                 if (a_1 == l8747_data[x + 1])
                     goto c86df;
@@ -390,8 +390,7 @@ c86b8:
         uint8_t y_1 = 0;
         //     jsr process_current_document_character
         bool is_tab = false;
-        a_3 =
-            process_current_document_character(&ram[tmp01], &x, &y_1, &is_tab);
+        a_3 = process_current_document_character(tmp01, &x, &y_1, &is_tab);
         //     and #0x7f
         a_3 &= 0x7f;
         //     ldx #0
@@ -436,7 +435,7 @@ c871f:
     //     ldy ((uint8_t*)&tmp01)[0]
     //     cpy area_end_ptr
     // (16-bit equality consolidated)
-    if (&ram[tmp01] != area_end_ptr)
+    if (tmp01 != area_end_ptr)
         goto c86b8;
     //     ldx ((uint8_t*)&tmp89)[0]
     render_number_to_screen(tmp89);

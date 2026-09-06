@@ -1130,7 +1130,7 @@ void write_area_to_file(void)
     //     sta ((uint8_t*)&tmp89)[0]
     //     lda area_start_ptr+1
     //     sta ((uint8_t*)&tmp89)[1]
-    addr_t tmp89 = area_start_ptr - &ram[0];
+    uint8_t* tmp89 = area_start_ptr;
     //     zrepeat
     do
     {
@@ -1138,12 +1138,12 @@ void write_area_to_file(void)
         // (y is only set as a side effect of the 6502's indexed dereference;
         //  the C reads *tmp89 directly and no caller reads y afterwards)
         //         lda (((uint8_t*)&tmp89)[0]),y
-        uint8_t a = ram[tmp89];
+        uint8_t a = *tmp89;
         //         jsr put_byte_to_file
         // (inlined: fputc(a, file_ptr))
         fputc(a, file_ptr);
         tmp89++;
-    } while (&ram[tmp89] != area_end_ptr);
+    } while (tmp89 != area_end_ptr);
     // return_17:
     //     rts
 }
