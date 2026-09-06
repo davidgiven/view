@@ -479,16 +479,16 @@ void ensure_cr_at_document_top(void)
 cb06c:
     //     sta current_line_ptr
     //     sty current_line_ptr+1
-    current_line_ptr = page;
+    current_line_ptr = page - &ram[0];
     //     ldy #0
     uint8_t y = 0;
     //     lda #0x0d
     uint8_t a = 0x0d;
     //     sta (page),y
-    ram[page + y] = a;
+    page[y] = a;
     //     tya
     //     sta (top),y
-    ram[top + y] = y;
+    top[y] = y;
     // return_85:
     //     rts
 }
@@ -646,7 +646,7 @@ void initialise_document(void)
     xpos = y;
     //     lda #0xaa
     //     sta (oshwm),y
-    ram[oshwm + y] = 0xaa;
+    oshwm[y] = 0xaa;
     //     lda page
     //     sec
     //     sbc #1
@@ -654,7 +654,7 @@ void initialise_document(void)
     //     lda page+1
     //     sbc #0
     //     sta ((uint8_t*)&tmp89)[1]
-    addr_t tmp89 = page - 1;
+    addr_t tmp89 = (page - &ram[0]) - 1;
     //     lda #0x0d
     //     sta (((uint8_t*)&tmp89)[0]),y
     ram[tmp89] = 0x0d;
@@ -839,7 +839,7 @@ void move_cursor_to_top_of_document(void)
     // document
     //     lda page
     //     sta current_line_ptr
-    current_line_ptr = page;
+    current_line_ptr = page - &ram[0];
     //     lda page+1
     //     sta current_line_ptr+1
     //     lda #0
@@ -907,7 +907,7 @@ bool find_previous_line(addr_t val, addr_t* tmp01)
     //     bne cab4b
     //     cmp page
     //     bcc return_71
-    if (*tmp01 < page)
+    if (*tmp01 < (page - &ram[0]))
         return false;
     // loop_cab4d:
     do
@@ -994,12 +994,12 @@ void reset_area_to_entire_document(void)
     // page)
     //     lda top
     //     sta area_start_ptr
-    area_start_ptr = top;
+    area_start_ptr = top - &ram[0];
     //     lda top+1
     //     sta area_start_ptr+1
     //     lda page
     //     sta area_end_ptr
-    area_end_ptr = page;
+    area_end_ptr = page - &ram[0];
     //     lda page+1
     //     sta area_end_ptr+1
     //     rts

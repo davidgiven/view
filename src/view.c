@@ -96,12 +96,13 @@ addr_t current_ruler_ptr; // PROVISIONAL: points to current ruler definition
 addr_t current_line_ptr; // PROVISIONAL: cursor/position pointer that walks
                          // through document memory
 // X page: .fill 2
-addr_t
+uint8_t*
     page; // PROVISIONAL: start (lowest address) of document text area in memory
 // X top: .fill 2
-addr_t top; // PROVISIONAL: dynamic end-of-document pointer (top of free memory)
+uint8_t*
+    top; // PROVISIONAL: dynamic end-of-document pointer (top of free memory)
 // X himem: .fill 2
-addr_t himem; // PROVISIONAL: absolute upper bound of available RAM
+uint8_t* himem; // PROVISIONAL: absolute upper bound of available RAM
 // X l0011: .fill 1
 // X l0012: .fill 1
 addr_t top_of_screen_line_ptr; // PROVISIONAL: document address of the first
@@ -130,8 +131,8 @@ struct macro* last_macro_ptr; // PROVISIONAL: end of macro-definition area where
 addr_t ptr3; // PROVISIONAL: macro text pointer — walks through
              // currently-executing macro body
 // X oshwm: .fill 2
-addr_t oshwm; // PROVISIONAL: OS high-water mark, base address for ruler stack
-              // and document area
+uint8_t* oshwm; // PROVISIONAL: OS high-water mark, base address for ruler stack
+                // and document area
 addr_t ruler_index[128]; // ruler stack (was ram[oshwm] trick, now separate)
 // X l0021: .fill 1
 uint8_t l0021; // PROVISIONAL: remaining-lines counter on current page during
@@ -293,13 +294,13 @@ uint8_t l0082; // PROVISIONAL: current screen line (row) number during document
 uint8_t l0083; // PROVISIONAL: document line length from get_line_length; also
                // screen column during character rendering
 // X l0084: .fill 1
-uint8_t l0084; // PROVISIONAL: temporary column-position save/restore slot used
-               // during character rendering
-addr_t tmp01;  // PROVISIONAL: combined 16-bit temporary (was tmp0:tmp1)
-addr_t tmp23;  // PROVISIONAL: combined 16-bit temporary (was tmp2:tmp3)
-addr_t tmp45;  // PROVISIONAL: combined 16-bit temporary (was tmp4:tmp5)
-addr_t tmp67;  // PROVISIONAL: combined 16-bit temporary (was tmp6:tmp7)
-addr_t tmp89;  // PROVISIONAL: combined 16-bit temporary (was tmp8:tmp9)
+uint8_t l0084;  // PROVISIONAL: temporary column-position save/restore slot used
+                // during character rendering
+uint8_t* tmp01; // PROVISIONAL: combined 16-bit temporary (was tmp0:tmp1)
+uint8_t* tmp23; // PROVISIONAL: combined 16-bit temporary (was tmp2:tmp3)
+addr_t tmp45;   // PROVISIONAL: combined 16-bit temporary (was tmp4:tmp5)
+addr_t tmp67;   // PROVISIONAL: combined 16-bit temporary (was tmp6:tmp7)
+uint8_t* tmp89; // PROVISIONAL: combined 16-bit temporary (was tmp8:tmp9)
 // X file_ptr: .fill 2
 FILE* file_ptr; // PROVISIONAL: currently selected FILE* for file I/O (set to
                 // input_fp or output_fp)
@@ -773,7 +774,7 @@ addr_t read_into_document(void)
     // (16-bit subtraction: tmp67 = space_limit - tmp01)
     ptrdiff_t tmp67 = space_limit - cursor;
     //     jsr adjust_pointers
-    tmp89 = adjust_pointers(cursor, tmp67);
+    tmp89 = &ram[adjust_pointers(cursor, tmp67)];
     // (the 6502 left the post-read cursor in tmp01; load_cmd uses it for top)
     return cursor;
 }
@@ -894,7 +895,7 @@ c8a87:
     if (delta < 0)
     {
         ptrdiff_t tmp67 = -delta;
-        tmp89 = adjust_pointers(tmp45, tmp67);
+        tmp89 = &ram[adjust_pointers(tmp45, tmp67)];
     }
     else if (delta > 0)
     {
@@ -1067,7 +1068,7 @@ c8b11:
     //     lda ptr2
     //     ldy ptr2+1
     //     jsr cac78
-    split_line_at_wrap(tmp89);
+    split_line_at_wrap(tmp89 - &ram[0]);
     //     clc
     //     rts
     return false;
@@ -1101,7 +1102,7 @@ bool read_next_chunk_from_input_file(addr_t ptr)
     //     Y=0x00
     //     sta (((uint8_t*)&tmp01)[0]),y
     ram[cursor + 0] = 0;
-    top = cursor;
+    top = &ram[cursor];
     //     plp
     //     rts
     return status == READ_BLOCK_EMPTY;
@@ -1113,7 +1114,7 @@ bool read_first_chunk_from_input_file(void)
     //     lda page
     //     ldy page+1
     //     jmp read_next_chunk_from_input_file
-    return read_next_chunk_from_input_file(page);
+    return read_next_chunk_from_input_file(page - &ram[0]);
 }
 
 void write_area_to_file(void)
@@ -1251,8 +1252,8 @@ void check_continuous_editing(void)
 // parse_command moved to cli.c
 static void system_init(void)
 {
-    himem = 0xffff;
-    oshwm = 0x0800;
+    himem = &ram[0xffff];
+    oshwm = &ram[0x0800];
     uint16_t size = screen_getsize();
     screen_maxcolumn = (uint8_t)(size & 0xff);
     screen_maxrow = (uint8_t)(size >> 8);

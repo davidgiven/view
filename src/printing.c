@@ -878,7 +878,7 @@ static void dm_fmt_cmd(void)
         //     lda himem+1
         //     sbc last_macro_ptr+1
         //     bne c96b8
-        intptr_t diff = (ram + himem) - (uint8_t*)(last_macro_ptr->body);
+        intptr_t diff = himem - (uint8_t*)(last_macro_ptr->body);
         if (diff < 0x97)
         {
             display_not_enough_memory();
@@ -1776,7 +1776,7 @@ c9048:
         //     pha
         {
             //     lda (((uint8_t*)&tmp01)[0]),y
-            uint8_t a_1 = ram[tmp01 + (*y)];
+            uint8_t a_1 = tmp01[*y];
             //     jsr sub_c9431
             convert_char_for_printing(a_1, &x, &is_tab);
             //     pla
@@ -1785,7 +1785,7 @@ c9048:
         //     tax
         x = a_2;
         //     lda (((uint8_t*)&tmp01)[0]),y
-        a_3 = ram[tmp01 + (*y)];
+        a_3 = tmp01[*y];
         //     iny
         (*y)++;
         //     cmp #0x1a
@@ -2092,7 +2092,7 @@ c912b:
 c8fe6_inline:
     do
     {
-        uint8_t a_20 = ram[tmp01 + (*y)];
+        uint8_t a_20 = tmp01[*y];
         (*y)++;
         a_21 = convert_char_for_printing(a_20, &x, &is_tab);
         print_char_x_times(a_21, x);
@@ -2241,7 +2241,7 @@ void print_document(struct scan_state* scan)
     //     sta ptr5+1
     //     tay
     // (16-bit arithmetic: ptr5 = top + 3)
-    addr_t ptr5 = top + 3;
+    addr_t ptr5 = (top - &ram[0]) + 3;
     //     txa
     //     adc #0x8d
     //     bcc c8edb
@@ -2273,7 +2273,7 @@ void print_document(struct scan_state* scan)
     {
         //     inc printing_from_file_flag
         printing_from_file_flag++;
-        printer_ptr6 = page;
+        printer_ptr6 = page - &ram[0];
         print_loop(ptr5);
         goto c8f0d;
     }
@@ -2604,7 +2604,9 @@ c8cc8:
         if (l0083 == MAX_LINE_LENGTH)
         {
             {
-                write_cr_to_memory(&tmp01);
+                addr_t tmp01_off = tmp01 - &ram[0];
+                write_cr_to_memory(&tmp01_off);
+                tmp01 = &ram[tmp01_off];
                 a_1 = a_1;
             }
             x_2++;

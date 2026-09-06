@@ -77,7 +77,7 @@ extern uint8_t format_mode_flag, justifying_flag;
 extern uint8_t highlight_code[2];
 #define highlight1_code highlight_code[0]
 #define highlight2_code highlight_code[1]
-extern addr_t himem, top, page;
+extern uint8_t *himem, *top, *page;
 extern struct macro *first_macro_ptr, *last_macro_ptr;
 extern addr_t ptr5, current_format_line_ptr;
 extern uint8_t header_text_maybe[0x42];
@@ -90,7 +90,8 @@ extern uint8_t l0047;
 extern uint8_t justify_nonspace_counter;
 extern uint8_t print_micro_divisor;
 extern uint8_t l0080, l0081, l0082, l0083, l0084;
-extern addr_t tmp01, tmp23, tmp45, tmp67, tmp89;
+extern uint8_t *tmp01, *tmp23, *tmp89;
+extern addr_t tmp45, tmp67;
 
 extern uint8_t print_flags, folding_flag, macro_executing_flag;
 extern uint8_t ruler_right_stop, ruler_left_stop;
@@ -223,7 +224,7 @@ extern uint8_t line_lengths[];
 extern uint8_t l0073;
 
 extern uint8_t ruler_index_ptr;
-extern addr_t oshwm;
+extern uint8_t* oshwm;
 extern addr_t ruler_index[128];
 #define RAM_CURRENT_LINE_BUF 0x0545
 #define RAM_EDIT_BUFFER 0x0548

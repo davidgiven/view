@@ -678,7 +678,7 @@ static void load_cmd(struct scan_state* scan)
     reset_area_to_entire_document();
     //     jsr 1f
     // (returns the post-read cursor, which the 6502 left in tmp01)
-    top = read_into_document();
+    top = &ram[read_into_document()];
     //     jsr reset_document_name_after_load
     reset_document_name_after_load();
     //     jsr clear_cmd
@@ -792,7 +792,7 @@ static void more_cmd(struct scan_state* scan)
     //     bne c84e8
     if (input_file_empty_flag == 0)
     {
-        if (read_next_chunk_from_input_file(top))
+        if (read_next_chunk_from_input_file(top - &ram[0]))
         {
             return_to_cli_prompt();
             return;
