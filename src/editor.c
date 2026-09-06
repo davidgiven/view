@@ -143,7 +143,7 @@ static void cf6_split_line_key(void);
 
 static void cf7_join_lines_key(void);
 
-static void cf8_mark_as_ruler_key(uint8_t* ptr);
+static void cf8_mark_as_ruler_key(void);
 
 static void delete_key(void);
 
@@ -207,7 +207,7 @@ static void sf6_go_to_marker_key(void);
 
 static void sf7_set_marker_key(void);
 
-static void sf8_edit_command_key(uint8_t* ptr);
+static void sf8_edit_command_key(void);
 
 static void sf9_delete_command_key(void);
 
@@ -527,7 +527,7 @@ static void cf5_default_ruler_key(void)
     //     jsr sub_ca276
     redraw_editor();
     //     jsr cf8_mark_as_ruler_key
-    cf8_mark_as_ruler_key(ptr1);
+    cf8_mark_as_ruler_key();
     //     lda current_edit_line_ptr
     create_default_ruler(&ram[RAM_EDIT_BUFFER]);
 }
@@ -641,7 +641,7 @@ static void cf7_join_lines_key(void)
     //     jmp beep
 }
 
-static void cf8_mark_as_ruler_key(uint8_t* ptr)
+static void cf8_mark_as_ruler_key(void)
 {
     // cf8_mark_as_ruler_key
     //  Ptrs:   ptr1
@@ -1836,7 +1836,7 @@ static void o_command_key(void)
             return;
 
         case 'C':
-            sf8_edit_command_key(ptr1);
+            sf8_edit_command_key();
             return;
 
         case 'D':
@@ -1848,7 +1848,7 @@ static void o_command_key(void)
             return;
 
         case 'M':
-            cf8_mark_as_ruler_key(ptr1);
+            cf8_mark_as_ruler_key();
             return;
 
         case 'R':
@@ -2036,7 +2036,7 @@ static void sf11_copy_key(void)
     // ca0ef:
 ca0ef:
     //     jmp cf8_mark_as_ruler_key
-    cf8_mark_as_ruler_key(ptr1);
+    cf8_mark_as_ruler_key();
 }
 
 static void sf12_left_key(void)
@@ -2366,7 +2366,7 @@ static void sf7_set_marker_key(void)
     return;
 }
 
-static void sf8_edit_command_key(uint8_t* ptr)
+static void sf8_edit_command_key(void)
 {
     uint8_t a_1;
     // sf8_edit_command_key
@@ -4766,7 +4766,7 @@ c98d9:
     l0039 = y_3;
     //     lda #0x1a
     //     jsr wipe_buffer
-    wipe_buffer(0x1a, ptr1);
+    wipe_buffer(0x1a, ptr);
     //     lda l0042
     uint8_t a_10 = justify_overflow_counter;
     if (!(a_10 == 0))
@@ -6591,7 +6591,7 @@ static void unpack_line(uint8_t* ptr)
     // unpack_line:
     //     lda #0x10
     //     jsr wipe_buffer
-    wipe_buffer(0x10, ptr1);
+    wipe_buffer(0x10, ptr);
     //     jsr sub_caf5f
     clear_format_mode_bit7();
     //     ldy #0
@@ -6611,7 +6611,7 @@ static void unpack_line(uint8_t* ptr)
     //     stx current_format_line_ptr
     //     sty current_format_line_ptr+1
     current_format_line_ptr =
-        (cp != NO_COMMAND_PREFIX) ? ptr1 : &ram[RAM_EDIT_BUFFER];
+        (cp != NO_COMMAND_PREFIX) ? ptr : &ram[RAM_EDIT_BUFFER];
     //     ldy #0
     uint8_t y_1 = 0;
     // loop_caabd:
@@ -6823,7 +6823,7 @@ static void unpack_line_into_buffer(uint8_t* ptr)
     //     lda #1
     //     sta l006e
     edit_buffer_unpacked_flag = 1;
-    unpack_line(ptr1);
+    unpack_line(ptr);
 }
 
 void wipe_buffer(uint8_t a, uint8_t* ptr)
