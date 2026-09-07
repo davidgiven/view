@@ -943,7 +943,7 @@ static void dm_fmt_cmd(void)
     //     lda last_macro_ptr+1
     //     sta (((uint8_t*)&tmp67)[0]),y
     // (16-bit write: the previous macro's next pointer = body + 1)
-    tmp67->next = (addr_t)(last_macro_ptr->body + 1 - ram);
+    tmp67->next = (struct macro*)(last_macro_ptr->body + 1);
     //     rts
     return;
 }
@@ -2401,7 +2401,7 @@ c8f30:
         //     beq c8f6b
         // (the 6502 tests only the low byte of the next pointer for the
         //  end-of-list marker)
-        if ((uint8_t)macro->next == 0)
+        if (macro->next == NULL)
             goto c8f6b_l;
         if (!(macro->name[0] != a_2))
         {
@@ -2422,7 +2422,7 @@ c8f30:
         //     sta ((uint8_t*)&tmp67)[0]
         //     jmp lookup_macro_name
         // (macro = the next-macro pointer stored at *macro)
-        macro = (struct macro*)&ram[macro->next];
+        macro = macro->next;
         goto lookup_macro_name_l;
         // c8fb9:
     c8fb9_l:

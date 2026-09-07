@@ -15,7 +15,7 @@ typedef uint16_t addr_t;
 // through body[].
 struct macro
 {
-    addr_t next;
+    struct macro* next;
     char name[2];
     uint8_t body[0];
 };
