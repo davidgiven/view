@@ -7,8 +7,6 @@
 #include <stdio.h>
 #include <stddef.h>
 
-typedef uint16_t addr_t;
-
 // A macro definition stored in ram[].  Macros form a singly-linked list: a
 // node holds the address of the next macro (0 terminates the list) and the
 // two-character macro name; the macro body follows the header and is reached
