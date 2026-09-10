@@ -8,7 +8,7 @@ extern command_prefix_t check_for_command_prefix(uint8_t ch);
 extern control_code_t check_for_control_code(uint8_t a);
 extern ptrdiff_t compute_bytes_free(void);
 extern command_prefix_t deref_and_check_for_command_prefix(
-    uint8_t y, uint8_t* ptr);
+    uint8_t y, uint8_t* target_ptr);
 extern void display_document_file_state(void);
 extern void find_margins_of_current_ruler_buffer(void);
 extern void print_char(uint8_t a);
@@ -54,7 +54,7 @@ extern void open_output_file(void);
 
 extern void pop_from_ruler_index(void);
 
-extern void push_onto_ruler_index(uint8_t* ptr);
+extern void push_onto_ruler_index(uint8_t* target_ptr);
 
 extern void reset_area_to_entire_document(void);
 

@@ -17,7 +17,7 @@ extern uint8_t print_xpos;
 extern uint8_t input_buffer_offset;
 extern uint8_t* current_format_line_ptr;
 extern uint8_t* current_line_ptr;
-extern uint8_t* ptr1;
+extern uint8_t* edit_buffer_base; // was ptr1
 extern uint8_t* scratch_scan_ptr; // was tmp89
 extern uint8_t output_buffer[132];
 extern uint8_t input_buffer[68];
@@ -53,7 +53,7 @@ static void init_globals(const char* text, uint8_t jf, uint8_t rstop)
     setup_edit_buffer(text);
     current_format_line_ptr = &ram[BUFFER_ADDR];
     current_line_ptr = &ram[BUFFER_ADDR];
-    ptr1 = &ram[BUFFER_ADDR];
+    edit_buffer_base = &ram[BUFFER_ADDR]; // was ptr1
 
     justifying_flag = jf;
     ruler_left_stop = 0;

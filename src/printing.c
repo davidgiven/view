@@ -30,7 +30,7 @@ bool parse_decimal_number(int* value, uint8_t* y);
 bool parse_optional_filename_from_command(struct scan_state* scan);
 static void print_char_x_times(uint8_t a, uint8_t x);
 void print_document(struct scan_state* scan);
-static void print_loop(uint8_t* ptr5);
+static void print_loop(uint8_t* print_doc_ptr);
 static void print_newline(void);
 static void print_vertical_space(uint8_t x);
 read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit);
@@ -64,7 +64,7 @@ static void write_cr_to_memory(uint8_t** cursor);
 // Forward declarations within printing.c
 static uint8_t expand_line(void);
 static void write_output_buffer_to_format_line(uint8_t a);
-static bool parse_word_flag(uint8_t* ptr, uint8_t* y, uint8_t* value);
+static bool parse_word_flag(uint8_t* target_ptr, uint8_t* y, uint8_t* value);
 static bool parse_boolean_from_fmt_cmd(uint8_t* y, uint8_t* value);
 static void page_eject_fmt(void);
 static bool evaluate_expression_from_fmt_cmd(
@@ -1088,9 +1088,9 @@ enum formatting_command lookup_formatting_command(void)
  * (c8f6b_l via continue; c8fce_l through render_new_page /
  * output_left_margin / the character loop) reach the next flag consumer
  * only after prepare_output_line has rewritten C.  Handler exit-flag
- * traffic is therefore not reproduced.  line_ptr, ptr1, ptr5 are registers
- * the dispatched command reads/writes, used by the printing pipeline
- * after the call.
+ * traffic is therefore not reproduced.  line_ptr, edit_buffer_base,
+ * print_doc_ptr are registers the dispatched command reads/writes, used by the
+ * printing pipeline after the call.
  */
 bool execute_formatting_command(enum formatting_command x)
 {
@@ -1229,13 +1229,13 @@ static bool parse_boolean_from_fmt_cmd(uint8_t* y, uint8_t* value)
 static const uint8_t l97b0_data[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
 
 /**
- * Parse a word-based flag (ON/OFF/YES/NO, or the digits 1/0) from ptr at
+ * Parse a word-based flag (ON/OFF/YES/NO, or the digits 1/0) from target_ptr at
  * *y (6502 sub_c976c).  On success *y is advanced past the token and
  * *value holds the parsed byte (exactly what the 6502 left in A).
  *
  * @return true on parse error (the 6502's C set), false on success.
  */
-static bool parse_word_flag(uint8_t* ptr, uint8_t* y, uint8_t* value)
+static bool parse_word_flag(uint8_t* target_ptr, uint8_t* y, uint8_t* value)
 {
     uint8_t a_2;
     // sub_c976c
@@ -1246,7 +1246,7 @@ static bool parse_word_flag(uint8_t* ptr, uint8_t* y, uint8_t* value)
     // x is a scratch index into the word table.
     // sub_c976c:
     //     lda (((uint8_t*)&tmp89)[0]),y
-    uint8_t a = ptr[*y];
+    uint8_t a = target_ptr[*y];
     //     tax
     uint8_t x = a;
     if (!(x == 0x31))
@@ -1279,7 +1279,7 @@ c9788:
         //     iny
         (*y)++;
         //     lda (((uint8_t*)&tmp89)[0]),y
-        uint8_t a_1 = ptr[*y];
+        uint8_t a_1 = target_ptr[*y];
         //     jsr to_uppercase
         a_2 = toupper(a_1);
         //     inx
@@ -2230,7 +2230,7 @@ void print_document(struct scan_state* scan)
     //     sta ptr5+1
     //     tay
     // (16-bit arithmetic: ptr5 = top + 3)
-    uint8_t* ptr5 = top + 3;
+    uint8_t* print_doc_ptr = top + 3;
     //     txa
     //     adc #0x8d
     //     bcc c8edb
@@ -2240,7 +2240,7 @@ void print_document(struct scan_state* scan)
     //     sty first_macro_ptr+1
     //     sty last_macro_ptr+1
     // (16-bit arithmetic: first_macro_ptr = last_macro_ptr = ptr5 + 0x8d)
-    first_macro_ptr = (struct macro*)(ptr5 + 0x8d);
+    first_macro_ptr = (struct macro*)(print_doc_ptr + 0x8d);
     last_macro_ptr = first_macro_ptr;
     //     lda #0
     uint8_t a = 0;
@@ -2263,7 +2263,7 @@ void print_document(struct scan_state* scan)
         //     inc printing_from_file_flag
         printing_from_file_flag++;
         printer_ptr6 = page;
-        print_loop(ptr5);
+        print_loop(print_doc_ptr);
         goto c8f0d;
     }
     // c8f0a:
@@ -2275,7 +2275,7 @@ c8f0d:
     {
         // A = 0x0d (set by parse_optional_filename_from_command's lda #&0d)
         set_rw_file_handle(0x0d);
-        print_loop(ptr5);
+        print_loop(print_doc_ptr);
         goto c8f0d;
     }
     //     lda l0031
@@ -2293,11 +2293,11 @@ c8f0d:
     //     jmp return_to_cli_prompt
 }
 
-static void print_loop(uint8_t* ptr5)
+static void print_loop(uint8_t* print_doc_ptr)
 {
     uint8_t x;
     enum formatting_command fmt_cmd_index;
-    uint8_t* ptr3 = NULL;
+    uint8_t* macro_cursor_ptr = NULL;
     // set before first use (macro start); 0 placates GCC's
     // cross-function uninitialised analysis
     // current format-line address (was global tmp01)
@@ -2320,7 +2320,7 @@ c8f30:
         }
         //     jsr sub_c9188
         //     bcs c8f0a (C=1 conveyed as a true return)
-        uint8_t* cursor = prepare_output_line(ptr5, &ptr3);
+        uint8_t* cursor = prepare_output_line(print_doc_ptr, &macro_cursor_ptr);
         if (cursor == NULL)
             return;
         //     jsr sub_c916a
@@ -2437,8 +2437,8 @@ c8f30:
         // (the macro body cursor persists across prepare_output_line calls,
         //  so it lives here and is passed by reference; the body follows the
         //  macro header via body[])
-        ptr3 = macro->body;
-        macro_executing_flag = (ptr3 != NULL);
+        macro_cursor_ptr = macro->body;
+        macro_executing_flag = (macro_cursor_ptr != NULL);
         //     bne c900e
         if (macro_executing_flag != 0)
             continue;
@@ -2968,9 +2968,9 @@ static void emit_microspacing_spaces(uint8_t a, uint8_t x)
  * output line via read_next_output_line (handling macro execution) and
  * points current_format_line_ptr at it.
  *
- * The 6502 kept the macro-body cursor in the global ptr3, persisting it
- * across successive calls; here the caller owns that cursor and passes it
- * in by reference.
+ * The 6502 kept the macro-body cursor in the global macro_cursor_ptr,
+ * persisting it across successive calls; here the caller owns that cursor and
+ * passes it in by reference.
  *
  * @return the address of the prepared line, or NULL (0) when no more
  *         output remains (the 6502 returned C set; print_loop's bcs
@@ -3071,11 +3071,11 @@ c91c2:
     (*macro_cursor) += y;
     //     lda ptr1 / ldy ptr1+1 (folded via c91d0)
     // c91d0:
-    current_format_line_ptr = ptr1;
+    current_format_line_ptr = edit_buffer_base;
     //     clc
     // return_26:
     //     rts
-    return ptr1;
+    return edit_buffer_base;
     // c91da:
 c91da:
     //     iny

@@ -76,11 +76,12 @@ void check_for_at_least_150_bytes_free(void)
     display_not_enough_memory();
 }
 
-command_prefix_t deref_and_check_for_command_prefix(uint8_t y, uint8_t* ptr)
+command_prefix_t deref_and_check_for_command_prefix(
+    uint8_t y, uint8_t* target_ptr)
 {
     // deref_and_check_for_command_prefix:
     //     lda (((uint8_t*)&tmp01)[0]),y
-    uint8_t a = ptr[y];
+    uint8_t a = target_ptr[y];
     return check_for_command_prefix(a);
 }
 
@@ -650,7 +651,7 @@ void initialise_document(void)
     //     adc #0
     //     sta current_edit_line_ptr+1
     //     sta current_format_line_ptr+1
-    ptr1 = &ram[RAM_CURRENT_LINE_BUF];
+    edit_buffer_base = &ram[RAM_CURRENT_LINE_BUF];
     current_format_line_ptr = &ram[RAM_EDIT_BUFFER];
     //     lda #<(current_ruler_buffer)
     uint8_t y_1 = create_default_ruler(&ram[RAM_CURRENT_RULER_BUF]);
@@ -945,7 +946,7 @@ void pop_from_ruler_index(void)
     load_current_ruler(y);
 }
 
-void push_onto_ruler_index(uint8_t* ptr)
+void push_onto_ruler_index(uint8_t* target_ptr)
 {
     // push_onto_ruler_index
     // Pseudocode: Pushes current ruler position onto the ruler index
@@ -958,7 +959,7 @@ void push_onto_ruler_index(uint8_t* ptr)
         //     ldy ruler_stack_ptr
         uint8_t stack_index = ruler_index_ptr - 2;
         //     sta (oshwm),y / sta (oshwm),y+1
-        ruler_index[stack_index >> 1] = ptr;
+        ruler_index[stack_index >> 1] = target_ptr;
         //     jsr cab91
         load_current_ruler(stack_index);
     }

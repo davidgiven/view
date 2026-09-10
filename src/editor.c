@@ -32,7 +32,7 @@ uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta);
 static bool advance_to_next_doc_line(void);
 void beep(void);
 bool scan_document_for_next_line(void);
-static void insert_line_into_document(uint8_t* ptr);
+static void insert_line_into_document(uint8_t* target_ptr);
 static void update_line_length(void);
 void clamp_ptr6_to_document(void);
 void clear_screen(void);
@@ -47,11 +47,11 @@ static uint8_t get_line_length(void);
 static void go_to_marker(uint8_t x);
 static void go_to_marker_n(uint8_t marker);
 static void home_cursor(void);
-uint8_t justify_edit_buffer(uint8_t* ptr);
+uint8_t justify_edit_buffer(uint8_t* target_ptr);
 bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta);
 static void memory_full(void);
 uint8_t process_current_document_character(
-    uint8_t* ptr, uint8_t* x, uint8_t* y, bool* is_tab);
+    uint8_t* target_ptr, uint8_t* x, uint8_t* y, bool* is_tab);
 static void recalculate_cursor_xpos(void);
 void redraw_editor(void);
 static void render_char(struct render_state* rs);
@@ -72,16 +72,16 @@ static bool insert_character_into_edit_buffer(uint8_t a);
 static void set_xpos_to_line_length(void);
 static uint8_t compute_display_start_line(void);
 static void advance_to_next_char_and_render(struct render_state* rs);
-static uint8_t find_marker_at_position(uint8_t y, uint8_t* ptr);
-static void unpack_line(uint8_t* ptr);
+static uint8_t find_marker_at_position(uint8_t y, uint8_t* target_ptr);
+static void unpack_line(uint8_t* target_ptr);
 static void update_markers_to_format_buffer(void);
-void check_for_embedded_ruler(uint8_t* ptr);
-static uint8_t* find_line_start(uint8_t* ptr);
+void check_for_embedded_ruler(uint8_t* target_ptr);
+static uint8_t* find_line_start(uint8_t* target_ptr);
 static int find_left_margin_stop(void);
 static void insert_at_left_margin(void);
 static bool insert_byte_at_xpos(uint8_t y);
-static void unpack_line_into_buffer(uint8_t* ptr);
-void wipe_buffer(uint8_t a, uint8_t* ptr);
+static void unpack_line_into_buffer(uint8_t* target_ptr);
+void wipe_buffer(uint8_t a, uint8_t* target_ptr);
 static bool write_line_back_to_document(void);
 void write_line_back_to_document_safely(void);
 
@@ -93,7 +93,7 @@ void draw_previous_word(
 bool adjust_margins_at_left_margin(void);
 bool insert_edit_buffer_bytes_at_xpos(uint8_t x);
 void set_marker_to_here(uint8_t x);
-void split_line_at_wrap(uint8_t* ptr);
+void split_line_at_wrap(uint8_t* target_ptr);
 
 // Editor-internal helper functions
 
@@ -111,7 +111,7 @@ static int prompt_for_marker(void);
 
 static bool reset_area_to_marks_1_2(void);
 
-static void insert_line_at_cursor(uint8_t* ptr);
+static void insert_line_at_cursor(uint8_t* target_ptr);
 
 static void move_to_previous_line(void);
 
@@ -243,7 +243,7 @@ void editor_loop_impl(void)
             {
                 uint8_t a_1;
                 {
-                    unpack_line(ptr1);
+                    unpack_line(edit_buffer_base);
                     a_1 = a;
                 }
                 edit_buffer_unpacked_flag = a_1;
@@ -488,7 +488,7 @@ static void cf1_next_match_key(void)
         esc_key();
         return;
     }
-    move_cursor_to_address(ptr2);
+    move_cursor_to_address(doc_working_ptr);
 }
 
 static void cf2_format_mode_key(void)
@@ -645,7 +645,7 @@ static void cf8_mark_as_ruler_key(void)
     // default characters
     //     lda ptr1
     //     sta current_format_line_ptr
-    current_format_line_ptr = ptr1;
+    current_format_line_ptr = edit_buffer_base;
     //     lda ptr1+1
     //     sta current_format_line_ptr+1
     //     ldy #0
@@ -853,7 +853,7 @@ static void f1_top_of_text_key(void)
 {
     scroll_repeat_count = 0xff;
     move_cursor_up(0xff);
-    unpack_line(ptr1);
+    unpack_line(edit_buffer_base);
 }
 
 static void f2_bottom_of_text_key(void)
@@ -869,7 +869,7 @@ static void f2_bottom_of_text_key(void)
     //     jsr sub_ca0af
     move_cursor_down(0xff);
     //     jsr unpack_line
-    unpack_line(ptr1);
+    unpack_line(edit_buffer_base);
     //     jmp c9e9b
     set_xpos_to_line_length();
 }
@@ -2108,7 +2108,7 @@ entry:
         // (16-bit arithmetic: current_line_ptr += y)
         current_line_ptr += y_1;
         //     jsr unpack_line
-        unpack_line(ptr1);
+        unpack_line(edit_buffer_base);
         //     dec l006f
         scroll_repeat_count--;
         //     jsr c9e94
@@ -2409,7 +2409,7 @@ edit_command_loop:
     //     sta (ptr1),y
     // (16-bit arithmetic: ptr1[y], with the carry across the low-byte
     //  boundary handled by the plain 16-bit index)
-    ptr1[y] = a_1;
+    edit_buffer_base[y] = a_1;
     //     cpy #2
     if (y < 2)
         goto edit_command_loop;
@@ -2428,7 +2428,7 @@ finished_editing_command:
         return;
     //     lda ptr1
     //     sta current_format_line_ptr
-    current_format_line_ptr = ptr1;
+    current_format_line_ptr = edit_buffer_base;
     //     lda ptr1+1
     //     sta current_format_line_ptr+1
     //     ldy #0
@@ -3018,7 +3018,7 @@ c9ca2:
     //     ALWAYS branch
     // c9d15:
     //     jsr justify_edit_buffer
-    justify_edit_buffer(ptr1);
+    justify_edit_buffer(edit_buffer_base);
     //     jsr ca93c
     write_line_back_to_document_safely();
     //     jsr ca741
@@ -3103,13 +3103,13 @@ static bool reset_area_to_marks_1_2(void)
     return true;
 }
 
-static void insert_line_at_cursor(uint8_t* ptr)
+static void insert_line_at_cursor(uint8_t* target_ptr)
 {
     // sub_c9de1:
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     falls through to c9de3
-    insert_line_into_document(ptr);
+    insert_line_into_document(target_ptr);
 }
 
 static void move_to_previous_line(void)
@@ -3124,7 +3124,7 @@ static void move_to_previous_line(void)
     //     bcc return_56
     current_line_ptr = line_ptr;
     //     jsr unpack_line
-    unpack_line(ptr1);
+    unpack_line(edit_buffer_base);
     //     jsr c9e9b
     set_xpos_to_line_length();
     //     dec l006f
@@ -3641,7 +3641,7 @@ void set_marker_to_here(uint8_t x)
     //     rts
 }
 
-void split_line_at_wrap(uint8_t* ptr)
+void split_line_at_wrap(uint8_t* target_ptr)
 {
     uint8_t a_3;
     // cac78
@@ -3649,7 +3649,7 @@ void split_line_at_wrap(uint8_t* ptr)
     // line
     // cac78:
     //     jsr sub_cac50
-    uint8_t* scan_ptr = find_line_start(ptr);
+    uint8_t* scan_ptr = find_line_start(target_ptr);
     do
     {
         // cac7b:
@@ -4148,16 +4148,16 @@ c8c3e:
     // (16-bit copy: doc_ptr2 = tmp89; ptr2 = the previous doc_ptr2.  The
     //  6502 also returned the old address in YA for its callers, who now
     //  read ptr2 instead)
-    ptr2 = doc_ptr2;
+    doc_working_ptr = doc_ptr2;
     doc_ptr2 = scan_ptr;
     //     ldx #0
     return true;
 }
 
-static void insert_line_into_document(uint8_t* ptr)
+static void insert_line_into_document(uint8_t* target_ptr)
 {
     //     sta ((uint8_t*)&tmp45)[0]
-    uint8_t* insert_ptr = ptr;
+    uint8_t* insert_ptr = target_ptr;
     //     lda #1
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda #0
@@ -4544,7 +4544,7 @@ static void home_cursor(void)
     return;
 }
 
-uint8_t justify_edit_buffer(uint8_t* ptr)
+uint8_t justify_edit_buffer(uint8_t* target_ptr)
 {
     _Bool is_zero_1;
     uint8_t x = 0;
@@ -4748,7 +4748,7 @@ c9871:
     column_position = y_3;
     //     lda #0x1a
     //     jsr wipe_buffer
-    wipe_buffer(0x1a, ptr);
+    wipe_buffer(0x1a, target_ptr);
     //     lda l0042
     uint8_t a_10 = justify_overflow_counter;
     if (!(a_10 == 0))
@@ -4954,11 +4954,11 @@ static void memory_full(void)
 static const uint8_t la995_data[] = "Memory full - Press ESCAPE";
 
 uint8_t process_current_document_character(
-    uint8_t* ptr, uint8_t* x, uint8_t* y, bool* is_tab)
+    uint8_t* target_ptr, uint8_t* x, uint8_t* y, bool* is_tab)
 {
     // draw_char:
     //     lda (((uint8_t*)&tmp01)[0]),y
-    uint8_t a = ptr[*y];
+    uint8_t a = target_ptr[*y];
     //     iny
     (*y)++;
     uint8_t a_1 = process_document_character(a, x, is_tab);
@@ -5253,7 +5253,7 @@ void redraw_editor(void)
         //     jsr cab91 (5344)
         load_current_ruler(saved_ruler_index_redraw);
     //     jsr unpack_line_into_buffer (5345)
-    unpack_line_into_buffer(ptr1);
+    unpack_line_into_buffer(edit_buffer_base);
     //     jsr sub_ca608 (5346)
     recalculate_cursor_xpos();
     //     lda screen_width (5347)
@@ -5381,7 +5381,7 @@ ca3de:
         // ca3e7: (5419)
     ca3e7:
         //     jsr unpack_line_into_buffer (5420)
-        unpack_line_into_buffer(ptr1);
+        unpack_line_into_buffer(edit_buffer_base);
         //     jsr sub_caacb (5421)
         update_markers_to_format_buffer();
         //     jsr draw_ruler (5422)
@@ -5924,7 +5924,7 @@ c998a:
     // ((uint8_t*)&tmp67)[0]/((uint8_t*)&tmp67)[1] = current_line_ptr.
     //      lda #0x10
     //     jsr wipe_buffer
-    wipe_buffer(0x10, ptr1);
+    wipe_buffer(0x10, edit_buffer_base);
     //     lda current_line_ptr
     //     sta ((uint8_t*)&tmp67)[0]
     //     lda current_line_ptr+1
@@ -6200,7 +6200,7 @@ c9a60:
     //     jsr sub_caed6
     insert_at_left_margin();
     //     jsr justify_edit_buffer
-    justify_edit_buffer(ptr1);
+    justify_edit_buffer(edit_buffer_base);
     //     jsr sub_c9aa9
     if (flush_formatted_line())
         return FORMAT_MEMORY_FULL;
@@ -6497,14 +6497,14 @@ static void advance_to_next_char_and_render(struct render_state* rs)
     render_char(rs);
 }
 
-static uint8_t find_marker_at_position(uint8_t y, uint8_t* ptr)
+static uint8_t find_marker_at_position(uint8_t y, uint8_t* target_ptr)
 {
     // sub_ca536
     // Pseudocode: Checks if a position in the edit line corresponds to a marker
     // On exit:  return value is the marker array index (0,2,...,10) if the
     // position matches a marker, or 0x0c if it does not
     // sub_ca536:
-    uint8_t* scan_ptr = ptr + y;
+    uint8_t* scan_ptr = target_ptr + y;
     //     ldx #0
     uint8_t x = 0;
     // loop_ca544:
@@ -6529,13 +6529,13 @@ ca558:
     return x;
 }
 
-static void unpack_line(uint8_t* ptr)
+static void unpack_line(uint8_t* target_ptr)
 {
     // unpack_line
     // unpack_line:
     //     lda #0x10
     //     jsr wipe_buffer
-    wipe_buffer(0x10, ptr);
+    wipe_buffer(0x10, target_ptr);
     //     jsr sub_caf5f
     clear_format_mode_bit7();
     //     ldy #0
@@ -6555,7 +6555,7 @@ static void unpack_line(uint8_t* ptr)
     //     stx current_format_line_ptr
     //     sty current_format_line_ptr+1
     current_format_line_ptr =
-        (cp != NO_COMMAND_PREFIX) ? ptr : &ram[RAM_EDIT_BUFFER];
+        (cp != NO_COMMAND_PREFIX) ? target_ptr : &ram[RAM_EDIT_BUFFER];
     //     ldy #0
     uint8_t y_1 = 0;
     // loop_caabd:
@@ -6631,7 +6631,7 @@ static void update_markers_to_format_buffer(void)
     //     rts
 }
 
-void check_for_embedded_ruler(uint8_t* ptr)
+void check_for_embedded_ruler(uint8_t* target_ptr)
 {
     // Pseudocode: Pushes ruler stack before entering a new ruler region
     // sub_cac41:
@@ -6641,8 +6641,8 @@ void check_for_embedded_ruler(uint8_t* ptr)
     //     jsr sub_cab6e
     //     bne cac4c
     // (inlined: Z = (*ptr == RULER_BYTE))
-    if (*ptr == RULER_BYTE)
-        push_onto_ruler_index(ptr);
+    if (*target_ptr == RULER_BYTE)
+        push_onto_ruler_index(target_ptr);
     //     pla
     //     tay
     //     pla
@@ -6650,7 +6650,7 @@ void check_for_embedded_ruler(uint8_t* ptr)
     return;
 }
 
-static uint8_t* find_line_start(uint8_t* ptr)
+static uint8_t* find_line_start(uint8_t* target_ptr)
 {
     // sub_cac50
     // Pseudocode: Finds the start of current line by scanning backward for CR
@@ -6663,15 +6663,15 @@ static uint8_t* find_line_start(uint8_t* ptr)
     // (loop restructured)
     while (1)
     {
-        ptr--;
-        uint8_t a = ptr[y];
+        target_ptr--;
+        uint8_t a = target_ptr[y];
         if (a == 0x0d)
             break;
     }
     // cac6f:
     // return_73:
     //     rts
-    return ptr;
+    return target_ptr;
 }
 
 /**
@@ -6755,7 +6755,7 @@ static bool insert_byte_at_xpos(uint8_t y)
     return ok;
 }
 
-static void unpack_line_into_buffer(uint8_t* ptr)
+static void unpack_line_into_buffer(uint8_t* target_ptr)
 {
     // unpack_line_into_buffer:
     //     lda l006e
@@ -6765,10 +6765,10 @@ static void unpack_line_into_buffer(uint8_t* ptr)
     //     lda #1
     //     sta l006e
     edit_buffer_unpacked_flag = 1;
-    unpack_line(ptr);
+    unpack_line(target_ptr);
 }
 
-void wipe_buffer(uint8_t a, uint8_t* ptr)
+void wipe_buffer(uint8_t a, uint8_t* target_ptr)
 {
     // wipe_buffer:
     //     ldy #0
@@ -6782,7 +6782,7 @@ void wipe_buffer(uint8_t a, uint8_t* ptr)
     //     bne loop_cab13
     do
     {
-        ptr[y] = a;
+        target_ptr[y] = a;
         y++;
         x--;
     } while (x != 0);

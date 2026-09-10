@@ -47,24 +47,24 @@ command_prefix_t check_for_command_prefix(uint8_t ch);
 
 bool reset_command_parse_state(struct scan_state* scan);
 cli_cmd_status_t process_cli_command(struct scan_state* scan);
-bool check_area_memory(uint8_t* ptr2);
+bool check_area_memory(uint8_t* doc_line_ptr);
 void redraw_and_write_back(void);
-void setup_area_pointers(uint8_t* ptr2);
+void setup_area_pointers(uint8_t* doc_line_ptr);
 void write_area_to_file(void);
 void run_editor(void);
 bool read_first_chunk_from_input_file(void);
 // Input:  a = document character, y = line offset (for tab stop lookup)
 // Output: a = character to render, x = screen width consumed, y preserved,
 // flags.C=0
-bool read_next_chunk_from_input_file(uint8_t* ptr);
-static uint8_t* compute_space_available(uint8_t* ptr);
-static uint8_t* compute_space_common(uint8_t* ptr, ptrdiff_t scan_ptr);
+bool read_next_chunk_from_input_file(uint8_t* target_ptr);
+static uint8_t* compute_space_available(uint8_t* target_ptr);
+static uint8_t* compute_space_common(uint8_t* target_ptr, ptrdiff_t scan_ptr);
 control_code_t check_for_control_code(uint8_t a);
 
 static void system_init(void);
 
 // Forward declarations for recently translated functions
-static uint8_t* compute_required_space_for_insertion(uint8_t* ptr);
+static uint8_t* compute_required_space_for_insertion(uint8_t* target_ptr);
 
 #include "io.h"
 
@@ -80,7 +80,7 @@ uint8_t ram[655360];
 // X .section .zp, "zax", @nobits
 
 // X ptr1: .fill 2
-uint8_t* ptr1;
+uint8_t* edit_buffer_base; // was ptr1 - base of edit buffer (0x0545)
 // X current_edit_line_ptr: .fill 2
 // X current_format_line_ptr: .fill 2
 uint8_t* current_format_line_ptr;
@@ -101,7 +101,7 @@ uint8_t* top_of_screen_line_ptr;
 uint8_t* editor_ptr6;
 uint8_t* printer_ptr6;
 // X ptr5: .fill 2
-uint8_t* ptr5;
+uint8_t* print_doc_ptr; // was ptr5 - print document pointer
 // X printer_driver_ptr: .fill 2 (replaced by struct pointer)
 const struct printer_driver* printer_driver_ptr;
 // X first_macro_ptr: .fill 2
@@ -109,7 +109,7 @@ struct macro* first_macro_ptr;
 // X last_macro_ptr: .fill 2
 struct macro* last_macro_ptr;
 // X ptr3: .fill 2
-uint8_t* ptr3;
+uint8_t* macro_cursor_ptr; // was ptr3 - macro cursor pointer
 // X oshwm: .fill 2
 uint8_t* oshwm;
 uint8_t* ruler_index[128]; // ruler stack (was oshwm[] trick, now separate)
@@ -185,7 +185,7 @@ uint8_t cli_header_limit; // upper-bound loop limit for CLI header/footer (part
 uint8_t editor_header_limit; // upper-bound loop limit for editor (part of 6502
                              // l004a)
 // X ptr2: .fill 2
-uint8_t* ptr2;
+uint8_t* doc_working_ptr; // was ptr2 - document working pointer
 // X rw_file_handle: .fill 1
 uint8_t rw_file_handle;
 // X print_flags: .fill 1
@@ -436,7 +436,7 @@ void redraw_and_write_back(void)
     //     jmp esc_key
 }
 
-void setup_area_pointers(uint8_t* ptr2)
+void setup_area_pointers(uint8_t* doc_working_ptr)
 {
     // sub_c8371
     //  Ptrs:   ptr2
@@ -445,7 +445,7 @@ void setup_area_pointers(uint8_t* ptr2)
     //     sta ((uint8_t*)&tmp89)[0]
     //     lda ptr2+1
     //     sta ((uint8_t*)&tmp89)[1]
-    uint8_t* scan_ptr = ptr2;
+    uint8_t* scan_ptr = doc_working_ptr;
     //     ldy #0
     //     ldx #0
     uint8_t x = 0;
@@ -692,14 +692,15 @@ uint8_t* read_into_document(void)
 }
 
 /**
- * Check that the area at ptr2 will fit in memory, expanding it if needed
- * (6502 sub_c8a4f).  Also rebuilds ptr2's line into the edit buffer.
+ * Check that the area at doc_working_ptr will fit in memory, expanding it if
+ * needed (6502 sub_c8a4f).  Also rebuilds doc_working_ptr's line into the edit
+ * buffer.
  *
  * @return true on memory full (the 6502 left C set after
  *         make_space_for_insertion failed), false otherwise (the 6502's
  *         explicit clc before rts).
  */
-bool check_area_memory(uint8_t* ptr2)
+bool check_area_memory(uint8_t* doc_working_ptr)
 {
     uint8_t a_3;
     uint8_t a_4;
@@ -787,7 +788,7 @@ bool check_area_memory(uint8_t* ptr2)
     //     lda doc_ptr2+1
     //     sbc ptr2+1
     //     sta l0081
-    ptrdiff_t gap = doc_ptr2 - ptr2;
+    ptrdiff_t gap = doc_ptr2 - doc_working_ptr;
     //     ldx l0082
     uint8_t x_1 = block_expansion_len;
     //     tay
@@ -797,7 +798,7 @@ bool check_area_memory(uint8_t* ptr2)
     //     txa
     //     clc; adc ptr2; sta ((uint8_t*)&tmp45)[0]; lda ptr2+1; adc #0; sta
     //     ((uint8_t*)&tmp45)[1]
-    uint8_t* insert_ptr = ptr2 + x_1;
+    uint8_t* insert_ptr = doc_working_ptr + x_1;
     //     lda l0082 / sec; sbc l0080; sta tmp67; lda #0; sbc l0081
     // (tmp67 = l0082 - gap as signed 16-bit) — three-way split:
     // shrink (delta<0), no-change (delta==0), grow (delta>0)
@@ -826,7 +827,7 @@ bool check_area_memory(uint8_t* ptr2)
         do
         {
             //     lda (ptr2),y
-            a_3 = ptr2[y_1];
+            a_3 = doc_working_ptr[y_1];
             //     iny
             y_1++;
             //     jsr is_uppercase
@@ -866,7 +867,7 @@ bool check_area_memory(uint8_t* ptr2)
         if (!(x_2 == 0))
         {
             //     lda (ptr2),y
-            uint8_t a_5 = ptr2[y_1];
+            uint8_t a_5 = doc_working_ptr[y_1];
             //     jsr is_uppercase
             //     bcs c8b11
             if (!isalpha(a_5))
@@ -962,7 +963,7 @@ c8b11:
         // c8b64:
         //     ldy l0083
         //     sta (ptr2),y
-        ptr2[doc_write_pos] = a_6;
+        doc_working_ptr[doc_write_pos] = a_6;
         //     inc l0083
         doc_write_pos++;
     c8b6a:
@@ -976,7 +977,7 @@ c8b11:
     //     lda ptr2
     //     ldy ptr2+1
     //     jsr cac78
-    split_line_at_wrap(ptr2); // was scan_ptr (tmp89)
+    split_line_at_wrap(doc_working_ptr); // was scan_ptr (tmp89)
     //     clc
     //     rts
     return false;
@@ -984,17 +985,17 @@ c8b11:
 
 // Returns true if the block read was empty (the 6502's Z flag, restored by
 // the php/plp around read_block_from_file).
-bool read_next_chunk_from_input_file(uint8_t* ptr)
+bool read_next_chunk_from_input_file(uint8_t* target_ptr)
 {
     // read_next_chunk_from_input_file
     // read_next_chunk_from_input_file:
     //     jsr sub_c8da2
-    uint8_t* space_limit = compute_space_available(ptr);
+    uint8_t* space_limit = compute_space_available(target_ptr);
     //     jsr select_file
     // (inlined: file_ptr = input_fp)
     file_ptr = input_fp;
     //     jsr read_block_from_file
-    uint8_t* cursor = ptr;
+    uint8_t* cursor = target_ptr;
     read_block_status_t status = read_block_from_file(&cursor, space_limit);
     //     php
     //     beq c8d39
@@ -1056,12 +1057,12 @@ void write_area_to_file(void)
     //     rts
 }
 
-static uint8_t* compute_space_common(uint8_t* ptr, ptrdiff_t scan_ptr)
+static uint8_t* compute_space_common(uint8_t* target_ptr, ptrdiff_t scan_ptr)
 {
     // compute_space_common
     // c8daf:
     //     sta ((uint8_t*)&tmp01)[0]
-    uint8_t* line_ptr = ptr;
+    uint8_t* line_ptr = target_ptr;
     //     jsr compute_bytes_free
     //     stx ((uint8_t*)&tmp67)[0]
     ptrdiff_t size_delta = compute_bytes_free();
@@ -1099,7 +1100,7 @@ static uint8_t* compute_space_common(uint8_t* ptr, ptrdiff_t scan_ptr)
     return line_ptr + size_delta - 0x8b;
 }
 
-static uint8_t* compute_space_available(uint8_t* ptr)
+static uint8_t* compute_space_available(uint8_t* target_ptr)
 {
     // sub_c8da2
     // sub_c8da2:
@@ -1111,17 +1112,17 @@ static uint8_t* compute_space_available(uint8_t* ptr)
     //     pla
     //     tay
     //     pla
-    return compute_space_common(ptr, compute_bytes_free());
+    return compute_space_common(target_ptr, compute_bytes_free());
 }
 
-static uint8_t* compute_required_space_for_insertion(uint8_t* ptr)
+static uint8_t* compute_required_space_for_insertion(uint8_t* target_ptr)
 {
     // compute_required_space_for_insertion:
     //     ldx #0
     //     stx ((uint8_t*)&tmp89)[0]
     //     beq c8daf                                                         ;
     //     ALWAYS branch
-    return compute_space_common(ptr, 0);
+    return compute_space_common(target_ptr, 0);
 }
 
 void parse_filename_from_command(struct scan_state* scan)

@@ -77,7 +77,7 @@ extern uint8_t highlight_code[2];
 #define highlight2_code highlight_code[1]
 extern uint8_t *himem, *top, *page;
 extern struct macro *first_macro_ptr, *last_macro_ptr;
-extern uint8_t *ptr5, *current_format_line_ptr;
+extern uint8_t *print_doc_ptr, *current_format_line_ptr; // was ptr5
 extern uint8_t header_text_maybe[0x42];
 extern uint8_t footer_text_maybe[0x42];
 extern uint8_t output_buffer[];
@@ -127,9 +127,9 @@ typedef enum
 } cli_cmd_status_t;
 
 extern cli_cmd_status_t process_cli_command(struct scan_state* scan);
-extern bool check_area_memory(uint8_t* ptr2);
+extern bool check_area_memory(uint8_t* doc_line_ptr);
 extern void redraw_and_write_back(void);
-extern void setup_area_pointers(uint8_t* ptr2);
+extern void setup_area_pointers(uint8_t* doc_line_ptr);
 extern void esc_key(void);
 extern void parse_filename_from_command(struct scan_state* scan);
 extern void set_document_name_to_filename_buffer(void);
@@ -145,7 +145,7 @@ typedef enum
 extern area_status_t sanitise_area(void);
 extern void parse_marks_from_command(struct scan_state* scan);
 extern void write_area_to_file(void);
-extern bool read_next_chunk_from_input_file(uint8_t* ptr);
+extern bool read_next_chunk_from_input_file(uint8_t* target_ptr);
 extern uint8_t* read_into_document(void);
 extern void reset_document_name_after_load(void);
 extern bool parse_integer_from_command(struct scan_state* scan, int* out);
@@ -177,7 +177,7 @@ extern uint8_t input_buffer[];
 extern uint8_t microspacing_flag;
 extern uint8_t input_buffer_offset;
 extern uint8_t insert_mode_flag;
-extern uint8_t* ptr3;
+extern uint8_t* macro_cursor_ptr; // was ptr3
 
 // Pointer array struct (markers, area pointers, doc pointers)
 struct pointer_array_t
@@ -224,7 +224,7 @@ extern uint8_t hscroll_pos;
 extern uint8_t ypos;
 extern uint8_t screen_maxrow;
 extern uint8_t status_line_needs_redrawing_flag;
-extern uint8_t* ptr1;
+extern uint8_t* edit_buffer_base; // was ptr1
 extern uint8_t edit_buffer_dirty_flag;
 extern uint8_t line_lengths[];
 
@@ -269,7 +269,7 @@ extern read_block_status_t read_block_from_file(
     uint8_t** cursor, uint8_t* limit);
 
 extern bool scan_input_buffer(uint8_t* buffer, struct scan_state* state);
-extern void check_for_embedded_ruler(uint8_t* ptr);
+extern void check_for_embedded_ruler(uint8_t* target_ptr);
 
 // Functions moved to printing.c still called from view.c/other modules
 extern void display_not_enough_memory(void);
@@ -295,14 +295,14 @@ extern uint8_t cli_header_pos;
 extern uint8_t editor_header_pos;
 extern uint8_t cli_header_limit;
 extern uint8_t editor_header_limit;
-extern uint8_t* ptr2;
+extern uint8_t* doc_working_ptr; // was ptr2
 
 extern bool scan_document_for_next_line(void);
 extern uint8_t process_current_document_character(
-    uint8_t* ptr, uint8_t* x, uint8_t* y, bool* is_tab);
+    uint8_t* target_ptr, uint8_t* x, uint8_t* y, bool* is_tab);
 extern void check_not_continuous_editing(void);
 extern void adjust_area_pointers(ptrdiff_t area_delta);
-extern void wipe_buffer(uint8_t a, uint8_t* ptr);
+extern void wipe_buffer(uint8_t a, uint8_t* target_ptr);
 
 // Result of format_paragraph, conveying the 6502 exit flags explicitly:
 // FORMAT_MEMORY_FULL is V=1 (document write failed); FORMAT_AT_END is C=1

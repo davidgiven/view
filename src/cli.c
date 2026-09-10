@@ -187,25 +187,25 @@ static void change_cmd(struct scan_state* scan)
     }
     //     bne c82fa
     //     ldx #0
-    //     stx ptr3
-    //     stx ptr3+1
-    int ptr3 = 0;
+    //     stx change_count
+    //     stx change_count+1
+    int change_count = 0;
     // loop_c82b3:
     for (;;)
     {
-        //     inc ptr3
+        //     inc change_count
         //     bne c82b9
-        //     inc ptr3+1
+        //     inc change_count+1
         // c82b9:
-        ptr3++;
+        change_count++;
         //     jsr move_cursor_to_address
-        move_cursor_to_address(ptr2);
+        move_cursor_to_address(doc_working_ptr);
         //     lda #0
         //     sta print_xpos
         print_xpos = 0;
         //     jsr sub_c8a4f
         //     bcs c830d (C=1 conveyed as a true return)
-        if (check_area_memory(ptr2))
+        if (check_area_memory(doc_working_ptr))
             goto c830d;
         //     jsr c8b7b
         if (scan_document_for_next_line())
@@ -213,8 +213,8 @@ static void change_cmd(struct scan_state* scan)
         //     beq loop_c82b3
         break;
     }
-    //     ldx ptr3
-    render_number_to_screen(ptr3);
+    //     ldx change_count
+    render_number_to_screen(change_count);
     //     jsr print_inline_string
     //     .ascii " string(s) changed"
     //     .byte 0xff
@@ -612,7 +612,7 @@ static void format_cmd(struct scan_state* scan)
         clear_format_mode_bit7();
         //     lda #0x10
         //     jsr wipe_buffer
-        wipe_buffer(0x10, ptr1);
+        wipe_buffer(0x10, edit_buffer_base);
         //     lda current_edit_line_ptr
         //     sta current_format_line_ptr
         //     lda current_edit_line_ptr+1
@@ -965,7 +965,7 @@ static void replace_cmd(struct scan_state* scan)
     }
     //     bne c82fa
     //     jsr move_cursor_to_address
-    move_cursor_to_address(ptr2);
+    move_cursor_to_address(doc_working_ptr);
     //     jsr enter_editor_mode
     enter_editor_mode();
     // c832d:
@@ -999,10 +999,10 @@ c832d:
     //     stx print_xpos
     print_xpos = x;
     //     jsr sub_c8371
-    setup_area_pointers(ptr2);
+    setup_area_pointers(doc_working_ptr);
     //     jsr sub_c8a4f
     //     bcs c836b (C=1 conveyed as a true return)
-    if (check_area_memory(ptr2))
+    if (check_area_memory(doc_working_ptr))
     {
         show_memory_full_error();
         esc_key();
@@ -1017,7 +1017,7 @@ c8356:
         return;
     //     bne return_2
     //     jsr move_cursor_to_address
-    move_cursor_to_address(ptr2);
+    move_cursor_to_address(doc_working_ptr);
     //     jmp c832d
     goto c832d;
 }
@@ -1128,7 +1128,7 @@ static void search_cmd(struct scan_state* scan)
     }
     //     bne c82fa
     //     jsr move_cursor_to_address
-    move_cursor_to_address(ptr2);
+    move_cursor_to_address(doc_working_ptr);
     //     jmp enter_editor_mode
     enter_editor_mode();
     longjmp(env, JMP_EDITOR);
