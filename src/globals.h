@@ -105,7 +105,7 @@ extern uint8_t ruler_right_stop, ruler_left_stop;
 
 extern command_prefix_t check_for_command_prefix(uint8_t ch);
 extern control_code_t check_for_control_code(uint8_t cur_ch);
-extern void render_number_to_screen(uint16_t val);
+extern void render_number_to_screen(int val);
 
 // Functions in view.c called by other modules
 // scan_input_buffer: result of the input-buffer scan.  ch is the character

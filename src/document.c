@@ -40,7 +40,7 @@ control_code_t check_for_control_code(uint8_t cur_ch)
     return NO_CONTROL_CODE;
 }
 
-ptrdiff_t compute_bytes_free(void)
+int compute_bytes_free(void)
 {
     // compute_bytes_free
     // Pseudocode: Computes number of free bytes between top and himem
@@ -57,7 +57,7 @@ ptrdiff_t compute_bytes_free(void)
     //     tay
     // return_84:
     //     rts
-    return himem - top;
+    return (int)(himem - top);
 }
 
 void check_for_at_least_150_bytes_free(void)

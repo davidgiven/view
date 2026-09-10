@@ -87,7 +87,7 @@ static void write_output_buffer_to_format_line(uint8_t cur_ch);
 void render_register(uint8_t cur_ch, uint8_t idx);
 static void render_number_to_output_buffer(uint16_t value, uint8_t start_x);
 static void emit_to_output_buffer_callback(uint8_t digit);
-static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t));
+static void render_number_to_callback(int value, void (*cb)(uint8_t));
 
 static void write_output_buffer_to_format_line(uint8_t cur_ch)
 {
@@ -1555,7 +1555,7 @@ static void emit_to_output_buffer_callback(uint8_t digit)
     return;
 }
 
-void render_number_to_screen(uint16_t val)
+void render_number_to_screen(int val)
 {
     // Pseudocode: Renders a 16-bit number to screen via bdos_print_char
     // ;
@@ -1572,15 +1572,19 @@ void render_number_to_screen(uint16_t val)
     render_number_to_callback(val, cli_putchar);
 }
 
-static void render_number_to_callback(uint16_t value, void (*cb)(uint8_t))
+static void render_number_to_callback(int value, void (*cb)(uint8_t))
 {
     // Pseudocode: Render 16-bit number as decimal via callback
-    char buf[6];
-    snprintf(buf, sizeof(buf), "%u", (unsigned int)value);
+    char buf[12];
+    snprintf(buf, sizeof(buf), "%d", value);
     for (char* p = buf; *p; p++)
     {
-        uint8_t cur_ch = *p - '0';
-        cur_ch |= 0x30;
+        uint8_t cur_ch = (uint8_t)*p;
+        if (cur_ch >= '0' && cur_ch <= '9')
+        {
+            cur_ch -= '0';
+            cur_ch |= 0x30;
+        }
         cb(cur_ch);
     }
 }
