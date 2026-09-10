@@ -43,19 +43,19 @@ KNOWN_GLOBALS = {
     'current_ruler_ptr', 'current_line_ptr', 'page', 'top', 'himem',
     'top_of_screen_line_ptr', 'ptr6', 'ptr5', 'first_macro_ptr', 'last_macro_ptr',
     'ptr3', 'oshwm',
-    'l0021', 'l0030', 'l0031', 'printing_from_file_flag',
-    'l0033', 'l0034', 'l0038', 'l0039', 'l003a', 'l003b',
-    'file_edit_flags', 'l003d', 'xpos', 'input_file_empty_flag',
-    'l0042', 'l0043', 'l0044', 'l0045', 'l0046', 'l0047',
-    'l0048', 'l0049', 'l004a',
+    'page_lines_remaining', 'formatted_line_written_flag', 'page_break_pending_flag', 'printing_from_file_flag',
+    'saved_ruler_index_scroll', 'saved_ruler_index_redraw', 'column_position', 'ruler_buffer_len', 'edit_line_len',
+    'file_edit_flags', 'ptr6_screen_row', 'xpos', 'input_file_empty_flag',
+    'justify_gap_count', 'format_src_index',
+    'cli_output_pos', 'editor_output_pos', 'cli_header_pos', 'editor_header_pos', 'cli_header_limit', 'editor_header_limit',
     'ptr2', 'rw_file_handle', 'error_handling_mode', 'print_flags',
     'edit_buffer_dirty_flag', 'edit_buffer_unpacked_flag',
-    'l006f', 'ruler_index_ptr', 'hscroll_pos',
-    'l0072', 'l0073', 'l0074',
+    'scroll_repeat_count', 'ruler_index_ptr', 'hscroll_pos',
+    'visual_column', 'display_start_row', 'line_counter',
     'flags_need_redrawing_flag', 'status_line_needs_redrawing_flag',
-    'l0076', 'ypos', 'print_xpos', 'l0079', 'l007a',
+    'ypos', 'print_xpos', 'line_change_pending_flag', 'search_target_len',
     'cursor_moved_flag', 'delimiter_char', 'line_format_status',
-    'input_buffer_offset', 'l0080', 'l0081', 'l0082', 'l0083', 'l0084',
+    'input_buffer_offset', 'scratch_offset', 'scratch_index', 'screen_row', 'screen_column', 'temp_save',
     'tmp0', 'tmp1', 'tmp2', 'tmp3', 'tmp4', 'tmp5', 'tmp6', 'tmp7', 'tmp8', 'tmp9',
     'top_margin', 'bottom_margin', 'header_margin', 'footer_margin',
     'page_length', 'line_spacing',
@@ -107,15 +107,33 @@ def get_func_defs_in_file(filepath):
         # Skip extern and forward declarations (not definitions)
         if stripped.startswith('extern '):
             continue
-        # Forward declarations end with ';' not '{'
-        if '{' not in stripped:
-            continue
         m = FUNC_RE.match(stripped)
-        if m:
-            name = m.group(2)
-            if name not in INLINE_HELPERS:
-                is_static = 'static' in (m.group(1) or '')
-                defs.append((name, i + 1, is_static))
+        if not m:
+            continue
+        # Check if this is a definition (has body) vs forward declaration
+        # Definition if '{' on same line or next non-empty line starts with '{'
+        has_brace = '{' in stripped
+        if not has_brace:
+            # Look ahead for '{' on next non-empty, non-comment line
+            for j in range(i + 1, min(i + 3, len(lines))):
+                nxt = lines[j].strip()
+                if not nxt or nxt.startswith('//') or nxt.startswith('/*') or nxt.startswith('*'):
+                    continue
+                if nxt.startswith('{'):
+                    has_brace = True
+                    break
+                else:
+                    break
+        if not has_brace:
+            continue
+        # Skip if ends with ';' (forward declaration)
+        if stripped.endswith(';'):
+            continue
+        name = m.group(2)
+        if name not in INLINE_HELPERS:
+            is_static = 'static' in (m.group(1) or '')
+            # Use line of function name for body extraction
+            defs.append((name, i + 1, is_static))
     return defs
 
 

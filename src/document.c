@@ -186,7 +186,7 @@ void find_margins_of_current_ruler_buffer(void)
     } while (y != MAX_LINE_LENGTH);
     // cabbc:
     //     sty l003a
-    l003a = y;
+    ruler_buffer_len = y;
     //     lda ruler_left_stop
     //     cmp ruler_right_stop
     //     bcc return_72
@@ -268,8 +268,8 @@ void print_char_just_to_screen(uint8_t a)
  *
  * @param a the character to process (the byte from the current edit line).
  * @param[out] x on return, holds 1 on the ordinary paths (ca5d1 / ca5f8), or
- * the tab offset (index of the first `*` ruler stop beyond l0039) on the tab
- * path.
+ * the tab offset (index of the first `*` ruler stop beyond column_position) on
+ * the tab path.
  * @param[in,out] is_tab on entry, the previous character in the same walk's
  * tab-expansion status (emulated from the 6502's SEC/CLC carry flag, but
  * passed via the bool since sub_ca5ae starts with cmp #9 which clobbers the
@@ -279,8 +279,8 @@ void print_char_just_to_screen(uint8_t a)
  * if a tab expansion was performed (the C flag of the
  * 6502 sub_ca5ae), false otherwise.
  *
- * Reads the globals current_ruler_ptr, ruler_left_stop, l0039, l003a,
- * print_flags and highlight_code.
+ * Reads the globals current_ruler_ptr, ruler_left_stop, column_position,
+ * ruler_buffer_len, print_flags and highlight_code.
  *
  * @return the processed character, normally `0x20` (space): tabs and
  * characters below `0x1a` map to space, and characters in `[0x1a, 0x20)`
@@ -352,7 +352,7 @@ uint8_t process_document_character(uint8_t a, uint8_t* x, bool* is_tab)
     }
     else
     {
-        uint8_t tab_pos = l0039;
+        uint8_t tab_pos = column_position;
         // loop_ca5e5:
         do
         {
@@ -360,7 +360,7 @@ uint8_t process_document_character(uint8_t a, uint8_t* x, bool* is_tab)
             tab_pos++;
             //     cpy l003a
             //     bcs ca5f8
-            if (tab_pos >= l003a)
+            if (tab_pos >= ruler_buffer_len)
                 goto ca5f8;
             //     lda (current_ruler_ptr),y
             a = current_ruler_ptr[tab_pos];
@@ -372,8 +372,8 @@ uint8_t process_document_character(uint8_t a, uint8_t* x, bool* is_tab)
     }
     //     sbc l0039
     {
-        bool no_borrow = (a >= l0039);
-        a -= l0039;
+        bool no_borrow = (a >= column_position);
+        a -= column_position;
         //     tax
         *x = a;
         //     beq ca5f8
@@ -590,17 +590,17 @@ void initialise_document(void)
     print_flags = 0;
     edit_buffer_dirty_flag = 0;
     edit_buffer_unpacked_flag = 0;
-    l006f = 0;
+    scroll_repeat_count = 0;
     ruler_index_ptr = 0;
     hscroll_pos = 0;
-    l0072 = 0;
-    l0073 = 0;
-    l0074 = 0;
+    visual_column = 0;
+    display_start_row = 0;
+    line_counter = 0;
     flags_need_redrawing_flag = 0;
     ypos = 0;
     print_xpos = 0;
-    l0079 = 0;
-    l007a = 0;
+    line_change_pending_flag = 0;
+    search_target_len = 0;
     cursor_moved_flag = 0;
     delimiter_char = 0;
     line_format_status = 0;
@@ -829,7 +829,7 @@ void move_cursor_to_top_of_document(void)
     //     sty ruler_stack_ptr
     ruler_index_ptr = 0xfe;
     //     sty l0033
-    l0033 = 0xfe;
+    saved_ruler_index_scroll = 0xfe;
     //     jmp cab91
     load_current_ruler(0xfe);
 }

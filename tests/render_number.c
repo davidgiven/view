@@ -9,7 +9,7 @@ typedef uint16_t addr_t;
 uint8_t a, x, y;
 extern addr_t tmp01, tmp23, tmp45, tmp67, tmp89;
 addr_t tmp01 = 0, tmp23 = 0, tmp45 = 0, tmp67 = 0, tmp89 = 0;
-uint8_t l0083;
+uint8_t screen_column;
 
 /* ---- captured output for testing ---- */
 static char output_buf[32];

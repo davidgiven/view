@@ -11,8 +11,8 @@ extern uint8_t ram[65536];
 extern uint8_t justifying_flag;
 extern uint8_t ruler_left_stop;
 extern uint8_t ruler_right_stop;
-extern uint8_t l0039, l0042, l0043, l0044, l0045, l0046;
-extern uint8_t l0081, l0082, l0083, l0084;
+extern uint8_t column_position, justify_gap_count;
+extern uint8_t scratch_index, screen_row, screen_column, temp_save;
 extern uint8_t print_xpos;
 extern uint8_t input_buffer_offset;
 extern uint8_t *current_format_line_ptr;
@@ -59,8 +59,8 @@ static void init_globals(const char* text, uint8_t jf, uint8_t rstop)
     ruler_left_stop = 0;
     ruler_right_stop = rstop;
 
-    l0039 = l0046 = 0;
-    l0081 = l0082 = l0083 = l0084 = 0;
+    column_position = justify_gap_count = 0;
+    scratch_index = screen_row = screen_column = temp_save = 0;
     tmp89 = NULL;
     print_xpos = 4;
     input_buffer_offset = 0;
@@ -83,10 +83,10 @@ static void run_justify(const char* text, uint8_t rstop)
     }
 
     int total_extra = 0;
-    for (int i = 0; i < l0046; i++)
+    for (int i = 0; i < justify_gap_count; i++)
         total_extra += input_buffer[i];
 
-    ASSERT(l0046 > 1, "justification found word gaps");
+    ASSERT(justify_gap_count > 1, "justification found word gaps");
     ASSERT(buf_len > orig_len, "buffer expanded beyond original text");
     ASSERT(total_extra > 0, "extra spaces were distributed");
 }
@@ -102,7 +102,7 @@ int main(void)
     {
         init_globals("The quick brown fox jumps over", 0xFF, 40);
         justify_edit_buffer();
-        ASSERT(l0046 == 0, "justification skipped when flag != 0");
+        ASSERT(justify_gap_count == 0, "justification skipped when flag != 0");
     }
 
     if (test_failures)

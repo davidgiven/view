@@ -163,7 +163,7 @@ static void ce_fmt_cmd(void)
     //  own values)
     a >>= 1;
     //     sta l0084
-    l0084 = a;
+    temp_save = a;
     //     lda ruler_right_stop
     uint8_t a_1 = ruler_right_stop;
     //     beq c950f
@@ -188,9 +188,9 @@ static void ce_fmt_cmd(void)
     //     bcs c950f
     // (sbc with C=1 is a plain subtraction; its C flag (no borrow) selects
     //  the result passed to c950f_impl)
-    if (a_1 >= l0084)
+    if (a_1 >= temp_save)
     {
-        write_output_buffer_to_format_line(a_1 - l0084);
+        write_output_buffer_to_format_line(a_1 - temp_save);
         return;
     }
     //     lda #0
@@ -227,12 +227,12 @@ static void rj_fmt_cmd(void)
         return;
     }
     //     stx l0083
-    l0083 = x;
+    screen_column = x;
     //     lda ruler_right_stop
     uint8_t a_1 = ruler_right_stop;
     //     sec
     //     sbc l0083
-    a_1 -= l0083;
+    a_1 -= screen_column;
     // c950f: fall-through to shared routine
     write_output_buffer_to_format_line(a_1);
     return;
@@ -241,11 +241,12 @@ static void rj_fmt_cmd(void)
 /**
  * Expand the current format command line into output_buffer, copying from
  * offset 3 onward and expanding |<register> references via render_register.
- * Control codes are counted in l0083 and MAX_LINE_LENGTH is enforced.
+ * Control codes are counted in screen_column and MAX_LINE_LENGTH is enforced.
  *
  * The 6502 also returned C, but it is redundant: the terminating CR is not
- * a control code, so l0083 <= x-1 at the sbc and every non-empty expansion
- * leaves x >= 1.  A zero return therefore means exactly "nothing expanded".
+ * a control code, so screen_column <= x-1 at the sbc and every non-empty
+ * expansion leaves x >= 1.  A zero return therefore means exactly "nothing
+ * expanded".
  *
  * @return the number of characters written to output_buffer (the 6502's X
  *         register); 0 when the byte at offset 3 is nul.
@@ -262,7 +263,7 @@ static uint8_t expand_line(void)
     //     ldx #0
     uint8_t x = 0;
     //     stx l0083
-    l0083 = x;
+    screen_column = x;
     //     ldy #3
     uint8_t y = 3;
     //     jsr get_current_fmt_cmd_byte
@@ -292,7 +293,7 @@ c9537:
             control_code_t cc = check_for_control_code(a_1);
             //     bne c9548
             if (cc != NO_CONTROL_CODE)
-                l0083++;
+                screen_column++;
             //     inx
             x++;
             //     cmp #0x0d
@@ -322,7 +323,7 @@ c9555:
     // (C=1 carry-in makes this a plain subtraction; the sbc's resulting
     //  carry is provably always set here — CR is not a control code, so
     //  l0083 <= x-1 — which is why the 6502's C return was redundant)
-    x -= l0083;
+    x -= screen_column;
     //     tax
     // return_37:
     //     rts
@@ -339,8 +340,8 @@ c955e:
     //     jsr render_register
     render_register(a_1, x);
     // advance x past the digits written by render_number_to_output_buffer
-    if (l0082 > x)
-        x = l0082;
+    if (screen_row > x)
+        x = screen_row;
     //     jmp c9537
     goto c9537;
 }
@@ -350,13 +351,13 @@ static void store_to_output_buffer(uint8_t a, uint8_t* tmp23)
     // sub_c95b2
     // sub_c95b2:
     //     ldy l0081
-    uint8_t y = l0081;
+    uint8_t y = scratch_index;
     //     sta (((uint8_t*)&tmp23)[0]),y
     tmp23[y] = a;
     //     iny
     y++;
     //     sty l0081
-    l0081 = y;
+    scratch_index = y;
 }
 
 static uint8_t process_header_footer_line(uint8_t* tmp23)
@@ -366,16 +367,16 @@ static uint8_t process_header_footer_line(uint8_t* tmp23)
     // (the 6502 passed the buffer address in YX; the C passes it directly)
     //     lda #0
     //     sta l0081
-    l0081 = 0;
+    scratch_index = 0;
     //     sta l007a
-    l007a = 0;
+    search_target_len = 0;
     //     ldy #3
     uint8_t y = 3;
     //     sty input_buffer_offset+1
     //     lda (current_format_line_ptr),y
     uint8_t a = current_format_line_ptr[y];
     //     sta l0083
-    l0083 = a;
+    screen_column = a;
     //     ldx #0x3f ; '?'
     uint8_t x = 0x3f;
     // loop_c9589:
@@ -384,7 +385,7 @@ static uint8_t process_header_footer_line(uint8_t* tmp23)
         //     iny
         y++;
         //     sty l0082
-        l0082 = y;
+        screen_row = y;
         //     lda (current_format_line_ptr),y
         a_1 = current_format_line_ptr[y];
         //     cmp #0x0d
@@ -403,7 +404,7 @@ static uint8_t process_header_footer_line(uint8_t* tmp23)
         {
             if (a_1 < 0x1b)
                 a_1 = 0x20;
-            if (a_1 == l0083)
+            if (a_1 == screen_column)
                 a_1 |= 0x80;
         }
         store_to_output_buffer(a_1, tmp23);
@@ -411,7 +412,7 @@ static uint8_t process_header_footer_line(uint8_t* tmp23)
         if (a_1 == 0x8d)
             goto c95aa;
         //     ldy l0082
-        y = l0082;
+        y = screen_row;
         //     dex
         x--;
         //     bne loop_c9589
@@ -665,12 +666,12 @@ static void pe_fmt_cmd(void)
     }
     //     cmp l0021
     //     bcc return_40
-    if (value < l0021)
+    if (value < page_lines_remaining)
         return;
     // (the 6502 cleared C on this exit; pe_fmt_cmd's caller never reads it)
     //     lda l0031
     //     bne page_eject_fmt
-    if (l0031 != 0)
+    if (page_break_pending_flag != 0)
     {
         page_eject_fmt();
         return;
@@ -741,7 +742,7 @@ static void page_eject_fmt(void)
     // page_eject_fmt:
     //     lda l0031
     //     bne c964c
-    if (l0031 == 0)
+    if (page_break_pending_flag == 0)
     {
         //     jsr render_new_page
         render_new_page();
@@ -1268,7 +1269,7 @@ c9783:
     //     dey
     (*y)--;
     //     sty l0084
-    l0084 = *y;
+    temp_save = *y;
     //     ldx #0xff
     uint8_t x_1 = 0xff;
 c9788:
@@ -1309,7 +1310,7 @@ c9788:
             if (a_3 >= 0x20)
                 continue;
             //     ldy l0084
-            *y = l0084;
+            *y = temp_save;
             //     lda l97b1,x
             a_3 = l97b0_data[x_1 + 1];
             if ((int8_t)a_3 >= 0)
@@ -1358,7 +1359,7 @@ static bool evaluate_expression_from_fmt_cmd(
     //     sta ((uint8_t*)&tmp89)[1]
     int tmp89 = 0;
     //     sta input_buffer_offset+1
-    l0080 = a;
+    scratch_offset = a;
     // c97c0:
     for (;;)
     {
@@ -1395,12 +1396,12 @@ static bool evaluate_expression_from_fmt_cmd(
             // c97dc:
         }
         //     ldx input_buffer_offset+1
-        uint8_t count = l0080;
+        uint8_t count = scratch_offset;
         if (!(count == 0))
         {
             //     lda #0
             //     sta input_buffer_offset+1
-            l0080 = 0;
+            scratch_offset = 0;
             //     dex
             count--;
             if (!(count == 0))
@@ -1436,7 +1437,7 @@ static bool evaluate_expression_from_fmt_cmd(
         }
         // c981c:
         //     stx input_buffer_offset+1
-        l0080 = count_1;
+        scratch_offset = count_1;
         //     iny
         (*y)++;
         //     bne c97c0
@@ -1513,7 +1514,7 @@ static void render_number_to_output_buffer(uint16_t value, uint8_t start_x)
     // ***************************************************************************************
     // render_number_to_output_buffer:
     //     stx l0082
-    l0082 = start_x;
+    screen_row = start_x;
     //     lda la69a
     //     ldy la69b
     //     jsr render_number_to_callback
@@ -1541,10 +1542,10 @@ static void emit_to_output_buffer_callback(uint8_t digit)
         // (the work uses a local x, so the caller's x register is
         //  preserved without an explicit save/restore)
         //     sta output_buffer,l0082
-        output_buffer[l0082] = digit;
+        output_buffer[screen_row] = digit;
         //     cpx #MAX_LINE_LENGTH-2
-        if (l0082 < MAX_LINE_LENGTH - 2)
-            l0082++;
+        if (screen_row < MAX_LINE_LENGTH - 2)
+            screen_row++;
         //     pla (restore a — dead here: render_number_to_callback keeps its
         //     own local a, so no caller reads the global a)
     }
@@ -1618,7 +1619,7 @@ static void process_page_footer(void)
     {
         //     ldx l0021 ; X=number of lines
         //     jsr print_vertical_space
-        print_vertical_space(l0021);
+        print_vertical_space(page_lines_remaining);
         //     ldx footer_margin ; X=number of lines
         //     jsr print_vertical_space
         print_vertical_space(footer_margin);
@@ -1647,7 +1648,7 @@ static void process_page_footer(void)
     //     lda #0
     //     sta register_value_l+1
     //     sta l0031
-    l0031 = 0;
+    page_break_pending_flag = 0;
     //     rts
     return;
 }
@@ -1659,7 +1660,7 @@ static void print_output_buffer(void)
     //     ldy #0
     uint8_t y = 0;
     //     ldx l0084
-    uint8_t x = l0084;
+    uint8_t x = temp_save;
     //     beq return_28
     if (x == 0)
         return;
@@ -1749,17 +1750,17 @@ static void microspace_word_processor(uint8_t* y)
     //     stx l0044 / stx l0046 / stx l0045
     uint32_t accum_1 = 0;
     //     stx l0047
-    uint8_t l0047_1 = 0;
+    uint8_t micro_word_start = 0;
     //     stx l0039
-    l0039 = 0;
+    column_position = 0;
     //     stx l0048
-    uint8_t l0048_1 = 0;
+    uint8_t micro_space_count = 0;
     //     stx l0042
-    uint8_t l0042_1 = 0;
+    uint8_t micro_overflow = 0;
     //     stx l0043
-    uint8_t l0043_1 = 0;
+    uint8_t micro_word_counter = 0;
     //     stx l0083
-    l0083 = 0;
+    screen_column = 0;
     bool is_tab = false;
 c9048:
     do
@@ -1788,24 +1789,24 @@ c9048:
         //     bit l0083
         //     bpl c9064
         // (bit test: N = l0083 & 0x80)
-        if (!(l0083 & 0x80))
+        if (!(screen_column & 0x80))
             break;
         //     lda l0048
-        uint8_t a_4 = l0048_1;
+        uint8_t a_4 = micro_space_count;
         //     beq c906b
         if (a_4 == 0)
             goto c906b;
         //     inc l0043
-        l0043_1++;
-    } while (l0043_1 != 0);
+        micro_word_counter++;
+    } while (micro_word_counter != 0);
     do
     {
         //     bne c9048
         // c9064:
         //     lda l0039
-        uint8_t a_5 = l0039;
+        uint8_t a_5 = column_position;
         //     sta l0047
-        l0047_1 = a_5;
+        micro_word_start = a_5;
         //     jmp c908c
         goto c908c;
         // c906b:
@@ -1813,7 +1814,7 @@ c9048:
         //     lda #0x20 ; ' '
         a_3 = 0x20;
         //     dec l0042
-        l0042_1--;
+        micro_overflow--;
         // c906f:
     c906f:
         //     cmp #0x20 ; ' '
@@ -1823,19 +1824,19 @@ c9048:
         //     bne c9090
         if (a_3 != 0x20)
             goto c9090;
-    } while (!(l0083 & 0x80));
+    } while (!(screen_column & 0x80));
     //     lda l0042
-    uint8_t a_6 = l0042_1;
+    uint8_t a_6 = micro_overflow;
     //     beq c908a
     if (a_6 == 0)
         goto c908a;
     if (!(a_6 & 0x80))
     {
         //     inc l0043
-        l0043_1++;
+        micro_word_counter++;
         //     lda #0
         //     sta l0042
-        l0042_1 = 0;
+        micro_overflow = 0;
         //     beq c9048 ; ALWAYS branch
         goto c9048;
     }
@@ -1849,7 +1850,7 @@ c9048:
     // c908a:
 c908a:
     //     inc l0048
-    l0048_1++;
+    micro_space_count++;
     // c908c:
 c908c:
     //     lda #0x20 ; ' '
@@ -1877,20 +1878,20 @@ c9092:
         {
             //     lda l0039
             // (Z from this lda is clobbered by the following lda #0)
-            uint8_t a_8 = l0039;
+            uint8_t a_8 = column_position;
             //     sta l0047
-            l0047_1 = a_8;
+            micro_word_start = a_8;
             //     lda #0
             //     sta l0083
-            l0083 = 0;
+            screen_column = 0;
             //     sta l0046 / sta l0044 / sta l0045
             accum_1 = 0;
             //     sta l0048
-            l0048_1 = 0;
+            micro_space_count = 0;
             //     sta l0042
-            l0042_1 = 0;
+            micro_overflow = 0;
             //     sta l0043
-            l0043_1 = 0;
+            micro_word_counter = 0;
             //     pla
             a_3 = a_3;
         }
@@ -1907,7 +1908,7 @@ c90b6:
         if (a_3 == 0x20)
             goto c9048;
         //     lda l0048
-        uint8_t a_9 = l0048_1;
+        uint8_t a_9 = micro_space_count;
         //     beq c9048
         if (a_9 == 0)
             goto c9048;
@@ -1922,16 +1923,16 @@ c90b6:
         //     sta l0045
         // (24-bit addition: acc is incremented by l0048 in its two low
         //  bytes and l0043 in its high byte)
-        accum_1 +=
-            ((uint32_t)l0043_1 << 16) | ((uint32_t)l0048_1 << 8) | l0048_1;
+        accum_1 += ((uint32_t)micro_word_counter << 16) |
+                   ((uint32_t)micro_space_count << 8) | micro_space_count;
         //     lda #0
         uint8_t a_10 = 0;
         //     sta l0048
-        l0048_1 = a_10;
+        micro_space_count = a_10;
         //     sta l0042
-        l0042_1 = a_10;
+        micro_overflow = a_10;
         //     sta l0043
-        l0043_1 = a_10;
+        micro_word_counter = a_10;
         //     jmp c9048
         goto c9048;
     }
@@ -1956,7 +1957,7 @@ c90b6:
         // (check whether the remaining width matches the microspacing
         //  accumulator; the 6502 does d = ruler_right_stop - l0047, then
         //  sbc l0045 / adc #0 to recover the borrow)
-        int d = ruler_right_stop - l0047_1;
+        int d = ruler_right_stop - micro_word_start;
         if (d < 0)
             goto c90f8;
         if ((uint8_t)(d - (accum_1 >> 16) + (d >= (int)(accum_1 >> 16))) ==
@@ -1969,7 +1970,7 @@ c90b6:
 c90f8:
     //     lda #0
     //     sta l0039
-    l0039 = 0;
+    column_position = 0;
     //     ldy input_buffer_offset+1
     //     jmp c8fe6
     goto c8fe6_inline;
@@ -1995,19 +1996,19 @@ c9101:
     uint16_t tmp89 = (uint16_t)print_running_total_accum * microspacing_flag;
     //     lda l0044
     //     sta l0046
-    l0046 = print_extra_space_accum;
+    justify_gap_count = print_extra_space_accum;
     //     jsr sub_cadf0
     //     sta l0045
     //     lda tmp8
     //     sta l0044
     // (16-bit division by 8-bit: l0044 = tmp89 / l0046,
     //  l0045 = tmp89 % l0046)
-    print_running_total_accum = tmp89 % l0046;
-    print_extra_space_accum = (uint8_t)(tmp89 / l0046);
+    print_running_total_accum = tmp89 % justify_gap_count;
+    print_extra_space_accum = (uint8_t)(tmp89 / justify_gap_count);
     //     ldy #0
     (*y) = 0;
     //     sty l0039
-    l0039 = (*y);
+    column_position = (*y);
     // c912b:
 c912b:
     //     lda output_buffer,y
@@ -2019,11 +2020,11 @@ c912b:
     //     pha
     {
         //     lda l0039
-        uint8_t a_16 = l0039;
-        if (!(a_16 == l0047_1))
+        uint8_t a_16 = column_position;
+        if (!(a_16 == micro_word_start))
         {
             //     bcs c9142
-            if (a_16 >= l0047_1)
+            if (a_16 >= micro_word_start)
                 goto c9142;
         }
         // c913b:
@@ -2099,15 +2100,15 @@ c8ffb_inline:
     //     bcs c9009_inline
     // (clc forces C=0, so the sbc subtracts line_spacing + 1; the borrow
     //  branch is taken when l0021 <= line_spacing)
-    uint8_t a_22 = l0021 - line_spacing - 1;
-    if (l0021 <= line_spacing)
+    uint8_t a_22 = page_lines_remaining - line_spacing - 1;
+    if (page_lines_remaining <= line_spacing)
     {
         a_22 = 0;
-        x_1 = l0021;
+        x_1 = page_lines_remaining;
         x_1--;
     }
     //     sta l0021
-    l0021 = a_22;
+    page_lines_remaining = a_22;
     //     jsr print_vertical_space
     print_vertical_space(x_1);
     //     rts
@@ -2244,7 +2245,7 @@ void print_document(struct scan_state* scan)
     //     lda #0
     uint8_t a = 0;
     //     sta l0031
-    l0031 = a;
+    page_break_pending_flag = a;
     //     sta print_xpos
     print_xpos = a;
     //     sta printing_from_file_flag
@@ -2278,7 +2279,7 @@ c8f0d:
         goto c8f0d;
     }
     //     lda l0031
-    if ((int8_t)l0031 >= 0)
+    if ((int8_t)page_break_pending_flag >= 0)
         return;
     //     bpl return_23
     //     jmp c9263
@@ -2309,11 +2310,11 @@ c8f30:
         uint8_t a_10;
         uint8_t a_1;
         //     lda l0031
-        uint8_t a = l0031;
+        uint8_t a = page_break_pending_flag;
         //     beq c8f3b
         if (a != 0)
         {
-            a = l0021;
+            a = page_lines_remaining;
             if (a == 0)
                 process_page_footer();
         }
@@ -2328,14 +2329,14 @@ c8f30:
         // (Z from ldy #0 is clobbered by the following jsr)
         uint8_t y = 0;
         //     sty input_buffer_ptr+1
-        l0080 = y;
+        scratch_offset = y;
         //     jsr deref_and_check_for_command_prefix
         command_prefix_t cp = deref_and_check_for_command_prefix(y, cursor);
         if (!(cp == NO_COMMAND_PREFIX))
         {
             //     ldy #3
             //     sty input_buffer_ptr+1
-            l0080 = 3;
+            scratch_offset = 3;
             //     jsr sub_cab6e
             //     bne c8f6e
             // (inlined: Z = (*tmp01 == RULER_BYTE))
@@ -2444,15 +2445,15 @@ c8f30:
         // c8fce:
     c8fce_l:
         //     lda l0031
-        if (l0031 == 0)
+        if (page_break_pending_flag == 0)
             render_new_page();
         //     jsr sub_c9407
         output_left_margin();
         //     lda #0
         //     sta l0039
-        l0039 = 0;
+        column_position = 0;
         //     ldy input_buffer_ptr+1
-        uint8_t y_4 = l0080;
+        uint8_t y_4 = scratch_offset;
         //     lda print_flags
         if (((int8_t)print_flags < 0))
         {
@@ -2481,15 +2482,15 @@ c8f30:
         //     bcs c9009
         // (clc forces C=0, so the sbc subtracts line_spacing + 1; the borrow
         //  branch is taken when l0021 <= line_spacing)
-        uint8_t a_11 = l0021 - line_spacing - 1;
-        if (l0021 <= line_spacing)
+        uint8_t a_11 = page_lines_remaining - line_spacing - 1;
+        if (page_lines_remaining <= line_spacing)
         {
             a_11 = 0;
-            x = l0021;
+            x = page_lines_remaining;
             x--;
         }
         //     sta l0021
-        l0021 = a_11;
+        page_lines_remaining = a_11;
         //     jsr print_vertical_space
         print_vertical_space(x);
         // c900e:
@@ -2531,9 +2532,9 @@ read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit)
     //     lda #0
     uint8_t a = 0;
     //     sta l0083
-    l0083 = a;
+    screen_column = a;
     //     sta l0084
-    l0084 = a;
+    temp_save = a;
 c8c95:
     do
     {
@@ -2550,7 +2551,7 @@ c8c95:
         //     cmp #0x7f
         if (a_1 < 0x7f)
             goto c8caf;
-    } while (l0084 != 0);
+    } while (temp_save != 0);
     //     jsr check_for_command_prefix
     command_prefix_t cp = check_for_command_prefix(a_1);
     //     bne c8c95
@@ -2558,7 +2559,7 @@ c8c95:
         goto c8c95;
     //     ldx #0xfd
     //     stx l0083
-    l0083 = 0xfd;
+    screen_column = 0xfd;
 // c8caf:
 //     cmp #0x20 ; ' '
 c8caf:
@@ -2586,7 +2587,7 @@ c8cc8:
         x_2--;
         //     ldy l0083
         //     cpy #0x84
-        if (l0083 == MAX_LINE_LENGTH)
+        if (screen_column == MAX_LINE_LENGTH)
         {
             {
                 write_cr_to_memory(&tmp01);
@@ -2597,7 +2598,7 @@ c8cc8:
     }
     // c8cdb:
     //     inc l0083
-    l0083++;
+    screen_column++;
     //     jsr write_byte_to_memory
     write_byte_to_memory(cursor, a_1);
     //     txa
@@ -2618,12 +2619,12 @@ c8cf2:
     // c8cf2:
     //     lda l0084
     //     beq c8cfa
-    if (l0084 != 0)
+    if (temp_save != 0)
         write_cr_to_memory(cursor);
     // c8cfa:
     //     lda l0082
     // (return: EMPTY if l0082 == 0, else eof selects DONE vs block-full MORE)
-    if (l0082 == 0)
+    if (screen_row == 0)
         return READ_BLOCK_EMPTY;
     if (eof_1)
         return READ_BLOCK_DONE;
@@ -2654,7 +2655,7 @@ static void render_header_or_footer(uint8_t* text)
     //     lda #0
     uint8_t a_1 = 0;
     //     sta l0039
-    l0039 = a_1;
+    column_position = a_1;
     //     jsr sub_c9393
     uint8_t* section_start = compute_header_left_section(text);
     //     jsr sub_c93fd
@@ -2680,7 +2681,7 @@ static void render_header_or_footer(uint8_t* text)
         // (flags not used: get_right_margin sets them fresh; plain shift)
         a_3 >>= 1;
         //     sta l0081
-        l0081 = a_3;
+        scratch_index = a_3;
         //     jsr sub_c93be
         uint8_t a_4 = get_right_margin();
         //     beq c9355
@@ -2697,9 +2698,9 @@ static void render_header_or_footer(uint8_t* text)
         // (the two sbc subtractions are equivalent to a C comparison:
         //  reach add_justification_spaces iff a >= l0081 + l0039, with
         //  the count a - l0081 - l0039)
-        if (a_4 >= l0081 + l0039)
+        if (a_4 >= scratch_index + column_position)
         {
-            uint8_t x_1 = a_4 - l0081 - l0039;
+            uint8_t x_1 = a_4 - scratch_index - column_position;
             add_justification_spaces(x_1);
         }
     }
@@ -2733,7 +2734,7 @@ c9355:
     if (a_6 != 0)
     {
         //     stx l0081
-        l0081 = x_2;
+        scratch_index = x_2;
         //     sec
         //     sbc l0081
         //     bcc c937b
@@ -2745,9 +2746,9 @@ c9355:
         // (the two sbc subtractions are equivalent to a C comparison:
         //  reach add_justification_spaces iff a >= l0081 + l0039, with
         //  the count a - l0081 - l0039)
-        if (a_6 >= l0081 + l0039)
+        if (a_6 >= scratch_index + column_position)
         {
-            uint8_t x_3 = a_6 - l0081 - l0039;
+            uint8_t x_3 = a_6 - scratch_index - column_position;
             x_3++;
             add_justification_spaces(x_3);
         }
@@ -2769,7 +2770,7 @@ static void render_new_page(void)
     //     lda #0x81
     uint8_t a = 0x81;
     //     sta l0031
-    l0031 = a;
+    page_break_pending_flag = a;
     if (print_flags & 0x40)
     {
         //     jsr stop_printing
@@ -3091,20 +3092,20 @@ c91da:
         //     iny
         y++;
         //     sty l0084
-        l0084 = y;
+        temp_save = y;
         //     sta l0083
-        l0083 = a_3;
+        screen_column = a_3;
         //     lda #0
         //     sta l0082
-        l0082 = 0;
+        screen_row = 0;
         //     ldy #2
         uint8_t y_1 = 2;
         do
         {
             // loop_c91f1:
             //     dec l0083
-            l0083--;
-            if ((int8_t)l0083 < 0)
+            screen_column--;
+            if ((int8_t)screen_column < 0)
                 goto c9209;
             // c91f5:
         c91f5:
@@ -3164,7 +3165,7 @@ c91da:
         // c9223:
     c9223:
         //     ldy l0084
-        y = l0084;
+        y = temp_save;
     }
     // c9225:
 c9225:
@@ -3182,7 +3183,7 @@ static enum parse_register_result_t parse_register_reference(uint8_t a)
     if (a == 0x3e)
     {
         a = 0;
-        l0082 = a;
+        screen_row = a;
         return PARSE_REGISTER_MARKER;
         // Z live
     }
@@ -3191,14 +3192,14 @@ static enum parse_register_result_t parse_register_reference(uint8_t a)
     if (a == 0x3c)
     {
         a = 0x40;
-        l0082 = a;
+        screen_row = a;
         return PARSE_REGISTER_MARKER;
         // Z live
     }
     //     bit l0082
     // (bit sets Z and V; Z is killed by the following set_flags, so V
     //  is the only surviving flag on this path)
-    if (a & l0082)
+    if (a & screen_row)
         return PARSE_REGISTER_VALUE;
     // V live
     //     ora #0
@@ -3279,7 +3280,7 @@ static void compute_lines_remaining_on_page(void)
     }
 c930d:
     //     stx l0021
-    l0021 = x;
+    page_lines_remaining = x;
     //     rts
     return;
 }
@@ -3370,7 +3371,7 @@ static uint8_t get_right_margin(void)
     //     sec
     //     sbc #1
     // return_29:
-    return l003a - 1;
+    return ruler_buffer_len - 1;
 }
 
 static uint8_t copy_header_footer_text(uint8_t* text)
@@ -3386,7 +3387,7 @@ static uint8_t copy_header_footer_text(uint8_t* text)
     // (Z from ldy #0 is clobbered by the following lda (text),y)
     uint8_t y_1 = 0;
     //     sty l0081
-    int l0081 = y_1;
+    int section_len = y_1;
     // c93ce:
     for (;;)
     {
@@ -3398,7 +3399,7 @@ static uint8_t copy_header_footer_text(uint8_t* text)
         control_code_t cc = check_for_control_code(a);
         //     bne c93d9
         if (cc != NO_CONTROL_CODE)
-            l0081++;
+            section_len++;
         //     iny
         y_1++;
         //     cmp #0x7c ; '|'
@@ -3416,12 +3417,12 @@ static uint8_t copy_header_footer_text(uint8_t* text)
         {
             // c93e6:
             //     stx l0084
-            l0084 = x;
+            temp_save = x;
             //     lda print_flags
             if (((int8_t)print_flags < 0))
             {
                 uint8_t a_2 = x;
-                a_2 -= l0081;
+                a_2 -= section_len;
                 x = a_2;
             }
             //     rts
@@ -3487,9 +3488,9 @@ static uint8_t add_justification_spaces(uint8_t x)
     uint8_t a = x;
     //     clc
     //     adc l0039
-    a += l0039;
+    a += column_position;
     //     sta l0039
-    l0039 = a;
+    column_position = a;
     //     lda #0x20 ; ' '
     uint8_t a_1 = 0x20;
     //     bne c9426                                                         ;
@@ -3528,9 +3529,9 @@ static uint8_t convert_char_for_printing(uint8_t a, uint8_t* x, bool* is_tab)
         a = *x;
         //     clc
         //     adc l0039
-        a += l0039;
+        a += column_position;
         //     sta l0039
-        l0039 = a;
+        column_position = a;
         //     pla
         a = saved_a;
     }
@@ -3618,15 +3619,15 @@ static void write_byte_to_memory(uint8_t** cursor, uint8_t a)
     //     inc ((uint8_t*)&tmp01)[1]
     // c8d0a:
     //     sta l0084
-    l0084 = a;
+    temp_save = a;
     //     cmp #0x0d
     //     bne return_16
     if (a != 0x0d)
         return;
     //     sty l0084
-    l0084 = 0;
+    temp_save = 0;
     //     sty l0083
-    l0083 = 0;
+    screen_column = 0;
     // return_16:
     //     rts
 }

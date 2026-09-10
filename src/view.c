@@ -23,8 +23,6 @@
 // #include "driver.inc"
 // #include "zif.inc"
 
-typedef uint16_t addr_t;
-
 // ; Longjmp buffer for stack unwinding (txs equivalent)
 jmp_buf env;
 #define JMP_CLI 1
@@ -75,105 +73,76 @@ static uint8_t* compute_required_space_for_insertion(uint8_t* ptr);
 #include "editor.h"
 
 // X ram:                              .fill 65536
-uint8_t ram[65536];
+uint8_t ram[655360];
 
 // ; Memory locations
 
 // X .section .zp, "zax", @nobits
 
 // X ptr1: .fill 2
-uint8_t* ptr1; // PROVISIONAL: working copy of current_format_line_ptr, used for
-               // editing/unpacking lines
+uint8_t* ptr1;
 // X current_edit_line_ptr: .fill 2
 // X current_format_line_ptr: .fill 2
-uint8_t* current_format_line_ptr; // PROVISIONAL: points to line being
-                                  // formatted/printed; aliased to
-                                  // current_edit_line_ptr during editing
+uint8_t* current_format_line_ptr;
 // X current_ruler_ptr: .fill 2
-uint8_t* current_ruler_ptr; // PROVISIONAL: points to current ruler definition
-                            // (tab stops, margins) in ruler buffer
+uint8_t* current_ruler_ptr;
 // X current_line_ptr: .fill 2
-uint8_t* current_line_ptr; // PROVISIONAL: cursor/position pointer that walks
-                           // through document memory
+uint8_t* current_line_ptr;
 // X page: .fill 2
-uint8_t*
-    page; // PROVISIONAL: start (lowest address) of document text area in memory
+uint8_t* page;
 // X top: .fill 2
-uint8_t*
-    top; // PROVISIONAL: dynamic end-of-document pointer (top of free memory)
+uint8_t* top;
 // X himem: .fill 2
-uint8_t* himem; // PROVISIONAL: absolute upper bound of available RAM
+uint8_t* himem;
 // X l0011: .fill 1
 // X l0012: .fill 1
-uint8_t* top_of_screen_line_ptr; // PROVISIONAL: document address of the first
-                                 // visible line on screen
+uint8_t* top_of_screen_line_ptr;
 // X ptr6: .fill 2
-uint8_t* editor_ptr6;  // PROVISIONAL: editor redraw pointer — the document line
-                       // to position the cursor on during redraw_editor (split
-                       // from the 6502's single ptr6)
-uint8_t* printer_ptr6; // PROVISIONAL: file/print read pointer — points to next
-                       // byte to read during printing/formatting (split from
-                       // the 6502's single ptr6)
+uint8_t* editor_ptr6;
+uint8_t* printer_ptr6;
 // X ptr5: .fill 2
-uint8_t* ptr5; // PROVISIONAL: print-engine source pointer — next line/file-byte
-               // to print
+uint8_t* ptr5;
 // X printer_driver_ptr: .fill 2 (replaced by struct pointer)
-const struct printer_driver*
-    printer_driver_ptr; // PROVISIONAL: function-pointer struct for printer
-                        // backend dispatch
+const struct printer_driver* printer_driver_ptr;
 // X first_macro_ptr: .fill 2
-struct macro* first_macro_ptr; // PROVISIONAL: start of macro-definition linked
-                               // list in document memory
+struct macro* first_macro_ptr;
 // X last_macro_ptr: .fill 2
-struct macro* last_macro_ptr; // PROVISIONAL: end of macro-definition area where
-                              // new macros are appended
+struct macro* last_macro_ptr;
 // X ptr3: .fill 2
-uint8_t* ptr3; // PROVISIONAL: macro text pointer — walks through
-               // currently-executing macro body
+uint8_t* ptr3;
 // X oshwm: .fill 2
-uint8_t* oshwm; // PROVISIONAL: OS high-water mark, base address for ruler stack
-                // and document area
+uint8_t* oshwm;
 uint8_t* ruler_index[128]; // ruler stack (was oshwm[] trick, now separate)
 // X l0021: .fill 1
-uint8_t l0021; // PROVISIONAL: remaining-lines counter on current page during
-               // printing
+uint8_t page_lines_remaining;
 // X l0030: .fill 1
-uint8_t
-    formatted_line_written_flag; // PROVISIONAL: set by a format command that
-                                 // writes a formatted line (the 6502's l0030)
+uint8_t formatted_line_written_flag;
 // X l0031: .fill 1
-uint8_t l0031; // PROVISIONAL: page-break-requested flag for the print engine
+uint8_t page_break_pending_flag;
 // X printing_from_file_flag: .fill 1
-uint8_t printing_from_file_flag; // PROVISIONAL: selects between file-buffer and
-                                 // in-memory reading during printing
+uint8_t printing_from_file_flag;
 // X l0033: .fill 1
-uint8_t l0033; // PROVISIONAL: saved ruler_index_ptr during editor scroll-up
-               // operations
+uint8_t saved_ruler_index_scroll;
 // X l0034: .fill 1
-uint8_t l0034; // PROVISIONAL: saved ruler_index_ptr during editor redraw
+uint8_t saved_ruler_index_redraw;
 // X l0038: .fill 1  (6502 zero-page byte; split into two C variables by role)
 uint8_t editor_current_key; // current key code in editor input loop (part of
                             // 6502 l0038)
 uint8_t page_break_flag; // page-break flag in print path (part of 6502 l0038)
 // X l0039: .fill 1
-uint8_t l0039; // PROVISIONAL: column-position counter used in formatting,
-               // tab-handling, and cursor recalculation
+uint8_t column_position;
 // X l003a: .fill 1
-uint8_t l003a; // PROVISIONAL: ruler-buffer width / ruler byte count
+uint8_t ruler_buffer_len;
 // X l003b: .fill 1
-uint8_t l003b; // PROVISIONAL: byte count (length) of the current document line
+uint8_t edit_line_len;
 // X file_edit_flags: .fill 1
-uint8_t file_edit_flags; // PROVISIONAL: bitfield tracking file-editing state
-                         // (bit0=input open, bit6=continuous, bit7=output open)
+uint8_t file_edit_flags;
 // X l003d: .fill 1
-uint8_t l003d; // PROVISIONAL: screen-row counter for partial redraw; 0xff means
-               // redraw all rows
+uint8_t ptr6_screen_row;
 // X xpos: .fill 1
-uint8_t xpos; // PROVISIONAL: cursor horizontal column position (0-based) on the
-              // current edit line
+uint8_t xpos;
 // X input_file_empty_flag: .fill 1
-uint8_t input_file_empty_flag; // PROVISIONAL: flag indicating whether the input
-                               // file was found to be empty
+uint8_t input_file_empty_flag;
 // X l0042: .fill 1
 uint8_t justify_overflow_counter; // word-break overflow counter in editor
                                   // justification (part of 6502 l0042, printing
@@ -197,186 +166,139 @@ uint8_t print_running_total_accum; // running-total accumulator for distributing
 uint8_t justify_running_total_accum; // running-total accumulator in editor
                                      // justification (part of 6502 l0045)
 // X l0046: .fill 1
-uint8_t l0046; // PROVISIONAL: non-space character counter on current line
-               // during microspaced word processing
+uint8_t justify_gap_count;
 // X l0047: .fill 1
-uint8_t l0047; // PROVISIONAL: saved word-break position (column) for
-               // line-breaking in justification
+uint8_t format_src_index;
 // X l0048: .fill 1  (6502 zero-page byte; split into two C variables by role)
-uint8_t cli_l0048; // output-buffer write index for CLI check_area (part of 6502
-                   // l0048)
-uint8_t editor_l0048; // output-buffer write index / block-advance flag for
-                      // editor justification (part of 6502 l0048)
+uint8_t cli_output_pos; // output-buffer write index for CLI check_area (part of
+                        // 6502 l0048)
+uint8_t editor_output_pos; // output-buffer write index / block-advance flag for
+                           // editor justification (part of 6502 l0048)
 // X l0049: .fill 1  (6502 zero-page byte; split into two C variables by role)
-uint8_t cli_l0049; // header/footer cell/field position for CLI check_area (part
-                   // of 6502 l0049)
-uint8_t editor_l0049; // header/footer cell/field position for editor (part of
-                      // 6502 l0049)
+uint8_t cli_header_pos; // header/footer cell/field position for CLI check_area
+                        // (part of 6502 l0049)
+uint8_t editor_header_pos; // header/footer cell/field position for editor (part
+                           // of 6502 l0049)
 // X l004a: .fill 1  (6502 zero-page byte; split into two C variables by role)
-uint8_t cli_l004a; // upper-bound loop limit for CLI header/footer (part of 6502
-                   // l004a)
-uint8_t editor_l004a; // upper-bound loop limit for editor (part of 6502 l004a)
+uint8_t cli_header_limit; // upper-bound loop limit for CLI header/footer (part
+                          // of 6502 l004a)
+uint8_t editor_header_limit; // upper-bound loop limit for editor (part of 6502
+                             // l004a)
 // X ptr2: .fill 2
-uint8_t* ptr2; // PROVISIONAL: working pointer into document body — used as
-               // source/dest in search/replace/convert
+uint8_t* ptr2;
 // X rw_file_handle: .fill 1
-uint8_t rw_file_handle; // PROVISIONAL: raw OS file handle returned by
-                        // open_file() to editor on error
+uint8_t rw_file_handle;
 // X print_flags: .fill 1
-uint8_t print_flags; // PROVISIONAL: controls printer output routing and state
-                     // (bit7 selects printer-driver vs screen output)
+uint8_t print_flags;
 // X l006d: .fill 1
-uint8_t
-    edit_buffer_dirty_flag; // PROVISIONAL: non-zero when edit buffer differs
-                            // from packed document and must be written back
+uint8_t edit_buffer_dirty_flag;
 // X l006e: .fill 1
-uint8_t
-    edit_buffer_unpacked_flag; // PROVISIONAL: tracks whether edit line has been
-                               // unpacked; bit7 set when needs repacking
+uint8_t edit_buffer_unpacked_flag;
 // X l006f: .fill 1
-uint8_t l006f; // PROVISIONAL: line-counter/index used in document body scanning
-               // and vertical-scroll calculations
+uint8_t scroll_repeat_count;
 // X ruler_stack_ptr: .fill 1
-uint8_t ruler_index_ptr; // PROVISIONAL: index pointer into ruler-index stored
-                         // in high RAM at oshwm
+uint8_t ruler_index_ptr;
 // X hscroll_pos: .fill 1
-uint8_t
-    hscroll_pos; // PROVISIONAL: horizontal scroll offset of the editor viewport
+uint8_t hscroll_pos;
 // X l0072: .fill 1
-uint8_t l0072; // PROVISIONAL: right margin (right stop) of the current ruler,
-               // used as wrap column limit
+uint8_t visual_column;
 // X l0073: .fill 1
-uint8_t l0073; // PROVISIONAL: multi-purpose flag/counter tracking rendered
-               // display lines or redraw phase
+uint8_t display_start_row;
 // X l0074: .fill 1
-uint8_t l0074; // PROVISIONAL: character/line counter incremented for each
-               // CR-terminated line during document scanning
+uint8_t line_counter;
 // X flags_need_redrawing_flag: .fill 1
-uint8_t flags_need_redrawing_flag; // PROVISIONAL: non-zero triggers redrawing
-                                   // of status-area flags/indicators
+uint8_t flags_need_redrawing_flag;
 // X status_line_needs_redrawing_flag: .fill 1
-uint8_t status_line_needs_redrawing_flag; // PROVISIONAL: non-zero triggers
-                                          // redrawing of ruler status line
+uint8_t status_line_needs_redrawing_flag;
 // X l0076: .fill 1
 // (removed: unused/reserved byte, previously l0076 - zeroed in init, never
 // read) X ypos: .fill 1
-uint8_t ypos; // PROVISIONAL: current Y (row) position on screen for cursor
-              // addressing
+uint8_t ypos;
 // X print_xpos: .fill 1
-uint8_t print_xpos; // PROVISIONAL: printer's current horizontal column position
+uint8_t print_xpos;
 // X l0079: .fill 1
-uint8_t l0079; // PROVISIONAL: flag controlling early-exit in
-               // character-rendering loop (non-zero skips first draw)
+uint8_t line_change_pending_flag;
 // X l007a: .fill 1
-uint8_t l007a; // PROVISIONAL: character-count limit used as loop bound in
-               // print-formatter output buffer processing
+uint8_t search_target_len;
 // X cursor_moved_flag: .fill 1
-uint8_t cursor_moved_flag; // PROVISIONAL: incremented when cursor position
-                           // changes; triggers row recalculation in display
+uint8_t cursor_moved_flag;
 // X l007e: .fill 1  (6502 zero-page byte; split into two C variables by role)
 uint8_t delimiter_char; // delimiter/separator character used during CLI command
                         // parsing and printing scans (part of 6502 l007e)
 uint8_t line_format_status; // format status byte (part of 6502 l007e): counts
                             // marker bytes and is tagged when a line is flushed
 // X input_buffer_offset: .fill 2
-uint8_t input_buffer_offset; // PROVISIONAL: current read index into
-                             // input_buffer during command/filename parsing
+uint8_t input_buffer_offset;
 // X l0080: .fill 1
-uint8_t l0080; // PROVISIONAL: low byte paired with input_buffer_offset for
-               // 16-bit pointer arithmetic
+uint8_t
+    scratch_offset; // view.py: l0080 (generic multipurpose) - C: scratch_offset
 // X l0081: .fill 1
-uint8_t l0081; // PROVISIONAL: general-purpose counter (output-buffer position
-               // index in print formatter)
+uint8_t
+    scratch_index; // view.py: l0081 (generic multipurpose) - C: scratch_index
 // X l0082: .fill 1
-uint8_t l0082; // PROVISIONAL: current screen line (row) number during document
-               // rendering
+uint8_t screen_row; // view.py: l0082 (generic multipurpose) - C: screen_row
 // X l0083: .fill 1
-uint8_t l0083; // PROVISIONAL: document line length from get_line_length; also
-               // screen column during character rendering
+uint8_t
+    screen_column; // view.py: l0083 (generic multipurpose) - C: screen_column
 // X l0084: .fill 1
-uint8_t l0084;  // PROVISIONAL: temporary column-position save/restore slot used
-                // during character rendering
-uint8_t* tmp01; // PROVISIONAL: combined 16-bit temporary (was tmp0:tmp1)
-uint8_t* tmp23; // PROVISIONAL: combined 16-bit temporary (was tmp2:tmp3)
+uint8_t temp_save; // view.py: l0084 (generic multipurpose) - C: temp_save
+uint8_t* tmp01;
+uint8_t* tmp23;
 ptrdiff_t area_size;
-uint8_t* tmp89; // PROVISIONAL: combined 16-bit temporary (was tmp8:tmp9)
+uint8_t* tmp89;
 // X file_ptr: .fill 2
-FILE* file_ptr; // PROVISIONAL: currently selected FILE* for file I/O (set to
-                // input_fp or output_fp)
+FILE* file_ptr;
 
 // X .bss
 
 // X top_margin: .fill 1
-uint8_t top_margin; // PROVISIONAL: blank lines at page top before header (TM
-                    // format command)
+uint8_t top_margin;
 // X bottom_margin: .fill 1
-uint8_t bottom_margin; // PROVISIONAL: blank lines at page bottom after footer
-                       // (BM format command)
+uint8_t bottom_margin;
 // X header_margin: .fill 1
-uint8_t header_margin; // PROVISIONAL: blank lines between header text and body
-                       // (HM format command)
+uint8_t header_margin;
 // X footer_margin: .fill 1
-uint8_t footer_margin; // PROVISIONAL: blank lines between body text and footer
-                       // (FM format command)
+uint8_t footer_margin;
 // X page_length: .fill 1
-uint8_t page_length; // PROVISIONAL: total lines per page (PL format command,
-                     // default 66)
+uint8_t page_length;
 // X line_spacing: .fill 1
-uint8_t
-    line_spacing; // PROVISIONAL: line spacing (1 or 2) set by LS format command
+uint8_t line_spacing;
 // X footers_enabled_flag: .fill 1
-uint8_t footers_enabled_flag; // PROVISIONAL: boolean flag controlling footer
-                              // printing (FO format command)
+uint8_t footers_enabled_flag;
 // X headers_enabled_flag: .fill 1
-uint8_t headers_enabled_flag; // PROVISIONAL: boolean flag controlling header
-                              // printing (HE format command)
+uint8_t headers_enabled_flag;
 // X rhs_extra_margin: .fill 1
-uint8_t rhs_extra_margin; // PROVISIONAL: extra right-hand margin for even pages
-                          // in two-sided printing (TS)
+uint8_t rhs_extra_margin;
 // X macro_executing_flag: .fill 1
-uint8_t macro_executing_flag; // PROVISIONAL: non-zero when a macro is currently
-                              // executing
+uint8_t macro_executing_flag;
 // X two_sided_flag: .fill 1
-uint8_t two_sided_flag; // PROVISIONAL: enables two-sided printing (TS format
-                        // command)
+uint8_t two_sided_flag;
 // X left_margin: .fill 1
-uint8_t left_margin; // PROVISIONAL: left margin width in columns (LM format
-                     // command)
+uint8_t left_margin;
 // X highlight1_code: .fill 2
-uint8_t highlight_code[2]; // PROVISIONAL: highlight control codes for text
-                           // attributes (HT format command)
+uint8_t highlight_code[2];
 #define highlight1_code highlight_code[0]
 #define highlight2_code highlight_code[1]
 // X format_mode_flag: .fill 1
-uint8_t format_mode_flag; // PROVISIONAL: bitfield controlling format mode
-                          // (bit0=on, bit6=margin-release, bit7=command-line)
+uint8_t format_mode_flag;
 // X justifying_flag: .fill 1
-uint8_t justifying_flag; // PROVISIONAL: enables/disables word-spacing
-                         // justification during printing
+uint8_t justifying_flag;
 // X insert_mode_flag: .fill 1
-uint8_t insert_mode_flag; // PROVISIONAL: toggle insert vs overwrite mode for
-                          // typed characters
+uint8_t insert_mode_flag;
 // X screen_height: .fill 1
-uint8_t screen_maxrow; // PROVISIONAL: maximum row index (height-1) of
-                       // terminal/screen
+uint8_t screen_maxrow;
 // X screen_width: .fill 1
-uint8_t screen_maxcolumn; // PROVISIONAL: maximum column index (width-1) of
-                          // terminal/screen
+uint8_t screen_maxcolumn;
 // X microspacing_flag: .fill 1
-uint8_t microspacing_flag; // PROVISIONAL: non-zero if printer driver supports
-                           // microspacing
+uint8_t microspacing_flag;
 // X current_tab_key: .fill 1
-uint8_t current_tab_key; // PROVISIONAL: user-configured tab key code (remapped
-                         // to ASCII 9)
+uint8_t current_tab_key;
 // X folding_flag: .fill 1
-uint8_t folding_flag; // PROVISIONAL: when set uppercase folded to lowercase
-                      // during printing
+uint8_t folding_flag;
 // X ruler_right_stop: .fill 1
-uint8_t ruler_right_stop; // PROVISIONAL: right margin column from current ruler
-                          // (< character)
+uint8_t ruler_right_stop;
 // X ruler_left_stop: .fill 1
-uint8_t ruler_left_stop; // PROVISIONAL: left margin column from current ruler
-                         // (> character)
+uint8_t ruler_left_stop;
 
 // X __begin_pointer_array:
 // X markers_array: .fill 12
@@ -395,11 +317,9 @@ struct pointer_array_t pointer_array;
 #define doc_ptr3 pointer_array.doc_ptr3
 
 // X printer_driver_block:           .fill 0x100
-uint8_t printer_driver_block[0x100]; // PROVISIONAL: 256-byte workspace holding
-                                     // loaded printer driver binary
+uint8_t printer_driver_block[0x100];
 // X input_buffer:                   .fill 0x45
-uint8_t input_buffer[MAX_COMMAND_LENGTH]; // PROVISIONAL: CLI command-line input
-                                          // buffer (69 bytes)
+uint8_t input_buffer[MAX_COMMAND_LENGTH];
 
 // X current_line_buffer:            .fill 135
 #define RAM_CURRENT_LINE_BUF 0x0545
@@ -410,26 +330,19 @@ uint8_t input_buffer[MAX_COMMAND_LENGTH]; // PROVISIONAL: CLI command-line input
 // X current_ruler_buffer:           .fill 133
 //  RAM_CURRENT_RULER_BUF and current_ruler_buffer defined in globals.h
 // X output_buffer:                  .fill 132
-uint8_t
-    output_buffer[MAX_LINE_LENGTH]; // PROVISIONAL: general-purpose output
-                                    // buffer for formatted line construction
+uint8_t output_buffer[MAX_LINE_LENGTH];
 
 // X header_text_maybe:              .fill 0x42
-uint8_t header_text_maybe[0x42]; // PROVISIONAL: stores user-defined page header
-                                 // text string
+uint8_t header_text_maybe[0x42];
 // X footer_text_maybe:              .fill 0x42
-uint8_t footer_text_maybe[0x42]; // PROVISIONAL: stores user-defined page footer
-                                 // text string
+uint8_t footer_text_maybe[0x42];
 
 // X filename_buffer:                .fill 0x14
-uint8_t filename_buffer[MAX_COMMAND_LENGTH]; // PROVISIONAL: primary filename
-                                             // buffer for current file
+uint8_t filename_buffer[MAX_COMMAND_LENGTH];
 // X output_filename:                .fill 0x14
-uint8_t output_filename[MAX_COMMAND_LENGTH]; // PROVISIONAL: target filename for
-                                             // save/print operations
+uint8_t output_filename[MAX_COMMAND_LENGTH];
 // X printer_driver_name:            .fill 0x14
-uint8_t printer_driver_name[0x14]; // PROVISIONAL: filename of loaded printer
-                                   // driver (e.g. "P.DOTMATRIX")
+uint8_t printer_driver_name[0x14];
 
 // X register_value_array:           .fill 26*2
 // (originally stored in emulated 6502 RAM at 0x0798; now a real C array of
@@ -439,17 +352,14 @@ unsigned int register_value_array[26];
 #define MAX_LINES 100
 #define MAX_COLUMNS 132
 // X line_lengths:                   .fill 32
-uint8_t line_lengths[MAX_LINES]; // PROVISIONAL: table of displayed line widths
-                                 // indexed by screen row
+uint8_t line_lengths[MAX_LINES];
 // X input_filename:                 .fill 20
-uint8_t input_filename[MAX_COMMAND_LENGTH]; // PROVISIONAL: source filename of
-                                            // currently loaded document
+uint8_t input_filename[MAX_COMMAND_LENGTH];
 
 // X input_file:                     .fill FS__SIZE
-FILE* input_fp; // PROVISIONAL: FILE* handle for currently open input/read file
+FILE* input_fp;
 // X output_file:                    .fill FS__SIZE
-FILE*
-    output_fp; // PROVISIONAL: FILE* handle for currently open output/write file
+FILE* output_fp;
 
 int main(int argc, char* argv[])
 {
@@ -552,7 +462,7 @@ void setup_area_pointers(uint8_t* ptr2)
     //     bne c837d
     // c8398:
     //     inc l0074
-    l0074++;
+    line_counter++;
     //     txa
     //     beq return_3
     if (x == 0)
@@ -572,7 +482,7 @@ static uint8_t expand_escaped_string(uint8_t x, uint8_t y)
     // expand_escaped_string
     // expand_escaped_string:
     //     stx l0083
-    l0083 = x;
+    screen_column = x;
     //     dey
     y--;
     do
@@ -595,7 +505,7 @@ static uint8_t expand_escaped_string(uint8_t x, uint8_t y)
                 break;
             //     jsr to_uppercase
             //     sta l0082
-            l0082 = toupper(a_1);
+            screen_row = toupper(a_1);
             //     ldx #0xfe
             x = 0xfe;
             // loop_c83b8:
@@ -611,7 +521,7 @@ static uint8_t expand_escaped_string(uint8_t x, uint8_t y)
                 if (a_3 & 0x80)
                     break;
                 //     cmp l0082
-                if (a_3 == l0082)
+                if (a_3 == screen_row)
                 {
                     //     lda l83e0,x
                     a = l83e0_table[idx];
@@ -623,27 +533,27 @@ static uint8_t expand_escaped_string(uint8_t x, uint8_t y)
             }
             // c83c8:
             //     lda l0084
-            a = l0084;
+            a = temp_save;
         }
     c83ca:
         // c83ca:
         //     ldx l007a
-        x = l007a;
+        x = search_target_len;
         //     bne c83d1
         if (x == 0)
             a = upper_case_unless_folding(a);
         // c83d1:
         //     ldx l0083
-        x = l0083;
+        x = screen_column;
         //     sta header_text_maybe,x
         header_text_maybe[x] = a;
         //     inc l0083
-        l0083++;
-    } while (l0083 != 0);
+        screen_column++;
+    } while (screen_column != 0);
     //     bne c83a3
     // c83da:
     //     ldx l0083
-    x = l0083;
+    x = screen_column;
     //     sty input_buffer_offset
     input_buffer_offset = y;
     return x;
@@ -665,8 +575,9 @@ cli_cmd_status_t process_cli_command(struct scan_state* scan)
     if (!scan_input_buffer(input_buffer, scan))
     {
         // (base index comes from l007a, set by reset_command_parse_state)
-        uint8_t x = expand_escaped_string(l007a, input_buffer_offset + 1);
-        cli_l004a = x;
+        uint8_t x =
+            expand_escaped_string(search_target_len, input_buffer_offset + 1);
+        cli_header_limit = x;
     }
     // c8402:
     //     jsr parse_marks_from_command
@@ -697,9 +608,9 @@ bool reset_command_parse_state(struct scan_state* scan)
     //     ldx #0
     uint8_t x = 0;
     //     stx l007a
-    l007a = x;
+    search_target_len = x;
     //     stx l004a
-    cli_l004a = x;
+    cli_header_limit = x;
     //     jsr sub_c8e33
     //     beq return_5
     if (scan_input_buffer(input_buffer, scan))
@@ -709,7 +620,7 @@ bool reset_command_parse_state(struct scan_state* scan)
     //     jsr expand_escaped_string
     uint8_t x_1 = expand_escaped_string(0, scan->pos);
     //     stx l007a
-    l007a = x_1;
+    search_target_len = x_1;
     //     cpx #0
     return x_1 == 0;
     // Z = (x == 0)
@@ -794,13 +705,13 @@ bool check_area_memory(uint8_t* ptr2)
     //     lda #0
     uint8_t a = 0;
     //     sta l0082
-    uint8_t l0082 = a;
+    uint8_t block_expansion_len = a;
     //     sta l0081
-    l0081 = a;
+    scratch_index = a;
     //     ldy #0x14
     uint8_t y = 0x14;
     //     ldx l007a
-    uint8_t x = l007a;
+    uint8_t x = search_target_len;
     if (!(x != 0))
     {
     c8a5b:
@@ -811,14 +722,14 @@ bool check_area_memory(uint8_t* ptr2)
         {
             //     bne c8a6c
             //     lda l0081
-            a_1 = l0081;
+            a_1 = scratch_index;
             //     cmp l0049
-            if (a_1 >= cli_l0049)
+            if (a_1 >= cli_header_pos)
                 goto c8a86;
             //     bcs c8a86
             //     inc l0081
-            l0081++;
-            if (l0081 != 0)
+            scratch_index++;
+            if (scratch_index != 0)
                 goto c8a84;
         }
         //     bne c8a84
@@ -826,7 +737,7 @@ bool check_area_memory(uint8_t* ptr2)
         //     cmp #0x20 ; ' '
         //     bne c8a84
         //     cpy l0048
-        if (!(a_1 != 0x20 || y >= cli_l0048))
+        if (!(a_1 != 0x20 || y >= cli_output_pos))
         {
             //     bcs c8a84
             // loop_c8a74:
@@ -843,19 +754,19 @@ bool check_area_memory(uint8_t* ptr2)
                 if (a_2 == 0)
                     goto c8a86;
                 //     inc l0082
-                l0082++;
+                block_expansion_len++;
                 //     cpy l0048
-                if (y >= cli_l0048)
+                if (y >= cli_output_pos)
                     break;
                 //     bcc loop_c8a74
             }
             //     dec l0082
-            l0082--;
+            block_expansion_len--;
         }
     c8a84:
         // c8a84:
         //     inc l0082
-        l0082++;
+        block_expansion_len++;
     c8a86:
         // c8a86:
         //     inx
@@ -863,7 +774,7 @@ bool check_area_memory(uint8_t* ptr2)
     }
     // c8a87:
     //     cpx l004a
-    if (x < cli_l004a)
+    if (x < cli_header_limit)
         goto c8a5b;
     //     lda doc_ptr2+0
     //     sec
@@ -874,7 +785,7 @@ bool check_area_memory(uint8_t* ptr2)
     //     sta l0081
     ptrdiff_t gap = doc_ptr2 - ptr2;
     //     ldx l0082
-    uint8_t x_1 = l0082;
+    uint8_t x_1 = block_expansion_len;
     //     tay
     if (gap < 256 && x_1 >= gap)
         x_1 = gap;
@@ -886,7 +797,7 @@ bool check_area_memory(uint8_t* ptr2)
     //     lda l0082 / sec; sbc l0080; sta tmp67; lda #0; sbc l0081
     // (tmp67 = l0082 - gap as signed 16-bit) — three-way split:
     // shrink (delta<0), no-change (delta==0), grow (delta>0)
-    ptrdiff_t delta = (ptrdiff_t)l0082 - gap;
+    ptrdiff_t delta = (ptrdiff_t)block_expansion_len - gap;
     if (delta < 0)
     {
         ptrdiff_t tmp67 = -delta;
@@ -902,11 +813,11 @@ bool check_area_memory(uint8_t* ptr2)
     //     ldy #0
     uint8_t y_1 = 0;
     //     sty l0081
-    l0081 = y_1;
+    scratch_index = y_1;
     if (!(print_xpos & 0x80))
     {
         //     ldx input_buffer_offset+1
-        uint8_t x_2 = l0080;
+        uint8_t x_2 = scratch_offset;
         // loop_c8ae4:
         do
         {
@@ -945,7 +856,7 @@ bool check_area_memory(uint8_t* ptr2)
             goto c8b11;
         //     bne c8b11
         //     inc l0081
-        l0081++;
+        scratch_index++;
         //     dex
         x_2--;
         if (!(x_2 == 0))
@@ -964,22 +875,22 @@ bool check_area_memory(uint8_t* ptr2)
         //     bne c8b11
         // c8b0d:
         //     dec l0081
-        l0081--;
+        scratch_index--;
         //     dec l0081
-        l0081--;
+        scratch_index--;
     }
 c8b11:
     // c8b11:
     //     ldx #0
     //     stx l0082
-    uint8_t l0082_1 = 0;
+    uint8_t output_buf_pos = 0;
     //     stx l0083
-    uint8_t l0083 = 0;
+    uint8_t doc_write_pos = 0;
     //     ldx #0x14
     //     stx input_buffer_offset+1
-    l0080 = 0x14;
+    scratch_offset = 0x14;
     //     ldx l007a
-    uint8_t x_3 = l007a;
+    uint8_t x_3 = search_target_len;
     //     bne c8b6b
     if (x_3 != 0)
         goto c8b6b;
@@ -988,18 +899,18 @@ c8b11:
         //     lda header_text_maybe,x
         uint8_t a_6 = header_text_maybe[x_3];
         //     stx l0084
-        l0084 = x_3;
+        temp_save = x_3;
         if (!(a_6 != 0x20))
         {
             //     bne c8b38
             //     ldy input_buffer_offset+1
-            uint8_t y_2 = l0080;
+            uint8_t y_2 = scratch_offset;
             //     cpy l0048
-            if (y_2 >= cli_l0048)
+            if (y_2 >= cli_output_pos)
                 goto c8b47;
             //     bcs c8b47
             //     inc input_buffer_offset+1
-            l0080++;
+            scratch_offset++;
             //     lda output_buffer,y
             a_6 = output_buffer[y_2];
             //     beq c8b6a
@@ -1017,13 +928,13 @@ c8b11:
             //     bne c8b47
             //     ldy l0082
             //     cpy l0049
-            if (l0082_1 >= cli_l0049)
+            if (output_buf_pos >= cli_header_pos)
                 goto c8b6a;
             //     bcs c8b6a
             //     lda output_buffer,y
-            a_6 = output_buffer[l0082_1];
+            a_6 = output_buffer[output_buf_pos];
             //     inc l0082
-            l0082_1++;
+            output_buf_pos++;
         }
     c8b47:
         // c8b47:
@@ -1037,9 +948,9 @@ c8b11:
             if (isalpha(a_6))
             {
                 a_6 |= 0x20;
-                if (l0081 != 0)
+                if (scratch_index != 0)
                 {
-                    l0081--;
+                    scratch_index--;
                     a_6 &= 0xdf;
                 }
             }
@@ -1047,9 +958,9 @@ c8b11:
         // c8b64:
         //     ldy l0083
         //     sta (ptr2),y
-        ptr2[l0083] = a_6;
+        ptr2[doc_write_pos] = a_6;
         //     inc l0083
-        l0083++;
+        doc_write_pos++;
     c8b6a:
         // c8b6a:
         //     inx
@@ -1057,7 +968,7 @@ c8b11:
     c8b6b:
         // c8b6b:
         //     cpx l004a
-    } while (x_3 < cli_l004a);
+    } while (x_3 < cli_header_limit);
     //     lda ptr2
     //     ldy ptr2+1
     //     jsr cac78
@@ -1245,7 +1156,7 @@ void check_continuous_editing(void)
 // parse_command moved to cli.c
 static void system_init(void)
 {
-    himem = &ram[0xffff];
+    himem = ram + sizeof(ram) - 1;
     oshwm = &ram[0x0800];
     uint16_t size = screen_getsize();
     screen_maxcolumn = (uint8_t)(size & 0xff);

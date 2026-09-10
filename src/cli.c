@@ -322,8 +322,8 @@ static void count_cmd(struct scan_state* scan)
     int tmp89 = 0;
     //     sta l0083
     //     sta l0082
-    l0083 = 0;
-    l0082 = 0;
+    screen_column = 0;
+    screen_row = 0;
     // c86b8:
 c86b8:
     //     ldy #0
@@ -394,7 +394,7 @@ c86b8:
         a_3 &= 0x7f;
         //     ldx #0
         x = 0;
-        if (!((int8_t)l0082 < 0))
+        if (!((int8_t)screen_row < 0))
         {
             if (!(a_3 == 0x0d || a_3 == 0x20))
             {
@@ -402,27 +402,27 @@ c86b8:
                 // c86ff:
             c86ff:
                 //     inc l0083
-                l0083++;
-                if (l0083 != 0)
+                screen_column++;
+                if (screen_column != 0)
                     goto c8715;
             }
             //     bne c8715
             // c8703:
             //     ldy l0083
             //     beq c870d
-            if (l0083 != 0)
+            if (screen_column != 0)
                 tmp89++;
         }
         //     stx l0083
-        l0083 = x;
+        screen_column = x;
         //     cmp #0x0d
         if (a_3 == 0x0d)
-            l0082 = x;
+            screen_row = x;
     c8715:
         //     ora l0082
-        a_3 |= l0082;
+        a_3 |= screen_row;
         //     sta l0082
-        l0082 = a_3;
+        screen_row = a_3;
         tmp01++;
     }
     // c871f:
@@ -764,7 +764,7 @@ static void more_cmd(struct scan_state* scan)
     //     ldx l003a
     // loop_c84c4:
     uint8_t y = 0;
-    uint8_t x = l003a;
+    uint8_t x = ruler_buffer_len;
     do
     {
         uint8_t a = current_ruler_ptr[y];
@@ -1337,7 +1337,7 @@ void input_line_not_escaped(void)
     //     sty input_buffer_offset+1
     // (parse_command leaves the command index in l0082; the 6502 copied it
     //  to Y on exit)
-    l0080 = l0082;
+    scratch_offset = screen_row;
     //     bcs c8263
     //     cpy #(jumptable4_cli_end-jumptable4_cli)/2
     //     bcc c826e
@@ -1348,10 +1348,10 @@ void input_line_not_escaped(void)
     //     ldy #2
     //     jsr call_through_jumptable
     // (branch restructured: Mistake is printed when C is set or index >= 48)
-    if (failed || l0082 >= 48)
+    if (failed || screen_row >= 48)
         cli_putstring("Mistake\n");
     struct scan_state scan;
-    execute_cli_command(l0080, &scan);
+    execute_cli_command(scratch_offset, &scan);
     //     jmp run_cli
     run_cli();
 }
@@ -1467,13 +1467,13 @@ void run_cli(void)
             if (!(y != 0))
             {
                 //     stx l0083
-                l0083 = x_1;
+                screen_column = x_1;
                 //     jsr print_inline_string
                 //     .ascii "Marker(s) set "
                 //     .byte 0
                 cli_putstring("Marker(s) set ");
                 //     ldx l0083
-                x_1 = l0083;
+                x_1 = screen_column;
                 //     ldy #1
                 y = 1;
                 // c81db:
@@ -1525,7 +1525,7 @@ static bool parse_command(uint8_t* input_buffer_offset)
     //     lda #0xff
     uint8_t a = 0xff;
     //     sta l0082
-    l0082 = a;
+    screen_row = a;
     //     tax                                                               ;
     //     X=0xff
     uint8_t x = a;
@@ -1537,7 +1537,7 @@ static bool parse_command(uint8_t* input_buffer_offset)
         //     dey
         y--;
         //     inc l0082
-        l0082++;
+        screen_row++;
         // loop_ca851:
         for (;;)
         {
@@ -1550,7 +1550,7 @@ static bool parse_command(uint8_t* input_buffer_offset)
             //     and #0xdf
             a_1 &= 0xdf;
             //     sta l0084
-            l0084 = a_1;
+            temp_save = a_1;
             //     lda parser_table,x
             uint8_t a_2 = parser_table[x];
             //     beq ca890
@@ -1562,11 +1562,11 @@ static bool parse_command(uint8_t* input_buffer_offset)
             //     eor #0x5b ; '['
             a_2 ^= 0x5b;
             //     sta l0083
-            l0083 = a_2;
+            screen_column = a_2;
             //     and #0xdf
             a_2 &= 0xdf;
             //     cmp l0084
-            if (a_2 != l0084)
+            if (a_2 != temp_save)
                 break;
             //     beq loop_ca851
         }
@@ -1584,7 +1584,7 @@ static bool parse_command(uint8_t* input_buffer_offset)
             //     bpl loop_ca86a
         } while (!(a_3 & 0x80));
         //     lda l0083
-        uint8_t a_4 = l0083;
+        uint8_t a_4 = screen_column;
         //     and #0x20 ; ' '
         a_4 &= 0x20;
         //     beq ca84c

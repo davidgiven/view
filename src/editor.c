@@ -251,7 +251,7 @@ void editor_loop_impl(void)
             //     jsr sub_ca608
             recalculate_cursor_xpos();
             if (!(ruler_left_stop == 0 || format_mode_flag & 0x80 ||
-                    ruler_left_stop <= l0072))
+                    ruler_left_stop <= visual_column))
             {
                 if (!(cursor_moved_flag != 0))
                 {
@@ -276,9 +276,9 @@ void editor_loop_impl(void)
                 else
                 c9b6a_:
                 {
-                    l0072 = ruler_left_stop;
+                    visual_column = ruler_left_stop;
                     //     inc l0079
-                    l0079++;
+                    line_change_pending_flag++;
                     //     jsr sub_ca608
                     recalculate_cursor_xpos();
                     //     lda format_mode_flag
@@ -542,7 +542,7 @@ static void cf6_split_line_key(void)
     if (line_len >= xpos)
         y = xpos;
     //     inc l0079
-    l0079++;
+    line_change_pending_flag++;
     //     tya
     //     tax
     uint8_t x = y;
@@ -629,7 +629,7 @@ static void cf7_join_lines_key(void)
     //     jsr cac78
     split_line_at_wrap(current_line_ptr);
     //     inc l0079
-    l0079++;
+    line_change_pending_flag++;
     //     jmp ca741
     clamp_ptr6_to_document();
     return;
@@ -667,7 +667,7 @@ static void cf8_mark_as_ruler_key(void)
     //     sta (current_format_line_ptr),y
     current_format_line_ptr[y] = a_2;
     //     inc l0074
-    l0074++;
+    line_counter++;
     //     lda l006e
     //     bmi c9f5f
     if (!(edit_buffer_unpacked_flag & 0x80))
@@ -687,7 +687,7 @@ static void delete_key(void)
     // delete_key:
     //     lda l0072
     //     beq return_55
-    if (l0072 == 0)
+    if (visual_column == 0)
         return;
     //     dec xpos
     xpos--;
@@ -760,8 +760,8 @@ static void f0_format_block_key(void)
     // (the sec/clc dance just computes C = (line_format_status != 0))
     if (line_format_status == 0)
     {
-        l003d = l003d;
-        l0073 = l0073;
+        ptr6_screen_row = ptr6_screen_row;
+        display_start_row = display_start_row;
     }
     //     rts
 }
@@ -785,7 +785,7 @@ static void f12_left_key(void)
     // f12_left_key: Moves cursor left by one position
     //     ldy l0072
     //     beq return_52
-    if (l0072 == 0)
+    if (visual_column == 0)
         return;
     //     dec xpos
     xpos--;
@@ -817,9 +817,9 @@ static void f14_down_key(void)
     //     jsr write_line_back_to_document_safely
     write_line_back_to_document_safely();
     //     inc l0079
-    l0079++;
+    line_change_pending_flag++;
     //     bne c9d9b
-    if (l0079 != 0)
+    if (line_change_pending_flag != 0)
     {
         advance_current_line_pointer();
         return;
@@ -841,7 +841,7 @@ static void f15_up_key(void)
     //     bcc return_53
     current_line_ptr = tmp01;
     //     inc l0079
-    l0079++;
+    line_change_pending_flag++;
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     // return_53:
@@ -851,7 +851,7 @@ static void f15_up_key(void)
 
 static void f1_top_of_text_key(void)
 {
-    l006f = 0xff;
+    scroll_repeat_count = 0xff;
     move_cursor_up(0xff);
     unpack_line(ptr1);
 }
@@ -865,7 +865,7 @@ static void f2_bottom_of_text_key(void)
     // f2_bottom_of_text_key:
     //     ldx #0xff
     //     stx l006f
-    l006f = 0xff;
+    scroll_repeat_count = 0xff;
     //     jsr sub_ca0af
     move_cursor_down(0xff);
     //     jsr unpack_line
@@ -886,7 +886,7 @@ static void f3_delete_to_eol_key(void)
     a -= xpos;
     //     tax
     //     inc l0074
-    l0074++;
+    line_counter++;
     //     jmp delete_edit_buffer_bytes_at_xpos
     delete_edit_buffer_bytes_at_xpos(a);
     return;
@@ -920,7 +920,7 @@ static void f6_insert_line_key(void)
     //     lda current_line_ptr
     //     ldy current_line_ptr+1
     //     inc l0079
-    l0079++;
+    line_change_pending_flag++;
     //     falls through to sub_c9de1
     insert_line_at_cursor(current_line_ptr);
 }
@@ -939,7 +939,7 @@ static void f7_delete_line_key(void)
     //     sta ((uint8_t*)&tmp45)[1]
     uint8_t* tmp45 = current_line_ptr;
     //     ldx l003b
-    uint8_t x = l003b;
+    uint8_t x = edit_line_len;
     //     inx
     x++;
     //     stx ((uint8_t*)&tmp67)[0]
@@ -961,7 +961,7 @@ static void f7_delete_line_key(void)
         current_line_ptr = tmp01;
     }
     //     inc l0079
-    l0079++;
+    line_change_pending_flag++;
     //     jmp ca741
     clamp_ptr6_to_document();
     return;
@@ -983,7 +983,7 @@ static void f9_delete_char_key(void)
     // f9_delete_char_key: Deletes character under cursor
     //     ldx #1
     //     inc l0074
-    l0074++;
+    line_counter++;
     //     jmp delete_edit_buffer_bytes_at_xpos
     delete_edit_buffer_bytes_at_xpos(1);
     return;
@@ -1999,7 +1999,7 @@ static void sf0_move_block_key(void)
     }
     check_pointer_in_area();
     top_of_screen_line_ptr = &ram[RAM_MAX];
-    l006f = 0xff;
+    scroll_repeat_count = 0xff;
     adjust_area_pointers(area_size);
     ensure_cr_at_document_top();
     move_cursor_to_address(doc_ptr1);
@@ -2015,7 +2015,7 @@ static void sf11_copy_key(void)
     //     jsr sub_ca276
     redraw_editor();
     //     ldx l003a
-    uint8_t x = l003a;
+    uint8_t x = ruler_buffer_len;
     if (!(x == 0))
     {
         //     ldy #0
@@ -2110,7 +2110,7 @@ entry:
         //     jsr unpack_line
         unpack_line(ptr1);
         //     dec l006f
-        l006f--;
+        scroll_repeat_count--;
         //     jsr c9e94
         xpos = 0;
         //     jsr get_line_length
@@ -2189,8 +2189,8 @@ static void sf14_down_key(void)
     //     ldx screen_height
     //     inc l0079
     //     inc l006f
-    l0079++;
-    l006f++;
+    line_change_pending_flag++;
+    scroll_repeat_count++;
     move_cursor_down(screen_maxrow);
 }
 
@@ -2199,9 +2199,9 @@ static void sf15_up_key(void)
     // sf15_up_key:
     //     ldx screen_height
     //     inc l0079
-    l0079++;
+    line_change_pending_flag++;
     //     inc l006f
-    l006f++;
+    scroll_repeat_count++;
     move_cursor_up(screen_maxrow);
 }
 
@@ -2220,7 +2220,7 @@ static void sf1_swap_case_key(void)
         return;
     }
     //     inc l0074
-    l0074++;
+    line_counter++;
     //     eor #0x20 ; ' '
     a ^= 0x20;
     //     sta (current_edit_line_ptr),xpos
@@ -2273,7 +2273,7 @@ static void sf3_delete_to_char_key(void)
         return;
     }
     {
-        l0074++;
+        line_counter++;
         uint8_t y = xpos;
         uint8_t start_x = y;
         // loop_ca132: scan forward to find matching char
@@ -2376,16 +2376,16 @@ static void sf8_edit_command_key(void)
     //     lda #0
     uint8_t a = 0;
     //     sta input_buffer_offset+1
-    l0080 = a;
+    scratch_offset = a;
     //     sta l0081
-    l0081 = 0;
+    scratch_index = 0;
 edit_command_loop:
     do
     {
         // edit_command_loop:
         //     ldx input_buffer_offset+1
         //     ldy ypos
-        screen_setcursor(l0080, ypos);
+        screen_setcursor(scratch_offset, ypos);
         //     jsr read_char
         a_1 = screen_getchar();
         //     cmp #0x0d
@@ -2397,15 +2397,15 @@ edit_command_loop:
     } while (a_1 < 0x41 || a_1 >= 0x5b);
     //     bcs edit_command_loop
     //     sta l0081
-    l0081 = a_1;
+    scratch_index = a_1;
     //     jsr screen_putchar
     screen_putchar(a_1);
     //     ldy input_buffer_offset+1
-    uint8_t y = l0080;
+    uint8_t y = scratch_offset;
     //     iny
     y++;
     //     sty input_buffer_offset+1
-    l0080 = y;
+    scratch_offset = y;
     //     sta (ptr1),y
     // (16-bit arithmetic: ptr1[y], with the carry across the low-byte
     //  boundary handled by the plain 16-bit index)
@@ -2417,14 +2417,14 @@ edit_command_loop:
     //     lda #0
     uint8_t a_2 = 0;
     //     sta input_buffer_offset+1
-    l0080 = a_2;
+    scratch_offset = a_2;
     //     beq edit_command_loop
     goto edit_command_loop;
     // finished_editing_command:
 finished_editing_command:
     //     lda l0081
     //     beq return_56
-    if (l0081 == 0)
+    if (scratch_index == 0)
         return;
     //     lda ptr1
     //     sta current_format_line_ptr
@@ -2465,7 +2465,7 @@ static void sf9_delete_command_key(void)
     //     jsr sub_caf5f
     clear_format_mode_bit7();
     //     inc l0074
-    l0074++;
+    line_counter++;
     //     inc l006d
     edit_buffer_dirty_flag++;
     //     inc cursor_moved_flag
@@ -2543,7 +2543,7 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t x)
     // delete_edit_buffer_bytes_at_xpos: Deletes N bytes at cursor position,
     // shifting existing content left
     //     stx input_buffer_offset+1
-    l0080 = x;
+    scratch_offset = x;
     //     inc l006d
     edit_buffer_dirty_flag++;
     //     lda current_edit_line_ptr
@@ -2557,7 +2557,7 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t x)
     uint8_t a = y;
     //     clc
     //     adc input_buffer_offset+1
-    a += l0080;
+    a += scratch_offset;
     do
     {
         //     sta l0084
@@ -2588,7 +2588,7 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t x)
             // (16-bit store: markers_array[x] = (y >= l0084)
             //  ? RAM_EDIT_BUFFER + (y - l0080) : 0)
             uint16_t marker_val =
-                (y >= l0084) ? RAM_EDIT_BUFFER + (y - l0080) : 0;
+                (y >= temp_save) ? RAM_EDIT_BUFFER + (y - scratch_offset) : 0;
             markers_array[x / 2] = marker_val ? &ram[marker_val] : NULL;
             //     jmp cae78
             continue;
@@ -2627,11 +2627,11 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t x)
     //     bcc loop_caea5
     // return_78:
     //     rts
-    int copy_len = MAX_LINE_LENGTH - (int)xpos - (int)l0080;
+    int copy_len = MAX_LINE_LENGTH - (int)xpos - (int)scratch_offset;
     if (copy_len > 0)
     {
         memmove(&ram[RAM_EDIT_BUFFER + xpos],
-            &ram[RAM_EDIT_BUFFER + xpos + l0080],
+            &ram[RAM_EDIT_BUFFER + xpos + scratch_offset],
             (size_t)copy_len);
         memset(&ram[RAM_EDIT_BUFFER + xpos + copy_len],
             0x10,
@@ -2671,7 +2671,7 @@ static void enter_printable_character(void)
     if (idx != 0x0c)
     {
         if (idx < 4)
-            l0074++;
+            line_counter++;
     }
     //     ldx insert_mode_flag
     uint8_t x = insert_mode_flag;
@@ -2691,7 +2691,7 @@ static void enter_printable_character(void)
     // c9c00:
 c9c00:
     //     inc l0074
-    l0074++;
+    line_counter++;
     //     ldx #1
     //     jsr insert_edit_buffer_bytes_at_xpos
     if (!insert_edit_buffer_bytes_at_xpos(1))
@@ -2707,7 +2707,7 @@ c9c09:
     // (the 6502 left y = the insert position, i.e. xpos)
     ram[RAM_EDIT_BUFFER + xpos] = a_1;
     //     ldy l0074
-    uint8_t y_2 = l0074;
+    uint8_t y_2 = line_counter;
     //     bne c9c14
     if (y_2 == 0)
         screen_putchar(a_1);
@@ -2718,7 +2718,7 @@ c9c09:
     //     ldy #0
     uint8_t y_3 = 0;
     //     sty l0039
-    l0039 = 0;
+    column_position = 0;
 c9c1d:
     do
     {
@@ -2742,7 +2742,7 @@ c9c1d:
             a_2 = x;
             //     clc
             //     adc l0039
-            a_2 += l0039;
+            a_2 += column_position;
             //     bne c9c43
             if (a_2 != 0)
                 goto c9c43;
@@ -2757,7 +2757,7 @@ c9c1d:
             if (!(a_2 == 0))
             {
                 //     ldx l0039
-                x = l0039;
+                x = column_position;
                 //     beq c9c43
                 if (x != 0)
                 {
@@ -2769,7 +2769,7 @@ c9c1d:
                 }
             c9c43:
                 //     sta l0039
-                l0039 = a_2;
+                column_position = a_2;
                 //     jmp c9c1d
                 continue;
             }
@@ -2785,15 +2785,15 @@ c9c1d:
             goto c9c48;
     } while (a_2 < 0x20);
     //     inc l0039
-    l0039++;
+    column_position++;
     //     bne c9c1d
     goto c9c1d;
     // c9c56:
 c9c56:
     //     ldy l0039
-    uint8_t y_4 = l0039;
+    uint8_t y_4 = column_position;
     //     cpy l003a
-    if (y_4 < l003a)
+    if (y_4 < ruler_buffer_len)
     {
         //     lda (current_ruler_ptr),y
         uint8_t a_4 = current_ruler_ptr[y_4];
@@ -2813,7 +2813,7 @@ c9c56:
     //     beq c9c7f
     if (ruler_right_stop == 0)
     {
-        l0074 = 0;
+        line_counter = 0;
         return_to_editor_loop();
     }
     //     lda format_mode_flag
@@ -2834,7 +2834,7 @@ c9c56:
         return;
     // c9c82: (4202)
     //     jsr get_line_length (4203)
-    l0083 = get_line_length();
+    screen_column = get_line_length();
     //     lda #0 (4205)
     //     sta top_margin (4206)
     top_margin = 0;
@@ -2849,7 +2849,7 @@ c9c56:
     //     jsr sub_ca608 (4210)
     recalculate_cursor_xpos();
     //     lda l0072 (4211)
-    uint8_t a_6 = l0072;
+    uint8_t a_6 = visual_column;
     //     cmp ruler_left_stop (4212)
     //     beq c9c9d (4213) bcs c9ca2 (4214)
     // c9c9d: (4215)
@@ -2878,12 +2878,12 @@ c9ca2:
     a_7 -= xpos;
     top_margin = a_7;
     //     lda l0083 (4224)
-    uint8_t a_8 = l0083;
+    uint8_t a_8 = screen_column;
     //     sec (4225)
     //     sbc xpos (4226)
     //     sta l0083 (4227)
     a_8 -= xpos;
-    l0083 = a_8;
+    screen_column = a_8;
     //     tay (4228)
     uint8_t y_8 = a_8;
     //     iny (4229)
@@ -2904,7 +2904,7 @@ c9ca2:
     //     lda current_line_ptr+1 (4240)
     //     adc #0 (4241)
     //     sta ((uint8_t*)&tmp45)[1] (4242)
-    uint8_t* tmp45 = current_line_ptr + l003b + 1;
+    uint8_t* tmp45 = current_line_ptr + edit_line_len + 1;
     if (!(make_space_for_insertion(tmp45, y_8)))
     {
         // bcc c9cd0
@@ -2927,7 +2927,7 @@ c9ca2:
     }
     // c9cdb:
     //     sty l0081
-    l0081 = y_9;
+    scratch_index = y_9;
     //     lda current_edit_line_ptr
     uint8_t* tmp67_3 = &ram[RAM_EDIT_BUFFER];
     //     ldy xpos
@@ -2948,14 +2948,14 @@ c9ca2:
     //     iny
     y_10++;
     //     sty l0082
-    l0082 = y_10;
+    screen_row = y_10;
     do
     {
         // c9cf5:
         //     ldy l0082
-        uint8_t y_11 = l0082;
+        uint8_t y_11 = screen_row;
         //     inc l0082
-        l0082++;
+        screen_row++;
         // loop_c9cf9:
         for (;;)
         {
@@ -2974,15 +2974,15 @@ c9ca2:
             // (16-bit arithmetic: markers_array[marker_index] = tmp45 + l0081;
             //  the bcc loop_c9cf9 continues while the address fits in 16 bits)
             {
-                uint8_t* val_ptr = tmp45 + l0081;
+                uint8_t* val_ptr = tmp45 + scratch_index;
                 markers_array[marker_index / 2] = val_ptr;
-                if (tmp45 - &ram[0] + l0081 >= 0x10000)
+                if (tmp45 - &ram[0] + scratch_index >= 0x10000)
                     break;
             }
         }
         // c9d0d:
         //     lda l0083
-        uint8_t a_11 = l0083;
+        uint8_t a_11 = screen_column;
         if (!(a_11 != 0))
         {
             //     lda #0x0d
@@ -3005,14 +3005,14 @@ c9ca2:
         }
         // c9d30:
         //     ldy l0081
-        uint8_t y_12 = l0081;
+        uint8_t y_12 = scratch_index;
         //     inc l0081
-        l0081++;
+        scratch_index++;
         //     sta (((uint8_t*)&tmp45)[0]),y
         tmp45[y_12] = a_12;
         //     dec l0083
-        l0083--;
-    } while (!(l0083 & 0x80));
+        screen_column--;
+    } while (!(screen_column & 0x80));
     //     bmi c9d15                                                         ;
     //     ALWAYS branch
     // c9d15:
@@ -3127,7 +3127,7 @@ static void move_to_previous_line(void)
     //     jsr c9e9b
     set_xpos_to_line_length();
     //     dec l006f
-    l006f--;
+    scroll_repeat_count--;
 }
 
 static void move_cursor_up(uint8_t x)
@@ -3139,7 +3139,7 @@ static void move_cursor_up(uint8_t x)
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     stx input_buffer_offset+1
-    l0080 = x;
+    scratch_offset = x;
     //     jsr write_line_back_to_document_safely
     write_line_back_to_document_safely();
     //     lda current_line_ptr / ldy current_line_ptr+1
@@ -3158,14 +3158,14 @@ static void move_cursor_up(uint8_t x)
         }
         line = tmp01;
         //     ldx input_buffer_offset+1
-        x = l0080;
+        x = scratch_offset;
         //     bmi ca07c
         if ((int8_t)x < 0)
             continue;
         //     dec input_buffer_offset+1
-        l0080--;
+        scratch_offset--;
         //     bne ca07c
-    } while (l0080 != 0);
+    } while (scratch_offset != 0);
     // ca097:
     //     sta current_line_ptr
     current_line_ptr = line;
@@ -3182,7 +3182,7 @@ static void move_cursor_down(uint8_t x)
     //     inc cursor_moved_flag
     cursor_moved_flag++;
     //     stx input_buffer_offset+1
-    l0080 = x;
+    scratch_offset = x;
     //     jsr write_line_back_to_document_safely
     write_line_back_to_document_safely();
     //     lda current_line_ptr / ldy current_line_ptr+1
@@ -3206,14 +3206,14 @@ static void move_cursor_down(uint8_t x)
         line = line + y;
         // ca0c8:
         //     ldx input_buffer_offset+1
-        x = l0080;
+        x = scratch_offset;
         //     bmi ca0ba
         if ((int8_t)x < 0)
             continue;
         //     dec input_buffer_offset+1
-        l0080--;
+        scratch_offset--;
         //     bne ca0ba
-        if (l0080 != 0)
+        if (scratch_offset != 0)
             continue;
         //     beq ca0d6
         break;
@@ -3265,7 +3265,7 @@ static void check_pointer_in_area(void)
     split_line_at_wrap(adjusted);
     //     lda doc_ptr1 / ldy doc_ptr1+1 / jsr split_line_at_wrap
     split_line_at_wrap(doc_ptr1);
-    l0073 = 1;
+    display_start_row = 1;
     cursor_moved_flag = 1;
 }
 
@@ -3298,7 +3298,7 @@ void enter_editor_mode(void)
     //     sta l006d
     edit_buffer_dirty_flag = 0;
     //     sta l006f
-    l006f = 0;
+    scroll_repeat_count = 0;
     //     sta l006e
     edit_buffer_unpacked_flag = 0;
     //     ldx screen_height
@@ -3430,16 +3430,16 @@ bool adjust_margins_at_left_margin(void)
         uint8_t line_len = get_line_length();
         //     lda xpos
         //     sta l0083
-        l0083 = xpos;
+        screen_column = xpos;
         //     sty xpos
         xpos = line_len;
         //     jsr sub_ca608
         recalculate_cursor_xpos();
-        if (!(l0072 < ruler_left_stop))
+        if (!(visual_column < ruler_left_stop))
         {
             //     bcc caf19
             //     ldy l0083
-            y = l0083;
+            y = screen_column;
             //     sty xpos
             xpos = y;
             //     inc xpos
@@ -3449,10 +3449,10 @@ bool adjust_margins_at_left_margin(void)
         }
         else
         {
-            uint8_t a_3 = l0083;
+            uint8_t a_3 = screen_column;
             //     ldy xpos
             y = xpos;
-            if (!(y >= l0083))
+            if (!(y >= screen_column))
             {
                 //     sec
                 //     sbc ruler_left_stop
@@ -3461,9 +3461,9 @@ bool adjust_margins_at_left_margin(void)
                 // the store.
                 //  Otherwise the carry into the following adc is 1: a += xpos +
                 //  1)
-                if (l0083 < ruler_left_stop)
+                if (screen_column < ruler_left_stop)
                     goto caf2a;
-                a_3 = l0083 - ruler_left_stop + xpos + 1;
+                a_3 = screen_column - ruler_left_stop + xpos + 1;
             }
             //     adc xpos
             // caf28:
@@ -3477,7 +3477,7 @@ bool adjust_margins_at_left_margin(void)
             return true;
         // bcs return_79 — insertion failed
         //     inc l0074
-        l0074++;
+        line_counter++;
     }
     // caf31:
     //     clc
@@ -3500,15 +3500,15 @@ bool insert_edit_buffer_bytes_at_xpos(uint8_t x)
         return false;
     }
     //     stx input_buffer_offset+1
-    l0080 = x;
+    scratch_offset = x;
     //     jsr get_line_length
     uint8_t a_1 = get_line_length();
     //     clc
     //     adc input_buffer_offset+1
     //     bcs cae03
     // (adc with C=0 is xpos plain addition; carry means overflow)
-    a_1 += l0080;
-    if (a_1 < l0080)
+    a_1 += scratch_offset;
+    if (a_1 < scratch_offset)
     {
         beep();
         return false;
@@ -3541,14 +3541,14 @@ cae27:
     //     adc input_buffer_offset+1
     //     bcs cae35
     // (adc with C=0 is xpos plain addition; carry means overflow)
-    a_2 += l0080;
-    if (a_2 >= l0080)
+    a_2 += scratch_offset;
+    if (a_2 >= scratch_offset)
     {
         if (a_2 < MAX_LINE_LENGTH)
             x = a_2;
     }
     //     stx l0081
-    l0081 = x;
+    scratch_index = x;
     // loop_cae37:
     for (;;)
     {
@@ -3573,7 +3573,8 @@ cae27:
         //     sta markers_array+1,x
         // (16-bit store: markers_array[idx] = l0081
         //  ? RAM_EDIT_BUFFER + l0081 : 0)
-        uint16_t marker_val = l0081 ? RAM_EDIT_BUFFER + l0081 : 0;
+        uint16_t marker_val =
+            scratch_index ? RAM_EDIT_BUFFER + scratch_index : 0;
         markers_array[idx / 2] = marker_val ? &ram[marker_val] : NULL;
         //     jmp loop_cae37
     }
@@ -3591,10 +3592,10 @@ cae27:
 cae52:
     if (y != xpos)
         goto cae27;
-    int copy_len = MAX_LINE_LENGTH - (int)xpos - (int)l0080;
+    int copy_len = MAX_LINE_LENGTH - (int)xpos - (int)scratch_offset;
     if (copy_len > 0)
     {
-        memmove(&ram[RAM_EDIT_BUFFER + xpos + l0080],
+        memmove(&ram[RAM_EDIT_BUFFER + xpos + scratch_offset],
             &ram[RAM_EDIT_BUFFER + xpos],
             (size_t)copy_len);
     }
@@ -3653,7 +3654,7 @@ void split_line_at_wrap(uint8_t* ptr)
         // cac7b:
         //     lda #0
         //     sta l0083
-        l0083 = 0;
+        screen_column = 0;
         //     ldx #0x85
         uint8_t x = MAX_LINE_LENGTH + 1;
         //     ldy #1
@@ -3670,7 +3671,7 @@ void split_line_at_wrap(uint8_t* ptr)
             x++;
         }
         //     stx l0084
-        l0084 = x;
+        temp_save = x;
         do
         {
             // cac8f:
@@ -3688,24 +3689,24 @@ void split_line_at_wrap(uint8_t* ptr)
             //     bne cac9c
             // cac9a:
             //     sty l0083
-            l0083 = y;
+            screen_column = y;
             // cac9c:
         cac9c:
             //     cmp #0x0d
             //     beq return_73
             if (a_2 == 0x0d)
                 return;
-        } while (y == l0084 || y < l0084);
+        } while (y == temp_save || y < temp_save);
         //     lda l0084
         //     ldx l0083
         //     beq cacad
         //     txa
-        if (l0083 == 0)
+        if (screen_column == 0)
         {
-            a_3 = l0084;
+            a_3 = temp_save;
             goto cacad;
         }
-        a_3 = l0083;
+        a_3 = screen_column;
         // cacad:
     cacad:
         //     clc
@@ -3902,7 +3903,7 @@ static bool advance_to_next_doc_line(void)
     //     sty l003b
     // (y is used only to compute l003b; write_line_back_to_document overwrites
     //  y before reading it, so the register writes are dead)
-    l003b = l0047 - 1;
+    edit_line_len = format_src_index - 1;
     //     inc l006e
     edit_buffer_unpacked_flag++;
     //     jsr write_line_back_to_document
@@ -3944,18 +3945,18 @@ bool scan_document_for_next_line(void)
     //     beq c8b78
     // c8b78:
     //     lda #0xff
-    if (l007a == 0)
+    if (search_target_len == 0)
         return false;
     //     lda #0x14
     //     sta l0048
-    editor_l0048 = 0x14;
+    editor_output_pos = 0x14;
     //     ldx #0
     // (the 6502's ldx #0 overwrites Z before any branch reads it)
     uint8_t x = 0;
     //     stx l0049
-    editor_l0049 = 0;
+    editor_header_pos = 0;
     //     stx l0081
-    l0081 = 0;
+    scratch_index = 0;
     //     lda doc_ptr2+0
     //     sta ((uint8_t*)&tmp89)[0]
     //     lda doc_ptr2+1
@@ -4002,7 +4003,7 @@ c8b91:
     }
     // c8bb7:
     //     jsr sub_c8c5f
-    l0083 = upper_case_unless_folding(a_2);
+    screen_column = upper_case_unless_folding(a_2);
     //     sta l0083
     do
     {
@@ -4035,7 +4036,7 @@ c8b91:
             a_5 = 0x20;
         // c8bd7:
         //     cmp l0083
-        if (a_5 == l0083)
+        if (a_5 == screen_column)
             goto c8c33;
     c8bdb:
         do
@@ -4054,23 +4055,23 @@ c8b91:
             // c8be3:
             //     lda l0083
             //     stx l0084
-            l0084 = x;
+            temp_save = x;
             //     ldx l0049
             //     cpx #0x14
-            if (editor_l0049 < 0x14)
+            if (editor_header_pos < 0x14)
             {
-                output_buffer[editor_l0049] = l0083;
-                editor_l0049++;
+                output_buffer[editor_header_pos] = screen_column;
+                editor_header_pos++;
             }
             // c8bf2:
             //     ldx l0084
-            x = l0084;
+            x = temp_save;
             //     jmp c8c33
             goto c8c33;
         c8bf7:
             // c8bf7:
             //     stx l0084
-            l0084 = x;
+            temp_save = x;
             //     lda l0083
             //     cmp #0x20 ; ' '
             //     beq c8c23
@@ -4081,12 +4082,13 @@ c8b91:
             //     cmp #0x1a
             //     beq c8c23
             //     cmp #0x0d
-            if (l0083 == 0x20 || l0083 == 9 || l0083 == 0x0b || l0083 == 0x1a ||
-                l0083 == 0x0d)
+            if (screen_column == 0x20 || screen_column == 9 ||
+                screen_column == 0x0b || screen_column == 0x1a ||
+                screen_column == 0x0d)
             {
                 goto c8c23;
             }
-        } while (l0081 == 0);
+        } while (scratch_index == 0);
         //     jsr sub_c8c51
         // (inlined: append_to_output_buffer(0))
         append_to_output_buffer(0);
@@ -4094,24 +4096,24 @@ c8b91:
         // (Z from this lda is clobbered by the following ldx l0084)
         uint8_t a_9 = 0;
         //     sta l0081
-        l0081 = a_9;
+        scratch_index = a_9;
         //     ldx l0084
-        x = l0084;
+        x = temp_save;
         //     inx
         x++;
         //     cpx l007a
-    } while (x < l007a);
+    } while (x < search_target_len);
     //     bcc c8bbc
     //     bcs c8c3e
     goto c8c3e;
 c8c23:
     // c8c23:
     //     jsr sub_c8c53
-    append_to_output_buffer(l0083);
+    append_to_output_buffer(screen_column);
     //     ldx l0084
-    x = l0084;
+    x = temp_save;
     //     sta l0081
-    l0081 = l0083;
+    scratch_index = screen_column;
     do
     {
         // loop_c8c2a:
@@ -4126,7 +4128,7 @@ c8c23:
         // c8c33:
         //     inx
         x++;
-    } while (x < l007a);
+    } while (x < search_target_len);
     //     bcc loop_c8c2a
     //     inc ((uint8_t*)&tmp89)[0]
     tmp89++;
@@ -4205,10 +4207,10 @@ void clamp_ptr6_to_document(void)
     }
     // ca753:
     //     ldx #0xff
-    l0073 = 0xff;
+    display_start_row = 0xff;
     //     stx l0073
     //     stx l003d
-    l003d = 0xff;
+    ptr6_screen_row = 0xff;
     //     rts
 }
 
@@ -4505,7 +4507,7 @@ static void go_to_marker(uint8_t x)
     // ca035:
     //     lda #1
     //     sta l0073
-    l0073 = 1;
+    display_start_row = 1;
     //     jmp ca684
     update_line_length();
     return;
@@ -4553,9 +4555,9 @@ uint8_t justify_edit_buffer(uint8_t* ptr)
         return x;
     //     bne return_47
     //     sta l0046
-    l0046 = a;
+    justify_gap_count = a;
     //     sta l0039
-    l0039 = a;
+    column_position = a;
     //     sta l0042
     justify_overflow_counter = a;
     //     lda ruler_right_stop
@@ -4575,9 +4577,9 @@ c9847:
     {
         // c9847:
         //     lda l0039
-        a_1 = l0039;
+        a_1 = column_position;
         //     sta l0084
-        l0084 = a_1;
+        temp_save = a_1;
         //     iny
         y++;
         //     cpy l0043
@@ -4592,7 +4594,7 @@ c9847:
     } while (a_1 != 0x20);
     //     bne c9847
     //     inc l0046
-    l0046++;
+    justify_gap_count++;
 c985c:
     do
     {
@@ -4617,14 +4619,14 @@ c985c:
     // c986d:
 c986d:
     //     dec l0046
-    l0046--;
+    justify_gap_count--;
     //     bmi return_47
-    if (l0046 & 0x80)
+    if (justify_gap_count & 0x80)
         return x;
     // c9871:
 c9871:
     //     lda l0046
-    uint8_t a_2 = l0046;
+    uint8_t a_2 = justify_gap_count;
     //     beq return_47
     if (a_2 == 0)
         return x;
@@ -4634,9 +4636,9 @@ c9871:
     //     sbc l0084
     //     bcc return_47
     // (C=1: plain subtraction; if it borrows, abort)
-    if (a_3 < l0084)
+    if (a_3 < temp_save)
         return x;
-    a_3 -= l0084;
+    a_3 -= temp_save;
     //     adc #0
     //     tax
     //     adc l0043
@@ -4650,19 +4652,19 @@ c9871:
     uint8_t extra = (uint8_t)(a_3 + 1 + justify_line_length);
     if (extra >= MAX_LINE_LENGTH)
     {
-        l0084 = (uint8_t)(extra - MAX_LINE_LENGTH);
-        x_1 = (uint8_t)(x_1 - l0084);
+        temp_save = (uint8_t)(extra - MAX_LINE_LENGTH);
+        x_1 = (uint8_t)(x_1 - temp_save);
     }
     //     stx l0082
-    l0082 = x_1;
+    screen_row = x_1;
     //     stx ((uint8_t*)&tmp89)[0]
     //     lda #0
     //     sta ((uint8_t*)&tmp89)[1]
     uint16_t tmp89 = x_1;
     //     jsr sub_cadf0
     //     sta l0045
-    uint8_t a_4 = tmp89 % l0046;
-    uint16_t tmp89_1 = tmp89 / l0046;
+    uint8_t a_4 = tmp89 % justify_gap_count;
+    uint16_t tmp89_1 = tmp89 / justify_gap_count;
     justify_running_total_accum = a_4;
     //     lda ((uint8_t*)&tmp89)[0]
     uint8_t a_5 = tmp89_1 & 0xff;
@@ -4671,7 +4673,7 @@ c9871:
     //     ldy #0
     uint8_t y_1 = 0;
     //     ldx l0046
-    uint8_t x_2 = l0046;
+    uint8_t x_2 = justify_gap_count;
     //     tya                                                               ;
     //     A=0x00
     uint8_t a_6 = y_1;
@@ -4688,12 +4690,12 @@ c9871:
     //     iny
     y_2++;
     //     cpy l0046
-    if (y_2 >= l0046)
+    if (y_2 >= justify_gap_count)
         y_2 = 1;
     //     dey
     y_2--;
     //     ldx l0046
-    uint8_t x_3 = l0046;
+    uint8_t x_3 = justify_gap_count;
     do
     {
         // c98b5:
@@ -4712,7 +4714,7 @@ c9871:
         //     sta input_buffer,y
         input_buffer[y_2] = a_7;
         //     lda l0082
-        uint8_t a_8 = l0082;
+        uint8_t a_8 = screen_row;
         //     sec
         //     sbc input_buffer,y
         // (sec makes this a plain 8-bit subtraction; the result's Z flag is
@@ -4720,12 +4722,12 @@ c9871:
         //  by the following beq, so compare directly instead of via php/plp)
         uint8_t a_9 = a_8 - input_buffer[y_2];
         //     sta l0082
-        l0082 = a_9;
+        screen_row = a_9;
         //     iny
         y_2++;
         //     cpy l0046
         //     bcc c98d3
-        if (y_2 >= l0046)
+        if (y_2 >= justify_gap_count)
             y_2 = 0;
         //     beq c98d9
         if (a_9 == 0)
@@ -4739,9 +4741,9 @@ c9871:
     //     ldy #0
     uint8_t y_3 = 0;
     //     sty l0081
-    l0081 = y_3;
+    scratch_index = y_3;
     //     sty l0039
-    l0039 = y_3;
+    column_position = y_3;
     //     lda #0x1a
     //     jsr wipe_buffer
     wipe_buffer(0x1a, ptr);
@@ -4775,29 +4777,29 @@ c9871:
         {
             //     bne c9920
             //     lda l0081
-            uint8_t a_13 = l0081;
+            uint8_t a_13 = scratch_index;
             if (!(a_13 == 0))
             {
                 //     sty l0084
-                l0084 = y_5;
+                temp_save = y_5;
                 //     ldy l0039
-                uint8_t y_6 = l0039;
+                uint8_t y_6 = column_position;
                 //     cpy l0046
                 //     lda #0
                 //     bcs c9912
-                if (y_6 < l0046)
+                if (y_6 < justify_gap_count)
                     a_13 = input_buffer[y_6];
                 //     clc
                 //     adc l0084
-                a_13 += l0084;
+                a_13 += temp_save;
                 //     inc l0039
-                l0039++;
+                column_position++;
                 //     tay
                 y_5 = a_13;
                 //     lda #0
                 uint8_t a_14 = 0;
                 //     sta l0081
-                l0081 = a_14;
+                scratch_index = a_14;
             }
             // c991c:
             //     lda #0x20 ; ' '
@@ -4807,7 +4809,7 @@ c9871:
         }
         else
         {
-            l0081++;
+            scratch_index++;
         }
         // c9922:
         //     sta (current_edit_line_ptr),y
@@ -4974,7 +4976,7 @@ static void recalculate_cursor_xpos(void)
     //     sta ((uint8_t*)&tmp01)[1]
     uint8_t* tmp01 = &ram[RAM_EDIT_BUFFER];
     //     lda l0079
-    uint8_t a = l0079;
+    uint8_t a = line_change_pending_flag;
     // (The SBC at ca5f1 in process_document_character uses the previous
     //  character's tab status as its borrow-in; propagate it across the walk.)
     bool is_tab = false;
@@ -4991,7 +4993,7 @@ static void recalculate_cursor_xpos(void)
                 goto ca63d;
             //     beq ca63d
             //     sta l0039
-            l0039 = a;
+            column_position = a;
             //     jsr process_current_document_character
             (void)process_current_document_character(tmp01, &x, &y, &is_tab);
             //     txa
@@ -5000,29 +5002,29 @@ static void recalculate_cursor_xpos(void)
             //     adc l0039
             //     bcc loop_ca615
             // (adc with C=0 is a plain addition; carry means overflow)
-            a += l0039;
-        } while (a >= l0039);
+            a += column_position;
+        } while (a >= column_position);
     }
     // ca624:
     //     lda #0
     a = 0;
     //     sta l0079
-    l0079 = a;
+    line_change_pending_flag = a;
     //     tay                                                               ;
     //     Y=0x00
     uint8_t y_1 = a;
     // loop_ca629:
     do
     {
-        l0039 = a;
+        column_position = a;
         (void)process_current_document_character(tmp01, &x, &y_1, &is_tab);
         a = x;
-        a += l0039;
-    } while (a < l0072);
+        a += column_position;
+    } while (a < visual_column);
     //     beq ca63b
-    if (a != l0072)
+    if (a != visual_column)
     {
-        a = l0039;
+        a = column_position;
         y_1--;
     }
     //     sty xpos
@@ -5030,7 +5032,7 @@ static void recalculate_cursor_xpos(void)
     // ca63d:
 ca63d:
     //     sta l0072
-    l0072 = a;
+    visual_column = a;
     // return_64:
     //     rts
     return;
@@ -5053,7 +5055,7 @@ void redraw_editor(void)
     //     lda ruler_stack_ptr                                           (5208)
     uint8_t a = ruler_index_ptr;
     //     sta l0034                                                     (5209)
-    l0034 = a;
+    saved_ruler_index_redraw = a;
     //     lda l0076                                                     (5210)
     uint8_t a_1 = status_line_needs_redrawing_flag;
     //     sta input_buffer_ptr+1                                        (5211)
@@ -5061,9 +5063,9 @@ void redraw_editor(void)
     if (!(edit_buffer_unpacked_flag == 0))
     {
         //     lda l0073 (5214)
-        uint8_t a_3 = l0073;
+        uint8_t a_3 = display_start_row;
         //     ora l006f (5215)
-        a_3 |= l006f;
+        a_3 |= scroll_repeat_count;
         //     bne ca28e (5216)
         if (a_3 != 0)
             goto ca28e;
@@ -5083,11 +5085,11 @@ void redraw_editor(void)
     ca29c:
         //     lda l006f (5228)
         //     bne ca30d (5229)
-        if (l006f != 0)
+        if (scroll_repeat_count != 0)
             goto ca30d;
         //     lda l0033 (5230)
         //     sta ruler_stack_ptr (5231)
-        ruler_index_ptr = l0033;
+        ruler_index_ptr = saved_ruler_index_scroll;
         //     ldy l0012 (5232) lda l0011 (5233) cpy top+1 (5234) bcc ca2b2
         //     (5235) bne ca30d (5236) cmp top (5237) bcs ca30d (5238)
         if (top_of_screen_line_ptr >= top)
@@ -5131,7 +5133,7 @@ void redraw_editor(void)
     ca2dc:
         //     lda l0033 (5264)
         //     sta ruler_stack_ptr (5265)
-        ruler_index_ptr = l0033;
+        ruler_index_ptr = saved_ruler_index_scroll;
         // ca2e0: (5266)
     ca2e0:
         //     ldx #0 (5267)
@@ -5147,7 +5149,7 @@ void redraw_editor(void)
             //     cmp ptr6 (5274)
             // (16-bit comparison: walk == editor_ptr6)
             if (walk == editor_ptr6)
-                l003d = x_1;
+                ptr6_screen_row = x_1;
             //     cpy current_line_ptr+1 (5278)
             //     cmp current_line_ptr (5280)
             // (16-bit comparison: walk == current_line_ptr)
@@ -5181,7 +5183,7 @@ void redraw_editor(void)
             //     cpx screen_height (5300)
             if (x_1 <= screen_maxrow)
                 goto ca35e;
-        } while (l006f != 0);
+        } while (scroll_repeat_count != 0);
         //     ldx #0 (5305)
         uint8_t x_3 = 0;
         // loop_ca31f: (5306)
@@ -5193,7 +5195,7 @@ void redraw_editor(void)
         } while (x_3 != screen_maxrow);
         //     bne loop_ca31f (5311)
         //     dec l003d (5312)
-        l003d--;
+        ptr6_screen_row--;
         //     ldx #0 (5313)
         uint8_t x_4 = 0;
         //     lda screen_width (5314)
@@ -5201,7 +5203,7 @@ void redraw_editor(void)
         line_lengths[x_4] = screen_maxcolumn;
         //     lda l0033 (5316)
         //     sta ruler_stack_ptr (5317)
-        ruler_index_ptr = l0033;
+        ruler_index_ptr = saved_ruler_index_scroll;
         //     ldy l0012 / lda l0011  (these loaded bytes are clobbered by
         //     advance_to_next_line's scan; y is left holding the offset past
         //     the CR, which is what the following addition needs) jsr sub_cab1a
@@ -5231,11 +5233,11 @@ void redraw_editor(void)
     ca351:
         //     lda ruler_stack_ptr (5334)
         //     sta l0033 (5335)
-        l0033 = ruler_index_ptr;
+        saved_ruler_index_scroll = ruler_index_ptr;
         //     inc input_buffer_ptr+1 (5336)
         saved_status_line_needs_redrawing_flag++;
         //     inc l0074 (5337)
-        l0074++;
+        line_counter++;
         //     tya (5338)
         //     tax (5339)
         x_1 = y;
@@ -5247,7 +5249,7 @@ void redraw_editor(void)
         // ca360: (5342)
         //     ldy l0034 (5343)
         //     jsr cab91 (5344)
-        load_current_ruler(l0034);
+        load_current_ruler(saved_ruler_index_redraw);
     //     jsr unpack_line_into_buffer (5345)
     unpack_line_into_buffer(ptr1);
     //     jsr sub_ca608 (5346)
@@ -5257,35 +5259,35 @@ void redraw_editor(void)
     //     lsr (5348)
     a_14 >>= 1;
     //     sta l0083 (5349)
-    l0083 = a_14;
-    if (!(l0072 < hscroll_pos))
+    screen_column = a_14;
+    if (!(visual_column < hscroll_pos))
     {
         //     lda hscroll_pos / clc / adc screen_width / sbc #3 / cmp l0072
         //     (5357)
         // (the 8-bit sequence just tests whether the cursor x (l0072) is still
         //  within the visible right edge (hscroll_pos + screen_width, less a
         //  4-column margin for the borrow); do the comparison directly)
-        if ((int)l0072 <= (int)hscroll_pos + (int)screen_maxcolumn - 4)
+        if ((int)visual_column <= (int)hscroll_pos + (int)screen_maxcolumn - 4)
             goto ca395;
     }
     //     bcs ca395 (5358)
     // ca381: (5359)
     //     lda l0072 (5360)
-    uint8_t a_16 = l0072;
+    uint8_t a_16 = visual_column;
     //     sec (5361)
     //     sbc l0083 (5362)
     //     bcs ca38a (5363)
     // (sbc with C=1 is a plain subtraction; the borrow selects 0)
-    if (a_16 < l0083)
+    if (a_16 < screen_column)
         a_16 = 0;
     else
-        a_16 -= l0083;
+        a_16 -= screen_column;
     //     sta hscroll_pos (5366)
     hscroll_pos = a_16;
     //     lda #1 (5367)
     uint8_t a_17 = 1;
     //     sta l0073 (5368)
-    l0073 = a_17;
+    display_start_row = a_17;
     //     sta input_buffer_ptr+1 (5369)
     saved_status_line_needs_redrawing_flag = a_17;
     //     jsr ca93c (5370)
@@ -5298,17 +5300,17 @@ ca395:
     status_line_needs_redrawing_flag = a_18;
     //     lda l0073 (5374)
     //     beq ca3e7 (5375)
-    if (l0073 == 0)
+    if (display_start_row == 0)
         goto ca3e7;
-    if (!((int8_t)l0073 >= 0 || (int8_t)l003d < 0))
+    if (!((int8_t)display_start_row >= 0 || (int8_t)ptr6_screen_row < 0))
     {
         //     sta l0082 (5379)
-        l0082 = l003d;
+        screen_row = ptr6_screen_row;
         //     lda screen_height (5380)
         uint8_t a_21 = screen_maxrow;
         //     sec (5381)
         //     sbc l003d (5382)
-        a_21 -= l003d;
+        a_21 -= ptr6_screen_row;
         //     tax (5383)
         x_5 = a_21;
         //     inx (5384)
@@ -5321,10 +5323,10 @@ ca395:
     // ca3b2: (5388)
     //     ldy l0033 (5389)
     //     jsr cab91 (5390)
-    load_current_ruler(l0033);
+    load_current_ruler(saved_ruler_index_scroll);
     //     lda #1 (5391)
     //     sta l0082 (5392)
-    l0082 = 1;
+    screen_row = 1;
     //     lda l0011 / ldy l0012
     draw = top_of_screen_line_ptr;
     //     ldx screen_height (5395)
@@ -5332,12 +5334,12 @@ ca395:
     // ca3c1: (5396)
 ca3c1:
     //     stx l0081 (5397)
-    l0081 = x_5;
+    scratch_index = x_5;
     // loop_ca3c3: (5398)
     do
     {
         //     jsr sub_ca486 (5399)
-        struct render_state rs = {.line = l0082};
+        struct render_state rs = {.line = screen_row};
         draw_line(&rs, draw);
         //     lda ((uint8_t*)&tmp01)[0] (5400)
         //     ldy ((uint8_t*)&tmp01)[1] (5401)
@@ -5359,21 +5361,21 @@ ca3c1:
         tmp01 += y_2;
         draw = tmp01;
         //     inc l0082 (5411)
-        l0082++;
+        screen_row++;
         //     dec l0081 (5412)
-        l0081--;
+        scratch_index--;
         //     bne loop_ca3c3 (5413)
-    } while (l0081 != 0);
+    } while (scratch_index != 0);
 ca3de:
     do
     {
         // ca3de: (5414)
         //     lda #0 (5415)
         //     sta l0074 (5416)
-        l0074 = 0;
+        line_counter = 0;
         //     ldy l0034 (5417)
         //     jsr cab91 (5418)
-        load_current_ruler(l0034);
+        load_current_ruler(saved_ruler_index_redraw);
         // ca3e7: (5419)
     ca3e7:
         //     jsr unpack_line_into_buffer (5420)
@@ -5384,10 +5386,10 @@ ca3de:
         draw_ruler();
         //     lda l0074 (5423)
         //     beq ca3ff (5424)
-        if (l0074 != 0)
+        if (line_counter != 0)
         {
-            l0082 = ypos;
-            struct render_state rs_1 = {.line = l0082};
+            screen_row = ypos;
+            struct render_state rs_1 = {.line = screen_row};
             draw_line(&rs_1, current_format_line_ptr);
         }
         //     lda flags_need_redrawing_flag (5431)
@@ -5395,7 +5397,7 @@ ca3de:
         if (flags_need_redrawing_flag != 0)
             draw_status_word();
         //     lda l0072 (5435)
-        uint8_t a_27 = l0072;
+        uint8_t a_27 = visual_column;
         //     sec (5436)
         //     sbc hscroll_pos (5437)
         //     clc (5438)
@@ -5405,11 +5407,11 @@ ca3de:
         //     tax (5440)
         //     ldy #0 (5441)
         //     sty l0073 (5442)
-        l0073 = 0;
+        display_start_row = 0;
         //     sty l0074 (5443)
-        l0074 = 0;
+        line_counter = 0;
         //     sty l006f (5444)
-        l006f = 0;
+        scroll_repeat_count = 0;
         //     dey (5445)
         //     sty ptr6+1 (5446)
         editor_ptr6 = &ram[RAM_MAX];
@@ -5421,29 +5423,29 @@ ca3de:
         // ca422: (5451)
     ca422:
         //     dec l0081 (5452)
-        l0081--;
-    } while (l0081 == 0);
+        scratch_index--;
+    } while (scratch_index == 0);
     //     ldx l0082 (5454)
     //     lda screen_width (5455)
     uint8_t a_28 = screen_maxcolumn + 1;
     //     sta line_lengths+1,x (5456)
-    line_lengths[l0082 + 1] = a_28;
+    line_lengths[screen_row + 1] = a_28;
     //     sta l0083 (5457)
-    l0083 = a_28;
+    screen_column = a_28;
     //     lda #0x2a ; '*' (5458)
     uint8_t a_29 = 0x2a;
     // loop_ca431: (5459)
     do
     {
-        l0082++;
-        screen_setcursor(0, l0082);
-        clear_to_eol(a_29, l0082);
-        line_lengths[l0082] = l0083;
+        screen_row++;
+        screen_setcursor(0, screen_row);
+        clear_to_eol(a_29, screen_row);
+        line_lengths[screen_row] = screen_column;
         uint8_t a_31 = 0;
-        l0083 = a_31;
+        screen_column = a_31;
         a_29 = 0x20;
-        l0081--;
-    } while (l0081 != 0);
+        scratch_index--;
+    } while (scratch_index != 0);
     //     beq ca3de (5472)
     goto ca3de;
 }
@@ -5599,7 +5601,7 @@ static void set_marker(uint8_t x)
     //     jsr set_marker_to_here
     set_marker_to_here(x);
     //     jmp ca035
-    l0073 = 1;
+    display_start_row = 1;
     update_line_length();
     return;
 }
@@ -5700,7 +5702,7 @@ void show_memory_full_error(void)
     //     sta status_line_needs_redrawing_flag
     status_line_needs_redrawing_flag = 1;
     //     sta l0073
-    l0073 = 1;
+    display_start_row = 1;
     //     rts
 }
 
@@ -5727,12 +5729,12 @@ static void append_to_output_buffer(uint8_t a)
     //     ldx l0048
     //     cpx #MAX_LINE_LENGTH
     //     bcs return_13
-    if (editor_l0048 >= MAX_LINE_LENGTH)
+    if (editor_output_pos >= MAX_LINE_LENGTH)
         return;
     //     sta output_buffer,l0048
-    output_buffer[editor_l0048] = a;
+    output_buffer[editor_output_pos] = a;
     //     inc l0048
-    editor_l0048++;
+    editor_output_pos++;
     // return_13:
     //     rts
 }
@@ -5756,7 +5758,7 @@ static bool process_char_for_output(
     // tabs and margins
     // sub_c9936:
     //     ror l0083
-    l0083 = (l0083 >> 1) | (carry_in ? 0x80 : 0);
+    screen_column = (screen_column >> 1) | (carry_in ? 0x80 : 0);
     //     lda (current_edit_line_ptr),y
     (*a) = ram[RAM_EDIT_BUFFER + y];
     //     sta output_buffer,y
@@ -5775,7 +5777,7 @@ static bool process_char_for_output(
         //     adc l0039
         //     bne c995c
         // (adc with C=0 is a plain addition; Z means the result is zero)
-        (*a) += l0039;
+        (*a) += column_position;
         if ((*a) != 0)
             goto c995c;
     }
@@ -5789,7 +5791,7 @@ static bool process_char_for_output(
         if (!((*a) == 0))
         {
             //     ldx l0039
-            *x = l0039;
+            *x = column_position;
             //     beq c995c
             if (*x != 0)
             {
@@ -5801,7 +5803,7 @@ static bool process_char_for_output(
             }
         c995c:
             //     sta l0039
-            l0039 = (*a);
+            column_position = (*a);
             //     sty l0042
             justify_overflow_counter = y;
             //     inc l0042
@@ -5809,7 +5811,7 @@ static bool process_char_for_output(
             //     lda #0
             (*a) = 0;
             //     sta l0046
-            l0046 = (*a);
+            justify_gap_count = (*a);
             //     rts
             return true;
         }
@@ -5828,10 +5830,10 @@ static bool process_char_for_output(
     if ((*a) < 0x20)
         return false;
     //     inc l0039
-    l0039++;
+    column_position++;
     // return_49:
     //     rts
-    return l0039 == 0;
+    return column_position == 0;
 }
 
 /**
@@ -5915,7 +5917,7 @@ c998a:
     // (carry is 1, so this is a + 2)
     uint8_t a_3 = ruler_right_stop - ruler_left_stop + 2;
     //     sta input_buffer_offset+1
-    l0080 = a_3;
+    scratch_offset = a_3;
     // PROVISIONAL: Wipe the edit buffer with 0x10 (soft spaces) and set up
     // ((uint8_t*)&tmp67)[0]/((uint8_t*)&tmp67)[1] = current_line_ptr.
     //      lda #0x10
@@ -5934,13 +5936,13 @@ c998a:
     uint8_t soft_hyphen_flag = 0;
     // was l0038 in 6502, now local to format_paragraph
     //     sty l0047
-    l0047 = y_1;
+    format_src_index = y_1;
     //     sty l0039
-    l0039 = y_1;
+    column_position = y_1;
     //     sty l0038
     soft_hyphen_flag = y_1;
     //     sty l0046
-    l0046 = y_1;
+    justify_gap_count = y_1;
     //     sty bottom_margin
     bottom_margin = y_1;
     // PROVISIONAL: Save current buffer index in l0048. Then scan forward
@@ -5950,9 +5952,9 @@ c998a:
     //  c99b6:
 c99b6:
     //     sty l0048
-    editor_l0048 = y_1;
+    editor_output_pos = y_1;
     //     ldy l0047
-    uint8_t y_2 = l0047;
+    uint8_t y_2 = format_src_index;
     // loop_c99ba:
     do
     {
@@ -5983,7 +5985,7 @@ c99c9:
         //     iny
         y_2++;
         //     sty l0047
-        l0047 = y_2;
+        format_src_index = y_2;
         if (!(a_5 != 9))
         {
             //     bne c99e0
@@ -5998,9 +6000,9 @@ c99c9:
             uint8_t a_7 = x;
             //     clc
             //     adc l0039
-            a_7 += l0039;
+            a_7 += column_position;
             //     sta l0039
-            l0039 = a_7;
+            column_position = a_7;
             //     lda #9
             a_5 = 9;
             //     bne c9a21 ; ALWAYS branch
@@ -6020,7 +6022,7 @@ c99c9:
             // to c9a2e.
             //  c99e4:
             //     lda l0046
-            if (l0046 != 0)
+            if (justify_gap_count != 0)
                 goto c99c9;
             //     bne c99c9
             //     ldx #0xff
@@ -6051,16 +6053,16 @@ c99c9:
     } while (a_10 == 0);
     //     ldx l0039
     //     cpx ruler_left_stop
-    if (l0039 < ruler_left_stop)
+    if (column_position < ruler_left_stop)
     {
-        l0039 = a_10;
-        l0039--;
+        column_position = a_10;
+        column_position--;
     }
     //     clc
     //     adc input_buffer_offset+1
-    a_10 += l0080;
+    a_10 += scratch_offset;
     //     sta input_buffer_offset+1
-    l0080 = a_10;
+    scratch_offset = a_10;
     //     lda #0x0b
     a_5 = 0x0b;
 // c9a11:
@@ -6095,7 +6097,7 @@ c9a11:
     // (c9a40) — this is a multi-space gap, keep only the first.
 c9a21:
     //     ldy l0048
-    y_1 = editor_l0048;
+    y_1 = editor_output_pos;
     //     ldx #0
     x = 0;
     if (!(a_5 != 0x20))
@@ -6104,7 +6106,7 @@ c9a21:
         //     inx ; X=0x01
         x++;
         //     bit l0046
-        if ((l0046 & 0x80))
+        if ((justify_gap_count & 0x80))
             goto c9a40;
     }
     // PROVISIONAL: Write character to edit buffer at write position (l0048). If
@@ -6113,7 +6115,7 @@ c9a21:
     //  c9a2e:
 c9a2e:
     //     ldy l0048
-    y_1 = editor_l0048;
+    y_1 = editor_output_pos;
     //     sta (current_edit_line_ptr),y
     ram[RAM_EDIT_BUFFER + y_1] = a_5;
     //     cmp #0x20 ; ' '
@@ -6131,13 +6133,13 @@ c9a2e:
     control_code_t cc = check_for_control_code(a_5);
     //     beq c9a40
     if (cc == NO_CONTROL_CODE)
-        l0039++;
+        column_position++;
 c9a40:
     //     bit l0046
     //     stx l0046
     // (bit test: N reflects the old l0046 before it is overwritten)
-    bool old_l0046_high = (l0046 & 0x80) != 0;
-    l0046 = x;
+    bool old_l0046_high = (justify_gap_count & 0x80) != 0;
+    justify_gap_count = x;
     if (!(old_l0046_high || a_5 == 0x20))
     {
         //     beq c9a58
@@ -6150,7 +6152,7 @@ c9a40:
             goto c9a58;
         //     lda l0039
         //     cmp input_buffer_offset+1
-        if (l0039 >= l0080)
+        if (column_position >= scratch_offset)
             goto c9a60;
     }
     //     bcs c9a60
@@ -6173,11 +6175,11 @@ c9a58:
     // Advance to the next document line; if non-empty, loop back to c998a.
 c9a60:
     //     inc l0047
-    l0047++;
+    format_src_index++;
     // loop_c9a62:
     do
     {
-        l0047--;
+        format_src_index--;
         y_1--;
         if (y_1 == 0)
             return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
@@ -6259,7 +6261,7 @@ static bool find_next_word_boundary(uint8_t y)
     //     ldy #0
     y = 0;
     //     sty l0083
-    l0083 = y;
+    screen_column = y;
     do
     {
         // c9ad5:
@@ -6277,7 +6279,7 @@ static bool find_next_word_boundary(uint8_t y)
         if (!(y != 0))
         {
             //     sty l0084
-            l0084 = y;
+            temp_save = y;
             //     beq c9aef ; ALWAYS branch
             goto c9aef;
             // c9ae9:
@@ -6309,7 +6311,7 @@ static bool find_next_word_boundary(uint8_t y)
                 // (The 6502 sets bit 7 by rolling left, setting C, and rolling
                 // right
                 //  again; the carry is preserved from the preceding cmp.)
-                l0084 |= 0x80;
+                temp_save |= 0x80;
                 //     bcs c9ae9
                 // (a >= 0x0b holds on this path, so the bcs is always taken)
                 if (a_3 >= 0x0b)
@@ -6329,7 +6331,7 @@ static bool find_next_word_boundary(uint8_t y)
             //     beq c9b2f
             //     ldx l0083
             //     bne c9b2f
-            if (ruler_left_stop == 0 || l0084 == 0 || l0083 != 0)
+            if (ruler_left_stop == 0 || temp_save == 0 || screen_column != 0)
                 goto c9b2f;
             // c9b1a:
             //     cmp #0x0b
@@ -6340,7 +6342,7 @@ static bool find_next_word_boundary(uint8_t y)
             if (a_4 != 0x0b)
                 break;
             //     sta l0083
-            l0083 = a_4;
+            screen_column = a_4;
         }
         // c9b20:
         //     iny
@@ -6353,7 +6355,7 @@ static bool find_next_word_boundary(uint8_t y)
     //     beq c9b31
     //     lda l0083
     //     bne c9b31
-    if (!(ruler_left_stop == 0 || l0084 == 0 || l0083 != 0))
+    if (!(ruler_left_stop == 0 || temp_save == 0 || screen_column != 0))
     {
         // c9b2f:
     c9b2f:
@@ -6387,7 +6389,7 @@ static bool insert_character_into_edit_buffer(uint8_t a)
     // (the 6502 left y = the insert position, i.e. xpos)
     ram[RAM_EDIT_BUFFER + xpos] = a;
     //     inc l0074
-    l0074++;
+    line_counter++;
     // return_55:
     //     rts
     return true;
@@ -6410,11 +6412,11 @@ static uint8_t compute_display_start_line(void)
     // sub_ca44e: Computes starting line for display based on screen position
     //     lda l0034
     //     sta ruler_stack_ptr
-    ruler_index_ptr = l0034;
+    ruler_index_ptr = saved_ruler_index_redraw;
     //     lda screen_height
     uint8_t a_1 = screen_maxrow;
     //     sta l0073
-    l0073 = a_1;
+    display_start_row = a_1;
     //     lsr
     a_1 >>= 1;
     //     tax
@@ -6423,9 +6425,9 @@ static uint8_t compute_display_start_line(void)
     x++;
     //     lda l006f
     //     bmi ca461
-    if (!(l006f & 0x80))
+    if (!(scroll_repeat_count & 0x80))
     {
-        if (l006f != 0)
+        if (scroll_repeat_count != 0)
             x = ypos;
     }
     //     lda current_line_ptr / ldy current_line_ptr+1
@@ -6457,10 +6459,10 @@ static uint8_t compute_display_start_line(void)
     top_of_screen_line_ptr = line;
     //     lda ruler_stack_ptr
     //     sta l0033
-    l0033 = ruler_index_ptr;
+    saved_ruler_index_scroll = ruler_index_ptr;
     //     lda l0034
     //     sta ruler_stack_ptr
-    ruler_index_ptr = l0034;
+    ruler_index_ptr = saved_ruler_index_redraw;
     return x;
     //     rts
 }
@@ -6472,7 +6474,7 @@ static void advance_to_next_char(struct render_state* rs)
     // registers, so synchronise the render state around the call.
     //     jsr process_current_document_character
     uint8_t y = rs->pos;
-    l0039 = rs->char_width;
+    column_position = rs->char_width;
     uint8_t a;
     uint8_t x;
     a = process_current_document_character(
@@ -6480,7 +6482,7 @@ static void advance_to_next_char(struct render_state* rs)
     rs->ch = a;
     rs->pos = y;
     rs->width = x;
-    rs->char_width = l0039;
+    rs->char_width = column_position;
 }
 
 static void advance_to_next_char_and_render(struct render_state* rs)
@@ -6571,7 +6573,7 @@ static void unpack_line(uint8_t* ptr)
     } while (y_1 != 0);
     // caac8:
     //     sty l003b
-    l003b = y_1;
+    edit_line_len = y_1;
     // return_68:
     //     rts
 }
@@ -6798,9 +6800,9 @@ static bool write_line_back_to_document(void)
         //     sty ((uint8_t*)&tmp67)[1]
         area_size = 0;
         //     jsr get_line_length
-        l0083 = get_line_length();
+        screen_column = get_line_length();
         //     lda l003b
-        uint8_t a_1 = l003b;
+        uint8_t a_1 = edit_line_len;
         //     sec
         //     sbc l0083
         //     bcc ca8df
@@ -6811,8 +6813,8 @@ static bool write_line_back_to_document(void)
         //  paths, and the borrow/zero flags select the branch)
         {
             uint8_t minuend = a_1;
-            a_1 -= l0083;
-            if (minuend < l0083)
+            a_1 -= screen_column;
+            if (minuend < screen_column)
                 goto ca8df;
             // borrow: edit_buffer_unpacked_flag < l0083
             if (a_1 == 0)
@@ -6827,13 +6829,13 @@ static bool write_line_back_to_document(void)
         // ca8df:
     ca8df:
         //     sta l0084
-        l0084 = a_1;
+        temp_save = a_1;
         //     lda #0
         // (Z from this lda is clobbered by the following sbc l0084)
         uint8_t a_2 = 0;
         //     sec
         //     sbc l0084
-        a_2 -= l0084;
+        a_2 -= temp_save;
         //     sta ((uint8_t*)&tmp67)[0]
         area_size = a_2;
         //     jsr make_space_for_insertion
@@ -6860,9 +6862,9 @@ static bool write_line_back_to_document(void)
         //     sta ((uint8_t*)&tmp67)[1]
         area_size = current_format_line_ptr - &ram[0];
         //     ldx l0083
-        uint8_t x = l0083;
+        uint8_t x = screen_column;
         //     stx l003b
-        l003b = x;
+        edit_line_len = x;
         do
         {
             if (!(x != 0))

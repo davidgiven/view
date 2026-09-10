@@ -16,7 +16,7 @@ extern uint8_t* current_ruler_ptr;
 extern uint8_t ruler_left_stop;
 extern uint8_t ruler_right_stop;
 extern uint8_t status_line_needs_redrawing_flag;
-extern uint8_t l003a;
+extern uint8_t ruler_buffer_len;
 extern uint8_t screen_maxcolumn;
 
 void push_onto_ruler_index(uint8_t* ptr);

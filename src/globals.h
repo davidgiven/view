@@ -54,7 +54,7 @@ struct edit_state
     uint8_t y;
 };
 
-extern uint8_t ram[65536];
+extern uint8_t ram[655360];
 
 // Printer driver struct
 struct printer_driver
@@ -82,12 +82,16 @@ extern uint8_t header_text_maybe[0x42];
 extern uint8_t footer_text_maybe[0x42];
 extern uint8_t output_buffer[];
 extern uint8_t formatted_line_written_flag;
-extern uint8_t l0039;
-extern uint8_t l0074;
-extern uint8_t l0047;
+extern uint8_t column_position;
+extern uint8_t line_counter;
+extern uint8_t format_src_index;
 extern uint8_t justify_nonspace_counter;
 extern uint8_t print_micro_divisor;
-extern uint8_t l0080, l0081, l0082, l0083, l0084;
+/** Multipurpose scratch bytes 0x80-0x84: view.py generic l0080-l0084
+ *  C: scratch_offset (l0080), scratch_index (l0081), screen_row (l0082),
+ *  screen_column (l0083), temp_save (l0084) */
+extern uint8_t scratch_offset, scratch_index, screen_row, screen_column,
+    temp_save;
 extern uint8_t *tmp01, *tmp23, *tmp89;
 extern ptrdiff_t area_size;
 
@@ -140,7 +144,7 @@ extern bool read_next_chunk_from_input_file(uint8_t* ptr);
 extern uint8_t* read_into_document(void);
 extern void reset_document_name_after_load(void);
 extern bool parse_integer_from_command(struct scan_state* scan, int* out);
-extern uint8_t l0021, l0031, l007a;
+extern uint8_t page_lines_remaining, page_break_pending_flag, search_target_len;
 extern uint8_t editor_current_key;
 extern uint8_t page_break_flag;
 
@@ -159,8 +163,8 @@ extern uint8_t file_edit_flags;
 extern uint8_t* current_ruler_ptr;
 extern uint8_t* current_line_ptr;
 extern uint8_t* top_of_screen_line_ptr;
-extern uint8_t l003a;
-extern uint8_t l0046;
+extern uint8_t ruler_buffer_len;
+extern uint8_t justify_gap_count;
 extern uint8_t input_file_empty_flag;
 extern uint8_t filename_buffer[];
 extern uint8_t current_tab_key;
@@ -195,22 +199,22 @@ extern uint8_t printer_driver_name[];
 extern void run_editor(void);
 
 extern uint8_t edit_buffer_unpacked_flag;
-extern uint8_t l0072;
-extern uint8_t l0079;
+extern uint8_t visual_column;
+extern uint8_t line_change_pending_flag;
 extern uint8_t cursor_moved_flag;
 extern uint8_t xpos;
 extern uint8_t flags_need_redrawing_flag;
 #define CTRL(c) ((uint8_t)((c) & 0x1f))
 
-extern uint8_t l0084;
-extern uint8_t l003b;
+extern uint8_t temp_save;
+extern uint8_t edit_line_len;
 extern uint8_t delimiter_char;
 extern uint8_t line_format_status;
-extern uint8_t l0083;
-extern uint8_t l006f;
-extern uint8_t l0033;
-extern uint8_t l0034;
-extern uint8_t l003d;
+extern uint8_t screen_column;
+extern uint8_t scroll_repeat_count;
+extern uint8_t saved_ruler_index_scroll;
+extern uint8_t saved_ruler_index_redraw;
+extern uint8_t ptr6_screen_row;
 extern uint8_t hscroll_pos;
 extern uint8_t ypos;
 extern uint8_t screen_maxrow;
@@ -219,7 +223,7 @@ extern uint8_t* ptr1;
 extern uint8_t edit_buffer_dirty_flag;
 extern uint8_t line_lengths[];
 
-extern uint8_t l0073;
+extern uint8_t display_start_row;
 
 extern uint8_t ruler_index_ptr;
 extern uint8_t* oshwm;
@@ -251,7 +255,7 @@ extern bool parse_optional_filename_from_command(struct scan_state* scan);
 
 typedef enum
 {
-    READ_BLOCK_EMPTY, /* Z set: nothing was read (l0082 == 0) */
+    READ_BLOCK_EMPTY, /* Z set: nothing was read (screen_row == 0) */
     READ_BLOCK_DONE,  /* C set: reached end of file, all data read */
     READ_BLOCK_MORE   /* neither C nor Z: block filled to limit, more data */
 } read_block_status_t;
@@ -272,8 +276,8 @@ extern uint8_t print_extra_space_accum;
 extern uint8_t justify_extra_space_accum;
 extern uint8_t print_running_total_accum;
 extern uint8_t justify_running_total_accum;
-extern uint8_t cli_l0048;
-extern uint8_t editor_l0048;
+extern uint8_t cli_output_pos;
+extern uint8_t editor_output_pos;
 extern uint8_t justify_overflow_counter;
 extern uint8_t print_last_microspacing;
 extern uint8_t justify_line_length;
@@ -282,10 +286,10 @@ extern uint8_t* editor_ptr6;
 extern uint8_t* printer_ptr6;
 extern uint8_t parser_table[];
 
-extern uint8_t cli_l0049;
-extern uint8_t editor_l0049;
-extern uint8_t cli_l004a;
-extern uint8_t editor_l004a;
+extern uint8_t cli_header_pos;
+extern uint8_t editor_header_pos;
+extern uint8_t cli_header_limit;
+extern uint8_t editor_header_limit;
 extern uint8_t* ptr2;
 
 extern bool scan_document_for_next_line(void);
