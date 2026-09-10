@@ -58,7 +58,7 @@ static void bye_cmd(void)
     exit(0);
 }
 
-void execute_cli_command(uint8_t a, struct scan_state* scan)
+void execute_cli_command(uint8_t cur_ch, struct scan_state* scan)
 {
     // execute_cli_command
     // call_through_jumptable (y=2):
@@ -76,7 +76,7 @@ void execute_cli_command(uint8_t a, struct scan_state* scan)
     //     lda (((uint8_t*)&tmp89)[0]),y
     //     sta ((uint8_t*)&tmp67)[1]
     //     jmp (((uint8_t*)&tmp67)[0])
-    switch (a)
+    switch (cur_ch)
     {
         case 0:
             quit_cmd();
@@ -294,8 +294,8 @@ static void cmd_err_no_target(void)
 
 static void count_cmd(struct scan_state* scan)
 {
-    uint8_t x;
-    uint8_t a_3;
+    uint8_t idx;
+    uint8_t tmp_ch3;
     // count_cmd
     // Pseudocode: Counts words in document area handling command prefixes and
     // punctuation
@@ -327,48 +327,48 @@ static void count_cmd(struct scan_state* scan)
     // c86b8:
 c86b8:
     //     ldy #0
-    uint8_t y = 0;
+    uint8_t pos = 0;
     //     jsr deref_and_check_for_command_prefix
-    command_prefix_t cp = deref_and_check_for_command_prefix(y, line_ptr);
+    command_prefix_t cp = deref_and_check_for_command_prefix(pos, line_ptr);
     if (!(cp == NO_COMMAND_PREFIX))
     {
         //     ldx #0
-        x = 0;
+        idx = 0;
         //     iny
-        y++;
+        pos++;
         // loop_c86c2:
         do
         {
             //     lda (((uint8_t*)&tmp01)[0]),y
-            uint8_t a = line_ptr[y];
+            uint8_t cur_ch = line_ptr[pos];
             //     iny
-            y++;
-            if (!(a != l8747_data[x]))
+            pos++;
+            if (!(cur_ch != l8747_data[idx]))
             {
                 //     lda (((uint8_t*)&tmp01)[0]),y
-                uint8_t a_1 = line_ptr[y];
+                uint8_t next_ch = line_ptr[pos];
                 //     cmp l8748,x
-                if (a_1 == l8747_data[x + 1])
+                if (next_ch == l8747_data[idx + 1])
                     goto c86df;
             }
             // c86d1:
             //     lda l8749,x
-            uint8_t a_2 = l8747_data[x + 2];
+            uint8_t tmp_ch2 = l8747_data[idx + 2];
             //     beq c86db
-            if (a_2 == 0)
+            if (tmp_ch2 == 0)
                 goto c86db;
             //     dey
-            y--;
+            pos--;
             //     inx
-            x++;
+            idx++;
             //     inx
-            x++;
+            idx++;
             //     bne loop_c86c2
-        } while (x != 0);
+        } while (idx != 0);
         // c86db:
     c86db:
         //     lda #0x80
-        a_3 = 0x80;
+        tmp_ch3 = 0x80;
         //     bne c86ff ; ALWAYS branch
         goto c86ff;
         // c86df:
@@ -386,17 +386,18 @@ c86b8:
     }
     else
     {
-        uint8_t y_1 = 0;
+        uint8_t pos2 = 0;
         //     jsr process_current_document_character
         bool is_tab = false;
-        a_3 = process_current_document_character(line_ptr, &x, &y_1, &is_tab);
+        tmp_ch3 =
+            process_current_document_character(line_ptr, &idx, &pos2, &is_tab);
         //     and #0x7f
-        a_3 &= 0x7f;
+        tmp_ch3 &= 0x7f;
         //     ldx #0
-        x = 0;
+        idx = 0;
         if (!((int8_t)screen_row < 0))
         {
-            if (!(a_3 == 0x0d || a_3 == 0x20))
+            if (!(tmp_ch3 == 0x0d || tmp_ch3 == 0x20))
             {
                 //     beq c8703
                 // c86ff:
@@ -414,15 +415,15 @@ c86b8:
                 scan_ptr++;
         }
         //     stx l0083
-        screen_column = x;
+        screen_column = idx;
         //     cmp #0x0d
-        if (a_3 == 0x0d)
-            screen_row = x;
+        if (tmp_ch3 == 0x0d)
+            screen_row = idx;
     c8715:
         //     ora l0082
-        a_3 |= screen_row;
+        tmp_ch3 |= screen_row;
         //     sta l0082
-        screen_row = a_3;
+        screen_row = tmp_ch3;
         line_ptr++;
     }
     // c871f:
@@ -452,7 +453,7 @@ c86b8:
 
 static void edit_cmd(struct scan_state* scan)
 {
-    uint8_t a;
+    uint8_t cur_ch;
     // edit_cmd
     check_not_continuous_editing();
     parse_filename_from_command(scan);
@@ -460,16 +461,16 @@ static void edit_cmd(struct scan_state* scan)
     open_input_file();
     parse_filename_from_command(scan);
     open_output_file();
-    uint8_t x = 0;
-    input_file_empty_flag = x;
+    uint8_t idx = 0;
+    input_file_empty_flag = idx;
     do
     {
-        a = filename_buffer[x];
-        if (a == 0)
-            a = 0x0d;
-        output_filename[x] = a;
-        x++;
-    } while (a != 0x0d);
+        cur_ch = filename_buffer[idx];
+        if (cur_ch == 0)
+            cur_ch = 0x0d;
+        output_filename[idx] = cur_ch;
+        idx++;
+    } while (cur_ch != 0x0d);
     initialise_document();
     if (read_first_chunk_from_input_file())
     {
@@ -497,16 +498,16 @@ static void field_cmd(struct scan_state* scan)
         return;
     }
     //     lda ((uint8_t*)&tmp89)[0]
-    uint8_t a = value & 0xFF;
+    uint8_t cur_ch = value & 0xFF;
     //     cmp #0x1b
-    if (a == 0x1b)
+    if (cur_ch == 0x1b)
     {
         cli_putstring("Frump!\n");
         return_to_cli_prompt();
         return;
     }
     //     sta current_tab_key
-    current_tab_key = a;
+    current_tab_key = cur_ch;
     // c869b:
     //     jmp return_to_cli_prompt
     return_to_cli_prompt();
@@ -555,16 +556,16 @@ static void fold_cmd(struct scan_state* scan)
     if (!(scan_input_buffer(input_buffer, scan)))
     {
         //     lda input_buffer,y
-        uint8_t a = input_buffer[scan->pos];
+        uint8_t cur_ch = input_buffer[scan->pos];
         //     cmp #'1'
         //     beq c87b2 (true → folding_flag = 0)
-        if (a == '1')
+        if (cur_ch == '1')
         {
             folding_flag = 0;
             goto c87b4;
         }
         //     cmp #'0'
-        if (a == '0')
+        if (cur_ch == '0')
             folding_flag = 0x80;
     }
 c87b4:
@@ -695,12 +696,12 @@ static void microspace_cmd(struct scan_state* scan)
     int value;
     bool parsed = parse_integer_from_command(scan, &value);
     //     ldx #0x0a
-    uint8_t x = 0x0a;
+    uint8_t idx = 0x0a;
     //     beq c8608
     if (parsed)
     {
-        x = value & 0xFF;
-        if (x == 0)
+        idx = value & 0xFF;
+        if (idx == 0)
             return;
     }
     //     ldy #0
@@ -708,16 +709,16 @@ static void microspace_cmd(struct scan_state* scan)
     //     jsr call_printer_driver
     // (the printer driver returns its status in the global y register;
     //  the y = 0 input setup is unused by the default driver)
-    uint8_t y;
-    printer_driver_ptr->printer_getflags(&x, &y);
+    uint8_t pos;
+    printer_driver_ptr->printer_getflags(&idx, &pos);
     //     tya
-    uint8_t a = y;
+    uint8_t cur_ch = pos;
     //     and #1
-    a &= 1;
+    cur_ch &= 1;
     //     beq c8617
-    if (a != 0)
+    if (cur_ch != 0)
     {
-        microspacing_flag = x;
+        microspacing_flag = idx;
         return;
     }
     //     jsr print_inline_string
@@ -763,18 +764,18 @@ static void more_cmd(struct scan_state* scan)
     //     ldy #0
     //     ldx l003a
     // loop_c84c4:
-    uint8_t y = 0;
-    uint8_t x = ruler_buffer_len;
+    uint8_t pos = 0;
+    uint8_t idx = ruler_buffer_len;
     do
     {
-        uint8_t a = current_ruler_ptr[y];
-        current_ruler_buffer[y] = a;
-        y++;
-        x--;
-    } while (x != 0);
+        uint8_t cur_ch = current_ruler_ptr[pos];
+        current_ruler_buffer[pos] = cur_ch;
+        pos++;
+        idx--;
+    } while (idx != 0);
     //     lda #0x0d
     //     sta current_ruler_buffer,y
-    current_ruler_buffer[y] = 0x0d;
+    current_ruler_buffer[pos] = 0x0d;
     //     jsr sub_c89d3
     adjust_area_pointers(area_size);
     //     jsr move_cursor_to_top_of_document
@@ -977,27 +978,27 @@ c832d:
     //     jsr draw_prompt_characters
     draw_prompt_characters('R', 'P');
     //     jsr flush_and_read_char
-    uint8_t a = screen_getchar();
+    uint8_t cur_ch = screen_getchar();
     //     bcs return_2
-    if (a == 0x1b)
+    if (cur_ch == 0x1b)
         return;
     //     and #0xdf
-    a &= 0xdf;
+    cur_ch &= 0xdf;
     //     ldx #0
-    uint8_t x = 0;
-    if (!(a == 0x59))
+    uint8_t idx = 0;
+    if (!(cur_ch == 0x59))
     {
         //     beq c8349
         //     dex ; X=0xff
-        x--;
+        idx--;
         //     cmp #0x4f ; 'O'
-        if (a != 0x4f)
+        if (cur_ch != 0x4f)
             goto c8356;
     }
     //     bne c8356
     // c8349:
     //     stx print_xpos
-    print_xpos = x;
+    print_xpos = idx;
     //     jsr sub_c8371
     setup_area_pointers(doc_working_ptr);
     //     jsr sub_c8a4f
@@ -1047,16 +1048,16 @@ static void save_cmd_write_cmd(struct scan_state* scan)
             //         zendif
         }
         //         ldx #0
-        uint8_t x = 0;
+        uint8_t idx = 0;
         //         zrepeat
         do
         {
             //             lda input_filename,x
-            ch = input_filename[x];
+            ch = input_filename[idx];
             //             sta filename_buffer,x
-            filename_buffer[x] = ch;
+            filename_buffer[idx] = ch;
             //             inx
-            x++;
+            idx++;
             //             cmp #0x0d
             //         zuntil eq
         } while (ch != 0x0d);
@@ -1150,22 +1151,22 @@ static void setup_cmd(struct scan_state* scan)
     // c8681:
     static const uint8_t c8681_data[] = {0x00, 0x00, 0xff};
     //     ldx #1
-    uint8_t x = 1;
+    uint8_t idx = 1;
     //     stx tmp6
     uint8_t fmt_flag_tmp =
-        x; // view.py: tmp6 (generic) - C: fmt_flag_tmp (was tmp6)
+        idx; // view.py: tmp6 (generic) - C: fmt_flag_tmp (was tmp6)
     //     dex                                                               ;
     //     X=0x00
-    x--;
+    idx--;
     //     stx tmp8
     uint8_t insert_flag_tmp =
-        x; // view.py: tmp8 (generic) - C: insert_flag_tmp (was tmp8)
+        idx; // view.py: tmp8 (generic) - C: insert_flag_tmp (was tmp8)
     //     dex                                                               ;
     //     X=0xff
-    x--;
+    idx--;
     //     stx tmp7
     uint8_t justify_flag_tmp =
-        x; // view.py: tmp7 (generic) - C: justify_flag_tmp (was tmp7)
+        idx; // view.py: tmp7 (generic) - C: justify_flag_tmp (was tmp7)
     do
     {
         // c8649:
@@ -1176,20 +1177,20 @@ static void setup_cmd(struct scan_state* scan)
         //     and #0xdf
         scan->ch &= 0xdf;
         //     ldx #0
-        uint8_t x_1 = 0;
+        uint8_t idx2 = 0;
         // loop_c8652:
-        uint8_t y;
+        uint8_t pos;
         do
         {
             //     cmp c867d,x
-            if (scan->ch == c867d_data[x_1])
+            if (scan->ch == c867d_data[idx2])
                 goto c8669;
             //     inx
-            x_1++;
+            idx2++;
             //     ldy c867d,x
-            y = c867d_data[x_1];
+            pos = c867d_data[idx2];
             //     bne loop_c8652
-        } while (y != 0);
+        } while (pos != 0);
         //     jsr print_inline_string
         //     .ascii "Bad flag"
         //     .byte 0xff
@@ -1199,39 +1200,39 @@ static void setup_cmd(struct scan_state* scan)
         // c8669:
     c8669:
         //     lda c8681,x
-        uint8_t a = c8681_data[x_1];
+        uint8_t cur_ch = c8681_data[idx2];
         //     sta tmp6,x
-        if (x_1 == 0)
-            fmt_flag_tmp = a;
-        else if (x_1 == 1)
-            justify_flag_tmp = a;
+        if (idx2 == 0)
+            fmt_flag_tmp = cur_ch;
+        else if (idx2 == 1)
+            justify_flag_tmp = cur_ch;
         else
-            insert_flag_tmp = a;
+            insert_flag_tmp = cur_ch;
         //     inc input_buffer_offset
         input_buffer_offset++;
     } while (input_buffer_offset != 0);
     //     bne c8649
     // c8672:
     //     ldx #2
-    uint8_t x_2 = 2;
+    uint8_t idx3 = 2;
     // loop_c8674:
     do
     {
-        uint8_t a_1;
-        if (x_2 == 0)
-            a_1 = fmt_flag_tmp;
-        else if (x_2 == 1)
-            a_1 = justify_flag_tmp;
+        uint8_t next_ch;
+        if (idx3 == 0)
+            next_ch = fmt_flag_tmp;
+        else if (idx3 == 1)
+            next_ch = justify_flag_tmp;
         else
-            a_1 = insert_flag_tmp;
-        if (x_2 == 0)
-            format_mode_flag = a_1;
-        else if (x_2 == 1)
-            justifying_flag = a_1;
+            next_ch = insert_flag_tmp;
+        if (idx3 == 0)
+            format_mode_flag = next_ch;
+        else if (idx3 == 1)
+            justifying_flag = next_ch;
         else
-            insert_mode_flag = a_1;
-        x_2--;
-    } while (!((int8_t)x_2 < 0));
+            insert_mode_flag = next_ch;
+        idx3--;
+    } while (!((int8_t)idx3 < 0));
     //     bpl loop_c8674
     //     bmi c869b                                                         ;
     //     ALWAYS branch
@@ -1293,7 +1294,7 @@ bool read_command_line(void)
 
 const uint8_t la83d[] = "VIEW\0B3.0 for CP/M-65";
 
-static void print_x_words_of_help(uint8_t x)
+static void print_x_words_of_help(uint8_t idx)
 {
     // print_x_words_of_help
     // Pseudocode: Prints X words of the help string showing VIEW and version
@@ -1301,7 +1302,7 @@ static void print_x_words_of_help(uint8_t x)
     // ***************************************************************************************
     // print_x_words_of_help:
     //     ldy #0
-    uint8_t y = 0;
+    uint8_t pos = 0;
     // ca82e:
     //     jsr bdos_print_char
     //     iny
@@ -1313,16 +1314,16 @@ static void print_x_words_of_help(uint8_t x)
     //     bpl ca82e
     for (;;)
     {
-        uint8_t a = la83d[y];
-        if (a == 0)
+        uint8_t cur_ch = la83d[pos];
+        if (cur_ch == 0)
         {
-            a = 0x20;
-            x--;
-            if ((int8_t)x < 0)
+            cur_ch = 0x20;
+            idx--;
+            if ((int8_t)idx < 0)
                 break;
         }
-        cli_putchar(a);
-        y++;
+        cli_putchar(cur_ch);
+        pos++;
     }
     //     rts
     return;
@@ -1423,15 +1424,15 @@ void run_cli(void)
         }
     }
     //     lda printer_driver_name
-    uint8_t a_2 = printer_driver_name[0];
-    if (!(a_2 == 0))
+    uint8_t tmp_ch2 = printer_driver_name[0];
+    if (!(tmp_ch2 == 0))
     {
         //     jsr print_inline_string
         //     .ascii "Printer "
         //     .byte 0
         cli_putstring("Printer ");
         //     ldx #0
-        uint8_t x = 0;
+        uint8_t idx = 0;
         // loop_c819a:
         //     lda printer_driver_name,x
         //     cmp #0x0d
@@ -1441,12 +1442,12 @@ void run_cli(void)
         //     bne loop_c819a
         do
         {
-            uint8_t a_3 = printer_driver_name[x];
-            if (a_3 == 0x0d)
+            uint8_t tmp_ch3 = printer_driver_name[idx];
+            if (tmp_ch3 == 0x0d)
                 break;
-            cli_putchar(a_3);
-            x++;
-        } while (x != 0);
+            cli_putchar(tmp_ch3);
+            idx++;
+        } while (idx != 0);
         // c81a7:
         //     lda microspacing_flag
         //     beq c81b3
@@ -1457,28 +1458,28 @@ void run_cli(void)
     }
     // c81b6:
     //     ldx #0
-    uint8_t x_1 = 0;
+    uint8_t idx2 = 0;
     //     ldy #0
-    uint8_t y = 0;
+    uint8_t pos = 0;
     do
     {
         // c81ba:
         //     lda markers_array+1,x
-        uint8_t a_5 = ((uint8_t*)markers_array)[x_1 + 1];
-        if (!(a_5 == 0))
+        uint8_t tmp_ch5 = ((uint8_t*)markers_array)[idx2 + 1];
+        if (!(tmp_ch5 == 0))
         {
-            if (!(y != 0))
+            if (!(pos != 0))
             {
                 //     stx l0083
-                screen_column = x_1;
+                screen_column = idx2;
                 //     jsr print_inline_string
                 //     .ascii "Marker(s) set "
                 //     .byte 0
                 cli_putstring("Marker(s) set ");
                 //     ldx l0083
-                x_1 = screen_column;
+                idx2 = screen_column;
                 //     ldy #1
-                y = 1;
+                pos = 1;
                 // c81db:
                 //     lda #0x2c ; ','
                 //     jsr screen_putchar
@@ -1494,19 +1495,19 @@ void run_cli(void)
             // (x is an even offset into markers_array, so lsr shifts out a 0
             // and
             //  the carry is 0: a = (x >> 1) + 0x31)
-            uint8_t a_6 = (x_1 >> 1) + 0x31;
+            uint8_t tmp_ch6 = (idx2 >> 1) + 0x31;
             //     jsr screen_putchar
-            screen_putchar(a_6);
+            screen_putchar(tmp_ch6);
         }
         // c81e7:
         //     inx
-        x_1++;
+        idx2++;
         //     inx
-        x_1++;
-    } while (x_1 != 0x0c);
+        idx2++;
+    } while (idx2 != 0x0c);
     //     tya
     //     beq c81f3
-    if (y != 0)
+    if (pos != 0)
         cli_putchar('\n');
     //     jsr bdos_print_newline
     cli_putchar('\n');
@@ -1516,7 +1517,7 @@ void run_cli(void)
 // CLI command parser
 static bool parse_command(uint8_t* input_buffer_offset)
 {
-    uint8_t y;
+    uint8_t pos;
     // parse_command
     //     .ascii "VIEW"
     //     .byte 0
@@ -1526,77 +1527,77 @@ static bool parse_command(uint8_t* input_buffer_offset)
     // ***************************************************************************************
     // parse_command:
     //     lda #0xff
-    uint8_t a = 0xff;
+    uint8_t cur_ch = 0xff;
     //     sta l0082
-    screen_row = a;
+    screen_row = cur_ch;
     //     tax                                                               ;
     //     X=0xff
-    uint8_t x = a;
+    uint8_t idx = cur_ch;
     // ca84c:
     for (;;)
     {
         //     ldy input_buffer_offset
-        y = *input_buffer_offset;
+        pos = *input_buffer_offset;
         //     dey
-        y--;
+        pos--;
         //     inc l0082
         screen_row++;
         // loop_ca851:
         for (;;)
         {
             //     inx
-            x++;
+            idx++;
             //     iny
-            y++;
+            pos++;
             //     lda (((uint8_t*)&tmp01)[0]),y
-            uint8_t a_1 = input_buffer[y];
+            uint8_t next_ch = input_buffer[pos];
             //     and #0xdf
-            a_1 &= 0xdf;
+            next_ch &= 0xdf;
             //     sta l0084
-            temp_save = a_1;
+            temp_save = next_ch;
             //     lda parser_table,x
-            uint8_t a_2 = parser_table[x];
+            uint8_t tmp_ch2 = parser_table[idx];
             //     beq ca890
-            if (a_2 == 0)
+            if (tmp_ch2 == 0)
                 goto ca890;
             //     bmi ca87e
-            if (a_2 & 0x80)
+            if (tmp_ch2 & 0x80)
                 goto ca87e;
             //     eor #0x5b ; '['
-            a_2 ^= 0x5b;
+            tmp_ch2 ^= 0x5b;
             //     sta l0083
-            screen_column = a_2;
+            screen_column = tmp_ch2;
             //     and #0xdf
-            a_2 &= 0xdf;
+            tmp_ch2 &= 0xdf;
             //     cmp l0084
-            if (a_2 != temp_save)
+            if (tmp_ch2 != temp_save)
                 break;
             //     beq loop_ca851
         }
         // loop_ca86a:
-        uint8_t a_3;
+        uint8_t tmp_ch3;
         do
         {
             //     inx
-            x++;
+            idx++;
             //     lda parser_table,x
-            a_3 = parser_table[x];
+            tmp_ch3 = parser_table[idx];
             //     beq ca890
-            if (a_3 == 0)
+            if (tmp_ch3 == 0)
                 goto ca890;
             //     bpl loop_ca86a
-        } while (!(a_3 & 0x80));
+        } while (!(tmp_ch3 & 0x80));
         //     lda l0083
-        uint8_t a_4 = screen_column;
+        uint8_t tmp_ch4 = screen_column;
         //     and #0x20 ; ' '
-        a_4 &= 0x20;
+        tmp_ch4 &= 0x20;
         //     beq ca84c
-        if (a_4 == 0)
+        if (tmp_ch4 == 0)
             continue;
         //     lda (((uint8_t*)&tmp01)[0]),y
-        uint8_t a_5 = input_buffer[y];
+        uint8_t tmp_ch5 = input_buffer[pos];
         //     cmp #0x30 ; '0'
-        if (a_5 >= 0x30)
+        if (tmp_ch5 >= 0x30)
             continue;
         //     bcs ca84c
         break;
@@ -1604,14 +1605,14 @@ static bool parse_command(uint8_t* input_buffer_offset)
     // ca87e:
 ca87e:
     //     lda (((uint8_t*)&tmp01)[0]),y
-    uint8_t a_6 = input_buffer[y];
+    uint8_t tmp_ch6 = input_buffer[pos];
     //     cmp #0x30 ; '0'
-    if (a_6 < 0x30)
+    if (tmp_ch6 < 0x30)
     {
-        delimiter_char = a_6;
-        y++;
+        delimiter_char = tmp_ch6;
+        pos++;
     }
-    *input_buffer_offset = y;
+    *input_buffer_offset = pos;
     //     ldy l0082
     // (the 6502 copied the command index into Y here; callers now read
     //  l0082 directly)
@@ -1675,13 +1676,13 @@ bool parse_integer_from_command(struct scan_state* scan, int* out)
     if (scan_input_buffer(input_buffer, scan))
         return false;
     //     jmp ca6fe
-    uint8_t y = scan->pos;
-    const char* start = (const char*)&input_buffer[y];
+    uint8_t pos = scan->pos;
+    const char* start = (const char*)&input_buffer[pos];
     char* end;
     int parsed = (int)strtoul(start, &end, 10);
     bool ok = (end != start);
     // y is advanced locally as in ca6fe; callers do not read it back
-    (void)y;
+    (void)pos;
     if (out)
         *out = parsed;
     // (6502 returns Z set when no integer was parsed; the boolean mirrors
@@ -1728,24 +1729,24 @@ void reset_document_name_after_load(void)
 
 void set_document_name_to_filename_buffer(void)
 {
-    uint8_t a;
+    uint8_t cur_ch;
     // set_document_name_to_filename_buffer
     // Pseudocode: Copies filename buffer to input filename buffer
     // set_document_name_to_filename_buffer:
     //     ldx #0
-    uint8_t x = 0;
+    uint8_t idx = 0;
     // loop_c88fa:
     do
     {
-        a = filename_buffer[x];
-        input_filename[x] = a;
-        x++;
-    } while (a >= 0x21);
+        cur_ch = filename_buffer[idx];
+        input_filename[idx] = cur_ch;
+        idx++;
+    } while (cur_ch >= 0x21);
     //     bge loop_c88fa
     // return_9:
     //     lda #0x0d
     //     sta input_filename-1, x
-    input_filename[x - 1] = 0x0d;
+    input_filename[idx - 1] = 0x0d;
     //     rts
     return;
     // MULTIPLE ENTRY POINTS: also called directly from edit_cmd
@@ -1763,10 +1764,10 @@ void zero_terminate_filename_buffer(void)
     //     lda #0
     //     sta filename_buffer, x
     //     rts
-    uint8_t x = 0;
-    while (filename_buffer[x] != 0x0d)
-        x++;
-    filename_buffer[x] = 0;
+    uint8_t idx = 0;
+    while (filename_buffer[idx] != 0x0d)
+        idx++;
+    filename_buffer[idx] = 0;
     return;
 }
 

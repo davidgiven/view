@@ -38,7 +38,7 @@ typedef enum
     HIGHLIGHT2_CODE, /* 0x1d highlight 2 toggle */
 } control_code_t;
 
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+#define ARRAY_SIZE(cur_ch) (sizeof(cur_ch) / sizeof((cur_ch)[0]))
 
 #define MAX_LINE_LENGTH 132
 #define MAX_COMMAND_LENGTH 68
@@ -51,7 +51,7 @@ typedef enum
 // the line-navigation helpers pass between themselves and their callers.
 struct edit_state
 {
-    uint8_t y;
+    uint8_t pos;
 };
 
 extern uint8_t ram[655360];
@@ -59,11 +59,11 @@ extern uint8_t ram[655360];
 // Printer driver struct
 struct printer_driver
 {
-    void (*print_char)(uint8_t a);
+    void (*print_char)(uint8_t cur_ch);
     void (*printer_on)(void);
     void (*printer_off)(void);
     void (*printer_microspace)(void);
-    void (*printer_getflags)(uint8_t* x, uint8_t* y);
+    void (*printer_getflags)(uint8_t* idx, uint8_t* pos);
 };
 
 // Global variables (shared between view.c and printing.c)
@@ -104,7 +104,7 @@ extern uint8_t print_flags, folding_flag, macro_executing_flag;
 extern uint8_t ruler_right_stop, ruler_left_stop;
 
 extern command_prefix_t check_for_command_prefix(uint8_t ch);
-extern control_code_t check_for_control_code(uint8_t a);
+extern control_code_t check_for_control_code(uint8_t cur_ch);
 extern void render_number_to_screen(uint16_t val);
 
 // Functions in view.c called by other modules
@@ -251,11 +251,11 @@ extern void file_error(void);
 extern void redraw_editor(void);
 extern void write_line_back_to_document_safely(void);
 extern void clamp_ptr6_to_document(void);
-extern uint8_t upper_case_unless_folding(uint8_t a);
+extern uint8_t upper_case_unless_folding(uint8_t cur_ch);
 extern area_status_t sanitise_area(void);
 extern bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta);
 extern uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta);
-extern bool parse_decimal_number(int* value, uint8_t* y);
+extern bool parse_decimal_number(int* value, uint8_t* pos);
 extern bool parse_optional_filename_from_command(struct scan_state* scan);
 
 typedef enum
@@ -299,10 +299,10 @@ extern uint8_t* doc_working_ptr; // was ptr2
 
 extern bool scan_document_for_next_line(void);
 extern uint8_t process_current_document_character(
-    uint8_t* target_ptr, uint8_t* x, uint8_t* y, bool* is_tab);
+    uint8_t* target_ptr, uint8_t* idx, uint8_t* pos, bool* is_tab);
 extern void check_not_continuous_editing(void);
 extern void adjust_area_pointers(ptrdiff_t area_delta);
-extern void wipe_buffer(uint8_t a, uint8_t* target_ptr);
+extern void wipe_buffer(uint8_t cur_ch, uint8_t* target_ptr);
 
 // Result of format_paragraph, conveying the 6502 exit flags explicitly:
 // FORMAT_MEMORY_FULL is V=1 (document write failed); FORMAT_AT_END is C=1
@@ -316,7 +316,7 @@ typedef enum
 
 extern format_result_t format_paragraph(void);
 extern void print_document(struct scan_state* scan);
-extern void draw_prompt_characters(uint8_t x, uint8_t y);
+extern void draw_prompt_characters(uint8_t idx, uint8_t pos);
 extern void show_memory_full_error(void);
 extern void bad_filename_error(void);
 extern void clear_screen(void);

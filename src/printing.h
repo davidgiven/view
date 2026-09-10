@@ -34,7 +34,7 @@ enum formatting_command
 };
 
 // Functions defined in printing.c, called from view.c
-extern bool execute_formatting_command(enum formatting_command x);
+extern bool execute_formatting_command(enum formatting_command idx);
 extern void prepare_printer_driver(void);
 extern void stop_printing(void);
 

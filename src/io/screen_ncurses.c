@@ -33,17 +33,17 @@ void screen_leave(void)
     ncurses_active = false;
 }
 
-void screen_putchar(uint8_t a)
+void screen_putchar(uint8_t cur_ch)
 {
-    assert(a != 0 && "screen_putchar called with NUL");
+    assert(cur_ch != 0 && "screen_putchar called with NUL");
 
     if (ncurses_active)
     {
-        addch(a);
+        addch(cur_ch);
 #if defined(TEST_HARNESS)
         /*
          * Workaround for pyte bug: DECSC/DECRC (save/restore cursor)
-         * produces wrong cursor row when a DECSTBM (scroll region) is set
+         * produces wrong cursor row when cur_ch DECSTBM (scroll region) is set
          * between them, causing scroll-region RI (\x1bM) to silently
          * move the cursor instead of scrolling.  ncurses emits this exact
          * pattern for scroll-based redraws.  Flushing each character
@@ -55,7 +55,7 @@ void screen_putchar(uint8_t a)
     }
     else
     {
-        putchar(a);
+        putchar(cur_ch);
         fflush(stdout);
     }
 }
@@ -104,11 +104,11 @@ uint16_t screen_getcursor(void)
     return 0;
 }
 
-void screen_setstyle(uint8_t a)
+void screen_setstyle(uint8_t cur_ch)
 {
     if (ncurses_active)
     {
-        if (a)
+        if (cur_ch)
             attron(A_REVERSE);
         else
             attroff(A_REVERSE);

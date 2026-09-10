@@ -24,10 +24,10 @@ void screen_leave(void)
     log_call("screen_leave()");
 }
 
-void screen_putchar(uint8_t a)
+void screen_putchar(uint8_t cur_ch)
 {
-    char repr = (a >= 0x20 && a < 0x7f) ? (char)a : '?';
-    log_call("screen_putchar(%d '%c')", a, repr);
+    char repr = (cur_ch >= 0x20 && cur_ch < 0x7f) ? (char)cur_ch : '?';
+    log_call("screen_putchar(%d '%c')", cur_ch, repr);
 }
 
 uint8_t screen_getchar(void)
@@ -47,9 +47,9 @@ uint16_t screen_getcursor(void)
     return 0;
 }
 
-void screen_setstyle(uint8_t a)
+void screen_setstyle(uint8_t cur_ch)
 {
-    log_call("screen_setstyle(0x%02x)", a);
+    log_call("screen_setstyle(0x%02x)", cur_ch);
 }
 
 uint16_t screen_getsize(void)

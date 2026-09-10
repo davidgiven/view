@@ -59,7 +59,7 @@ bool read_first_chunk_from_input_file(void);
 bool read_next_chunk_from_input_file(uint8_t* target_ptr);
 static uint8_t* compute_space_available(uint8_t* target_ptr);
 static uint8_t* compute_space_common(uint8_t* target_ptr, ptrdiff_t scan_ptr);
-control_code_t check_for_control_code(uint8_t a);
+control_code_t check_for_control_code(uint8_t cur_ch);
 
 static void system_init(void);
 
@@ -400,23 +400,23 @@ int main(int argc, char* argv[])
 // run_editor moved to editor.c
 // sub_c8310.  *end is set if the byte is the delimiter (delimiter_char) or CR,
 // terminating the current token (the 6502's Z flag).
-static uint8_t read_next_command_byte(uint8_t* y, bool* end)
+static uint8_t read_next_command_byte(uint8_t* pos, bool* end)
 {
     // sub_c8310
     // sub_c8310:
     //     iny
-    (*y)++;
+    (*pos)++;
     //     lda input_buffer,y
-    uint8_t a = input_buffer[*y];
+    uint8_t cur_ch = input_buffer[*pos];
     //     sta l0084
     // (the l0084 store is omitted — callers use the returned byte instead)
     //     cmp l007e
     //     beq return_2
     //     cmp #0x0d
-    *end = (a == delimiter_char) || (a == 0x0d);
+    *end = (cur_ch == delimiter_char) || (cur_ch == 0x0d);
     // return_2:
     //     rts
-    return a;
+    return cur_ch;
 }
 
 void redraw_and_write_back(void)
@@ -448,15 +448,15 @@ void setup_area_pointers(uint8_t* doc_working_ptr)
     uint8_t* scan_ptr = doc_working_ptr;
     //     ldy #0
     //     ldx #0
-    uint8_t x = 0;
+    uint8_t idx = 0;
     if (!(scan_ptr == doc_ptr2))
     {
         // c8389:
         //     lda (((uint8_t*)&tmp89)[0]),y
-        uint8_t a = *scan_ptr;
+        uint8_t cur_ch = *scan_ptr;
         //     cmp #0x0d
-        if (a == 0x0d)
-            x++;
+        if (cur_ch == 0x0d)
+            idx++;
         // c8390:
         //     inc ((uint8_t*)&tmp89)[0]
         scan_ptr++;
@@ -469,7 +469,7 @@ void setup_area_pointers(uint8_t* doc_working_ptr)
     line_counter++;
     //     txa
     //     beq return_3
-    if (x == 0)
+    if (idx == 0)
         return;
     //     jmp ca741
     clamp_ptr6_to_document();
@@ -481,86 +481,86 @@ static const uint8_t escaped_char_table[] = {
 static const uint8_t l83e0_table[] = {
     1, 9, 0x0d, 2, 0x0b, 0x1a, 0x1c, 0x1d, 0xff};
 
-static uint8_t expand_escaped_string(uint8_t x, uint8_t y)
+static uint8_t expand_escaped_string(uint8_t idx, uint8_t pos)
 {
     // expand_escaped_string
     // expand_escaped_string:
     //     stx l0083
-    screen_column = x;
+    screen_column = idx;
     //     dey
-    y--;
+    pos--;
     do
     {
         // c83a3:
         //     jsr sub_c8310
-        uint8_t a;
+        uint8_t cur_ch;
         _Bool end;
-        a = read_next_command_byte(&y, &end);
+        cur_ch = read_next_command_byte(&pos, &end);
         //     beq c83da
         if (end)
             break;
-        if (!(a != 0x5e))
+        if (!(cur_ch != 0x5e))
         {
             //     bne c83ca
             //     jsr sub_c8310
-            uint8_t a_1 = read_next_command_byte(&y, &end);
+            uint8_t next_ch = read_next_command_byte(&pos, &end);
             //     beq c83da
             if (end)
                 break;
             //     jsr to_uppercase
             //     sta l0082
-            screen_row = toupper(a_1);
+            screen_row = toupper(next_ch);
             //     ldx #0xfe
-            x = 0xfe;
+            idx = 0xfe;
             // loop_c83b8:
             for (;;)
             {
                 //     inx
                 //     inx
-                x += 2;
-                uint8_t idx = x >> 1;
+                idx += 2;
+                uint8_t table_idx = idx >> 1;
                 //     lda escaped_char_table,x
-                uint8_t a_3 = escaped_char_table[idx];
+                uint8_t tmp_ch3 = escaped_char_table[table_idx];
                 //     bmi c83c8
-                if (a_3 & 0x80)
+                if (tmp_ch3 & 0x80)
                     break;
                 //     cmp l0082
-                if (a_3 == screen_row)
+                if (tmp_ch3 == screen_row)
                 {
                     //     lda l83e0,x
-                    a = l83e0_table[idx];
+                    cur_ch = l83e0_table[table_idx];
                     //     bne c83ca
-                    if (a != 0)
+                    if (cur_ch != 0)
                         goto c83ca;
                 }
                 //     bne loop_c83b8
             }
             // c83c8:
             //     lda l0084
-            a = temp_save;
+            cur_ch = temp_save;
         }
     c83ca:
         // c83ca:
         //     ldx l007a
-        x = search_target_len;
+        idx = search_target_len;
         //     bne c83d1
-        if (x == 0)
-            a = upper_case_unless_folding(a);
+        if (idx == 0)
+            cur_ch = upper_case_unless_folding(cur_ch);
         // c83d1:
         //     ldx l0083
-        x = screen_column;
+        idx = screen_column;
         //     sta header_text_maybe,x
-        header_text_maybe[x] = a;
+        header_text_maybe[idx] = cur_ch;
         //     inc l0083
         screen_column++;
     } while (screen_column != 0);
     //     bne c83a3
     // c83da:
     //     ldx l0083
-    x = screen_column;
+    idx = screen_column;
     //     sty input_buffer_offset
-    input_buffer_offset = y;
-    return x;
+    input_buffer_offset = pos;
+    return idx;
     // return_3:
     //     rts
 }
@@ -579,9 +579,9 @@ cli_cmd_status_t process_cli_command(struct scan_state* scan)
     if (!scan_input_buffer(input_buffer, scan))
     {
         // (base index comes from l007a, set by reset_command_parse_state)
-        uint8_t x =
+        uint8_t idx =
             expand_escaped_string(search_target_len, input_buffer_offset + 1);
-        cli_header_limit = x;
+        cli_header_limit = idx;
     }
     // c8402:
     //     jsr parse_marks_from_command
@@ -610,11 +610,11 @@ bool reset_command_parse_state(struct scan_state* scan)
     // sub_c8412
     // sub_c8412:
     //     ldx #0
-    uint8_t x = 0;
+    uint8_t idx = 0;
     //     stx l007a
-    search_target_len = x;
+    search_target_len = idx;
     //     stx l004a
-    cli_header_limit = x;
+    cli_header_limit = idx;
     //     jsr sub_c8e33
     //     beq return_5
     if (scan_input_buffer(input_buffer, scan))
@@ -622,11 +622,11 @@ bool reset_command_parse_state(struct scan_state* scan)
     // Z set (no command)
     //     ldx #0
     //     jsr expand_escaped_string
-    uint8_t x_1 = expand_escaped_string(0, scan->pos);
+    uint8_t idx2 = expand_escaped_string(0, scan->pos);
     //     stx l007a
-    search_target_len = x_1;
+    search_target_len = idx2;
     //     cpx #0
-    return x_1 == 0;
+    return idx2 == 0;
     // Z = (x == 0)
     // return_5:
     //     rts
@@ -702,34 +702,34 @@ uint8_t* read_into_document(void)
  */
 bool check_area_memory(uint8_t* doc_working_ptr)
 {
-    uint8_t a_3;
-    uint8_t a_4;
+    uint8_t tmp_ch3;
+    uint8_t tmp_ch4;
     // sub_c8a4f
     //  Ptrs:   ptr2
     // sub_c8a4f:
     //     lda #0
-    uint8_t a = 0;
+    uint8_t cur_ch = 0;
     //     sta l0082
-    uint8_t block_expansion_len = a;
+    uint8_t block_expansion_len = cur_ch;
     //     sta l0081
-    scratch_index = a;
+    scratch_index = cur_ch;
     //     ldy #0x14
-    uint8_t y = 0x14;
+    uint8_t pos = 0x14;
     //     ldx l007a
-    uint8_t x = search_target_len;
-    if (!(x != 0))
+    uint8_t idx = search_target_len;
+    if (!(idx != 0))
     {
     c8a5b:
         // c8a5b:
         //     lda header_text_maybe,x
-        uint8_t a_1 = header_text_maybe[x];
-        if (!(a_1 != 1))
+        uint8_t next_ch = header_text_maybe[idx];
+        if (!(next_ch != 1))
         {
             //     bne c8a6c
             //     lda l0081
-            a_1 = scratch_index;
+            next_ch = scratch_index;
             //     cmp l0049
-            if (a_1 >= cli_header_pos)
+            if (next_ch >= cli_header_pos)
                 goto c8a86;
             //     bcs c8a86
             //     inc l0081
@@ -742,26 +742,26 @@ bool check_area_memory(uint8_t* doc_working_ptr)
         //     cmp #0x20 ; ' '
         //     bne c8a84
         //     cpy l0048
-        if (!(a_1 != 0x20 || y >= cli_output_pos))
+        if (!(next_ch != 0x20 || pos >= cli_output_pos))
         {
             //     bcs c8a84
             // loop_c8a74:
             while (1)
             {
                 //     lda output_buffer,y
-                uint8_t a_2 = output_buffer[y];
+                uint8_t tmp_ch2 = output_buffer[pos];
                 //     php; iny; plp
                 // (the php/plp preserves Z across iny for the beq below;
                 // testing
                 //  a == 0 directly is equivalent)
-                y++;
+                pos++;
                 //     beq c8a86
-                if (a_2 == 0)
+                if (tmp_ch2 == 0)
                     goto c8a86;
                 //     inc l0082
                 block_expansion_len++;
                 //     cpy l0048
-                if (y >= cli_output_pos)
+                if (pos >= cli_output_pos)
                     break;
                 //     bcc loop_c8a74
             }
@@ -775,11 +775,11 @@ bool check_area_memory(uint8_t* doc_working_ptr)
     c8a86:
         // c8a86:
         //     inx
-        x++;
+        idx++;
     }
     // c8a87:
     //     cpx l004a
-    if (x < cli_header_limit)
+    if (idx < cli_header_limit)
         goto c8a5b;
     //     lda doc_ptr2+0
     //     sec
@@ -790,15 +790,15 @@ bool check_area_memory(uint8_t* doc_working_ptr)
     //     sta l0081
     ptrdiff_t gap = doc_ptr2 - doc_working_ptr;
     //     ldx l0082
-    uint8_t x_1 = block_expansion_len;
+    uint8_t idx2 = block_expansion_len;
     //     tay
-    if (gap < 256 && x_1 >= gap)
-        x_1 = gap;
+    if (gap < 256 && idx2 >= gap)
+        idx2 = gap;
     // c8aa3:
     //     txa
     //     clc; adc ptr2; sta ((uint8_t*)&tmp45)[0]; lda ptr2+1; adc #0; sta
     //     ((uint8_t*)&tmp45)[1]
-    uint8_t* insert_ptr = doc_working_ptr + x_1;
+    uint8_t* insert_ptr = doc_working_ptr + idx2;
     //     lda l0082 / sec; sbc l0080; sta tmp67; lda #0; sbc l0081
     // (tmp67 = l0082 - gap as signed 16-bit) — three-way split:
     // shrink (delta<0), no-change (delta==0), grow (delta>0)
@@ -816,23 +816,23 @@ bool check_area_memory(uint8_t* doc_working_ptr)
     // delta==0 falls through
     // c8ada:
     //     ldy #0
-    uint8_t y_1 = 0;
+    uint8_t pos2 = 0;
     //     sty l0081
-    scratch_index = y_1;
+    scratch_index = pos2;
     if (!(print_xpos & 0x80))
     {
         //     ldx input_buffer_offset+1
-        uint8_t x_2 = scratch_offset;
+        uint8_t idx3 = scratch_offset;
         // loop_c8ae4:
         do
         {
             //     lda (ptr2),y
-            a_3 = doc_working_ptr[y_1];
+            tmp_ch3 = doc_working_ptr[pos2];
             //     iny
-            y_1++;
+            pos2++;
             //     jsr is_uppercase
             //     bcc c8af3
-            if (isalpha(a_3))
+            if (isalpha(tmp_ch3))
                 goto c8af3;
             //     ror print_xpos
             // (carry-in is 1: is_uppercase left C set on this fall-through; the
@@ -840,9 +840,9 @@ bool check_area_memory(uint8_t* doc_working_ptr)
             //  loop-back and by cpx/cmp on the exit path)
             print_xpos = (uint8_t)(print_xpos >> 1) | 0x80;
             //     dex
-            x_2--;
+            idx3--;
             //     bne loop_c8ae4
-        } while (x_2 != 0);
+        } while (idx3 != 0);
         //     beq c8b11
         goto c8b11;
     c8af3:
@@ -853,28 +853,28 @@ bool check_area_memory(uint8_t* doc_working_ptr)
             //     sta print_xpos
             print_xpos = 0;
             //     pla
-            a_4 = a_3;
+            tmp_ch4 = tmp_ch3;
         }
         //     and #0x20 ; ' '
-        a_4 &= 0x20;
-        if (a_4 != 0)
+        tmp_ch4 &= 0x20;
+        if (tmp_ch4 != 0)
             goto c8b11;
         //     bne c8b11
         //     inc l0081
         scratch_index++;
         //     dex
-        x_2--;
-        if (!(x_2 == 0))
+        idx3--;
+        if (!(idx3 == 0))
         {
             //     lda (ptr2),y
-            uint8_t a_5 = doc_working_ptr[y_1];
+            uint8_t tmp_ch5 = doc_working_ptr[pos2];
             //     jsr is_uppercase
             //     bcs c8b11
-            if (!isalpha(a_5))
+            if (!isalpha(tmp_ch5))
                 goto c8b11;
             //     and #0x20 ; ' '
-            a_5 &= 0x20;
-            if (a_5 != 0)
+            tmp_ch5 &= 0x20;
+            if (tmp_ch5 != 0)
                 goto c8b11;
         }
         //     bne c8b11
@@ -895,40 +895,40 @@ c8b11:
     //     stx input_buffer_offset+1
     scratch_offset = 0x14;
     //     ldx l007a
-    uint8_t x_3 = search_target_len;
+    uint8_t idx4 = search_target_len;
     //     bne c8b6b
-    if (x_3 != 0)
+    if (idx4 != 0)
         goto c8b6b;
     do
     {
         //     lda header_text_maybe,x
-        uint8_t a_6 = header_text_maybe[x_3];
+        uint8_t tmp_ch6 = header_text_maybe[idx4];
         //     stx l0084
-        temp_save = x_3;
-        if (!(a_6 != 0x20))
+        temp_save = idx4;
+        if (!(tmp_ch6 != 0x20))
         {
             //     bne c8b38
             //     ldy input_buffer_offset+1
-            uint8_t y_2 = scratch_offset;
+            uint8_t pos3 = scratch_offset;
             //     cpy l0048
-            if (y_2 >= cli_output_pos)
+            if (pos3 >= cli_output_pos)
                 goto c8b47;
             //     bcs c8b47
             //     inc input_buffer_offset+1
             scratch_offset++;
             //     lda output_buffer,y
-            a_6 = output_buffer[y_2];
+            tmp_ch6 = output_buffer[pos3];
             //     beq c8b6a
-            if (a_6 == 0)
+            if (tmp_ch6 == 0)
                 goto c8b6a;
             //     dex
-            x_3--;
+            idx4--;
             // c8b38:
             //     cmp #1
         }
         else
         {
-            if (a_6 != 1)
+            if (tmp_ch6 != 1)
                 goto c8b47;
             //     bne c8b47
             //     ldy l0082
@@ -937,43 +937,43 @@ c8b11:
                 goto c8b6a;
             //     bcs c8b6a
             //     lda output_buffer,y
-            a_6 = output_buffer[output_buf_pos];
+            tmp_ch6 = output_buffer[output_buf_pos];
             //     inc l0082
             output_buf_pos++;
         }
     c8b47:
         // c8b47:
         //     cmp #2
-        if (a_6 == 2)
-            a_6 = 0x20;
+        if (tmp_ch6 == 2)
+            tmp_ch6 = 0x20;
         if (!(folding_flag & 0x80 || print_xpos != 0))
         {
             //     jsr is_uppercase
             //     bcs c8b64
-            if (isalpha(a_6))
+            if (isalpha(tmp_ch6))
             {
-                a_6 |= 0x20;
+                tmp_ch6 |= 0x20;
                 if (scratch_index != 0)
                 {
                     scratch_index--;
-                    a_6 &= 0xdf;
+                    tmp_ch6 &= 0xdf;
                 }
             }
         }
         // c8b64:
         //     ldy l0083
         //     sta (ptr2),y
-        doc_working_ptr[doc_write_pos] = a_6;
+        doc_working_ptr[doc_write_pos] = tmp_ch6;
         //     inc l0083
         doc_write_pos++;
     c8b6a:
         // c8b6a:
         //     inx
-        x_3++;
+        idx4++;
     c8b6b:
         // c8b6b:
         //     cpx l004a
-    } while (x_3 < cli_header_limit);
+    } while (idx4 < cli_header_limit);
     //     lda ptr2
     //     ldy ptr2+1
     //     jsr cac78
@@ -1047,10 +1047,10 @@ void write_area_to_file(void)
         // (y is only set as a side effect of the 6502's indexed dereference;
         //  the C reads *tmp89 directly and no caller reads y afterwards)
         //         lda (((uint8_t*)&tmp89)[0]),y
-        uint8_t a = *scan_ptr;
+        uint8_t cur_ch = *scan_ptr;
         //         jsr put_byte_to_file
         // (inlined: fputc(a, file_ptr))
-        fputc(a, file_ptr);
+        fputc(cur_ch, file_ptr);
         scan_ptr++;
     } while (scan_ptr != area_end_ptr);
     // return_17:
