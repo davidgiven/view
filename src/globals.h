@@ -92,7 +92,12 @@ extern uint8_t print_micro_divisor;
  *  screen_column (l0083), temp_save (l0084) */
 extern uint8_t scratch_offset, scratch_index, screen_row, screen_column,
     temp_save;
-extern uint8_t *tmp01, *tmp23, *tmp89;
+/** Multipurpose tmp pointers 0x85-0x8E: view.py generic tmp0-tmp9
+ *  C: scratch_line_ptr (tmp0/tmp1), scratch_block_ptr (tmp2/tmp3),
+ *  scratch_scan_ptr (tmp8/tmp9), area_size (tmp6/tmp7) — all are
+ *  multipurpose scratch; locals alias the same storage as
+ *  insert_ptr, base_ptr, ruler_ptr, scan_ptr, copy_ptr, etc. */
+extern uint8_t *scratch_line_ptr, *scratch_block_ptr, *scratch_scan_ptr;
 extern ptrdiff_t area_size;
 
 extern uint8_t print_flags, folding_flag, macro_executing_flag;
@@ -248,8 +253,8 @@ extern void write_line_back_to_document_safely(void);
 extern void clamp_ptr6_to_document(void);
 extern uint8_t upper_case_unless_folding(uint8_t a);
 extern area_status_t sanitise_area(void);
-extern bool make_space_for_insertion(uint8_t* tmp45, ptrdiff_t tmp67);
-extern uint8_t* adjust_pointers(uint8_t* tmp45, ptrdiff_t tmp67);
+extern bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta);
+extern uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta);
 extern bool parse_decimal_number(int* value, uint8_t* y);
 extern bool parse_optional_filename_from_command(struct scan_state* scan);
 
@@ -296,7 +301,7 @@ extern bool scan_document_for_next_line(void);
 extern uint8_t process_current_document_character(
     uint8_t* ptr, uint8_t* x, uint8_t* y, bool* is_tab);
 extern void check_not_continuous_editing(void);
-extern void adjust_area_pointers(ptrdiff_t tmp67);
+extern void adjust_area_pointers(ptrdiff_t area_delta);
 extern void wipe_buffer(uint8_t a, uint8_t* ptr);
 
 // Result of format_paragraph, conveying the 6502 exit flags explicitly:

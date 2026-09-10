@@ -44,9 +44,9 @@ extern void move_cursor_to_address(uint8_t* addr);
 
 extern void move_cursor_to_top_of_document(void);
 
-extern bool find_next_line(uint8_t* start, uint8_t** tmp01, uint8_t* y);
+extern bool find_next_line(uint8_t* start, uint8_t** line_ptr, uint8_t* y);
 
-extern bool find_previous_line(uint8_t* val, uint8_t** tmp01);
+extern bool find_previous_line(uint8_t* val, uint8_t** line_ptr);
 
 extern void open_input_file(void);
 
@@ -58,6 +58,6 @@ extern void push_onto_ruler_index(uint8_t* ptr);
 
 extern void reset_area_to_entire_document(void);
 
-extern bool advance_to_next_line(uint8_t* line, uint8_t** tmp01, uint8_t* y);
+extern bool advance_to_next_line(uint8_t* line, uint8_t** line_ptr, uint8_t* y);
 
 #endif

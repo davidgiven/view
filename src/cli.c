@@ -315,11 +315,11 @@ static void count_cmd(struct scan_state* scan)
     //     sta ((uint8_t*)&tmp01)[0]
     //     lda area_start_ptr+1
     //     sta ((uint8_t*)&tmp01)[1]
-    uint8_t* tmp01 = area_start_ptr;
+    uint8_t* line_ptr = area_start_ptr;
     //     lda #0
     //     sta ((uint8_t*)&tmp89)[0]
     //     sta ((uint8_t*)&tmp89)[1]
-    int tmp89 = 0;
+    int scan_ptr = 0;
     //     sta l0083
     //     sta l0082
     screen_column = 0;
@@ -329,7 +329,7 @@ c86b8:
     //     ldy #0
     uint8_t y = 0;
     //     jsr deref_and_check_for_command_prefix
-    command_prefix_t cp = deref_and_check_for_command_prefix(y, tmp01);
+    command_prefix_t cp = deref_and_check_for_command_prefix(y, line_ptr);
     if (!(cp == NO_COMMAND_PREFIX))
     {
         //     ldx #0
@@ -340,13 +340,13 @@ c86b8:
         do
         {
             //     lda (((uint8_t*)&tmp01)[0]),y
-            uint8_t a = tmp01[y];
+            uint8_t a = line_ptr[y];
             //     iny
             y++;
             if (!(a != l8747_data[x]))
             {
                 //     lda (((uint8_t*)&tmp01)[0]),y
-                uint8_t a_1 = tmp01[y];
+                uint8_t a_1 = line_ptr[y];
                 //     cmp l8748,x
                 if (a_1 == l8747_data[x + 1])
                     goto c86df;
@@ -380,7 +380,7 @@ c86b8:
         //     bcs c871d
         //     bcc c871f ; ALWAYS branch
         // (16-bit arithmetic: tmp01 += 3)
-        tmp01 += 3;
+        line_ptr += 3;
         // c86ea:
         //     ldy #0
     }
@@ -389,7 +389,7 @@ c86b8:
         uint8_t y_1 = 0;
         //     jsr process_current_document_character
         bool is_tab = false;
-        a_3 = process_current_document_character(tmp01, &x, &y_1, &is_tab);
+        a_3 = process_current_document_character(line_ptr, &x, &y_1, &is_tab);
         //     and #0x7f
         a_3 &= 0x7f;
         //     ldx #0
@@ -411,7 +411,7 @@ c86b8:
             //     ldy l0083
             //     beq c870d
             if (screen_column != 0)
-                tmp89++;
+                scan_ptr++;
         }
         //     stx l0083
         screen_column = x;
@@ -423,7 +423,7 @@ c86b8:
         a_3 |= screen_row;
         //     sta l0082
         screen_row = a_3;
-        tmp01++;
+        line_ptr++;
     }
     // c871f:
     //     ldy ((uint8_t*)&tmp01)[1]
@@ -431,10 +431,10 @@ c86b8:
     //     ldy ((uint8_t*)&tmp01)[0]
     //     cpy area_end_ptr
     // (16-bit equality consolidated)
-    if (tmp01 != area_end_ptr)
+    if (line_ptr != area_end_ptr)
         goto c86b8;
     //     ldx ((uint8_t*)&tmp89)[0]
-    render_number_to_screen(tmp89);
+    render_number_to_screen(scan_ptr);
     //     jsr print_inline_string
     //     .ascii " word(s) counted."
     //     .byte 0xff
@@ -1152,17 +1152,20 @@ static void setup_cmd(struct scan_state* scan)
     //     ldx #1
     uint8_t x = 1;
     //     stx tmp6
-    uint8_t tmp6 = x;
+    uint8_t fmt_flag_tmp =
+        x; // view.py: tmp6 (generic) - C: fmt_flag_tmp (was tmp6)
     //     dex                                                               ;
     //     X=0x00
     x--;
     //     stx tmp8
-    uint8_t tmp8 = x;
+    uint8_t insert_flag_tmp =
+        x; // view.py: tmp8 (generic) - C: insert_flag_tmp (was tmp8)
     //     dex                                                               ;
     //     X=0xff
     x--;
     //     stx tmp7
-    uint8_t tmp7 = x;
+    uint8_t justify_flag_tmp =
+        x; // view.py: tmp7 (generic) - C: justify_flag_tmp (was tmp7)
     do
     {
         // c8649:
@@ -1199,11 +1202,11 @@ static void setup_cmd(struct scan_state* scan)
         uint8_t a = c8681_data[x_1];
         //     sta tmp6,x
         if (x_1 == 0)
-            tmp6 = a;
+            fmt_flag_tmp = a;
         else if (x_1 == 1)
-            tmp7 = a;
+            justify_flag_tmp = a;
         else
-            tmp8 = a;
+            insert_flag_tmp = a;
         //     inc input_buffer_offset
         input_buffer_offset++;
     } while (input_buffer_offset != 0);
@@ -1216,11 +1219,11 @@ static void setup_cmd(struct scan_state* scan)
     {
         uint8_t a_1;
         if (x_2 == 0)
-            a_1 = tmp6;
+            a_1 = fmt_flag_tmp;
         else if (x_2 == 1)
-            a_1 = tmp7;
+            a_1 = justify_flag_tmp;
         else
-            a_1 = tmp8;
+            a_1 = insert_flag_tmp;
         if (x_2 == 0)
             format_mode_flag = a_1;
         else if (x_2 == 1)

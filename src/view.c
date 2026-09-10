@@ -58,7 +58,7 @@ bool read_first_chunk_from_input_file(void);
 // flags.C=0
 bool read_next_chunk_from_input_file(uint8_t* ptr);
 static uint8_t* compute_space_available(uint8_t* ptr);
-static uint8_t* compute_space_common(uint8_t* ptr, ptrdiff_t tmp89);
+static uint8_t* compute_space_common(uint8_t* ptr, ptrdiff_t scan_ptr);
 control_code_t check_for_control_code(uint8_t a);
 
 static void system_init(void);
@@ -242,10 +242,14 @@ uint8_t
     screen_column; // view.py: l0083 (generic multipurpose) - C: screen_column
 // X l0084: .fill 1
 uint8_t temp_save; // view.py: l0084 (generic multipurpose) - C: temp_save
-uint8_t* tmp01;
-uint8_t* tmp23;
-ptrdiff_t area_size;
-uint8_t* tmp89;
+uint8_t* scratch_line_ptr;  // view.py: tmp0/tmp1 (generic multipurpose) - C:
+                            // scratch_line_ptr
+uint8_t* scratch_block_ptr; // view.py: tmp2/tmp3 (generic multipurpose) - C:
+                            // scratch_block_ptr
+ptrdiff_t area_size; // view.py: tmp6/tmp7 (generic multipurpose) - C: area_size
+                     // (was tmp67)
+uint8_t* scratch_scan_ptr; // view.py: tmp8/tmp9 (generic multipurpose) - C:
+                           // scratch_scan_ptr
 // X file_ptr: .fill 2
 FILE* file_ptr;
 
@@ -441,21 +445,21 @@ void setup_area_pointers(uint8_t* ptr2)
     //     sta ((uint8_t*)&tmp89)[0]
     //     lda ptr2+1
     //     sta ((uint8_t*)&tmp89)[1]
-    uint8_t* tmp89 = ptr2;
+    uint8_t* scan_ptr = ptr2;
     //     ldy #0
     //     ldx #0
     uint8_t x = 0;
-    if (!(tmp89 == doc_ptr2))
+    if (!(scan_ptr == doc_ptr2))
     {
         // c8389:
         //     lda (((uint8_t*)&tmp89)[0]),y
-        uint8_t a = *tmp89;
+        uint8_t a = *scan_ptr;
         //     cmp #0x0d
         if (a == 0x0d)
             x++;
         // c8390:
         //     inc ((uint8_t*)&tmp89)[0]
-        tmp89++;
+        scan_ptr++;
     }
     //     bne c837d
     //     inc ((uint8_t*)&tmp89)[1]
@@ -647,20 +651,20 @@ uint8_t* read_into_document(void)
     open_input_file();
     //     lda area_start_ptr
     //     sta ((uint8_t*)&tmp45)[0]
-    uint8_t* tmp45 = area_start_ptr;
+    uint8_t* insert_ptr = area_start_ptr;
     //     jsr move_cursor_to_address
     move_cursor_to_address(area_start_ptr);
     //     lda ((uint8_t*)&tmp45)[0]
     //     ldy ((uint8_t*)&tmp45)[1]
     //     jsr compute_required_space_for_insertion
-    uint8_t* space_limit = compute_required_space_for_insertion(tmp45);
+    uint8_t* space_limit = compute_required_space_for_insertion(insert_ptr);
     //     jsr make_space_for_insertion
     // (the 6502 leaves the clamped free-space size in tmp67; since
     //  space_limit = tmp45 + tmp67 - 0x8b, tmp67 = space_limit - tmp45 + 0x8b)
-    make_space_for_insertion(tmp45, space_limit - tmp45 + 0x8b);
+    make_space_for_insertion(insert_ptr, space_limit - insert_ptr + 0x8b);
     //     jsr read_block_from_file
     // (destination = the insertion point tmp45 explicitly)
-    uint8_t* cursor = tmp45;
+    uint8_t* cursor = insert_ptr;
     read_block_status_t status = read_block_from_file(&cursor, space_limit);
     //     beq c8584
     //     bcs c8598
@@ -680,9 +684,9 @@ uint8_t* read_into_document(void)
     //     sbc ((uint8_t*)&tmp01)[1]
     //     sta ((uint8_t*)&tmp67)[1]
     // (16-bit subtraction: tmp67 = space_limit - tmp01)
-    ptrdiff_t tmp67 = space_limit - cursor;
+    ptrdiff_t size_delta = space_limit - cursor;
     //     jsr adjust_pointers
-    tmp89 = adjust_pointers(cursor, tmp67);
+    scratch_scan_ptr = adjust_pointers(cursor, size_delta);
     // (the 6502 left the post-read cursor in tmp01; load_cmd uses it for top)
     return cursor;
 }
@@ -793,19 +797,19 @@ bool check_area_memory(uint8_t* ptr2)
     //     txa
     //     clc; adc ptr2; sta ((uint8_t*)&tmp45)[0]; lda ptr2+1; adc #0; sta
     //     ((uint8_t*)&tmp45)[1]
-    uint8_t* tmp45 = ptr2 + x_1;
+    uint8_t* insert_ptr = ptr2 + x_1;
     //     lda l0082 / sec; sbc l0080; sta tmp67; lda #0; sbc l0081
     // (tmp67 = l0082 - gap as signed 16-bit) — three-way split:
     // shrink (delta<0), no-change (delta==0), grow (delta>0)
     ptrdiff_t delta = (ptrdiff_t)block_expansion_len - gap;
     if (delta < 0)
     {
-        ptrdiff_t tmp67 = -delta;
-        tmp89 = adjust_pointers(tmp45, tmp67);
+        ptrdiff_t size_delta = -delta;
+        scratch_scan_ptr = adjust_pointers(insert_ptr, size_delta);
     }
     else if (delta > 0)
     {
-        if (!make_space_for_insertion(tmp45, delta))
+        if (!make_space_for_insertion(insert_ptr, delta))
             return true;
     }
     // delta==0 falls through
@@ -972,7 +976,7 @@ c8b11:
     //     lda ptr2
     //     ldy ptr2+1
     //     jsr cac78
-    split_line_at_wrap(tmp89);
+    split_line_at_wrap(ptr2); // was scan_ptr (tmp89)
     //     clc
     //     rts
     return false;
@@ -1034,7 +1038,7 @@ void write_area_to_file(void)
     //     sta ((uint8_t*)&tmp89)[0]
     //     lda area_start_ptr+1
     //     sta ((uint8_t*)&tmp89)[1]
-    uint8_t* tmp89 = area_start_ptr;
+    uint8_t* scan_ptr = area_start_ptr;
     //     zrepeat
     do
     {
@@ -1042,28 +1046,28 @@ void write_area_to_file(void)
         // (y is only set as a side effect of the 6502's indexed dereference;
         //  the C reads *tmp89 directly and no caller reads y afterwards)
         //         lda (((uint8_t*)&tmp89)[0]),y
-        uint8_t a = *tmp89;
+        uint8_t a = *scan_ptr;
         //         jsr put_byte_to_file
         // (inlined: fputc(a, file_ptr))
         fputc(a, file_ptr);
-        tmp89++;
-    } while (tmp89 != area_end_ptr);
+        scan_ptr++;
+    } while (scan_ptr != area_end_ptr);
     // return_17:
     //     rts
 }
 
-static uint8_t* compute_space_common(uint8_t* ptr, ptrdiff_t tmp89)
+static uint8_t* compute_space_common(uint8_t* ptr, ptrdiff_t scan_ptr)
 {
     // compute_space_common
     // c8daf:
     //     sta ((uint8_t*)&tmp01)[0]
-    uint8_t* tmp01 = ptr;
+    uint8_t* line_ptr = ptr;
     //     jsr compute_bytes_free
     //     stx ((uint8_t*)&tmp67)[0]
-    ptrdiff_t tmp67 = compute_bytes_free();
+    ptrdiff_t size_delta = compute_bytes_free();
     //     lsr ((uint8_t*)&tmp89)[1]; ror ((uint8_t*)&tmp89)[0]; lsr
     //     ((uint8_t*)&tmp89)[1]; ror ((uint8_t*)&tmp89)[0]
-    tmp89 >>= 2;
+    scan_ptr >>= 2;
     //     lda ((uint8_t*)&tmp89)[1]; cmp #4
     // (16-bit comparison: tmp89 >= 0x0400)
     // c8dce (the clamp's C flag supplies the SBC borrow-in, so the
@@ -1073,15 +1077,15 @@ static uint8_t* compute_space_common(uint8_t* ptr, ptrdiff_t tmp89)
     //     ((uint8_t*)&tmp67)[0]
     //     lda ((uint8_t*)&tmp67)[1]; sbc ((uint8_t*)&tmp89)[1]; sta
     //     ((uint8_t*)&tmp67)[1]
-    if (tmp89 >= 0x0400)
+    if (scan_ptr >= 0x0400)
     {
         //     lda #4; sta ((uint8_t*)&tmp89)[1]; sta ((uint8_t*)&tmp89)[0]
-        tmp89 = 0x0404;
-        tmp67 -= tmp89;
+        scan_ptr = 0x0404;
+        size_delta -= scan_ptr;
     }
     else
     {
-        tmp67 -= tmp89 + 1;
+        size_delta -= scan_ptr + 1;
     }
     //     lda ((uint8_t*)&tmp01)[0]; clc; adc ((uint8_t*)&tmp67)[0]; sta ptr5;
     //     pha lda ((uint8_t*)&tmp01)[1]; adc ((uint8_t*)&tmp67)[1]; sta ptr5+1;
@@ -1092,7 +1096,7 @@ static uint8_t* compute_space_common(uint8_t* ptr, ptrdiff_t tmp89)
     // (16-bit subtraction: result = tmp01 + tmp67 - 0x8b)
     // return_18:
     //     rts
-    return tmp01 + tmp67 - 0x8b;
+    return line_ptr + size_delta - 0x8b;
 }
 
 static uint8_t* compute_space_available(uint8_t* ptr)

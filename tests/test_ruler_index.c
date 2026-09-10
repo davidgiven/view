@@ -8,7 +8,7 @@ typedef uint16_t addr_t;
 typedef uint16_t addr_t;
 
 extern uint8_t ram[65536];
-extern uint8_t* tmp01;
+extern uint8_t* scratch_line_ptr; // was tmp01
 extern uint8_t ruler_index_ptr;
 extern uint8_t* oshwm;
 extern uint8_t* ruler_index[128];

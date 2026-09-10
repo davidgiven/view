@@ -21,7 +21,7 @@ void bad_filename_error(void);
 static void set_rw_file_handle(uint8_t a);
 static void process_page_footer(void);
 static void print_output_buffer(void);
-static uint8_t scan_string_length(uint8_t y_start, uint8_t* tmp45);
+static uint8_t scan_string_length(uint8_t y_start, uint8_t* insert_ptr);
 void check_not_continuous_editing(void);
 void display_not_enough_memory(void);
 static void microspace_word_processor(uint8_t* y);
@@ -34,7 +34,7 @@ static void print_loop(uint8_t* ptr5);
 static void print_newline(void);
 static void print_vertical_space(uint8_t x);
 read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit);
-static void render_header_or_footer(uint8_t* tmp45);
+static void render_header_or_footer(uint8_t* insert_ptr);
 static void render_new_page(void);
 bool scan_input_buffer(uint8_t* buffer, struct scan_state* state);
 static void start_microspacing_if_active(uint8_t a);
@@ -45,12 +45,12 @@ static enum parse_register_result_t parse_register_reference(uint8_t a);
 static read_block_status_t read_next_output_line(
     uint8_t* limit, uint8_t** cursor);
 static void compute_lines_remaining_on_page(void);
-static uint8_t* compute_header_left_section(uint8_t* tmp45);
-static uint8_t* compute_header_middle_section(uint8_t* tmp45);
-static uint8_t* compute_header_odd_page_section(uint8_t* tmp45);
-static uint8_t get_line_width(uint8_t* tmp45);
+static uint8_t* compute_header_left_section(uint8_t* insert_ptr);
+static uint8_t* compute_header_middle_section(uint8_t* insert_ptr);
+static uint8_t* compute_header_odd_page_section(uint8_t* insert_ptr);
+static uint8_t get_line_width(uint8_t* insert_ptr);
 static uint8_t get_right_margin(void);
-static uint8_t copy_header_footer_text(uint8_t* tmp23);
+static uint8_t copy_header_footer_text(uint8_t* copy_ptr);
 static bool get_page_parity(void);
 static void output_left_margin(void);
 static uint8_t add_justification_spaces(uint8_t x);
@@ -80,8 +80,8 @@ enum parse_register_result_t
 };
 
 enum formatting_command lookup_formatting_command(void);
-static void store_to_output_buffer(uint8_t a, uint8_t* tmp23);
-static uint8_t process_header_footer_line(uint8_t* tmp23);
+static void store_to_output_buffer(uint8_t a, uint8_t* copy_ptr);
+static uint8_t process_header_footer_line(uint8_t* copy_ptr);
 static void write_output_buffer_to_format_line(uint8_t a);
 void render_register(uint8_t a, uint8_t x);
 static void render_number_to_output_buffer(uint16_t value, uint8_t start_x);
@@ -346,21 +346,21 @@ c955e:
     goto c9537;
 }
 
-static void store_to_output_buffer(uint8_t a, uint8_t* tmp23)
+static void store_to_output_buffer(uint8_t a, uint8_t* copy_ptr)
 {
     // sub_c95b2
     // sub_c95b2:
     //     ldy l0081
     uint8_t y = scratch_index;
     //     sta (((uint8_t*)&tmp23)[0]),y
-    tmp23[y] = a;
+    copy_ptr[y] = a;
     //     iny
     y++;
     //     sty l0081
     scratch_index = y;
 }
 
-static uint8_t process_header_footer_line(uint8_t* tmp23)
+static uint8_t process_header_footer_line(uint8_t* copy_ptr)
 {
     uint8_t a_1;
     // c9575
@@ -407,7 +407,7 @@ static uint8_t process_header_footer_line(uint8_t* tmp23)
             if (a_1 == screen_column)
                 a_1 |= 0x80;
         }
-        store_to_output_buffer(a_1, tmp23);
+        store_to_output_buffer(a_1, copy_ptr);
         //     cmp #0x8d
         if (a_1 == 0x8d)
             goto c95aa;
@@ -420,11 +420,11 @@ static uint8_t process_header_footer_line(uint8_t* tmp23)
 c95aa:
     //     lda #0x80
     //     jsr sub_c95b2
-    store_to_output_buffer(0x80, tmp23);
+    store_to_output_buffer(0x80, copy_ptr);
     //     jsr sub_c95b2
-    store_to_output_buffer(0x80, tmp23);
+    store_to_output_buffer(0x80, copy_ptr);
     //     (fall through into sub_c95b2)
-    store_to_output_buffer(0x80, tmp23);
+    store_to_output_buffer(0x80, copy_ptr);
     return a_1;
     // MULTIPLE ENTRY POINTS: dh_fmt_cmd, df_fmt_cmd
 }
@@ -827,8 +827,8 @@ static void dm_fmt_cmd(void)
     //     lda last_macro_ptr+1
     //     sta ((uint8_t*)&tmp67)[1]
     // (tmp67 keeps the struct macro* of the node being built)
-    struct macro* tmp67;
-    tmp67 = last_macro_ptr;
+    struct macro* size_delta;
+    size_delta = last_macro_ptr;
     //     ldy #3
     uint8_t y = 3;
     //     lda (current_format_line_ptr),y
@@ -895,10 +895,10 @@ static void dm_fmt_cmd(void)
         //     sta l0081
         //     sta current_format_line_ptr+1
         // (16-bit copy: tmp01 = current_format_line_ptr = last_macro_ptr->body)
-        uint8_t* tmp01 = last_macro_ptr->body;
+        uint8_t* line_ptr = last_macro_ptr->body;
         current_format_line_ptr = last_macro_ptr->body;
         //     jsr sub_c9241
-        if (read_next_output_line(last_macro_ptr->body, &tmp01) ==
+        if (read_next_output_line(last_macro_ptr->body, &line_ptr) ==
             READ_BLOCK_DONE)
         {
             return;
@@ -922,7 +922,7 @@ static void dm_fmt_cmd(void)
         //     lda tmp1
         //     sta last_macro_ptr+1
         //     bne c96a2
-        last_macro_ptr = (struct macro*)tmp01;
+        last_macro_ptr = (struct macro*)line_ptr;
     }
     //     lda #4
     //     ldy #0
@@ -944,7 +944,7 @@ static void dm_fmt_cmd(void)
     //     lda last_macro_ptr+1
     //     sta (((uint8_t*)&tmp67)[0]),y
     // (16-bit write: the previous macro's next pointer = body + 1)
-    tmp67->next = (struct macro*)(last_macro_ptr->body + 1);
+    size_delta->next = (struct macro*)(last_macro_ptr->body + 1);
     //     rts
     return;
 }
@@ -1088,7 +1088,7 @@ enum formatting_command lookup_formatting_command(void)
  * (c8f6b_l via continue; c8fce_l through render_new_page /
  * output_left_margin / the character loop) reach the next flag consumer
  * only after prepare_output_line has rewritten C.  Handler exit-flag
- * traffic is therefore not reproduced.  tmp01, ptr1, ptr5 are registers
+ * traffic is therefore not reproduced.  line_ptr, ptr1, ptr5 are registers
  * the dispatched command reads/writes, used by the printing pipeline
  * after the call.
  */
@@ -1340,7 +1340,7 @@ c97ae:
 static bool evaluate_expression_from_fmt_cmd(
     uint16_t* result, uint8_t* y, uint8_t x)
 {
-    int tmp45 = 0;
+    int insert_ptr = 0;
     // evaluate_expression_from_fmt_cmd
     // Pseudocode: Evaluates arithmetic expression with +, - and register
     // references
@@ -1357,7 +1357,7 @@ static bool evaluate_expression_from_fmt_cmd(
     uint8_t a = 0;
     //     sta ((uint8_t*)&tmp89)[0]
     //     sta ((uint8_t*)&tmp89)[1]
-    int tmp89 = 0;
+    int scan_ptr = 0;
     //     sta input_buffer_offset+1
     scratch_offset = a;
     // c97c0:
@@ -1369,7 +1369,7 @@ static bool evaluate_expression_from_fmt_cmd(
         if (a_1 == 0)
         {
             // empty argument: nothing parsed (the 6502 just returned tmp89=0)
-            *result = tmp89;
+            *result = scan_ptr;
             return false;
         }
         //     cmp #0x7c ; '|'
@@ -1392,7 +1392,7 @@ static bool evaluate_expression_from_fmt_cmd(
             //     jsr ca6fe
             int parsed;
             parse_decimal_number(&parsed, y);
-            tmp89 = (uint16_t)parsed;
+            scan_ptr = (uint16_t)parsed;
             // c97dc:
         }
         //     ldx input_buffer_offset+1
@@ -1412,13 +1412,13 @@ static bool evaluate_expression_from_fmt_cmd(
                 // (the sec makes this a plain subtraction; its carry is dead —
                 // no
                 //  reader exists between here and the next flag write)
-                tmp89 = tmp45 - tmp89;
+                scan_ptr = insert_ptr - scan_ptr;
                 goto c9804;
             }
-            tmp89 += tmp45;
+            scan_ptr += insert_ptr;
         }
     c9804:
-        tmp45 = tmp89;
+        insert_ptr = scan_ptr;
         //     jsr get_current_fmt_cmd_byte
         uint8_t a_4 = get_current_fmt_cmd_byte(y);
         //     beq c9821
@@ -1446,7 +1446,7 @@ static bool evaluate_expression_from_fmt_cmd(
 c9821:
     //     lda ((uint8_t*)&tmp89)[0]
     //     rts
-    *result = tmp89;
+    *result = scan_ptr;
     return true;
 }
 
@@ -1679,7 +1679,7 @@ static void print_output_buffer(void)
     //     rts
 }
 
-static uint8_t scan_string_length(uint8_t y, uint8_t* tmp45)
+static uint8_t scan_string_length(uint8_t y, uint8_t* insert_ptr)
 {
     uint8_t a;
     // c93b8:
@@ -1689,7 +1689,7 @@ static uint8_t scan_string_length(uint8_t y, uint8_t* tmp45)
     do
     {
         y++;
-        a = tmp45[y];
+        a = insert_ptr[y];
     } while ((int8_t)a >= 0);
     return y;
     //     rts
@@ -1771,7 +1771,7 @@ c9048:
         //     pha
         {
             //     lda (((uint8_t*)&tmp01)[0]),y
-            uint8_t a_1 = tmp01[*y];
+            uint8_t a_1 = scratch_line_ptr[*y];
             //     jsr sub_c9431
             convert_char_for_printing(a_1, &x, &is_tab);
             //     pla
@@ -1780,7 +1780,7 @@ c9048:
         //     tax
         x = a_2;
         //     lda (((uint8_t*)&tmp01)[0]),y
-        a_3 = tmp01[*y];
+        a_3 = scratch_line_ptr[*y];
         //     iny
         (*y)++;
         //     cmp #0x1a
@@ -1993,7 +1993,7 @@ c9101:
     //     bne loop_c9107
     //     sta tmp8
     // (shift-add multiply: tmp89 = l0045 * microspacing_flag)
-    uint16_t tmp89 = (uint16_t)print_running_total_accum * microspacing_flag;
+    uint16_t scan_ptr = (uint16_t)print_running_total_accum * microspacing_flag;
     //     lda l0044
     //     sta l0046
     justify_gap_count = print_extra_space_accum;
@@ -2003,8 +2003,8 @@ c9101:
     //     sta l0044
     // (16-bit division by 8-bit: l0044 = tmp89 / l0046,
     //  l0045 = tmp89 % l0046)
-    print_running_total_accum = tmp89 % justify_gap_count;
-    print_extra_space_accum = (uint8_t)(tmp89 / justify_gap_count);
+    print_running_total_accum = scan_ptr % justify_gap_count;
+    print_extra_space_accum = (uint8_t)(scan_ptr / justify_gap_count);
     //     ldy #0
     (*y) = 0;
     //     sty l0039
@@ -2082,7 +2082,7 @@ c912b:
 c8fe6_inline:
     do
     {
-        uint8_t a_20 = tmp01[*y];
+        uint8_t a_20 = scratch_line_ptr[*y]; // was line_ptr (tmp01)
         (*y)++;
         a_21 = convert_char_for_printing(a_20, &x, &is_tab);
         print_char_x_times(a_21, x);
@@ -2590,7 +2590,7 @@ c8cc8:
         if (screen_column == MAX_LINE_LENGTH)
         {
             {
-                write_cr_to_memory(&tmp01);
+                write_cr_to_memory(&scratch_line_ptr);
                 a_1 = a_1;
             }
             x_2++;
@@ -3285,12 +3285,12 @@ c930d:
     return;
 }
 
-static uint8_t* compute_header_left_section(uint8_t* tmp45)
+static uint8_t* compute_header_left_section(uint8_t* insert_ptr)
 {
-    uint8_t* tmp23;
+    uint8_t* copy_ptr;
     // sub_c9393:
     //     jsr sub_c93b6
-    get_line_width(tmp45);
+    get_line_width(insert_ptr);
     //     lda #0
     uint8_t a = 0;
     //     jmp c93aa
@@ -3302,16 +3302,16 @@ static uint8_t* compute_header_left_section(uint8_t* tmp45)
         //     lda ((uint8_t*)&tmp45)[1]
         //     adc #0
         //     sta ((uint8_t*)&tmp23)[1]
-        tmp23 = tmp45 + a;
+        copy_ptr = insert_ptr + a;
     }
-    return tmp23;
+    return copy_ptr;
 }
 
-static uint8_t* compute_header_middle_section(uint8_t* tmp45)
+static uint8_t* compute_header_middle_section(uint8_t* insert_ptr)
 {
     // sub_c939b:
     //     jsr sub_c93b6
-    uint8_t y = get_line_width(tmp45);
+    uint8_t y = get_line_width(insert_ptr);
     //     jmp c93a7
     // c93a7:
     //     iny
@@ -3324,18 +3324,18 @@ static uint8_t* compute_header_middle_section(uint8_t* tmp45)
     //     lda ((uint8_t*)&tmp45)[1]
     //     adc #0
     //     sta ((uint8_t*)&tmp23)[1]
-    uint8_t* tmp23 = tmp45 + y + 1;
-    return tmp23;
+    uint8_t* copy_ptr = insert_ptr + y + 1;
+    return copy_ptr;
 }
 
-static uint8_t* compute_header_odd_page_section(uint8_t* tmp45)
+static uint8_t* compute_header_odd_page_section(uint8_t* insert_ptr)
 {
-    uint8_t* tmp23;
+    uint8_t* copy_ptr;
     // sub_c93a1:
     //     jsr sub_c93b6
     //     jsr c93b8
     // c93a7:
-    uint8_t y = scan_string_length(get_line_width(tmp45), tmp45);
+    uint8_t y = scan_string_length(get_line_width(insert_ptr), insert_ptr);
     y++;
     uint8_t a = y;
     y--;
@@ -3347,16 +3347,16 @@ static uint8_t* compute_header_odd_page_section(uint8_t* tmp45)
         //     lda ((uint8_t*)&tmp45)[1]
         //     adc #0
         //     sta ((uint8_t*)&tmp23)[1]
-        tmp23 = tmp45 + a;
+        copy_ptr = insert_ptr + a;
     }
-    return tmp23;
+    return copy_ptr;
 }
 
-static uint8_t get_line_width(uint8_t* tmp45)
+static uint8_t get_line_width(uint8_t* insert_ptr)
 {
     // sub_c93b6:
     //     ldy #0xff
-    return scan_string_length(0xff, tmp45);
+    return scan_string_length(0xff, insert_ptr);
 }
 
 static uint8_t get_right_margin(void)

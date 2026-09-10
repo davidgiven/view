@@ -490,7 +490,7 @@ uint8_t create_default_ruler(uint8_t* ruler_addr)
     // ***************************************************************************************
     // create_default_ruler:
     //     sta ((uint8_t*)&tmp01)[0]
-    uint8_t* tmp01 = ruler_addr;
+    uint8_t* line_ptr = ruler_addr;
     //     lda #0
     //     tay                                                               ;
     //     Y=0x00
@@ -504,7 +504,7 @@ uint8_t create_default_ruler(uint8_t* ruler_addr)
         for (;;)
         {
             //     sta (((uint8_t*)&tmp01)[0]),y
-            tmp01[y] = a;
+            line_ptr[y] = a;
             //     iny
             y++;
             //     tya
@@ -533,7 +533,7 @@ uint8_t create_default_ruler(uint8_t* ruler_addr)
 cb0ff:
     //     lda #0x3c ; '<'
     //     sta (((uint8_t*)&tmp01)[0]),y
-    tmp01[y] = 0x3c;
+    line_ptr[y] = 0x3c;
     //     rts
     return y;
 }
@@ -704,11 +704,11 @@ int lookup_marker(uint8_t a)
 
 void move_cursor_to_address(uint8_t* addr)
 {
-    uint8_t* tmp01_1;
+    uint8_t* next_line_start;
     // move_cursor_to_address
     // move_cursor_to_address:
     //     sta ((uint8_t*)&tmp89)[0]
-    uint8_t* tmp89 = addr;
+    uint8_t* scan_ptr = addr;
     uint8_t* cur = current_line_ptr;
     if (!(cur == addr))
     {
@@ -718,10 +718,10 @@ void move_cursor_to_address(uint8_t* addr)
             for (;;)
             {
                 //     jsr sub_cab37
-                uint8_t* tmp01;
-                if (!find_previous_line(cur, &tmp01))
+                uint8_t* line_ptr;
+                if (!find_previous_line(cur, &line_ptr))
                     goto cac20;
-                cur = tmp01;
+                cur = line_ptr;
                 //     bcc cac20
                 //     cpy ((uint8_t*)&tmp89)[1]
                 //     bcc cac20
@@ -741,7 +741,7 @@ void move_cursor_to_address(uint8_t* addr)
         {
             //     sta ((uint8_t*)&tmp01)[0]
             uint8_t y;
-            if (find_next_line(cur, &tmp01_1, &y))
+            if (find_next_line(cur, &next_line_start, &y))
                 break;
             //     beq cac17
             //     tya
@@ -749,7 +749,7 @@ void move_cursor_to_address(uint8_t* addr)
             //     clc
             //     adc ((uint8_t*)&tmp01)[0]
             //     bcc cac0b
-            cur = tmp01_1 + y;
+            cur = next_line_start + y;
             //     cpy ((uint8_t*)&tmp89)[1]
             //     bcc cabf6
             //     bne cac17
@@ -764,18 +764,18 @@ void move_cursor_to_address(uint8_t* addr)
             }
             //     cabf6:
             //     jsr sub_cac41
-            check_for_embedded_ruler(tmp01_1);
+            check_for_embedded_ruler(next_line_start);
         } while (1);
         // cac17:
         //     lda ((uint8_t*)&tmp01)[0]
         //     ldy ((uint8_t*)&tmp01)[1]
         //     bne cac20
-        cur = tmp01_1;
+        cur = next_line_start;
         goto cac20;
         // cac1d:
     cac1d:
         //     jsr sub_cac41
-        check_for_embedded_ruler(tmp01_1);
+        check_for_embedded_ruler(next_line_start);
     }
     // cac20:
 cac20:
@@ -787,7 +787,7 @@ cac20:
     //     sbc current_line_ptr
     //     tax
     // (sbc with C=1 is a plain subtraction; tax overwrites the flags)
-    uint8_t x = (uint8_t)(tmp89 - current_line_ptr);
+    uint8_t x = (uint8_t)(scan_ptr - current_line_ptr);
     //     ldy #0
     //     lda (current_line_ptr),y
     uint8_t a = current_line_ptr[0];
@@ -837,9 +837,9 @@ void move_cursor_to_top_of_document(void)
 // Skips to the next CR or zero terminator.  Sets *y to the offset of the byte
 // past the CR (or of the NUL), and returns true if that byte is a NUL (end of
 // document) — the 6502's Z flag.
-bool find_next_line(uint8_t* start, uint8_t** tmp01, uint8_t* y)
+bool find_next_line(uint8_t* start, uint8_t** line_ptr, uint8_t* y)
 {
-    *tmp01 = start;
+    *line_ptr = start;
     // find_next_line
     // Pseudocode: Skips to next CR or zero terminator in memory
     // cab29:
@@ -854,14 +854,14 @@ bool find_next_line(uint8_t* start, uint8_t** tmp01, uint8_t* y)
     //     lda (((uint8_t*)&tmp01)[0]),y
     for (;;)
     {
-        uint8_t a = (*tmp01)[*y];
+        uint8_t a = (*line_ptr)[*y];
         if (a == 0)
             return true;
         (*y)++;
         if (a == 0x0d)
             break;
     }
-    uint8_t a_1 = (*tmp01)[*y];
+    uint8_t a_1 = (*line_ptr)[*y];
     // return_70:
     //     rts
     return a_1 == 0;
@@ -869,7 +869,7 @@ bool find_next_line(uint8_t* start, uint8_t** tmp01, uint8_t* y)
 
 // Returns false if tmp01 is already at the start of the document (no previous
 // line); true if it was moved back to the start of the previous line.
-bool find_previous_line(uint8_t* val, uint8_t** tmp01)
+bool find_previous_line(uint8_t* val, uint8_t** line_ptr)
 {
     uint8_t a;
     // find_previous_line
@@ -879,25 +879,25 @@ bool find_previous_line(uint8_t* val, uint8_t** tmp01)
     //     sta ((uint8_t*)&tmp01)[0]
     //     bcs cab3f
     //     sty ((uint8_t*)&tmp01)[1]
-    *tmp01 = val - 1;
+    *line_ptr = val - 1;
     //     cpy page+1
     //     bcc return_71
     //     bne cab4b
     //     cmp page
     //     bcc return_71
-    if (*tmp01 < page)
+    if (*line_ptr < page)
         return false;
     // loop_cab4d:
     do
     {
-        (*tmp01)--;
-        a = **tmp01;
+        (*line_ptr)--;
+        a = **line_ptr;
     } while (a != 0x0d);
-    (*tmp01)++;
+    (*line_ptr)++;
     //     jsr sub_cab6e
     //     bne cab6c
     // (inlined: Z = (*tmp01 == RULER_BYTE))
-    if (**tmp01 == RULER_BYTE)
+    if (**line_ptr == RULER_BYTE)
         pop_from_ruler_index();
     //     sec
     // return_71:
@@ -986,7 +986,7 @@ void reset_area_to_entire_document(void)
 // Finds the next line, handling a command/ruler prefix and pushing onto the
 // ruler index.  Returns true if the next line is the end of the document (the
 // 6502's Z flag, as left by find_next_line).
-bool advance_to_next_line(uint8_t* line, uint8_t** tmp01, uint8_t* y)
+bool advance_to_next_line(uint8_t* line, uint8_t** line_ptr, uint8_t* y)
 {
     // Pseudocode: Finds next line in document, handling command prefix and
     // ruler stack
@@ -996,9 +996,9 @@ bool advance_to_next_line(uint8_t* line, uint8_t** tmp01, uint8_t* y)
     //     bne cab29
     // (inlined: Z = (*tmp01 == RULER_BYTE))
     if (*line != RULER_BYTE)
-        return find_next_line(line, tmp01, y);
+        return find_next_line(line, line_ptr, y);
     //     jsr cab29
-    bool end = find_next_line(line, tmp01, y);
+    bool end = find_next_line(line, line_ptr, y);
     //     bne push_onto_ruler_stack
     if (!end)
         push_onto_ruler_index(line);

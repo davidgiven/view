@@ -15,10 +15,10 @@ extern uint8_t column_position, justify_gap_count;
 extern uint8_t scratch_index, screen_row, screen_column, temp_save;
 extern uint8_t print_xpos;
 extern uint8_t input_buffer_offset;
-extern uint8_t *current_format_line_ptr;
-extern uint8_t *current_line_ptr;
-extern uint8_t *ptr1;
-extern uint8_t *tmp89;
+extern uint8_t* current_format_line_ptr;
+extern uint8_t* current_line_ptr;
+extern uint8_t* ptr1;
+extern uint8_t* scratch_scan_ptr; // was tmp89
 extern uint8_t output_buffer[132];
 extern uint8_t input_buffer[68];
 
@@ -61,7 +61,7 @@ static void init_globals(const char* text, uint8_t jf, uint8_t rstop)
 
     column_position = justify_gap_count = 0;
     scratch_index = screen_row = screen_column = temp_save = 0;
-    tmp89 = NULL;
+    scratch_scan_ptr = NULL; // was tmp89
     print_xpos = 4;
     input_buffer_offset = 0;
     memset(output_buffer, 0, sizeof(output_buffer));

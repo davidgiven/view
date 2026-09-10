@@ -11,9 +11,9 @@ extern void f13_right_key(void);
 
 // Functions in view.c called by editor key handlers
 extern uint8_t create_default_ruler(uint8_t* ruler_addr);
-extern bool find_next_line(uint8_t* start, uint8_t** tmp01, uint8_t* y);
-extern bool find_previous_line(uint8_t* val, uint8_t** tmp01);
-extern bool advance_to_next_line(uint8_t* line, uint8_t** tmp01, uint8_t* y);
+extern bool find_next_line(uint8_t* start, uint8_t** line_ptr, uint8_t* y);
+extern bool find_previous_line(uint8_t* val, uint8_t** line_ptr);
+extern bool advance_to_next_line(uint8_t* line, uint8_t** line_ptr, uint8_t* y);
 extern void run_cli(void);
 extern void move_cursor_to_address(uint8_t* addr);
 
