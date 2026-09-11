@@ -26,8 +26,9 @@ void screen_leave(void)
 
 void screen_putchar(uint8_t cur_ch)
 {
-    char repr = (cur_ch >= 0x20 && cur_ch < 0x7f) ? (char)cur_ch : '?';
-    log_call("screen_putchar(%d '%c')", cur_ch, repr);
+    log_call("screen_putchar(%d '%c')",
+        cur_ch,
+        (cur_ch >= 0x20 && cur_ch < 0x7f) ? (char)cur_ch : '?');
 }
 
 uint8_t screen_getchar(void)

@@ -264,8 +264,7 @@ void setup_area_pointers(uint8_t* doc_working_ptr)
     uint8_t idx = 0;
     if (!(scan_ptr == doc_ptr2))
     {
-        uint8_t cur_ch = *scan_ptr;
-        if (cur_ch == 0x0d)
+        if (*scan_ptr == 0x0d)
             idx++;
         scan_ptr++;
     }
@@ -349,9 +348,8 @@ cli_cmd_status_t process_cli_command(struct scan_state* scan)
         return CLI_CMD_NO_TARGET;
     if (!scan_input_buffer(input_buffer, scan))
     {
-        uint8_t idx =
+        cli_header_limit =
             expand_escaped_string(search_target_len, input_buffer_offset + 1);
-        cli_header_limit = idx;
     }
     parse_marks_from_command(scan);
     if (sanitise_area() == AREA_EMPTY)
@@ -397,8 +395,7 @@ uint8_t* read_into_document(void)
     read_block_status_t status = read_block_from_file(&cursor, space_limit);
     if (status != READ_BLOCK_DONE)
         cli_putstring("Not all read in\n");
-    ptrdiff_t size_delta = space_limit - cursor;
-    scratch_scan_ptr = adjust_pointers(cursor, size_delta);
+    scratch_scan_ptr = adjust_pointers(cursor, space_limit - cursor);
     return cursor;
 }
 
@@ -460,8 +457,7 @@ bool check_area_memory(uint8_t* doc_working_ptr)
     ptrdiff_t delta = (ptrdiff_t)block_expansion_len - gap;
     if (delta < 0)
     {
-        ptrdiff_t size_delta = -delta;
-        scratch_scan_ptr = adjust_pointers(insert_ptr, size_delta);
+        scratch_scan_ptr = adjust_pointers(insert_ptr, -delta);
     }
     else if (delta > 0)
     {
@@ -600,8 +596,7 @@ void write_area_to_file(void)
     uint8_t* scan_ptr = area_start_ptr;
     do
     {
-        uint8_t cur_ch = *scan_ptr;
-        fputc(cur_ch, file_ptr);
+        fputc(*scan_ptr, file_ptr);
         scan_ptr++;
     } while (scan_ptr != area_end_ptr);
 }
@@ -615,7 +610,6 @@ void write_area_to_file(void)
  */
 static uint8_t* compute_space_common(uint8_t* target_ptr, ptrdiff_t scan_ptr)
 {
-    uint8_t* line_ptr = target_ptr;
     ptrdiff_t size_delta = compute_bytes_free();
     scan_ptr >>= 2;
     if (scan_ptr >= 0x0400)
@@ -624,10 +618,9 @@ static uint8_t* compute_space_common(uint8_t* target_ptr, ptrdiff_t scan_ptr)
         size_delta -= scan_ptr;
     }
     else
-    {
         size_delta -= scan_ptr + 1;
-    }
-    return line_ptr + size_delta - 0x8b;
+
+    return target_ptr + size_delta - 0x8b;
 }
 
 /**

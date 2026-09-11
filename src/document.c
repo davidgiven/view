@@ -464,7 +464,6 @@ int lookup_marker(uint8_t cur_ch)
 void move_cursor_to_address(uint8_t* addr)
 {
     uint8_t* next_line_start;
-    uint8_t* scan_ptr = addr;
     uint8_t* cur = current_line_ptr;
     if (!(cur == addr))
     {
@@ -501,9 +500,8 @@ void move_cursor_to_address(uint8_t* addr)
     }
 cac20:
     current_line_ptr = cur;
-    uint8_t idx = (uint8_t)(scan_ptr - current_line_ptr);
-    uint8_t cur_ch = current_line_ptr[0];
-    command_prefix_t cp = check_for_command_prefix(cur_ch);
+    uint8_t idx = (uint8_t)(addr - current_line_ptr);
+    command_prefix_t cp = check_for_command_prefix(current_line_ptr[0]);
     if (cp != NO_COMMAND_PREFIX)
     {
         uint8_t next_ch = idx;
@@ -553,8 +551,7 @@ bool find_next_line(uint8_t* start, uint8_t** line_ptr, uint8_t* pos)
         if (cur_ch == 0x0d)
             break;
     }
-    uint8_t next_ch = (*line_ptr)[*pos];
-    return next_ch == 0;
+    return (*line_ptr)[*pos] == 0;
 }
 
 /**

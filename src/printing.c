@@ -163,10 +163,9 @@ static void rj_fmt_cmd(void)
         return;
     idx--;
     idx--;
-    uint8_t cur_ch = 0;
     if (idx >= ruler_right_stop)
     {
-        write_output_buffer_to_format_line(cur_ch);
+        write_output_buffer_to_format_line(0);
         return;
     }
     screen_column = idx;
@@ -191,8 +190,7 @@ static uint8_t expand_line(void)
     uint8_t idx = 0;
     screen_column = idx;
     uint8_t pos = 3;
-    uint8_t cur_ch = get_current_fmt_cmd_byte(&pos);
-    if (cur_ch == 0)
+    if (get_current_fmt_cmd_byte(&pos) == 0)
         return idx;
 c9537:
     for (;;)
@@ -258,8 +256,7 @@ static uint8_t process_header_footer_line(uint8_t* copy_ptr)
     scratch_index = 0;
     search_target_len = 0;
     uint8_t pos = 3;
-    uint8_t cur_ch = current_format_line_ptr[pos];
-    screen_column = cur_ch;
+    screen_column = current_format_line_ptr[pos];
     uint8_t idx = 0x3f;
     do
     {
@@ -563,8 +560,7 @@ static void dm_fmt_cmd(void)
     last_macro_ptr->name[0] = firstchar;
     for (;;)
     {
-        intptr_t diff = himem - (uint8_t*)(last_macro_ptr->body);
-        if (diff < 0x97)
+        if (himem - (uint8_t*)(last_macro_ptr->body) < 0x97)
         {
             display_not_enough_memory();
             return;
@@ -576,8 +572,7 @@ static void dm_fmt_cmd(void)
         {
             return;
         }
-        uint8_t next_ch = last_macro_ptr->body[0];
-        command_prefix_t cp = check_for_command_prefix(next_ch);
+        command_prefix_t cp = check_for_command_prefix(last_macro_ptr->body[0]);
         if (cp != NO_COMMAND_PREFIX &&
             lookup_formatting_command() == FORMATTING_COMMAND_EM)
         {
@@ -789,8 +784,7 @@ c9788:
     do
     {
         (*pos)++;
-        uint8_t next_ch = target_ptr[*pos];
-        tmp_ch2 = toupper(next_ch);
+        tmp_ch2 = toupper(target_ptr[*pos]);
         idx2++;
     } while (tmp_ch2 == l97b0_data[idx2]);
     uint8_t tmp_ch3 = l97b0_data[idx2];
@@ -1052,9 +1046,8 @@ static void print_output_buffer(void)
     do
     {
         uint8_t idx3 = idx;
-        uint8_t tmp_ch2 =
-            convert_char_for_printing(output_buffer[pos], &idx3, &is_tab);
-        print_char(tmp_ch2);
+        print_char(
+            convert_char_for_printing(output_buffer[pos], &idx3, &is_tab));
         pos++;
         idx--;
     } while (idx != 0);
@@ -1127,8 +1120,7 @@ c9048:
     {
         uint8_t cur_ch = idx;
         {
-            uint8_t next_ch = scratch_line_ptr[*pos];
-            convert_char_for_printing(next_ch, &idx, &is_tab);
+            convert_char_for_printing(scratch_line_ptr[*pos], &idx, &is_tab);
             tmp_ch2 = cur_ch;
         }
         idx = tmp_ch2;
@@ -1138,15 +1130,13 @@ c9048:
             goto c906f;
         if (!(screen_column & 0x80))
             break;
-        uint8_t tmp_ch4 = micro_space_count;
-        if (tmp_ch4 == 0)
+        if (micro_space_count == 0)
             goto c906b;
         micro_word_counter++;
     } while (micro_word_counter != 0);
     do
     {
-        uint8_t tmp_ch5 = column_position;
-        micro_word_start = tmp_ch5;
+        micro_word_start = column_position;
         goto c908c;
     c906b:
         tmp_ch3 = 0x20;
@@ -1178,8 +1168,7 @@ c9092:
     else
     {
         {
-            uint8_t tmp_ch8 = column_position;
-            micro_word_start = tmp_ch8;
+            micro_word_start = column_position;
             screen_column = 0;
             accum_1 = 0;
             micro_space_count = 0;
@@ -1195,8 +1184,7 @@ c90b6:
     {
         if (tmp_ch3 == 0x20)
             goto c9048;
-        uint8_t tmp_ch9 = micro_space_count;
-        if (tmp_ch9 == 0)
+        if (micro_space_count == 0)
             goto c9048;
         accum_1 += ((uint32_t)micro_word_counter << 16) |
                    ((uint32_t)micro_space_count << 8) | micro_space_count;
@@ -1206,11 +1194,9 @@ c90b6:
         micro_word_counter = tmp_ch10;
         goto c9048;
     }
-    uint8_t tmp_ch11 = accum_1 >> 16;
-    if (!(tmp_ch11 == 0))
+    if (!(accum_1 >> 16 == 0))
     {
-        uint8_t tmp_ch12 = ruler_right_stop;
-        if (tmp_ch12 == 0)
+        if (ruler_right_stop == 0)
             goto c90f8;
         int d = ruler_right_stop - micro_word_start;
         if (d < 0)
@@ -1232,9 +1218,9 @@ c9101:
     (*pos) = 0;
     column_position = (*pos);
 c912b:
-    uint8_t tmp_ch14 = output_buffer[(*pos)];
     (*pos)++;
-    uint8_t tmp_ch15 = convert_char_for_printing(tmp_ch14, &idx, &is_tab);
+    uint8_t tmp_ch15 =
+        convert_char_for_printing(output_buffer[(*pos)], &idx, &is_tab);
     {
         uint8_t tmp_ch16 = column_position;
         if (!(tmp_ch16 == micro_word_start))
@@ -1275,9 +1261,9 @@ c912b:
 c8fe6_inline:
     do
     {
-        uint8_t tmp_ch20 = scratch_line_ptr[*pos];
         (*pos)++;
-        tmp_ch21 = convert_char_for_printing(tmp_ch20, &idx, &is_tab);
+        tmp_ch21 =
+            convert_char_for_printing(scratch_line_ptr[*pos], &idx, &is_tab);
         print_char_x_times(tmp_ch21, idx);
     } while (tmp_ch21 != 0x0d);
     register_value_array['L' - 'A']++;
@@ -1323,9 +1309,8 @@ bool parse_decimal_number(int* value, uint8_t* pos)
         start = (const char*)&current_format_line_ptr[*pos];
     char* end;
     *value = (int)strtoul(start, &end, 10);
-    bool parsed = (end != start);
     *pos += (uint8_t)(end - start);
-    return parsed;
+    return (end != start);
 }
 
 /**
@@ -1543,8 +1528,7 @@ c8f30:
  */
 static void print_newline(void)
 {
-    uint8_t cur_ch = 0x0d;
-    print_char(cur_ch);
+    print_char(0x0d);
 }
 
 /**
@@ -1554,8 +1538,7 @@ static void print_newline(void)
  */
 static void print_vertical_space(uint8_t idx)
 {
-    uint8_t cur_ch = 0x0d;
-    print_char_x_times(cur_ch, idx);
+    print_char_x_times(0x0d, idx);
 }
 
 /**
@@ -1634,20 +1617,16 @@ c8cf2:
  */
 static void render_header_or_footer(uint8_t* text)
 {
-    uint8_t cur_ch = text[0];
-    if (cur_ch == 0)
+    if (text[0] == 0)
         return;
     output_left_margin();
-    uint8_t next_ch = 0;
-    column_position = next_ch;
+    column_position = 0;
     uint8_t* section_start = compute_header_left_section(text);
-    bool parity = get_page_parity();
-    if (!parity)
+    if (!get_page_parity())
         section_start = compute_header_odd_page_section(text);
     copy_header_footer_text(section_start);
     print_output_buffer();
-    uint8_t* section_start_1 = compute_header_middle_section(text);
-    uint8_t idx = copy_header_footer_text(section_start_1);
+    uint8_t idx = copy_header_footer_text(compute_header_middle_section(text));
     if (!(idx == 0))
     {
         idx--;
@@ -1659,16 +1638,12 @@ static void render_header_or_footer(uint8_t* text)
             goto c9355;
         tmp_ch4 >>= 1;
         if (tmp_ch4 >= scratch_index + column_position)
-        {
-            uint8_t idx2 = tmp_ch4 - scratch_index - column_position;
-            add_justification_spaces(idx2);
-        }
+            add_justification_spaces(tmp_ch4 - scratch_index - column_position);
     }
 c9355:
     print_output_buffer();
     uint8_t* section_start_2 = compute_header_odd_page_section(text);
-    bool parity2 = get_page_parity();
-    if (!parity2)
+    if (!get_page_parity())
         section_start_2 = compute_header_left_section(text);
     uint8_t idx3 = copy_header_footer_text(section_start_2);
     uint8_t tmp_ch6 = get_right_margin();
@@ -1691,8 +1666,7 @@ c9355:
  */
 static void render_new_page(void)
 {
-    uint8_t cur_ch = 0x81;
-    page_break_pending_flag = cur_ch;
+    page_break_pending_flag = 0x81;
     if (print_flags & 0x40)
     {
         stop_printing();
@@ -1804,8 +1778,7 @@ static void emit_microspacing_spaces(uint8_t cur_ch, uint8_t idx)
 uint8_t* prepare_output_line(uint8_t* read_limit, uint8_t** macro_cursor)
 {
     uint8_t tmp_ch5;
-    uint8_t cur_ch = macro_executing_flag;
-    if (!(cur_ch != 0))
+    if (!(macro_executing_flag != 0))
     {
     c9188_normal_entry:
         uint8_t* cursor = read_limit;
@@ -1989,9 +1962,8 @@ static uint8_t* compute_header_left_section(uint8_t* insert_ptr)
 {
     uint8_t* copy_ptr;
     get_line_width(insert_ptr);
-    uint8_t cur_ch = 0;
     {
-        copy_ptr = insert_ptr + cur_ch;
+        copy_ptr = insert_ptr + 0;
     }
     return copy_ptr;
 }
@@ -2004,9 +1976,7 @@ static uint8_t* compute_header_left_section(uint8_t* insert_ptr)
  */
 static uint8_t* compute_header_middle_section(uint8_t* insert_ptr)
 {
-    uint8_t pos = get_line_width(insert_ptr);
-    uint8_t* copy_ptr = insert_ptr + pos + 1;
-    return copy_ptr;
+    return insert_ptr + get_line_width(insert_ptr) + 1;
 }
 
 /**
@@ -2121,8 +2091,7 @@ static void output_left_margin(void)
         if (two_sided_flag != 0)
             cur_ch += rhs_extra_margin;
     }
-    uint8_t next_ch = 0x20;
-    print_char_x_times(next_ch, cur_ch);
+    print_char_x_times(0x20, cur_ch);
 }
 
 /**

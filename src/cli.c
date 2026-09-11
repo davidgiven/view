@@ -260,12 +260,10 @@ c86b8:
             pos++;
             if (!(cur_ch != l8747_data[idx]))
             {
-                uint8_t next_ch = line_ptr[pos];
-                if (next_ch == l8747_data[idx + 1])
+                if (line_ptr[pos] == l8747_data[idx + 1])
                     goto c86df;
             }
-            uint8_t tmp_ch2 = l8747_data[idx + 2];
-            if (tmp_ch2 == 0)
+            if (l8747_data[idx + 2] == 0)
                 goto c86db;
             pos--;
             idx++;
@@ -355,8 +353,7 @@ static void edit_cmd(struct scan_state* scan)
 static void field_cmd(struct scan_state* scan)
 {
     int value;
-    bool ok = parse_integer_from_command(scan, &value);
-    if (!ok)
+    if (!parse_integer_from_command(scan, &value))
     {
         return_to_cli_prompt();
         return;
@@ -546,8 +543,7 @@ static void more_cmd(struct scan_state* scan)
     uint8_t idx = ruler_buffer_len;
     do
     {
-        uint8_t cur_ch = current_ruler_ptr[pos];
-        current_ruler_buffer[pos] = cur_ch;
+        current_ruler_buffer[pos] = current_ruler_ptr[pos];
         pos++;
         idx--;
     } while (idx != 0);
@@ -954,8 +950,7 @@ void run_cli(void)
             cli_putstring("empty\n");
         }
     }
-    uint8_t tmp_ch2 = printer_driver_name[0];
-    if (!(tmp_ch2 == 0))
+    if (!(printer_driver_name[0] == 0))
     {
         cli_putstring("Printer ");
         uint8_t idx = 0;
@@ -975,8 +970,7 @@ void run_cli(void)
     uint8_t pos = 0;
     do
     {
-        uint8_t tmp_ch5 = ((uint8_t*)markers_array)[idx2 + 1];
-        if (!(tmp_ch5 == 0))
+        if (!(((uint8_t*)markers_array)[idx2 + 1] == 0))
         {
             if (!(pos != 0))
             {
@@ -989,8 +983,7 @@ void run_cli(void)
             {
                 screen_putchar(0x2c);
             }
-            uint8_t tmp_ch6 = (idx2 >> 1) + 0x31;
-            screen_putchar(tmp_ch6);
+            screen_putchar((idx2 >> 1) + 0x31);
         }
         idx2++;
         idx2++;
@@ -1049,8 +1042,7 @@ static bool parse_command(uint8_t* input_buffer_offset)
         tmp_ch4 &= 0x20;
         if (tmp_ch4 == 0)
             continue;
-        uint8_t tmp_ch5 = input_buffer[pos];
-        if (tmp_ch5 >= 0x30)
+        if (input_buffer[pos] >= 0x30)
             continue;
         break;
     }
@@ -1103,11 +1095,10 @@ bool parse_integer_from_command(struct scan_state* scan, int* out)
     const char* start = (const char*)&input_buffer[pos];
     char* end;
     int parsed = (int)strtoul(start, &end, 10);
-    bool ok = (end != start);
     (void)pos;
     if (out)
         *out = parsed;
-    return ok;
+    return (end != start);
 }
 
 /**
