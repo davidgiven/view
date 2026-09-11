@@ -751,7 +751,7 @@ static bool parse_boolean_from_fmt_cmd(uint8_t* pos, uint8_t* value)
     return parse_word_flag(current_format_line_ptr, pos, value);
 }
 
-static const uint8_t l97b0_data[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
+static const uint8_t on_off_table[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
 
 /**
  * Parses a word-based flag such as ON/OFF from the format line.
@@ -786,8 +786,8 @@ c9788:
         (*pos)++;
         tmp_ch2 = toupper(target_ptr[*pos]);
         idx2++;
-    } while (tmp_ch2 == l97b0_data[idx2]);
-    uint8_t tmp_ch3 = l97b0_data[idx2];
+    } while (tmp_ch2 == on_off_table[idx2]);
+    uint8_t tmp_ch3 = on_off_table[idx2];
     if (!((int8_t)tmp_ch3 < 0))
     {
         if (tmp_ch3 < 0x20)
@@ -798,13 +798,13 @@ c9788:
         for (;;)
         {
             idx2++;
-            tmp_ch3 = l97b0_data[idx2];
+            tmp_ch3 = on_off_table[idx2];
             if ((int8_t)tmp_ch3 < 0)
                 goto c97ae;
             if (tmp_ch3 >= 0x20)
                 continue;
             *pos = temp_save;
-            tmp_ch3 = l97b0_data[idx2 + 1];
+            tmp_ch3 = on_off_table[idx2 + 1];
             if ((int8_t)tmp_ch3 >= 0)
                 goto c9788;
             break;

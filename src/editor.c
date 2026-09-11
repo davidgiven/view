@@ -3017,7 +3017,7 @@ static void memory_full(void)
     longjmp(env, JMP_EDITOR);
 }
 
-static const uint8_t la995_data[] = "Memory full - Press ESCAPE";
+static const uint8_t memory_full_message[] = "Memory full - Press ESCAPE";
 
 uint8_t process_current_document_character(
     uint8_t* target_ptr, uint8_t* x_val, uint8_t* y_val, bool* is_tab)
@@ -3425,7 +3425,7 @@ void show_memory_full_error(void)
     uint8_t x_val = 0;
     for (;;)
     {
-        uint8_t a_val1 = la995_data[x_val];
+        uint8_t a_val1 = memory_full_message[x_val];
         if (a_val1 == 0)
             break;
         x_val++;

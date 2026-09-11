@@ -277,7 +277,7 @@ void setup_area_pointers(uint8_t* doc_working_ptr)
 
 static const uint8_t escaped_char_table[] = {
     '?', 'T', 'C', 'S', 'L', 'Z', '-', '*', 0xff};
-static const uint8_t l83e0_table[] = {
+static const uint8_t escaped_value_table[] = {
     1, 9, 0x0d, 2, 0x0b, 0x1a, 0x1c, 0x1d, 0xff};
 
 /**
@@ -314,7 +314,7 @@ static uint8_t expand_escaped_string(uint8_t idx, uint8_t pos)
                     break;
                 if (tmp_ch3 == screen_row)
                 {
-                    cur_ch = l83e0_table[table_idx];
+                    cur_ch = escaped_value_table[table_idx];
                     if (cur_ch != 0)
                         goto c83ca;
                 }

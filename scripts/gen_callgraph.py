@@ -79,7 +79,7 @@ KNOWN_GLOBALS = {
     'doc_ptr1', 'doc_ptr2', 'doc_ptr3', 'doc_ptr4',
     'l006e', 'l006d',
     'printer_driver', 'default_printer_driver',
-    'parser_table', 'la83d', 'la995_data',
+    'parser_table', 'version_string', 'memory_full_message',
     'x_register_value_array',
 }
 

@@ -236,7 +236,8 @@ static void count_cmd(struct scan_state* scan)
 {
     uint8_t idx;
     uint8_t tmp_ch3;
-    static const uint8_t l8747_data[] = {0x52, 0x4a, 'C', 'E', 'L', 'J', 0};
+    static const uint8_t count_word_table[] = {
+        0x52, 0x4a, 'C', 'E', 'L', 'J', 0};
     parse_marks_from_command(scan);
     if (sanitise_area() == AREA_EMPTY)
     {
@@ -258,12 +259,12 @@ c86b8:
         {
             uint8_t cur_ch = line_ptr[pos];
             pos++;
-            if (!(cur_ch != l8747_data[idx]))
+            if (!(cur_ch != count_word_table[idx]))
             {
-                if (line_ptr[pos] == l8747_data[idx + 1])
+                if (line_ptr[pos] == count_word_table[idx + 1])
                     goto c86df;
             }
-            if (l8747_data[idx + 2] == 0)
+            if (count_word_table[idx + 2] == 0)
                 goto c86db;
             pos--;
             idx++;
@@ -870,7 +871,7 @@ bool read_command_line(void)
     return cli_readstring((char*)input_buffer, MAX_COMMAND_LENGTH);
 }
 
-const uint8_t la83d[] = "VIEW\0B3.0 for CP/M-65";
+const uint8_t version_string[] = "VIEW\0B3.0 for CP/M-65";
 
 /**
  * Prints a number of words from the help and version string.
@@ -882,7 +883,7 @@ static void print_x_words_of_help(uint8_t idx)
     uint8_t pos = 0;
     for (;;)
     {
-        uint8_t cur_ch = la83d[pos];
+        uint8_t cur_ch = version_string[pos];
         if (cur_ch == 0)
         {
             cur_ch = 0x20;
