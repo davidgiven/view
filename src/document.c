@@ -1,20 +1,17 @@
 #include "document.h"
 #include "io.h"
 #include "printing.h"
-#include <stdio.h>
 #include <ctype.h>
+#include <stdio.h>
 
-// call_printer_driver moved to printing.c
-
+/**
+ * Check whether a byte is a command or ruler prefix.
+ * @param ch byte to test
+ * @return COMMAND_PREFIX for 0x80, RULER_PREFIX for 0x81, NO_COMMAND_PREFIX
+ * otherwise
+ */
 command_prefix_t check_for_command_prefix(uint8_t ch)
 {
-    // check_for_command_prefix:
-    //     cmp #0x80
-    //     beq return_81
-    //     cmp #0x81
-    //     clc
-    // return_81:
-    //     rts
     if (ch == COMMAND_BYTE)
         return COMMAND_PREFIX;
     if (ch == RULER_BYTE)
@@ -22,17 +19,14 @@ command_prefix_t check_for_command_prefix(uint8_t ch)
     return NO_COMMAND_PREFIX;
 }
 
+/**
+ * Check whether a character is a highlight control code.
+ * @param cur_ch character to test
+ * @return HIGHLIGHT1_CODE for 0x1c, HIGHLIGHT2_CODE for 0x1d, NO_CONTROL_CODE
+ * otherwise
+ */
 control_code_t check_for_control_code(uint8_t cur_ch)
 {
-    // Pseudocode: Checks if character is a control code (0x1c or 0x1d)
-    // Returns HIGHLIGHT1_CODE for 0x1c, HIGHLIGHT2_CODE for 0x1d, or
-    // NO_CONTROL_CODE otherwise.
-    // check_for_control_code:
-    //     cmp #0x1c
-    //     beq return_63
-    //     cmp #0x1d
-    //     clc
-    //     rts
     if (cur_ch == 0x1c)
         return HIGHLIGHT1_CODE;
     if (cur_ch == 0x1d)
@@ -40,64 +34,48 @@ control_code_t check_for_control_code(uint8_t cur_ch)
     return NO_CONTROL_CODE;
 }
 
+/**
+ * Compute free bytes between document top and himem.
+ * @return number of free bytes (himem - top)
+ */
 int compute_bytes_free(void)
 {
-    // compute_bytes_free
-    // Pseudocode: Computes number of free bytes between top and himem
-    // Returns the 16-bit difference himem - top.  (The 6502 returns it in YX;
-    // callers used to read the global y/x registers and now use the return
-    // value.)
-    // compute_bytes_free:
-    //     lda himem
-    //     sec
-    //     sbc top
-    //     tax
-    //     lda himem+1
-    //     sbc top+1
-    //     tay
-    // return_84:
-    //     rts
     return (int)(himem - top);
 }
 
+/**
+ * Ensure at least 150 bytes are free.
+ * Displays a memory error and does not return if less than 150 bytes remain.
+ */
 void check_for_at_least_150_bytes_free(void)
 {
-    // Pseudocode: Checks if at least 150 bytes of memory are available
-    // check_for_at_least_150_bytes_free:
-    //     jsr compute_bytes_free
-    //     tya
-    //     bne return_6
-    //     cpx #0x96
-    //     bcs return_6
     if (compute_bytes_free() >= 0x96)
         return;
-    // MULTIPLE ENTRY POINTS: check_for_at_least_150_bytes_free,
-    // display_not_enough_memory
     display_not_enough_memory();
 }
 
+/**
+ * Dereference a document pointer at an offset and test for command prefix.
+ * @param pos offset from target_ptr
+ * @param target_ptr base pointer into document memory
+ * @return COMMAND_PREFIX, RULER_PREFIX, or NO_COMMAND_PREFIX
+ */
 command_prefix_t deref_and_check_for_command_prefix(
     uint8_t pos, uint8_t* target_ptr)
 {
-    // deref_and_check_for_command_prefix:
-    //     lda (((uint8_t*)&tmp01)[0]),y
     uint8_t cur_ch = target_ptr[pos];
     return check_for_command_prefix(cur_ch);
 }
 
-// Returns COMMAND_PREFIX for ch == 0x80 (format command), RULER_PREFIX for
-// ch == 0x81 (ruler line), or NO_COMMAND_PREFIX otherwise.
-
+/**
+ * Display the current document file state.
+ * Prints "Editing No File" or the input/output filenames and stops any
+ * active printing.
+ */
 void display_document_file_state(void)
 {
     uint8_t next_ch;
-    // display_document_file_state
-    // display_document_file_state:
-    //     jsr stop_printing
     stop_printing();
-    //     jsr print_inline_string
-    //     .ascii "Editing "
-    //     .byte 0
     cli_putstring("Editing ");
     if (file_edit_flags == 0)
     {
@@ -105,15 +83,7 @@ void display_document_file_state(void)
         return;
     }
 
-    //     ldy #0
     uint8_t pos = 0;
-    // loop_c89fa:
-    //     lda input_filename,y
-    //     cmp #0x0d
-    //     jsr bdos_print_char
-    //     iny
-    //     bne loop_c89fa
-    // (loop restructured)
     for (;;)
     {
         next_ch = input_filename[pos];
@@ -122,139 +92,96 @@ void display_document_file_state(void)
         cli_putchar(next_ch);
         pos++;
     }
-    // c8a07:
-    //     bit file_edit_flags
     if ((file_edit_flags & 0x40))
         goto c8a19;
-    //     jsr print_inline_string
-    //     .ascii " to "
-    //     .byte 0
     cli_putstring(" to ");
-    //     ldy #0
     pos = 0;
-    // loop_c8a15:
-    //     lda output_filename,y
-    //     iny
-    //     jsr bdos_print_char
-    //     cmp #0x0d
-    //     bne loop_c8a15
-    // (loop restructured)
     for (;;)
     {
         next_ch = output_filename[pos];
         pos++;
     c8a19:
-        // c8a19:
-        //     jsr bdos_print_char
         cli_putchar(next_ch);
         if (next_ch == 0x0d)
             break;
     }
 }
 
+/**
+ * Scan the current ruler buffer for left and right margin stops.
+ * Sets ruler_left_stop to the position of '>' and ruler_right_stop to the
+ * position of '<'. If the left stop is not strictly before the right stop,
+ * both are reset to zero. Also updates ruler_buffer_len.
+ */
 void find_margins_of_current_ruler_buffer(void)
 {
-    // find_margins_of_current_ruler_buffer
-    // Pseudocode: Finds left (>) and right (<) margin stops in the current
-    // ruler buffer
-    // ;
-    // ***************************************************************************************
-    // find_margins_of_current_ruler_buffer:
-    // sub_cabc4 (inlined):
-    //     ldy #0
-    //     sty ruler_right_stop
-    //     sty ruler_left_stop
     uint8_t pos = 0;
     ruler_right_stop = 0;
     ruler_left_stop = 0;
-    // loop_caba5:
     do
     {
-        //     lda (current_ruler_ptr),y
         uint8_t cur_ch = current_ruler_ptr[pos];
-        //     cmp #0x3e ; '>'
         if (cur_ch == 0x3e)
             ruler_left_stop = pos;
-        //     cmp #0x3c ; '<'
         if (cur_ch == 0x3c)
             ruler_right_stop = pos;
-        //     cmp #0x0d
         if (cur_ch == 0x0d)
             break;
-        //     iny
         pos++;
-        //     cpy #0x84
     } while (pos != MAX_LINE_LENGTH);
-    // cabbc:
-    //     sty l003a
     ruler_buffer_len = pos;
-    //     lda ruler_left_stop
-    //     cmp ruler_right_stop
-    //     bcc return_72
     if (ruler_left_stop < ruler_right_stop)
         return;
-    // fall through to re-zero margins
     ruler_right_stop = 0;
     ruler_left_stop = 0;
 }
 
+/**
+ * Print a character with alignment handling.
+ * Spaces increment the pending alignment count; carriage returns reset it.
+ * Other characters are flushed via alignment and then rendered.
+ * @param cur_ch character to print
+ */
 void print_char(uint8_t cur_ch)
 {
     if (cur_ch == 0x20)
     {
         print_xpos++;
-        //     rts
         return;
     }
     if (cur_ch == 0x0d)
-    {
-        //     cmp #0x20 ; ' '
-        //     bne c9468
-        //     inc print_xpos
-        //     lda #0
-        //     sta print_xpos
         print_xpos = 0;
-        //     lda #0x0d
-    }
-    //     jsr sub_c9445
     print_alignment_spaces(cur_ch);
     print_char_just_to_screen(cur_ch);
 }
 
+/**
+ * Render a character directly to screen or printer.
+ * If printer output is enabled, delegates to the printer driver.
+ * Otherwise handles highlight codes by rendering '-' or '*' in reverse
+ * video and translates carriage return to newline.
+ * @param cur_ch character to render
+ */
 void print_char_just_to_screen(uint8_t cur_ch)
 {
-    // print_char_just_to_screen
-    // print_char_just_to_printer:
-    //     bit print_flags
-    //     bpl c9472
     if ((print_flags & 0x80))
     {
         printer_driver_ptr->print_char(cur_ch);
         return;
     }
-    //     jsr check_for_control_code
     control_code_t cc = check_for_control_code(cur_ch);
     if (!(cc == NO_CONTROL_CODE))
     {
-        //     pha
         {
             uint8_t saved_a = cur_ch;
-            //     lda #0x2d ; '-'
             cur_ch = (cc == HIGHLIGHT1_CODE) ? 0x2d : 0x2a;
-            //     bcs c947e
-            // c947e:
-            //     jsr set_inverted_text_if_not_mode_7
             screen_setstyle(STYLE_REVERSE);
-            //     jsr bdos_print_char
             cli_putchar(cur_ch);
-            //     pla
             cur_ch = saved_a;
         }
-        //     jmp set_normal_text_if_not_mode_7
         screen_setstyle(0);
         return;
     }
-    //     jmp bdos_print_char
     if (cur_ch == 0x0d)
     {
         cli_putchar('\n');
@@ -266,214 +193,133 @@ void print_char_just_to_screen(uint8_t cur_ch)
 /**
  * Process one document character, performing tab, ruler and highlight-code
  * expansion.
- *
- * @param cur_ch the character to process (the byte from the current edit line).
- * @param[out] idx on return, holds 1 on the ordinary paths (ca5d1 / ca5f8), or
- * the tab offset (index of the first `*` ruler stop beyond column_position) on
- * the tab path.
- * @param[in,out] is_tab on entry, the previous character in the same walk's
- * tab-expansion status (emulated from the 6502's SEC/CLC carry flag, but
- * passed via the bool since sub_ca5ae starts with cmp #9 which clobbers the
- * 6502 carry);
- * the tab path (ca5e1) uses true as carry-in for ca5f1, the indent path
- * (ca5d9) always uses false (reached via beq with C set).  On return, true
- * if cur_ch tab expansion was performed (the C flag of the
- * 6502 sub_ca5ae), false otherwise.
- *
- * Reads the globals current_ruler_ptr, ruler_left_stop, column_position,
- * ruler_buffer_len, print_flags and highlight_code.
- *
- * @return the processed character, normally `0x20` (space): tabs and
- * characters below `0x1a` map to space, and characters in `[0x1a, 0x20)`
- * map to cur_ch highlight code when `print_flags & 0x80`.
+ * @param cur_ch character from the current edit line to process
+ * @param idx on return, holds 1 on ordinary paths or the tab offset (index of
+ * the first '*' ruler stop beyond column_position) on the tab path
+ * @param is_tab on entry, the previous tab-expansion state for this walk; on
+ * return, true if tab expansion was performed for cur_ch, false otherwise
+ * @return processed character, normally 0x20 (space); tabs and characters below
+ * 0x1a map to space, and characters in [0x1a, 0x20) map to highlight codes when
+ * printer output is enabled
  */
 uint8_t process_document_character(uint8_t cur_ch, uint8_t* idx, bool* is_tab)
 {
     if (!(cur_ch == 9))
     {
-        //     cmp #0x10
         if ((cur_ch == 0x10) || cur_ch == 0x1a)
             goto ca5d5;
-        //     cmp #0x0b
         if (cur_ch == 0x0b)
             goto ca5d9;
-        //     cmp #0x1a
-        //     beq ca5d5
         if (cur_ch > 0x1a)
         {
-            //     cmp #0x20 ; ' '
-            //     bcs ca5d1
-            // (The 6502 saves/restores y via l0084 around this block;
-            // print_flags is
-            //  read directly, so the register is never clobbered.)
             if (cur_ch < 0x20)
             {
                 if ((print_flags & 0x80))
                 {
-                    //     sbc #0x1b
-                    // (carry is clear from the cmp #0x20, so this is a -= 0x1b
-                    // + 1)
                     cur_ch = (uint8_t)(cur_ch - 0x1b - 1);
-                    //     tax
-                    //     lda highlight1_code,x
                     *idx = cur_ch;
                     cur_ch = highlight_code[*idx];
                 }
             }
         }
     ca5d1:
-        //     ldx #1
         *idx = 1;
-        //     clc
         *is_tab = false;
-        //     rts
         return cur_ch;
     ca5d5:
         do
         {
-            //     lda #0x20 ; ' '
             cur_ch = 0x20;
-            //     bne ca5d1
             goto ca5d1;
         ca5d9:
-            //     lda ruler_left_stop
             cur_ch = ruler_left_stop;
         } while (cur_ch == 0);
-        //     sty l0084
-        //     bne ca5f1
-        // (ca5d9 is reached via beq from cmp #0x0b with a==0x0b, so the 6502
-        //  carry is always set; the indent ruler path enters ca5f1 with
-        //  a decremented by 1 to account for the borrow)
         cur_ch--;
-        //     sty l0084
-        //     ldy l0039
-        // (The 6502 uses y as the tab counter with y saved in l0084; the C uses
-        // a
-        //  local so y is never touched.)
     }
     else
     {
         uint8_t tab_pos = column_position;
-        // loop_ca5e5:
         do
         {
-            //     iny
             tab_pos++;
-            //     cpy l003a
-            //     bcs ca5f8
             if (tab_pos >= ruler_buffer_len)
                 goto ca5f8;
-            //     lda (current_ruler_ptr),y
             cur_ch = current_ruler_ptr[tab_pos];
-            //     cmp #0x2a ; '*'
-            //     bne loop_ca5e5
         } while (cur_ch != 0x2a);
-        //     tya
         cur_ch = tab_pos;
     }
-    //     sbc l0039
     {
         bool no_borrow = (cur_ch >= column_position);
         cur_ch -= column_position;
-        //     tax
         *idx = cur_ch;
-        //     beq ca5f8
         if (*idx == 0)
             goto ca5f8;
-        //     bcs ca5fa
         if (no_borrow)
             goto ca5fa;
     }
 ca5f8:
-    //     ldx #1
     *idx = 1;
 ca5fa:
-    //     lda #0x20 ; ' '
     cur_ch = 0x20;
-    //     ldy l0084
-    //     sec
     *is_tab = true;
-    //     rts
     return cur_ch;
 }
 
+/**
+ * Return control to the CLI prompt via longjmp.
+ */
 void return_to_cli_prompt(void)
 {
     longjmp(env, JMP_CLI);
 }
 
+/**
+ * Flush pending alignment spaces to the output.
+ * Prints print_xpos spaces and resets the counter.
+ * @param cur_ch unused, retained for call-site compatibility
+ */
 void print_alignment_spaces(uint8_t cur_ch)
 {
-    // sub_c9445
-    // Pseudocode: Outputs print_xpos number of spaces to align printer
-    // sub_c9445:
-    //     pha
-    //     lda print_xpos
     cur_ch = print_xpos;
     if (cur_ch == 0)
         return;
 
-    //     lda #0x20 ; ' '
-    // loop_c944c:
     do
     {
         print_char_just_to_screen(' ');
         print_xpos--;
     } while (print_xpos != 0);
-    // c9453:
-    //     pla
-    //     rts
 }
 
+/**
+ * Load the ruler at the given index offset and recompute margins.
+ * @param pos byte offset into the ruler index stack
+ */
 void load_current_ruler(uint8_t pos)
 {
-    // cab91
-    // Pseudocode: Sets current_ruler_ptr from stack at ruler_index_ptr offset
-    // cab91:
-    //     sty ruler_stack_ptr
-    //     iny
-    //     lda (oshwm),y
-    //     clc
-    //     adc #3
-    //     sta current_ruler_ptr
-    //     dey
-    //     lda (oshwm),y
-    //     adc #0
-    //     sta current_ruler_ptr+1
-    // (16-bit arithmetic: the two stacked bytes form the stored ruler
-    //  pointer, high byte first; current_ruler_ptr = stored + 3)
     ruler_index_ptr = pos;
     current_ruler_ptr = ruler_index[pos >> 1] + 3;
-    // MULTIPLE ENTRY POINTS: pop_from_ruler_index, cab91
-    //     (falls through to find_margins_of_current_ruler_buffer)
     find_margins_of_current_ruler_buffer();
 }
 
+/**
+ * Ensure the document contains at least one carriage return.
+ * If the document is empty (page == top), inserts a CR at page and a
+ * terminating NUL at top.
+ */
 void ensure_cr_at_document_top(void)
 {
-    // cb05a
-    // cb05a: Ensures at least one CR at top of document
     if (page != top)
         return;
-    //     inc top
     top++;
-    //     inc top+1
-    // (automatically handled by 16-bit top)
-    // cb06c:
-    //     sta current_line_ptr
-    //     sty current_line_ptr+1
     current_line_ptr = page;
-    //     ldy #0
-    //     lda #0x0d
-    //     sta (page),y
     page[0] = 0x0d;
-    //     tya
-    //     sta (top),y
     top[0] = 0;
-    // return_85:
-    //     rts
 }
 
+/**
+ * Close the currently open file if any.
+ */
 void close_file(void)
 {
     if (file_ptr)
@@ -483,111 +329,75 @@ void close_file(void)
     }
 }
 
+/**
+ * Create a default ruler with tab stops every six columns.
+ * Fills the buffer with '.' and '*' tab markers and terminates with '<'.
+ * @param ruler_addr destination buffer for the ruler
+ * @return offset of the terminating '<' character
+ */
 uint8_t create_default_ruler(uint8_t* ruler_addr)
 {
-    // create_default_ruler
-    // Pseudocode: Creates a default ruler with tab stops every 6 columns
-    // ;
-    // ***************************************************************************************
-    // create_default_ruler:
-    //     sta ((uint8_t*)&tmp01)[0]
     uint8_t* line_ptr = ruler_addr;
-    //     lda #0
-    //     tay                                                               ;
-    //     Y=0x00
     uint8_t pos = 0;
-    // loop_cb0e7:
     for (;;)
     {
-        //     lda #0x2e ; '.'
         uint8_t cur_ch = 0x2e;
-        // loop_cb0e9:
         for (;;)
         {
-            //     sta (((uint8_t*)&tmp01)[0]),y
             line_ptr[pos] = cur_ch;
-            //     iny
             pos++;
-            //     tya
             uint8_t next_ch = pos;
-            //     tax
             uint8_t idx = next_ch;
-            //     inx
             idx++;
-            //     clc
-            //     adc #6
             next_ch += 6;
-            //     cmp screen_width
             if (next_ch == screen_maxcolumn)
                 goto cb0ff;
-            //     txa
-            //     and #7
-            //     bne loop_cb0e7
             if (idx & 7)
                 break;
-            //     lda #0x2a ; '*'
             cur_ch = 0x2a;
-            //     bne loop_cb0e9 ; ALWAYS branch
         }
     }
-    // cb0ff:
 cb0ff:
-    //     lda #0x3c ; '<'
-    //     sta (((uint8_t*)&tmp01)[0]),y
     line_ptr[pos] = 0x3c;
-    //     rts
     return pos;
 }
 
+/**
+ * Read one byte from the current file.
+ * @return next byte, or 0 on EOF or NUL
+ */
 uint8_t get_byte_from_file(void)
 {
-    // get_byte_from_file
     int c = fgetc(file_ptr);
     if (c == EOF || c == 0)
         return 0;
     return (uint8_t)c;
 }
 
+/**
+ * Get the address of a register variable by letter name.
+ * @param cur_ch letter identifying the register (A-Z, case-insensitive)
+ * @return pointer to the register value, or NULL if not a letter
+ */
 unsigned int* get_register_address(uint8_t cur_ch)
 {
-    // get_register_address
-    // get_register_address: Gets a pointer to the register value by letter
-    // name.  Returns NULL if the letter is not a letter A-Z/a-z (invalid).
-    //     jsr is_uppercase
-    //     bcs return_77
     if (!isalpha(cur_ch))
         return NULL;
-    //     and #0xdf
     cur_ch &= 0xdf;
-    //     sbc #0x40 ; '@'
-    //     asl
-    //     adc #<register_value_array
-    //     sta ((uint8_t*)&tmp67)[0]
-    //     lda #>register_value_array
-    //     adc #0
-    //     sta ((uint8_t*)&tmp67)[1]
-    // (16-bit arithmetic: pointer = register_value_array + (a - 'A') * 2)
     return &register_value_array[cur_ch - 'A'];
 }
 
+/**
+ * Initialise document state and memory layout.
+ * Clears flags, sets up heap boundaries, creates the default ruler,
+ * and positions the cursor at the top of the document.
+ */
 void initialise_document(void)
 {
-    // initialise_document
-    // initialise_document:
-    //     lda #0
-    //     sta printer_driver_name
     printer_driver_name[0] = 0;
-    //     sta format_mode_flag
     format_mode_flag = 0;
-    //     sta justifying_flag
     justifying_flag = 0;
-    //     sta insert_mode_flag
     insert_mode_flag = 0;
-    //     ldx #(input_buffer_ptr+2 - print_flags)
-    // loop_cafe9:
-    //     sta print_flags,x
-    //     dex
-    //     bpl loop_cafe9
     print_flags = 0;
     edit_buffer_dirty_flag = 0;
     edit_buffer_unpacked_flag = 0;
@@ -606,195 +416,94 @@ void initialise_document(void)
     delimiter_char = 0;
     line_format_status = 0;
     input_buffer_offset = 0;
-    // cafee:
-    //     ldx oshwm
-    //     ldy oshwm+1
-    //     iny
-    //     inx
-    //     stx page
-    //     bne caffe
-    //     iny
-    // caffe:
-    //     sty page+1
     page = oshwm + 0x101;
-    //     ldy #0
     uint8_t pos = 0;
-    //     sty file_edit_flags
     file_edit_flags = pos;
-    //     sty xpos
     xpos = pos;
-    //     lda #0xaa
-    //     sta (oshwm),y
     oshwm[pos] = 0xaa;
-    //     lda page
-    //     sec
-    //     sbc #1
-    //     sta ((uint8_t*)&tmp89)[0]
-    //     lda page+1
-    //     sbc #0
-    //     sta ((uint8_t*)&tmp89)[1]
-    //     lda #0x0d
-    //     sta (((uint8_t*)&tmp89)[0]),y
     page[-1] = 0x0d;
-    //     sta current_line_buffer + 0x89
     ram[RAM_CURRENT_LINE_BUF + MAX_LINE_LENGTH - 1] = 0x0d;
-    //     lda page / sta top / lda page+1 / sta top+1
     top = page;
-    //     lda #<(current_line_buffer)
-    //     sta ptr1
-    //     clc
-    //     adc #3
-    //     sta current_edit_line_ptr
-    //     sta current_format_line_ptr
-    //     lda #>(current_line_buffer)
-    //     sta ptr1+1
-    //     adc #0
-    //     sta current_edit_line_ptr+1
-    //     sta current_format_line_ptr+1
     edit_buffer_base = &ram[RAM_CURRENT_LINE_BUF];
     current_format_line_ptr = &ram[RAM_EDIT_BUFFER];
-    //     lda #<(current_ruler_buffer)
     uint8_t pos2 = create_default_ruler(&ram[RAM_CURRENT_RULER_BUF]);
-    //     iny
     pos2++;
-    //     lda #0x0d
-    //     sta (((uint8_t*)&tmp01)[0]),y
     ram[RAM_CURRENT_RULER_BUF + pos2] = 0x0d;
-    //     ldy #0xff
-    //     lda #<(just_before_current_ruler_buffer)
-    //     sta (oshwm),y
-    //     dey
-    //     lda #>(just_before_current_ruler_buffer)
-    //     sta (oshwm),y
     ruler_index[0] = &ram[0];
     ruler_index[0x7f] = &ram[RAM_JUST_BEFORE_RULER_BUF];
-    //     jsr move_cursor_to_top_of_document
     move_cursor_to_top_of_document();
-    //     jsr clear_cmd
     clear_cmd();
-    //     (falls through to cb05a)
     ensure_cr_at_document_top();
 }
 
-// Returns the marker index 0-5, or MARKER_INVALID if the character is not a
-// valid marker ('1'-'6').  Beeps on a non-digit marker (the 6502 branches to
-// the beep entry point); out-of-range digits return MARKER_INVALID silently.
+/**
+ * Convert a marker character to its zero-based index.
+ * @param cur_ch character '1'..'6' to look up
+ * @return 0..5 for valid markers, MARKER_INVALID otherwise; beeps if
+ * cur_ch is below '1'
+ */
 int lookup_marker(uint8_t cur_ch)
 {
-    // lookup_marker
-    // lookup_marker: Converts marker character '1'-'6' to index
-    //     sec
-    //     sbc #0x31 ; '1'
-    //     bcc loop_caced
-    // (sbc with C=1 is a plain subtraction; borrow means invalid marker.
-    //  loop_caced is beep.)
     if (cur_ch < 0x31)
     {
         beep();
         return MARKER_INVALID;
     }
     cur_ch -= 0x31;
-    //     cmp #6
-    //     bcs return_75
     if (cur_ch >= 6)
         return MARKER_INVALID;
-    // return_75:
-    //     rts
     return cur_ch;
 }
 
+/**
+ * Move the cursor to the document address containing the given pointer.
+ * Scans forward or backward from the current line to locate the line that
+ * contains the target address and updates current_line_ptr and xpos.
+ * @param addr target address within the document heap
+ */
 void move_cursor_to_address(uint8_t* addr)
 {
     uint8_t* next_line_start;
-    // move_cursor_to_address
-    // move_cursor_to_address:
-    //     sta ((uint8_t*)&tmp89)[0]
     uint8_t* scan_ptr = addr;
     uint8_t* cur = current_line_ptr;
     if (!(cur == addr))
     {
         if (cur > addr)
         {
-            // cabdf:
             for (;;)
             {
-                //     jsr sub_cab37
                 uint8_t* line_ptr;
                 if (!find_previous_line(cur, &line_ptr))
                     goto cac20;
                 cur = line_ptr;
-                //     bcc cac20
-                //     cpy ((uint8_t*)&tmp89)[1]
-                //     bcc cac20
-                //     bne cabdf
-                //     cmp ((uint8_t*)&tmp89)[0]
-                //     bcc cac20
-                //     bne cabdf
-                //     beq cac20
                 if (cur <= addr)
                     goto cac20;
-                //     ALWAYS branch
             }
         }
-        // cabf6:
-        // cabf9:
         do
         {
-            //     sta ((uint8_t*)&tmp01)[0]
             uint8_t pos;
             if (find_next_line(cur, &next_line_start, &pos))
                 break;
-            //     beq cac17
-            //     tya
-            //     ldy ((uint8_t*)&tmp01)[1]
-            //     clc
-            //     adc ((uint8_t*)&tmp01)[0]
-            //     bcc cac0b
             cur = next_line_start + pos;
-            //     cpy ((uint8_t*)&tmp89)[1]
-            //     bcc cabf6
-            //     bne cac17
-            //     cmp ((uint8_t*)&tmp89)[0]
-            //     bcc cabf6
-            //     beq cac1d
             if (cur >= addr)
             {
                 if (cur == addr)
                     goto cac1d;
                 break;
             }
-            //     cabf6:
-            //     jsr sub_cac41
             check_for_embedded_ruler(next_line_start);
         } while (1);
-        // cac17:
-        //     lda ((uint8_t*)&tmp01)[0]
-        //     ldy ((uint8_t*)&tmp01)[1]
-        //     bne cac20
         cur = next_line_start;
         goto cac20;
-        // cac1d:
     cac1d:
-        //     jsr sub_cac41
         check_for_embedded_ruler(next_line_start);
     }
-    // cac20:
 cac20:
-    //     sta current_line_ptr
-    //     sty current_line_ptr+1
     current_line_ptr = cur;
-    //     lda ((uint8_t*)&tmp89)[0]
-    //     sec
-    //     sbc current_line_ptr
-    //     tax
-    // (sbc with C=1 is a plain subtraction; tax overwrites the flags)
     uint8_t idx = (uint8_t)(scan_ptr - current_line_ptr);
-    //     ldy #0
-    //     lda (current_line_ptr),y
     uint8_t cur_ch = current_line_ptr[0];
-    //     jsr check_for_command_prefix
     command_prefix_t cp = check_for_command_prefix(cur_ch);
-    //     bne cac3e
     if (cp != NO_COMMAND_PREFIX)
     {
         uint8_t next_ch = idx;
@@ -805,54 +514,36 @@ cac20:
             idx = next_ch;
         }
     }
-    //     stx xpos
     xpos = idx;
-    //     rts
     return;
 }
 
+/**
+ * Move the cursor to the start of the document (page).
+ * Resets screen and ruler stack pointers and loads the initial ruler.
+ */
 void move_cursor_to_top_of_document(void)
 {
-    // move_cursor_to_top_of_document
-    // move_cursor_to_top_of_document: Moves cursor to the top (page) of the
-    // document
-    //     lda page
-    //     sta current_line_ptr
     current_line_ptr = page;
-    //     lda page+1
-    //     sta current_line_ptr+1
-    //     lda #0
-    //     sta xpos
     xpos = 0;
-    //     ldy #0xfe
-    //     sty l0012
     top_of_screen_line_ptr = &ram[RAM_MAX];
-    //     sty ruler_stack_ptr
     ruler_index_ptr = 0xfe;
-    //     sty l0033
     saved_ruler_index_scroll = 0xfe;
-    //     jmp cab91
     load_current_ruler(0xfe);
 }
 
-// Skips to the next CR or zero terminator.  Sets *y to the offset of the byte
-// past the CR (or of the NUL), and returns true if that byte is a NUL (end of
-// document) — the 6502's Z flag.
+/**
+ * Find the end of the current line.
+ * Scans from start until CR (0x0d) or NUL.
+ * @param start address to start scanning
+ * @param line_ptr on return, set to start
+ * @param pos on return, offset of the byte past the CR or of the NUL
+ * @return true if the terminator is NUL (end of document), false if CR
+ */
 bool find_next_line(uint8_t* start, uint8_t** line_ptr, uint8_t* pos)
 {
     *line_ptr = start;
-    // find_next_line
-    // Pseudocode: Skips to next CR or zero terminator in memory
-    // cab29:
-    //     ldy #0
     *pos = 0;
-    // loop_cab2b:
-    //     lda (((uint8_t*)&tmp01)[0]),y
-    //     beq return_70
-    //     iny
-    //     cmp #0x0d
-    //     bne loop_cab2b
-    //     lda (((uint8_t*)&tmp01)[0]),y
     for (;;)
     {
         uint8_t cur_ch = (*line_ptr)[*pos];
@@ -863,49 +554,36 @@ bool find_next_line(uint8_t* start, uint8_t** line_ptr, uint8_t* pos)
             break;
     }
     uint8_t next_ch = (*line_ptr)[*pos];
-    // return_70:
-    //     rts
     return next_ch == 0;
 }
 
-// Returns false if tmp01 is already at the start of the document (no previous
-// line); true if it was moved back to the start of the previous line.
+/**
+ * Find the start of the previous line.
+ * @param val address just past the current line
+ * @param line_ptr on return, set to the start of the previous line
+ * @return false if already at the start of the document, true otherwise
+ */
 bool find_previous_line(uint8_t* val, uint8_t** line_ptr)
 {
     uint8_t cur_ch;
-    // find_previous_line
-    // sub_cab37:
-    //     sec
-    //     sbc #1
-    //     sta ((uint8_t*)&tmp01)[0]
-    //     bcs cab3f
-    //     sty ((uint8_t*)&tmp01)[1]
     *line_ptr = val - 1;
-    //     cpy page+1
-    //     bcc return_71
-    //     bne cab4b
-    //     cmp page
-    //     bcc return_71
     if (*line_ptr < page)
         return false;
-    // loop_cab4d:
     do
     {
         (*line_ptr)--;
         cur_ch = **line_ptr;
     } while (cur_ch != 0x0d);
     (*line_ptr)++;
-    //     jsr sub_cab6e
-    //     bne cab6c
-    // (inlined: Z = (*tmp01 == RULER_BYTE))
     if (**line_ptr == RULER_BYTE)
         pop_from_ruler_index();
-    //     sec
-    // return_71:
-    //     rts
     return true;
 }
 
+/**
+ * Open the input file named in filename_buffer for reading.
+ * On failure, reports file not found.
+ */
 void open_input_file(void)
 {
     zero_terminate_filename_buffer();
@@ -918,6 +596,10 @@ void open_input_file(void)
     file_ptr = input_fp;
 }
 
+/**
+ * Open the output file named in filename_buffer for writing.
+ * On failure, reports a file error.
+ */
 void open_output_file(void)
 {
     zero_terminate_filename_buffer();
@@ -930,79 +612,59 @@ void open_output_file(void)
     file_ptr = output_fp;
 }
 
+/**
+ * Pop the most recent ruler from the ruler index stack.
+ * Increments the status line redraw flag and loads the previous ruler.
+ */
 void pop_from_ruler_index(void)
 {
-    // Pseudocode: Pops ruler position from the ruler index
-    // pop_from_ruler_stack:
-    //     inc status_line_needs_redrawing_flag
     status_line_needs_redrawing_flag++;
-    //     ldy ruler_stack_ptr
     uint8_t pos = ruler_index_ptr;
-    //     iny
     pos++;
-    //     iny
     pos++;
-    // MULTIPLE ENTRY POINTS: pop_from_ruler_index, cab91
     load_current_ruler(pos);
 }
 
+/**
+ * Push a ruler address onto the ruler index stack.
+ * @param target_ptr address of the ruler line to push
+ */
 void push_onto_ruler_index(uint8_t* target_ptr)
 {
-    // push_onto_ruler_index
-    // Pseudocode: Pushes current ruler position onto the ruler index
-    // push_onto_ruler_stack:
-    //     tya
-    //     pha
     {
-        //     inc status_line_needs_redrawing_flag
         status_line_needs_redrawing_flag++;
-        //     ldy ruler_stack_ptr
         uint8_t stack_index = ruler_index_ptr - 2;
-        //     sta (oshwm),y / sta (oshwm),y+1
         ruler_index[stack_index >> 1] = target_ptr;
-        //     jsr cab91
         load_current_ruler(stack_index);
     }
-    //     rts
     return;
 }
 
+/**
+ * Reset the active area to cover the entire document.
+ * Sets area_start_ptr to top and area_end_ptr to page.
+ */
 void reset_area_to_entire_document(void)
 {
-    // reset_area_to_entire_document: Resets area to entire document (top to
-    // page)
-    //     lda top
-    //     sta area_start_ptr
     area_start_ptr = top;
-    //     lda top+1
-    //     sta area_start_ptr+1
-    //     lda page
-    //     sta area_end_ptr
     area_end_ptr = page;
-    //     lda page+1
-    //     sta area_end_ptr+1
-    //     rts
 }
 
-// Finds the next line, handling a command/ruler prefix and pushing onto the
-// ruler index.  Returns true if the next line is the end of the document (the
-// 6502's Z flag, as left by find_next_line).
+/**
+ * Advance to the next document line, handling ruler lines.
+ * If the current line is a ruler, it is pushed onto the ruler stack.
+ * @param line first byte of the current line
+ * @param line_ptr on return, set to the start of the current line
+ * @param pos on return, offset past the line terminator
+ * @return true if the next line terminator is NUL (end of document), false
+ * otherwise
+ */
 bool advance_to_next_line(uint8_t* line, uint8_t** line_ptr, uint8_t* pos)
 {
-    // Pseudocode: Finds next line in document, handling command prefix and
-    // ruler stack
-    // sub_cab1a:
-    //     sta ((uint8_t*)&tmp01)[0]
-    //     jsr sub_cab6e
-    //     bne cab29
-    // (inlined: Z = (*tmp01 == RULER_BYTE))
     if (*line != RULER_BYTE)
         return find_next_line(line, line_ptr, pos);
-    //     jsr cab29
     bool end = find_next_line(line, line_ptr, pos);
-    //     bne push_onto_ruler_stack
     if (!end)
         push_onto_ruler_index(line);
-    //     rts
     return end;
 }

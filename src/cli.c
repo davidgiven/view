@@ -6,7 +6,6 @@
 #include <string.h>
 uint8_t* parse_mark_from_command(struct scan_state* scan);
 
-// Forward declarations for CLI utilities
 void file_error(void);
 void file_not_found_error(void);
 bool parse_integer_from_command(struct scan_state* scan, int* out);
@@ -15,7 +14,6 @@ void reset_document_name_after_load(void);
 void set_document_name_to_filename_buffer(void);
 void zero_terminate_filename_buffer(void);
 
-// Forward declarations for static CLI command functions
 static void bye_cmd(void);
 static void cmd_err_no_target(void);
 static void cmd_err_no_string(void);
@@ -45,37 +43,22 @@ static void fold_cmd(struct scan_state* scan);
 static void printer_cmd(struct scan_state* scan);
 static void name_cmd(struct scan_state* scan);
 
-// check_for_at_least_150_bytes_free defined in document.c
-
+/**
+ * Exits the program.
+ */
 static void bye_cmd(void)
 {
-    // Pseudocode: Exits the program via BDOS exit system call
-    // ;
-    // ***************************************************************************************
-    // zproc bye_cmd
-    //     ldy #BDOS_EXIT_PROGRAM
-    //     jmp BDOS
     exit(0);
 }
 
+/**
+ * Dispatches a CLI command by index to its handler.
+ *
+ * @param cur_ch command index into the CLI jump table
+ * @param scan scan state for argument parsing
+ */
 void execute_cli_command(uint8_t cur_ch, struct scan_state* scan)
 {
-    // execute_cli_command
-    // call_through_jumptable (y=2):
-    //     asl
-    //     clc
-    //     adc jumptable_ptrs,y
-    //     sta ((uint8_t*)&tmp89)[0]
-    //     lda #0
-    //     adc jumptable_ptrs+1,y
-    //     sta ((uint8_t*)&tmp89)[1]
-    //     ldy #0
-    //     lda (((uint8_t*)&tmp89)[0]),y
-    //     sta ((uint8_t*)&tmp67)[0]
-    //     iny
-    //     lda (((uint8_t*)&tmp89)[0]),y
-    //     sta ((uint8_t*)&tmp67)[1]
-    //     jmp (((uint8_t*)&tmp67)[0])
     switch (cur_ch)
     {
         case 0:
@@ -159,302 +142,185 @@ void execute_cli_command(uint8_t cur_ch, struct scan_state* scan)
     }
 }
 
+/**
+ * Replaces all occurrences of the search string in the document area.
+ *
+ * @param scan scan state containing search and replace arguments
+ */
 static void change_cmd(struct scan_state* scan)
 {
-    // change_cmd
-    // Pseudocode: Replaces all occurrences of search string in document area,
-    // reports change count
-    // change_cmd:
-    //     jsr sub_c83f0
     cli_cmd_status_t st = process_cli_command(scan);
-    //     bcs c82fa
     if (st == CLI_CMD_NO_STRING)
     {
         cmd_err_no_string();
         return;
     }
-    //     beq c82e7
     if (st == CLI_CMD_NO_TARGET)
     {
         cmd_err_no_target();
         return;
     }
-    //     jsr c8b7b
     if (!scan_document_for_next_line())
     {
         cmd_err_no_string();
         return;
     }
-    //     bne c82fa
-    //     ldx #0
-    //     stx change_count
-    //     stx change_count+1
     int change_count = 0;
-    // loop_c82b3:
     for (;;)
     {
-        //     inc change_count
-        //     bne c82b9
-        //     inc change_count+1
-        // c82b9:
         change_count++;
-        //     jsr move_cursor_to_address
         move_cursor_to_address(doc_working_ptr);
-        //     lda #0
-        //     sta print_xpos
         print_xpos = 0;
-        //     jsr sub_c8a4f
-        //     bcs c830d (C=1 conveyed as a true return)
         if (check_area_memory(doc_working_ptr))
             goto c830d;
-        //     jsr c8b7b
         if (scan_document_for_next_line())
             continue;
-        //     beq loop_c82b3
         break;
     }
-    //     ldx change_count
     render_number_to_screen(change_count);
-    //     jsr print_inline_string
-    //     .ascii " string(s) changed"
-    //     .byte 0xff
     cli_putstring(" string(s) changed\n");
     return_to_cli_prompt();
     return;
-    // c830d:
 c830d:
-    //     jmp display_not_enough_memory
     display_not_enough_memory();
 }
 
+/**
+ * Clears all document markers.
+ */
 void clear_cmd(void)
 {
-    // clear_cmd
-    // Pseudocode: Clears all markers (sets to zero)
-    // ;
-    // ***************************************************************************************
-    // clear_cmd:
-    //     ldx #0x0b
-    //     lda #0
-    // loop_cb095:
-    //     sta markers_array,x
-    //     dex
-    //     bpl loop_cb095
-    //     rts
     memset(markers_array, 0, sizeof(markers_array));
     return;
 }
 
+/**
+ * Closes the output file, resets editing flags and returns to the CLI prompt.
+ */
 static void close_input_output_files(void)
 {
-    // close_input_output_files
-    // Pseudocode: Closes output file, resets editing flags, returns to CLI
-    // close_input_output_files:
-    //     lda #0
-    //     sta input_file_empty_flag
     input_file_empty_flag = 0;
-    //     sta file_edit_flags
     file_edit_flags = 0;
-    //     jsr select_file
-    // (inlined: file_ptr = output_fp)
     file_ptr = output_fp;
-    //     jsr close_file
     close_file();
-    //     jmp return_to_cli_prompt
     return_to_cli_prompt();
     return;
-    // MULTIPLE ENTRY POINTS: quit_cmd, close_input_output_files
 }
 
+/**
+ * Reports a "No string found" error and returns to the CLI prompt.
+ */
 static void cmd_err_no_string(void)
 {
-    // c82fa - shared error handler for CLI commands
-    // c82fa:
-    //     jsr print_inline_string
-    //     .ascii "No string found"
-    //     .byte 0xff
-    //     rts
     cli_putstring("No string found\n");
     return_to_cli_prompt();
     return;
 }
 
+/**
+ * Reports a "No target given" error and returns to the CLI prompt.
+ */
 static void cmd_err_no_target(void)
 {
-    // c82e7 - shared error handler for CLI commands
-    // c82e7:
-    //     jsr print_inline_string
-    //     .ascii "No target given"
-    //     .byte 0xff
-    //     rts
     cli_putstring("No target given\n");
     return_to_cli_prompt();
     return;
 }
 
+/**
+ * Counts words in the document area handling command prefixes and punctuation.
+ *
+ * @param scan scan state containing optional marker range
+ */
 static void count_cmd(struct scan_state* scan)
 {
     uint8_t idx;
     uint8_t tmp_ch3;
-    // count_cmd
-    // Pseudocode: Counts words in document area handling command prefixes and
-    // punctuation
     static const uint8_t l8747_data[] = {0x52, 0x4a, 'C', 'E', 'L', 'J', 0};
-    // ;
-    // ***************************************************************************************
-    // count_cmd:
-    //     jsr parse_marks_from_command
     parse_marks_from_command(scan);
-    //     jsr sanitise_area
     if (sanitise_area() == AREA_EMPTY)
     {
         return_to_cli_prompt();
         return;
     }
-    //     lda area_start_ptr
-    //     sta ((uint8_t*)&tmp01)[0]
-    //     lda area_start_ptr+1
-    //     sta ((uint8_t*)&tmp01)[1]
     uint8_t* line_ptr = area_start_ptr;
-    //     lda #0
-    //     sta ((uint8_t*)&tmp89)[0]
-    //     sta ((uint8_t*)&tmp89)[1]
     int scan_ptr = 0;
-    //     sta l0083
-    //     sta l0082
     screen_column = 0;
     screen_row = 0;
-    // c86b8:
 c86b8:
-    //     ldy #0
     uint8_t pos = 0;
-    //     jsr deref_and_check_for_command_prefix
     command_prefix_t cp = deref_and_check_for_command_prefix(pos, line_ptr);
     if (!(cp == NO_COMMAND_PREFIX))
     {
-        //     ldx #0
         idx = 0;
-        //     iny
         pos++;
-        // loop_c86c2:
         do
         {
-            //     lda (((uint8_t*)&tmp01)[0]),y
             uint8_t cur_ch = line_ptr[pos];
-            //     iny
             pos++;
             if (!(cur_ch != l8747_data[idx]))
             {
-                //     lda (((uint8_t*)&tmp01)[0]),y
                 uint8_t next_ch = line_ptr[pos];
-                //     cmp l8748,x
                 if (next_ch == l8747_data[idx + 1])
                     goto c86df;
             }
-            // c86d1:
-            //     lda l8749,x
             uint8_t tmp_ch2 = l8747_data[idx + 2];
-            //     beq c86db
             if (tmp_ch2 == 0)
                 goto c86db;
-            //     dey
             pos--;
-            //     inx
             idx++;
-            //     inx
             idx++;
-            //     bne loop_c86c2
         } while (idx != 0);
-        // c86db:
     c86db:
-        //     lda #0x80
         tmp_ch3 = 0x80;
-        //     bne c86ff ; ALWAYS branch
         goto c86ff;
-        // c86df:
     c86df:
-        //     lda ((uint8_t*)&tmp01)[0]
-        //     clc
-        //     adc #3
-        //     sta ((uint8_t*)&tmp01)[0]
-        //     bcs c871d
-        //     bcc c871f ; ALWAYS branch
-        // (16-bit arithmetic: tmp01 += 3)
         line_ptr += 3;
-        // c86ea:
-        //     ldy #0
     }
     else
     {
         uint8_t pos2 = 0;
-        //     jsr process_current_document_character
         bool is_tab = false;
         tmp_ch3 =
             process_current_document_character(line_ptr, &idx, &pos2, &is_tab);
-        //     and #0x7f
         tmp_ch3 &= 0x7f;
-        //     ldx #0
         idx = 0;
         if (!((int8_t)screen_row < 0))
         {
             if (!(tmp_ch3 == 0x0d || tmp_ch3 == 0x20))
             {
-                //     beq c8703
-                // c86ff:
             c86ff:
-                //     inc l0083
                 screen_column++;
                 if (screen_column != 0)
                     goto c8715;
             }
-            //     bne c8715
-            // c8703:
-            //     ldy l0083
-            //     beq c870d
             if (screen_column != 0)
                 scan_ptr++;
         }
-        //     stx l0083
         screen_column = idx;
-        //     cmp #0x0d
         if (tmp_ch3 == 0x0d)
             screen_row = idx;
     c8715:
-        //     ora l0082
         tmp_ch3 |= screen_row;
-        //     sta l0082
         screen_row = tmp_ch3;
         line_ptr++;
     }
-    // c871f:
-    //     ldy ((uint8_t*)&tmp01)[1]
-    //     cpy area_end_ptr+1
-    //     ldy ((uint8_t*)&tmp01)[0]
-    //     cpy area_end_ptr
-    // (16-bit equality consolidated)
     if (line_ptr != area_end_ptr)
         goto c86b8;
-    //     ldx ((uint8_t*)&tmp89)[0]
     render_number_to_screen(scan_ptr);
-    //     jsr print_inline_string
-    //     .ascii " word(s) counted."
-    //     .byte 0xff
     cli_putstring(" word(s) counted.\n");
     return_to_cli_prompt();
     return;
-    // l8747:
-    //     .byte 0x52
-    // l8748:
-    //     .byte 0x4a
-    // l8749:
-    //     .ascii "CELJ"
-    //     .byte 0
 }
 
+/**
+ * Enters continuous editing mode using the specified input and output files.
+ *
+ * @param scan scan state containing input and output filenames
+ */
 static void edit_cmd(struct scan_state* scan)
 {
     uint8_t cur_ch;
-    // edit_cmd
     check_not_continuous_editing();
     parse_filename_from_command(scan);
     set_document_name_to_filename_buffer();
@@ -481,15 +347,13 @@ static void edit_cmd(struct scan_state* scan)
     file_edit_flags = 1;
 }
 
+/**
+ * Sets the tab key field width from a parsed integer argument.
+ *
+ * @param scan scan state containing the field width value
+ */
 static void field_cmd(struct scan_state* scan)
 {
-    // field_cmd
-    // Pseudocode: Sets the tab key field width from parsed integer argument
-    // ;
-    // ***************************************************************************************
-    // field_cmd:
-    //     jsr parse_integer_from_command
-    //     beq c869b
     int value;
     bool ok = parse_integer_from_command(scan, &value);
     if (!ok)
@@ -497,43 +361,30 @@ static void field_cmd(struct scan_state* scan)
         return_to_cli_prompt();
         return;
     }
-    //     lda ((uint8_t*)&tmp89)[0]
     uint8_t cur_ch = value & 0xFF;
-    //     cmp #0x1b
     if (cur_ch == 0x1b)
     {
         cli_putstring("Frump!\n");
         return_to_cli_prompt();
         return;
     }
-    //     sta current_tab_key
     current_tab_key = cur_ch;
-    // c869b:
-    //     jmp return_to_cli_prompt
     return_to_cli_prompt();
     return;
 }
 
+/**
+ * Writes remaining document content to the output file in chunks.
+ */
 static void finish_cmd(void)
 {
-    // finish_cmd
-    // Pseudocode: Writes remaining document content to output file in chunks
-    // ;
-    // ***************************************************************************************
-    // finish_cmd:
-    //     jsr check_continuous_editing
     check_continuous_editing();
-    // loop_c84ee:
     while (1)
     {
         reset_area_to_entire_document();
         sanitise_area();
-        //     jsr select_file
-        // (inlined: file_ptr = output_fp)
         file_ptr = output_fp;
         write_area_to_file();
-        //     jsr put_byte_to_file
-        // (inlined: fputc(0, file_ptr))
         fputc(0, file_ptr);
         adjust_area_pointers(area_size);
         move_cursor_to_top_of_document();
@@ -551,219 +402,146 @@ static void finish_cmd(void)
     }
 }
 
+/**
+ * Toggles or reports the folding mode.
+ *
+ * @param scan scan state containing optional folding argument
+ */
 static void fold_cmd(struct scan_state* scan)
 {
     if (!(scan_input_buffer(input_buffer, scan)))
     {
-        //     lda input_buffer,y
         uint8_t cur_ch = input_buffer[scan->pos];
-        //     cmp #'1'
-        //     beq c87b2 (true → folding_flag = 0)
         if (cur_ch == '1')
         {
             folding_flag = 0;
             goto c87b4;
         }
-        //     cmp #'0'
         if (cur_ch == '0')
             folding_flag = 0x80;
     }
 c87b4:
-    //     jsr print_inline_string
-    //     .ascii "Folding "
-    //     .byte 0
     cli_putstring("Folding ");
-    //     lda folding_flag
     if (((int8_t)folding_flag < 0))
     {
         cli_putstring("off\n");
         return_to_cli_prompt();
         return;
     }
-    //     jsr print_inline_string
-    //     .ascii "on"
-    //     .byte 0xff
     cli_putstring("on\n");
     return_to_cli_prompt();
     return;
-    // c87d1:
-    //     jsr print_inline_string
-    //     .ascii "Bad file"
-    //     .byte 0xff
     cli_putstring("Bad file\n");
     return_to_cli_prompt();
     return;
 }
 
+/**
+ * Formats the document area paragraph by paragraph.
+ *
+ * @param scan scan state containing optional marker range
+ */
 static void format_cmd(struct scan_state* scan)
 {
-    // Pseudocode: Formats document area by running line-by-line through
-    // formatting pipeline
-    // ;
-    // ***************************************************************************************
-    // format_cmd:
-    //     jsr parse_marks_from_command
     parse_marks_from_command(scan);
     if (!(sanitise_area() == AREA_EMPTY))
     {
-        //     lda area_start_ptr
-        //     jsr move_cursor_to_address
         move_cursor_to_address(area_start_ptr);
-        //     jsr sub_caf5f
         clear_format_mode_bit7();
-        //     lda #0x10
-        //     jsr wipe_buffer
         wipe_buffer(0x10, edit_buffer_base);
-        //     lda current_edit_line_ptr
-        //     sta current_format_line_ptr
-        //     lda current_edit_line_ptr+1
-        //     sta current_format_line_ptr+1
         current_format_line_ptr = &ram[RAM_EDIT_BUFFER];
         do
         {
-            // c876d:
-            //     jsr sub_c9977
             format_result_t fr = format_paragraph();
-            //     bvs c8791 (V=1 conveyed as FORMAT_MEMORY_FULL)
             if (fr == FORMAT_MEMORY_FULL)
                 goto c8791;
-            //     bcs c8787 (C=1 conveyed as FORMAT_AT_END)
             if (fr == FORMAT_AT_END)
                 break;
-            //     lda #0x2e ; '.'
-            //     jsr bdos_print_char
             cli_putchar(0x2e);
         } while (current_line_ptr < area_end_ptr);
-        // c8787:
-        //     lda #0xff
-        //     lda #0xff
-        //     sta l0012
         top_of_screen_line_ptr = &ram[RAM_MAX];
     }
-    // c878b:
-    //     jsr bdos_print_newline
     cli_putchar('\n');
-    //     jmp return_to_cli_prompt
     return_to_cli_prompt();
     return;
-    // c8791:
 c8791:
-    //     jsr bdos_print_newline
     cli_putchar('\n');
-    //     jmp display_not_enough_memory
     display_not_enough_memory();
     return;
 }
 
+/**
+ * Loads a document from a file and moves the cursor to the top.
+ *
+ * @param scan scan state containing the filename
+ */
 static void load_cmd(struct scan_state* scan)
 {
-    // load_cmd
-    // load_cmd:
-    //     jsr check_not_continuous_editing
     check_not_continuous_editing();
-    //     jsr parse_filename_from_command
     parse_filename_from_command(scan);
-    //     jsr initialise_document
     initialise_document();
     top = page;
-    // WORKAROUND: ensure_cr_at_document_top bumped top past the
-    // initial CR; need to load at page, not page+1
-    //     jsr reset_area_to_entire_document
     reset_area_to_entire_document();
-    //     jsr 1f
-    // (returns the post-read cursor, which the 6502 left in tmp01)
     top = read_into_document();
-    //     jsr reset_document_name_after_load
     reset_document_name_after_load();
-    //     jsr clear_cmd
     clear_cmd();
-    //     jmp move_cursor_to_top_of_document
     move_cursor_to_top_of_document();
     return;
 }
 
+/**
+ * Configures microspacing via the printer driver.
+ *
+ * @param scan scan state containing optional microspacing value
+ */
 static void microspace_cmd(struct scan_state* scan)
 {
-    // microspace_cmd
-    // Pseudocode: Configures microspacing by querying printer driver
-    // ;
-    // ***************************************************************************************
-    // microspace_cmd:
-    //     jsr prepare_printer_driver
     prepare_printer_driver();
-    //     jsr parse_integer_from_command
-    //     php
     int value;
     bool parsed = parse_integer_from_command(scan, &value);
-    //     ldx #0x0a
     uint8_t idx = 0x0a;
-    //     beq c8608
     if (parsed)
     {
         idx = value & 0xFF;
         if (idx == 0)
             return;
     }
-    //     ldy #0
-    //     lda #0x0c
-    //     jsr call_printer_driver
-    // (the printer driver returns its status in the global y register;
-    //  the y = 0 input setup is unused by the default driver)
     uint8_t pos;
     printer_driver_ptr->printer_getflags(&idx, &pos);
-    //     tya
     uint8_t cur_ch = pos;
-    //     and #1
     cur_ch &= 1;
-    //     beq c8617
     if (cur_ch != 0)
     {
         microspacing_flag = idx;
         return;
     }
-    //     jsr print_inline_string
-    //     .ascii "Driver does not support microspacing"
-    //     .byte 0xff
     cli_putstring("Driver does not support microspacing\n");
     return_to_cli_prompt();
     return;
 }
 
+/**
+ * Reports a "Bad mode" error and returns to the CLI prompt.
+ */
 static void mode_cmd(void)
 {
-    // ;
-    // ***************************************************************************************
-    // mode_cmd:
-    //     jsr print_inline_string
-    //     .ascii "Bad mode"
-    //     .byte 0xff
     cli_putstring("Bad mode\n");
     return_to_cli_prompt();
     return;
 }
 
+/**
+ * Appends more text from the input file at the current cursor position.
+ *
+ * @param scan scan state containing optional marker
+ */
 static void more_cmd(struct scan_state* scan)
 {
-    // more_cmd
-    // Pseudocode: Appends more text from input file into document at current
-    // cursor position
-    // ;
-    // ***************************************************************************************
-    // more_cmd:
-    //     jsr check_continuous_editing
     check_continuous_editing();
-    //     jsr parse_marks_from_command
     parse_marks_from_command(scan);
-    //     jsr move_cursor_to_address
     move_cursor_to_address(area_start_ptr);
-    //     jsr select_file
-    // (inlined: file_ptr = output_fp)
     file_ptr = output_fp;
-    //     jsr write_area_to_file
     write_area_to_file();
-    //     ldy #0
-    //     ldx l003a
-    // loop_c84c4:
     uint8_t pos = 0;
     uint8_t idx = ruler_buffer_len;
     do
@@ -773,17 +551,10 @@ static void more_cmd(struct scan_state* scan)
         pos++;
         idx--;
     } while (idx != 0);
-    //     lda #0x0d
-    //     sta current_ruler_buffer,y
     current_ruler_buffer[pos] = 0x0d;
-    //     jsr sub_c89d3
     adjust_area_pointers(area_size);
-    //     jsr move_cursor_to_top_of_document
     move_cursor_to_top_of_document();
-    //     jsr check_for_at_least_150_bytes_free
     check_for_at_least_150_bytes_free();
-    //     lda input_file_empty_flag
-    //     bne c84e8
     if (input_file_empty_flag == 0)
     {
         if (read_next_chunk_from_input_file(top))
@@ -792,430 +563,260 @@ static void more_cmd(struct scan_state* scan)
             return;
         }
     }
-    //     jmp cb05a
     ensure_cr_at_document_top();
 }
 
+/**
+ * Sets the document name from an optional filename argument.
+ *
+ * @param scan scan state containing optional filename
+ */
 static void name_cmd(struct scan_state* scan)
 {
-    // name_cmd
-    // Pseudocode: Sets document name from optional filename argument
-    // ;
-    // ***************************************************************************************
-    // name_cmd:
-    //     jsr check_not_continuous_editing
     check_not_continuous_editing();
-    //     jsr parse_optional_filename_from_command
     bool has_filename = parse_optional_filename_from_command(scan);
-    //     php
-    //     lda #0
-    //     sta file_edit_flags
-    //     plp
     file_edit_flags = 0;
-    //     beq return_9
     if (!has_filename)
         return;
-    // MULTIPLE ENTRY POINTS: name_cmd, reset_document_name_after_load
     reset_document_name_after_load();
 }
 
+/**
+ * Creates a new empty document.
+ */
 static void new_cmd(void)
 {
-    // Pseudocode: Creates a new empty document after checking continuous
-    // editing state
-    // ;
-    // ***************************************************************************************
-    // new_cmd:
-    //     jsr check_not_continuous_editing
     check_not_continuous_editing();
-    //     jmp initialise_document
     initialise_document();
     return;
 }
 
+/**
+ * Initiates printing and previews the document on screen.
+ *
+ * @param scan scan state containing optional marker range
+ */
 static void print_cmd(struct scan_state* scan)
 {
-    // Pseudocode: Sets print flags and falls through to print_to_screen
-    // ;
-    // ***************************************************************************************
-    // print_cmd:
-    //     lda #0x80
-    //     jsr start_printing
-    // ;
-    // ***************************************************************************************
     start_printing();
-    // MULTIPLE ENTRY POINTS: print_cmd, print_to_screen
     print_to_screen(scan);
 }
 
+/**
+ * Prints the document for screen preview and returns to the CLI prompt.
+ *
+ * @param scan scan state containing optional marker range
+ */
 static void print_to_screen(struct scan_state* scan)
 {
-    // print_to_screen: Prints document for screen preview, returns to CLI when
-    // done
-    //     jsr print_document
     print_document(scan);
-    //     jmp return_to_cli_prompt
     return_to_cli_prompt();
     return;
 }
 
+/**
+ * Handles the printer command and delegates to printing.
+ *
+ * @param scan scan state containing optional arguments
+ */
 static void printer_cmd(struct scan_state* scan)
 {
-    // Pseudocode: Redirects to print_cmd (printer driver loading code is
-    // disabled with #if 0)
-    // ;
-    // ***************************************************************************************
-    // printer_cmd:
-    //     jmp print_cmd
     print_cmd(scan);
     return;
-    // #if 0
-    //     // TODO: implement loading printer drivers.
-    //     jsr parse_optional_filename_from_command
-    //     beq c882f
-    //     ;jsr sub_c8849
-    //     beq c87d1
-    //     lda l050c
-    //     ora l050d
-    //     bne c87d1
-    //     ldy l050b
-    //     dey
-    //     bmi c8801
-    //     bne c87d1
-    //     lda l050a
-    //     bne c87d1
-    // c8801:
-    //     lda #<printer_driver_block
-    //     sta l0502
-    //     lda #>printer_driver_block
-    //     sta l0503
-    //     lda #osbyte_read_high_order_address
-    //     jsr osbyte                                                        ;
-    //     Read the filing system 'machine high order address' stx l0504 ; X and
-    //     Y contain the machine high order address (low, high) sty l0505 lda #0
-    //     sta l0506
-    //     lda #0xff
-    //     jsr do_osfile_with_buffer
-    //     ldx #0
-    // loop_c8822:
-    //     lda filename_buffer,x
-    //     sta printer_driver_name,x
-    //     inx
-    //     cmp #0x0d
-    //     bne loop_c8822
-    //     beq c8834                                                         ;
-    //     ALWAYS branch
-    // c882f:
-    //     lda #0
-    //     sta printer_driver_name
-    // c8834:
-    //     lda #0
-    //     sta microspacing_flag
-    // #endif
-    // return_8:
-    //     rts
 }
 
+/**
+ * Checks editing state and closes input/output files to quit.
+ */
 static void quit_cmd(void)
 {
-    // Pseudocode: Checks continuous editing then falls through to close files
-    // ;
-    // ***************************************************************************************
-    // quit_cmd:
-    //     jsr check_continuous_editing
     check_continuous_editing();
-    // MULTIPLE ENTRY POINTS: quit_cmd, close_input_output_files
     close_input_output_files();
 }
 
+/**
+ * Reads a file into the document at the marked area.
+ *
+ * @param scan scan state containing filename and optional markers
+ */
 static void read_cmd(struct scan_state* scan)
 {
-    // read_cmd:
-    //     jsr parse_filename_from_command
     parse_filename_from_command(scan);
-    //     jsr parse_marks_from_command
     parse_marks_from_command(scan);
-    // 1:
     read_into_document();
-    //     jmp return_to_cli_prompt
     return_to_cli_prompt();
     return;
 }
 
+/**
+ * Performs interactive search and replace prompting for each match.
+ *
+ * @param scan scan state containing search and replace strings
+ */
 static void replace_cmd(struct scan_state* scan)
 {
-    // replace_cmd
-    // Pseudocode: Interactive search and replace prompting for each match
-    // (Y)es/(O)K/(N)o
-    // ;
-    // ***************************************************************************************
-    // replace_cmd:
-    //     jsr sub_c83f0
     cli_cmd_status_t st = process_cli_command(scan);
-    //     beq c82e7
     if (st != CLI_CMD_OK)
     {
         cmd_err_no_target();
         return;
     }
-    //     jsr c8b7b
     if (!scan_document_for_next_line())
     {
         cmd_err_no_string();
         return;
     }
-    //     bne c82fa
-    //     jsr move_cursor_to_address
     move_cursor_to_address(doc_working_ptr);
-    //     jsr enter_editor_mode
     enter_editor_mode();
-    // c832d:
 c832d:
-    //     jsr sub_c8361
     redraw_and_write_back();
-    //     ldx #0x52 ; 'R'
-    //     ldy #0x50 ; 'P'
-    //     jsr draw_prompt_characters
     draw_prompt_characters('R', 'P');
-    //     jsr flush_and_read_char
     uint8_t cur_ch = screen_getchar();
-    //     bcs return_2
     if (cur_ch == 0x1b)
         return;
-    //     and #0xdf
     cur_ch &= 0xdf;
-    //     ldx #0
     uint8_t idx = 0;
     if (!(cur_ch == 0x59))
     {
-        //     beq c8349
-        //     dex ; X=0xff
         idx--;
-        //     cmp #0x4f ; 'O'
         if (cur_ch != 0x4f)
             goto c8356;
     }
-    //     bne c8356
-    // c8349:
-    //     stx print_xpos
     print_xpos = idx;
-    //     jsr sub_c8371
     setup_area_pointers(doc_working_ptr);
-    //     jsr sub_c8a4f
-    //     bcs c836b (C=1 conveyed as a true return)
     if (check_area_memory(doc_working_ptr))
     {
         show_memory_full_error();
         esc_key();
         return;
     }
-    //     jsr sub_c8361
     redraw_and_write_back();
-    // c8356:
 c8356:
-    //     jsr c8b7b
     if (!scan_document_for_next_line())
         return;
-    //     bne return_2
-    //     jsr move_cursor_to_address
     move_cursor_to_address(doc_working_ptr);
-    //     jmp c832d
     goto c832d;
 }
 
+/**
+ * Saves the document area to the output file.
+ *
+ * @param scan scan state containing optional filename and marker range
+ */
 static void save_cmd_write_cmd(struct scan_state* scan)
 {
-    // save_cmd_write_cmd
-    // Pseudocode: Saves document area to output file with optional filename
-    // ;
-    // ***************************************************************************************
-    // save_cmd:
-    // write_cmd:
-    //     jsr parse_optional_filename_from_command
-    //     zif eq
     if (!parse_optional_filename_from_command(scan))
     {
         uint8_t ch;
-        //         bit file_edit_flags
-        // (the A value only affects BIT's Z flag, which is not checked here;
-        //  V comes from file_edit_flags, so a constant is passed)
-        //         zif vc
         if (!(file_edit_flags & 0x40))
         {
-            //             jmp bad_filename_error
             bad_filename_error();
             return;
-            //         zendif
         }
-        //         ldx #0
         uint8_t idx = 0;
-        //         zrepeat
         do
         {
-            //             lda input_filename,x
             ch = input_filename[idx];
-            //             sta filename_buffer,x
             filename_buffer[idx] = ch;
-            //             inx
             idx++;
-            //             cmp #0x0d
-            //         zuntil eq
         } while (ch != 0x0d);
-        //     zendif
     }
-    //     jsr parse_marks_from_command
     parse_marks_from_command(scan);
-    //     jsr sanitise_area
     if (sanitise_area() == AREA_EMPTY)
         return;
-    //     jsr open_output_file
     open_output_file();
-    //     jsr write_area_to_file
     write_area_to_file();
-    //     lda #0
-    //     jsr put_byte_to_file
-    // (inlined: fputc(0, file_ptr))
     fputc(0, file_ptr);
-    //     jsr close_file
     close_file();
-    //     jmp return_to_cli_prompt
     return_to_cli_prompt();
     return;
-    // MULTIPLE ENTRY POINTS: save_cmd, write_cmd
 }
 
+/**
+ * Shows the document on screen for preview.
+ *
+ * @param scan scan state containing optional marker range
+ */
 static void screen_cmd(struct scan_state* scan)
 {
-    // Pseudocode: Jumps to print_to_screen for on-screen document preview
-    // ;
-    // ***************************************************************************************
-    // screen_cmd:
-    //     jmp print_to_screen
     print_to_screen(scan);
     return;
 }
 
+/**
+ * Searches for the target string and enters the editor at the match.
+ *
+ * @param scan scan state containing search target and optional range
+ */
 static void search_cmd(struct scan_state* scan)
 {
-    // search_cmd
-    // Pseudocode: Searches for target string, reports position if found
-    // ;
-    // ***************************************************************************************
-    // search_cmd:
-    //     jsr sub_c8412
-    //     beq c82e7
     if (reset_command_parse_state(scan))
     {
         cmd_err_no_target();
         return;
     }
-    //     jsr parse_marks_from_command
     parse_marks_from_command(scan);
-    //     jsr sanitise_area
     if (sanitise_area() == AREA_EMPTY)
     {
         cmd_err_no_string();
         return;
     }
-    //     jsr sub_c8c7c
-    // (inlined: doc_ptr2 = area_start_ptr; doc_ptr3 = area_end_ptr)
     doc_ptr2 = area_start_ptr;
     doc_ptr3 = area_end_ptr;
-    //     jsr c8b7b
     if (!scan_document_for_next_line())
     {
         cmd_err_no_string();
         return;
     }
-    //     bne c82fa
-    //     jsr move_cursor_to_address
     move_cursor_to_address(doc_working_ptr);
-    //     jmp enter_editor_mode
     enter_editor_mode();
     longjmp(env, JMP_EDITOR);
     return;
-    // ;
-    // ***************************************************************************************
 }
 
+/**
+ * Parses flag letters to configure formatting, justification and insert modes.
+ *
+ * @param scan scan state containing flag characters
+ */
 static void setup_cmd(struct scan_state* scan)
 {
-    // setup_cmd
-    // Pseudocode: Parses flag letters and sets format_mode_flag,
-    // justifying_flag, insert_mode_flag
-    // ;
-    // ***************************************************************************************
-    // setup_cmd:
-    // c867d:
     static const uint8_t c867d_data[] = {0x4e, 0x4a, 0x00, 0x49, 0x00};
-    // c8681:
     static const uint8_t c8681_data[] = {0x00, 0x00, 0xff};
-    //     ldx #1
     uint8_t idx = 1;
-    //     stx tmp6
-    uint8_t fmt_flag_tmp =
-        idx; // view.py: tmp6 (generic) - C: fmt_flag_tmp (was tmp6)
-    //     dex                                                               ;
-    //     X=0x00
+    uint8_t fmt_flag_tmp = idx;
     idx--;
-    //     stx tmp8
-    uint8_t insert_flag_tmp =
-        idx; // view.py: tmp8 (generic) - C: insert_flag_tmp (was tmp8)
-    //     dex                                                               ;
-    //     X=0xff
+    uint8_t insert_flag_tmp = idx;
     idx--;
-    //     stx tmp7
-    uint8_t justify_flag_tmp =
-        idx; // view.py: tmp7 (generic) - C: justify_flag_tmp (was tmp7)
+    uint8_t justify_flag_tmp = idx;
     do
     {
-        // c8649:
-        //     jsr sub_c8e33
-        //     beq c8672
         if (scan_input_buffer(input_buffer, scan))
             break;
-        //     and #0xdf
         scan->ch &= 0xdf;
-        //     ldx #0
         uint8_t idx2 = 0;
-        // loop_c8652:
         uint8_t pos;
         do
         {
-            //     cmp c867d,x
             if (scan->ch == c867d_data[idx2])
                 goto c8669;
-            //     inx
             idx2++;
-            //     ldy c867d,x
             pos = c867d_data[idx2];
-            //     bne loop_c8652
         } while (pos != 0);
-        //     jsr print_inline_string
-        //     .ascii "Bad flag"
-        //     .byte 0xff
         cli_putstring("Bad flag\n");
         return_to_cli_prompt();
         return;
-        // c8669:
     c8669:
-        //     lda c8681,x
         uint8_t cur_ch = c8681_data[idx2];
-        //     sta tmp6,x
         if (idx2 == 0)
             fmt_flag_tmp = cur_ch;
         else if (idx2 == 1)
             justify_flag_tmp = cur_ch;
         else
             insert_flag_tmp = cur_ch;
-        //     inc input_buffer_offset
         input_buffer_offset++;
     } while (input_buffer_offset != 0);
-    //     bne c8649
-    // c8672:
-    //     ldx #2
     uint8_t idx3 = 2;
-    // loop_c8674:
     do
     {
         uint8_t next_ch;
@@ -1233,59 +834,40 @@ static void setup_cmd(struct scan_state* scan)
             insert_mode_flag = next_ch;
         idx3--;
     } while (!((int8_t)idx3 < 0));
-    //     bpl loop_c8674
-    //     bmi c869b                                                         ;
-    //     ALWAYS branch
     return_to_cli_prompt();
     return;
-    // c867d:
-    //     lsr l004a
-    //     eor #0
-    // c8681:
-    //     brk
-    //     .byte 0, 0xff
 }
 
+/**
+ * Prints the document to the printer and returns to the CLI.
+ *
+ * @param scan scan state containing optional marker range
+ */
 static void sheets_cmd(struct scan_state* scan)
 {
-    // Pseudocode: Prints document to printer then displays newline and returns
-    // to CLI
-    // ;
-    // ***************************************************************************************
-    // sheets_cmd:
-    //     lda #0xc0
-    //     jsr start_printing
     start_printing();
-    //     jsr print_document
     print_document(scan);
-    //     jsr stop_printing
     stop_printing();
-    //     jsr bdos_print_newline
     cli_putchar('\n');
-    //     jmp return_to_cli_prompt
     return_to_cli_prompt();
     return;
 }
 
+/**
+ * Initializes the printing subsystem.
+ */
 void start_printing(void)
 {
-    // Pseudocode: Initializes printer driver and starts printing with given
-    // flags
-    // start_printing:
-    //     jsr print_inline_string
-    //     .ascii "Sorry, can't print yet\r"
-    //     .byte 0
     cli_putstring("Sorry, can't print yet\n");
-    //     jmp return_to_cli_prompt
     return_to_cli_prompt();
     return;
 }
 
-// C translation of the 6502 "readline" subroutine (view-cpm.S:7939).  Renamed
-// from "readline" to avoid colliding with GNU readline's readline(3), whose
-// symbol the executable would otherwise interpose over (causing infinite
-// recursion in cli_readstring).
-// Returns true if the line read was empty (the 6502's carry flag).
+/**
+ * Reads a command line from the CLI input.
+ *
+ * @return true if the line was empty, false otherwise
+ */
 bool read_command_line(void)
 {
     input_buffer_offset = 0;
@@ -1294,24 +876,14 @@ bool read_command_line(void)
 
 const uint8_t la83d[] = "VIEW\0B3.0 for CP/M-65";
 
+/**
+ * Prints a number of words from the help and version string.
+ *
+ * @param idx number of words to print beyond the first
+ */
 static void print_x_words_of_help(uint8_t idx)
 {
-    // print_x_words_of_help
-    // Pseudocode: Prints X words of the help string showing VIEW and version
-    // ;
-    // ***************************************************************************************
-    // print_x_words_of_help:
-    //     ldy #0
     uint8_t pos = 0;
-    // ca82e:
-    //     jsr bdos_print_char
-    //     iny
-    // ca832:
-    //     lda la83d,y
-    //     bne ca82e
-    //     lda #0x20 ; ' '
-    //     dex
-    //     bpl ca82e
     for (;;)
     {
         uint8_t cur_ch = la83d[pos];
@@ -1325,96 +897,55 @@ static void print_x_words_of_help(uint8_t idx)
         cli_putchar(cur_ch);
         pos++;
     }
-    //     rts
     return;
 }
 
 static bool parse_command(uint8_t* input_buffer_offset);
 
+/**
+ * Parses and dispatches a non-escaped CLI input line.
+ */
 void input_line_not_escaped(void)
 {
-    // input_line_not_escaped
-    // input_line_not_escaped: Parses command input and dispatches through CLI
-    // jump table
-    //     jsr parse_command
     bool failed = parse_command(&input_buffer_offset);
-    //     sty input_buffer_offset+1
-    // (parse_command leaves the command index in l0082; the 6502 copied it
-    //  to Y on exit)
     scratch_offset = screen_row;
-    //     bcs c8263
-    //     cpy #(jumptable4_cli_end-jumptable4_cli)/2
-    //     bcc c826e
-    // c8263:
-    //     jsr print_inline_string ; .ascii "Mistake\n"
-    // c826e:
-    //     lda input_buffer_offset+1
-    //     ldy #2
-    //     jsr call_through_jumptable
-    // (branch restructured: Mistake is printed when C is set or index >= 48)
     if (failed || screen_row >= 48)
         cli_putstring("Mistake\n");
     struct scan_state scan;
     execute_cli_command(scratch_offset, &scan);
-    //     jmp run_cli
     run_cli();
 }
 
+/**
+ * Main CLI handler loop, prompting for and dispatching commands.
+ */
 void cli_handler_impl(void)
 {
-    // cli_handler_impl
-    // cli_handler_impl: Main CLI loop (called after setjmp reset)
-    //     jsr stop_printing
     stop_printing();
-    //     ldx #0xff
-    //     txs  (handled by setjmp/longjmp in main_)
-    //     inx  ; X=0x00
-    //     stx print_flags
     print_flags = 0;
-    //     jsr print_inline_string ; .ascii "=>"
     cli_putstring("=>");
-    //     jsr readline
     if (!read_command_line())
     {
         input_line_not_escaped();
         return;
     }
-    //     lda #<input_buffer
-    //     sta ((uint8_t*)&tmp01)[0]
-    //     ldx #>input_buffer
-    //     stx ((uint8_t*)&tmp01)[1]
-    // (((uint8_t*)&tmp01)[0]/((uint8_t*)&tmp01)[1] no longer used as a pointer;
-    // parse_command reads input_buffer[] directly)
-    //     bcc input_line_not_escaped
-    //     jmp run_editor
     run_editor();
 }
 
+/**
+ * Displays the CLI status screen and returns to the prompt.
+ */
 void run_cli(void)
 {
-    // run_cli
     screen_leave();
-    // run_cli:
-    //     jsr clear_screen
     clear_screen();
-    //     ldx #1
-    //     jsr print_x_words_of_help
     print_x_words_of_help(1);
-    //     jsr print_inline_string
-    //     .ascii "\r\rBytes free "
-    //     .byte 0
     cli_putstring("\n\nBytes free ");
-    //     jsr compute_bytes_free
     render_number_to_screen(compute_bytes_free());
-    //     jsr bdos_print_newline
     cli_putchar('\n');
-    //     jsr display_document_file_state
     display_document_file_state();
     if (!((file_edit_flags & 0x40)))
     {
-        //     lda file_edit_flags
-        //     ror
-        //     bcc c816d
         if ((file_edit_flags & 1))
         {
             cli_putstring("Input file is ");
@@ -1423,23 +954,11 @@ void run_cli(void)
             cli_putstring("empty\n");
         }
     }
-    //     lda printer_driver_name
     uint8_t tmp_ch2 = printer_driver_name[0];
     if (!(tmp_ch2 == 0))
     {
-        //     jsr print_inline_string
-        //     .ascii "Printer "
-        //     .byte 0
         cli_putstring("Printer ");
-        //     ldx #0
         uint8_t idx = 0;
-        // loop_c819a:
-        //     lda printer_driver_name,x
-        //     cmp #0x0d
-        //     beq c81a7
-        //     jsr bdos_print_char
-        //     inx
-        //     bne loop_c819a
         do
         {
             uint8_t tmp_ch3 = printer_driver_name[idx];
@@ -1448,322 +967,199 @@ void run_cli(void)
             cli_putchar(tmp_ch3);
             idx++;
         } while (idx != 0);
-        // c81a7:
-        //     lda microspacing_flag
-        //     beq c81b3
         if (microspacing_flag != 0)
             cli_putstring(" (m)");
-        //     jsr bdos_print_newline
         cli_putchar('\n');
     }
-    // c81b6:
-    //     ldx #0
     uint8_t idx2 = 0;
-    //     ldy #0
     uint8_t pos = 0;
     do
     {
-        // c81ba:
-        //     lda markers_array+1,x
         uint8_t tmp_ch5 = ((uint8_t*)markers_array)[idx2 + 1];
         if (!(tmp_ch5 == 0))
         {
             if (!(pos != 0))
             {
-                //     stx l0083
                 screen_column = idx2;
-                //     jsr print_inline_string
-                //     .ascii "Marker(s) set "
-                //     .byte 0
                 cli_putstring("Marker(s) set ");
-                //     ldx l0083
                 idx2 = screen_column;
-                //     ldy #1
                 pos = 1;
-                // c81db:
-                //     lda #0x2c ; ','
-                //     jsr screen_putchar
             }
             else
             {
                 screen_putchar(0x2c);
             }
-            // c81e0:
-            //     txa
-            //     lsr
-            //     adc #0x31 ; '1'
-            // (x is an even offset into markers_array, so lsr shifts out a 0
-            // and
-            //  the carry is 0: a = (x >> 1) + 0x31)
             uint8_t tmp_ch6 = (idx2 >> 1) + 0x31;
-            //     jsr screen_putchar
             screen_putchar(tmp_ch6);
         }
-        // c81e7:
-        //     inx
         idx2++;
-        //     inx
         idx2++;
     } while (idx2 != 0x0c);
-    //     tya
-    //     beq c81f3
     if (pos != 0)
         cli_putchar('\n');
-    //     jsr bdos_print_newline
     cli_putchar('\n');
     return_to_cli_prompt();
 }
 
-// CLI command parser
+/**
+ * Parses a command name from the input buffer against the parser table.
+ *
+ * @param input_buffer_offset pointer to current offset in the input buffer;
+ * updated to position after the command
+ * @return true on parse failure, false on success
+ */
 static bool parse_command(uint8_t* input_buffer_offset)
 {
     uint8_t pos;
-    // parse_command
-    //     .ascii "VIEW"
-    //     .byte 0
-    //     .ascii "B3.0 for CP/M-65"
-    //     .byte 0
-    // ;
-    // ***************************************************************************************
-    // parse_command:
-    //     lda #0xff
     uint8_t cur_ch = 0xff;
-    //     sta l0082
     screen_row = cur_ch;
-    //     tax                                                               ;
-    //     X=0xff
     uint8_t idx = cur_ch;
-    // ca84c:
     for (;;)
     {
-        //     ldy input_buffer_offset
         pos = *input_buffer_offset;
-        //     dey
         pos--;
-        //     inc l0082
         screen_row++;
-        // loop_ca851:
         for (;;)
         {
-            //     inx
             idx++;
-            //     iny
             pos++;
-            //     lda (((uint8_t*)&tmp01)[0]),y
             uint8_t next_ch = input_buffer[pos];
-            //     and #0xdf
             next_ch &= 0xdf;
-            //     sta l0084
             temp_save = next_ch;
-            //     lda parser_table,x
             uint8_t tmp_ch2 = parser_table[idx];
-            //     beq ca890
             if (tmp_ch2 == 0)
                 goto ca890;
-            //     bmi ca87e
             if (tmp_ch2 & 0x80)
                 goto ca87e;
-            //     eor #0x5b ; '['
             tmp_ch2 ^= 0x5b;
-            //     sta l0083
             screen_column = tmp_ch2;
-            //     and #0xdf
             tmp_ch2 &= 0xdf;
-            //     cmp l0084
             if (tmp_ch2 != temp_save)
                 break;
-            //     beq loop_ca851
         }
-        // loop_ca86a:
         uint8_t tmp_ch3;
         do
         {
-            //     inx
             idx++;
-            //     lda parser_table,x
             tmp_ch3 = parser_table[idx];
-            //     beq ca890
             if (tmp_ch3 == 0)
                 goto ca890;
-            //     bpl loop_ca86a
         } while (!(tmp_ch3 & 0x80));
-        //     lda l0083
         uint8_t tmp_ch4 = screen_column;
-        //     and #0x20 ; ' '
         tmp_ch4 &= 0x20;
-        //     beq ca84c
         if (tmp_ch4 == 0)
             continue;
-        //     lda (((uint8_t*)&tmp01)[0]),y
         uint8_t tmp_ch5 = input_buffer[pos];
-        //     cmp #0x30 ; '0'
         if (tmp_ch5 >= 0x30)
             continue;
-        //     bcs ca84c
         break;
     }
-    // ca87e:
 ca87e:
-    //     lda (((uint8_t*)&tmp01)[0]),y
     uint8_t tmp_ch6 = input_buffer[pos];
-    //     cmp #0x30 ; '0'
     if (tmp_ch6 < 0x30)
     {
         delimiter_char = tmp_ch6;
         pos++;
     }
     *input_buffer_offset = pos;
-    //     ldy l0082
-    // (the 6502 copied the command index into Y here; callers now read
-    //  l0082 directly)
-    //     lda parser_table,x
-    //     clc
-    //     rts
     return false;
-    // ca890:
 ca890:
-    //     sec
-    //     rts
     return true;
 }
 
-// CLI utility functions
+/**
+ * Displays a file error message and returns to the CLI prompt.
+ */
 void file_error(void)
 {
-    // Pseudocode: Displays File error and returns to CLI
-    // ;
-    // ***************************************************************************************
-    // zproc file_error
-    //     jsr print_inline_string
-    //     .ascii "File error"
-    //     .byte 0
     cli_putstring("File error");
-    //     jmp return_to_cli_prompt
     return_to_cli_prompt();
     return;
-    // zendproc
 }
 
+/**
+ * Displays a file not found error and returns to the CLI prompt.
+ */
 void file_not_found_error(void)
 {
-    // Pseudocode: Displays File not found error and returns to CLI
-    // ;
-    // ***************************************************************************************
-    // file_not_found_error:
-    //     jsr stop_printing
     stop_printing();
-    //     jsr print_inline_string
-    //     .ascii "File not found\r"
-    //     .byte 0
     cli_putstring("File not found\n");
-    //     jmp return_to_cli_prompt
     return_to_cli_prompt();
     return;
 }
 
+/**
+ * Parses a decimal integer from the command input buffer.
+ *
+ * @param scan scan state for scanning the input buffer
+ * @param out pointer to receive the parsed integer
+ * @return true if an integer was parsed, false otherwise
+ */
 bool parse_integer_from_command(struct scan_state* scan, int* out)
 {
-    // Pseudocode: Parses a decimal integer from the command input buffer
-    // ;
-    // ***************************************************************************************
-    // parse_integer_from_command:
-    //     lda #<(input_buffer)
-    //     sta current_format_line_ptr
-    //     lda #>(input_buffer)
-    //     sta current_format_line_ptr+1
-    //     jsr sub_c8e33
-    //     beq return_8
     if (scan_input_buffer(input_buffer, scan))
         return false;
-    //     jmp ca6fe
     uint8_t pos = scan->pos;
     const char* start = (const char*)&input_buffer[pos];
     char* end;
     int parsed = (int)strtoul(start, &end, 10);
     bool ok = (end != start);
-    // y is advanced locally as in ca6fe; callers do not read it back
     (void)pos;
     if (out)
         *out = parsed;
-    // (6502 returns Z set when no integer was parsed; the boolean mirrors
-    //  that: true = an integer was parsed)
     return ok;
 }
 
+/**
+ * Parses zero to two marker arguments to define the operation area.
+ *
+ * @param scan scan state for scanning markers
+ */
 void parse_marks_from_command(struct scan_state* scan)
 {
-    // parse_marks_from_command:
-    //     jsr reset_area_to_entire_document
     reset_area_to_entire_document();
-    //     jsr parse_mark_from_command
     uint8_t* start_mark = parse_mark_from_command(scan);
-    //     beq return_11
     if (start_mark == NULL)
         return;
-    //     sta area_start_ptr
     area_start_ptr = start_mark;
-    //     sty area_start_ptr+1
-    //     jsr parse_mark_from_command
     uint8_t* end_mark = parse_mark_from_command(scan);
-    //     beq return_11
     if (end_mark == NULL)
         return;
-    //     sta area_end_ptr
     area_end_ptr = end_mark;
-    //     sty area_end_ptr+1
-    // return_11:
-    //     rts
 }
 
+/**
+ * Marks the document as loaded and updates the document name from the filename
+ * buffer.
+ */
 void reset_document_name_after_load(void)
 {
-    // Pseudocode: Sets file_edit_flags to indicate a document is loaded
-    // reset_document_name_after_load:
-    //     lda #0x40 ; '@'
-    //     sta file_edit_flags
     file_edit_flags = 0x40;
-    // fall through to set_document_name_to_filename_buffer
     set_document_name_to_filename_buffer();
-    // MULTIPLE ENTRY POINTS: name_cmd, reset_document_name_after_load
 }
 
+/**
+ * Copies the filename buffer into the document name storage.
+ */
 void set_document_name_to_filename_buffer(void)
 {
     uint8_t cur_ch;
-    // set_document_name_to_filename_buffer
-    // Pseudocode: Copies filename buffer to input filename buffer
-    // set_document_name_to_filename_buffer:
-    //     ldx #0
     uint8_t idx = 0;
-    // loop_c88fa:
     do
     {
         cur_ch = filename_buffer[idx];
         input_filename[idx] = cur_ch;
         idx++;
     } while (cur_ch >= 0x21);
-    //     bge loop_c88fa
-    // return_9:
-    //     lda #0x0d
-    //     sta input_filename-1, x
     input_filename[idx - 1] = 0x0d;
-    //     rts
     return;
-    // MULTIPLE ENTRY POINTS: also called directly from edit_cmd
 }
 
+/**
+ * Zero-terminates the filename buffer at its line terminator.
+ */
 void zero_terminate_filename_buffer(void)
 {
-    // zero_terminate_filename_buffer:
-    //     ldx #0
-    //     lda #0x0d
-    // zloop:
-    //     cmp filename_buffer, x
-    //     inx
-    //     bne zloop
-    //     lda #0
-    //     sta filename_buffer, x
-    //     rts
     uint8_t idx = 0;
     while (filename_buffer[idx] != 0x0d)
         idx++;
@@ -1771,40 +1167,30 @@ void zero_terminate_filename_buffer(void)
     return;
 }
 
+/**
+ * Parses a single marker reference from the command.
+ *
+ * @param scan scan state for scanning the marker
+ * @return pointer to the marker location, or NULL if no marker was present
+ */
 uint8_t* parse_mark_from_command(struct scan_state* scan)
 {
-    // parse_mark_from_command
-    // parse_mark_from_command:
-    //     jsr sub_c8e33
-    //     beq return_12
     if (scan_input_buffer(input_buffer, scan))
         return NULL;
-    //     iny
     scan->pos++;
-    //     sty input_buffer_offset
     input_buffer_offset = scan->pos;
-    //     jsr lookup_marker
     int marker_index = lookup_marker(scan->ch);
-    //     bcs c89b3 / c89b3: jsr print_inline_string ; .ascii "Bad marker" ;
-    //     .byte 0xff
     if (marker_index == MARKER_INVALID)
     {
         cli_putstring("Bad marker\n");
         return_to_cli_prompt();
         return 0;
     }
-    //     beq c89c1 / c89c1: jsr print_inline_string ; .ascii "Marker not set"
-    //     ; .byte 0xff
     if (markers_array[marker_index] == 0)
     {
         cli_putstring("Marker not set\n");
         return_to_cli_prompt();
         return 0;
     }
-    //     lda markers_array,x
-    //     ldy markers_array+1,x
-    // (the 6502 returned the address in YA; the C returns it directly)
-    // return_12:
-    //     rts
     return markers_array[marker_index];
 }

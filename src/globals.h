@@ -45,10 +45,10 @@ typedef enum
 #define JMP_CLI 1
 #define JMP_EDITOR 2
 
-// 6502 CPU register globals (a, x, y) removed — all functions now use locals.
-
-// Encapsulates the scan-offset scratch value (the 6502's Y register) that
-// the line-navigation helpers pass between themselves and their callers.
+/**
+ * Encapsulates the scan offset that line-navigation helpers pass between
+ * themselves and their callers.
+ */
 struct edit_state
 {
     uint8_t pos;
@@ -77,7 +77,7 @@ extern uint8_t highlight_code[2];
 #define highlight2_code highlight_code[1]
 extern uint8_t *himem, *top, *page;
 extern struct macro *first_macro_ptr, *last_macro_ptr;
-extern uint8_t *print_doc_ptr, *current_format_line_ptr; // was ptr5
+extern uint8_t *print_doc_ptr, *current_format_line_ptr;
 extern uint8_t header_text_maybe[0x42];
 extern uint8_t footer_text_maybe[0x42];
 extern uint8_t output_buffer[];
@@ -87,16 +87,10 @@ extern uint8_t line_counter;
 extern uint8_t format_src_index;
 extern uint8_t justify_nonspace_counter;
 extern uint8_t print_micro_divisor;
-/** Multipurpose scratch bytes 0x80-0x84: view.py generic l0080-l0084
- *  C: scratch_offset (l0080), scratch_index (l0081), screen_row (l0082),
- *  screen_column (l0083), temp_save (l0084) */
+/** Multipurpose scratch bytes. */
 extern uint8_t scratch_offset, scratch_index, screen_row, screen_column,
     temp_save;
-/** Multipurpose tmp pointers 0x85-0x8E: view.py generic tmp0-tmp9
- *  C: scratch_line_ptr (tmp0/tmp1), scratch_block_ptr (tmp2/tmp3),
- *  scratch_scan_ptr (tmp8/tmp9), area_size (tmp6/tmp7) — all are
- *  multipurpose scratch; locals alias the same storage as
- *  insert_ptr, base_ptr, ruler_ptr, scan_ptr, copy_ptr, etc. */
+/** Multipurpose temporary pointers and sizes. */
 extern uint8_t *scratch_line_ptr, *scratch_block_ptr, *scratch_scan_ptr;
 extern ptrdiff_t area_size;
 
@@ -121,9 +115,9 @@ extern bool reset_command_parse_state(struct scan_state* scan);
 
 typedef enum
 {
-    CLI_CMD_OK,        // command parsed and processed (was C=0, Z=0)
-    CLI_CMD_NO_TARGET, // no command given (was C=0, Z=1)
-    CLI_CMD_NO_STRING  // area empty / no search string (was C=1, Z=1)
+    CLI_CMD_OK,        /** Command parsed and processed. */
+    CLI_CMD_NO_TARGET, /** No command given. */
+    CLI_CMD_NO_STRING  /** Area empty or no search string. */
 } cli_cmd_status_t;
 
 extern cli_cmd_status_t process_cli_command(struct scan_state* scan);
@@ -156,7 +150,7 @@ extern uint8_t page_break_flag;
 #define RAM_CURRENT_RULER_BUF 0x05CF
 #define RAM_MAX 0xffff
 
-// Emulated register values for A-Z (originally stored in 6502 RAM at 0x0798)
+/** Register values for A-Z. */
 extern unsigned int register_value_array[26];
 
 extern jmp_buf env;
@@ -177,7 +171,7 @@ extern uint8_t input_buffer[];
 extern uint8_t microspacing_flag;
 extern uint8_t input_buffer_offset;
 extern uint8_t insert_mode_flag;
-extern uint8_t* macro_cursor_ptr; // was ptr3
+extern uint8_t* macro_cursor_ptr;
 
 // Pointer array struct (markers, area pointers, doc pointers)
 struct pointer_array_t
@@ -224,7 +218,7 @@ extern uint8_t hscroll_pos;
 extern uint8_t ypos;
 extern uint8_t screen_maxrow;
 extern uint8_t status_line_needs_redrawing_flag;
-extern uint8_t* edit_buffer_base; // was ptr1
+extern uint8_t* edit_buffer_base;
 extern uint8_t edit_buffer_dirty_flag;
 extern uint8_t line_lengths[];
 
@@ -260,9 +254,9 @@ extern bool parse_optional_filename_from_command(struct scan_state* scan);
 
 typedef enum
 {
-    READ_BLOCK_EMPTY, /* Z set: nothing was read (screen_row == 0) */
-    READ_BLOCK_DONE,  /* C set: reached end of file, all data read */
-    READ_BLOCK_MORE   /* neither C nor Z: block filled to limit, more data */
+    READ_BLOCK_EMPTY, /* Nothing was read. */
+    READ_BLOCK_DONE,  /* Reached end of file. */
+    READ_BLOCK_MORE   /* Block filled to limit, more data remains. */
 } read_block_status_t;
 
 extern read_block_status_t read_block_from_file(
@@ -295,7 +289,7 @@ extern uint8_t cli_header_pos;
 extern uint8_t editor_header_pos;
 extern uint8_t cli_header_limit;
 extern uint8_t editor_header_limit;
-extern uint8_t* doc_working_ptr; // was ptr2
+extern uint8_t* doc_working_ptr;
 
 extern bool scan_document_for_next_line(void);
 extern uint8_t process_current_document_character(
@@ -304,14 +298,14 @@ extern void check_not_continuous_editing(void);
 extern void adjust_area_pointers(ptrdiff_t area_delta);
 extern void wipe_buffer(uint8_t cur_ch, uint8_t* target_ptr);
 
-// Result of format_paragraph, conveying the 6502 exit flags explicitly:
-// FORMAT_MEMORY_FULL is V=1 (document write failed); FORMAT_AT_END is C=1
-// (advance_to_next_line reached the end of the document).
+/**
+ * Result of @ref format_paragraph.
+ */
 typedef enum
 {
-    FORMAT_OK,
-    FORMAT_AT_END,
-    FORMAT_MEMORY_FULL
+    FORMAT_OK,         /** Formatting succeeded. */
+    FORMAT_AT_END,     /** Reached end of document. */
+    FORMAT_MEMORY_FULL /** Document write failed due to insufficient memory. */
 } format_result_t;
 
 extern format_result_t format_paragraph(void);
