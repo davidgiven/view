@@ -33,52 +33,54 @@ static void insert_line_into_document(uint8_t* target_ptr);
 static void update_line_length(void);
 void clamp_ptr6_to_document(void);
 void clear_screen(void);
-static void clear_to_eol(uint8_t a_val, uint8_t line);
+static void clear_to_eol(uint8_t fill_char, uint8_t line);
 static void cursor_off(void);
 static void cursor_on(void);
 void draw_line(struct render_state* rs, uint8_t* addr);
-void draw_prompt_characters(uint8_t x_val, uint8_t y_val);
+void draw_prompt_characters(uint8_t first_char, uint8_t second_char);
 static void draw_ruler(void);
 static void draw_status_word(void);
 static uint8_t get_line_length(void);
-static void go_to_marker(uint8_t x_val);
+static void go_to_marker(uint8_t marker_idx);
 static void go_to_marker_n(uint8_t marker);
 static void home_cursor(void);
 uint8_t justify_edit_buffer(uint8_t* target_ptr);
 bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta);
 static void memory_full(void);
-uint8_t process_current_document_character(
-    uint8_t* target_ptr, uint8_t* x_val, uint8_t* y_val, bool* is_tab);
+uint8_t process_current_document_character(uint8_t* target_ptr,
+    uint8_t* char_width_out,
+    uint8_t* pos_inout,
+    bool* is_tab);
 static void recalculate_cursor_xpos(void);
 void redraw_editor(void);
 static void render_char(struct render_state* rs);
 static void advance_to_next_char(struct render_state* rs);
 static void render_xchar(struct render_state* rs);
 area_status_t sanitise_area(void);
-static void set_marker(uint8_t x_val);
-static void set_marker_common(uint8_t a_val);
+static void set_marker(uint8_t marker_idx);
+static void set_marker_common(uint8_t marker_char);
 void show_memory_full_error(void);
 void adjust_area_pointers(ptrdiff_t size_delta);
-static void append_to_output_buffer(uint8_t a_val);
-uint8_t upper_case_unless_folding(uint8_t a_val);
+static void append_to_output_buffer(uint8_t byte_to_append);
+uint8_t upper_case_unless_folding(uint8_t ch);
 static bool process_char_for_output(
-    uint8_t y_val, bool carry_in, uint8_t* x_val, uint8_t* a_val);
+    uint8_t buf_idx, bool carry_in, uint8_t* char_width_out, uint8_t* out_char);
 format_result_t format_paragraph(void);
-static bool find_next_word_boundary(uint8_t y_val);
-static bool insert_character_into_edit_buffer(uint8_t a_val);
+static bool find_next_word_boundary(uint8_t src_idx);
+static bool insert_character_into_edit_buffer(uint8_t ch);
 static void set_xpos_to_line_length(void);
 static uint8_t compute_display_start_line(void);
 static void advance_to_next_char_and_render(struct render_state* rs);
-static uint8_t find_marker_at_position(uint8_t y_val, uint8_t* target_ptr);
+static uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr);
 static void unpack_line(uint8_t* target_ptr);
 static void update_markers_to_format_buffer(void);
 void check_for_embedded_ruler(uint8_t* target_ptr);
 static uint8_t* find_line_start(uint8_t* target_ptr);
 static int find_left_margin_stop(void);
 static void insert_at_left_margin(void);
-static bool insert_byte_at_xpos(uint8_t y_val);
+static bool insert_byte_at_xpos(uint8_t insert_pos);
 static void unpack_line_into_buffer(uint8_t* target_ptr);
-void wipe_buffer(uint8_t a_val, uint8_t* target_ptr);
+void wipe_buffer(uint8_t fill_value, uint8_t* target_ptr);
 static bool write_line_back_to_document(void);
 void write_line_back_to_document_safely(void);
 
@@ -88,8 +90,8 @@ void set_format_mode_bit7(void);
 void draw_previous_word(
     uint8_t* word_boundary, bool* is_start_of_line, uint8_t* char_width);
 bool adjust_margins_at_left_margin(void);
-bool insert_edit_buffer_bytes_at_xpos(uint8_t x_val);
-void set_marker_to_here(uint8_t x_val);
+bool insert_edit_buffer_bytes_at_xpos(uint8_t count);
+void set_marker_to_here(uint8_t marker_idx);
 void split_line_at_wrap(uint8_t* target_ptr);
 
 // Editor-internal helper functions
@@ -98,9 +100,9 @@ static void advance_current_line_pointer(void);
 
 static void clear_marks_1_2(void);
 
-static uint8_t control_key_to_ascii(uint8_t a_val);
+static uint8_t control_key_to_ascii(uint8_t key_code);
 
-static void delete_edit_buffer_bytes_at_xpos(uint8_t x_val);
+static void delete_edit_buffer_bytes_at_xpos(uint8_t delete_count);
 
 static void enter_printable_character(void);
 
@@ -112,13 +114,13 @@ static void insert_line_at_cursor(uint8_t* target_ptr);
 
 static void move_to_previous_line(void);
 
-static void move_cursor_up(uint8_t x_val);
+static void move_cursor_up(uint8_t lines_to_move);
 
-static void move_cursor_down(uint8_t x_val);
+static void move_cursor_down(uint8_t lines_to_move);
 
 static void check_pointer_in_area(void);
 
-static void tab_highlight_common(uint8_t a_val);
+static void tab_highlight_common(uint8_t char_to_insert);
 
 // Forward declarations for key handler functions
 
@@ -233,22 +235,22 @@ void run_editor(void)
  */
 void editor_loop_impl(void)
 {
-    uint8_t a_val3;
+    uint8_t tmp_flags;
     screen_enter();
     for (;;)
     {
     editor_loop:
     {
         uint8_t saved_fmt = format_mode_flag;
-        uint8_t a_val = edit_buffer_unpacked_flag;
-        if (a_val == 0)
+        uint8_t unpacked_flag = edit_buffer_unpacked_flag;
+        if (unpacked_flag == 0)
         {
-            uint8_t a_val1;
+            uint8_t unpacked_flag_copy;
             {
                 unpack_line(edit_buffer_base);
-                a_val1 = a_val;
+                unpacked_flag_copy = unpacked_flag;
             }
-            edit_buffer_unpacked_flag = a_val1;
+            edit_buffer_unpacked_flag = unpacked_flag_copy;
         }
         recalculate_cursor_xpos();
         if (!(ruler_left_stop == 0 || format_mode_flag & 0x80 ||
@@ -257,7 +259,7 @@ void editor_loop_impl(void)
             if (!(cursor_moved_flag != 0))
             {
                 uint8_t line_len = get_line_length();
-                a_val3 = format_mode_flag;
+                tmp_flags = format_mode_flag;
                 if (line_len >= xpos)
                     goto c9b84_;
                 if (format_mode_flag & 0x40)
@@ -270,18 +272,18 @@ void editor_loop_impl(void)
                 visual_column = ruler_left_stop;
                 line_change_pending_flag++;
                 recalculate_cursor_xpos();
-                uint8_t a_val5 = format_mode_flag;
-                a_val5 &= 0xbf;
+                uint8_t masked_flags = format_mode_flag;
+                masked_flags &= 0xbf;
                 {
-                    int y_val = find_left_margin_stop();
-                    a_val3 = a_val5;
-                    if (y_val < 0 || y_val <= xpos)
+                    int margin_pos = find_left_margin_stop();
+                    tmp_flags = masked_flags;
+                    if (margin_pos < 0 || margin_pos <= xpos)
                         goto c9b86_;
                 }
-                a_val3 |= 0x40;
+                tmp_flags |= 0x40;
             }
             c9b84_:
-                format_mode_flag = a_val3;
+                format_mode_flag = tmp_flags;
         }
     c9b86_:
         if (saved_fmt != format_mode_flag)
@@ -289,19 +291,19 @@ void editor_loop_impl(void)
         cursor_moved_flag = 0;
         redraw_editor();
     }
-        uint8_t a_val6 = screen_getchar();
-        if (a_val6 == current_tab_key)
-            a_val6 = 9;
-        editor_current_key = a_val6;
-        if (!(a_val6 < 0x20))
+        uint8_t key_code = screen_getchar();
+        if (key_code == current_tab_key)
+            key_code = 9;
+        editor_current_key = key_code;
+        if (!(key_code < 0x20))
         {
-            if (a_val6 < 0x7f)
+            if (key_code < 0x7f)
             {
                 enter_printable_character();
                 goto editor_loop;
             }
         }
-        switch (a_val6)
+        switch (key_code)
         {
 
             case CTRL('['):
@@ -466,12 +468,12 @@ static void cf1_next_match_key(void)
  */
 static void cf2_format_mode_key(void)
 {
-    uint8_t a_val = format_mode_flag;
-    a_val &= 0xbf;
+    uint8_t new_flags = format_mode_flag;
+    new_flags &= 0xbf;
     if (format_mode_flag & 0x40)
-        a_val |= 1;
-    a_val ^= 1;
-    format_mode_flag = a_val;
+        new_flags |= 1;
+    new_flags ^= 1;
+    format_mode_flag = new_flags;
     flags_need_redrawing_flag++;
 }
 
@@ -516,20 +518,20 @@ static void cf6_split_line_key(void)
 {
     write_line_back_to_document_safely();
     uint8_t line_len = get_line_length();
-    uint8_t y_val = line_len;
+    uint8_t split_pos = line_len;
     if (line_len >= xpos)
-        y_val = xpos;
+        split_pos = xpos;
     line_change_pending_flag++;
-    uint8_t x_val = y_val;
-    uint8_t a_val1 = current_format_line_ptr[0];
-    command_prefix_t cp = check_for_command_prefix(a_val1);
+    uint8_t insert_offset = split_pos;
+    uint8_t first_char = current_format_line_ptr[0];
+    command_prefix_t cp = check_for_command_prefix(first_char);
     if (cp != NO_COMMAND_PREFIX)
     {
-        x_val++;
-        x_val++;
-        x_val++;
+        insert_offset++;
+        insert_offset++;
+        insert_offset++;
     }
-    uint32_t sum = (uint32_t)(current_line_ptr - &ram[0]) + x_val;
+    uint32_t sum = (uint32_t)(current_line_ptr - &ram[0]) + insert_offset;
     if (sum > 0xffff)
     {
         f6_insert_line_key();
@@ -547,20 +549,20 @@ static void cf7_join_lines_key(void)
 {
     write_line_back_to_document_safely();
     uint8_t* line_ptr;
-    uint8_t y_val;
-    if (find_next_line(current_line_ptr, &line_ptr, &y_val))
+    uint8_t next_line_len;
+    if (find_next_line(current_line_ptr, &line_ptr, &next_line_len))
     {
         beep();
         return;
     }
-    command_prefix_t cp = check_for_command_prefix(line_ptr[y_val]);
+    command_prefix_t cp = check_for_command_prefix(line_ptr[next_line_len]);
     if (cp != NO_COMMAND_PREFIX)
     {
         beep();
         return;
     }
-    y_val--;
-    uint8_t* insert_ptr = current_line_ptr + y_val;
+    next_line_len--;
+    uint8_t* insert_ptr = current_line_ptr + next_line_len;
     scratch_scan_ptr = adjust_pointers(insert_ptr, 1);
     split_line_at_wrap(current_line_ptr);
     line_change_pending_flag++;
@@ -575,12 +577,12 @@ static void cf7_join_lines_key(void)
 static void cf8_mark_as_ruler_key(void)
 {
     current_format_line_ptr = edit_buffer_base;
-    uint8_t y_val = 0;
-    current_format_line_ptr[y_val] = 0x81;
-    y_val++;
-    current_format_line_ptr[y_val] = 0x2e;
-    y_val++;
-    current_format_line_ptr[y_val] = 0x2e;
+    uint8_t buf_idx = 0;
+    current_format_line_ptr[buf_idx] = 0x81;
+    buf_idx++;
+    current_format_line_ptr[buf_idx] = 0x2e;
+    buf_idx++;
+    current_format_line_ptr[buf_idx] = 0x2e;
     line_counter++;
     if (!(edit_buffer_unpacked_flag & 0x80))
     {
@@ -598,16 +600,16 @@ static void cf8_mark_as_ruler_key(void)
  */
 static void delete_key(void)
 {
-    uint8_t a_val2;
+    uint8_t marker_check;
     if (visual_column == 0)
         return;
     xpos--;
-    uint8_t a_val1 = ram[RAM_EDIT_BUFFER + xpos];
+    uint8_t char_at_cursor = ram[RAM_EDIT_BUFFER + xpos];
     {
         f9_delete_char_key();
-        a_val2 = a_val1;
+        marker_check = char_at_cursor;
     }
-    if (a_val2 < 0x0c)
+    if (marker_check < 0x0c)
         return;
     if (insert_mode_flag != 0)
         return;
@@ -750,10 +752,10 @@ static void f2_bottom_of_text_key(void)
  */
 static void f3_delete_to_eol_key(void)
 {
-    uint8_t a_val = MAX_LINE_LENGTH;
-    a_val -= xpos;
+    uint8_t bytes_to_delete = MAX_LINE_LENGTH;
+    bytes_to_delete -= xpos;
     line_counter++;
-    delete_edit_buffer_bytes_at_xpos(a_val);
+    delete_edit_buffer_bytes_at_xpos(bytes_to_delete);
     return;
 }
 
@@ -798,13 +800,13 @@ static void f7_delete_line_key(void)
     write_line_back_to_document_safely();
     cursor_moved_flag++;
     uint8_t* insert_ptr = current_line_ptr;
-    uint8_t x_val = edit_line_len;
-    x_val++;
-    ptrdiff_t size_delta = x_val;
+    uint8_t bytes_to_remove = edit_line_len;
+    bytes_to_remove++;
+    ptrdiff_t size_delta = bytes_to_remove;
     scratch_scan_ptr = adjust_pointers(insert_ptr, size_delta);
     ensure_cr_at_document_top();
-    uint8_t a_val = current_line_ptr[0];
-    if (a_val == 0)
+    uint8_t first_byte = current_line_ptr[0];
+    if (first_byte == 0)
     {
         uint8_t* line_ptr;
         find_previous_line(current_line_ptr, &line_ptr);
@@ -844,9 +846,9 @@ static void k_command_key(void)
 {
     draw_prompt_characters('^', 'K');
     flags_need_redrawing_flag++;
-    uint8_t a_val = screen_getchar();
-    uint8_t a_val1 = control_key_to_ascii(a_val);
-    switch (a_val1)
+    uint8_t key_code = screen_getchar();
+    uint8_t ascii_code = control_key_to_ascii(key_code);
+    switch (ascii_code)
     {
 
         case 'M':
@@ -1118,9 +1120,9 @@ static void o_command_key(void)
 {
     draw_prompt_characters('^', 'O');
     flags_need_redrawing_flag++;
-    uint8_t a_val = screen_getchar();
-    uint8_t a_val1 = control_key_to_ascii(a_val);
-    switch (a_val1)
+    uint8_t key_code = screen_getchar();
+    uint8_t ascii_code = control_key_to_ascii(key_code);
+    switch (ascii_code)
     {
 
         case 'J':
@@ -1175,9 +1177,9 @@ static void q_command_key(void)
 {
     draw_prompt_characters('^', 'Q');
     flags_need_redrawing_flag++;
-    uint8_t a_val = screen_getchar();
-    uint8_t a_val1 = control_key_to_ascii(a_val);
-    switch (a_val1)
+    uint8_t key_code = screen_getchar();
+    uint8_t ascii_code = control_key_to_ascii(key_code);
+    switch (ascii_code)
     {
 
         case 'R':
@@ -1244,13 +1246,13 @@ void return_key(void)
     write_line_back_to_document_safely();
     xpos = 0;
     uint8_t* line_ptr;
-    uint8_t y_val;
-    if (!find_next_line(current_line_ptr, &line_ptr, &y_val))
+    uint8_t next_line_len;
+    if (!find_next_line(current_line_ptr, &line_ptr, &next_line_len))
     {
         advance_current_line_pointer();
         return;
     }
-    uint16_t sum = (current_line_ptr - &ram[0]) + y_val;
+    uint16_t sum = (current_line_ptr - &ram[0]) + next_line_len;
     insert_line_at_cursor(&ram[sum]);
     advance_current_line_pointer();
     return;
@@ -1285,17 +1287,17 @@ static void sf11_copy_key(void)
 {
     f6_insert_line_key();
     redraw_editor();
-    uint8_t x_val = ruler_buffer_len;
-    if (!(x_val == 0))
+    uint8_t remaining = ruler_buffer_len;
+    if (!(remaining == 0))
     {
-        uint8_t y_val = 0;
+        uint8_t copy_idx = 0;
         do
         {
-            uint8_t a_val = current_ruler_ptr[y_val];
-            ram[RAM_EDIT_BUFFER + y_val] = a_val;
-            y_val++;
-            x_val--;
-        } while (x_val != 0);
+            uint8_t ruler_byte = current_ruler_ptr[copy_idx];
+            ram[RAM_EDIT_BUFFER + copy_idx] = ruler_byte;
+            copy_idx++;
+            remaining--;
+        } while (remaining != 0);
     }
     cf8_mark_as_ruler_key();
 }
@@ -1314,8 +1316,8 @@ static void sf12_left_key(void)
     }
     uint8_t word_boundary;
     _Bool is_start_of_line;
-    uint8_t x_val;
-    draw_previous_word(&word_boundary, &is_start_of_line, &x_val);
+    uint8_t char_width;
+    draw_previous_word(&word_boundary, &is_start_of_line, &char_width);
     if (!is_start_of_line)
         return;
     if (word_boundary == 0x20)
@@ -1331,69 +1333,69 @@ static void sf12_left_key(void)
  */
 static void sf13_right_key(void)
 {
-    uint8_t y_val;
+    uint8_t buf_pos;
     _Bool is_tab;
 entry:
     uint8_t* line_ptr = &ram[RAM_EDIT_BUFFER];
     uint8_t line_len = get_line_length();
     if (!(line_len < xpos || line_len == xpos))
     {
-        y_val = xpos;
+        buf_pos = xpos;
     }
     else
     {
-        uint8_t y_val1;
-        xpos = y_val1;
+        uint8_t next_line_len;
+        xpos = next_line_len;
         write_line_back_to_document_safely();
-        if (advance_to_next_line(current_line_ptr, &line_ptr, &y_val1))
+        if (advance_to_next_line(current_line_ptr, &line_ptr, &next_line_len))
             return;
-        current_line_ptr += y_val1;
+        current_line_ptr += next_line_len;
         unpack_line(edit_buffer_base);
         scroll_repeat_count--;
         xpos = 0;
         if (get_line_length() == xpos)
             return;
-        y_val1 = 0;
+        next_line_len = 0;
         is_tab = false;
-        uint8_t a_val1;
-        uint8_t x_val;
-        a_val1 = process_current_document_character(
-            &ram[RAM_EDIT_BUFFER], &x_val, &y_val1, &is_tab);
-        if (a_val1 != 0x20)
+        uint8_t cur_char;
+        uint8_t char_width;
+        cur_char = process_current_document_character(
+            &ram[RAM_EDIT_BUFFER], &char_width, &next_line_len, &is_tab);
+        if (cur_char != 0x20)
             return;
         goto entry;
     }
     for (;;)
     {
-        if (y_val >= line_len)
+        if (buf_pos >= line_len)
             goto ca00f;
-        uint8_t x_val;
-        uint8_t a_val2 = process_current_document_character(
-            line_ptr, &x_val, &y_val, &is_tab);
-        if (a_val2 != 0x20)
+        uint8_t char_width;
+        uint8_t cur_char2 = process_current_document_character(
+            line_ptr, &char_width, &buf_pos, &is_tab);
+        if (cur_char2 != 0x20)
             continue;
         break;
     }
     for (;;)
     {
-        if (y_val >= line_len)
+        if (buf_pos >= line_len)
             goto ca00f;
-        uint8_t x_val;
-        uint8_t a_val3 = process_current_document_character(
-            line_ptr, &x_val, &y_val, &is_tab);
-        if (a_val3 == 0x20)
+        uint8_t char_width;
+        uint8_t cur_char3 = process_current_document_character(
+            line_ptr, &char_width, &buf_pos, &is_tab);
+        if (cur_char3 == 0x20)
             continue;
         break;
     }
-    y_val--;
+    buf_pos--;
 ca00f:
-    xpos = y_val;
+    xpos = buf_pos;
     return;
 }
 
-static void set_marker(uint8_t x_val);
+static void set_marker(uint8_t marker_idx);
 
-static void set_marker_common(uint8_t a_val);
+static void set_marker_common(uint8_t marker_char);
 
 /**
  * Moves the cursor down by a page.
@@ -1423,15 +1425,15 @@ static void sf15_up_key(void)
  */
 static void sf1_swap_case_key(void)
 {
-    uint8_t a_val = ram[RAM_EDIT_BUFFER + xpos];
-    if (!isalpha(a_val))
+    uint8_t acc = ram[RAM_EDIT_BUFFER + xpos];
+    if (!isalpha(acc))
     {
         f13_right_key();
         return;
     }
     line_counter++;
-    a_val ^= 0x20;
-    ram[RAM_EDIT_BUFFER + xpos] = a_val;
+    acc ^= 0x20;
+    ram[RAM_EDIT_BUFFER + xpos] = acc;
     f13_right_key();
     return;
 }
@@ -1448,13 +1450,13 @@ static void sf2_release_margins_key(void)
         xpos = 0;
         return;
     }
-    int y_val = find_left_margin_stop();
-    if (y_val < 0)
+    int margin_pos = find_left_margin_stop();
+    if (margin_pos < 0)
     {
         f4_beginning_of_line_key();
         return;
     }
-    xpos = (uint8_t)y_val;
+    xpos = (uint8_t)margin_pos;
     return;
 }
 
@@ -1466,29 +1468,29 @@ static void sf3_delete_to_char_key(void)
 {
     draw_prompt_characters('C', 'H');
     flags_need_redrawing_flag++;
-    uint8_t a_val = screen_getchar();
-    if (a_val == 9 || a_val == 0xa0 || a_val == 0xa1)
+    uint8_t target_char = screen_getchar();
+    if (target_char == 9 || target_char == 0xa0 || target_char == 0xa1)
     {
-        if (a_val == 0xa0)
-            a_val = 0x1c;
-        else if (a_val == 0xa1)
-            a_val = 0x1d;
+        if (target_char == 0xa0)
+            target_char = 0x1c;
+        else if (target_char == 0xa1)
+            target_char = 0x1d;
     }
-    else if (a_val < 0x20 || a_val >= 0x7f)
+    else if (target_char < 0x20 || target_char >= 0x7f)
     {
         beep();
         return;
     }
     {
         line_counter++;
-        uint8_t y_val = xpos;
-        uint8_t start_x = y_val;
+        uint8_t scan_pos = xpos;
+        uint8_t start_x = scan_pos;
         bool found_match = false;
-        while (y_val < MAX_LINE_LENGTH)
+        while (scan_pos < MAX_LINE_LENGTH)
         {
-            uint8_t a_val1 = ram[RAM_EDIT_BUFFER + y_val];
-            y_val++;
-            if (a_val1 == a_val)
+            uint8_t scanned_char = ram[RAM_EDIT_BUFFER + scan_pos];
+            scan_pos++;
+            if (scanned_char == target_char)
             {
                 found_match = true;
                 break;
@@ -1499,16 +1501,16 @@ static void sf3_delete_to_char_key(void)
             beep();
             return;
         }
-        while (y_val < MAX_LINE_LENGTH)
+        while (scan_pos < MAX_LINE_LENGTH)
         {
-            uint8_t a_val2 = ram[RAM_EDIT_BUFFER + y_val];
-            y_val++;
-            if (a_val2 != a_val)
+            uint8_t scanned_char2 = ram[RAM_EDIT_BUFFER + scan_pos];
+            scan_pos++;
+            if (scanned_char2 != target_char)
                 break;
         }
-        y_val--;
-        uint8_t x_val = y_val - start_x;
-        delete_edit_buffer_bytes_at_xpos(x_val);
+        scan_pos--;
+        uint8_t chars_to_delete = scan_pos - start_x;
+        delete_edit_buffer_bytes_at_xpos(chars_to_delete);
     }
 }
 
@@ -1568,7 +1570,7 @@ static void sf7_set_marker_key(void)
  */
 static void sf8_edit_command_key(void)
 {
-    uint8_t a_val1;
+    uint8_t key_code;
     xpos = 0;
     redraw_editor();
     edit_buffer_dirty_flag++;
@@ -1578,18 +1580,18 @@ edit_command_loop:
     do
     {
         screen_setcursor(scratch_offset, ypos);
-        a_val1 = screen_getchar();
-        if (a_val1 == 0x0d)
+        key_code = screen_getchar();
+        if (key_code == 0x0d)
             goto finished_editing_command;
-        a_val1 &= 0xdf;
-    } while (a_val1 < 0x41 || a_val1 >= 0x5b);
-    scratch_index = a_val1;
-    screen_putchar(a_val1);
-    uint8_t y_val = scratch_offset;
-    y_val++;
-    scratch_offset = y_val;
-    edit_buffer_base[y_val] = a_val1;
-    if (y_val < 2)
+        key_code &= 0xdf;
+    } while (key_code < 0x41 || key_code >= 0x5b);
+    scratch_index = key_code;
+    screen_putchar(key_code);
+    uint8_t edit_pos = scratch_offset;
+    edit_pos++;
+    scratch_offset = edit_pos;
+    edit_buffer_base[edit_pos] = key_code;
+    if (edit_pos < 2)
         goto edit_command_loop;
     scratch_offset = 0;
     goto edit_command_loop;
@@ -1608,12 +1610,12 @@ finished_editing_command:
  */
 static void sf9_delete_command_key(void)
 {
-    uint8_t y_val = 0;
-    uint8_t a_val = current_format_line_ptr[y_val];
-    command_prefix_t cp = check_for_command_prefix(a_val);
+    uint8_t pos = 0;
+    uint8_t first_char = current_format_line_ptr[pos];
+    command_prefix_t cp = check_for_command_prefix(first_char);
     if (cp == NO_COMMAND_PREFIX)
         return;
-    current_format_line_ptr[y_val] = y_val;
+    current_format_line_ptr[pos] = pos;
     current_format_line_ptr = &ram[RAM_EDIT_BUFFER];
     clear_format_mode_bit7();
     line_counter++;
@@ -1640,10 +1642,10 @@ static void advance_current_line_pointer(void)
 {
     cursor_moved_flag++;
     uint8_t* line_ptr;
-    uint8_t y_val;
-    if (advance_to_next_line(current_line_ptr, &line_ptr, &y_val))
+    uint8_t line_len;
+    if (advance_to_next_line(current_line_ptr, &line_ptr, &line_len))
         return;
-    current_line_ptr += y_val;
+    current_line_ptr += line_len;
 }
 
 /**
@@ -1659,44 +1661,45 @@ static void clear_marks_1_2(void)
 /**
  * Converts a control key code to ASCII.
  * Maps control codes below 0x20 to letters and folds to uppercase.
- * @param a_val key code
+ * @param acc key code
  * @return converted ASCII code
  */
-static uint8_t control_key_to_ascii(uint8_t a_val)
+static uint8_t control_key_to_ascii(uint8_t key_code)
 {
-    if (a_val < 0x20)
-        a_val |= 0x40;
-    return toupper(a_val);
+    if (key_code < 0x20)
+        key_code |= 0x40;
+    return toupper(key_code);
 }
 
 /**
  * Deletes bytes at the cursor in the edit buffer.
  * Removes a given number of bytes at the cursor, shifts content left, and
  * updates markers.
- * @param x_val number of bytes to delete
+ * @param idx number of bytes to delete
  */
-static void delete_edit_buffer_bytes_at_xpos(uint8_t x_val)
+static void delete_edit_buffer_bytes_at_xpos(uint8_t delete_count)
 {
-    scratch_offset = x_val;
+    scratch_offset = delete_count;
     edit_buffer_dirty_flag++;
     uint8_t* size_delta = &ram[RAM_EDIT_BUFFER];
-    uint8_t y_val = xpos;
-    uint8_t a_val = y_val;
-    a_val += scratch_offset;
+    uint8_t scan_pos = xpos;
+    uint8_t end_pos = scan_pos;
+    end_pos += scratch_offset;
     do
     {
-        x_val = find_marker_at_position(y_val, size_delta);
-        if (!(x_val == 0x0c))
+        delete_count = find_marker_at_position(scan_pos, size_delta);
+        if (!(delete_count == 0x0c))
         {
-            uint16_t marker_val =
-                (y_val >= temp_save)
-                    ? RAM_EDIT_BUFFER + (y_val - scratch_offset)
+            uint16_t marker_addr =
+                (scan_pos >= temp_save)
+                    ? RAM_EDIT_BUFFER + (scan_pos - scratch_offset)
                     : 0;
-            markers_array[x_val / 2] = marker_val ? &ram[marker_val] : NULL;
+            markers_array[delete_count / 2] =
+                marker_addr ? &ram[marker_addr] : NULL;
             continue;
         }
-        y_val++;
-    } while (y_val < MAX_LINE_LENGTH + 1);
+        scan_pos++;
+    } while (scan_pos < MAX_LINE_LENGTH + 1);
     if (xpos >= MAX_LINE_LENGTH)
     {
         /* return_78: */
@@ -1726,29 +1729,29 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t x_val)
  */
 static void enter_printable_character(void)
 {
-    uint8_t a_val2;
-    uint8_t a_val12;
-    uint8_t y_val = xpos;
-    if (y_val >= MAX_LINE_LENGTH)
+    uint8_t scanned_char;
+    uint8_t filler;
+    uint8_t cursor_pos = xpos;
+    if (cursor_pos >= MAX_LINE_LENGTH)
         return;
     edit_buffer_dirty_flag++;
     if (adjust_margins_at_left_margin())
         return;
     uint8_t* size_delta = &ram[RAM_EDIT_BUFFER];
-    uint8_t y_val1 = xpos;
-    uint8_t idx = find_marker_at_position(y_val1, size_delta);
+    uint8_t check_pos = xpos;
+    uint8_t idx = find_marker_at_position(check_pos, size_delta);
     if (idx != 0x0c)
     {
         if (idx < 4)
             line_counter++;
     }
-    uint8_t x_val = insert_mode_flag;
-    if (!(x_val != 0))
+    uint8_t mode_flag = insert_mode_flag;
+    if (!(mode_flag != 0))
     {
-        uint8_t a_val = ram[RAM_EDIT_BUFFER + y_val1];
-        if (a_val == 9)
+        uint8_t char_at_pos = ram[RAM_EDIT_BUFFER + check_pos];
+        if (char_at_pos == 9)
             goto c9c00;
-        if (a_val != 0x0b)
+        if (char_at_pos != 0x0b)
             goto c9c09;
     }
 c9c00:
@@ -1756,70 +1759,71 @@ c9c00:
     if (!insert_edit_buffer_bytes_at_xpos(1))
         return;
 c9c09:
-    uint8_t a_val1 = editor_current_key;
-    ram[RAM_EDIT_BUFFER + xpos] = a_val1;
-    uint8_t y_val2 = line_counter;
-    if (y_val2 == 0)
-        screen_putchar(a_val1);
+    uint8_t typed_char = editor_current_key;
+    ram[RAM_EDIT_BUFFER + xpos] = typed_char;
+    uint8_t copied_flag = line_counter;
+    if (copied_flag == 0)
+        screen_putchar(typed_char);
     xpos++;
     update_line_length();
-    uint8_t y_val3 = 0;
+    uint8_t scan_idx = 0;
     column_position = 0;
 c9c1d:
     do
     {
-        a_val2 = ram[RAM_EDIT_BUFFER + y_val3];
-        y_val3++;
-        if (y_val3 > xpos)
+        scanned_char = ram[RAM_EDIT_BUFFER + scan_idx];
+        scan_idx++;
+        if (scan_idx > xpos)
             goto c9c56;
-        if (!(a_val2 != 9))
+        if (!(scanned_char != 9))
         {
             {
                 bool is_tab = false;
-                (void)process_document_character(a_val2, &x_val, &is_tab);
+                (void)process_document_character(
+                    scanned_char, &mode_flag, &is_tab);
             }
-            a_val2 = x_val;
-            a_val2 += column_position;
-            if (a_val2 != 0)
+            scanned_char = mode_flag;
+            scanned_char += column_position;
+            if (scanned_char != 0)
                 goto c9c43;
         }
-        if (!(a_val2 != 0x0b))
+        if (!(scanned_char != 0x0b))
         {
-            a_val2 = ruler_left_stop;
-            if (!(a_val2 == 0))
+            scanned_char = ruler_left_stop;
+            if (!(scanned_char == 0))
             {
-                x_val = column_position;
-                if (x_val != 0)
+                mode_flag = column_position;
+                if (mode_flag != 0)
                 {
-                    if (x_val >= ruler_left_stop)
+                    if (mode_flag >= ruler_left_stop)
                     {
-                        x_val++;
-                        a_val2 = x_val;
+                        mode_flag++;
+                        scanned_char = mode_flag;
                     }
                 }
             c9c43:
-                column_position = a_val2;
+                column_position = scanned_char;
                 continue;
             }
         c9c48:
-            a_val2 = 0x20;
+            scanned_char = 0x20;
         }
-        if (a_val2 < 0x1b)
+        if (scanned_char < 0x1b)
             goto c9c48;
-    } while (a_val2 < 0x20);
+    } while (scanned_char < 0x20);
     column_position++;
     goto c9c1d;
 c9c56:
-    uint8_t y_val4 = column_position;
-    if (y_val4 < ruler_buffer_len)
+    uint8_t col_pos = column_position;
+    if (col_pos < ruler_buffer_len)
     {
-        uint8_t a_val4 = current_ruler_ptr[y_val4];
-        a_val4 &= 0xdf;
-        if (a_val4 == 0x42)
+        uint8_t ruler_char = current_ruler_ptr[col_pos];
+        ruler_char &= 0xdf;
+        if (ruler_char == 0x42)
             beep();
     }
-    uint8_t a_val5 = editor_current_key;
-    if (a_val5 == 0x20)
+    uint8_t typed_char2 = editor_current_key;
+    if (typed_char2 == 0x20)
         return;
     if (ruler_right_stop == 0)
     {
@@ -1828,79 +1832,79 @@ c9c56:
     }
     if (format_mode_flag != 0)
         return;
-    if (y_val4 == 0)
+    if (col_pos == 0)
         return;
-    y_val4--;
-    if (y_val4 < ruler_right_stop)
+    col_pos--;
+    if (col_pos < ruler_right_stop)
         return;
     screen_column = get_line_length();
     top_margin = 0;
-    uint8_t y_val5 = xpos;
-    input_buffer_offset = y_val5;
+    uint8_t saved_xpos = xpos;
+    input_buffer_offset = saved_xpos;
     uint8_t word_boundary;
     _Bool is_start_of_line;
-    draw_previous_word(&word_boundary, &is_start_of_line, &x_val);
+    draw_previous_word(&word_boundary, &is_start_of_line, &mode_flag);
     recalculate_cursor_xpos();
-    uint8_t a_val6 = visual_column;
-    if (a_val6 == ruler_left_stop)
+    uint8_t vis_col = visual_column;
+    if (vis_col == ruler_left_stop)
     {
-        uint8_t y_val6 = input_buffer_offset;
-        y_val6--;
-        xpos = y_val6;
+        uint8_t tmp_pos = input_buffer_offset;
+        tmp_pos--;
+        xpos = tmp_pos;
         goto c9ca2;
     }
-    if (a_val6 < ruler_left_stop)
+    if (vis_col < ruler_left_stop)
     {
         {
-            uint8_t y_val7 = input_buffer_offset;
-            y_val7--;
-            xpos = y_val7;
+            uint8_t tmp_pos2 = input_buffer_offset;
+            tmp_pos2--;
+            xpos = tmp_pos2;
         }
     }
 c9ca2:
-    uint8_t a_val7 = input_buffer_offset;
-    a_val7 -= xpos;
-    top_margin = a_val7;
-    uint8_t a_val8 = screen_column;
-    a_val8 -= xpos;
-    screen_column = a_val8;
-    uint8_t y_val8 = a_val8;
-    y_val8++;
-    uint8_t a_val9 = ruler_left_stop;
-    if (a_val9 != 0)
+    uint8_t wrap_len = input_buffer_offset;
+    wrap_len -= xpos;
+    top_margin = wrap_len;
+    uint8_t col_remaining = screen_column;
+    col_remaining -= xpos;
+    screen_column = col_remaining;
+    uint8_t remaining_len = col_remaining;
+    remaining_len++;
+    uint8_t left_stop = ruler_left_stop;
+    if (left_stop != 0)
     {
         top_margin++;
-        y_val8++;
+        remaining_len++;
     }
     uint8_t* insert_ptr = current_line_ptr + edit_line_len + 1;
-    if (!(make_space_for_insertion(insert_ptr, y_val8)))
+    if (!(make_space_for_insertion(insert_ptr, remaining_len)))
     {
         show_memory_full_error();
         longjmp(env, JMP_EDITOR);
     }
-    uint8_t y_val9 = 0;
+    uint8_t dst_idx = 0;
     if (ruler_left_stop != 0)
     {
         *insert_ptr = 0x0b;
-        y_val9 = 1;
+        dst_idx = 1;
     }
-    scratch_index = y_val9;
+    scratch_index = dst_idx;
     uint8_t* marker_base_ptr = &ram[RAM_EDIT_BUFFER];
-    uint8_t y_val10 = xpos;
-    y_val10--;
-    uint8_t a_val10 = ram[RAM_EDIT_BUFFER + y_val10];
-    if (a_val10 == 0x20)
-        ram[RAM_EDIT_BUFFER + y_val10] = 0x10;
-    y_val10++;
-    screen_row = y_val10;
+    uint8_t prev_pos = xpos;
+    prev_pos--;
+    uint8_t prev_char = ram[RAM_EDIT_BUFFER + prev_pos];
+    if (prev_char == 0x20)
+        ram[RAM_EDIT_BUFFER + prev_pos] = 0x10;
+    prev_pos++;
+    screen_row = prev_pos;
     do
     {
-        uint8_t y_val11 = screen_row;
+        uint8_t src_pos = screen_row;
         screen_row++;
         for (;;)
         {
             uint8_t marker_index =
-                find_marker_at_position(y_val11, marker_base_ptr);
+                find_marker_at_position(src_pos, marker_base_ptr);
             if (marker_index == 0x0c)
                 break;
             {
@@ -1910,23 +1914,23 @@ c9ca2:
                     break;
             }
         }
-        uint8_t a_val11 = screen_column;
-        if (!(a_val11 != 0))
+        uint8_t src_char = screen_column;
+        if (!(src_char != 0))
         {
-            a_val12 = 0x0d;
+            filler = 0x0d;
         }
         else
         {
-            uint8_t a_val13 = ram[RAM_EDIT_BUFFER + y_val11];
+            uint8_t acc13 = ram[RAM_EDIT_BUFFER + src_pos];
             {
-                uint8_t saved = a_val13;
-                ram[RAM_EDIT_BUFFER + y_val11] = 0x10;
-                a_val12 = saved;
+                uint8_t saved = acc13;
+                ram[RAM_EDIT_BUFFER + src_pos] = 0x10;
+                filler = saved;
             }
         }
-        uint8_t y_val12 = scratch_index;
+        uint8_t dst_pos = scratch_index;
         scratch_index++;
-        insert_ptr[y_val12] = a_val12;
+        insert_ptr[dst_pos] = filler;
         screen_column--;
     } while (!(screen_column & 0x80));
     justify_edit_buffer(edit_buffer_base);
@@ -1946,8 +1950,8 @@ static int prompt_for_marker(void)
 {
     draw_prompt_characters('M', 'K');
     flags_need_redrawing_flag++;
-    uint8_t a_val = screen_getchar();
-    return lookup_marker(a_val);
+    uint8_t key_code = screen_getchar();
+    return lookup_marker(key_code);
 }
 
 /**
@@ -1969,8 +1973,9 @@ static bool reset_area_to_marks_1_2(void)
         if (markers_array[idx2] != 0)
         {
             area_end_ptr = markers_array[idx2];
-            uint8_t x_val = ((uint8_t*)&doc_ptr1 - (uint8_t*)markers_array) / 2;
-            set_marker_to_here(x_val);
+            uint8_t marker_array_idx =
+                ((uint8_t*)&doc_ptr1 - (uint8_t*)markers_array) / 2;
+            set_marker_to_here(marker_array_idx);
             area_status_t status = sanitise_area();
             if (status == AREA_NOT_EMPTY)
                 return false;
@@ -2010,12 +2015,12 @@ static void move_to_previous_line(void)
 /**
  * Moves the cursor up.
  * Writes the buffer back and moves up by the specified number of lines.
- * @param x_val number of lines to move
+ * @param idx number of lines to move
  */
-static void move_cursor_up(uint8_t x_val)
+static void move_cursor_up(uint8_t lines_to_move)
 {
     cursor_moved_flag++;
-    scratch_offset = x_val;
+    scratch_offset = lines_to_move;
     write_line_back_to_document_safely();
     uint8_t* line = current_line_ptr;
     do
@@ -2028,8 +2033,8 @@ static void move_cursor_up(uint8_t x_val)
             break;
         }
         line = line_ptr;
-        x_val = scratch_offset;
-        if ((int8_t)x_val < 0)
+        lines_to_move = scratch_offset;
+        if ((int8_t)lines_to_move < 0)
             continue;
         scratch_offset--;
     } while (scratch_offset != 0);
@@ -2039,26 +2044,26 @@ static void move_cursor_up(uint8_t x_val)
 /**
  * Moves the cursor down.
  * Writes the buffer back and moves down by the specified number of lines.
- * @param x_val number of lines to move
+ * @param idx number of lines to move
  */
-static void move_cursor_down(uint8_t x_val)
+static void move_cursor_down(uint8_t lines_to_move)
 {
     cursor_moved_flag++;
-    scratch_offset = x_val;
+    scratch_offset = lines_to_move;
     write_line_back_to_document_safely();
     uint8_t* line = current_line_ptr;
     while (1)
     {
         uint8_t* line_ptr;
-        uint8_t y_val;
-        if (advance_to_next_line(line, &line_ptr, &y_val))
+        uint8_t line_len;
+        if (advance_to_next_line(line, &line_ptr, &line_len))
         {
             line = line_ptr;
             break;
         }
-        line = line + y_val;
-        x_val = scratch_offset;
-        if ((int8_t)x_val < 0)
+        line = line + line_len;
+        lines_to_move = scratch_offset;
+        if ((int8_t)lines_to_move < 0)
             continue;
         scratch_offset--;
         if (scratch_offset != 0)
@@ -2109,13 +2114,13 @@ static void check_pointer_in_area(void)
  * Common handler for tab and highlight insertion.
  * Checks margins and inserts the given control character, then advances the
  * cursor.
- * @param a_val control character to insert
+ * @param acc control character to insert
  */
-static void tab_highlight_common(uint8_t a_val)
+static void tab_highlight_common(uint8_t char_to_insert)
 {
     if (adjust_margins_at_left_margin())
         return;
-    if (!insert_character_into_edit_buffer(a_val))
+    if (!insert_character_into_edit_buffer(char_to_insert))
         return;
     f13_right_key();
     return;
@@ -2132,12 +2137,12 @@ void enter_editor_mode(void)
     edit_buffer_dirty_flag = 0;
     scroll_repeat_count = 0;
     edit_buffer_unpacked_flag = 0;
-    uint8_t x_val = screen_maxrow;
+    uint8_t remaining_rows = screen_maxrow;
     do
     {
-        line_lengths[x_val] = 0;
-        x_val--;
-    } while (!(x_val & 0x80));
+        line_lengths[remaining_rows] = 0;
+        remaining_rows--;
+    } while (!(remaining_rows & 0x80));
     status_line_needs_redrawing_flag = 2;
     flags_need_redrawing_flag = 1;
 }
@@ -2214,10 +2219,10 @@ caf55:
  */
 bool adjust_margins_at_left_margin(void)
 {
-    uint8_t y_val;
-    uint8_t a_val = format_mode_flag;
-    a_val &= 0x81;
-    if (!(a_val != 0 || find_left_margin_stop() >= 0))
+    uint8_t insert_pos;
+    uint8_t flags_tmp = format_mode_flag;
+    flags_tmp &= 0x81;
+    if (!(flags_tmp != 0 || find_left_margin_stop() >= 0))
     {
         uint8_t line_len = get_line_length();
         screen_column = xpos;
@@ -2225,24 +2230,24 @@ bool adjust_margins_at_left_margin(void)
         recalculate_cursor_xpos();
         if (!(visual_column < ruler_left_stop))
         {
-            y_val = screen_column;
-            xpos = y_val;
+            insert_pos = screen_column;
+            xpos = insert_pos;
             xpos++;
         }
         else
         {
-            uint8_t a_val3 = screen_column;
-            y_val = xpos;
-            if (!(y_val >= screen_column))
+            uint8_t acc3 = screen_column;
+            insert_pos = xpos;
+            if (!(insert_pos >= screen_column))
             {
                 if (screen_column < ruler_left_stop)
                     goto caf2a;
-                a_val3 = screen_column - ruler_left_stop + xpos + 1;
+                acc3 = screen_column - ruler_left_stop + xpos + 1;
             }
-            xpos = a_val3;
+            xpos = acc3;
         }
     caf2a:
-        if (!insert_byte_at_xpos(y_val))
+        if (!insert_byte_at_xpos(insert_pos))
             return true;
         line_counter++;
     }
@@ -2252,54 +2257,54 @@ bool adjust_margins_at_left_margin(void)
 /**
  * Inserts bytes at the cursor in the edit buffer.
  * Makes room at the cursor by shifting existing content right.
- * @param x_val number of bytes to insert
+ * @param idx number of bytes to insert
  * @return true on success, false if overflow or out of space
  */
-bool insert_edit_buffer_bytes_at_xpos(uint8_t x_val)
+bool insert_edit_buffer_bytes_at_xpos(uint8_t count)
 {
     if (xpos >= MAX_LINE_LENGTH)
     {
         beep();
         return false;
     }
-    scratch_offset = x_val;
-    uint8_t a_val1 = get_line_length();
-    a_val1 += scratch_offset;
-    if (a_val1 < scratch_offset)
+    scratch_offset = count;
+    uint8_t acc1 = get_line_length();
+    acc1 += scratch_offset;
+    if (acc1 < scratch_offset)
     {
         beep();
         return false;
     }
-    if (a_val1 >= MAX_LINE_LENGTH + 1)
+    if (acc1 >= MAX_LINE_LENGTH + 1)
     {
         beep();
         return false;
     }
     edit_buffer_dirty_flag++;
     uint8_t* size_delta = &ram[RAM_EDIT_BUFFER];
-    uint8_t y_val = MAX_LINE_LENGTH;
+    uint8_t scan_pos = MAX_LINE_LENGTH;
 cae27:
-    y_val--;
-    x_val = 0;
-    uint8_t a_val2 = y_val;
-    a_val2 += scratch_offset;
-    if (a_val2 >= scratch_offset)
+    scan_pos--;
+    count = 0;
+    uint8_t tail_len = scan_pos;
+    tail_len += scratch_offset;
+    if (tail_len >= scratch_offset)
     {
-        if (a_val2 < MAX_LINE_LENGTH)
-            x_val = a_val2;
+        if (tail_len < MAX_LINE_LENGTH)
+            count = tail_len;
     }
-    scratch_index = x_val;
+    scratch_index = count;
     for (;;)
     {
-        uint8_t idx = find_marker_at_position(y_val, size_delta);
+        uint8_t idx = find_marker_at_position(scan_pos, size_delta);
         if (idx == 0x0c)
             goto cae52;
-        uint16_t marker_val =
+        uint16_t marker_addr =
             scratch_index ? RAM_EDIT_BUFFER + scratch_index : 0;
-        markers_array[idx / 2] = marker_val ? &ram[marker_val] : NULL;
+        markers_array[idx / 2] = marker_addr ? &ram[marker_addr] : NULL;
     }
 cae52:
-    if (y_val != xpos)
+    if (scan_pos != xpos)
         goto cae27;
     int copy_len = MAX_LINE_LENGTH - (int)xpos - (int)scratch_offset;
     if (copy_len > 0)
@@ -2315,23 +2320,23 @@ cae52:
  * Sets a marker to the current position.
  * Computes the document address for the cursor and stores it in the marker
  * array.
- * @param x_val marker index
+ * @param idx marker index
  */
-void set_marker_to_here(uint8_t x_val)
+void set_marker_to_here(uint8_t marker_idx)
 {
-    uint8_t y_val;
-    (void)y_val;
+    uint8_t tmp_pos;
+    (void)tmp_pos;
     uint8_t len = get_line_length();
     if (len >= xpos)
     {
-        uint8_t a_val = current_format_line_ptr[0];
-        command_prefix_t cp = check_for_command_prefix(a_val);
+        uint8_t first_char = current_format_line_ptr[0];
+        command_prefix_t cp = check_for_command_prefix(first_char);
         len = xpos;
         if (cp != NO_COMMAND_PREFIX)
             len += 3;
     }
     uint16_t marker_addr = (current_line_ptr - &ram[0]) + len;
-    markers_array[x_val] = &ram[marker_addr];
+    markers_array[marker_idx] = &ram[marker_addr];
 }
 
 /**
@@ -2341,44 +2346,44 @@ void set_marker_to_here(uint8_t x_val)
  */
 void split_line_at_wrap(uint8_t* target_ptr)
 {
-    uint8_t a_val3;
+    uint8_t acc3;
     uint8_t* scan_ptr = find_line_start(target_ptr);
     do
     {
         screen_column = 0;
-        uint8_t x_val = MAX_LINE_LENGTH + 1;
-        uint8_t y_val = 1;
-        uint8_t a_val1 = scan_ptr[y_val];
-        command_prefix_t cp = check_for_command_prefix(a_val1);
+        uint8_t copy_len = MAX_LINE_LENGTH + 1;
+        uint8_t scan_pos = 1;
+        uint8_t scan_char = scan_ptr[scan_pos];
+        command_prefix_t cp = check_for_command_prefix(scan_char);
         if (cp != NO_COMMAND_PREFIX)
         {
-            x_val++;
-            x_val++;
-            x_val++;
+            copy_len++;
+            copy_len++;
+            copy_len++;
         }
-        temp_save = x_val;
+        temp_save = copy_len;
         do
         {
-            uint8_t a_val2 = scan_ptr[y_val];
-            y_val++;
-            if (!(a_val2 == 0x20))
+            uint8_t next_char = scan_ptr[scan_pos];
+            scan_pos++;
+            if (!(next_char == 0x20))
             {
-                if (a_val2 != 0x1a)
+                if (next_char != 0x1a)
                     goto cac9c;
             }
-            screen_column = y_val;
+            screen_column = scan_pos;
         cac9c:
-            if (a_val2 == 0x0d)
+            if (next_char == 0x0d)
                 return;
-        } while (y_val == temp_save || y_val < temp_save);
+        } while (scan_pos == temp_save || scan_pos < temp_save);
         if (screen_column == 0)
         {
-            a_val3 = temp_save;
+            acc3 = temp_save;
             goto cacad;
         }
-        a_val3 = screen_column;
+        acc3 = screen_column;
     cacad:
-        uint8_t* insert_ptr = scan_ptr + a_val3;
+        uint8_t* insert_ptr = scan_ptr + acc3;
         scan_ptr = insert_ptr;
         make_space_for_insertion(insert_ptr, 1);
         insert_ptr[0] = 0x0d;
@@ -2399,28 +2404,28 @@ uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta)
 {
     uint8_t* copy_ptr = insert_ptr;
     uint8_t* local_tmp89 = insert_ptr + size_delta;
-    uint8_t x_val = 0;
+    uint8_t slot_idx = 0;
     do
     {
         {
-            uint8_t* pa_val = ((uint8_t**)&pointer_array)[x_val];
-            if (pa_val < insert_ptr)
+            uint8_t* slot_ptr = ((uint8_t**)&pointer_array)[slot_idx];
+            if (slot_ptr < insert_ptr)
                 goto ca9f1;
-            if (pa_val < local_tmp89)
+            if (slot_ptr < local_tmp89)
                 goto ca9db;
             goto ca9e7;
         }
     ca9db:
-        if (!(x_val >= ARRAY_SIZE(markers_array)))
-            ((uint8_t**)&pointer_array)[x_val] = NULL;
+        if (!(slot_idx >= ARRAY_SIZE(markers_array)))
+            ((uint8_t**)&pointer_array)[slot_idx] = NULL;
         else
         ca9e7:
         {
-            ((uint8_t**)&pointer_array)[x_val] -= size_delta;
+            ((uint8_t**)&pointer_array)[slot_idx] -= size_delta;
         }
         ca9f1:
-            x_val++;
-    } while (x_val != sizeof(pointer_array) / sizeof(uint8_t*));
+            slot_idx++;
+    } while (slot_idx != sizeof(pointer_array) / sizeof(uint8_t*));
     {
         size_t copy_len = strlen((char*)local_tmp89) + 1;
         memmove(copy_ptr, local_tmp89, copy_len);
@@ -2438,10 +2443,11 @@ static bool advance_to_next_doc_line(void)
 {
     xpos = 0;
     uint8_t* line_ptr;
-    uint8_t y_val;
-    bool end_of_document = find_next_line(current_line_ptr, &line_ptr, &y_val);
+    uint8_t line_len;
+    bool end_of_document =
+        find_next_line(current_line_ptr, &line_ptr, &line_len);
     if (!end_of_document)
-        current_line_ptr = line_ptr + y_val;
+        current_line_ptr = line_ptr + line_len;
     return end_of_document;
 }
 
@@ -2474,39 +2480,39 @@ bool scan_document_for_next_line(void)
     if (search_target_len == 0)
         return false;
     editor_output_pos = 0x14;
-    uint8_t x_val = 0;
+    uint8_t idx = 0;
     editor_header_pos = 0;
     scratch_index = 0;
     uint8_t* scan_ptr = doc_ptr2;
 c8b91:
     if (scan_ptr >= doc_ptr3)
         return false;
-    uint8_t y_val = 0;
-    uint8_t a_val2 = *scan_ptr;
-    command_prefix_t cp = check_for_command_prefix(a_val2);
+    uint8_t pos = 0;
+    uint8_t acc2 = *scan_ptr;
+    command_prefix_t cp = check_for_command_prefix(acc2);
     if (cp != NO_COMMAND_PREFIX)
     {
         doc_ptr2 = scan_ptr + 3;
         return scan_document_for_next_line();
     }
-    screen_column = upper_case_unless_folding(a_val2);
+    screen_column = upper_case_unless_folding(acc2);
     do
     {
-        y_val++;
-        uint8_t a_val4 = scan_ptr[y_val];
-        if (a_val4 == 0)
+        pos++;
+        uint8_t acc4 = scan_ptr[pos];
+        if (acc4 == 0)
             goto c8bdb;
-        command_prefix_t cp2 = check_for_command_prefix(a_val4);
+        command_prefix_t cp2 = check_for_command_prefix(acc4);
         if (cp2 != NO_COMMAND_PREFIX)
             goto c8bdb;
-        uint8_t a_val5 = header_text_maybe[x_val];
-        if (a_val5 == 0x20)
+        uint8_t acc5 = header_text_maybe[idx];
+        if (acc5 == 0x20)
             goto c8bf7;
-        if (a_val5 == 1)
+        if (acc5 == 1)
             goto c8be3;
-        if (a_val5 == 2)
-            a_val5 = 0x20;
-        if (a_val5 == screen_column)
+        if (acc5 == 2)
+            acc5 = 0x20;
+        if (acc5 == screen_column)
             goto c8c33;
     c8bdb:
         do
@@ -2514,16 +2520,16 @@ c8b91:
             doc_ptr2++;
             return scan_document_for_next_line();
         c8be3:
-            temp_save = x_val;
+            temp_save = idx;
             if (editor_header_pos < 0x14)
             {
                 output_buffer[editor_header_pos] = screen_column;
                 editor_header_pos++;
             }
-            x_val = temp_save;
+            idx = temp_save;
             goto c8c33;
         c8bf7:
-            temp_save = x_val;
+            temp_save = idx;
             if (screen_column == 0x20 || screen_column == 9 ||
                 screen_column == 0x0b || screen_column == 0x1a ||
                 screen_column == 0x0d)
@@ -2533,21 +2539,21 @@ c8b91:
         } while (scratch_index == 0);
         append_to_output_buffer(0);
         scratch_index = 0;
-        x_val = temp_save;
-        x_val++;
-    } while (x_val < search_target_len);
+        idx = temp_save;
+        idx++;
+    } while (idx < search_target_len);
     goto c8c3e;
 c8c23:
     append_to_output_buffer(screen_column);
-    x_val = temp_save;
+    idx = temp_save;
     scratch_index = screen_column;
     do
     {
         scan_ptr++;
         goto c8b91;
     c8c33:
-        x_val++;
-    } while (x_val < search_target_len);
+        idx++;
+    } while (idx < search_target_len);
     scan_ptr++;
 c8c3e:
     doc_working_ptr = doc_ptr2;
@@ -2609,17 +2615,17 @@ void clear_screen(void)
 /**
  * Clears to the end of the line.
  * Fills the remainder of the screen line with the given character.
- * @param a_val fill character
+ * @param acc fill character
  * @param line screen line index
  */
-static void clear_to_eol(uint8_t a_val, uint8_t line)
+static void clear_to_eol(uint8_t fill_char, uint8_t line)
 {
     uint8_t line_len = line_lengths[line];
     if (!(line_len == 0))
     {
         do
         {
-            screen_putchar(a_val);
+            screen_putchar(fill_char);
             line_lengths[line]--;
         } while (line_lengths[line] != 0);
     }
@@ -2693,17 +2699,17 @@ void draw_line(struct render_state* rs, uint8_t* addr)
  * Draws prompt characters.
  * Displays two inverted prompt characters at the top-left and restores the
  * cursor.
- * @param x_val first prompt character
- * @param y_val second prompt character
+ * @param idx first prompt character
+ * @param pos second prompt character
  */
-void draw_prompt_characters(uint8_t x_val, uint8_t y_val)
+void draw_prompt_characters(uint8_t first_char, uint8_t second_char)
 {
     uint16_t saved_cursor_pos = screen_getcursor();
     cursor_off();
     home_cursor();
     screen_setstyle(STYLE_REVERSE);
-    screen_putchar(x_val);
-    screen_putchar(y_val);
+    screen_putchar(first_char);
+    screen_putchar(second_char);
     screen_setstyle(0);
     screen_putchar(0x20);
     screen_setcursor(saved_cursor_pos & 0xff, saved_cursor_pos >> 8);
@@ -2732,20 +2738,20 @@ static void draw_status_word(void)
 {
     flags_need_redrawing_flag = 0;
     home_cursor();
-    uint8_t x_val = 0x46;
-    uint8_t a_val = format_mode_flag;
-    if (a_val != 0)
+    uint8_t status_char = 0x46;
+    uint8_t fmt_flags = format_mode_flag;
+    if (fmt_flags != 0)
     {
-        x_val = 0x4d;
-        a_val &= 0xc0;
-        if (a_val == 0)
-            x_val = 0x20;
+        status_char = 0x4d;
+        fmt_flags &= 0xc0;
+        if (fmt_flags == 0)
+            status_char = 0x20;
     }
-    screen_putchar(x_val);
-    uint8_t a_val2 = 0x4a;
+    screen_putchar(status_char);
+    uint8_t acc2 = 0x4a;
     if (justifying_flag != 0)
-        a_val2 = 0x20;
-    screen_putchar(a_val2);
+        acc2 = 0x20;
+    screen_putchar(acc2);
     if (insert_mode_flag != 0)
     {
         home_cursor();
@@ -2763,31 +2769,31 @@ static void draw_status_word(void)
  */
 static uint8_t get_line_length(void)
 {
-    uint8_t a_val = *current_format_line_ptr;
-    command_prefix_t cp = check_for_command_prefix(a_val);
-    uint8_t y_val = MAX_LINE_LENGTH;
+    uint8_t first_char = *current_format_line_ptr;
+    command_prefix_t cp = check_for_command_prefix(first_char);
+    uint8_t scan_pos = MAX_LINE_LENGTH;
     do
     {
-        y_val--;
-        if (ram[RAM_EDIT_BUFFER + y_val] != 0x10)
+        scan_pos--;
+        if (ram[RAM_EDIT_BUFFER + scan_pos] != 0x10)
             goto cab06;
-    } while (y_val != 0);
-    y_val--;
+    } while (scan_pos != 0);
+    scan_pos--;
 cab06:
-    y_val++;
+    scan_pos++;
     if (cp != NO_COMMAND_PREFIX)
-        y_val += 3;
-    return y_val;
+        scan_pos += 3;
+    return scan_pos;
 }
 
 /**
  * Jumps to a marker.
  * Moves the cursor to the address stored in the marker.
- * @param x_val marker index
+ * @param idx marker index
  */
-static void go_to_marker(uint8_t x_val)
+static void go_to_marker(uint8_t marker_idx)
 {
-    move_cursor_to_address(markers_array[x_val]);
+    move_cursor_to_address(markers_array[marker_idx]);
     display_start_row = 1;
     update_line_length();
     return;
@@ -2827,158 +2833,160 @@ static void home_cursor(void)
 uint8_t justify_edit_buffer(uint8_t* target_ptr)
 {
     _Bool is_zero_1;
-    uint8_t x_val = 0;
-    uint8_t a_val = justifying_flag;
-    if (a_val != 0)
-        return x_val;
-    justify_gap_count = a_val;
-    column_position = a_val;
-    justify_overflow_counter = a_val;
-    uint8_t a_val1 = ruler_right_stop;
-    if (a_val1 == 0)
-        return x_val;
+    uint8_t gap_idx = 0;
+    uint8_t acc = justifying_flag;
+    if (acc != 0)
+        return gap_idx;
+    justify_gap_count = acc;
+    column_position = acc;
+    justify_overflow_counter = acc;
+    uint8_t cur_char = ruler_right_stop;
+    if (cur_char == 0)
+        return gap_idx;
     justify_line_length = get_line_length();
-    uint8_t y_val = 0;
+    uint8_t scan_pos = 0;
     goto c9861;
 c9847:
     do
     {
-        a_val1 = column_position;
-        temp_save = a_val1;
-        y_val++;
-        if (y_val == justify_line_length)
+        cur_char = column_position;
+        temp_save = cur_char;
+        scan_pos++;
+        if (scan_pos == justify_line_length)
             goto c9871;
-        bool is_zero = process_char_for_output(y_val, false, &x_val, &a_val1);
+        bool is_zero =
+            process_char_for_output(scan_pos, false, &gap_idx, &cur_char);
         if (is_zero)
             goto c985c;
-    } while (a_val1 != 0x20);
+    } while (cur_char != 0x20);
     justify_gap_count++;
 c985c:
     do
     {
-        y_val++;
-        if (y_val == justify_line_length)
+        scan_pos++;
+        if (scan_pos == justify_line_length)
             goto c986d;
     c9861:
-        is_zero_1 = process_char_for_output(y_val, true, &x_val, &a_val1);
+        is_zero_1 =
+            process_char_for_output(scan_pos, true, &gap_idx, &cur_char);
     } while (is_zero_1);
-    if (a_val1 != 0x20)
+    if (cur_char != 0x20)
         goto c9847;
     goto c985c;
 c986d:
     justify_gap_count--;
     if (justify_gap_count & 0x80)
-        return x_val;
+        return gap_idx;
 c9871:
-    uint8_t a_val2 = justify_gap_count;
-    if (a_val2 == 0)
-        return x_val;
-    uint8_t a_val3 = ruler_right_stop;
-    if (a_val3 < temp_save)
-        return x_val;
-    a_val3 -= temp_save;
-    uint8_t x_val1 = (uint8_t)(a_val3 + 1);
-    uint8_t extra = (uint8_t)(a_val3 + 1 + justify_line_length);
+    uint8_t acc2 = justify_gap_count;
+    if (acc2 == 0)
+        return gap_idx;
+    uint8_t acc3 = ruler_right_stop;
+    if (acc3 < temp_save)
+        return gap_idx;
+    acc3 -= temp_save;
+    uint8_t idx1 = (uint8_t)(acc3 + 1);
+    uint8_t extra = (uint8_t)(acc3 + 1 + justify_line_length);
     if (extra >= MAX_LINE_LENGTH)
     {
         temp_save = (uint8_t)(extra - MAX_LINE_LENGTH);
-        x_val1 = (uint8_t)(x_val1 - temp_save);
+        idx1 = (uint8_t)(idx1 - temp_save);
     }
-    screen_row = x_val1;
-    uint16_t scan_ptr = x_val1;
-    uint8_t a_val4 = scan_ptr % justify_gap_count;
+    screen_row = idx1;
+    uint16_t scan_ptr = idx1;
+    uint8_t acc4 = scan_ptr % justify_gap_count;
     uint16_t quotient_tmp = scan_ptr / justify_gap_count;
-    justify_running_total_accum = a_val4;
-    uint8_t a_val5 = quotient_tmp & 0xff;
-    justify_extra_space_accum = a_val5;
-    uint8_t y_val1 = 0;
-    uint8_t x_val2 = justify_gap_count;
-    uint8_t a_val6 = y_val1;
+    justify_running_total_accum = acc4;
+    uint8_t acc5 = quotient_tmp & 0xff;
+    justify_extra_space_accum = acc5;
+    uint8_t pos1 = 0;
+    uint8_t idx2 = justify_gap_count;
+    uint8_t acc6 = pos1;
     do
     {
-        input_buffer[y_val1] = a_val6;
-        y_val1++;
-        x_val2--;
-    } while (x_val2 != 0);
-    uint8_t y_val2 = print_xpos;
-    y_val2++;
-    if (y_val2 >= justify_gap_count)
-        y_val2 = 1;
-    y_val2--;
-    uint8_t x_val3 = justify_gap_count;
+        input_buffer[pos1] = acc6;
+        pos1++;
+        idx2--;
+    } while (idx2 != 0);
+    uint8_t pos2 = print_xpos;
+    pos2++;
+    if (pos2 >= justify_gap_count)
+        pos2 = 1;
+    pos2--;
+    uint8_t idx3 = justify_gap_count;
     do
     {
-        uint8_t a_val7 = justify_running_total_accum;
-        if (a_val7 != 0)
+        uint8_t acc7 = justify_running_total_accum;
+        if (acc7 != 0)
         {
-            a_val7 = 1;
+            acc7 = 1;
             justify_running_total_accum--;
         }
-        a_val7 += justify_extra_space_accum;
-        input_buffer[y_val2] = a_val7;
-        uint8_t a_val8 = screen_row;
-        uint8_t a_val9 = a_val8 - input_buffer[y_val2];
-        screen_row = a_val9;
-        y_val2++;
-        if (y_val2 >= justify_gap_count)
-            y_val2 = 0;
-        if (a_val9 == 0)
+        acc7 += justify_extra_space_accum;
+        input_buffer[pos2] = acc7;
+        uint8_t acc8 = screen_row;
+        uint8_t acc9 = acc8 - input_buffer[pos2];
+        screen_row = acc9;
+        pos2++;
+        if (pos2 >= justify_gap_count)
+            pos2 = 0;
+        if (acc9 == 0)
             break;
-        x_val3--;
-    } while (x_val3 != 0);
-    print_xpos = y_val2;
-    uint8_t y_val3 = 0;
-    scratch_index = y_val3;
-    column_position = y_val3;
+        idx3--;
+    } while (idx3 != 0);
+    print_xpos = pos2;
+    uint8_t pos3 = 0;
+    scratch_index = pos3;
+    column_position = pos3;
     wipe_buffer(0x1a, target_ptr);
-    uint8_t a_val10 = justify_overflow_counter;
-    if (!(a_val10 == 0))
+    uint8_t acc10 = justify_overflow_counter;
+    if (!(acc10 == 0))
     {
-        uint8_t y_val4 = 0;
+        uint8_t pos4 = 0;
         do
         {
-            uint8_t a_val11 = output_buffer[y_val4];
-            ram[RAM_EDIT_BUFFER + y_val4] = a_val11;
-            y_val4++;
-        } while (y_val4 != justify_overflow_counter);
+            uint8_t acc11 = output_buffer[pos4];
+            ram[RAM_EDIT_BUFFER + pos4] = acc11;
+            pos4++;
+        } while (pos4 != justify_overflow_counter);
     }
-    uint8_t y_val5 = justify_overflow_counter;
-    uint8_t x_val4 = justify_overflow_counter;
+    uint8_t pos5 = justify_overflow_counter;
+    uint8_t idx4 = justify_overflow_counter;
     do
     {
-        uint8_t a_val12 = output_buffer[x_val4];
-        if (!(a_val12 != 0x20))
+        uint8_t acc12 = output_buffer[idx4];
+        if (!(acc12 != 0x20))
         {
-            uint8_t a_val13 = scratch_index;
-            if (!(a_val13 == 0))
+            uint8_t acc13 = scratch_index;
+            if (!(acc13 == 0))
             {
-                temp_save = y_val5;
-                uint8_t y_val6 = column_position;
-                if (y_val6 < justify_gap_count)
-                    a_val13 = input_buffer[y_val6];
-                a_val13 += temp_save;
+                temp_save = pos5;
+                uint8_t pos6 = column_position;
+                if (pos6 < justify_gap_count)
+                    acc13 = input_buffer[pos6];
+                acc13 += temp_save;
                 column_position++;
-                y_val5 = a_val13;
+                pos5 = acc13;
                 scratch_index = 0;
             }
-            a_val12 = 0x20;
+            acc12 = 0x20;
         }
         else
         {
             scratch_index++;
         }
-        ram[RAM_EDIT_BUFFER + y_val5] = a_val12;
-        y_val5++;
-        x_val4++;
-    } while (x_val4 != justify_line_length);
+        ram[RAM_EDIT_BUFFER + pos5] = acc12;
+        pos5++;
+        idx4++;
+    } while (idx4 != justify_line_length);
     while (1)
     {
-        if (y_val5 >= MAX_LINE_LENGTH)
-            return x_val4;
-        ram[RAM_EDIT_BUFFER + y_val5] = 0x10;
-        y_val5++;
+        if (pos5 >= MAX_LINE_LENGTH)
+            return idx4;
+        ram[RAM_EDIT_BUFFER + pos5] = 0x10;
+        pos5++;
     }
-    return x_val4;
+    return idx4;
 }
 
 /**
@@ -2995,13 +3003,13 @@ bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta)
     if (scan_ptr >= himem)
         return false;
     top = scan_ptr;
-    uint8_t x_val = 0;
+    uint8_t slot_idx = 0;
     do
     {
-        if (!(((uint8_t**)&pointer_array)[x_val] < insert_ptr))
-            ((uint8_t**)&pointer_array)[x_val] += size_delta;
-        x_val++;
-    } while (x_val != sizeof(pointer_array) / sizeof(uint8_t*));
+        if (!(((uint8_t**)&pointer_array)[slot_idx] < insert_ptr))
+            ((uint8_t**)&pointer_array)[slot_idx] += size_delta;
+        slot_idx++;
+    } while (slot_idx != sizeof(pointer_array) / sizeof(uint8_t*));
     size_t copy_len = (size_t)(copy_ptr - insert_ptr) + 1;
     memmove(insert_ptr + size_delta, insert_ptr, copy_len);
     return true;
@@ -3019,13 +3027,16 @@ static void memory_full(void)
 
 static const uint8_t memory_full_message[] = "Memory full - Press ESCAPE";
 
-uint8_t process_current_document_character(
-    uint8_t* target_ptr, uint8_t* x_val, uint8_t* y_val, bool* is_tab)
+uint8_t process_current_document_character(uint8_t* target_ptr,
+    uint8_t* char_width_out,
+    uint8_t* pos_inout,
+    bool* is_tab)
 {
-    uint8_t a_val = target_ptr[*y_val];
-    (*y_val)++;
-    uint8_t a_val1 = process_document_character(a_val, x_val, is_tab);
-    return a_val1;
+    uint8_t cur_byte = target_ptr[*pos_inout];
+    (*pos_inout)++;
+    uint8_t processed_char =
+        process_document_character(cur_byte, char_width_out, is_tab);
+    return processed_char;
 }
 
 /**
@@ -3034,43 +3045,43 @@ uint8_t process_current_document_character(
  */
 static void recalculate_cursor_xpos(void)
 {
-    uint8_t x_val;
+    uint8_t char_width;
     uint8_t* line_ptr = &ram[RAM_EDIT_BUFFER];
-    uint8_t a_val = line_change_pending_flag;
+    uint8_t acc_width = line_change_pending_flag;
     bool is_tab = false;
-    if (!(a_val != 0))
+    if (!(acc_width != 0))
     {
-        uint8_t y_val = a_val;
+        uint8_t scan_pos = acc_width;
         do
         {
-            if (y_val == xpos)
+            if (scan_pos == xpos)
                 goto ca63d;
-            column_position = a_val;
+            column_position = acc_width;
             (void)process_current_document_character(
-                line_ptr, &x_val, &y_val, &is_tab);
-            a_val = x_val;
-            a_val += column_position;
-        } while (a_val >= column_position);
+                line_ptr, &char_width, &scan_pos, &is_tab);
+            acc_width = char_width;
+            acc_width += column_position;
+        } while (acc_width >= column_position);
     }
-    a_val = 0;
-    line_change_pending_flag = a_val;
-    uint8_t y_val1 = a_val;
+    acc_width = 0;
+    line_change_pending_flag = acc_width;
+    uint8_t buf_pos = acc_width;
     do
     {
-        column_position = a_val;
+        column_position = acc_width;
         (void)process_current_document_character(
-            line_ptr, &x_val, &y_val1, &is_tab);
-        a_val = x_val;
-        a_val += column_position;
-    } while (a_val < visual_column);
-    if (a_val != visual_column)
+            line_ptr, &char_width, &buf_pos, &is_tab);
+        acc_width = char_width;
+        acc_width += column_position;
+    } while (acc_width < visual_column);
+    if (acc_width != visual_column)
     {
-        a_val = column_position;
-        y_val1--;
+        acc_width = column_position;
+        buf_pos--;
     }
-    xpos = y_val1;
+    xpos = buf_pos;
 ca63d:
-    visual_column = a_val;
+    visual_column = acc_width;
     return;
 }
 
@@ -3080,19 +3091,19 @@ ca63d:
  */
 void redraw_editor(void)
 {
-    uint8_t y_val1;
-    uint8_t x_val5;
+    uint8_t next_line_len;
+    uint8_t rows_remaining;
     uint8_t* draw;
     cursor_off();
-    uint8_t a_val = ruler_index_ptr;
-    saved_ruler_index_redraw = a_val;
-    uint8_t a_val1 = status_line_needs_redrawing_flag;
-    uint8_t saved_status_line_needs_redrawing_flag = a_val1;
+    uint8_t ruler_idx = ruler_index_ptr;
+    saved_ruler_index_redraw = ruler_idx;
+    uint8_t status_needs_redraw = status_line_needs_redrawing_flag;
+    uint8_t saved_status_line_needs_redrawing_flag = status_needs_redraw;
     if (!(edit_buffer_unpacked_flag == 0))
     {
-        uint8_t a_val3 = display_start_row;
-        a_val3 |= scroll_repeat_count;
-        if (a_val3 != 0)
+        uint8_t display_flag = display_start_row;
+        display_flag |= scroll_repeat_count;
+        if (display_flag != 0)
             goto ca28e;
     }
     else
@@ -3116,75 +3127,76 @@ void redraw_editor(void)
         if (scratch_line_ptr != current_line_ptr)
             goto ca30d;
         top_of_screen_line_ptr = scratch_line_ptr;
-        uint8_t x_val = screen_maxrow;
+        uint8_t tmp_idx = screen_maxrow;
         do
         {
-            x_val--;
-            uint8_t a_val6 = line_lengths[x_val];
-            x_val++;
-            line_lengths[x_val] = a_val6;
-            x_val--;
-        } while (x_val != 0);
+            tmp_idx--;
+            uint8_t line_len = line_lengths[tmp_idx];
+            tmp_idx++;
+            line_lengths[tmp_idx] = line_len;
+            tmp_idx--;
+        } while (tmp_idx != 0);
         screen_scrolldown();
         screen_setcursor(0, 1);
-        uint8_t y_val = 1;
+        uint8_t row = 1;
         goto ca351;
     ca2dc:
         ruler_index_ptr = saved_ruler_index_scroll;
     ca2e0:
-        uint8_t x_val1 = 0;
+        uint8_t walk_idx = 0;
         uint8_t* walk = top_of_screen_line_ptr;
         do
         {
-            x_val1++;
+            walk_idx++;
             if (walk == editor_ptr6)
-                ptr6_screen_row = x_val1;
+                ptr6_screen_row = walk_idx;
             if (walk == current_line_ptr)
                 goto ca313;
             {
                 uint8_t* nav_ptr;
-                if (advance_to_next_line(walk, &nav_ptr, &y_val1))
+                if (advance_to_next_line(walk, &nav_ptr, &next_line_len))
                     goto ca313;
                 scratch_line_ptr = nav_ptr;
             }
-            scratch_line_ptr += y_val1;
+            scratch_line_ptr += next_line_len;
             walk = scratch_line_ptr;
-        } while (x_val1 <= screen_maxrow);
+        } while (walk_idx <= screen_maxrow);
     ca30d:
         do
         {
             (void)compute_display_start_line();
             goto ca2e0;
         ca313:
-            if (x_val1 <= screen_maxrow)
+            if (walk_idx <= screen_maxrow)
                 goto ca35e;
         } while (scroll_repeat_count != 0);
-        uint8_t x_val3 = 0;
+        uint8_t shift_idx = 0;
         do
         {
-            uint8_t a_val9 = line_lengths[x_val3 + 1];
-            line_lengths[x_val3] = a_val9;
-            x_val3++;
-        } while (x_val3 != screen_maxrow);
+            uint8_t next_len2 = line_lengths[shift_idx + 1];
+            line_lengths[shift_idx] = next_len2;
+            shift_idx++;
+        } while (shift_idx != screen_maxrow);
         ptr6_screen_row--;
         line_lengths[0] = screen_maxcolumn;
         ruler_index_ptr = saved_ruler_index_scroll;
         {
             uint8_t* nav_ptr;
-            advance_to_next_line(top_of_screen_line_ptr, &nav_ptr, &y_val1);
+            advance_to_next_line(
+                top_of_screen_line_ptr, &nav_ptr, &next_line_len);
             scratch_line_ptr = nav_ptr;
         }
-        top_of_screen_line_ptr += y_val1;
+        top_of_screen_line_ptr += next_line_len;
         screen_scrollup();
         screen_setcursor(0, screen_maxrow);
-        y_val = screen_maxrow;
+        row = screen_maxrow;
     ca351:
         saved_ruler_index_scroll = ruler_index_ptr;
         saved_status_line_needs_redrawing_flag++;
         line_counter++;
-        x_val1 = y_val;
+        walk_idx = row;
     ca35e:
-        ypos = x_val1;
+        ypos = walk_idx;
     }
         load_current_ruler(saved_ruler_index_redraw);
     unpack_line_into_buffer(edit_buffer_base);
@@ -3217,8 +3229,8 @@ ca395:
         screen_row = ptr6_screen_row;
         uint8_t a_21 = screen_maxrow;
         a_21 -= ptr6_screen_row;
-        x_val5 = a_21;
-        x_val5++;
+        rows_remaining = a_21;
+        rows_remaining++;
         draw = editor_ptr6;
         if (editor_ptr6 != NULL)
             goto ca3c1;
@@ -3226,21 +3238,21 @@ ca395:
     load_current_ruler(saved_ruler_index_scroll);
     screen_row = 1;
     draw = top_of_screen_line_ptr;
-    x_val5 = screen_maxrow;
+    rows_remaining = screen_maxrow;
 ca3c1:
-    scratch_index = x_val5;
+    scratch_index = rows_remaining;
     do
     {
         struct render_state rs = {.line = screen_row};
         draw_line(&rs, draw);
-        uint8_t y_val2 = 0;
+        uint8_t next_len = 0;
         {
             uint8_t* nav_ptr = scratch_line_ptr;
-            if (advance_to_next_line(nav_ptr, &nav_ptr, &y_val2))
+            if (advance_to_next_line(nav_ptr, &nav_ptr, &next_len))
                 goto ca422;
             scratch_line_ptr = nav_ptr;
         }
-        scratch_line_ptr += y_val2;
+        scratch_line_ptr += next_len;
         draw = scratch_line_ptr;
         screen_row++;
         scratch_index--;
@@ -3300,48 +3312,48 @@ ca3de:
 static void render_char(struct render_state* rs)
 {
     uint8_t char_to_render = rs->ch;
-    uint8_t x_val = rs->line;
-    if (line_lengths[x_val] != 0)
-        line_lengths[x_val]--;
-    uint8_t x_val1 = rs->col;
-    if (x_val1 >= screen_maxcolumn)
+    uint8_t line_idx = rs->line;
+    if (line_lengths[line_idx] != 0)
+        line_lengths[line_idx]--;
+    uint8_t col = rs->col;
+    if (col >= screen_maxcolumn)
     {
         rs->ch = char_to_render;
         return;
     }
     rs->col++;
-    uint8_t a_val = rs->pos;
-    if (!(a_val == 0))
+    uint8_t pos = rs->pos;
+    if (!(pos == 0))
     {
         uint8_t* size_delta = rs->line_ptr;
-        x_val1 = find_marker_at_position(rs->pos - 1, size_delta);
-        if (x_val1 >= 4)
+        col = find_marker_at_position(rs->pos - 1, size_delta);
+        if (col >= 4)
             goto ca514;
-        x_val1 = 0;
-        if (x_val1 & 0x80)
+        col = 0;
+        if (col & 0x80)
         {
             rs->ch = char_to_render;
             goto ca523;
         }
-        if (x_val1 != 0)
+        if (col != 0)
             goto ca514;
         screen_setstyle(STYLE_REVERSE);
     }
 ca514:
-    a_val = char_to_render;
-    control_code_t f = check_for_control_code(a_val);
+    pos = char_to_render;
+    control_code_t f = check_for_control_code(pos);
     if (f != NO_CONTROL_CODE)
     {
         if (f == HIGHLIGHT1_CODE)
-            a_val = 0x2d;
+            pos = 0x2d;
         else
-            a_val = 0x2a;
+            pos = 0x2a;
     }
 ca523:
-    if (a_val == 0x0d || a_val == 0x00)
-        a_val = 0x20;
-    screen_putchar(a_val);
-    if (x_val1 == 0)
+    if (pos == 0x0d || pos == 0x00)
+        pos = 0x20;
+    screen_putchar(pos);
+    if (col == 0)
         screen_setstyle(0);
     rs->ch = char_to_render;
 }
@@ -3354,9 +3366,9 @@ ca523:
 static void render_xchar(struct render_state* rs)
 {
     rs->char_width++;
-    uint8_t x_val = rs->buf_off;
+    uint8_t buf_off = rs->buf_off;
     rs->buf_off++;
-    if (x_val < hscroll_pos)
+    if (buf_off < hscroll_pos)
         return;
     render_char(rs);
 }
@@ -3383,27 +3395,27 @@ area_status_t sanitise_area(void)
 /**
  * Sets a marker.
  * Stores the current position in the given marker and marks display for update.
- * @param x_val marker index
+ * @param idx marker index
  */
-static void set_marker(uint8_t x_val)
+static void set_marker(uint8_t marker_idx)
 {
-    set_marker_to_here(x_val);
+    set_marker_to_here(marker_idx);
     display_start_row = 1;
     update_line_length();
     return;
 }
 
-void go_to_marker(uint8_t x_val);
+void go_to_marker(uint8_t marker_idx);
 
 /**
  * Common handler for setting numbered markers.
  * Writes the buffer, looks up the marker index, and sets it.
- * @param a_val marker character
+ * @param acc marker character
  */
-static void set_marker_common(uint8_t a_val)
+static void set_marker_common(uint8_t marker_char)
 {
     write_line_back_to_document_safely();
-    int idx = lookup_marker(a_val);
+    int idx = lookup_marker(marker_char);
     set_marker(idx);
     return;
 }
@@ -3414,42 +3426,42 @@ static void set_marker_common(uint8_t a_val)
  */
 void show_memory_full_error(void)
 {
-    uint8_t a_val5;
+    uint8_t key_code;
     cursor_off();
     screen_setcursor(3, 0);
     screen_setstyle(STYLE_REVERSE);
-    uint8_t y_val = screen_maxcolumn;
-    line_lengths[0] = y_val;
-    y_val--;
-    y_val--;
-    uint8_t x_val = 0;
+    uint8_t remaining_cols = screen_maxcolumn;
+    line_lengths[0] = remaining_cols;
+    remaining_cols--;
+    remaining_cols--;
+    uint8_t msg_idx = 0;
     for (;;)
     {
-        uint8_t a_val1 = memory_full_message[x_val];
-        if (a_val1 == 0)
+        uint8_t msg_char = memory_full_message[msg_idx];
+        if (msg_char == 0)
             break;
-        x_val++;
-        y_val--;
-        if (y_val == 0)
+        msg_idx++;
+        remaining_cols--;
+        if (remaining_cols == 0)
             break;
-        screen_putchar(a_val1);
+        screen_putchar(msg_char);
     }
     screen_setstyle(0);
-    if (!(y_val == 0))
+    if (!(remaining_cols == 0))
     {
         do
         {
             screen_putchar(0x20);
-            y_val--;
-        } while (y_val != 0);
+            remaining_cols--;
+        } while (remaining_cols != 0);
     }
     edit_buffer_unpacked_flag = 0;
     clear_cmd();
     do
     {
         beep();
-        a_val5 = screen_getchar();
-    } while (a_val5 != 0x1b);
+        key_code = screen_getchar();
+    } while (key_code != 0x1b);
     cursor_on();
     status_line_needs_redrawing_flag = 1;
     display_start_row = 1;
@@ -3471,74 +3483,75 @@ void adjust_area_pointers(ptrdiff_t size_delta)
 /**
  * Appends a byte to the output buffer.
  * Writes the byte if space remains in the editor output buffer.
- * @param a_val byte to append
+ * @param acc byte to append
  */
-static void append_to_output_buffer(uint8_t a_val)
+static void append_to_output_buffer(uint8_t byte_to_append)
 {
     if (editor_output_pos >= MAX_LINE_LENGTH)
         return;
-    output_buffer[editor_output_pos] = a_val;
+    output_buffer[editor_output_pos] = byte_to_append;
     editor_output_pos++;
 }
 
 /**
  * Converts to uppercase unless folding is enabled.
  * Returns the character uppercased when folding is off.
- * @param a_val input character
+ * @param acc input character
  * @return possibly uppercased character
  */
-uint8_t upper_case_unless_folding(uint8_t a_val)
+uint8_t upper_case_unless_folding(uint8_t ch)
 {
     if (folding_flag & 0x80)
-        return a_val;
-    return toupper(a_val);
+        return ch;
+    return toupper(ch);
 }
 
 static bool process_char_for_output(
-    uint8_t y_val, bool carry_in, uint8_t* x_val, uint8_t* a_val)
+    uint8_t buf_idx, bool carry_in, uint8_t* char_width_out, uint8_t* out_char)
 {
     screen_column = (screen_column >> 1) | (carry_in ? 0x80 : 0);
-    (*a_val) = ram[RAM_EDIT_BUFFER + y_val];
-    output_buffer[y_val] = (*a_val);
-    if (!((*a_val) != 9))
+    (*out_char) = ram[RAM_EDIT_BUFFER + buf_idx];
+    output_buffer[buf_idx] = (*out_char);
+    if (!((*out_char) != 9))
     {
         {
             bool is_tab = false;
-            (*a_val) = process_document_character((*a_val), x_val, &is_tab);
+            (*out_char) = process_document_character(
+                (*out_char), char_width_out, &is_tab);
         }
-        (*a_val) = *x_val;
-        (*a_val) += column_position;
-        if ((*a_val) != 0)
+        (*out_char) = *char_width_out;
+        (*out_char) += column_position;
+        if ((*out_char) != 0)
             goto c995c;
     }
-    if (!((*a_val) != 0x0b))
+    if (!((*out_char) != 0x0b))
     {
-        (*a_val) = ruler_left_stop;
-        if (!((*a_val) == 0))
+        (*out_char) = ruler_left_stop;
+        if (!((*out_char) == 0))
         {
-            *x_val = column_position;
-            if (*x_val != 0)
+            *char_width_out = column_position;
+            if (*char_width_out != 0)
             {
-                if (*x_val >= ruler_left_stop)
+                if (*char_width_out >= ruler_left_stop)
                 {
-                    (*x_val)++;
-                    (*a_val) = *x_val;
+                    (*char_width_out)++;
+                    (*out_char) = *char_width_out;
                 }
             }
         c995c:
-            column_position = (*a_val);
-            justify_overflow_counter = y_val;
+            column_position = (*out_char);
+            justify_overflow_counter = buf_idx;
             justify_overflow_counter++;
-            (*a_val) = 0;
-            justify_gap_count = (*a_val);
+            (*out_char) = 0;
+            justify_gap_count = (*out_char);
             return true;
         }
     c9967:
-        (*a_val) = 0x20;
+        (*out_char) = 0x20;
     }
-    if ((*a_val) < 0x1b)
+    if ((*out_char) < 0x1b)
         goto c9967;
-    if ((*a_val) < 0x20)
+    if ((*out_char) < 0x20)
         return false;
     column_position++;
     return column_position == 0;
@@ -3552,45 +3565,45 @@ static bool process_char_for_output(
  */
 format_result_t format_paragraph(void)
 {
-    uint8_t a_val5;
-    uint8_t a_val10;
+    uint8_t cur_byte;
+    uint8_t left_stop_tmp;
     uint8_t a_15;
-    uint8_t x_val;
+    uint8_t is_space;
     cursor_moved_flag++;
     print_xpos = 4;
-    uint8_t y_val = 0;
-    input_buffer_offset = y_val;
-    line_format_status = y_val;
-    uint8_t a_val = current_line_ptr[y_val];
-    command_prefix_t cp = check_for_command_prefix(a_val);
+    uint8_t out_pos = 0;
+    input_buffer_offset = out_pos;
+    line_format_status = out_pos;
+    uint8_t first_char = current_line_ptr[out_pos];
+    command_prefix_t cp = check_for_command_prefix(first_char);
     if (cp != NO_COMMAND_PREFIX)
         return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
 c998a:
-    uint8_t a_val1 = format_mode_flag;
-    a_val1 &= 0x81;
-    if (a_val1 != 0)
+    uint8_t fmt_flags = format_mode_flag;
+    fmt_flags &= 0x81;
+    if (fmt_flags != 0)
         return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
     if (ruler_right_stop == 0)
         return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
     if (ruler_right_stop < ruler_left_stop)
         return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
-    uint8_t a_val3 = ruler_right_stop - ruler_left_stop + 2;
-    scratch_offset = a_val3;
+    uint8_t available_width = ruler_right_stop - ruler_left_stop + 2;
+    scratch_offset = available_width;
     wipe_buffer(0x10, edit_buffer_base);
     uint8_t* size_delta = current_line_ptr;
-    uint8_t y_val1 = 0;
+    uint8_t tmp_pos = 0;
     uint8_t soft_hyphen_flag = 0;
-    format_src_index = y_val1;
-    column_position = y_val1;
-    soft_hyphen_flag = y_val1;
-    justify_gap_count = y_val1;
-    bottom_margin = y_val1;
+    format_src_index = tmp_pos;
+    column_position = tmp_pos;
+    soft_hyphen_flag = tmp_pos;
+    justify_gap_count = tmp_pos;
+    bottom_margin = tmp_pos;
 c99b6:
-    editor_output_pos = y_val1;
-    uint8_t y_val2 = format_src_index;
+    editor_output_pos = tmp_pos;
+    uint8_t src_pos = format_src_index;
     do
     {
-        uint8_t idx = find_marker_at_position(y_val2, size_delta);
+        uint8_t idx = find_marker_at_position(src_pos, size_delta);
         if (idx == 0x0c)
             break;
         markers_array[idx / 2] = 0;
@@ -3599,81 +3612,81 @@ c99b6:
 c99c9:
     do
     {
-        a_val5 = current_line_ptr[y_val2];
-        y_val2++;
-        format_src_index = y_val2;
-        if (!(a_val5 != 9))
+        cur_byte = current_line_ptr[src_pos];
+        src_pos++;
+        format_src_index = src_pos;
+        if (!(cur_byte != 9))
         {
             {
                 bool is_tab = false;
-                (void)process_document_character(a_val5, &x_val, &is_tab);
+                (void)process_document_character(cur_byte, &is_space, &is_tab);
             }
-            x_val--;
-            uint8_t a_val7 = x_val;
-            a_val7 += column_position;
-            column_position = a_val7;
-            a_val5 = 9;
+            is_space--;
+            uint8_t col_tmp = is_space;
+            col_tmp += column_position;
+            column_position = col_tmp;
+            cur_byte = 9;
             goto c9a21;
         }
-        if (a_val5 != 0x1a)
+        if (cur_byte != 0x1a)
             goto c99ee;
         do
         {
             if (justify_gap_count != 0)
                 goto c99c9;
-            a_val5 = 0x20;
+            cur_byte = 0x20;
             goto c9a2e;
         c99ee:
-            if (a_val5 != 0x0b)
+            if (cur_byte != 0x0b)
                 goto c9a11;
-            x_val = input_buffer_offset;
-        } while (x_val != 0 || soft_hyphen_flag != 0);
+            is_space = input_buffer_offset;
+        } while (is_space != 0 || soft_hyphen_flag != 0);
         soft_hyphen_flag++;
-        a_val10 = ruler_left_stop;
-    } while (a_val10 == 0);
+        left_stop_tmp = ruler_left_stop;
+    } while (left_stop_tmp == 0);
     if (column_position < ruler_left_stop)
     {
-        column_position = a_val10;
+        column_position = left_stop_tmp;
         column_position--;
     }
-    a_val10 += scratch_offset;
-    scratch_offset = a_val10;
-    a_val5 = 0x0b;
+    left_stop_tmp += scratch_offset;
+    scratch_offset = left_stop_tmp;
+    cur_byte = 0x0b;
 c9a11:
-    if (!(a_val5 != 0x0d))
+    if (!(cur_byte != 0x0d))
     {
-        y_val2--;
-        if (y_val2 == 0)
+        src_pos--;
+        if (src_pos == 0)
             return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
-        if (find_next_word_boundary(y_val2))
+        if (find_next_word_boundary(src_pos))
             goto c9a87;
-        a_val5 = 0x20;
-        input_buffer_offset = a_val5;
+        cur_byte = 0x20;
+        input_buffer_offset = cur_byte;
     }
 c9a21:
-    y_val1 = editor_output_pos;
-    x_val = 0;
-    if (!(a_val5 != 0x20))
+    tmp_pos = editor_output_pos;
+    is_space = 0;
+    if (!(cur_byte != 0x20))
     {
-        x_val++;
+        is_space++;
         if ((justify_gap_count & 0x80))
             goto c9a40;
     }
 c9a2e:
-    y_val1 = editor_output_pos;
-    ram[RAM_EDIT_BUFFER + y_val1] = a_val5;
-    if (a_val5 == 0x20)
+    tmp_pos = editor_output_pos;
+    ram[RAM_EDIT_BUFFER + tmp_pos] = cur_byte;
+    if (cur_byte == 0x20)
         bottom_margin = (uint8_t)(bottom_margin >> 1) | 0x80;
-    y_val1++;
-    control_code_t cc = check_for_control_code(a_val5);
+    tmp_pos++;
+    control_code_t cc = check_for_control_code(cur_byte);
     if (cc == NO_CONTROL_CODE)
         column_position++;
 c9a40:
     bool old_l0046_high = (justify_gap_count & 0x80) != 0;
-    justify_gap_count = x_val;
-    if (!(old_l0046_high || a_val5 == 0x20))
+    justify_gap_count = is_space;
+    if (!(old_l0046_high || cur_byte == 0x20))
     {
-        if (y_val1 >= MAX_LINE_LENGTH + 1)
+        if (tmp_pos >= MAX_LINE_LENGTH + 1)
             goto c9a60;
         if (bottom_margin == 0)
             goto c9a58;
@@ -3681,21 +3694,21 @@ c9a40:
             goto c9a60;
     }
 c9a58:
-    if (y_val1 >= 0x86)
-        y_val1--;
+    if (tmp_pos >= 0x86)
+        tmp_pos--;
     goto c99b6;
 c9a60:
     format_src_index++;
     do
     {
         format_src_index--;
-        y_val1--;
-        if (y_val1 == 0)
+        tmp_pos--;
+        if (tmp_pos == 0)
             return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
-        uint8_t a_val13 = ram[RAM_EDIT_BUFFER + y_val1];
+        uint8_t saved_byte = ram[RAM_EDIT_BUFFER + tmp_pos];
         {
-            ram[RAM_EDIT_BUFFER + y_val1] = 0x10;
-            a_15 = a_val13;
+            ram[RAM_EDIT_BUFFER + tmp_pos] = 0x10;
+            a_15 = saved_byte;
         }
     } while (a_15 != 0x20);
     insert_at_left_margin();
@@ -3721,58 +3734,58 @@ c9aa5:
 /**
  * Finds the next word boundary for wrapping.
  * Scans forward to locate a suitable wrap point.
- * @param y_val current source index
+ * @param pos current source index
  * @return true if wrap is needed
  */
-static bool find_next_word_boundary(uint8_t y_val)
+static bool find_next_word_boundary(uint8_t src_idx)
 {
-    uint8_t a_val = y_val;
-    uint8_t* scan_ptr = current_line_ptr + a_val + 1;
+    uint8_t base_off = src_idx;
+    uint8_t* scan_ptr = current_line_ptr + base_off + 1;
     uint8_t* insert_ptr = scan_ptr;
-    y_val = 0;
-    screen_column = y_val;
+    src_idx = 0;
+    screen_column = src_idx;
     do
     {
-        uint8_t a_val1 = insert_ptr[y_val];
-        if (a_val1 == 0)
+        uint8_t next_char = insert_ptr[src_idx];
+        if (next_char == 0)
             goto c9b2f;
-        command_prefix_t cp = check_for_command_prefix(a_val1);
-        if (cp != NO_COMMAND_PREFIX || a_val1 == 0x0d)
+        command_prefix_t cp = check_for_command_prefix(next_char);
+        if (cp != NO_COMMAND_PREFIX || next_char == 0x0d)
             goto c9b2f;
-        if (!(y_val != 0))
+        if (!(src_idx != 0))
         {
-            temp_save = y_val;
+            temp_save = src_idx;
             goto c9aef;
         c9ae9:
             scan_ptr++;
         c9aef:
-            uint8_t a_val3 = scan_ptr[y_val];
-            if (a_val3 == 0 || a_val3 == 0x0d)
+            uint8_t scan_char = scan_ptr[src_idx];
+            if (scan_char == 0 || scan_char == 0x0d)
                 goto c9b06;
-            if (a_val3 == 9)
+            if (scan_char == 9)
                 goto c9b2f;
-            if (a_val3 == 0x0b)
+            if (scan_char == 0x0b)
             {
                 temp_save |= 0x80;
-                if (a_val3 >= 0x0b)
+                if (scan_char >= 0x0b)
                     goto c9ae9;
             }
         }
     c9b06:
-        uint8_t a_val4 = insert_ptr[y_val];
-        if (!(a_val4 != 0x20))
+        uint8_t check_char = insert_ptr[src_idx];
+        if (!(check_char != 0x20))
         {
             if (ruler_left_stop == 0 || temp_save == 0 || screen_column != 0)
                 goto c9b2f;
         }
         else
         {
-            if (a_val4 != 0x0b)
+            if (check_char != 0x0b)
                 break;
-            screen_column = a_val4;
+            screen_column = check_char;
         }
-        y_val++;
-    } while (y_val != 0);
+        src_idx++;
+    } while (src_idx != 0);
     if (!(ruler_left_stop == 0 || temp_save == 0 || screen_column != 0))
     {
     c9b2f:
@@ -3784,19 +3797,19 @@ static bool find_next_word_boundary(uint8_t y_val)
 /**
  * Inserts a character into the edit buffer.
  * Makes room and stores the character at the cursor.
- * @param a_val character to insert
+ * @param acc character to insert
  * @return true on success
  */
-static bool insert_character_into_edit_buffer(uint8_t a_val)
+static bool insert_character_into_edit_buffer(uint8_t ch)
 {
     _Bool ok;
     {
         ok = insert_edit_buffer_bytes_at_xpos(1);
-        a_val = a_val;
+        ch = ch;
     }
     if (!ok)
         return false;
-    ram[RAM_EDIT_BUFFER + xpos] = a_val;
+    ram[RAM_EDIT_BUFFER + xpos] = ch;
     line_counter++;
     return true;
 }
@@ -3818,21 +3831,21 @@ static void set_xpos_to_line_length(void)
 static uint8_t compute_display_start_line(void)
 {
     ruler_index_ptr = saved_ruler_index_redraw;
-    uint8_t a_val1 = screen_maxrow;
-    display_start_row = a_val1;
-    a_val1 >>= 1;
-    uint8_t x_val = a_val1;
-    x_val++;
+    uint8_t half_rows = screen_maxrow;
+    display_start_row = half_rows;
+    half_rows >>= 1;
+    uint8_t rows_needed = half_rows;
+    rows_needed++;
     if (!(scroll_repeat_count & 0x80))
     {
         if (scroll_repeat_count != 0)
-            x_val = ypos;
+            rows_needed = ypos;
     }
     uint8_t* line = current_line_ptr;
     for (;;)
     {
-        x_val--;
-        if (x_val == 0)
+        rows_needed--;
+        if (rows_needed == 0)
             break;
         uint8_t* line_ptr;
         if (!find_previous_line(line, &line_ptr))
@@ -3843,7 +3856,7 @@ static uint8_t compute_display_start_line(void)
     top_of_screen_line_ptr = line;
     saved_ruler_index_scroll = ruler_index_ptr;
     ruler_index_ptr = saved_ruler_index_redraw;
-    return x_val;
+    return rows_needed;
 }
 
 /**
@@ -3853,15 +3866,15 @@ static uint8_t compute_display_start_line(void)
  */
 static void advance_to_next_char(struct render_state* rs)
 {
-    uint8_t y_val = rs->pos;
+    uint8_t pos = rs->pos;
     column_position = rs->char_width;
-    uint8_t a_val;
-    uint8_t x_val;
-    a_val = process_current_document_character(
-        rs->line_ptr, &x_val, &y_val, &rs->prev_is_tab);
-    rs->ch = a_val;
-    rs->pos = y_val;
-    rs->width = x_val;
+    uint8_t cur_byte;
+    uint8_t char_width;
+    cur_byte = process_current_document_character(
+        rs->line_ptr, &char_width, &pos, &rs->prev_is_tab);
+    rs->ch = cur_byte;
+    rs->pos = pos;
+    rs->width = char_width;
     rs->char_width = column_position;
 }
 
@@ -3879,24 +3892,24 @@ static void advance_to_next_char_and_render(struct render_state* rs)
 /**
  * Finds a marker at a buffer position.
  * Checks if any marker points at the given edit-buffer offset.
- * @param y_val buffer position
+ * @param pos buffer position
  * @param target_ptr base pointer
  * @return marker index or 0x0c if none
  */
-static uint8_t find_marker_at_position(uint8_t y_val, uint8_t* target_ptr)
+static uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr)
 {
-    uint8_t* scan_ptr = target_ptr + y_val;
-    uint8_t x_val = 0;
+    uint8_t* scan_ptr = target_ptr + buf_offset;
+    uint8_t slot_idx = 0;
     do
     {
-        if (!(scan_ptr != markers_array[x_val / 2]))
+        if (!(scan_ptr != markers_array[slot_idx / 2]))
             goto ca558;
-        x_val++;
-        x_val++;
-    } while (x_val != 0x0c);
+        slot_idx++;
+        slot_idx++;
+    } while (slot_idx != 0x0c);
     return 0x0c;
 ca558:
-    return x_val;
+    return slot_idx;
 }
 
 /**
@@ -3908,26 +3921,26 @@ static void unpack_line(uint8_t* target_ptr)
 {
     wipe_buffer(0x10, target_ptr);
     clear_format_mode_bit7();
-    uint8_t a_val = *current_line_ptr;
-    command_prefix_t cp = check_for_command_prefix(a_val);
+    uint8_t first_byte = *current_line_ptr;
+    command_prefix_t cp = check_for_command_prefix(first_byte);
     if (cp != NO_COMMAND_PREFIX)
     {
         if (cp == RULER_PREFIX)
-            edit_buffer_unpacked_flag = a_val;
+            edit_buffer_unpacked_flag = first_byte;
         set_format_mode_bit7();
     }
     current_format_line_ptr =
         (cp != NO_COMMAND_PREFIX) ? target_ptr : &ram[RAM_EDIT_BUFFER];
-    uint8_t y_val1 = 0;
+    uint8_t copy_idx = 0;
     do
     {
-        uint8_t a2 = current_line_ptr[y_val1];
+        uint8_t a2 = current_line_ptr[copy_idx];
         if (a2 == 0x0d)
             break;
-        current_format_line_ptr[y_val1] = a2;
-        y_val1++;
-    } while (y_val1 != 0);
-    edit_line_len = y_val1;
+        current_format_line_ptr[copy_idx] = a2;
+        copy_idx++;
+    } while (copy_idx != 0);
+    edit_line_len = copy_idx;
 }
 
 /**
@@ -3937,24 +3950,24 @@ static void unpack_line(uint8_t* target_ptr)
 static void update_markers_to_format_buffer(void)
 {
     uint8_t* size_delta = current_line_ptr;
-    uint8_t y_val = 0;
+    uint8_t offset = 0;
     do
     {
-        uint8_t idx = find_marker_at_position(y_val, size_delta);
+        uint8_t idx = find_marker_at_position(offset, size_delta);
         if (!(idx == 0x0c))
         {
             {
-                uint16_t val = (current_format_line_ptr - &ram[0]) + y_val;
+                uint16_t val = (current_format_line_ptr - &ram[0]) + offset;
                 markers_array[idx / 2] = &ram[val];
                 if (val != 0)
                     continue;
             }
         }
-        uint8_t a_val = current_line_ptr[y_val];
-        if (a_val == 0x0d)
+        uint8_t acc = current_line_ptr[offset];
+        if (acc == 0x0d)
             return;
-        y_val++;
-    } while (y_val != 0);
+        offset++;
+    } while (offset != 0);
 }
 
 /**
@@ -3980,8 +3993,8 @@ static uint8_t* find_line_start(uint8_t* target_ptr)
     while (1)
     {
         target_ptr--;
-        uint8_t a_val = target_ptr[0];
-        if (a_val == 0x0d)
+        uint8_t acc = target_ptr[0];
+        if (acc == 0x0d)
             break;
     }
     return target_ptr;
@@ -3995,19 +4008,19 @@ static uint8_t* find_line_start(uint8_t* target_ptr)
  */
 static int find_left_margin_stop(void)
 {
-    uint8_t y_val = 0;
+    uint8_t scan_pos = 0;
     if (ruler_left_stop != 0)
     {
         do
         {
-            uint8_t a_val1 = ram[RAM_EDIT_BUFFER + y_val];
-            y_val++;
-            if (a_val1 == 0x0b)
-                return y_val;
-        } while (y_val < MAX_LINE_LENGTH);
+            uint8_t scanned_char = ram[RAM_EDIT_BUFFER + scan_pos];
+            scan_pos++;
+            if (scanned_char == 0x0b)
+                return scan_pos;
+        } while (scan_pos < MAX_LINE_LENGTH);
         return -1;
     }
-    return y_val;
+    return scan_pos;
 }
 
 /**
@@ -4024,18 +4037,18 @@ static void insert_at_left_margin(void)
 /**
  * Inserts a margin byte at a position.
  * Inserts a single margin tab at the given position.
- * @param y_val position
+ * @param pos position
  * @return true on success
  */
-static bool insert_byte_at_xpos(uint8_t y_val)
+static bool insert_byte_at_xpos(uint8_t insert_pos)
 {
     _Bool ok;
-    uint8_t a_val = xpos;
-    xpos = y_val;
+    uint8_t saved_xpos = xpos;
+    xpos = insert_pos;
     ok = insert_edit_buffer_bytes_at_xpos(1);
     if (ok)
         ram[RAM_EDIT_BUFFER + xpos] = 0x0b;
-    xpos = a_val;
+    xpos = saved_xpos;
     return ok;
 }
 
@@ -4055,19 +4068,19 @@ static void unpack_line_into_buffer(uint8_t* target_ptr)
 /**
  * Fills a buffer with a constant.
  * Writes the given value across the buffer length.
- * @param a_val fill value
+ * @param acc fill value
  * @param target_ptr destination
  */
-void wipe_buffer(uint8_t a_val, uint8_t* target_ptr)
+void wipe_buffer(uint8_t fill_value, uint8_t* target_ptr)
 {
-    uint8_t y_val = 0;
-    uint8_t x_val = 0x89;
+    uint8_t idx = 0;
+    uint8_t remaining = 0x89;
     do
     {
-        target_ptr[y_val] = a_val;
-        y_val++;
-        x_val--;
-    } while (x_val != 0);
+        target_ptr[idx] = fill_value;
+        idx++;
+        remaining--;
+    } while (remaining != 0);
 }
 
 /**
@@ -4078,30 +4091,30 @@ void wipe_buffer(uint8_t a_val, uint8_t* target_ptr)
  */
 static bool write_line_back_to_document(void)
 {
-    uint8_t a_val6;
-    uint8_t a_val9;
+    uint8_t out_byte;
+    uint8_t stored_byte;
     if (!(edit_buffer_unpacked_flag == 0))
     {
         uint8_t* insert_ptr = current_line_ptr;
         area_size = 0;
         screen_column = get_line_length();
-        uint8_t a_val1 = edit_line_len;
+        uint8_t old_len = edit_line_len;
         {
-            uint8_t minuend = a_val1;
-            a_val1 -= screen_column;
+            uint8_t minuend = old_len;
+            old_len -= screen_column;
             if (minuend < screen_column)
                 goto ca8df;
-            if (a_val1 == 0)
+            if (old_len == 0)
                 goto ca8ed;
         }
-        area_size = a_val1;
+        area_size = old_len;
         scratch_scan_ptr = adjust_pointers(insert_ptr, area_size);
         goto ca8ed;
     ca8df:
-        temp_save = a_val1;
-        uint8_t a_val2 = 0;
-        a_val2 -= temp_save;
-        area_size = a_val2;
+        temp_save = old_len;
+        uint8_t neg_len = 0;
+        neg_len -= temp_save;
+        area_size = neg_len;
         if (!make_space_for_insertion(insert_ptr, area_size))
             return true;
     ca8ed:
@@ -4110,41 +4123,41 @@ static bool write_line_back_to_document(void)
             if (edit_buffer_dirty_flag != 0)
                 clamp_ptr6_to_document();
         }
-        uint8_t y_val1 = 0;
-        edit_buffer_dirty_flag = y_val1;
-        edit_buffer_unpacked_flag = y_val1;
+        uint8_t copy_idx = 0;
+        edit_buffer_dirty_flag = copy_idx;
+        edit_buffer_unpacked_flag = copy_idx;
         area_size = current_format_line_ptr - &ram[0];
-        uint8_t x_val = screen_column;
-        edit_line_len = x_val;
+        uint8_t line_len = screen_column;
+        edit_line_len = line_len;
         do
         {
-            if (!(x_val != 0))
+            if (!(line_len != 0))
             {
-                a_val6 = 0x0d;
+                out_byte = 0x0d;
             }
             else
             {
-                a_val6 = current_format_line_ptr[y_val1];
-                if (a_val6 == 0x10)
-                    a_val6 = 0x20;
+                out_byte = current_format_line_ptr[copy_idx];
+                if (out_byte == 0x10)
+                    out_byte = 0x20;
             }
             {
                 uint16_t val;
                 do
                 {
                     uint8_t idx =
-                        find_marker_at_position(y_val1, &ram[area_size]);
+                        find_marker_at_position(copy_idx, &ram[area_size]);
                     if (idx == 0x0c)
                         break;
-                    val = (current_line_ptr - &ram[0]) + y_val1;
+                    val = (current_line_ptr - &ram[0]) + copy_idx;
                     markers_array[idx / 2] = &ram[val];
                 } while (val != 0);
-                a_val9 = a_val6;
+                stored_byte = out_byte;
             }
-            current_line_ptr[y_val1] = a_val9;
-            y_val1++;
-            x_val--;
-        } while (a_val9 != 0x0d);
+            current_line_ptr[copy_idx] = stored_byte;
+            copy_idx++;
+            line_len--;
+        } while (stored_byte != 0x0d);
     }
     return false;
 }

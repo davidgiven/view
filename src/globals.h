@@ -245,7 +245,7 @@ extern void file_error(void);
 extern void redraw_editor(void);
 extern void write_line_back_to_document_safely(void);
 extern void clamp_ptr6_to_document(void);
-extern uint8_t upper_case_unless_folding(uint8_t cur_ch);
+extern uint8_t upper_case_unless_folding(uint8_t ch);
 extern area_status_t sanitise_area(void);
 extern bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta);
 extern uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta);
@@ -292,11 +292,13 @@ extern uint8_t editor_header_limit;
 extern uint8_t* doc_working_ptr;
 
 extern bool scan_document_for_next_line(void);
-extern uint8_t process_current_document_character(
-    uint8_t* target_ptr, uint8_t* idx, uint8_t* pos, bool* is_tab);
+extern uint8_t process_current_document_character(uint8_t* target_ptr,
+    uint8_t* char_width_out,
+    uint8_t* pos_inout,
+    bool* is_tab);
 extern void check_not_continuous_editing(void);
 extern void adjust_area_pointers(ptrdiff_t area_delta);
-extern void wipe_buffer(uint8_t cur_ch, uint8_t* target_ptr);
+extern void wipe_buffer(uint8_t fill_value, uint8_t* target_ptr);
 
 /**
  * Result of @ref format_paragraph.
@@ -310,7 +312,7 @@ typedef enum
 
 extern format_result_t format_paragraph(void);
 extern void print_document(struct scan_state* scan);
-extern void draw_prompt_characters(uint8_t idx, uint8_t pos);
+extern void draw_prompt_characters(uint8_t first_char, uint8_t second_char);
 extern void show_memory_full_error(void);
 extern void bad_filename_error(void);
 extern void clear_screen(void);
