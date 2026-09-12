@@ -248,7 +248,6 @@ void redraw_and_write_back(void)
     edit_buffer_unpacked_flag = 0;
     redraw_editor();
     write_line_back_to_document_safely();
-    return;
 }
 
 /**
@@ -271,7 +270,6 @@ void setup_area_pointers(uint8_t* doc_working_ptr)
     if (idx == 0)
         return;
     clamp_ptr6_to_document();
-    return;
 }
 
 static const uint8_t escaped_char_table[] = {

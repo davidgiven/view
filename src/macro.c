@@ -104,7 +104,6 @@ void dm_fmt_cmd(void)
     body[0] = 4;
     new_macro_ptr->next = (struct macro*)(void*)align_up_ptr(body + 1);
     last_macro_ptr = (struct macro*)(void*)write_ptr;
-    return;
 }
 
 /**
@@ -116,7 +115,6 @@ void nested_macro_error(void)
     cli_putstring("Nested macro call");
     cli_putchar('\n');
     return_to_cli_prompt();
-    return;
 }
 
 /**

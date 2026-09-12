@@ -99,7 +99,6 @@ static void write_output_buffer_to_format_line(uint8_t cur_ch)
         idx++;
     } while (cur_ch != 0x0d);
     formatted_line_written_flag++;
-    return;
 }
 
 /**
@@ -110,7 +109,6 @@ static void lj_fmt_cmd(void)
     if (expand_line() == 0)
         return;
     write_output_buffer_to_format_line(0);
-    return;
 }
 
 /**
@@ -138,7 +136,6 @@ static void ce_fmt_cmd(void)
         return;
     }
     write_output_buffer_to_format_line(0);
-    return;
 }
 
 /**
@@ -160,7 +157,6 @@ static void rj_fmt_cmd(void)
     uint8_t next_ch = ruler_right_stop;
     next_ch -= screen_column;
     write_output_buffer_to_format_line(next_ch);
-    return;
 }
 
 /**
@@ -308,7 +304,6 @@ static void em_fmt_cmd(void)
     uint16_t reg_value;
     evaluate_expression_from_fmt_cmd(&reg_value, &pos, 0);
     *register_value = reg_value;
-    return;
 }
 
 /**
@@ -320,7 +315,6 @@ static void pl_fmt_cmd(void)
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
     page_length = value;
-    return;
 }
 
 /**
@@ -336,7 +330,6 @@ static void ts_fmt_cmd(void)
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
     rhs_extra_margin = value;
-    return;
 }
 
 /**
@@ -348,7 +341,6 @@ static void tm_fmt_cmd(void)
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
     top_margin = value;
-    return;
 }
 
 /**
@@ -360,7 +352,6 @@ static void bm_fmt_cmd(void)
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
     bottom_margin = value;
-    return;
 }
 
 /**
@@ -372,7 +363,6 @@ static void hm_fmt_cmd(void)
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
     header_margin = value;
-    return;
 }
 
 /**
@@ -384,7 +374,6 @@ static void fm_fmt_cmd(void)
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
     footer_margin = value;
-    return;
 }
 
 /**
@@ -396,7 +385,6 @@ static void lm_fmt_cmd(void)
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
     left_margin = value;
-    return;
 }
 
 /**
@@ -408,7 +396,6 @@ static void ls_fmt_cmd(void)
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
     line_spacing = value;
-    return;
 }
 
 /**
@@ -431,7 +418,6 @@ static void pe_fmt_cmd(void)
         page_eject_fmt();
         return;
     }
-    return;
 }
 
 /**
@@ -456,7 +442,6 @@ static void op_fmt_cmd(void)
     }
     cur_ch >>= 1;
     eject_two_pages();
-    return;
 }
 
 /**
@@ -472,7 +457,6 @@ static void ep_fmt_cmd(void)
     }
     cur_ch >>= 1;
     eject_two_pages();
-    return;
 }
 
 /**
@@ -484,7 +468,6 @@ static void page_eject_fmt(void)
     if (page_break_pending_flag == 0)
         render_new_page();
     process_page_footer();
-    return;
 }
 
 /**
@@ -497,7 +480,6 @@ static void fo_fmt_cmd(void)
     if (parse_boolean_from_fmt_cmd(&pos, &flag_value))
         return;
     footers_enabled_flag = flag_value;
-    return;
 }
 
 /**
@@ -510,7 +492,6 @@ static void he_fmt_cmd(void)
     if (parse_boolean_from_fmt_cmd(&pos, &flag_value))
         return;
     headers_enabled_flag = flag_value;
-    return;
 }
 
 /**
@@ -523,7 +504,6 @@ static void pb_fmt_cmd(void)
     if (parse_boolean_from_fmt_cmd(&pos, &flag_value))
         return;
     page_break_flag = flag_value;
-    return;
 }
 
 /**
@@ -556,7 +536,6 @@ c9725:
     uint16_t highlight_value;
     evaluate_expression_from_fmt_cmd(&highlight_value, &pos, idx);
     highlight_code[cur_ch] = highlight_value;
-    return;
 }
 
 static const uint8_t commands_table[] =
@@ -869,7 +848,6 @@ void render_register(uint8_t cur_ch, uint8_t idx)
     unsigned int* register_value = get_register_address(cur_ch);
     if (register_value != NULL)
         render_number_to_output_buffer(*register_value, idx);
-    return;
 }
 
 /**
@@ -882,7 +860,6 @@ static void render_number_to_output_buffer(uint16_t value, uint8_t start_x)
 {
     screen_row = start_x;
     render_number_to_callback(value, emit_to_output_buffer_callback);
-    return;
 }
 
 /**
@@ -897,7 +874,6 @@ static void emit_to_output_buffer_callback(uint8_t digit)
         if (screen_row < MAX_LINE_LENGTH - 2)
             screen_row++;
     }
-    return;
 }
 
 /**
@@ -939,7 +915,6 @@ void bad_filename_error(void)
 {
     cli_putstring("Bad filename\n");
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -970,7 +945,6 @@ static void process_page_footer(void)
     register_value_array['P' - 'A']++;
     register_value_array['L' - 'A'] = 1;
     page_break_pending_flag = 0;
-    return;
 }
 
 /**
@@ -1033,7 +1007,6 @@ void display_not_enough_memory(void)
     stop_printing();
     cli_putstring("Not enough memory\n");
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -1218,7 +1191,6 @@ c8ffb_inline:
     }
     page_lines_remaining = tmp_ch22;
     print_vertical_space(idx2);
-    return;
 }
 
 /**
@@ -1289,7 +1261,6 @@ static void print_char_x_times(uint8_t cur_ch, uint8_t idx)
             idx--;
         } while (idx != 0);
     }
-    return;
 }
 
 /**
@@ -1327,7 +1298,6 @@ c8f0d:
     if ((int8_t)page_break_pending_flag >= 0)
         return;
     process_page_footer();
-    return;
 }
 
 /**
@@ -1565,7 +1535,6 @@ c9355:
         }
     }
     print_output_buffer();
-    return;
 }
 
 /**
@@ -1605,7 +1574,6 @@ c92d4:
     print_newline();
     print_vertical_space(header_margin);
     compute_lines_remaining_on_page();
-    return;
 }
 
 /**
@@ -1649,7 +1617,6 @@ static void start_microspacing_if_active(uint8_t cur_ch)
     print_alignment_spaces(cur_ch);
     print_last_microspacing = microspacing_flag;
     printer_driver_ptr->printer_microspace();
-    return;
 }
 
 /**
@@ -1671,7 +1638,6 @@ static void emit_microspacing_spaces(uint8_t cur_ch, uint8_t idx)
     print_alignment_spaces(cur_ch);
     print_last_microspacing = idx;
     printer_driver_ptr->printer_microspace();
-    return;
 }
 
 /**
@@ -1700,7 +1666,6 @@ static void compute_lines_remaining_on_page(void)
     }
 c930d:
     page_lines_remaining = idx;
-    return;
 }
 
 /**
@@ -1929,7 +1894,6 @@ static void reset_print_registers(void)
     header_margin = tmp_ch3;
     footer_margin = tmp_ch3;
     compute_lines_remaining_on_page();
-    return;
 }
 
 /**
@@ -1969,7 +1933,6 @@ void stop_printing(void)
         print_flags &= 0x7f;
         printer_driver_ptr->printer_off();
     }
-    return;
 }
 
 /**

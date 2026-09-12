@@ -538,7 +538,6 @@ static void cf6_split_line_key(void)
         return;
     }
     insert_line_into_document(&ram[(uint16_t)sum]);
-    return;
 }
 
 /**
@@ -567,7 +566,6 @@ static void cf7_join_lines_key(void)
     split_line_at_wrap(current_line_ptr);
     line_change_pending_flag++;
     clamp_ptr6_to_document();
-    return;
 }
 
 /**
@@ -590,7 +588,6 @@ static void cf8_mark_as_ruler_key(void)
         edit_buffer_dirty_flag++;
     }
     set_format_mode_bit7();
-    return;
 }
 
 /**
@@ -689,7 +686,6 @@ void f13_right_key(void)
     if (xpos >= MAX_LINE_LENGTH)
         return;
     xpos++;
-    return;
 }
 
 /**
@@ -756,7 +752,6 @@ static void f3_delete_to_eol_key(void)
     bytes_to_delete -= xpos;
     line_counter++;
     delete_edit_buffer_bytes_at_xpos(bytes_to_delete);
-    return;
 }
 
 /**
@@ -767,7 +762,6 @@ static void f4_beginning_of_line_key(void)
 {
     cursor_moved_flag++;
     xpos = 0;
-    return;
 }
 
 /**
@@ -814,7 +808,6 @@ static void f7_delete_line_key(void)
     }
     line_change_pending_flag++;
     clamp_ptr6_to_document();
-    return;
 }
 
 /**
@@ -824,7 +817,6 @@ static void f7_delete_line_key(void)
 static void f8_insert_char_key(void)
 {
     insert_character_into_edit_buffer(0x20);
-    return;
 }
 
 /**
@@ -835,7 +827,6 @@ static void f9_delete_char_key(void)
 {
     line_counter++;
     delete_edit_buffer_bytes_at_xpos(1);
-    return;
 }
 
 /**
@@ -891,7 +882,6 @@ static void k_command_key(void)
             set_marker_common('6');
             return;
     }
-    return;
 }
 
 /** Command table for CLI parsing. Encodes command names and flags. */
@@ -1165,7 +1155,6 @@ static void o_command_key(void)
             sf5_highlight2_key();
             return;
     }
-    return;
 }
 
 /**
@@ -1234,7 +1223,6 @@ static void q_command_key(void)
             go_to_marker_n('6');
             return;
     }
-    return;
 }
 
 /**
@@ -1255,7 +1243,6 @@ void return_key(void)
     uint16_t sum = (current_line_ptr - &ram[0]) + next_line_len;
     insert_line_at_cursor(&ram[sum]);
     advance_current_line_pointer();
-    return;
 }
 
 /**
@@ -1390,7 +1377,6 @@ entry:
     buf_pos--;
 ca00f:
     xpos = buf_pos;
-    return;
 }
 
 static void set_marker(uint8_t marker_idx);
@@ -1435,7 +1421,6 @@ static void sf1_swap_case_key(void)
     acc ^= 0x20;
     ram[RAM_EDIT_BUFFER + xpos] = acc;
     f13_right_key();
-    return;
 }
 
 /**
@@ -1457,7 +1442,6 @@ static void sf2_release_margins_key(void)
         return;
     }
     xpos = (uint8_t)margin_pos;
-    return;
 }
 
 /**
@@ -1521,7 +1505,6 @@ static void sf3_delete_to_char_key(void)
 static void sf4_highlight1_key(void)
 {
     tab_highlight_common(0x1c);
-    return;
 }
 
 /**
@@ -1531,7 +1514,6 @@ static void sf4_highlight1_key(void)
 static void sf5_highlight2_key(void)
 {
     tab_highlight_common(0x1d);
-    return;
 }
 
 /**
@@ -1547,7 +1529,6 @@ static void sf6_go_to_marker_key(void)
     if (markers_array[marker] == 0)
         return;
     go_to_marker(marker);
-    return;
 }
 
 /**
@@ -1561,7 +1542,6 @@ static void sf7_set_marker_key(void)
     if (marker == MARKER_INVALID)
         return;
     set_marker(marker);
-    return;
 }
 
 /**
@@ -1601,7 +1581,6 @@ finished_editing_command:
     current_format_line_ptr = edit_buffer_base;
     current_format_line_ptr[0] = 0x80;
     set_format_mode_bit7();
-    return;
 }
 
 /**
@@ -1630,7 +1609,6 @@ static void sf9_delete_command_key(void)
 static void tab_key(void)
 {
     tab_highlight_common(9);
-    return;
 }
 
 /**
@@ -1719,7 +1697,6 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t delete_count)
     {
         memset(&ram[RAM_EDIT_BUFFER + xpos], 0x10, MAX_LINE_LENGTH - xpos);
     }
-    return;
 }
 
 /**
@@ -1938,7 +1915,6 @@ c9ca2:
     clamp_ptr6_to_document();
     return_key();
     xpos = top_margin;
-    return;
 }
 
 /**
@@ -2123,7 +2099,6 @@ static void tab_highlight_common(uint8_t char_to_insert)
     if (!insert_character_into_edit_buffer(char_to_insert))
         return;
     f13_right_key();
-    return;
 }
 
 /**
@@ -2389,7 +2364,6 @@ void split_line_at_wrap(uint8_t* target_ptr)
         insert_ptr[0] = 0x0d;
         scan_ptr = insert_ptr;
     } while (((uint8_t*)&scan_ptr)[1] != 0);
-    return;
 }
 
 /**
@@ -2576,7 +2550,6 @@ static void insert_line_into_document(uint8_t* target_ptr)
         return;
     }
     memory_full();
-    return;
 }
 
 /**
@@ -2586,7 +2559,6 @@ static void insert_line_into_document(uint8_t* target_ptr)
 static void update_line_length(void)
 {
     line_lengths[ypos] = screen_maxcolumn;
-    return;
 }
 
 /**
@@ -2609,7 +2581,6 @@ void clamp_ptr6_to_document(void)
 void clear_screen(void)
 {
     screen_clear();
-    return;
 }
 
 /**
@@ -2629,7 +2600,6 @@ static void clear_to_eol(uint8_t fill_char, uint8_t line)
             line_lengths[line]--;
         } while (line_lengths[line] != 0);
     }
-    return;
 }
 
 /**
@@ -2727,7 +2697,6 @@ static void draw_ruler(void)
     struct render_state rs = {.line = 0};
     draw_line(&rs, current_ruler_ptr);
     flags_need_redrawing_flag = 1;
-    return;
 }
 
 /**
@@ -2758,7 +2727,6 @@ static void draw_status_word(void)
         return;
     }
     home_cursor();
-    return;
 }
 
 /**
@@ -2796,7 +2764,6 @@ static void go_to_marker(uint8_t marker_idx)
     move_cursor_to_address(markers_array[marker_idx]);
     display_start_row = 1;
     update_line_length();
-    return;
 }
 
 /**
@@ -2811,7 +2778,6 @@ static void go_to_marker_n(uint8_t marker)
     int idx = lookup_marker(marker);
     if (markers_array[idx] != 0)
         go_to_marker(idx);
-    return;
 }
 
 /**
@@ -2821,7 +2787,6 @@ static void go_to_marker_n(uint8_t marker)
 static void home_cursor(void)
 {
     screen_setcursor(0, 0);
-    return;
 }
 
 /**
@@ -3082,7 +3047,6 @@ static void recalculate_cursor_xpos(void)
     xpos = buf_pos;
 ca63d:
     visual_column = acc_width;
-    return;
 }
 
 /**
@@ -3402,7 +3366,6 @@ static void set_marker(uint8_t marker_idx)
     set_marker_to_here(marker_idx);
     display_start_row = 1;
     update_line_length();
-    return;
 }
 
 void go_to_marker(uint8_t marker_idx);
@@ -3417,7 +3380,6 @@ static void set_marker_common(uint8_t marker_char)
     write_line_back_to_document_safely();
     int idx = lookup_marker(marker_char);
     set_marker(idx);
-    return;
 }
 
 /**
@@ -3477,7 +3439,6 @@ void adjust_area_pointers(ptrdiff_t size_delta)
     uint8_t* insert_ptr = area_start_ptr;
     scratch_scan_ptr = adjust_pointers(insert_ptr, size_delta);
     split_line_at_wrap(insert_ptr);
-    return;
 }
 
 /**
@@ -3979,7 +3940,6 @@ void check_for_embedded_ruler(uint8_t* target_ptr)
 {
     if (*target_ptr == RULER_BYTE)
         push_onto_ruler_index(target_ptr);
-    return;
 }
 
 /**
@@ -4031,7 +3991,6 @@ static void insert_at_left_margin(void)
 {
     if (find_left_margin_stop() < 0)
         insert_byte_at_xpos(0);
-    return;
 }
 
 /**

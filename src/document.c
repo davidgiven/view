@@ -513,7 +513,6 @@ cac20:
         }
     }
     xpos = idx;
-    return;
 }
 
 /**
@@ -634,7 +633,6 @@ void push_onto_ruler_index(uint8_t* target_ptr)
         ruler_index[stack_index >> 1] = target_ptr;
         load_current_ruler(stack_index);
     }
-    return;
 }
 
 /**

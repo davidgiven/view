@@ -191,7 +191,6 @@ c830d:
 void clear_cmd(void)
 {
     memset(markers_array, 0, sizeof(markers_array));
-    return;
 }
 
 /**
@@ -204,7 +203,6 @@ static void close_input_output_files(void)
     file_ptr = output_fp;
     close_file();
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -214,7 +212,6 @@ static void cmd_err_no_string(void)
 {
     cli_putstring("No string found\n");
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -224,7 +221,6 @@ static void cmd_err_no_target(void)
 {
     cli_putstring("No target given\n");
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -309,7 +305,6 @@ c86b8:
     render_number_to_screen(scan_ptr);
     cli_putstring(" word(s) counted.\n");
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -368,7 +363,6 @@ static void field_cmd(struct scan_state* scan)
     }
     current_tab_key = cur_ch;
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -431,7 +425,6 @@ c87b4:
     return;
     cli_putstring("Bad file\n");
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -465,7 +458,6 @@ static void format_cmd(struct scan_state* scan)
 c8791:
     cli_putchar('\n');
     display_not_enough_memory();
-    return;
 }
 
 /**
@@ -484,7 +476,6 @@ static void load_cmd(struct scan_state* scan)
     reset_document_name_after_load();
     clear_cmd();
     move_cursor_to_top_of_document();
-    return;
 }
 
 /**
@@ -515,7 +506,6 @@ static void microspace_cmd(struct scan_state* scan)
     }
     cli_putstring("Driver does not support microspacing\n");
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -525,7 +515,6 @@ static void mode_cmd(void)
 {
     cli_putstring("Bad mode\n");
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -585,7 +574,6 @@ static void new_cmd(void)
 {
     check_not_continuous_editing();
     initialise_document();
-    return;
 }
 
 /**
@@ -608,7 +596,6 @@ static void print_to_screen(struct scan_state* scan)
 {
     print_document(scan);
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -619,7 +606,6 @@ static void print_to_screen(struct scan_state* scan)
 static void printer_cmd(struct scan_state* scan)
 {
     print_cmd(scan);
-    return;
 }
 
 /**
@@ -642,7 +628,6 @@ static void read_cmd(struct scan_state* scan)
     parse_marks_from_command(scan);
     read_into_document();
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -726,7 +711,6 @@ static void save_cmd_write_cmd(struct scan_state* scan)
     fputc(0, file_ptr);
     close_file();
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -737,7 +721,6 @@ static void save_cmd_write_cmd(struct scan_state* scan)
 static void screen_cmd(struct scan_state* scan)
 {
     print_to_screen(scan);
-    return;
 }
 
 /**
@@ -768,7 +751,6 @@ static void search_cmd(struct scan_state* scan)
     move_cursor_to_address(doc_working_ptr);
     enter_editor_mode();
     longjmp(env, JMP_EDITOR);
-    return;
 }
 
 /**
@@ -832,7 +814,6 @@ static void setup_cmd(struct scan_state* scan)
         idx3--;
     } while (!((int8_t)idx3 < 0));
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -847,7 +828,6 @@ static void sheets_cmd(struct scan_state* scan)
     stop_printing();
     cli_putchar('\n');
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -857,7 +837,6 @@ void start_printing(void)
 {
     cli_putstring("Sorry, can't print yet\n");
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -894,7 +873,6 @@ static void print_x_words_of_help(uint8_t idx)
         cli_putchar(cur_ch);
         pos++;
     }
-    return;
 }
 
 static bool parse_command(uint8_t* input_buffer_offset);
@@ -1067,7 +1045,6 @@ void file_error(void)
 {
     cli_putstring("File error");
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -1078,7 +1055,6 @@ void file_not_found_error(void)
     stop_printing();
     cli_putstring("File not found\n");
     return_to_cli_prompt();
-    return;
 }
 
 /**
@@ -1144,7 +1120,6 @@ void set_document_name_to_filename_buffer(void)
         idx++;
     } while (cur_ch >= 0x21);
     input_filename[idx - 1] = 0x0d;
-    return;
 }
 
 /**
@@ -1156,7 +1131,6 @@ void zero_terminate_filename_buffer(void)
     while (filename_buffer[idx] != 0x0d)
         idx++;
     filename_buffer[idx] = 0;
-    return;
 }
 
 /**
