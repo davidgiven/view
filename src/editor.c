@@ -3439,7 +3439,7 @@ void redraw_editor(void)
     uint8_t* draw;
 
     cursor_off();
-    uint8_t ruler_idx = ruler_index_ptr;
+    int ruler_idx = ruler_index_ptr;
 
     saved_ruler_index_redraw = ruler_idx;
     uint8_t status_needs_redraw = status_line_needs_redrawing_flag;
@@ -3484,10 +3484,8 @@ void redraw_editor(void)
 
         do
         {
-            tmp_idx--;
-            uint8_t line_len = line_lengths[tmp_idx];
+            uint8_t line_len = line_lengths[tmp_idx - 1];
 
-            tmp_idx++;
             line_lengths[tmp_idx] = line_len;
             tmp_idx--;
         } while (tmp_idx != 0);

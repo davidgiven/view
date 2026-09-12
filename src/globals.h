@@ -199,8 +199,10 @@ extern uint8_t delimiter_char;
 extern uint8_t line_format_status;
 extern uint8_t screen_column;
 extern uint8_t scroll_repeat_count;
-extern uint8_t saved_ruler_index_scroll;
-extern uint8_t saved_ruler_index_redraw;
+/** Index into ruler_index[] (0 .. RULER_INDEX_SIZE-1). Plain element index. */
+extern int saved_ruler_index_scroll;
+/** Index into ruler_index[] (0 .. RULER_INDEX_SIZE-1). Plain element index. */
+extern int saved_ruler_index_redraw;
 extern uint8_t ptr6_screen_row;
 extern uint8_t hscroll_pos;
 extern uint8_t ypos;
@@ -212,9 +214,11 @@ extern uint8_t line_lengths[];
 
 extern uint8_t display_start_row;
 
-extern uint8_t ruler_index_ptr;
+#define RULER_INDEX_SIZE 128
+/** Index into ruler_index[] (0 .. RULER_INDEX_SIZE-1). Plain element index. */
+extern int ruler_index_ptr;
 extern uint8_t* oshwm;
-extern uint8_t* ruler_index[128];
+extern uint8_t* ruler_index[RULER_INDEX_SIZE];
 #define RAM_CURRENT_LINE_BUF 0x0545
 #define RAM_EDIT_BUFFER 0x0548
 #define RAM_JUST_BEFORE_RULER_BUF 0x05CC

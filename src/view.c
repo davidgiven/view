@@ -64,17 +64,17 @@ uint8_t* editor_ptr6;             /** Editor working pointer. */
 uint8_t* printer_ptr6;            /** Printer working pointer. */
 uint8_t* print_doc_ptr;           /** Document pointer used during printing. */
 const struct printer_driver* printer_driver_ptr; /** Active printer driver. */
-uint8_t* macro_cursor_ptr; /** Cursor into current macro body. */
-uint8_t* oshwm;            /** Ruler stack base. */
-uint8_t* ruler_index[128]; /** Ruler index stack. */
+uint8_t* macro_cursor_ptr;              /** Cursor into current macro body. */
+uint8_t* oshwm;                         /** Ruler stack base. */
+uint8_t* ruler_index[RULER_INDEX_SIZE]; /** Ruler index stack. */
 uint8_t page_lines_remaining;
 uint8_t formatted_line_written_flag;
 uint8_t page_break_pending_flag;
 uint8_t printing_from_file_flag;
-uint8_t saved_ruler_index_scroll;
-uint8_t saved_ruler_index_redraw;
-uint8_t editor_current_key; /** Current key code in editor input loop. */
-uint8_t page_break_flag;    /** Page-break flag in print path. */
+int saved_ruler_index_scroll; /** Index into ruler_index[] */
+int saved_ruler_index_redraw; /** Index into ruler_index[] */
+uint8_t editor_current_key;   /** Current key code in editor input loop. */
+uint8_t page_break_flag;      /** Page-break flag in print path. */
 uint8_t column_position;
 uint8_t ruler_buffer_len;
 uint8_t edit_line_len;
@@ -109,7 +109,7 @@ uint8_t print_flags;
 uint8_t edit_buffer_dirty_flag;
 uint8_t edit_buffer_unpacked_flag;
 uint8_t scroll_repeat_count;
-uint8_t ruler_index_ptr;
+int ruler_index_ptr; /** Index into ruler_index[] */
 uint8_t hscroll_pos;
 uint8_t visual_column;
 uint8_t display_start_row;

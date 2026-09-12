@@ -1,6 +1,7 @@
 #include "document.h"
 #include "io.h"
 #include "printing.h"
+#include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 
@@ -328,13 +329,14 @@ void print_alignment_spaces(uint8_t cur_ch)
 }
 
 /**
- * Load the ruler at the given index offset and recompute margins.
- * @param pos byte offset into the ruler index stack
+ * Load the ruler at the given index and recompute margins.
+ * @param pos element index into the ruler index stack (0 .. RULER_INDEX_SIZE-1)
  */
-void load_current_ruler(uint8_t pos)
+void load_current_ruler(int pos)
 {
+    assert(pos >= 0 && pos < RULER_INDEX_SIZE);
     ruler_index_ptr = pos;
-    current_ruler_ptr = ruler_index[pos >> 1] + 3;
+    current_ruler_ptr = ruler_index[pos] + 3;
     find_margins_of_current_ruler_buffer();
 }
 
@@ -476,7 +478,7 @@ void initialise_document(void)
     pos2++;
     ram[RAM_CURRENT_RULER_BUF + pos2] = 0x0d;
     ruler_index[0] = &ram[0];
-    ruler_index[0x7f] = &ram[RAM_JUST_BEFORE_RULER_BUF];
+    ruler_index[RULER_INDEX_SIZE - 1] = &ram[RAM_JUST_BEFORE_RULER_BUF];
     move_cursor_to_top_of_document();
     clear_cmd();
     ensure_cr_at_document_top();
@@ -583,9 +585,9 @@ void move_cursor_to_top_of_document(void)
     current_line_ptr = page;
     xpos = 0;
     top_of_screen_line_ptr = &ram[RAM_MAX];
-    ruler_index_ptr = 0xfe;
-    saved_ruler_index_scroll = 0xfe;
-    load_current_ruler(0xfe);
+    ruler_index_ptr = RULER_INDEX_SIZE - 1;
+    saved_ruler_index_scroll = RULER_INDEX_SIZE - 1;
+    load_current_ruler(RULER_INDEX_SIZE - 1);
 }
 
 /**
@@ -685,10 +687,8 @@ void open_output_file(void)
 void pop_from_ruler_index(void)
 {
     status_line_needs_redrawing_flag++;
-    uint8_t pos = ruler_index_ptr;
-
-    pos++;
-    pos++;
+    int pos = ruler_index_ptr + 1;
+    assert(pos >= 0 && pos < RULER_INDEX_SIZE);
     load_current_ruler(pos);
 }
 
@@ -698,13 +698,11 @@ void pop_from_ruler_index(void)
  */
 void push_onto_ruler_index(uint8_t* target_ptr)
 {
-    {
-        status_line_needs_redrawing_flag++;
-        uint8_t stack_index = ruler_index_ptr - 2;
-
-        ruler_index[stack_index >> 1] = target_ptr;
-        load_current_ruler(stack_index);
-    }
+    status_line_needs_redrawing_flag++;
+    int stack_index = ruler_index_ptr - 1;
+    assert(stack_index >= 0 && stack_index < RULER_INDEX_SIZE);
+    ruler_index[stack_index] = target_ptr;
+    load_current_ruler(stack_index);
 }
 
 /**

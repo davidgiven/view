@@ -20,7 +20,7 @@ extern void return_to_cli_prompt(void);
 extern void print_alignment_spaces(uint8_t cur_ch);
 extern void check_for_at_least_150_bytes_free(void);
 
-extern void load_current_ruler(uint8_t pos);
+extern void load_current_ruler(int pos);
 
 extern void ensure_cr_at_document_top(void);
 
