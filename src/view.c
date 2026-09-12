@@ -303,7 +303,7 @@ static uint8_t expand_escaped_string(uint8_t idx, uint8_t pos)
     do
     {
         uint8_t cur_ch;
-        _Bool end;
+        bool end;
 
         cur_ch = read_next_command_byte(&pos, &end);
 

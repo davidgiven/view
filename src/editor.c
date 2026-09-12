@@ -1417,7 +1417,7 @@ static void sf12_left_key(void)
         return;
     }
     uint8_t word_boundary;
-    _Bool is_start_of_line;
+    bool is_start_of_line;
     uint8_t char_width;
 
     draw_previous_word(&word_boundary, &is_start_of_line, &char_width);
@@ -1440,7 +1440,7 @@ static void sf12_left_key(void)
 static void sf13_right_key(void)
 {
     uint8_t buf_pos;
-    _Bool is_tab;
+    bool is_tab;
 
 entry:
     uint8_t* line_ptr = current_line_buffer.text;
@@ -2011,7 +2011,7 @@ c9c56:
 
     input_buffer_offset = saved_xpos;
     uint8_t word_boundary;
-    _Bool is_start_of_line;
+    bool is_start_of_line;
 
     draw_previous_word(&word_boundary, &is_start_of_line, &mode_flag);
     recalculate_cursor_xpos();
@@ -3131,7 +3131,7 @@ static void home_cursor(void)
  */
 uint8_t justify_edit_buffer(uint8_t* target_ptr)
 {
-    _Bool is_zero_1;
+    bool is_zero_1;
     uint8_t gap_idx = 0;
     uint8_t acc = justifying_flag;
 
@@ -4174,7 +4174,7 @@ c9a60:
 
     if (flush_formatted_line())
         return FORMAT_MEMORY_FULL;
-    _Bool at_end_1;
+    bool at_end_1;
 
     at_end_1 = advance_to_next_doc_line();
 
@@ -4280,7 +4280,7 @@ static bool find_next_word_boundary(uint8_t src_idx)
  */
 static bool insert_character_into_edit_buffer(uint8_t ch)
 {
-    _Bool ok;
+    bool ok;
     {
         ok = insert_edit_buffer_bytes_at_xpos(1);
         ch = ch;
@@ -4544,7 +4544,7 @@ static void insert_at_left_margin(void)
  */
 static bool insert_byte_at_xpos(uint8_t insert_pos)
 {
-    _Bool ok;
+    bool ok;
     uint8_t saved_xpos = xpos;
 
     xpos = insert_pos;

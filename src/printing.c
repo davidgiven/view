@@ -1623,7 +1623,7 @@ static void print_vertical_space(uint8_t idx)
 read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit)
 {
     uint8_t next_ch;
-    _Bool eof_1;
+    bool eof_1;
     uint8_t cur_ch = 0;
 
     screen_column = cur_ch;
