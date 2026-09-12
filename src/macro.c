@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdint.h>
 #include <ctype.h>
+#include <stdalign.h>
+#include <stddef.h>
 #include "io.h"
 #include "printing.h"
 #include "document.h"
@@ -17,8 +19,19 @@ struct macro
 {
     struct macro* next;
     char name[2];
-    uint8_t body[0];
+    uint8_t body[];
 };
+
+_Static_assert(sizeof(struct macro) % alignof(struct macro) == 0,
+    "macro size not multiple of alignment");
+
+static inline uint8_t* align_up_ptr(uint8_t* ptr)
+{
+    uintptr_t addr = (uintptr_t)ptr;
+    size_t align = alignof(struct macro);
+    addr = (addr + align - 1) & ~(align - 1);
+    return (uint8_t*)addr;
+}
 
 static struct macro* first_macro_ptr;
 static struct macro* last_macro_ptr;
@@ -41,7 +54,7 @@ static read_block_status_t read_next_output_line(
  */
 void macro_init(uint8_t* print_doc_ptr)
 {
-    first_macro_ptr = (struct macro*)(print_doc_ptr + 0x8d);
+    first_macro_ptr = (struct macro*)(void*)align_up_ptr(print_doc_ptr + 0x8d);
     last_macro_ptr = first_macro_ptr;
     last_macro_ptr->next = 0;
 }
@@ -53,44 +66,44 @@ void dm_fmt_cmd(void)
 {
     if (macro_executing_flag != 0)
         return;
-    struct macro* size_delta;
-    size_delta = last_macro_ptr;
-    uint8_t pos = 3;
-    uint8_t firstchar = current_format_line_ptr[pos];
-    firstchar &= 0xdf;
-    pos++;
-    uint8_t secondchar = current_format_line_ptr[pos];
+    struct macro* new_macro_ptr = last_macro_ptr;
+    new_macro_ptr->name[0] = current_format_line_ptr[3] & 0xdf;
+    uint8_t secondchar = current_format_line_ptr[4];
     if (isalpha(secondchar))
         secondchar &= 0xdf;
     else
         secondchar = 0x20;
-    last_macro_ptr->name[1] = secondchar;
-    last_macro_ptr->name[0] = firstchar;
+    new_macro_ptr->name[1] = secondchar;
+
+    uint8_t* write_ptr = (uint8_t*)new_macro_ptr;
+    uint8_t* body = write_ptr + offsetof(struct macro, body);
     for (;;)
     {
-        if (himem - (uint8_t*)(last_macro_ptr->body) < 0x97)
+        if (himem - body < 0x97)
         {
             display_not_enough_memory();
             return;
         }
-        uint8_t* line_ptr = last_macro_ptr->body;
-        current_format_line_ptr = last_macro_ptr->body;
-        if (read_next_output_line(last_macro_ptr->body, &line_ptr) ==
-            READ_BLOCK_DONE)
-        {
+        uint8_t* line_ptr = body;
+        current_format_line_ptr = body;
+        if (read_next_output_line(body, &line_ptr) == READ_BLOCK_DONE)
             return;
-        }
-        command_prefix_t cp = check_for_command_prefix(last_macro_ptr->body[0]);
+
+        command_prefix_t cp = check_for_command_prefix(body[0]);
         if (cp != NO_COMMAND_PREFIX &&
             lookup_formatting_command() == FORMATTING_COMMAND_EM)
-        {
             break;
-        }
-        last_macro_ptr = (struct macro*)line_ptr;
+
+        write_ptr = line_ptr;
+        body = write_ptr + offsetof(struct macro, body);
     }
-    last_macro_ptr->body[0] = 4;
-    last_macro_ptr->body[1] = 0;
-    size_delta->next = (struct macro*)(last_macro_ptr->body + 1);
+    // Align once at the end; previous writes used raw byte pointers
+    // so no struct alignment was required while building.
+    write_ptr = align_up_ptr(write_ptr);
+    body = write_ptr + offsetof(struct macro, body);
+    body[0] = 4;
+    new_macro_ptr->next = (struct macro*)(void*)align_up_ptr(body + 1);
+    last_macro_ptr = (struct macro*)(void*)write_ptr;
     return;
 }
 
@@ -114,16 +127,14 @@ void nested_macro_error(void)
  */
 bool macro_try_invoke(uint8_t** macro_cursor_ptr)
 {
-    uint8_t pos4 = 1;
-    uint8_t tmp_ch2 = current_format_line_ptr[pos4];
-    pos4++;
-    uint8_t tmp_ch3 = current_format_line_ptr[pos4];
-    if (!isalpha(tmp_ch3))
-        tmp_ch3 = 0x20;
+    uint8_t ch1 = current_format_line_ptr[1];
+    uint8_t ch2 = current_format_line_ptr[2];
+    if (!isalpha(ch2))
+        ch2 = 0x20;
     struct macro* macro = first_macro_ptr;
     while (macro->next != NULL)
     {
-        if (macro->name[0] == tmp_ch2 && macro->name[1] == tmp_ch3)
+        if (macro->name[0] == ch1 && macro->name[1] == ch2)
         {
             if (macro_executing_flag != 0)
             {
@@ -131,7 +142,7 @@ bool macro_try_invoke(uint8_t** macro_cursor_ptr)
                 return true;
             }
             *macro_cursor_ptr = macro->body;
-            macro_executing_flag = (*macro_cursor_ptr != NULL);
+            macro_executing_flag = true;
             return true;
         }
         macro = macro->next;
