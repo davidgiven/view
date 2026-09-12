@@ -515,7 +515,7 @@ static void format_cmd(struct scan_state* scan)
         move_cursor_to_address(area_start_ptr);
         clear_format_mode_bit7();
         wipe_buffer(0x10, edit_buffer_base);
-        current_format_line_ptr = &ram[RAM_EDIT_BUFFER];
+        current_format_line_ptr = &current_line_buffer[3];
 
         do
         {

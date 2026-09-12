@@ -180,6 +180,8 @@ extern struct pointer_array_t pointer_array;
 
 extern uint8_t current_ruler_buffer[133];
 
+extern uint8_t current_line_buffer[138];
+
 extern uint8_t printer_driver_name[];
 extern void run_editor(void);
 

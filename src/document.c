@@ -469,10 +469,10 @@ void initialise_document(void)
     xpos = pos;
     oshwm[pos] = 0xaa;
     page[-1] = 0x0d;
-    ram[RAM_CURRENT_LINE_BUF + MAX_LINE_LENGTH - 1] = 0x0d;
+    current_line_buffer[MAX_LINE_LENGTH - 1] = 0x0d;
     top = page;
-    edit_buffer_base = &ram[RAM_CURRENT_LINE_BUF];
-    current_format_line_ptr = &ram[RAM_EDIT_BUFFER];
+    edit_buffer_base = current_line_buffer;
+    current_format_line_ptr = &current_line_buffer[3];
     uint8_t pos2 = create_default_ruler(current_ruler_buffer);
 
     pos2++;
@@ -559,6 +559,19 @@ void move_cursor_to_address(uint8_t* addr)
 cac20:
     current_line_ptr = cur;
     uint8_t idx = (uint8_t)(addr - current_line_ptr);
+    {
+        FILE* _log = fopen("/tmp/view.log", "a");
+        if (_log)
+        {
+            fprintf(_log,
+                "move_cursor_to_address cur %p addr %p idx %d xpos %d\n",
+                (void*)cur,
+                (void*)addr,
+                idx,
+                idx);
+            fclose(_log);
+        }
+    }
 
     command_prefix_t cp = check_for_command_prefix(current_line_ptr[0]);
 
