@@ -13,10 +13,10 @@
  */
 command_prefix_t check_for_command_prefix(uint8_t ch)
 {
-    if (ch == COMMAND_BYTE)
+    if (ch == COMMAND_PREFIX)
         return COMMAND_PREFIX;
 
-    if (ch == RULER_BYTE)
+    if (ch == RULER_PREFIX)
         return RULER_PREFIX;
     return NO_COMMAND_PREFIX;
 }
@@ -469,10 +469,10 @@ void initialise_document(void)
     xpos = pos;
     oshwm[pos] = 0xaa;
     page[-1] = 0x0d;
-    current_line_buffer[MAX_LINE_LENGTH - 1] = 0x0d;
+    ((uint8_t*)&current_line_buffer)[MAX_LINE_LENGTH - 1] = 0x0d;
     top = page;
-    edit_buffer_base = current_line_buffer;
-    current_format_line_ptr = &current_line_buffer[3];
+    edit_buffer_base = (uint8_t*)&current_line_buffer;
+    current_format_line_ptr = current_line_buffer.text;
     uint8_t pos2 = create_default_ruler(current_ruler_buffer);
 
     pos2++;
@@ -652,7 +652,7 @@ bool find_previous_line(uint8_t* val, uint8_t** line_ptr)
     } while (cur_ch != 0x0d);
     (*line_ptr)++;
 
-    if (**line_ptr == RULER_BYTE)
+    if (**line_ptr == RULER_PREFIX)
         pop_from_ruler_index();
 
     return true;
@@ -740,7 +740,7 @@ void reset_area_to_entire_document(void)
  */
 bool advance_to_next_line(uint8_t* line, uint8_t** line_ptr, uint8_t* pos)
 {
-    if (*line != RULER_BYTE)
+    if (*line != RULER_PREFIX)
         return find_next_line(line, line_ptr, pos);
     bool end = find_next_line(line, line_ptr, pos);
 

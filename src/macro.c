@@ -209,7 +209,7 @@ c91a7:
 
         for (;;)
         {
-            current_line_buffer[idx] = next_ch;
+            ((uint8_t*)&current_line_buffer)[idx] = next_ch;
             idx++;
 
             if (next_ch == 0x0d)
@@ -286,7 +286,7 @@ c91a7:
                 break;
 
         c921b:
-            current_line_buffer[idx] = tmp_ch6;
+            ((uint8_t*)&current_line_buffer)[idx] = tmp_ch6;
             idx++;
         } while (idx < 0x82);
 

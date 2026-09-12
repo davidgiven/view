@@ -1518,7 +1518,7 @@ c8f30:
         {
             scratch_offset = 3;
 
-            if (*cursor != RULER_BYTE)
+            if (*cursor != RULER_PREFIX)
                 goto c8f6e_l;
             uint8_t pos3 = 3;
 

@@ -555,7 +555,7 @@ static void cf5_default_ruler_key(void)
     f6_insert_line_key();
     redraw_editor();
     cf8_mark_as_ruler_key();
-    create_default_ruler(&current_line_buffer[3]);
+    create_default_ruler(current_line_buffer.text);
 }
 
 /**
@@ -663,7 +663,7 @@ static void delete_key(void)
     if (visual_column == 0)
         return;
     xpos--;
-    uint8_t char_at_cursor = current_line_buffer[xpos + 3];
+    uint8_t char_at_cursor = current_line_buffer.text[xpos];
     {
         f9_delete_char_key();
         marker_check = char_at_cursor;
@@ -1393,9 +1393,9 @@ static void sf11_copy_key(void)
 
         do
         {
-            uint8_t ruler_byte = current_ruler_ptr[copy_idx];
+            uint8_t ruler_prefix = current_ruler_ptr[copy_idx];
 
-            current_line_buffer[copy_idx + 3] = ruler_byte;
+            current_line_buffer.text[copy_idx] = ruler_prefix;
             copy_idx++;
             remaining--;
         } while (remaining != 0);
@@ -1443,7 +1443,7 @@ static void sf13_right_key(void)
     _Bool is_tab;
 
 entry:
-    uint8_t* line_ptr = &current_line_buffer[3];
+    uint8_t* line_ptr = current_line_buffer.text;
     uint8_t line_len = get_line_length();
 
     if (!(line_len < xpos || line_len == xpos))
@@ -1472,7 +1472,7 @@ entry:
         uint8_t char_width;
 
         cur_char = process_current_document_character(
-            &current_line_buffer[3], &char_width, &next_line_len, &is_tab);
+            current_line_buffer.text, &char_width, &next_line_len, &is_tab);
 
         if (cur_char != 0x20)
             return;
@@ -1541,7 +1541,7 @@ static void sf15_up_key(void)
  */
 static void sf1_swap_case_key(void)
 {
-    uint8_t acc = current_line_buffer[xpos + 3];
+    uint8_t acc = current_line_buffer.text[xpos];
 
     if (!isalpha(acc))
     {
@@ -1551,7 +1551,7 @@ static void sf1_swap_case_key(void)
     }
     line_counter++;
     acc ^= 0x20;
-    current_line_buffer[xpos + 3] = acc;
+    current_line_buffer.text[xpos] = acc;
     f13_right_key();
 }
 
@@ -1610,7 +1610,7 @@ static void sf3_delete_to_char_key(void)
 
         while (scan_pos < MAX_LINE_LENGTH)
         {
-            uint8_t scanned_char = current_line_buffer[scan_pos + 3];
+            uint8_t scanned_char = current_line_buffer.text[scan_pos];
 
             scan_pos++;
 
@@ -1628,7 +1628,7 @@ static void sf3_delete_to_char_key(void)
         }
         while (scan_pos < MAX_LINE_LENGTH)
         {
-            uint8_t scanned_char2 = current_line_buffer[scan_pos + 3];
+            uint8_t scanned_char2 = current_line_buffer.text[scan_pos];
 
             scan_pos++;
 
@@ -1751,7 +1751,7 @@ static void sf9_delete_command_key(void)
     if (cp == NO_COMMAND_PREFIX)
         return;
     current_format_line_ptr[pos] = pos;
-    current_format_line_ptr = &current_line_buffer[3];
+    current_format_line_ptr = current_line_buffer.text;
     clear_format_mode_bit7();
     line_counter++;
     edit_buffer_dirty_flag++;
@@ -1817,7 +1817,7 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t delete_count)
 {
     scratch_offset = delete_count;
     edit_buffer_dirty_flag++;
-    uint8_t* size_delta = &current_line_buffer[3];
+    uint8_t* size_delta = current_line_buffer.text;
     uint8_t scan_pos = xpos;
     uint8_t end_pos = scan_pos;
 
@@ -1832,7 +1832,8 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t delete_count)
             uint16_t marker_addr =
                 (scan_pos >= temp_save) ? 3 + (scan_pos - scratch_offset) : 0;
             markers_array[delete_count / 2] =
-                marker_addr ? &current_line_buffer[marker_addr] : NULL;
+                marker_addr ? ((uint8_t*)&current_line_buffer + (marker_addr))
+                            : NULL;
             continue;
         }
         scan_pos++;
@@ -1848,16 +1849,16 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t delete_count)
 
     if (copy_len > 0)
     {
-        memmove(&current_line_buffer[xpos + 3],
-            &current_line_buffer[xpos + scratch_offset + 3],
+        memmove(&current_line_buffer.text[xpos],
+            &current_line_buffer.text[xpos + scratch_offset],
             (size_t)copy_len);
-        memset(&current_line_buffer[xpos + copy_len + 3],
+        memset(&current_line_buffer.text[xpos + copy_len],
             0x10,
             MAX_LINE_LENGTH - xpos - copy_len);
     }
     else
     {
-        memset(&current_line_buffer[xpos + 3], 0x10, MAX_LINE_LENGTH - xpos);
+        memset(&current_line_buffer.text[xpos], 0x10, MAX_LINE_LENGTH - xpos);
     }
 }
 
@@ -1878,7 +1879,7 @@ static void enter_printable_character(void)
 
     if (adjust_margins_at_left_margin())
         return;
-    uint8_t* size_delta = &current_line_buffer[3];
+    uint8_t* size_delta = current_line_buffer.text;
     uint8_t check_pos = xpos;
     uint8_t idx = find_marker_at_position(check_pos, size_delta);
 
@@ -1891,7 +1892,7 @@ static void enter_printable_character(void)
 
     if (!(mode_flag != 0))
     {
-        uint8_t char_at_pos = current_line_buffer[check_pos + 3];
+        uint8_t char_at_pos = current_line_buffer.text[check_pos];
 
         if (char_at_pos == 9)
             goto c9c00;
@@ -1908,7 +1909,7 @@ c9c00:
 c9c09:
     uint8_t typed_char = editor_current_key;
 
-    current_line_buffer[xpos + 3] = typed_char;
+    current_line_buffer.text[xpos] = typed_char;
     uint8_t copied_flag = line_counter;
 
     if (copied_flag == 0)
@@ -1922,7 +1923,7 @@ c9c09:
 c9c1d:
     do
     {
-        scanned_char = current_line_buffer[scan_idx + 3];
+        scanned_char = current_line_buffer.text[scan_idx];
         scan_idx++;
 
         if (scan_idx > xpos)
@@ -2068,14 +2069,14 @@ c9ca2:
         dst_idx = 1;
     }
     scratch_index = dst_idx;
-    uint8_t* marker_base_ptr = &current_line_buffer[3];
+    uint8_t* marker_base_ptr = current_line_buffer.text;
     uint8_t prev_pos = xpos;
 
     prev_pos--;
-    uint8_t prev_char = current_line_buffer[prev_pos + 3];
+    uint8_t prev_char = current_line_buffer.text[prev_pos];
 
     if (prev_char == 0x20)
-        current_line_buffer[prev_pos + 3] = 0x10;
+        current_line_buffer.text[prev_pos] = 0x10;
     prev_pos++;
     screen_row = prev_pos;
 
@@ -2109,11 +2110,11 @@ c9ca2:
         }
         else
         {
-            uint8_t acc13 = current_line_buffer[src_pos + 3];
+            uint8_t acc13 = current_line_buffer.text[src_pos];
             {
                 uint8_t saved = acc13;
 
-                current_line_buffer[src_pos + 3] = 0x10;
+                current_line_buffer.text[src_pos] = 0x10;
                 filler = saved;
             }
         }
@@ -2401,7 +2402,7 @@ void draw_previous_word(
             uint8_t ch;
 
             ch = process_current_document_character(
-                &current_line_buffer[3], char_width, &pos, &is_tab);
+                current_line_buffer.text, char_width, &pos, &is_tab);
             pos--;
 
             if (ch == 0x20)
@@ -2414,7 +2415,7 @@ void draw_previous_word(
             uint8_t ch_1;
 
             ch_1 = process_current_document_character(
-                &current_line_buffer[3], char_width, &pos, &is_tab);
+                current_line_buffer.text, char_width, &pos, &is_tab);
 
             if (ch_1 == 0x20)
                 break;
@@ -2426,7 +2427,7 @@ caf55:
     uint8_t ch_2;
 
     ch_2 = process_current_document_character(
-        &current_line_buffer[3], char_width, &pos, &is_tab);
+        current_line_buffer.text, char_width, &pos, &is_tab);
     pos--;
     *word_boundary = ch_2;
     *is_start_of_line = (pos == 0);
@@ -2512,7 +2513,7 @@ bool insert_edit_buffer_bytes_at_xpos(uint8_t count)
         return false;
     }
     edit_buffer_dirty_flag++;
-    uint8_t* size_delta = &current_line_buffer[3];
+    uint8_t* size_delta = current_line_buffer.text;
     uint8_t scan_pos = MAX_LINE_LENGTH;
 
 cae27:
@@ -2537,7 +2538,8 @@ cae27:
             goto cae52;
         uint16_t marker_addr = scratch_index ? 3 + scratch_index : 0;
         markers_array[idx / 2] =
-            marker_addr ? &current_line_buffer[marker_addr] : NULL;
+            marker_addr ? ((uint8_t*)&current_line_buffer + (marker_addr))
+                        : NULL;
     }
 cae52:
     if (scan_pos != xpos)
@@ -2546,8 +2548,8 @@ cae52:
 
     if (copy_len > 0)
     {
-        memmove(&current_line_buffer[xpos + scratch_offset + 3],
-            &current_line_buffer[xpos + 3],
+        memmove(&current_line_buffer.text[xpos + scratch_offset],
+            &current_line_buffer.text[xpos],
             (size_t)copy_len);
     }
     return true;
@@ -3071,7 +3073,7 @@ static uint8_t get_line_length(void)
     {
         scan_pos--;
 
-        if (current_line_buffer[scan_pos + 3] != 0x10)
+        if (current_line_buffer.text[scan_pos] != 0x10)
             goto cab06;
     } while (scan_pos != 0);
     scan_pos--;
@@ -3274,7 +3276,7 @@ c9871:
         {
             uint8_t acc11 = output_buffer[pos4];
 
-            current_line_buffer[pos4 + 3] = acc11;
+            current_line_buffer.text[pos4] = acc11;
             pos4++;
         } while (pos4 != justify_overflow_counter);
     }
@@ -3307,7 +3309,7 @@ c9871:
         {
             scratch_index++;
         }
-        current_line_buffer[pos5 + 3] = acc12;
+        current_line_buffer.text[pos5] = acc12;
         pos5++;
         idx4++;
     } while (idx4 != justify_line_length);
@@ -3316,7 +3318,7 @@ c9871:
     {
         if (pos5 >= MAX_LINE_LENGTH)
             return idx4;
-        current_line_buffer[pos5 + 3] = 0x10;
+        current_line_buffer.text[pos5] = 0x10;
         pos5++;
     }
     return idx4;
@@ -3383,7 +3385,7 @@ uint8_t process_current_document_character(uint8_t* target_ptr,
 static void recalculate_cursor_xpos(void)
 {
     uint8_t char_width;
-    uint8_t* line_ptr = &current_line_buffer[3];
+    uint8_t* line_ptr = current_line_buffer.text;
     uint8_t acc_width = line_change_pending_flag;
     bool is_tab = false;
 
@@ -3920,7 +3922,7 @@ static bool process_char_for_output(
     uint8_t buf_idx, bool carry_in, uint8_t* char_width_out, uint8_t* out_char)
 {
     screen_column = (screen_column >> 1) | (carry_in ? 0x80 : 0);
-    (*out_char) = current_line_buffer[buf_idx + 3];
+    (*out_char) = current_line_buffer.text[buf_idx];
     output_buffer[buf_idx] = (*out_char);
     if (!((*out_char) != 9))
     {
@@ -4119,7 +4121,7 @@ c9a21:
     }
 c9a2e:
     tmp_pos = editor_output_pos;
-    current_line_buffer[tmp_pos + 3] = cur_byte;
+    current_line_buffer.text[tmp_pos] = cur_byte;
 
     if (cur_byte == 0x20)
         bottom_margin = (uint8_t)(bottom_margin >> 1) | 0x80;
@@ -4161,9 +4163,9 @@ c9a60:
 
         if (tmp_pos == 0)
             return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
-        uint8_t saved_byte = current_line_buffer[tmp_pos + 3];
+        uint8_t saved_byte = current_line_buffer.text[tmp_pos];
         {
-            current_line_buffer[tmp_pos + 3] = 0x10;
+            current_line_buffer.text[tmp_pos] = 0x10;
             a_15 = saved_byte;
         }
     } while (a_15 != 0x20);
@@ -4285,7 +4287,7 @@ static bool insert_character_into_edit_buffer(uint8_t ch)
     }
     if (!ok)
         return false;
-    current_line_buffer[xpos + 3] = ch;
+    current_line_buffer.text[xpos] = ch;
     line_counter++;
 
     return true;
@@ -4421,7 +4423,7 @@ static void unpack_line(uint8_t* target_ptr)
         set_format_mode_bit7();
     }
     current_format_line_ptr =
-        (cp != NO_COMMAND_PREFIX) ? target_ptr : &current_line_buffer[3];
+        (cp != NO_COMMAND_PREFIX) ? target_ptr : current_line_buffer.text;
     uint8_t copy_idx = 0;
 
     do
@@ -4474,7 +4476,7 @@ static void update_markers_to_format_buffer(void)
  */
 void check_for_embedded_ruler(uint8_t* target_ptr)
 {
-    if (*target_ptr == RULER_BYTE)
+    if (*target_ptr == RULER_PREFIX)
         push_onto_ruler_index(target_ptr);
 }
 
@@ -4511,7 +4513,7 @@ static int find_left_margin_stop(void)
     {
         do
         {
-            uint8_t scanned_char = current_line_buffer[scan_pos + 3];
+            uint8_t scanned_char = current_line_buffer.text[scan_pos];
 
             scan_pos++;
 
@@ -4549,7 +4551,7 @@ static bool insert_byte_at_xpos(uint8_t insert_pos)
     ok = insert_edit_buffer_bytes_at_xpos(1);
 
     if (ok)
-        current_line_buffer[xpos + 3] = 0x0b;
+        current_line_buffer.text[xpos] = 0x0b;
     xpos = saved_xpos;
 
     return ok;

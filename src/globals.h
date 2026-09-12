@@ -7,17 +7,24 @@
 #include <stdio.h>
 #include <stddef.h>
 
+#define MAX_LINE_LENGTH 132
+
 // Result of check_for_command_prefix / deref_and_check_for_command_prefix
 typedef enum
 {
     NO_COMMAND_PREFIX = 0,
-    COMMAND_PREFIX, /* 0x80 format command */
-    RULER_PREFIX,   /* 0x81 ruler line */
+    COMMAND_PREFIX = 0x80, /* format command */
+    RULER_PREFIX = 0x81,   /* ruler line */
 } command_prefix_t;
 
-// Command-prefix byte values (first byte of a format command / ruler line)
-#define COMMAND_BYTE 0x80
-#define RULER_BYTE 0x81
+/* A line in memory. */
+struct __attribute__((packed, aligned(1))) line
+{
+    uint8_t prefix_byte;
+    char command[2];
+    uint8_t text[MAX_LINE_LENGTH];
+    char extra[3];
+};
 
 // Result of check_for_control_code
 typedef enum
@@ -29,7 +36,6 @@ typedef enum
 
 #define ARRAY_SIZE(cur_ch) (sizeof(cur_ch) / sizeof((cur_ch)[0]))
 
-#define MAX_LINE_LENGTH 132
 #define MAX_COMMAND_LENGTH 68
 #define JMP_CLI 1
 #define JMP_EDITOR 2
@@ -180,7 +186,7 @@ extern struct pointer_array_t pointer_array;
 
 extern uint8_t current_ruler_buffer[133];
 
-extern uint8_t current_line_buffer[138];
+extern struct line current_line_buffer;
 
 extern uint8_t printer_driver_name[];
 extern void run_editor(void);

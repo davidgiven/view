@@ -21,7 +21,15 @@ extern uint8_t* edit_buffer_base; // was ptr1
 extern uint8_t* scratch_scan_ptr; // was tmp89
 extern uint8_t output_buffer[132];
 extern uint8_t input_buffer[68];
-extern uint8_t current_line_buffer[138];
+
+struct __attribute__((packed, aligned(1))) line
+{
+    uint8_t prefix_byte;
+    char command[2];
+    uint8_t text[132];
+    char extra[3];
+};
+extern struct line current_line_buffer;
 
 void justify_edit_buffer(void);
 
@@ -42,21 +50,22 @@ static int test_failures;
 static void setup_edit_buffer(const char* text)
 {
     memset(ram, 0, sizeof(ram));
-    memset(current_line_buffer, 0x10, sizeof(current_line_buffer));
+    memset(&current_line_buffer, 0x10, sizeof(current_line_buffer));
     int len = strlen(text);
     for (int i = 0; i < len; i++)
-        current_line_buffer[i + 3] = (uint8_t)text[i];
+        current_line_buffer.text[i] = (uint8_t)text[i];
     for (int i = len; i < 132; i++)
-        current_line_buffer[i + 3] = 0x10;
-    current_line_buffer[132 + 3] = 0x0d;
+        current_line_buffer.text[i] = 0x10;
+    ((uint8_t*)&current_line_buffer)[132 + 3] =
+        0x0d; // extra boundary? mem via text
 }
 
 static void init_globals(const char* text, uint8_t jf, uint8_t rstop)
 {
     setup_edit_buffer(text);
-    current_format_line_ptr = &current_line_buffer[3];
-    current_line_ptr = &current_line_buffer[3];
-    edit_buffer_base = current_line_buffer; // was ptr1
+    current_format_line_ptr = current_line_buffer.text;
+    current_line_ptr = current_line_buffer.text;
+    edit_buffer_base = (uint8_t*)&current_line_buffer; // was ptr1
 
     justifying_flag = jf;
     ruler_left_stop = 0;
@@ -80,7 +89,7 @@ static void run_justify(const char* text, uint8_t rstop)
     int buf_len = 0;
     for (int i = 0; i < 132; i++)
     {
-        if (current_line_buffer[i + 3] == 0x10)
+        if (current_line_buffer.text[i] == 0x10)
             break;
         buf_len++;
     }

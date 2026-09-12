@@ -54,7 +54,7 @@ uint8_t ram[655360];
 
 uint8_t current_ruler_buffer[133];
 
-uint8_t current_line_buffer[138];
+struct line current_line_buffer;
 
 uint8_t* edit_buffer_base;        /** Base of edit buffer. */
 uint8_t* current_format_line_ptr; /** Current formatting line pointer. */
