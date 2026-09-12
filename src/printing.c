@@ -1454,7 +1454,7 @@ void print_document(struct scan_state* scan)
     page_break_pending_flag = cur_ch;
     print_xpos = cur_ch;
     printing_from_file_flag = cur_ch;
-    current_ruler_ptr = &ram[RAM_CURRENT_RULER_BUF];
+    current_ruler_ptr = current_ruler_buffer;
     find_margins_of_current_ruler_buffer();
 
     if (!(!scan_input_buffer(input_buffer, scan)))

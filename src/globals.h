@@ -135,7 +135,6 @@ extern uint8_t page_lines_remaining, page_break_pending_flag, search_target_len;
 extern uint8_t editor_current_key;
 extern uint8_t page_break_flag;
 
-#define RAM_CURRENT_RULER_BUF 0x05CF
 #define RAM_MAX 0xffff
 
 /** Register values for A-Z. */
@@ -179,8 +178,7 @@ extern struct pointer_array_t pointer_array;
 #define doc_ptr2 pointer_array.doc_ptr2
 #define doc_ptr3 pointer_array.doc_ptr3
 
-#define RAM_CURRENT_RULER_BUF 0x05CF
-#define current_ruler_buffer (&ram[RAM_CURRENT_RULER_BUF])
+extern uint8_t current_ruler_buffer[133];
 
 extern uint8_t printer_driver_name[];
 extern void run_editor(void);

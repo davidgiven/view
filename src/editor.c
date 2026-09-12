@@ -4436,6 +4436,7 @@ static void unpack_line(uint8_t* target_ptr)
         copy_idx++;
     } while (copy_idx != 0);
     edit_line_len = copy_idx;
+    target_ptr[MAX_LINE_LENGTH + 3] = 0x0d;
 }
 
 /**

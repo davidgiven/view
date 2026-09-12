@@ -473,12 +473,13 @@ void initialise_document(void)
     top = page;
     edit_buffer_base = &ram[RAM_CURRENT_LINE_BUF];
     current_format_line_ptr = &ram[RAM_EDIT_BUFFER];
-    uint8_t pos2 = create_default_ruler(&ram[RAM_CURRENT_RULER_BUF]);
+    uint8_t pos2 = create_default_ruler(current_ruler_buffer);
 
     pos2++;
-    ram[RAM_CURRENT_RULER_BUF + pos2] = 0x0d;
+    current_ruler_buffer[pos2] = 0x0d;
     ruler_index[0] = &ram[0];
-    ruler_index[RULER_INDEX_SIZE - 1] = &ram[RAM_JUST_BEFORE_RULER_BUF];
+    ruler_index[RULER_INDEX_SIZE - 1] =
+        (uint8_t*)((uintptr_t)current_ruler_buffer - 3);
     move_cursor_to_top_of_document();
     clear_cmd();
     ensure_cr_at_document_top();

@@ -52,6 +52,8 @@ static uint8_t* compute_required_space_for_insertion(uint8_t* target_ptr);
 
 uint8_t ram[655360];
 
+uint8_t current_ruler_buffer[133];
+
 uint8_t* edit_buffer_base;        /** Base of edit buffer. */
 uint8_t* current_format_line_ptr; /** Current formatting line pointer. */
 uint8_t* current_ruler_ptr;       /** Pointer into current ruler buffer. */

@@ -48,10 +48,9 @@ The address space is split into fixed working buffers (below `oshwm` =
 | Address range | Contents |
 |---|---|
 | `0x0545`–`0x05CB` | **`current_line_buffer`** (135 bytes). Working edit buffer. `ptr1` points here; `RAM_EDIT_BUFFER` (`0x0548`) / `current_format_line_ptr` point at offset +3. |
-| `0x05CC`–`0x05CE` | Pad bytes before ruler buffer. |
-| `0x05CF`–`0x0653` | **`current_ruler_buffer`** (133 bytes). Current ruler definition. |
-| `0x0798`–`0x07CB` | Register value array (26 × 2 bytes for A–Z). |
-| `0x0800` (`oshwm`) | Ruler stack base (grows downward). |
+| `0x05CC`–`0x0653` | Unused (formerly 3-byte pad at `0x05CC` + `current_ruler_buffer` 133 bytes at `0x05CF`; now `current_ruler_buffer[133]` is a real C array in BSS – `src/view.c:55` / `src/globals.h:182` – not in `ram[]`). |
+| `0x0798`–`0x07CB` | Unused (formerly register value array 26×2 bytes for A–Z; now `register_value_array[26]` in BSS – `src/view.c:190` – not in `ram[]`). |
+| `0x0800` (`oshwm`) | Unused (formerly ruler stack base growing downward; now `ruler_index[128]` is a real C array in BSS – `src/view.c:71` / `src/globals.h:219` – `oshwm` still `&ram[0x0800]` only for `page` calculation, stack data not in `ram[]`). |
 | `0x0901` (`page`) | **Document heap start.** Lines stored contiguously, each terminated by `0x0d`, ending with `0x00`. `current_line_ptr` walks through this region. |
 | `page` … `top` | Active document content. `top` grows/shrinks as lines are inserted/deleted. |
 | `top` … `0xFFFF` (`himem`) | Free RAM. |
