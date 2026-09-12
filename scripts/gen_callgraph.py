@@ -9,7 +9,7 @@ import os
 from collections import OrderedDict
 
 SRC_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'src')
-APP_FILES = ['view.c', 'printing.c', 'document.c', 'editor.c']
+APP_FILES = ['view.c', 'printing.c', 'macro.c', 'document.c', 'editor.c']
 
 # Regex to match a function definition line
 FUNC_RE = re.compile(

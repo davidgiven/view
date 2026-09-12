@@ -16,12 +16,12 @@ view-b3.0.asm: view.py view-b3.0.rom
 view-rebuild.rom: view-b3.0.asm
 	beebasm -i $< -o $@
 
-SRC_COMMON = src/view.c src/printing.c src/document.c src/editor.c src/cli.c src/io/screen_ncurses.c
+SRC_COMMON = src/view.c src/printing.c src/macro.c src/document.c src/editor.c src/cli.c src/io/screen_ncurses.c
 SRC_INTERACTIVE = src/io/cli_readline.c
 SRC_TEST = src/io/cli_stdio.c
 
-OBJ_COMMON = $(addprefix $(OBJ_DIR)/, view.o printing.o document.o editor.o cli.o screen_ncurses.o)
-OBJ_COMMON_TEST = $(addprefix $(OBJ_DIR)/, view.o printing.o document.o editor.o cli.o screen_ncurses_test.o)
+OBJ_COMMON = $(addprefix $(OBJ_DIR)/, view.o printing.o macro.o document.o editor.o cli.o screen_ncurses.o)
+OBJ_COMMON_TEST = $(addprefix $(OBJ_DIR)/, view.o printing.o macro.o document.o editor.o cli.o screen_ncurses_test.o)
 
 OBJ_INTERACTIVE = $(OBJ_COMMON) $(OBJ_DIR)/cli_readline.o
 OBJ_TEST = $(OBJ_COMMON_TEST) $(OBJ_DIR)/cli_stdio.o
@@ -56,15 +56,15 @@ bin/render_number: tests/render_number.c
 	mkdir -p bin
 	$(CC) $(CFLAGS) -o $@ $<
 
-bin/test_ruler: tests/test_ruler.c $(OBJ_DIR)/view_nomain.o $(OBJ_DIR)/cli.o $(OBJ_DIR)/printing.o $(OBJ_DIR)/document.o $(OBJ_DIR)/editor.o $(OBJ_DIR)/cli_stdio.o $(OBJ_DIR)/screen_ncurses.o
+bin/test_ruler: tests/test_ruler.c $(OBJ_DIR)/view_nomain.o $(OBJ_DIR)/cli.o $(OBJ_DIR)/printing.o $(OBJ_DIR)/macro.o $(OBJ_DIR)/document.o $(OBJ_DIR)/editor.o $(OBJ_DIR)/cli_stdio.o $(OBJ_DIR)/screen_ncurses.o
 	mkdir -p bin
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-bin/test_justify: tests/test_justify.c $(OBJ_DIR)/view_nomain.o $(OBJ_DIR)/cli.o $(OBJ_DIR)/printing.o $(OBJ_DIR)/document.o $(OBJ_DIR)/editor.o $(OBJ_DIR)/cli_stdio.o $(OBJ_DIR)/screen_ncurses.o
+bin/test_justify: tests/test_justify.c $(OBJ_DIR)/view_nomain.o $(OBJ_DIR)/cli.o $(OBJ_DIR)/printing.o $(OBJ_DIR)/macro.o $(OBJ_DIR)/document.o $(OBJ_DIR)/editor.o $(OBJ_DIR)/cli_stdio.o $(OBJ_DIR)/screen_ncurses.o
 	mkdir -p bin
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-bin/test_ruler_index: tests/test_ruler_index.c $(OBJ_DIR)/view_nomain.o $(OBJ_DIR)/cli.o $(OBJ_DIR)/printing.o $(OBJ_DIR)/document.o $(OBJ_DIR)/editor.o $(OBJ_DIR)/cli_stdio.o $(OBJ_DIR)/screen_ncurses.o
+bin/test_ruler_index: tests/test_ruler_index.c $(OBJ_DIR)/view_nomain.o $(OBJ_DIR)/cli.o $(OBJ_DIR)/printing.o $(OBJ_DIR)/macro.o $(OBJ_DIR)/document.o $(OBJ_DIR)/editor.o $(OBJ_DIR)/cli_stdio.o $(OBJ_DIR)/screen_ncurses.o
 	mkdir -p bin
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 

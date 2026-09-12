@@ -121,11 +121,11 @@ folding_flag                    = &007c
 cursor_moved_flag               = &007d
 delimiter_char                  = &007e
 input_buffer_ptr                = &007f
-l0080                           = &0080
-l0081                           = &0081
-l0082                           = &0082
-l0083                           = &0083
-l0084                           = &0084
+scratch_offset                  = &0080
+scratch_index                   = &0081
+screen_row                      = &0082
+screen_column                   = &0083
+temp_save                       = &0084
 tmp0                            = &0085
 tmp1                            = &0086
 tmp2                            = &0087
@@ -463,12 +463,12 @@ l80f2 = brk_handler_ptr+1
     beq c81e7                                                         ; 81bc: f0 29       .)
     tya                                                               ; 81be: 98          .
     bne c81db                                                         ; 81bf: d0 1a       ..
-    stx l0083                                                         ; 81c1: 86 83       ..
+    stx screen_column                                                 ; 81c1: 86 83       ..
     jsr print_inline_string                                           ; 81c3: 20 fa a7     ..
     equs "Marker(s) set "                                             ; 81c6: 4d 61 72... Mar
     equb 0                                                            ; 81d4: 00          .
 
-    ldx l0083                                                         ; 81d5: a6 83       ..
+    ldx screen_column                                                 ; 81d5: a6 83       ..
     ldy #1                                                            ; 81d7: a0 01       ..
     bne c81e0                                                         ; 81d9: d0 05       ..             ; ALWAYS branch
 
@@ -558,7 +558,7 @@ l80f2 = brk_handler_ptr+1
 ; &8258 referenced 1 time by &824c
 .input_line_not_oscli
     jsr parse_command                                                 ; 8258: 20 47 a8     G.
-    sty l0080                                                         ; 825b: 84 80       ..
+    sty scratch_offset                                                ; 825b: 84 80       ..
     bcs c8263                                                         ; 825d: b0 04       ..
     cpy #&19                                                          ; 825f: c0 19       ..
     bcc c826e                                                         ; 8261: 90 0b       ..
@@ -579,7 +579,7 @@ l80f2 = brk_handler_ptr+1
 
 ; &827c referenced 2 times by &826f, &8274
 .c827c
-    lda l0080                                                         ; 827c: a5 80       ..
+    lda scratch_offset                                                ; 827c: a5 80       ..
     ldy #4                                                            ; 827e: a0 04       ..
     jsr call_through_jumptable                                        ; 8280: 20 92 a8     ..
     jmp run_cli                                                       ; 8283: 4c f6 80    L..
@@ -649,7 +649,7 @@ l80f2 = brk_handler_ptr+1
 .read_next_command_byte
     iny                                                               ; 8310: c8          .
     lda input_buffer,y                                                ; 8311: b9 00 05    ...
-    sta l0084                                                         ; 8314: 85 84       ..
+    sta temp_save                                                     ; 8314: 85 84       ..
     cmp delimiter_char                                                ; 8316: c5 7e       .~
     beq return_2                                                      ; 8318: f0 02       ..
     cmp #&0d                                                          ; 831a: c9 0d       ..
@@ -746,7 +746,7 @@ l80f2 = brk_handler_ptr+1
 ; ***************************************************************************************
 ; &83a0 referenced 2 times by &83fd, &841f
 .expand_escaped_string
-    stx l0083                                                         ; 83a0: 86 83       ..
+    stx screen_column                                                 ; 83a0: 86 83       ..
     dey                                                               ; 83a2: 88          .
 ; &83a3 referenced 1 time by &83d8
 .c83a3
@@ -757,7 +757,7 @@ l80f2 = brk_handler_ptr+1
     jsr read_next_command_byte                                        ; 83ac: 20 10 83     ..
     beq c83da                                                         ; 83af: f0 29       .)
     jsr to_uppercase                                                  ; 83b1: 20 63 8c     c.
-    sta l0082                                                         ; 83b4: 85 82       ..
+    sta screen_row                                                    ; 83b4: 85 82       ..
     ldx #&fe                                                          ; 83b6: a2 fe       ..
 ; &83b8 referenced 1 time by &83c1
 .loop_c83b8
@@ -765,13 +765,13 @@ l80f2 = brk_handler_ptr+1
     inx                                                               ; 83b9: e8          .
     lda escaped_char_table,x                                          ; 83ba: bd df 83    ...
     bmi c83c8                                                         ; 83bd: 30 09       0.
-    cmp l0082                                                         ; 83bf: c5 82       ..
+    cmp screen_row                                                    ; 83bf: c5 82       ..
     bne loop_c83b8                                                    ; 83c1: d0 f5       ..
     lda l83e0,x                                                       ; 83c3: bd e0 83    ...
     bne c83ca                                                         ; 83c6: d0 02       ..
 ; &83c8 referenced 1 time by &83bd
 .c83c8
-    lda l0084                                                         ; 83c8: a5 84       ..
+    lda temp_save                                                     ; 83c8: a5 84       ..
 ; &83ca referenced 2 times by &83aa, &83c6
 .c83ca
     ldx search_target_len                                             ; 83ca: a6 7a       .z
@@ -779,13 +779,13 @@ l80f2 = brk_handler_ptr+1
     jsr upper_case_unless_folding                                     ; 83ce: 20 5f 8c     _.
 ; &83d1 referenced 1 time by &83cc
 .c83d1
-    ldx l0083                                                         ; 83d1: a6 83       ..
+    ldx screen_column                                                 ; 83d1: a6 83       ..
     sta header_text_maybe,x                                           ; 83d3: 9d d8 06    ...
-    inc l0083                                                         ; 83d6: e6 83       ..
+    inc screen_column                                                 ; 83d6: e6 83       ..
     bne c83a3                                                         ; 83d8: d0 c9       ..
 ; &83da referenced 2 times by &83a6, &83af
 .c83da
-    ldx l0083                                                         ; 83da: a6 83       ..
+    ldx screen_column                                                 ; 83da: a6 83       ..
     sty input_buffer_ptr                                              ; 83dc: 84 7f       ..
 ; &83de referenced 1 time by &839b
 .return_3
@@ -1091,14 +1091,14 @@ l80f2 = brk_handler_ptr+1
     inx                                                               ; 85bb: e8          .
     dex                                                               ; 85bc: ca          .
     bne c85ec                                                         ; 85bd: d0 2d       .-
-    sta l0084                                                         ; 85bf: 85 84       ..
+    sta temp_save                                                     ; 85bf: 85 84       ..
     lda is_tube_flag                                                  ; 85c1: a5 52       .R
     ror a                                                             ; 85c3: 6a          j
     bcs c85df                                                         ; 85c4: b0 19       ..
     jsr check_for_bad_document                                        ; 85c6: 20 86 8e     ..
     bne c85df                                                         ; 85c9: d0 14       ..
     lda #osbyte_read_himem_for_mode                                   ; 85cb: a9 85       ..
-    ldx l0084                                                         ; 85cd: a6 84       ..             ; X=MODE number
+    ldx temp_save                                                     ; 85cd: a6 84       ..             ; X=MODE number
     jsr osbyte                                                        ; 85cf: 20 f4 ff     ..            ; Read top of user memory for a given screen mode X
     cpy top+1                                                         ; 85d2: c4 0e       ..             ; X and Y contain the address (low, high)
     bcc c85dc                                                         ; 85d4: 90 06       ..
@@ -1113,7 +1113,7 @@ l80f2 = brk_handler_ptr+1
 .c85df
     lda #&16                                                          ; 85df: a9 16       ..
     jsr oswrch                                                        ; 85e1: 20 ee ff     ..            ; Write character 22
-    lda l0084                                                         ; 85e4: a5 84       ..
+    lda temp_save                                                     ; 85e4: a5 84       ..
     jsr oswrch                                                        ; 85e6: 20 ee ff     ..            ; Write character
     jmp system_init                                                   ; 85e9: 4c 79 af    Ly.
 
@@ -1234,8 +1234,8 @@ l80f2 = brk_handler_ptr+1
     lda #0                                                            ; 86ae: a9 00       ..
     sta tmp8                                                          ; 86b0: 85 8d       ..
     sta tmp9                                                          ; 86b2: 85 8e       ..
-    sta l0083                                                         ; 86b4: 85 83       ..
-    sta l0082                                                         ; 86b6: 85 82       ..
+    sta screen_column                                                 ; 86b4: 85 83       ..
+    sta screen_row                                                    ; 86b6: 85 82       ..
 ; &86b8 referenced 2 times by &8723, &8729
 .c86b8
     ldy #0                                                            ; 86b8: a0 00       ..
@@ -1280,7 +1280,7 @@ l80f2 = brk_handler_ptr+1
     jsr sub_ca5ab                                                     ; 86ec: 20 ab a5     ..
     and #&7f                                                          ; 86ef: 29 7f       ).
     ldx #0                                                            ; 86f1: a2 00       ..
-    ldy l0082                                                         ; 86f3: a4 82       ..
+    ldy screen_row                                                    ; 86f3: a4 82       ..
     bmi c870d                                                         ; 86f5: 30 16       0.
     cmp #&0d                                                          ; 86f7: c9 0d       ..
     beq c8703                                                         ; 86f9: f0 08       ..
@@ -1288,25 +1288,25 @@ l80f2 = brk_handler_ptr+1
     beq c8703                                                         ; 86fd: f0 04       ..
 ; &86ff referenced 1 time by &86dd
 .c86ff
-    inc l0083                                                         ; 86ff: e6 83       ..
+    inc screen_column                                                 ; 86ff: e6 83       ..
     bne c8715                                                         ; 8701: d0 12       ..
 ; &8703 referenced 2 times by &86f9, &86fd
 .c8703
-    ldy l0083                                                         ; 8703: a4 83       ..
+    ldy screen_column                                                 ; 8703: a4 83       ..
     beq c870d                                                         ; 8705: f0 06       ..
     inc tmp8                                                          ; 8707: e6 8d       ..
     bne c870d                                                         ; 8709: d0 02       ..
     inc tmp9                                                          ; 870b: e6 8e       ..
 ; &870d referenced 3 times by &86f5, &8705, &8709
 .c870d
-    stx l0083                                                         ; 870d: 86 83       ..
+    stx screen_column                                                 ; 870d: 86 83       ..
     cmp #&0d                                                          ; 870f: c9 0d       ..
     bne c8715                                                         ; 8711: d0 02       ..
-    stx l0082                                                         ; 8713: 86 82       ..
+    stx screen_row                                                    ; 8713: 86 82       ..
 ; &8715 referenced 2 times by &8701, &8711
 .c8715
-    ora l0082                                                         ; 8715: 05 82       ..
-    sta l0082                                                         ; 8717: 85 82       ..
+    ora screen_row                                                    ; 8715: 05 82       ..
+    sta screen_row                                                    ; 8717: 85 82       ..
     inc tmp0                                                          ; 8719: e6 85       ..
     bne c871f                                                         ; 871b: d0 02       ..
 ; &871d referenced 1 time by &86e6
@@ -1814,8 +1814,8 @@ l80f2 = brk_handler_ptr+1
 ; &8a4f referenced 2 times by &82c0, &834e
 .check_area_memory
     lda #0                                                            ; 8a4f: a9 00       ..
-    sta l0082                                                         ; 8a51: 85 82       ..
-    sta l0081                                                         ; 8a53: 85 81       ..
+    sta screen_row                                                    ; 8a51: 85 82       ..
+    sta scratch_index                                                 ; 8a53: 85 81       ..
     ldy #&14                                                          ; 8a55: a0 14       ..
     ldx search_target_len                                             ; 8a57: a6 7a       .z
     bne c8a87                                                         ; 8a59: d0 2c       .,
@@ -1824,10 +1824,10 @@ l80f2 = brk_handler_ptr+1
     lda header_text_maybe,x                                           ; 8a5b: bd d8 06    ...
     cmp #1                                                            ; 8a5e: c9 01       ..
     bne c8a6c                                                         ; 8a60: d0 0a       ..
-    lda l0081                                                         ; 8a62: a5 81       ..
+    lda scratch_index                                                 ; 8a62: a5 81       ..
     cmp l0049                                                         ; 8a64: c5 49       .I
     bcs c8a86                                                         ; 8a66: b0 1e       ..
-    inc l0081                                                         ; 8a68: e6 81       ..
+    inc scratch_index                                                 ; 8a68: e6 81       ..
     bne c8a84                                                         ; 8a6a: d0 18       ..
 ; &8a6c referenced 1 time by &8a60
 .c8a6c
@@ -1842,13 +1842,13 @@ l80f2 = brk_handler_ptr+1
     iny                                                               ; 8a78: c8          .
     plp                                                               ; 8a79: 28          (
     beq c8a86                                                         ; 8a7a: f0 0a       ..
-    inc l0082                                                         ; 8a7c: e6 82       ..
+    inc screen_row                                                    ; 8a7c: e6 82       ..
     cpy l0048                                                         ; 8a7e: c4 48       .H
     bcc loop_c8a74                                                    ; 8a80: 90 f2       ..
-    dec l0082                                                         ; 8a82: c6 82       ..
+    dec screen_row                                                    ; 8a82: c6 82       ..
 ; &8a84 referenced 3 times by &8a6a, &8a6e, &8a72
 .c8a84
-    inc l0082                                                         ; 8a84: e6 82       ..
+    inc screen_row                                                    ; 8a84: e6 82       ..
 ; &8a86 referenced 2 times by &8a66, &8a7a
 .c8a86
     inx                                                               ; 8a86: e8          .
@@ -1859,16 +1859,16 @@ l80f2 = brk_handler_ptr+1
     lda doc_ptr2                                                      ; 8a8b: a5 65       .e
     sec                                                               ; 8a8d: 38          8
     sbc doc_working_ptr                                               ; 8a8e: e5 4b       .K
-    sta l0080                                                         ; 8a90: 85 80       ..
+    sta scratch_offset                                                ; 8a90: 85 80       ..
     lda doc_ptr2+1                                                    ; 8a92: a5 66       .f
     sbc doc_working_ptr+1                                             ; 8a94: e5 4c       .L
-    sta l0081                                                         ; 8a96: 85 81       ..
-    ldx l0082                                                         ; 8a98: a6 82       ..
+    sta scratch_index                                                 ; 8a96: 85 81       ..
+    ldx screen_row                                                    ; 8a98: a6 82       ..
     tay                                                               ; 8a9a: a8          .
     bne c8aa3                                                         ; 8a9b: d0 06       ..
-    cpx l0080                                                         ; 8a9d: e4 80       ..
+    cpx scratch_offset                                                ; 8a9d: e4 80       ..
     bcc c8aa3                                                         ; 8a9f: 90 02       ..
-    ldx l0080                                                         ; 8aa1: a6 80       ..
+    ldx scratch_offset                                                ; 8aa1: a6 80       ..
 ; &8aa3 referenced 2 times by &8a9b, &8a9f
 .c8aa3
     txa                                                               ; 8aa3: 8a          .
@@ -1878,12 +1878,12 @@ l80f2 = brk_handler_ptr+1
     lda doc_working_ptr+1                                             ; 8aa9: a5 4c       .L
     adc #0                                                            ; 8aab: 69 00       i.
     sta tmp5                                                          ; 8aad: 85 8a       ..
-    lda l0082                                                         ; 8aaf: a5 82       ..
+    lda screen_row                                                    ; 8aaf: a5 82       ..
     sec                                                               ; 8ab1: 38          8
-    sbc l0080                                                         ; 8ab2: e5 80       ..
+    sbc scratch_offset                                                ; 8ab2: e5 80       ..
     sta tmp6                                                          ; 8ab4: 85 8b       ..
     lda #0                                                            ; 8ab6: a9 00       ..
-    sbc l0081                                                         ; 8ab8: e5 81       ..
+    sbc scratch_index                                                 ; 8ab8: e5 81       ..
     sta tmp7                                                          ; 8aba: 85 8c       ..
     bmi c8aca                                                         ; 8abc: 30 0c       0.
     ora tmp6                                                          ; 8abe: 05 8b       ..
@@ -1906,10 +1906,10 @@ l80f2 = brk_handler_ptr+1
 ; &8ada referenced 2 times by &8ac0, &8ac7
 .c8ada
     ldy #0                                                            ; 8ada: a0 00       ..
-    sty l0081                                                         ; 8adc: 84 81       ..
+    sty scratch_index                                                 ; 8adc: 84 81       ..
     bit print_xpos                                                    ; 8ade: 24 78       $x
     bmi c8b11                                                         ; 8ae0: 30 2f       0/
-    ldx l0080                                                         ; 8ae2: a6 80       ..
+    ldx scratch_offset                                                ; 8ae2: a6 80       ..
 ; &8ae4 referenced 1 time by &8aef
 .loop_c8ae4
     lda (doc_working_ptr),y                                           ; 8ae4: b1 4b       .K
@@ -1929,7 +1929,7 @@ l80f2 = brk_handler_ptr+1
     pla                                                               ; 8af8: 68          h
     and #&20 ; ' '                                                    ; 8af9: 29 20       )
     bne c8b11                                                         ; 8afb: d0 14       ..
-    inc l0081                                                         ; 8afd: e6 81       ..
+    inc scratch_index                                                 ; 8afd: e6 81       ..
     dex                                                               ; 8aff: ca          .
     beq c8b0d                                                         ; 8b00: f0 0b       ..
     lda (doc_working_ptr),y                                           ; 8b02: b1 4b       .K
@@ -1939,27 +1939,27 @@ l80f2 = brk_handler_ptr+1
     bne c8b11                                                         ; 8b0b: d0 04       ..
 ; &8b0d referenced 1 time by &8b00
 .c8b0d
-    dec l0081                                                         ; 8b0d: c6 81       ..
-    dec l0081                                                         ; 8b0f: c6 81       ..
+    dec scratch_index                                                 ; 8b0d: c6 81       ..
+    dec scratch_index                                                 ; 8b0f: c6 81       ..
 ; &8b11 referenced 5 times by &8ae0, &8af1, &8afb, &8b07, &8b0b
 .c8b11
     ldx #0                                                            ; 8b11: a2 00       ..
-    stx l0082                                                         ; 8b13: 86 82       ..
-    stx l0083                                                         ; 8b15: 86 83       ..
+    stx screen_row                                                    ; 8b13: 86 82       ..
+    stx screen_column                                                 ; 8b15: 86 83       ..
     ldx #&14                                                          ; 8b17: a2 14       ..
-    stx l0080                                                         ; 8b19: 86 80       ..
+    stx scratch_offset                                                ; 8b19: 86 80       ..
     ldx search_target_len                                             ; 8b1b: a6 7a       .z
     bne c8b6b                                                         ; 8b1d: d0 4c       .L
 ; &8b1f referenced 1 time by &8b6d
 .c8b1f
     lda header_text_maybe,x                                           ; 8b1f: bd d8 06    ...
-    stx l0084                                                         ; 8b22: 86 84       ..
+    stx temp_save                                                     ; 8b22: 86 84       ..
     cmp #&20 ; ' '                                                    ; 8b24: c9 20       .
     bne c8b38                                                         ; 8b26: d0 10       ..
-    ldy l0080                                                         ; 8b28: a4 80       ..
+    ldy scratch_offset                                                ; 8b28: a4 80       ..
     cpy l0048                                                         ; 8b2a: c4 48       .H
     bcs c8b47                                                         ; 8b2c: b0 19       ..
-    inc l0080                                                         ; 8b2e: e6 80       ..
+    inc scratch_offset                                                ; 8b2e: e6 80       ..
     lda output_buffer,y                                               ; 8b30: b9 54 06    .T.
     beq c8b6a                                                         ; 8b33: f0 35       .5
     dex                                                               ; 8b35: ca          .
@@ -1969,11 +1969,11 @@ l80f2 = brk_handler_ptr+1
 .c8b38
     cmp #1                                                            ; 8b38: c9 01       ..
     bne c8b47                                                         ; 8b3a: d0 0b       ..
-    ldy l0082                                                         ; 8b3c: a4 82       ..
+    ldy screen_row                                                    ; 8b3c: a4 82       ..
     cpy l0049                                                         ; 8b3e: c4 49       .I
     bcs c8b6a                                                         ; 8b40: b0 28       .(
     lda output_buffer,y                                               ; 8b42: b9 54 06    .T.
-    inc l0082                                                         ; 8b45: e6 82       ..
+    inc screen_row                                                    ; 8b45: e6 82       ..
 ; &8b47 referenced 3 times by &8b2c, &8b36, &8b3a
 .c8b47
     cmp #2                                                            ; 8b47: c9 02       ..
@@ -1988,15 +1988,15 @@ l80f2 = brk_handler_ptr+1
     jsr is_letter                                                     ; 8b55: 20 6b 8c     k.
     bcs c8b64                                                         ; 8b58: b0 0a       ..
     ora #&20 ; ' '                                                    ; 8b5a: 09 20       .
-    ldy l0081                                                         ; 8b5c: a4 81       ..
+    ldy scratch_index                                                 ; 8b5c: a4 81       ..
     beq c8b64                                                         ; 8b5e: f0 04       ..
-    dec l0081                                                         ; 8b60: c6 81       ..
+    dec scratch_index                                                 ; 8b60: c6 81       ..
     and #&df                                                          ; 8b62: 29 df       ).
 ; &8b64 referenced 4 times by &8b4f, &8b53, &8b58, &8b5e
 .c8b64
-    ldy l0083                                                         ; 8b64: a4 83       ..
+    ldy screen_column                                                 ; 8b64: a4 83       ..
     sta (doc_working_ptr),y                                           ; 8b66: 91 4b       .K
-    inc l0083                                                         ; 8b68: e6 83       ..
+    inc screen_column                                                 ; 8b68: e6 83       ..
 ; &8b6a referenced 2 times by &8b33, &8b40
 .c8b6a
     inx                                                               ; 8b6a: e8          .
@@ -2025,7 +2025,7 @@ l80f2 = brk_handler_ptr+1
     sta l0048                                                         ; 8b81: 85 48       .H
     ldx #0                                                            ; 8b83: a2 00       ..
     stx l0049                                                         ; 8b85: 86 49       .I
-    stx l0081                                                         ; 8b87: 86 81       ..
+    stx scratch_index                                                 ; 8b87: 86 81       ..
     lda doc_ptr2                                                      ; 8b89: a5 65       .e
     sta tmp8                                                          ; 8b8b: 85 8d       ..
     lda doc_ptr2+1                                                    ; 8b8d: a5 66       .f
@@ -2057,7 +2057,7 @@ l80f2 = brk_handler_ptr+1
 ; &8bb7 referenced 1 time by &8ba6
 .c8bb7
     jsr upper_case_unless_folding                                     ; 8bb7: 20 5f 8c     _.
-    sta l0083                                                         ; 8bba: 85 83       ..
+    sta screen_column                                                 ; 8bba: 85 83       ..
 ; &8bbc referenced 1 time by &8c1f
 .c8bbc
     iny                                                               ; 8bbc: c8          .
@@ -2075,7 +2075,7 @@ l80f2 = brk_handler_ptr+1
     lda #&20 ; ' '                                                    ; 8bd5: a9 20       .
 ; &8bd7 referenced 1 time by &8bd3
 .c8bd7
-    cmp l0083                                                         ; 8bd7: c5 83       ..
+    cmp screen_column                                                 ; 8bd7: c5 83       ..
     beq c8c33                                                         ; 8bd9: f0 58       .X
 ; &8bdb referenced 3 times by &8bbf, &8bc4, &8c11
 .c8bdb
@@ -2087,8 +2087,8 @@ l80f2 = brk_handler_ptr+1
     bne scan_document_for_next_line                                   ; 8be1: d0 98       ..
 ; &8be3 referenced 1 time by &8bcf
 .c8be3
-    lda l0083                                                         ; 8be3: a5 83       ..
-    stx l0084                                                         ; 8be5: 86 84       ..
+    lda screen_column                                                 ; 8be3: a5 83       ..
+    stx temp_save                                                     ; 8be5: 86 84       ..
     ldx l0049                                                         ; 8be7: a6 49       .I
     cpx #&14                                                          ; 8be9: e0 14       ..
     bcs c8bf2                                                         ; 8beb: b0 05       ..
@@ -2096,13 +2096,13 @@ l80f2 = brk_handler_ptr+1
     inc l0049                                                         ; 8bf0: e6 49       .I
 ; &8bf2 referenced 1 time by &8beb
 .c8bf2
-    ldx l0084                                                         ; 8bf2: a6 84       ..
+    ldx temp_save                                                     ; 8bf2: a6 84       ..
     jmp c8c33                                                         ; 8bf4: 4c 33 8c    L3.
 
 ; &8bf7 referenced 1 time by &8bcb
 .c8bf7
-    stx l0084                                                         ; 8bf7: 86 84       ..
-    lda l0083                                                         ; 8bf9: a5 83       ..
+    stx temp_save                                                     ; 8bf7: 86 84       ..
+    lda screen_column                                                 ; 8bf9: a5 83       ..
     cmp #&20 ; ' '                                                    ; 8bfb: c9 20       .
     beq c8c23                                                         ; 8bfd: f0 24       .$
     cmp #9                                                            ; 8bff: c9 09       ..
@@ -2113,12 +2113,12 @@ l80f2 = brk_handler_ptr+1
     beq c8c23                                                         ; 8c09: f0 18       ..
     cmp #&0d                                                          ; 8c0b: c9 0d       ..
     beq c8c23                                                         ; 8c0d: f0 14       ..
-    lda l0081                                                         ; 8c0f: a5 81       ..
+    lda scratch_index                                                 ; 8c0f: a5 81       ..
     beq c8bdb                                                         ; 8c11: f0 c8       ..
     jsr append_zero_to_output_buffer                                  ; 8c13: 20 51 8c     Q.
     lda #0                                                            ; 8c16: a9 00       ..
-    sta l0081                                                         ; 8c18: 85 81       ..
-    ldx l0084                                                         ; 8c1a: a6 84       ..
+    sta scratch_index                                                 ; 8c18: 85 81       ..
+    ldx temp_save                                                     ; 8c1a: a6 84       ..
     inx                                                               ; 8c1c: e8          .
     cpx search_target_len                                             ; 8c1d: e4 7a       .z
     bcc c8bbc                                                         ; 8c1f: 90 9b       ..
@@ -2127,8 +2127,8 @@ l80f2 = brk_handler_ptr+1
 ; &8c23 referenced 5 times by &8bfd, &8c01, &8c05, &8c09, &8c0d
 .c8c23
     jsr append_to_output_buffer                                       ; 8c23: 20 53 8c     S.
-    ldx l0084                                                         ; 8c26: a6 84       ..
-    sta l0081                                                         ; 8c28: 85 81       ..
+    ldx temp_save                                                     ; 8c26: a6 84       ..
+    sta scratch_index                                                 ; 8c28: 85 81       ..
 ; &8c2a referenced 1 time by &8c36
 .loop_c8c2a
     inc tmp8                                                          ; 8c2a: e6 8d       ..
@@ -2227,8 +2227,8 @@ l80f2 = brk_handler_ptr+1
 .read_block_from_file
     lda #0                                                            ; 8c8d: a9 00       ..
     sta error_handling_mode                                           ; 8c8f: 85 4e       .N
-    sta l0083                                                         ; 8c91: 85 83       ..
-    sta l0084                                                         ; 8c93: 85 84       ..
+    sta screen_column                                                 ; 8c91: 85 83       ..
+    sta temp_save                                                     ; 8c93: 85 84       ..
 ; &8c95 referenced 6 times by &8ca4, &8ca9, &8cc6, &8ce1, &8ce7, &8cef
 .c8c95
     ldy rw_file_handle                                                ; 8c95: a4 4d       .M
@@ -2237,12 +2237,12 @@ l80f2 = brk_handler_ptr+1
     bcs c8cf2                                                         ; 8c9c: b0 54       .T
     cmp #&7f                                                          ; 8c9e: c9 7f       ..
     bcc c8caf                                                         ; 8ca0: 90 0d       ..
-    ldx l0084                                                         ; 8ca2: a6 84       ..
+    ldx temp_save                                                     ; 8ca2: a6 84       ..
     bne c8c95                                                         ; 8ca4: d0 ef       ..
     jsr check_for_command_prefix                                      ; 8ca6: 20 71 af     q.
     bne c8c95                                                         ; 8ca9: d0 ea       ..
     ldx #&fd                                                          ; 8cab: a2 fd       ..
-    stx l0083                                                         ; 8cad: 86 83       ..
+    stx screen_column                                                 ; 8cad: 86 83       ..
 ; &8caf referenced 1 time by &8ca0
 .c8caf
     cmp #&20 ; ' '                                                    ; 8caf: c9 20       .
@@ -2263,7 +2263,7 @@ l80f2 = brk_handler_ptr+1
     cmp #&0d                                                          ; 8cca: c9 0d       ..
     beq c8cdb                                                         ; 8ccc: f0 0d       ..
     dex                                                               ; 8cce: ca          .              ; X=&00
-    ldy l0083                                                         ; 8ccf: a4 83       ..
+    ldy screen_column                                                 ; 8ccf: a4 83       ..
     cpy #&84                                                          ; 8cd1: c0 84       ..
     bne c8cdb                                                         ; 8cd3: d0 06       ..
     pha                                                               ; 8cd5: 48          H
@@ -2272,16 +2272,16 @@ l80f2 = brk_handler_ptr+1
     inx                                                               ; 8cda: e8          .
 ; &8cdb referenced 2 times by &8ccc, &8cd3
 .c8cdb
-    inc l0083                                                         ; 8cdb: e6 83       ..
+    inc screen_column                                                 ; 8cdb: e6 83       ..
     jsr write_byte_to_memory                                          ; 8cdd: 20 00 8d     ..
     txa                                                               ; 8ce0: 8a          .
     beq c8c95                                                         ; 8ce1: f0 b2       ..
     lda tmp1                                                          ; 8ce3: a5 86       ..
-    cmp l0081                                                         ; 8ce5: c5 81       ..
+    cmp scratch_index                                                 ; 8ce5: c5 81       ..
     bcc c8c95                                                         ; 8ce7: 90 ac       ..
     bne c8cf1                                                         ; 8ce9: d0 06       ..
     lda tmp0                                                          ; 8ceb: a5 85       ..
-    cmp l0080                                                         ; 8ced: c5 80       ..
+    cmp scratch_offset                                                ; 8ced: c5 80       ..
     bcc c8c95                                                         ; 8cef: 90 a4       ..
 ; &8cf1 referenced 1 time by &8ce9
 .c8cf1
@@ -2289,13 +2289,13 @@ l80f2 = brk_handler_ptr+1
 ; &8cf2 referenced 1 time by &8c9c
 .c8cf2
     php                                                               ; 8cf2: 08          .
-    lda l0084                                                         ; 8cf3: a5 84       ..
+    lda temp_save                                                     ; 8cf3: a5 84       ..
     beq c8cfa                                                         ; 8cf5: f0 03       ..
     jsr write_cr_to_memory                                            ; 8cf7: 20 fe 8c     ..
 ; &8cfa referenced 1 time by &8cf5
 .c8cfa
     plp                                                               ; 8cfa: 28          (
-    lda l0082                                                         ; 8cfb: a5 82       ..
+    lda screen_row                                                    ; 8cfb: a5 82       ..
     rts                                                               ; 8cfd: 60          `
 
 ; ***************************************************************************************
@@ -2312,11 +2312,11 @@ l80f2 = brk_handler_ptr+1
     inc tmp1                                                          ; 8d08: e6 86       ..
 ; &8d0a referenced 1 time by &8d06
 .c8d0a
-    sta l0084                                                         ; 8d0a: 85 84       ..
+    sta temp_save                                                     ; 8d0a: 85 84       ..
     cmp #&0d                                                          ; 8d0c: c9 0d       ..
     bne return_16                                                     ; 8d0e: d0 04       ..
-    sty l0084                                                         ; 8d10: 84 84       ..
-    sty l0083                                                         ; 8d12: 84 83       ..
+    sty temp_save                                                     ; 8d10: 84 84       ..
+    sty screen_column                                                 ; 8d12: 84 83       ..
 ; &8d14 referenced 1 time by &8d0e
 .return_16
     rts                                                               ; 8d14: 60          `
@@ -2325,14 +2325,14 @@ l80f2 = brk_handler_ptr+1
 ; &8d15 referenced 1 time by &8c97
 .get_byte_from_file
     tsx                                                               ; 8d15: ba          .
-    stx l0082                                                         ; 8d16: 86 82       ..
+    stx screen_row                                                    ; 8d16: 86 82       ..
     jmp osbget                                                        ; 8d18: 4c d7 ff    L..            ; Read a single byte from an open file Y
 
 .sub_c8d1b
-    ldx l0082                                                         ; 8d1b: a6 82       ..
+    ldx screen_row                                                    ; 8d1b: a6 82       ..
     txs                                                               ; 8d1d: 9a          .
     lda #0                                                            ; 8d1e: a9 00       ..
-    sta l0082                                                         ; 8d20: 85 82       ..
+    sta screen_row                                                    ; 8d20: 85 82       ..
     sec                                                               ; 8d22: 38          8
     rts                                                               ; 8d23: 60          `
 
@@ -2405,11 +2405,11 @@ l80f2 = brk_handler_ptr+1
 ; &8d79 referenced 1 time by &8d63
 .put_byte_to_file
     tsx                                                               ; 8d79: ba          .
-    stx l0084                                                         ; 8d7a: 86 84       ..
+    stx temp_save                                                     ; 8d7a: 86 84       ..
     jmp osbput                                                        ; 8d7c: 4c d4 ff    L..            ; Write a single byte A to an open file Y
 
 .sub_c8d7f
-    ldx l0084                                                         ; 8d7f: a6 84       ..
+    ldx temp_save                                                     ; 8d7f: a6 84       ..
     inx                                                               ; 8d81: e8          .
     inx                                                               ; 8d82: e8          .
     txs                                                               ; 8d83: 9a          .
@@ -2488,12 +2488,12 @@ l80f2 = brk_handler_ptr+1
     lda tmp1                                                          ; 8de2: a5 86       ..
     adc tmp7                                                          ; 8de4: 65 8c       e.
     sta print_doc_ptr+1                                               ; 8de6: 85 16       ..
-    sta l0081                                                         ; 8de8: 85 81       ..
+    sta scratch_index                                                 ; 8de8: 85 81       ..
     pla                                                               ; 8dea: 68          h
     sbc #&8b                                                          ; 8deb: e9 8b       ..
-    sta l0080                                                         ; 8ded: 85 80       ..
+    sta scratch_offset                                                ; 8ded: 85 80       ..
     bcs return_18                                                     ; 8def: b0 02       ..
-    dec l0081                                                         ; 8df1: c6 81       ..
+    dec scratch_index                                                 ; 8df1: c6 81       ..
 ; &8df3 referenced 1 time by &8def
 .return_18
     rts                                                               ; 8df3: 60          `
@@ -2745,11 +2745,11 @@ l80f2 = brk_handler_ptr+1
     bmi c8f1a                                                         ; 8f42: 30 d6       0.
     jsr start_microspacing_if_active                                  ; 8f44: 20 6a 91     j.
     ldy #0                                                            ; 8f47: a0 00       ..
-    sty l0080                                                         ; 8f49: 84 80       ..
+    sty scratch_offset                                                ; 8f49: 84 80       ..
     jsr deref_and_check_for_command_prefix                            ; 8f4b: 20 6f af     o.
     bne c8fce                                                         ; 8f4e: d0 7e       .~
     ldy #3                                                            ; 8f50: a0 03       ..
-    sty l0080                                                         ; 8f52: 84 80       ..
+    sty scratch_offset                                                ; 8f52: 84 80       ..
     jsr is_embedded_ruler                                             ; 8f54: 20 6e ab     n.
     bne c8f6e                                                         ; 8f57: d0 15       ..
     ldy #3                                                            ; 8f59: a0 03       ..
@@ -2840,7 +2840,7 @@ l80f2 = brk_handler_ptr+1
     jsr output_left_margin                                            ; 8fd5: 20 07 94     ..
     lda #0                                                            ; 8fd8: a9 00       ..
     sta column_position                                               ; 8fda: 85 39       .9
-    ldy l0080                                                         ; 8fdc: a4 80       ..
+    ldy scratch_offset                                                ; 8fdc: a4 80       ..
     lda __end_pointer_array                                           ; 8fde: a5 69       .i
     bpl c8fe6                                                         ; 8fe0: 10 04       ..
     lda microspacing_flag                                             ; 8fe2: a5 6c       .l
@@ -2905,7 +2905,7 @@ l80f2 = brk_handler_ptr+1
     stx l0048                                                         ; 9040: 86 48       .H
     stx l0042                                                         ; 9042: 86 42       .B
     stx l0043                                                         ; 9044: 86 43       .C
-    stx l0083                                                         ; 9046: 86 83       ..
+    stx screen_column                                                 ; 9046: 86 83       ..
 ; &9048 referenced 5 times by &9062, &9085, &90c0, &90c4, &90df
 .c9048
     txa                                                               ; 9048: 8a          .
@@ -2918,7 +2918,7 @@ l80f2 = brk_handler_ptr+1
     iny                                                               ; 9053: c8          .
     cmp #&1a                                                          ; 9054: c9 1a       ..
     bne c906f                                                         ; 9056: d0 17       ..
-    bit l0083                                                         ; 9058: 24 83       $.
+    bit screen_column                                                 ; 9058: 24 83       $.
     bpl c9064                                                         ; 905a: 10 08       ..
     lda l0048                                                         ; 905c: a5 48       .H
     beq c906b                                                         ; 905e: f0 0b       ..
@@ -2939,7 +2939,7 @@ l80f2 = brk_handler_ptr+1
     cmp #&20 ; ' '                                                    ; 906f: c9 20       .
     bcc c9092                                                         ; 9071: 90 1f       ..
     bne c9090                                                         ; 9073: d0 1b       ..
-    bit l0083                                                         ; 9075: 24 83       $.
+    bit screen_column                                                 ; 9075: 24 83       $.
     bpl c9064                                                         ; 9077: 10 eb       ..
     lda l0042                                                         ; 9079: a5 42       .B
     beq c908a                                                         ; 907b: f0 0d       ..
@@ -2971,7 +2971,7 @@ l80f2 = brk_handler_ptr+1
     cmp #&0b                                                          ; 9096: c9 0b       ..
     beq c90a0                                                         ; 9098: f0 06       ..
     sec                                                               ; 909a: 38          8
-    ror l0083                                                         ; 909b: 66 83       f.
+    ror screen_column                                                 ; 909b: 66 83       f.
     jmp c90b6                                                         ; 909d: 4c b6 90    L..
 
 ; &90a0 referenced 2 times by &9094, &9098
@@ -2980,7 +2980,7 @@ l80f2 = brk_handler_ptr+1
     lda column_position                                               ; 90a1: a5 39       .9
     sta format_src_index                                              ; 90a3: 85 47       .G
     lda #0                                                            ; 90a5: a9 00       ..
-    sta l0083                                                         ; 90a7: 85 83       ..
+    sta screen_column                                                 ; 90a7: 85 83       ..
     sta justify_gap_count                                             ; 90a9: 85 46       .F
     sta l0048                                                         ; 90ab: 85 48       .H
     sta l0042                                                         ; 90ad: 85 42       .B
@@ -3031,7 +3031,7 @@ l80f2 = brk_handler_ptr+1
 .c90f8
     lda #0                                                            ; 90f8: a9 00       ..
     sta column_position                                               ; 90fa: 85 39       .9
-    ldy l0080                                                         ; 90fc: a4 80       ..
+    ldy scratch_offset                                                ; 90fc: a4 80       ..
     jmp c8fe6                                                         ; 90fe: 4c e6 8f    L..
 
 ; &9101 referenced 1 time by &90f6
@@ -3146,10 +3146,10 @@ l80f2 = brk_handler_ptr+1
     lda macro_executing_flag                                          ; 9188: a5 2d       .-
     bne c91a3                                                         ; 918a: d0 17       ..
     lda print_doc_ptr                                                 ; 918c: a5 15       ..
-    sta l0080                                                         ; 918e: 85 80       ..
+    sta scratch_offset                                                ; 918e: 85 80       ..
     sta tmp0                                                          ; 9190: 85 85       ..
     lda print_doc_ptr+1                                               ; 9192: a5 16       ..
-    sta l0081                                                         ; 9194: 85 81       ..
+    sta scratch_index                                                 ; 9194: 85 81       ..
     sta tmp1                                                          ; 9196: 85 86       ..
     jsr read_next_output_line                                         ; 9198: 20 41 92     A.
     bcs return_26                                                     ; 919b: b0 3c       .<
@@ -3212,14 +3212,14 @@ l80f2 = brk_handler_ptr+1
     cmp #&0a                                                          ; 91e2: c9 0a       ..
     bcs c9225                                                         ; 91e4: b0 3f       .?
     iny                                                               ; 91e6: c8          .
-    sty l0084                                                         ; 91e7: 84 84       ..
-    sta l0083                                                         ; 91e9: 85 83       ..
+    sty temp_save                                                     ; 91e7: 84 84       ..
+    sta screen_column                                                 ; 91e9: 85 83       ..
     lda #0                                                            ; 91eb: a9 00       ..
-    sta l0082                                                         ; 91ed: 85 82       ..
+    sta screen_row                                                    ; 91ed: 85 82       ..
     ldy #2                                                            ; 91ef: a0 02       ..
 ; &91f1 referenced 1 time by &9205
 .loop_c91f1
-    dec l0083                                                         ; 91f1: c6 83       ..
+    dec screen_column                                                 ; 91f1: c6 83       ..
     bmi c9209                                                         ; 91f3: 30 14       0.
 ; &91f5 referenced 3 times by &91ff, &9201, &9207
 .c91f5
@@ -3253,7 +3253,7 @@ l80f2 = brk_handler_ptr+1
     bcc c9209                                                         ; 9221: 90 e6       ..
 ; &9223 referenced 3 times by &91fa, &920e, &9219
 .c9223
-    ldy l0084                                                         ; 9223: a4 84       ..
+    ldy temp_save                                                     ; 9223: a4 84       ..
 ; &9225 referenced 2 times by &91e0, &91e4
 .c9225
     jmp c91a7                                                         ; 9225: 4c a7 91    L..
@@ -3264,7 +3264,7 @@ l80f2 = brk_handler_ptr+1
     cmp #&3e ; '>'                                                    ; 9228: c9 3e       .>
     bne c9231                                                         ; 922a: d0 05       ..
     lda #0                                                            ; 922c: a9 00       ..
-    sta l0082                                                         ; 922e: 85 82       ..
+    sta screen_row                                                    ; 922e: 85 82       ..
     rts                                                               ; 9230: 60          `
 
 ; &9231 referenced 1 time by &922a
@@ -3272,13 +3272,13 @@ l80f2 = brk_handler_ptr+1
     cmp #&3c ; '<'                                                    ; 9231: c9 3c       .<
     bne c923c                                                         ; 9233: d0 07       ..
     lda #&40 ; '@'                                                    ; 9235: a9 40       .@
-    sta l0082                                                         ; 9237: 85 82       ..
+    sta screen_row                                                    ; 9237: 85 82       ..
     lda #0                                                            ; 9239: a9 00       ..
     rts                                                               ; 923b: 60          `
 
 ; &923c referenced 1 time by &9233
 .c923c
-    bit l0082                                                         ; 923c: 24 82       $.
+    bit screen_row                                                    ; 923c: 24 82       $.
     ora #0                                                            ; 923e: 09 00       ..
     rts                                                               ; 9240: 60          `
 
@@ -3427,7 +3427,7 @@ l80f2 = brk_handler_ptr+1
     stx tmp4                                                          ; 9310: 86 89       ..
     sty tmp5                                                          ; 9312: 84 8a       ..
     ldy #0                                                            ; 9314: a0 00       ..
-    sty l0082                                                         ; 9316: 84 82       ..
+    sty screen_row                                                    ; 9316: 84 82       ..
     lda (tmp4),y                                                      ; 9318: b1 89       ..
     beq return_28                                                     ; 931a: f0 76       .v
     jsr output_left_margin                                            ; 931c: 20 07 94     ..
@@ -3448,12 +3448,12 @@ l80f2 = brk_handler_ptr+1
     dex                                                               ; 933d: ca          .
     txa                                                               ; 933e: 8a          .
     lsr a                                                             ; 933f: 4a          J
-    sta l0081                                                         ; 9340: 85 81       ..
+    sta scratch_index                                                 ; 9340: 85 81       ..
     jsr get_right_margin                                              ; 9342: 20 be 93     ..
     beq c9355                                                         ; 9345: f0 0e       ..
     lsr a                                                             ; 9347: 4a          J
     sec                                                               ; 9348: 38          8
-    sbc l0081                                                         ; 9349: e5 81       ..
+    sbc scratch_index                                                 ; 9349: e5 81       ..
     bcc c9355                                                         ; 934b: 90 08       ..
     sbc column_position                                               ; 934d: e5 39       .9
     bcc c9355                                                         ; 934f: 90 04       ..
@@ -3471,9 +3471,9 @@ l80f2 = brk_handler_ptr+1
     jsr copy_header_footer_text                                       ; 9363: 20 c8 93     ..
     jsr get_right_margin                                              ; 9366: 20 be 93     ..
     beq print_output_buffer                                           ; 9369: f0 10       ..
-    stx l0081                                                         ; 936b: 86 81       ..
+    stx scratch_index                                                 ; 936b: 86 81       ..
     sec                                                               ; 936d: 38          8
-    sbc l0081                                                         ; 936e: e5 81       ..
+    sbc scratch_index                                                 ; 936e: e5 81       ..
     bcc print_output_buffer                                           ; 9370: 90 09       ..
     sbc column_position                                               ; 9372: e5 39       .9
     bcc print_output_buffer                                           ; 9374: 90 05       ..
@@ -3484,7 +3484,7 @@ l80f2 = brk_handler_ptr+1
 ; &937b referenced 5 times by &9331, &9355, &9369, &9370, &9374
 .print_output_buffer
     ldy #0                                                            ; 937b: a0 00       ..
-    ldx l0084                                                         ; 937d: a6 84       ..
+    ldx temp_save                                                     ; 937d: a6 84       ..
     beq return_28                                                     ; 937f: f0 11       ..
 ; &9381 referenced 1 time by &9390
 .loop_c9381
@@ -3564,14 +3564,14 @@ l80f2 = brk_handler_ptr+1
 .copy_header_footer_text
     ldx #0                                                            ; 93c8: a2 00       ..
     ldy #0                                                            ; 93ca: a0 00       ..
-    sty l0081                                                         ; 93cc: 84 81       ..
+    sty scratch_index                                                 ; 93cc: 84 81       ..
 ; &93ce referenced 2 times by &93e4, &93fa
 .c93ce
     lda (tmp2),y                                                      ; 93ce: b1 87       ..
     bmi c93e6                                                         ; 93d0: 30 14       0.
     jsr check_for_control_code                                        ; 93d2: 20 00 a6     ..
     bne c93d9                                                         ; 93d5: d0 02       ..
-    inc l0081                                                         ; 93d7: e6 81       ..
+    inc scratch_index                                                 ; 93d7: e6 81       ..
 ; &93d9 referenced 1 time by &93d5
 .c93d9
     iny                                                               ; 93d9: c8          .
@@ -3583,12 +3583,12 @@ l80f2 = brk_handler_ptr+1
     bcc c93ce                                                         ; 93e4: 90 e8       ..
 ; &93e6 referenced 2 times by &93d0, &93f4
 .c93e6
-    stx l0084                                                         ; 93e6: 86 84       ..
+    stx temp_save                                                     ; 93e6: 86 84       ..
     lda __end_pointer_array                                           ; 93e8: a5 69       .i
     bpl return_30                                                     ; 93ea: 10 05       ..
     txa                                                               ; 93ec: 8a          .
     sec                                                               ; 93ed: 38          8
-    sbc l0081                                                         ; 93ee: e5 81       ..
+    sbc scratch_index                                                 ; 93ee: e5 81       ..
     tax                                                               ; 93f0: aa          .
 ; &93f1 referenced 1 time by &93ea
 .return_30
@@ -3827,7 +3827,7 @@ l94b2 = default_printer_driver_ptr+1
     txa                                                               ; 94de: 8a          .
     beq return_36                                                     ; 94df: f0 49       .I
     lsr a                                                             ; 94e1: 4a          J
-    sta l0084                                                         ; 94e2: 85 84       ..
+    sta temp_save                                                     ; 94e2: 85 84       ..
     lda ruler_right_stop                                              ; 94e4: a5 3e       .>
     beq write_output_buffer_to_format_line                            ; 94e6: f0 27       .'
     sec                                                               ; 94e8: 38          8
@@ -3836,7 +3836,7 @@ l94b2 = default_printer_driver_ptr+1
     sec                                                               ; 94ec: 38          8
     adc ruler_left_stop                                               ; 94ed: 65 3f       e?
     sec                                                               ; 94ef: 38          8
-    sbc l0084                                                         ; 94f0: e5 84       ..
+    sbc temp_save                                                     ; 94f0: e5 84       ..
     bcs write_output_buffer_to_format_line                            ; 94f2: b0 1b       ..
     lda #0                                                            ; 94f4: a9 00       ..
     beq write_output_buffer_to_format_line                            ; 94f6: f0 17       ..             ; ALWAYS branch
@@ -3852,10 +3852,10 @@ l94b2 = default_printer_driver_ptr+1
     lda #0                                                            ; 9502: a9 00       ..
     cpx ruler_right_stop                                              ; 9504: e4 3e       .>
     bcs write_output_buffer_to_format_line                            ; 9506: b0 07       ..
-    stx l0083                                                         ; 9508: 86 83       ..
+    stx screen_column                                                 ; 9508: 86 83       ..
     lda ruler_right_stop                                              ; 950a: a5 3e       .>
     sec                                                               ; 950c: 38          8
-    sbc l0083                                                         ; 950d: e5 83       ..
+    sbc screen_column                                                 ; 950d: e5 83       ..
 ; ***************************************************************************************
 ; &950f referenced 5 times by &94d7, &94e6, &94f2, &94f6, &9506
 .write_output_buffer_to_format_line
@@ -3889,7 +3889,7 @@ l94b2 = default_printer_driver_ptr+1
 ; &952b referenced 3 times by &94d0, &94d9, &94f8
 .expand_line
     ldx #0                                                            ; 952b: a2 00       ..
-    stx l0083                                                         ; 952d: 86 83       ..
+    stx screen_column                                                 ; 952d: 86 83       ..
     ldy #3                                                            ; 952f: a0 03       ..
     jsr get_current_fmt_cmd_byte                                      ; 9531: 20 25 98     %.
     clc                                                               ; 9534: 18          .
@@ -3905,7 +3905,7 @@ l94b2 = default_printer_driver_ptr+1
     sta output_buffer,x                                               ; 953e: 9d 54 06    .T.
     jsr check_for_control_code                                        ; 9541: 20 00 a6     ..
     bne c9548                                                         ; 9544: d0 02       ..
-    inc l0083                                                         ; 9546: e6 83       ..
+    inc screen_column                                                 ; 9546: e6 83       ..
 ; &9548 referenced 1 time by &9544
 .c9548
     inx                                                               ; 9548: e8          .
@@ -3921,7 +3921,7 @@ l94b2 = default_printer_driver_ptr+1
     lda __end_pointer_array                                           ; 9555: a5 69       .i
     bpl return_37                                                     ; 9557: 10 04       ..
     txa                                                               ; 9559: 8a          .
-    sbc l0083                                                         ; 955a: e5 83       ..
+    sbc screen_column                                                 ; 955a: e5 83       ..
     tax                                                               ; 955c: aa          .
 ; &955d referenced 2 times by &9535, &9557
 .return_37
@@ -3952,17 +3952,17 @@ l94b2 = default_printer_driver_ptr+1
     stx tmp2                                                          ; 9575: 86 87       ..
     sty tmp3                                                          ; 9577: 84 88       ..
     lda #0                                                            ; 9579: a9 00       ..
-    sta l0081                                                         ; 957b: 85 81       ..
+    sta scratch_index                                                 ; 957b: 85 81       ..
     sta search_target_len                                             ; 957d: 85 7a       .z
     ldy #3                                                            ; 957f: a0 03       ..
-    sty l0080                                                         ; 9581: 84 80       ..
+    sty scratch_offset                                                ; 9581: 84 80       ..
     lda (current_format_line_ptr),y                                   ; 9583: b1 04       ..
-    sta l0083                                                         ; 9585: 85 83       ..
+    sta screen_column                                                 ; 9585: 85 83       ..
     ldx #&3f ; '?'                                                    ; 9587: a2 3f       .?
 ; &9589 referenced 1 time by &95a8
 .loop_c9589
     iny                                                               ; 9589: c8          .
-    sty l0082                                                         ; 958a: 84 82       ..
+    sty screen_row                                                    ; 958a: 84 82       ..
     lda (current_format_line_ptr),y                                   ; 958c: b1 04       ..
     cmp #&0d                                                          ; 958e: c9 0d       ..
     beq c959c                                                         ; 9590: f0 0a       ..
@@ -3971,7 +3971,7 @@ l94b2 = default_printer_driver_ptr+1
     lda #&20 ; ' '                                                    ; 9596: a9 20       .
 ; &9598 referenced 1 time by &9594
 .c9598
-    cmp l0083                                                         ; 9598: c5 83       ..
+    cmp screen_column                                                 ; 9598: c5 83       ..
     bne c959e                                                         ; 959a: d0 02       ..
 ; &959c referenced 1 time by &9590
 .c959c
@@ -3981,7 +3981,7 @@ l94b2 = default_printer_driver_ptr+1
     jsr store_to_output_buffer                                        ; 959e: 20 b2 95     ..
     cmp #&8d                                                          ; 95a1: c9 8d       ..
     beq c95aa                                                         ; 95a3: f0 05       ..
-    ldy l0082                                                         ; 95a5: a4 82       ..
+    ldy screen_row                                                    ; 95a5: a4 82       ..
     dex                                                               ; 95a7: ca          .
     bne loop_c9589                                                    ; 95a8: d0 df       ..
 ; &95aa referenced 1 time by &95a3
@@ -3992,10 +3992,10 @@ l94b2 = default_printer_driver_ptr+1
 ; ***************************************************************************************
 ; &95b2 referenced 3 times by &959e, &95ac, &95af
 .store_to_output_buffer
-    ldy l0081                                                         ; 95b2: a4 81       ..
+    ldy scratch_index                                                 ; 95b2: a4 81       ..
     sta (tmp2),y                                                      ; 95b4: 91 87       ..
     iny                                                               ; 95b6: c8          .
-    sty l0081                                                         ; 95b7: 84 81       ..
+    sty scratch_index                                                 ; 95b7: 84 81       ..
     rts                                                               ; 95b9: 60          `
 
 ; ***************************************************************************************
@@ -4162,7 +4162,7 @@ l94b2 = default_printer_driver_ptr+1
     ldy #3                                                            ; 9679: a0 03       ..
     lda (current_format_line_ptr),y                                   ; 967b: b1 04       ..
     and #&df                                                          ; 967d: 29 df       ).
-    sta l0084                                                         ; 967f: 85 84       ..
+    sta temp_save                                                     ; 967f: 85 84       ..
     iny                                                               ; 9681: c8          .              ; Y=&04
     lda (current_format_line_ptr),y                                   ; 9682: b1 04       ..
     jsr is_letter                                                     ; 9684: 20 6b 8c     k.
@@ -4178,7 +4178,7 @@ l94b2 = default_printer_driver_ptr+1
     dey                                                               ; 968f: 88          .
     sta (last_macro_ptr),y                                            ; 9690: 91 1b       ..
     dey                                                               ; 9692: 88          .
-    lda l0084                                                         ; 9693: a5 84       ..
+    lda temp_save                                                     ; 9693: a5 84       ..
     sta (last_macro_ptr),y                                            ; 9695: 91 1b       ..
     lda #4                                                            ; 9697: a9 04       ..
     clc                                                               ; 9699: 18          .
@@ -4204,11 +4204,11 @@ l94b2 = default_printer_driver_ptr+1
 .c96b8
     lda last_macro_ptr                                                ; 96b8: a5 1b       ..
     sta tmp0                                                          ; 96ba: 85 85       ..
-    sta l0080                                                         ; 96bc: 85 80       ..
+    sta scratch_offset                                                ; 96bc: 85 80       ..
     sta current_format_line_ptr                                       ; 96be: 85 04       ..
     lda last_macro_ptr+1                                              ; 96c0: a5 1c       ..
     sta tmp1                                                          ; 96c2: 85 86       ..
-    sta l0081                                                         ; 96c4: 85 81       ..
+    sta scratch_index                                                 ; 96c4: 85 81       ..
     sta current_format_line_ptr+1                                     ; 96c6: 85 05       ..
     jsr read_next_output_line                                         ; 96c8: 20 41 92     A.
     bcc c96ce                                                         ; 96cb: 90 01       ..
@@ -4353,7 +4353,7 @@ l94b2 = default_printer_driver_ptr+1
 ; &9783 referenced 1 time by &977d
 .c9783
     dey                                                               ; 9783: 88          .
-    sty l0084                                                         ; 9784: 84 84       ..
+    sty temp_save                                                     ; 9784: 84 84       ..
     ldx #&ff                                                          ; 9786: a2 ff       ..
 ; &9788 referenced 2 times by &9792, &97ac
 .c9788
@@ -4374,7 +4374,7 @@ l94b2 = default_printer_driver_ptr+1
     bmi c97ae                                                         ; 97a1: 30 0b       0.
     cmp #&20 ; ' '                                                    ; 97a3: c9 20       .
     bcs loop_c979d                                                    ; 97a5: b0 f6       ..
-    ldy l0084                                                         ; 97a7: a4 84       ..
+    ldy temp_save                                                     ; 97a7: a4 84       ..
     lda l97b1,x                                                       ; 97a9: bd b1 97    ...
     bpl c9788                                                         ; 97ac: 10 da       ..
 ; &97ae referenced 2 times by &9797, &97a1
@@ -4399,7 +4399,7 @@ l94b2 = default_printer_driver_ptr+1
     lda #0                                                            ; 97b8: a9 00       ..
     sta tmp8                                                          ; 97ba: 85 8d       ..
     sta tmp9                                                          ; 97bc: 85 8e       ..
-    sta l0080                                                         ; 97be: 85 80       ..
+    sta scratch_offset                                                ; 97be: 85 80       ..
 ; &97c0 referenced 1 time by &981f
 .c97c0
     jsr get_current_fmt_cmd_byte                                      ; 97c0: 20 25 98     %.
@@ -4419,10 +4419,10 @@ l94b2 = default_printer_driver_ptr+1
     stx tmp9                                                          ; 97da: 86 8e       ..
 ; &97dc referenced 1 time by &97d2
 .c97dc
-    ldx l0080                                                         ; 97dc: a6 80       ..
+    ldx scratch_offset                                                ; 97dc: a6 80       ..
     beq c9804                                                         ; 97de: f0 24       .$
     lda #0                                                            ; 97e0: a9 00       ..
-    sta l0080                                                         ; 97e2: 85 80       ..
+    sta scratch_offset                                                ; 97e2: 85 80       ..
     dex                                                               ; 97e4: ca          .
     beq c97f7                                                         ; 97e5: f0 10       ..
     lda tmp4                                                          ; 97e7: a5 89       ..
@@ -4459,7 +4459,7 @@ l94b2 = default_printer_driver_ptr+1
     bne c9821                                                         ; 981a: d0 05       ..
 ; &981c referenced 1 time by &9815
 .c981c
-    stx l0080                                                         ; 981c: 86 80       ..
+    stx scratch_offset                                                ; 981c: 86 80       ..
     iny                                                               ; 981e: c8          .
     bne c97c0                                                         ; 981f: d0 9f       ..
 ; &9821 referenced 4 times by &97c3, &97cc, &980f, &981a
@@ -4501,7 +4501,7 @@ l94b2 = default_printer_driver_ptr+1
 ; &9847 referenced 2 times by &9858, &9869
 .c9847
     lda column_position                                               ; 9847: a5 39       .9
-    sta l0084                                                         ; 9849: 85 84       ..
+    sta temp_save                                                     ; 9849: 85 84       ..
     iny                                                               ; 984b: c8          .
     cpy l0043                                                         ; 984c: c4 43       .C
     beq c9871                                                         ; 984e: f0 21       .!
@@ -4535,7 +4535,7 @@ l94b2 = default_printer_driver_ptr+1
     beq return_47                                                     ; 9873: f0 ba       ..
     lda ruler_right_stop                                              ; 9875: a5 3e       .>
     sec                                                               ; 9877: 38          8
-    sbc l0084                                                         ; 9878: e5 84       ..
+    sbc temp_save                                                     ; 9878: e5 84       ..
     bcc return_47                                                     ; 987a: 90 b3       ..
     adc #0                                                            ; 987c: 69 00       i.
     tax                                                               ; 987e: aa          .
@@ -4543,13 +4543,13 @@ l94b2 = default_printer_driver_ptr+1
     sec                                                               ; 9881: 38          8
     sbc #&84                                                          ; 9882: e9 84       ..
     bcc c988c                                                         ; 9884: 90 06       ..
-    sta l0084                                                         ; 9886: 85 84       ..
+    sta temp_save                                                     ; 9886: 85 84       ..
     txa                                                               ; 9888: 8a          .
-    sbc l0084                                                         ; 9889: e5 84       ..
+    sbc temp_save                                                     ; 9889: e5 84       ..
     tax                                                               ; 988b: aa          .
 ; &988c referenced 1 time by &9884
 .c988c
-    stx l0082                                                         ; 988c: 86 82       ..
+    stx screen_row                                                    ; 988c: 86 82       ..
     stx tmp8                                                          ; 988e: 86 8d       ..
     lda #0                                                            ; 9890: a9 00       ..
     sta tmp9                                                          ; 9892: 85 8e       ..
@@ -4586,11 +4586,11 @@ l94b2 = default_printer_driver_ptr+1
     clc                                                               ; 98bd: 18          .
     adc l0044                                                         ; 98be: 65 44       eD
     sta input_buffer,y                                                ; 98c0: 99 00 05    ...
-    lda l0082                                                         ; 98c3: a5 82       ..
+    lda screen_row                                                    ; 98c3: a5 82       ..
     sec                                                               ; 98c5: 38          8
     sbc input_buffer,y                                                ; 98c6: f9 00 05    ...
     php                                                               ; 98c9: 08          .
-    sta l0082                                                         ; 98ca: 85 82       ..
+    sta screen_row                                                    ; 98ca: 85 82       ..
     iny                                                               ; 98cc: c8          .
     cpy justify_gap_count                                             ; 98cd: c4 46       .F
     bcc c98d3                                                         ; 98cf: 90 02       ..
@@ -4605,7 +4605,7 @@ l94b2 = default_printer_driver_ptr+1
 .c98d9
     sty print_xpos                                                    ; 98d9: 84 78       .x
     ldy #0                                                            ; 98db: a0 00       ..
-    sty l0081                                                         ; 98dd: 84 81       ..
+    sty scratch_index                                                 ; 98dd: 84 81       ..
     sty column_position                                               ; 98df: 84 39       .9
     lda #&1a                                                          ; 98e1: a9 1a       ..
     jsr wipe_buffer                                                   ; 98e3: 20 0f ab     ..
@@ -4628,9 +4628,9 @@ l94b2 = default_printer_driver_ptr+1
     lda output_buffer,x                                               ; 98fa: bd 54 06    .T.
     cmp #&20 ; ' '                                                    ; 98fd: c9 20       .
     bne c9920                                                         ; 98ff: d0 1f       ..
-    lda l0081                                                         ; 9901: a5 81       ..
+    lda scratch_index                                                 ; 9901: a5 81       ..
     beq c991c                                                         ; 9903: f0 17       ..
-    sty l0084                                                         ; 9905: 84 84       ..
+    sty temp_save                                                     ; 9905: 84 84       ..
     ldy column_position                                               ; 9907: a4 39       .9
     cpy justify_gap_count                                             ; 9909: c4 46       .F
     lda #0                                                            ; 990b: a9 00       ..
@@ -4639,11 +4639,11 @@ l94b2 = default_printer_driver_ptr+1
 ; &9912 referenced 1 time by &990d
 .c9912
     clc                                                               ; 9912: 18          .
-    adc l0084                                                         ; 9913: 65 84       e.
+    adc temp_save                                                     ; 9913: 65 84       e.
     inc column_position                                               ; 9915: e6 39       .9
     tay                                                               ; 9917: a8          .
     lda #0                                                            ; 9918: a9 00       ..
-    sta l0081                                                         ; 991a: 85 81       ..
+    sta scratch_index                                                 ; 991a: 85 81       ..
 ; &991c referenced 1 time by &9903
 .c991c
     lda #&20 ; ' '                                                    ; 991c: a9 20       .
@@ -4651,7 +4651,7 @@ l94b2 = default_printer_driver_ptr+1
 
 ; &9920 referenced 1 time by &98ff
 .c9920
-    inc l0081                                                         ; 9920: e6 81       ..
+    inc scratch_index                                                 ; 9920: e6 81       ..
 ; &9922 referenced 1 time by &991e
 .c9922
     sta (current_edit_line_ptr),y                                     ; 9922: 91 02       ..
@@ -4674,7 +4674,7 @@ l94b2 = default_printer_driver_ptr+1
 ; ***************************************************************************************
 ; &9936 referenced 2 times by &9851, &9862
 .process_char_for_output
-    ror l0083                                                         ; 9936: 66 83       f.
+    ror screen_column                                                 ; 9936: 66 83       f.
     lda (current_edit_line_ptr),y                                     ; 9938: b1 02       ..
     sta output_buffer,y                                               ; 993a: 99 54 06    .T.
     cmp #9                                                            ; 993d: c9 09       ..
@@ -4746,7 +4746,7 @@ l94b2 = default_printer_driver_ptr+1
     sbc ruler_left_stop                                               ; 9995: e5 3f       .?
     bcc c9974                                                         ; 9997: 90 db       ..
     adc #1                                                            ; 9999: 69 01       i.
-    sta l0080                                                         ; 999b: 85 80       ..
+    sta scratch_offset                                                ; 999b: 85 80       ..
     lda #&10                                                          ; 999d: a9 10       ..
     jsr wipe_buffer                                                   ; 999f: 20 0f ab     ..
     lda current_line_ptr                                              ; 99a2: a5 08       ..
@@ -4821,8 +4821,8 @@ l94b2 = default_printer_driver_ptr+1
 ; &9a0a referenced 1 time by &9a04
 .c9a0a
     clc                                                               ; 9a0a: 18          .
-    adc l0080                                                         ; 9a0b: 65 80       e.
-    sta l0080                                                         ; 9a0d: 85 80       ..
+    adc scratch_offset                                                ; 9a0b: 65 80       e.
+    sta scratch_offset                                                ; 9a0d: 85 80       ..
     lda #&0b                                                          ; 9a0f: a9 0b       ..
 ; &9a11 referenced 1 time by &99f0
 .c9a11
@@ -4868,7 +4868,7 @@ l94b2 = default_printer_driver_ptr+1
     lda bottom_margin                                                 ; 9a4e: a5 23       .#
     beq c9a58                                                         ; 9a50: f0 06       ..
     lda column_position                                               ; 9a52: a5 39       .9
-    cmp l0080                                                         ; 9a54: c5 80       ..
+    cmp scratch_offset                                                ; 9a54: c5 80       ..
     bcs c9a60                                                         ; 9a56: b0 08       ..
 ; &9a58 referenced 3 times by &9a44, &9a48, &9a50
 .c9a58
@@ -4945,8 +4945,8 @@ l94b2 = default_printer_driver_ptr+1
     pla                                                               ; 9ab8: 68          h
     pla                                                               ; 9ab9: 68          h
     lda #&40 ; '@'                                                    ; 9aba: a9 40       .@
-    sta l0084                                                         ; 9abc: 85 84       ..
-    bit l0084                                                         ; 9abe: 24 84       $.
+    sta temp_save                                                     ; 9abc: 85 84       ..
+    bit temp_save                                                     ; 9abe: 24 84       $.
 ; &9ac0 referenced 1 time by &9ab6
 .return_50
     rts                                                               ; 9ac0: 60          `
@@ -4964,7 +4964,7 @@ l94b2 = default_printer_driver_ptr+1
     sta tmp9                                                          ; 9acd: 85 8e       ..
     sta tmp5                                                          ; 9acf: 85 8a       ..
     ldy #0                                                            ; 9ad1: a0 00       ..
-    sty l0083                                                         ; 9ad3: 84 83       ..
+    sty screen_column                                                 ; 9ad3: 84 83       ..
 ; &9ad5 referenced 1 time by &9b21
 .c9ad5
     lda (tmp4),y                                                      ; 9ad5: b1 89       ..
@@ -4975,7 +4975,7 @@ l94b2 = default_printer_driver_ptr+1
     beq c9b2f                                                         ; 9ae0: f0 4d       .M
     tya                                                               ; 9ae2: 98          .
     bne c9b06                                                         ; 9ae3: d0 21       .!
-    sty l0084                                                         ; 9ae5: 84 84       ..
+    sty temp_save                                                     ; 9ae5: 84 84       ..
     beq c9aef                                                         ; 9ae7: f0 06       ..             ; ALWAYS branch
 
 ; &9ae9 referenced 2 times by &9afd, &9b04
@@ -4993,9 +4993,9 @@ l94b2 = default_printer_driver_ptr+1
     beq c9b2f                                                         ; 9af9: f0 34       .4
     cmp #&0b                                                          ; 9afb: c9 0b       ..
     bne c9ae9                                                         ; 9afd: d0 ea       ..
-    rol l0084                                                         ; 9aff: 26 84       &.
+    rol temp_save                                                     ; 9aff: 26 84       &.
     sec                                                               ; 9b01: 38          8
-    ror l0084                                                         ; 9b02: 66 84       f.
+    ror temp_save                                                     ; 9b02: 66 84       f.
     bcs c9ae9                                                         ; 9b04: b0 e3       ..
 ; &9b06 referenced 3 times by &9ae3, &9af1, &9af5
 .c9b06
@@ -5004,9 +5004,9 @@ l94b2 = default_printer_driver_ptr+1
     bne c9b1a                                                         ; 9b0a: d0 0e       ..
     ldx ruler_left_stop                                               ; 9b0c: a6 3f       .?
     beq c9b2f                                                         ; 9b0e: f0 1f       ..
-    ldx l0084                                                         ; 9b10: a6 84       ..
+    ldx temp_save                                                     ; 9b10: a6 84       ..
     beq c9b2f                                                         ; 9b12: f0 1b       ..
-    ldx l0083                                                         ; 9b14: a6 83       ..
+    ldx screen_column                                                 ; 9b14: a6 83       ..
     bne c9b2f                                                         ; 9b16: d0 17       ..
     beq c9b20                                                         ; 9b18: f0 06       ..             ; ALWAYS branch
 
@@ -5014,7 +5014,7 @@ l94b2 = default_printer_driver_ptr+1
 .c9b1a
     cmp #&0b                                                          ; 9b1a: c9 0b       ..
     bne c9b23                                                         ; 9b1c: d0 05       ..
-    sta l0083                                                         ; 9b1e: 85 83       ..
+    sta screen_column                                                 ; 9b1e: 85 83       ..
 ; &9b20 referenced 1 time by &9b18
 .c9b20
     iny                                                               ; 9b20: c8          .
@@ -5023,9 +5023,9 @@ l94b2 = default_printer_driver_ptr+1
 .c9b23
     lda ruler_left_stop                                               ; 9b23: a5 3f       .?
     beq c9b31                                                         ; 9b25: f0 0a       ..
-    lda l0084                                                         ; 9b27: a5 84       ..
+    lda temp_save                                                     ; 9b27: a5 84       ..
     beq c9b31                                                         ; 9b29: f0 06       ..
-    lda l0083                                                         ; 9b2b: a5 83       ..
+    lda screen_column                                                 ; 9b2b: a5 83       ..
     bne c9b31                                                         ; 9b2d: d0 02       ..
 ; &9b2f referenced 7 times by &9ad7, &9adc, &9ae0, &9af9, &9b0e, &9b12, &9b16
 .c9b2f
@@ -5266,11 +5266,11 @@ l94b2 = default_printer_driver_ptr+1
 ; &9c82 referenced 1 time by &9c7d
 .c9c82
     jsr get_line_length                                               ; 9c82: 20 f1 aa     ..
-    sty l0083                                                         ; 9c85: 84 83       ..
+    sty screen_column                                                 ; 9c85: 84 83       ..
     lda #0                                                            ; 9c87: a9 00       ..
     sta top_margin                                                    ; 9c89: 85 22       ."
     ldy xpos                                                          ; 9c8b: a4 40       .@
-    sty l0080                                                         ; 9c8d: 84 80       ..
+    sty scratch_offset                                                ; 9c8d: 84 80       ..
     jsr draw_previous_word                                            ; 9c8f: 20 33 af     3.
     jsr recalculate_cursor_xpos                                       ; 9c92: 20 08 a6     ..
     lda visual_column                                                 ; 9c95: a5 72       .r
@@ -5279,19 +5279,19 @@ l94b2 = default_printer_driver_ptr+1
     bcs c9ca2                                                         ; 9c9b: b0 05       ..
 ; &9c9d referenced 1 time by &9c99
 .c9c9d
-    ldy l0080                                                         ; 9c9d: a4 80       ..
+    ldy scratch_offset                                                ; 9c9d: a4 80       ..
     dey                                                               ; 9c9f: 88          .
     sty xpos                                                          ; 9ca0: 84 40       .@
 ; &9ca2 referenced 1 time by &9c9b
 .c9ca2
-    lda l0080                                                         ; 9ca2: a5 80       ..
+    lda scratch_offset                                                ; 9ca2: a5 80       ..
     sec                                                               ; 9ca4: 38          8
     sbc xpos                                                          ; 9ca5: e5 40       .@
     sta top_margin                                                    ; 9ca7: 85 22       ."
-    lda l0083                                                         ; 9ca9: a5 83       ..
+    lda screen_column                                                 ; 9ca9: a5 83       ..
     sec                                                               ; 9cab: 38          8
     sbc xpos                                                          ; 9cac: e5 40       .@
-    sta l0083                                                         ; 9cae: 85 83       ..
+    sta screen_column                                                 ; 9cae: 85 83       ..
     tay                                                               ; 9cb0: a8          .
     iny                                                               ; 9cb1: c8          .
     lda ruler_left_stop                                               ; 9cb2: a5 3f       .?
@@ -5322,7 +5322,7 @@ l94b2 = default_printer_driver_ptr+1
     iny                                                               ; 9cda: c8          .              ; Y=&01
 ; &9cdb referenced 1 time by &9cd4
 .c9cdb
-    sty l0081                                                         ; 9cdb: 84 81       ..
+    sty scratch_index                                                 ; 9cdb: 84 81       ..
     lda current_edit_line_ptr                                         ; 9cdd: a5 02       ..
     sta tmp6                                                          ; 9cdf: 85 8b       ..
     lda current_edit_line_ptr+1                                       ; 9ce1: a5 03       ..
@@ -5337,16 +5337,16 @@ l94b2 = default_printer_driver_ptr+1
 ; &9cf2 referenced 1 time by &9cec
 .c9cf2
     iny                                                               ; 9cf2: c8          .
-    sty l0082                                                         ; 9cf3: 84 82       ..
+    sty screen_row                                                    ; 9cf3: 84 82       ..
 ; &9cf5 referenced 1 time by &9d38
 .c9cf5
-    ldy l0082                                                         ; 9cf5: a4 82       ..
-    inc l0082                                                         ; 9cf7: e6 82       ..
+    ldy screen_row                                                    ; 9cf5: a4 82       ..
+    inc screen_row                                                    ; 9cf7: e6 82       ..
 ; &9cf9 referenced 1 time by &9d0b
 .loop_c9cf9
     jsr find_marker_at_position                                       ; 9cf9: 20 36 a5     6.
     bne c9d0d                                                         ; 9cfc: d0 0f       ..
-    lda l0081                                                         ; 9cfe: a5 81       ..
+    lda scratch_index                                                 ; 9cfe: a5 81       ..
     clc                                                               ; 9d00: 18          .
     adc tmp4                                                          ; 9d01: 65 89       e.
     sta __begin_pointer_array,x                                       ; 9d03: 95 53       .S
@@ -5356,7 +5356,7 @@ l94b2 = default_printer_driver_ptr+1
     bcc loop_c9cf9                                                    ; 9d0b: 90 ec       ..
 ; &9d0d referenced 1 time by &9cfc
 .c9d0d
-    lda l0083                                                         ; 9d0d: a5 83       ..
+    lda screen_column                                                 ; 9d0d: a5 83       ..
     bne c9d28                                                         ; 9d0f: d0 17       ..
     lda #&0d                                                          ; 9d11: a9 0d       ..
     bne c9d30                                                         ; 9d13: d0 1b       ..             ; ALWAYS branch
@@ -5380,10 +5380,10 @@ l94b2 = default_printer_driver_ptr+1
     pla                                                               ; 9d2f: 68          h
 ; &9d30 referenced 1 time by &9d13
 .c9d30
-    ldy l0081                                                         ; 9d30: a4 81       ..
-    inc l0081                                                         ; 9d32: e6 81       ..
+    ldy scratch_index                                                 ; 9d30: a4 81       ..
+    inc scratch_index                                                 ; 9d32: e6 81       ..
     sta (tmp4),y                                                      ; 9d34: 91 89       ..
-    dec l0083                                                         ; 9d36: c6 83       ..
+    dec screen_column                                                 ; 9d36: c6 83       ..
     bpl c9cf5                                                         ; 9d38: 10 bb       ..
     bmi c9d15                                                         ; 9d3a: 30 d9       0.             ; ALWAYS branch
 
@@ -5708,11 +5708,11 @@ l94b2 = default_printer_driver_ptr+1
     jsr sub_ca276                                                     ; 9eeb: 20 76 a2     v.
     inc edit_buffer_dirty_flag                                        ; 9eee: e6 6d       .m
     lda #0                                                            ; 9ef0: a9 00       ..
-    sta l0080                                                         ; 9ef2: 85 80       ..
-    sta l0081                                                         ; 9ef4: 85 81       ..
+    sta scratch_offset                                                ; 9ef2: 85 80       ..
+    sta scratch_index                                                 ; 9ef4: 85 81       ..
 ; &9ef6 referenced 4 times by &9f0a, &9f0e, &9f1e, &9f24
 .edit_command_loop
-    ldx l0080                                                         ; 9ef6: a6 80       ..             ; X=X position
+    ldx scratch_offset                                                ; 9ef6: a6 80       ..             ; X=X position
     ldy ypos                                                          ; 9ef8: a4 77       .w             ; Y=Y position
     jsr set_cursor_position                                           ; 9efa: 20 ea a7     ..
     jsr read_char                                                     ; 9efd: 20 61 a7     a.
@@ -5724,21 +5724,21 @@ l94b2 = default_printer_driver_ptr+1
     bcc edit_command_loop                                             ; 9f0a: 90 ea       ..
     cmp #&5b ; '['                                                    ; 9f0c: c9 5b       .[
     bcs edit_command_loop                                             ; 9f0e: b0 e6       ..
-    sta l0081                                                         ; 9f10: 85 81       ..
+    sta scratch_index                                                 ; 9f10: 85 81       ..
     jsr oswrch                                                        ; 9f12: 20 ee ff     ..            ; Write character
-    ldy l0080                                                         ; 9f15: a4 80       ..
+    ldy scratch_offset                                                ; 9f15: a4 80       ..
     iny                                                               ; 9f17: c8          .
-    sty l0080                                                         ; 9f18: 84 80       ..
+    sty scratch_offset                                                ; 9f18: 84 80       ..
     sta (edit_buffer_base),y                                          ; 9f1a: 91 00       ..
     cpy #2                                                            ; 9f1c: c0 02       ..
     bcc edit_command_loop                                             ; 9f1e: 90 d6       ..
     lda #0                                                            ; 9f20: a9 00       ..
-    sta l0080                                                         ; 9f22: 85 80       ..
+    sta scratch_offset                                                ; 9f22: 85 80       ..
     beq edit_command_loop                                             ; 9f24: f0 d0       ..             ; ALWAYS branch
 
 ; &9f26 referenced 2 times by &9f00, &9f04
 .finished_editing_command
-    lda l0081                                                         ; 9f26: a5 81       ..
+    lda scratch_index                                                 ; 9f26: a5 81       ..
     beq return_56                                                     ; 9f28: f0 55       .U
     lda edit_buffer_base                                              ; 9f2a: a5 00       ..
     sta current_format_line_ptr                                       ; 9f2c: 85 04       ..
@@ -5860,21 +5860,21 @@ l94b2 = default_printer_driver_ptr+1
     lda current_edit_line_ptr+1                                       ; 9fe7: a5 03       ..
     sta tmp1                                                          ; 9fe9: 85 86       ..
     jsr get_line_length                                               ; 9feb: 20 f1 aa     ..
-    sty l0080                                                         ; 9fee: 84 80       ..
+    sty scratch_offset                                                ; 9fee: 84 80       ..
     cpy xpos                                                          ; 9ff0: c4 40       .@
     bcc c9fab                                                         ; 9ff2: 90 b7       ..
     beq c9fab                                                         ; 9ff4: f0 b5       ..
     ldy xpos                                                          ; 9ff6: a4 40       .@
 ; &9ff8 referenced 1 time by &a001
 .loop_c9ff8
-    cpy l0080                                                         ; 9ff8: c4 80       ..
+    cpy scratch_offset                                                ; 9ff8: c4 80       ..
     bcs ca00f                                                         ; 9ffa: b0 13       ..
     jsr sub_ca5ab                                                     ; 9ffc: 20 ab a5     ..
     cmp #&20 ; ' '                                                    ; 9fff: c9 20       .
     bne loop_c9ff8                                                    ; a001: d0 f5       ..
 ; &a003 referenced 1 time by &a00c
 .loop_ca003
-    cpy l0080                                                         ; a003: c4 80       ..
+    cpy scratch_offset                                                ; a003: c4 80       ..
     bcs ca00f                                                         ; a005: b0 08       ..
     jsr sub_ca5ab                                                     ; a007: 20 ab a5     ..
     cmp #&20 ; ' '                                                    ; a00a: c9 20       .
@@ -5959,7 +5959,7 @@ l94b2 = default_printer_driver_ptr+1
 ; &a071 referenced 1 time by &a062
 .move_cursor_up
     inc cursor_moved_flag                                             ; a071: e6 7d       .}
-    stx l0080                                                         ; a073: 86 80       ..
+    stx scratch_offset                                                ; a073: 86 80       ..
     jsr write_line_back_to_document_or_error                          ; a075: 20 3c a9     <.
     lda current_line_ptr                                              ; a078: a5 08       ..
     ldy current_line_ptr+1                                            ; a07a: a4 09       ..
@@ -5971,9 +5971,9 @@ l94b2 = default_printer_driver_ptr+1
     lda tmp0                                                          ; a083: a5 85       ..
     ldy tmp1                                                          ; a085: a4 86       ..
     bcc ca093                                                         ; a087: 90 0a       ..
-    ldx l0080                                                         ; a089: a6 80       ..
+    ldx scratch_offset                                                ; a089: a6 80       ..
     bmi ca07c                                                         ; a08b: 30 ef       0.
-    dec l0080                                                         ; a08d: c6 80       ..
+    dec scratch_offset                                                ; a08d: c6 80       ..
     bne ca07c                                                         ; a08f: d0 eb       ..
     beq ca097                                                         ; a091: f0 04       ..             ; ALWAYS branch
 
@@ -6004,7 +6004,7 @@ l94b2 = default_printer_driver_ptr+1
 ; &a0af referenced 1 time by &a0a0
 .move_cursor_down
     inc cursor_moved_flag                                             ; a0af: e6 7d       .}
-    stx l0080                                                         ; a0b1: 86 80       ..
+    stx scratch_offset                                                ; a0b1: 86 80       ..
     jsr write_line_back_to_document_or_error                          ; a0b3: 20 3c a9     <.
     lda current_line_ptr                                              ; a0b6: a5 08       ..
     ldy current_line_ptr+1                                            ; a0b8: a4 09       ..
@@ -6020,9 +6020,9 @@ l94b2 = default_printer_driver_ptr+1
     iny                                                               ; a0c7: c8          .
 ; &a0c8 referenced 1 time by &a0c5
 .ca0c8
-    ldx l0080                                                         ; a0c8: a6 80       ..
+    ldx scratch_offset                                                ; a0c8: a6 80       ..
     bmi ca0ba                                                         ; a0ca: 30 ee       0.
-    dec l0080                                                         ; a0cc: c6 80       ..
+    dec scratch_offset                                                ; a0cc: c6 80       ..
     bne ca0ba                                                         ; a0ce: d0 ea       ..
     beq ca0d6                                                         ; a0d0: f0 04       ..             ; ALWAYS branch
 
@@ -6092,17 +6092,17 @@ l94b2 = default_printer_driver_ptr+1
     bcs ca151                                                         ; a128: b0 27       .'
 ; &a12a referenced 3 times by &a110, &a118, &a120
 .ca12a
-    sta l0080                                                         ; a12a: 85 80       ..
+    sta scratch_offset                                                ; a12a: 85 80       ..
     inc line_counter                                                  ; a12c: e6 74       .t
     ldy xpos                                                          ; a12e: a4 40       .@
-    sty l0081                                                         ; a130: 84 81       ..
+    sty scratch_index                                                 ; a130: 84 81       ..
 ; &a132 referenced 1 time by &a13b
 .loop_ca132
     cpy #&84                                                          ; a132: c0 84       ..
     bcs ca151                                                         ; a134: b0 1b       ..
     lda (current_edit_line_ptr),y                                     ; a136: b1 02       ..
     iny                                                               ; a138: c8          .
-    cmp l0080                                                         ; a139: c5 80       ..
+    cmp scratch_offset                                                ; a139: c5 80       ..
     bne loop_ca132                                                    ; a13b: d0 f5       ..
 ; &a13d referenced 1 time by &a146
 .loop_ca13d
@@ -6110,12 +6110,12 @@ l94b2 = default_printer_driver_ptr+1
     bcs ca151                                                         ; a13f: b0 10       ..
     lda (current_edit_line_ptr),y                                     ; a141: b1 02       ..
     iny                                                               ; a143: c8          .
-    cmp l0080                                                         ; a144: c5 80       ..
+    cmp scratch_offset                                                ; a144: c5 80       ..
     beq loop_ca13d                                                    ; a146: f0 f5       ..
     dey                                                               ; a148: 88          .
     tya                                                               ; a149: 98          .
     sec                                                               ; a14a: 38          8
-    sbc l0081                                                         ; a14b: e5 81       ..
+    sbc scratch_index                                                 ; a14b: e5 81       ..
     tax                                                               ; a14d: aa          .
     jmp delete_edit_buffer_bytes_at_xpos                              ; a14e: 4c 64 ae    Ld.
 
@@ -6318,7 +6318,7 @@ l94b2 = default_printer_driver_ptr+1
     lda ruler_stack_ptr                                               ; a279: a5 70       .p
     sta saved_ruler_index_redraw                                      ; a27b: 85 34       .4
     lda l0076                                                         ; a27d: a5 76       .v
-    sta l0080                                                         ; a27f: 85 80       ..
+    sta scratch_offset                                                ; a27f: 85 80       ..
     lda line_buffer_needs_unpacking_flag                              ; a281: a5 6e       .n
     beq ca28e                                                         ; a283: f0 09       ..
     lda display_start_row                                             ; a285: a5 73       .s
@@ -6457,7 +6457,7 @@ l94b2 = default_printer_driver_ptr+1
     jsr oswrch                                                        ; a351: 20 ee ff     ..            ; Write character
     lda ruler_stack_ptr                                               ; a354: a5 70       .p
     sta saved_ruler_index_scroll                                      ; a356: 85 33       .3
-    inc l0080                                                         ; a358: e6 80       ..
+    inc scratch_offset                                                ; a358: e6 80       ..
     inc line_counter                                                  ; a35a: e6 74       .t
     tya                                                               ; a35c: 98          .
     tax                                                               ; a35d: aa          .
@@ -6472,7 +6472,7 @@ l94b2 = default_printer_driver_ptr+1
     jsr recalculate_cursor_xpos                                       ; a368: 20 08 a6     ..
     lda screen_maxcolumn                                              ; a36b: a5 36       .6
     lsr a                                                             ; a36d: 4a          J
-    sta l0083                                                         ; a36e: 85 83       ..
+    sta screen_column                                                 ; a36e: 85 83       ..
     lda visual_column                                                 ; a370: a5 72       .r
     cmp hscroll_pos                                                   ; a372: c5 71       .q
     bcc ca381                                                         ; a374: 90 0b       ..
@@ -6486,7 +6486,7 @@ l94b2 = default_printer_driver_ptr+1
 .ca381
     lda visual_column                                                 ; a381: a5 72       .r
     sec                                                               ; a383: 38          8
-    sbc l0083                                                         ; a384: e5 83       ..
+    sbc screen_column                                                 ; a384: e5 83       ..
     bcs ca38a                                                         ; a386: b0 02       ..
     lda #0                                                            ; a388: a9 00       ..
 ; &a38a referenced 1 time by &a386
@@ -6494,18 +6494,18 @@ l94b2 = default_printer_driver_ptr+1
     sta hscroll_pos                                                   ; a38a: 85 71       .q
     lda #1                                                            ; a38c: a9 01       ..
     sta display_start_row                                             ; a38e: 85 73       .s
-    sta l0080                                                         ; a390: 85 80       ..
+    sta scratch_offset                                                ; a390: 85 80       ..
     jsr write_line_back_to_document_or_error                          ; a392: 20 3c a9     <.
 ; &a395 referenced 1 time by &a37f
 .ca395
-    lda l0080                                                         ; a395: a5 80       ..
+    lda scratch_offset                                                ; a395: a5 80       ..
     sta l0076                                                         ; a397: 85 76       .v
     lda display_start_row                                             ; a399: a5 73       .s
     beq ca3e7                                                         ; a39b: f0 4a       .J
     bpl ca3b2                                                         ; a39d: 10 13       ..
     lda ptr6_screen_row                                               ; a39f: a5 3d       .=
     bmi ca3b2                                                         ; a3a1: 30 0f       0.
-    sta l0082                                                         ; a3a3: 85 82       ..
+    sta screen_row                                                    ; a3a3: 85 82       ..
     lda screen_maxheight                                              ; a3a5: a5 35       .5
     sec                                                               ; a3a7: 38          8
     sbc ptr6_screen_row                                               ; a3a8: e5 3d       .=
@@ -6519,13 +6519,13 @@ l94b2 = default_printer_driver_ptr+1
     ldy saved_ruler_index_scroll                                      ; a3b2: a4 33       .3
     jsr load_current_ruler                                            ; a3b4: 20 91 ab     ..
     lda #1                                                            ; a3b7: a9 01       ..
-    sta l0082                                                         ; a3b9: 85 82       ..
+    sta screen_row                                                    ; a3b9: 85 82       ..
     lda top_of_screen_line_ptr                                        ; a3bb: a5 11       ..
     ldy top_of_screen_line_ptr+1                                      ; a3bd: a4 12       ..
     ldx screen_maxheight                                              ; a3bf: a6 35       .5
 ; &a3c1 referenced 1 time by &a3b0
 .ca3c1
-    stx l0081                                                         ; a3c1: 86 81       ..
+    stx scratch_index                                                 ; a3c1: 86 81       ..
 ; &a3c3 referenced 1 time by &a3dc
 .loop_ca3c3
     jsr draw_line                                                     ; a3c3: 20 86 a4     ..
@@ -6541,8 +6541,8 @@ l94b2 = default_printer_driver_ptr+1
     iny                                                               ; a3d7: c8          .
 ; &a3d8 referenced 1 time by &a3d5
 .ca3d8
-    inc l0082                                                         ; a3d8: e6 82       ..
-    dec l0081                                                         ; a3da: c6 81       ..
+    inc screen_row                                                    ; a3d8: e6 82       ..
+    dec scratch_index                                                 ; a3da: c6 81       ..
     bne loop_ca3c3                                                    ; a3dc: d0 e5       ..
 ; &a3de referenced 2 times by &a424, &a44c
 .ca3de
@@ -6558,7 +6558,7 @@ l94b2 = default_printer_driver_ptr+1
     lda line_counter                                                  ; a3f0: a5 74       .t
     beq ca3ff                                                         ; a3f2: f0 0b       ..
     lda ypos                                                          ; a3f4: a5 77       .w
-    sta l0082                                                         ; a3f6: 85 82       ..
+    sta screen_row                                                    ; a3f6: 85 82       ..
     lda current_format_line_ptr                                       ; a3f8: a5 04       ..
     ldy current_format_line_ptr+1                                     ; a3fa: a4 05       ..
     jsr draw_line                                                     ; a3fc: 20 86 a4     ..
@@ -6587,26 +6587,26 @@ l94b2 = default_printer_driver_ptr+1
 
 ; &a422 referenced 1 time by &a3cd
 .ca422
-    dec l0081                                                         ; a422: c6 81       ..
+    dec scratch_index                                                 ; a422: c6 81       ..
     beq ca3de                                                         ; a424: f0 b8       ..
-    ldx l0082                                                         ; a426: a6 82       ..
+    ldx screen_row                                                    ; a426: a6 82       ..
     lda screen_maxcolumn                                              ; a428: a5 36       .6
     sta line_lengths+1,x                                              ; a42a: 9d cd 07    ...
-    sta l0083                                                         ; a42d: 85 83       ..
+    sta screen_column                                                 ; a42d: 85 83       ..
     lda #&2a ; '*'                                                    ; a42f: a9 2a       .*
 ; &a431 referenced 1 time by &a44a
 .loop_ca431
-    inc l0082                                                         ; a431: e6 82       ..
+    inc screen_row                                                    ; a431: e6 82       ..
     ldx #0                                                            ; a433: a2 00       ..             ; X=X position
-    ldy l0082                                                         ; a435: a4 82       ..             ; Y=Y position
+    ldy screen_row                                                    ; a435: a4 82       ..             ; Y=Y position
     jsr set_cursor_position                                           ; a437: 20 ea a7     ..
     jsr clear_to_eol                                                  ; a43a: 20 97 a5     ..
-    lda l0083                                                         ; a43d: a5 83       ..
+    lda screen_column                                                 ; a43d: a5 83       ..
     sta line_lengths,x                                                ; a43f: 9d cc 07    ...
     lda #0                                                            ; a442: a9 00       ..
-    sta l0083                                                         ; a444: 85 83       ..
+    sta screen_column                                                 ; a444: 85 83       ..
     lda #&20 ; ' '                                                    ; a446: a9 20       .
-    dec l0081                                                         ; a448: c6 81       ..
+    dec scratch_index                                                 ; a448: c6 81       ..
     bne loop_ca431                                                    ; a44a: d0 e5       ..
     beq ca3de                                                         ; a44c: f0 90       ..             ; ALWAYS branch
 
@@ -6658,11 +6658,11 @@ l94b2 = default_printer_driver_ptr+1
     sty tmp1                                                          ; a48a: 84 86       ..
     sty tmp7                                                          ; a48c: 84 8c       ..
     ldx #0                                                            ; a48e: a2 00       ..             ; X=X position
-    ldy l0082                                                         ; a490: a4 82       ..             ; Y=Y position
+    ldy screen_row                                                    ; a490: a4 82       ..             ; Y=Y position
     jsr set_cursor_position                                           ; a492: 20 ea a7     ..
     ldy #0                                                            ; a495: a0 00       ..
-    sty l0083                                                         ; a497: 84 83       ..
-    sty l0080                                                         ; a499: 84 80       ..
+    sty screen_column                                                 ; a497: 84 83       ..
+    sty scratch_offset                                                ; a499: 84 80       ..
     sty column_position                                               ; a49b: 84 39       .9
     jsr deref_and_check_for_command_prefix                            ; a49d: 20 6f af     o.
     bne ca4b4                                                         ; a4a0: d0 12       ..
@@ -6695,7 +6695,7 @@ l94b2 = default_printer_driver_ptr+1
     bne loop_ca4bf                                                    ; a4ca: d0 f3       ..
     lda #&20 ; ' '                                                    ; a4cc: a9 20       .
     jsr clear_to_eol                                                  ; a4ce: 20 97 a5     ..
-    lda l0083                                                         ; a4d1: a5 83       ..
+    lda screen_column                                                 ; a4d1: a5 83       ..
     sta line_lengths,x                                                ; a4d3: 9d cc 07    ...
     rts                                                               ; a4d6: 60          `
 
@@ -6708,25 +6708,25 @@ l94b2 = default_printer_driver_ptr+1
 ; &a4dd referenced 1 time by &a4c2
 .sub_ca4dd
     inc column_position                                               ; a4dd: e6 39       .9
-    stx l0084                                                         ; a4df: 86 84       ..
-    ldx l0080                                                         ; a4e1: a6 80       ..
-    inc l0080                                                         ; a4e3: e6 80       ..
+    stx temp_save                                                     ; a4df: 86 84       ..
+    ldx scratch_offset                                                ; a4e1: a6 80       ..
+    inc scratch_offset                                                ; a4e3: e6 80       ..
     cpx hscroll_pos                                                   ; a4e5: e4 71       .q
     bcc ca533                                                         ; a4e7: 90 4a       .J
 ; ***************************************************************************************
 ; &a4e9 referenced 4 times by &a4b6, &a4b9, &a4bc, &a4da
 .process_current_document_character
     pha                                                               ; a4e9: 48          H
-    ldx l0082                                                         ; a4ea: a6 82       ..
+    ldx screen_row                                                    ; a4ea: a6 82       ..
     lda line_lengths,x                                                ; a4ec: bd cc 07    ...
     beq ca4f4                                                         ; a4ef: f0 03       ..
     dec line_lengths,x                                                ; a4f1: de cc 07    ...
 ; &a4f4 referenced 1 time by &a4ef
 .ca4f4
-    ldx l0083                                                         ; a4f4: a6 83       ..
+    ldx screen_column                                                 ; a4f4: a6 83       ..
     cpx screen_maxcolumn                                              ; a4f6: e4 36       .6
     bcs ca532                                                         ; a4f8: b0 38       .8
-    inc l0083                                                         ; a4fa: e6 83       ..
+    inc screen_column                                                 ; a4fa: e6 83       ..
     tya                                                               ; a4fc: 98          .
     beq ca514                                                         ; a4fd: f0 15       ..
     dey                                                               ; a4ff: 88          .
@@ -6772,7 +6772,7 @@ l94b2 = default_printer_driver_ptr+1
     pla                                                               ; a532: 68          h
 ; &a533 referenced 1 time by &a4e7
 .ca533
-    ldx l0084                                                         ; a533: a6 84       ..
+    ldx temp_save                                                     ; a533: a6 84       ..
     rts                                                               ; a535: 60          `
 
 ; ***************************************************************************************
@@ -6864,11 +6864,11 @@ l94b2 = default_printer_driver_ptr+1
 ; ***************************************************************************************
 ; &a597 referenced 2 times by &a43a, &a4ce
 .clear_to_eol
-    ldx l0082                                                         ; a597: a6 82       ..
-    sta l0084                                                         ; a599: 85 84       ..
+    ldx screen_row                                                    ; a597: a6 82       ..
+    sta temp_save                                                     ; a599: 85 84       ..
     lda line_lengths,x                                                ; a59b: bd cc 07    ...
     beq return_62                                                     ; a59e: f0 0a       ..
-    lda l0084                                                         ; a5a0: a5 84       ..
+    lda temp_save                                                     ; a5a0: a5 84       ..
 ; &a5a2 referenced 1 time by &a5a8
 .loop_ca5a2
     jsr oswrch                                                        ; a5a2: 20 ee ff     ..            ; Write character
@@ -6895,7 +6895,7 @@ l94b2 = default_printer_driver_ptr+1
     bcc ca5d1                                                         ; a5be: 90 11       ..
     cmp #&20 ; ' '                                                    ; a5c0: c9 20       .
     bcs ca5d1                                                         ; a5c2: b0 0d       ..
-    sty l0084                                                         ; a5c4: 84 84       ..
+    sty temp_save                                                     ; a5c4: 84 84       ..
     ldy __end_pointer_array                                           ; a5c6: a4 69       .i
     bpl ca5cf                                                         ; a5c8: 10 05       ..
     sbc #&1b                                                          ; a5ca: e9 1b       ..
@@ -6903,7 +6903,7 @@ l94b2 = default_printer_driver_ptr+1
     lda highlight1_code,x                                             ; a5cd: b5 2a       .*
 ; &a5cf referenced 1 time by &a5c8
 .ca5cf
-    ldy l0084                                                         ; a5cf: a4 84       ..
+    ldy temp_save                                                     ; a5cf: a4 84       ..
 ; &a5d1 referenced 3 times by &a5be, &a5c2, &a5d7
 .ca5d1
     ldx #1                                                            ; a5d1: a2 01       ..
@@ -6919,12 +6919,12 @@ l94b2 = default_printer_driver_ptr+1
 .ca5d9
     lda ruler_left_stop                                               ; a5d9: a5 3f       .?
     beq ca5d5                                                         ; a5db: f0 f8       ..
-    sty l0084                                                         ; a5dd: 84 84       ..
+    sty temp_save                                                     ; a5dd: 84 84       ..
     bne ca5f1                                                         ; a5df: d0 10       ..             ; ALWAYS branch
 
 ; &a5e1 referenced 1 time by &a5b0
 .ca5e1
-    sty l0084                                                         ; a5e1: 84 84       ..
+    sty temp_save                                                     ; a5e1: 84 84       ..
     ldy column_position                                               ; a5e3: a4 39       .9
 ; &a5e5 referenced 1 time by &a5ee
 .loop_ca5e5
@@ -6947,7 +6947,7 @@ l94b2 = default_printer_driver_ptr+1
 ; &a5fa referenced 1 time by &a5f6
 .ca5fa
     lda #&20 ; ' '                                                    ; a5fa: a9 20       .
-    ldy l0084                                                         ; a5fc: a4 84       ..
+    ldy temp_save                                                     ; a5fc: a4 84       ..
     sec                                                               ; a5fe: 38          8
     rts                                                               ; a5ff: 60          `
 
@@ -7016,7 +7016,7 @@ l94b2 = default_printer_driver_ptr+1
     beq return_64                                                     ; a642: f0 fb       ..
     ldy #0                                                            ; a644: a0 00       ..
     sty l0076                                                         ; a646: 84 76       .v
-    sty l0082                                                         ; a648: 84 82       ..
+    sty screen_row                                                    ; a648: 84 82       ..
     lda current_ruler_ptr                                             ; a64a: a5 06       ..
     ldy current_ruler_ptr+1                                           ; a64c: a4 07       ..
     jsr draw_line                                                     ; a64e: 20 86 a4     ..
@@ -7072,11 +7072,11 @@ l94b2 = default_printer_driver_ptr+1
 ; ***************************************************************************************
 ; &a68c referenced 1 time by &adea
 .render_number_to_output_buffer
-    stx l0082                                                         ; a68c: 86 82       ..
+    stx screen_row                                                    ; a68c: 86 82       ..
     lda la69a                                                         ; a68e: ad 9a a6    ...
     ldy la69b                                                         ; a691: ac 9b a6    ...
     jsr render_number_to_callback                                     ; a694: 20 ba a6     ..
-    ldx l0082                                                         ; a697: a6 82       ..
+    ldx screen_row                                                    ; a697: a6 82       ..
     rts                                                               ; a699: 60          `
 
 ; &a69a referenced 1 time by &a68e
@@ -7091,11 +7091,11 @@ la69b = la69a+1
     pha                                                               ; a69e: 48          H
     tsx                                                               ; a69f: ba          .
     lda l0102,x                                                       ; a6a0: bd 02 01    ...
-    ldx l0082                                                         ; a6a3: a6 82       ..
+    ldx screen_row                                                    ; a6a3: a6 82       ..
     sta output_buffer,x                                               ; a6a5: 9d 54 06    .T.
     cpx #&82                                                          ; a6a8: e0 82       ..
     bcs ca6ae                                                         ; a6aa: b0 02       ..
-    inc l0082                                                         ; a6ac: e6 82       ..
+    inc screen_row                                                    ; a6ac: e6 82       ..
 ; &a6ae referenced 1 time by &a6aa
 .ca6ae
     pla                                                               ; a6ae: 68          h
@@ -7123,7 +7123,7 @@ la69b = la69a+1
     sta tmp6                                                          ; a6ba: 85 8b       ..
     sty tmp7                                                          ; a6bc: 84 8c       ..
     ldy #0                                                            ; a6be: a0 00       ..
-    sty l0083                                                         ; a6c0: 84 83       ..
+    sty screen_column                                                 ; a6c0: 84 83       ..
 ; &a6c2 referenced 1 time by &a6f5
 .ca6c2
     ldx #0                                                            ; a6c2: a2 00       ..
@@ -7150,12 +7150,12 @@ la69b = la69a+1
 .ca6e5
     txa                                                               ; a6e5: 8a          .
     bne ca6ec                                                         ; a6e6: d0 04       ..
-    ldx l0083                                                         ; a6e8: a6 83       ..
+    ldx screen_column                                                 ; a6e8: a6 83       ..
     beq ca6f1                                                         ; a6ea: f0 05       ..
 ; &a6ec referenced 1 time by &a6e6
 .ca6ec
     jsr sub_ca6f9                                                     ; a6ec: 20 f9 a6     ..
-    inc l0083                                                         ; a6ef: e6 83       ..
+    inc screen_column                                                 ; a6ef: e6 83       ..
 ; &a6f1 referenced 1 time by &a6ea
 .ca6f1
     iny                                                               ; a6f1: c8          .
@@ -7183,7 +7183,7 @@ la69b = la69a+1
     cmp #&0a                                                          ; a70c: c9 0a       ..
     bcs ca739                                                         ; a70e: b0 29       .)
     iny                                                               ; a710: c8          .
-    sta l0084                                                         ; a711: 85 84       ..
+    sta temp_save                                                     ; a711: 85 84       ..
     asl tmp8                                                          ; a713: 06 8d       ..
     rol tmp9                                                          ; a715: 26 8e       &.
     ldx tmp9                                                          ; a717: a6 8e       ..
@@ -7201,7 +7201,7 @@ la69b = la69a+1
 ; &a72b referenced 1 time by &a728
 .ca72b
     clc                                                               ; a72b: 18          .
-    adc l0084                                                         ; a72c: 65 84       e.
+    adc temp_save                                                     ; a72c: 65 84       e.
     sta tmp8                                                          ; a72e: 85 8d       ..
     txa                                                               ; a730: 8a          .
     adc tmp9                                                          ; a731: 65 8e       e.
@@ -7377,7 +7377,7 @@ la69b = la69a+1
 ; ***************************************************************************************
 ; &a7fa referenced 36 times by &811f, &8145, &815b, &8163, &816d, &818c, &81ab, &81c3, &8204, &8263, &82d1, &82e7, &82fa, &8542, &8584, &85ec, &8617, &865d, &868f, &8732, &87b4, &87c4, &87cb, &87d1, &8865, &89b3, &89c1, &89e8, &8a0b, &8a21, &8e0f, &8e68, &8eb1, &9014, &92a4, &92b7
 .print_inline_string
-    sty l0084                                                         ; a7fa: 84 84       ..
+    sty temp_save                                                     ; a7fa: 84 84       ..
     pla                                                               ; a7fc: 68          h
     clc                                                               ; a7fd: 18          .
     adc #1                                                            ; a7fe: 69 01       i.
@@ -7405,7 +7405,7 @@ la69b = la69a+1
     inc tmp3                                                          ; a81d: e6 88       ..
 ; &a81f referenced 1 time by &a81b
 .ca81f
-    ldy l0084                                                         ; a81f: a4 84       ..
+    ldy temp_save                                                     ; a81f: a4 84       ..
     jmp (tmp2)                                                        ; a821: 6c 87 00    l..
 
 ; &a824 referenced 1 time by &a811
@@ -7443,27 +7443,27 @@ la69b = la69a+1
 ; &a847 referenced 1 time by &8258
 .parse_command
     lda #&ff                                                          ; a847: a9 ff       ..
-    sta l0082                                                         ; a849: 85 82       ..
+    sta screen_row                                                    ; a849: 85 82       ..
     tax                                                               ; a84b: aa          .              ; X=&ff
 ; &a84c referenced 2 times by &a876, &a87c
 .ca84c
     ldy input_buffer_ptr                                              ; a84c: a4 7f       ..
     dey                                                               ; a84e: 88          .
-    inc l0082                                                         ; a84f: e6 82       ..
+    inc screen_row                                                    ; a84f: e6 82       ..
 ; &a851 referenced 1 time by &a868
 .loop_ca851
     inx                                                               ; a851: e8          .
     iny                                                               ; a852: c8          .
     lda (tmp0),y                                                      ; a853: b1 85       ..
     and #&df                                                          ; a855: 29 df       ).
-    sta l0084                                                         ; a857: 85 84       ..
+    sta temp_save                                                     ; a857: 85 84       ..
     lda parser_table,x                                                ; a859: bd 05 b2    ...
     beq ca890                                                         ; a85c: f0 32       .2
     bmi ca87e                                                         ; a85e: 30 1e       0.
     eor #&5b ; '['                                                    ; a860: 49 5b       I[
-    sta l0083                                                         ; a862: 85 83       ..
+    sta screen_column                                                 ; a862: 85 83       ..
     and #&df                                                          ; a864: 29 df       ).
-    cmp l0084                                                         ; a866: c5 84       ..
+    cmp temp_save                                                     ; a866: c5 84       ..
     beq loop_ca851                                                    ; a868: f0 e7       ..
 ; &a86a referenced 1 time by &a870
 .loop_ca86a
@@ -7471,7 +7471,7 @@ la69b = la69a+1
     lda parser_table,x                                                ; a86b: bd 05 b2    ...
     beq ca890                                                         ; a86e: f0 20       .
     bpl loop_ca86a                                                    ; a870: 10 f8       ..
-    lda l0083                                                         ; a872: a5 83       ..
+    lda screen_column                                                 ; a872: a5 83       ..
     and #&20 ; ' '                                                    ; a874: 29 20       )
     beq ca84c                                                         ; a876: f0 d4       ..
     lda (tmp0),y                                                      ; a878: b1 85       ..
@@ -7487,7 +7487,7 @@ la69b = la69a+1
 ; &a887 referenced 1 time by &a882
 .ca887
     sty input_buffer_ptr                                              ; a887: 84 7f       ..
-    ldy l0082                                                         ; a889: a4 82       ..
+    ldy screen_row                                                    ; a889: a4 82       ..
     lda parser_table,x                                                ; a88b: bd 05 b2    ...
     clc                                                               ; a88e: 18          .
     rts                                                               ; a88f: 60          `
@@ -7538,10 +7538,10 @@ la8a5 = ca8a4+1
     ldy #0                                                            ; a8c5: a0 00       ..
     sty tmp7                                                          ; a8c7: 84 8c       ..
     jsr get_line_length                                               ; a8c9: 20 f1 aa     ..
-    sta l0083                                                         ; a8cc: 85 83       ..
+    sta screen_column                                                 ; a8cc: 85 83       ..
     lda edit_line_len                                                 ; a8ce: a5 3b       .;
     sec                                                               ; a8d0: 38          8
-    sbc l0083                                                         ; a8d1: e5 83       ..
+    sbc screen_column                                                 ; a8d1: e5 83       ..
     bcc ca8df                                                         ; a8d3: 90 0a       ..
     beq ca8ed                                                         ; a8d5: f0 16       ..
     sta tmp6                                                          ; a8d7: 85 8b       ..
@@ -7550,10 +7550,10 @@ la8a5 = ca8a4+1
 
 ; &a8df referenced 1 time by &a8d3
 .ca8df
-    sta l0084                                                         ; a8df: 85 84       ..
+    sta temp_save                                                     ; a8df: 85 84       ..
     lda #0                                                            ; a8e1: a9 00       ..
     sec                                                               ; a8e3: 38          8
-    sbc l0084                                                         ; a8e4: e5 84       ..
+    sbc temp_save                                                     ; a8e4: e5 84       ..
     sta tmp6                                                          ; a8e6: 85 8b       ..
     jsr make_space_for_insertion                                      ; a8e8: 20 15 aa     ..
     bcs return_66                                                     ; a8eb: b0 4e       .N
@@ -7573,7 +7573,7 @@ la8a5 = ca8a4+1
     sta tmp6                                                          ; a900: 85 8b       ..
     lda current_format_line_ptr+1                                     ; a902: a5 05       ..
     sta tmp7                                                          ; a904: 85 8c       ..
-    ldx l0083                                                         ; a906: a6 83       ..
+    ldx screen_column                                                 ; a906: a6 83       ..
     stx edit_line_len                                                 ; a908: 86 3b       .;
 ; &a90a referenced 1 time by &a938
 .ca90a
@@ -8268,7 +8268,7 @@ la8a5 = ca8a4+1
 ; &ac7b referenced 1 time by &acd5
 .cac7b
     lda #0                                                            ; ac7b: a9 00       ..
-    sta l0083                                                         ; ac7d: 85 83       ..
+    sta screen_column                                                 ; ac7d: 85 83       ..
     ldx #&85                                                          ; ac7f: a2 85       ..
     ldy #1                                                            ; ac81: a0 01       ..
     lda (tmp8),y                                                      ; ac83: b1 8d       ..
@@ -8279,7 +8279,7 @@ la8a5 = ca8a4+1
     inx                                                               ; ac8c: e8          .
 ; &ac8d referenced 1 time by &ac88
 .cac8d
-    stx l0084                                                         ; ac8d: 86 84       ..
+    stx temp_save                                                     ; ac8d: 86 84       ..
 ; &ac8f referenced 2 times by &aca2, &aca4
 .cac8f
     lda (tmp8),y                                                      ; ac8f: b1 8d       ..
@@ -8290,16 +8290,16 @@ la8a5 = ca8a4+1
     bne cac9c                                                         ; ac98: d0 02       ..
 ; &ac9a referenced 1 time by &ac94
 .cac9a
-    sty l0083                                                         ; ac9a: 84 83       ..
+    sty screen_column                                                 ; ac9a: 84 83       ..
 ; &ac9c referenced 1 time by &ac98
 .cac9c
     cmp #&0d                                                          ; ac9c: c9 0d       ..
     beq return_73                                                     ; ac9e: f0 d7       ..
-    cpy l0084                                                         ; aca0: c4 84       ..
+    cpy temp_save                                                     ; aca0: c4 84       ..
     beq cac8f                                                         ; aca2: f0 eb       ..
     bcc cac8f                                                         ; aca4: 90 e9       ..
-    lda l0084                                                         ; aca6: a5 84       ..
-    ldx l0083                                                         ; aca8: a6 83       ..
+    lda temp_save                                                     ; aca6: a5 84       ..
+    ldx screen_column                                                 ; aca8: a6 83       ..
     beq cacad                                                         ; acaa: f0 01       ..
     txa                                                               ; acac: 8a          .
 ; &acad referenced 1 time by &acaa
@@ -8478,7 +8478,7 @@ la8a5 = ca8a4+1
 ; ***************************************************************************************
 ; &ad81 referenced 2 times by &97cf, &ada7
 .render_register
-    sty l0084                                                         ; ad81: 84 84       ..
+    sty temp_save                                                     ; ad81: 84 84       ..
     jsr get_register_address                                          ; ad83: 20 69 ad     i.
     ldy #0                                                            ; ad86: a0 00       ..
     sty tmp8                                                          ; ad88: 84 8d       ..
@@ -8499,7 +8499,7 @@ la8a5 = ca8a4+1
     clv                                                               ; ada2: b8          .
 ; &ada3 referenced 2 times by &ad93, &ad97
 .cada3
-    ldy l0084                                                         ; ada3: a4 84       ..
+    ldy temp_save                                                     ; ada3: a4 84       ..
     rts                                                               ; ada5: 60          `
 
 ; &ada6 referenced 1 time by &ad8e
@@ -8510,10 +8510,10 @@ la8a5 = ca8a4+1
 ; &ada7 referenced 2 times by &93f7, &9565
 .render_date_time_to_output_buffer
     jsr render_register                                               ; ada7: 20 81 ad     ..
-    sty l0084                                                         ; adaa: 84 84       ..
+    sty temp_save                                                     ; adaa: 84 84       ..
     bvc cadea                                                         ; adac: 50 3c       P<
     pha                                                               ; adae: 48          H
-    stx l0082                                                         ; adaf: 86 82       ..
+    stx screen_row                                                    ; adaf: 86 82       ..
     lda #0                                                            ; adb1: a9 00       ..
     sta input_buffer                                                  ; adb3: 8d 00 05    ...
     ldx #<(input_buffer)                                              ; adb6: a2 00       ..
@@ -8531,8 +8531,8 @@ la8a5 = ca8a4+1
     ldx #8                                                            ; adcf: a2 08       ..
 ; &add1 referenced 1 time by &adcb
 .cadd1
-    stx l0083                                                         ; add1: 86 83       ..
-    ldx l0082                                                         ; add3: a6 82       ..
+    stx screen_column                                                 ; add1: 86 83       ..
+    ldx screen_row                                                    ; add3: a6 82       ..
 ; &add5 referenced 1 time by &ade3
 .loop_cadd5
     lda input_buffer,y                                                ; add5: b9 00 05    ...
@@ -8541,20 +8541,20 @@ la8a5 = ca8a4+1
     cpx #&83                                                          ; addc: e0 83       ..
     beq caded                                                         ; adde: f0 0d       ..
     iny                                                               ; ade0: c8          .
-    dec l0083                                                         ; ade1: c6 83       ..
+    dec screen_column                                                 ; ade1: c6 83       ..
     bne loop_cadd5                                                    ; ade3: d0 f0       ..
     beq caded                                                         ; ade5: f0 06       ..             ; ALWAYS branch
 
 ; &ade7 referenced 1 time by &adc2
 .cade7
     pla                                                               ; ade7: 68          h
-    ldx l0082                                                         ; ade8: a6 82       ..
+    ldx screen_row                                                    ; ade8: a6 82       ..
 ; &adea referenced 1 time by &adac
 .cadea
     jsr render_number_to_output_buffer                                ; adea: 20 8c a6     ..
 ; &aded referenced 2 times by &adde, &ade5
 .caded
-    ldy l0084                                                         ; aded: a4 84       ..
+    ldy temp_save                                                     ; aded: a4 84       ..
     rts                                                               ; adef: 60          `
 
 ; ***************************************************************************************
@@ -8586,11 +8586,11 @@ la8a5 = ca8a4+1
     lda xpos                                                          ; ae06: a5 40       .@
     cmp #&84                                                          ; ae08: c9 84       ..
     bcs cae03                                                         ; ae0a: b0 f7       ..
-    stx l0080                                                         ; ae0c: 86 80       ..
+    stx scratch_offset                                                ; ae0c: 86 80       ..
     jsr get_line_length                                               ; ae0e: 20 f1 aa     ..
     tya                                                               ; ae11: 98          .
     clc                                                               ; ae12: 18          .
-    adc l0080                                                         ; ae13: 65 80       e.
+    adc scratch_offset                                                ; ae13: 65 80       e.
     bcs cae03                                                         ; ae15: b0 ec       ..
     cmp #&85                                                          ; ae17: c9 85       ..
     bcs cae03                                                         ; ae19: b0 e8       ..
@@ -8606,19 +8606,19 @@ la8a5 = ca8a4+1
     ldx #0                                                            ; ae28: a2 00       ..
     tya                                                               ; ae2a: 98          .
     clc                                                               ; ae2b: 18          .
-    adc l0080                                                         ; ae2c: 65 80       e.
+    adc scratch_offset                                                ; ae2c: 65 80       e.
     bcs cae35                                                         ; ae2e: b0 05       ..
     cmp #&84                                                          ; ae30: c9 84       ..
     bcs cae35                                                         ; ae32: b0 01       ..
     tax                                                               ; ae34: aa          .
 ; &ae35 referenced 2 times by &ae2e, &ae32
 .cae35
-    stx l0081                                                         ; ae35: 86 81       ..
+    stx scratch_index                                                 ; ae35: 86 81       ..
 ; &ae37 referenced 1 time by &ae4f
 .loop_cae37
     jsr find_marker_at_position                                       ; ae37: 20 36 a5     6.
     bne cae52                                                         ; ae3a: d0 16       ..
-    lda l0081                                                         ; ae3c: a5 81       ..
+    lda scratch_index                                                 ; ae3c: a5 81       ..
     beq cae4b                                                         ; ae3e: f0 0b       ..
     clc                                                               ; ae40: 18          .
     adc current_edit_line_ptr                                         ; ae41: 65 02       e.
@@ -8637,13 +8637,13 @@ la8a5 = ca8a4+1
 ; &ae52 referenced 1 time by &ae3a
 .cae52
     lda (current_edit_line_ptr),y                                     ; ae52: b1 02       ..
-    sty l0084                                                         ; ae54: 84 84       ..
-    ldy l0081                                                         ; ae56: a4 81       ..
+    sty temp_save                                                     ; ae54: 84 84       ..
+    ldy scratch_index                                                 ; ae56: a4 81       ..
     beq cae5c                                                         ; ae58: f0 02       ..
     sta (current_edit_line_ptr),y                                     ; ae5a: 91 02       ..
 ; &ae5c referenced 1 time by &ae58
 .cae5c
-    ldy l0084                                                         ; ae5c: a4 84       ..
+    ldy temp_save                                                     ; ae5c: a4 84       ..
     cpy xpos                                                          ; ae5e: c4 40       .@
     bne cae27                                                         ; ae60: d0 c5       ..
     clc                                                               ; ae62: 18          .
@@ -8652,7 +8652,7 @@ la8a5 = ca8a4+1
 ; ***************************************************************************************
 ; &ae64 referenced 3 times by &9e4d, &9ee5, &a14e
 .delete_edit_buffer_bytes_at_xpos
-    stx l0080                                                         ; ae64: 86 80       ..
+    stx scratch_offset                                                ; ae64: 86 80       ..
     inc edit_buffer_dirty_flag                                        ; ae66: e6 6d       .m
     lda current_edit_line_ptr                                         ; ae68: a5 02       ..
     sta tmp6                                                          ; ae6a: 85 8b       ..
@@ -8661,17 +8661,17 @@ la8a5 = ca8a4+1
     ldy xpos                                                          ; ae70: a4 40       .@
     tya                                                               ; ae72: 98          .
     clc                                                               ; ae73: 18          .
-    adc l0080                                                         ; ae74: 65 80       e.
-    sta l0084                                                         ; ae76: 85 84       ..
+    adc scratch_offset                                                ; ae74: 65 80       e.
+    sta temp_save                                                     ; ae76: 85 84       ..
 ; &ae78 referenced 2 times by &ae95, &ae9b
 .cae78
     jsr find_marker_at_position                                       ; ae78: 20 36 a5     6.
     bne cae98                                                         ; ae7b: d0 1b       ..
     lda #0                                                            ; ae7d: a9 00       ..
-    cpy l0084                                                         ; ae7f: c4 84       ..
+    cpy temp_save                                                     ; ae7f: c4 84       ..
     bcc cae91                                                         ; ae81: 90 0e       ..
     tya                                                               ; ae83: 98          .
-    sbc l0080                                                         ; ae84: e5 80       ..
+    sbc scratch_offset                                                ; ae84: e5 80       ..
     clc                                                               ; ae86: 18          .
     adc current_edit_line_ptr                                         ; ae87: 65 02       e.
     sta __begin_pointer_array,x                                       ; ae89: 95 53       .S
@@ -8697,11 +8697,11 @@ la8a5 = ca8a4+1
     ldy xpos                                                          ; aea3: a4 40       .@
 ; &aea5 referenced 1 time by &aebf
 .loop_caea5
-    sty l0084                                                         ; aea5: 84 84       ..
+    sty temp_save                                                     ; aea5: 84 84       ..
     ldx #&10                                                          ; aea7: a2 10       ..
     tya                                                               ; aea9: 98          .
     clc                                                               ; aeaa: 18          .
-    adc l0080                                                         ; aeab: 65 80       e.
+    adc scratch_offset                                                ; aeab: 65 80       e.
     bcs caeb7                                                         ; aead: b0 08       ..
     tay                                                               ; aeaf: a8          .
     cpy #&84                                                          ; aeb0: c0 84       ..
@@ -8710,7 +8710,7 @@ la8a5 = ca8a4+1
     tax                                                               ; aeb6: aa          .
 ; &aeb7 referenced 2 times by &aead, &aeb2
 .caeb7
-    ldy l0084                                                         ; aeb7: a4 84       ..
+    ldy temp_save                                                     ; aeb7: a4 84       ..
     txa                                                               ; aeb9: 8a          .
     sta (current_edit_line_ptr),y                                     ; aeba: 91 02       ..
     iny                                                               ; aebc: c8          .
@@ -8776,22 +8776,22 @@ la8a5 = ca8a4+1
     bcc caf31                                                         ; aefd: 90 32       .2
     jsr get_line_length                                               ; aeff: 20 f1 aa     ..
     lda xpos                                                          ; af02: a5 40       .@
-    sta l0083                                                         ; af04: 85 83       ..
+    sta screen_column                                                 ; af04: 85 83       ..
     sty xpos                                                          ; af06: 84 40       .@
     jsr recalculate_cursor_xpos                                       ; af08: 20 08 a6     ..
     lda visual_column                                                 ; af0b: a5 72       .r
     cmp ruler_left_stop                                               ; af0d: c5 3f       .?
     bcc caf19                                                         ; af0f: 90 08       ..
-    ldy l0083                                                         ; af11: a4 83       ..
+    ldy screen_column                                                 ; af11: a4 83       ..
     sty xpos                                                          ; af13: 84 40       .@
     inc xpos                                                          ; af15: e6 40       .@
     bcs caf2a                                                         ; af17: b0 11       ..             ; ALWAYS branch
 
 ; &af19 referenced 1 time by &af0f
 .caf19
-    lda l0083                                                         ; af19: a5 83       ..
+    lda screen_column                                                 ; af19: a5 83       ..
     ldy xpos                                                          ; af1b: a4 40       .@
-    cpy l0083                                                         ; af1d: c4 83       ..
+    cpy screen_column                                                 ; af1d: c4 83       ..
     bcs caf28                                                         ; af1f: b0 07       ..
     sec                                                               ; af21: 38          8
     sbc ruler_left_stop                                               ; af22: e5 3f       .?
@@ -9368,13 +9368,13 @@ lb2a1 = commands_table+1
     bne cb30c                                                         ; b2fe: d0 0c       ..
     ldx #8                                                            ; b300: a2 08       ..
     lda (tmp6),y                                                      ; b302: b1 8b       ..
-    sta l0083                                                         ; b304: 85 83       ..
+    sta screen_column                                                 ; b304: 85 83       ..
     inc tmp6                                                          ; b306: e6 8b       ..
     bne cb30c                                                         ; b308: d0 02       ..
     inc tmp7                                                          ; b30a: e6 8c       ..
 ; &b30c referenced 2 times by &b2fe, &b308
 .cb30c
-    rol l0083                                                         ; b30c: 26 83       &.
+    rol screen_column                                                 ; b30c: 26 83       &.
     dex                                                               ; b30e: ca          .
 ; &b30f referenced 1 time by &b32b
 .return_86
@@ -9770,16 +9770,16 @@ save pydis_start, pydis_end
 ;     tmp8:                                 109
 ;     tmp9:                                  81
 ;     tmp0:                                  75
-;     l0083:                                 74
-;     l0084:                                 71
+;     screen_column:                         74
+;     temp_save:                             71
 ;     input_buffer_ptr+1:                    61
-;     l0080:                                 61
+;     scratch_offset:                        61
 ;     tmp6:                                  61
 ;     xpos:                                  61
-;     l0082:                                 54
+;     screen_row:                            54
 ;     current_line_ptr:                      52
 ;     current_line_ptr+0:                    52
-;     l0081:                                 50
+;     scratch_index:                         50
 ;     tmp1:                                  47
 ;     column_position:                       46
 ;     tmp4:                                  44
