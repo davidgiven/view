@@ -3,7 +3,7 @@
 
 #include "globals.h"
 
-struct macro;
+typedef struct macro macro_t;
 
 /**
  * Initialises the macro list for a new print job.

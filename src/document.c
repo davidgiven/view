@@ -472,7 +472,8 @@ void initialise_document(void)
     ((uint8_t*)&current_line_buffer)[MAX_LINE_LENGTH - 1] = 0x0d;
     top = page;
     edit_buffer_base = (uint8_t*)&current_line_buffer;
-    current_format_line_ptr = current_line_buffer.text;
+    current_format_line = &current_line_buffer;
+    heap_format_line_ptr = &current_line_buffer;
     uint8_t pos2 = create_default_ruler(current_ruler_buffer);
 
     pos2++;

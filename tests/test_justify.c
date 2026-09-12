@@ -7,6 +7,14 @@ typedef uint16_t addr_t;
 
 typedef uint16_t addr_t;
 
+typedef struct __attribute__((packed, aligned(1))) line
+{
+    uint8_t prefix_byte;
+    uint8_t command[2];
+    uint8_t text[132];
+    uint8_t extra[3];
+} line_t;
+
 extern uint8_t ram[65536];
 extern uint8_t justifying_flag;
 extern uint8_t ruler_left_stop;
@@ -15,23 +23,17 @@ extern uint8_t column_position, justify_gap_count;
 extern uint8_t scratch_index, screen_row, screen_column, temp_save;
 extern uint8_t print_xpos;
 extern uint8_t input_buffer_offset;
-extern uint8_t* current_format_line_ptr;
+extern line_t* current_format_line;
+extern line_t* heap_format_line_ptr;
 extern uint8_t* current_line_ptr;
 extern uint8_t* edit_buffer_base; // was ptr1
 extern uint8_t* scratch_scan_ptr; // was tmp89
 extern uint8_t output_buffer[132];
 extern uint8_t input_buffer[68];
 
-struct __attribute__((packed, aligned(1))) line
-{
-    uint8_t prefix_byte;
-    char command[2];
-    uint8_t text[132];
-    char extra[3];
-};
-extern struct line current_line_buffer;
+extern line_t current_line_buffer;
 
-void justify_edit_buffer(void);
+uint8_t justify_edit_buffer(uint8_t* target_ptr);
 
 #define BUFFER_ADDR 0x0548 /* RAM_EDIT_BUFFER */
 
@@ -63,7 +65,8 @@ static void setup_edit_buffer(const char* text)
 static void init_globals(const char* text, uint8_t jf, uint8_t rstop)
 {
     setup_edit_buffer(text);
-    current_format_line_ptr = current_line_buffer.text;
+    current_format_line = &current_line_buffer;
+    heap_format_line_ptr = &current_line_buffer;
     current_line_ptr = current_line_buffer.text;
     edit_buffer_base = (uint8_t*)&current_line_buffer; // was ptr1
 
@@ -83,7 +86,7 @@ static void init_globals(const char* text, uint8_t jf, uint8_t rstop)
 static void run_justify(const char* text, uint8_t rstop)
 {
     init_globals(text, 0, rstop);
-    justify_edit_buffer();
+    justify_edit_buffer(edit_buffer_base);
 
     int orig_len = strlen(text);
     int buf_len = 0;
@@ -113,7 +116,7 @@ int main(void)
 
     {
         init_globals("The quick brown fox jumps over", 0xFF, 40);
-        justify_edit_buffer();
+        justify_edit_buffer(edit_buffer_base);
         ASSERT(justify_gap_count == 0, "justification skipped when flag != 0");
     }
 

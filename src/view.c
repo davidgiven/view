@@ -27,10 +27,10 @@ jmp_buf env;
 #define MAX_LINE_LENGTH 132
 
 void check_continuous_editing(void);
-void parse_filename_from_command(struct scan_state* scan);
+void parse_filename_from_command(scan_state_t* scan);
 command_prefix_t check_for_command_prefix(uint8_t ch);
-bool reset_command_parse_state(struct scan_state* scan);
-cli_cmd_status_t process_cli_command(struct scan_state* scan);
+bool reset_command_parse_state(scan_state_t* scan);
+cli_cmd_status_t process_cli_command(scan_state_t* scan);
 bool check_area_memory(uint8_t* doc_line_ptr);
 void redraw_and_write_back(void);
 void setup_area_pointers(uint8_t* doc_line_ptr);
@@ -54,20 +54,22 @@ uint8_t ram[655360];
 
 uint8_t current_ruler_buffer[133];
 
-struct line current_line_buffer;
+line_t current_line_buffer;
 
-uint8_t* edit_buffer_base;        /** Base of edit buffer. */
-uint8_t* current_format_line_ptr; /** Current formatting line pointer. */
-uint8_t* current_ruler_ptr;       /** Pointer into current ruler buffer. */
-uint8_t* current_line_ptr;        /** Walking cursor into document heap. */
-uint8_t* page;                    /** Start of document heap. */
-uint8_t* top;                     /** End of document heap (first free byte). */
-uint8_t* himem;                   /** Top of available memory. */
-uint8_t* top_of_screen_line_ptr;  /** Document line at top of screen. */
-uint8_t* editor_ptr6;             /** Editor working pointer. */
-uint8_t* printer_ptr6;            /** Printer working pointer. */
-uint8_t* print_doc_ptr;           /** Document pointer used during printing. */
-const struct printer_driver* printer_driver_ptr; /** Active printer driver. */
+uint8_t* edit_buffer_base; /** Base of edit buffer. */
+line_t*
+    current_format_line; /** Current formatting line pointer (edit buffer). */
+line_t* heap_format_line_ptr;    /** Heap formatting line pointer. */
+uint8_t* current_ruler_ptr;      /** Pointer into current ruler buffer. */
+uint8_t* current_line_ptr;       /** Walking cursor into document heap. */
+uint8_t* page;                   /** Start of document heap. */
+uint8_t* top;                    /** End of document heap (first free byte). */
+uint8_t* himem;                  /** Top of available memory. */
+uint8_t* top_of_screen_line_ptr; /** Document line at top of screen. */
+uint8_t* editor_ptr6;            /** Editor working pointer. */
+uint8_t* printer_ptr6;           /** Printer working pointer. */
+uint8_t* print_doc_ptr;          /** Document pointer used during printing. */
+const printer_driver_t* printer_driver_ptr; /** Active printer driver. */
 uint8_t* macro_cursor_ptr;              /** Cursor into current macro body. */
 uint8_t* oshwm;                         /** Ruler stack base. */
 uint8_t* ruler_index[RULER_INDEX_SIZE]; /** Ruler index stack. */
@@ -153,8 +155,6 @@ uint8_t macro_executing_flag;
 uint8_t two_sided_flag;
 uint8_t left_margin;
 uint8_t highlight_code[2];
-#define highlight1_code highlight_code[0]
-#define highlight2_code highlight_code[1]
 uint8_t format_mode_flag;
 uint8_t justifying_flag;
 uint8_t insert_mode_flag;
@@ -166,7 +166,7 @@ uint8_t folding_flag;
 uint8_t ruler_right_stop;
 uint8_t ruler_left_stop;
 
-struct pointer_array_t pointer_array;
+pointer_array_t pointer_array;
 #define markers_array pointer_array.markers_array
 #define area_start_ptr pointer_array.area_start_ptr
 #define area_end_ptr pointer_array.area_end_ptr
@@ -361,7 +361,7 @@ static uint8_t expand_escaped_string(uint8_t idx, uint8_t pos)
  * @return CLI_CMD_NO_TARGET if no command, CLI_CMD_NO_STRING if area empty,
  * CLI_CMD_OK otherwise
  */
-cli_cmd_status_t process_cli_command(struct scan_state* scan)
+cli_cmd_status_t process_cli_command(scan_state_t* scan)
 {
     if (reset_command_parse_state(scan))
         return CLI_CMD_NO_TARGET;
@@ -389,7 +389,7 @@ cli_cmd_status_t process_cli_command(struct scan_state* scan)
  * @param scan scan state to initialise
  * @return true if no search string was found, false otherwise
  */
-bool reset_command_parse_state(struct scan_state* scan)
+bool reset_command_parse_state(scan_state_t* scan)
 {
     uint8_t idx = 0;
 
@@ -722,7 +722,7 @@ static uint8_t* compute_required_space_for_insertion(uint8_t* target_ptr)
  * Reports an error if no filename is present.
  * @param scan scan state pointing into the command buffer
  */
-void parse_filename_from_command(struct scan_state* scan)
+void parse_filename_from_command(scan_state_t* scan)
 {
     if (!parse_optional_filename_from_command(scan))
     {

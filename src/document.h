@@ -34,10 +34,10 @@ extern unsigned int* get_register_address(uint8_t cur_ch);
 
 extern void initialise_document(void);
 
-enum marker_lookup_result_t
+typedef enum marker_lookup_result_t
 {
     MARKER_INVALID = -1
-};
+} marker_lookup_result_t;
 
 extern int lookup_marker(uint8_t cur_ch);
 

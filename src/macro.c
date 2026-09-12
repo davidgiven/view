@@ -15,37 +15,37 @@
 // node holds the address of the next macro (0 terminates the list) and the
 // two-character macro name; the macro body follows the header and is reached
 // through body[].
-struct macro
+typedef struct macro
 {
     struct macro* next;
-    char name[2];
+    uint8_t name[2];
     uint8_t body[];
-};
+} macro_t;
 
-_Static_assert(sizeof(struct macro) % alignof(struct macro) == 0,
+_Static_assert(sizeof(macro_t) % alignof(macro_t) == 0,
     "macro size not multiple of alignment");
 
 static inline uint8_t* align_up_ptr(uint8_t* ptr)
 {
     uintptr_t addr = (uintptr_t)ptr;
-    size_t align = alignof(struct macro);
+    size_t align = alignof(macro_t);
 
     addr = (addr + align - 1) & ~(align - 1);
 
     return (uint8_t*)addr;
 }
 
-static struct macro* first_macro_ptr;
-static struct macro* last_macro_ptr;
+static macro_t* first_macro_ptr;
+static macro_t* last_macro_ptr;
 
-enum parse_register_result_t
+typedef enum parse_register_result_t
 {
     PARSE_REGISTER_MARKER,
     PARSE_REGISTER_VALUE,
     PARSE_REGISTER_OTHER,
-};
+} parse_register_result_t;
 
-static enum parse_register_result_t parse_register_reference(uint8_t cur_ch);
+static parse_register_result_t parse_register_reference(uint8_t cur_ch);
 static read_block_status_t read_next_output_line(
     uint8_t* limit, uint8_t** cursor);
 
@@ -56,7 +56,7 @@ static read_block_status_t read_next_output_line(
  */
 void macro_init(uint8_t* print_doc_ptr)
 {
-    first_macro_ptr = (struct macro*)(void*)align_up_ptr(print_doc_ptr + 0x8d);
+    first_macro_ptr = (macro_t*)(void*)align_up_ptr(print_doc_ptr + 0x8d);
     last_macro_ptr = first_macro_ptr;
     last_macro_ptr->next = 0;
 }
@@ -68,10 +68,10 @@ void dm_fmt_cmd(void)
 {
     if (macro_executing_flag != 0)
         return;
-    struct macro* new_macro_ptr = last_macro_ptr;
+    macro_t* new_macro_ptr = last_macro_ptr;
 
-    new_macro_ptr->name[0] = current_format_line_ptr[3] & 0xdf;
-    uint8_t secondchar = current_format_line_ptr[4];
+    new_macro_ptr->name[0] = heap_format_line_ptr->text[0] & 0xdf;
+    uint8_t secondchar = heap_format_line_ptr->text[1];
 
     if (isalpha(secondchar))
         secondchar &= 0xdf;
@@ -80,7 +80,7 @@ void dm_fmt_cmd(void)
     new_macro_ptr->name[1] = secondchar;
 
     uint8_t* write_ptr = (uint8_t*)new_macro_ptr;
-    uint8_t* body = write_ptr + offsetof(struct macro, body);
+    uint8_t* body = write_ptr + offsetof(macro_t, body);
 
     for (;;)
     {
@@ -92,7 +92,8 @@ void dm_fmt_cmd(void)
         }
         uint8_t* line_ptr = body;
 
-        current_format_line_ptr = body;
+        heap_format_line_ptr = (line_t*)body;
+        current_format_line = (line_t*)body;
 
         if (read_next_output_line(body, &line_ptr) == READ_BLOCK_DONE)
             return;
@@ -104,15 +105,15 @@ void dm_fmt_cmd(void)
             break;
 
         write_ptr = line_ptr;
-        body = write_ptr + offsetof(struct macro, body);
+        body = write_ptr + offsetof(macro_t, body);
     }
     // Align once at the end; previous writes used raw byte pointers
     // so no struct alignment was required while building.
     write_ptr = align_up_ptr(write_ptr);
-    body = write_ptr + offsetof(struct macro, body);
+    body = write_ptr + offsetof(macro_t, body);
     body[0] = 4;
-    new_macro_ptr->next = (struct macro*)(void*)align_up_ptr(body + 1);
-    last_macro_ptr = (struct macro*)(void*)write_ptr;
+    new_macro_ptr->next = (macro_t*)(void*)align_up_ptr(body + 1);
+    last_macro_ptr = (macro_t*)(void*)write_ptr;
 }
 
 /**
@@ -135,12 +136,12 @@ void nested_macro_error(void)
  */
 bool macro_try_invoke(uint8_t** macro_cursor_ptr)
 {
-    uint8_t ch1 = current_format_line_ptr[1];
-    uint8_t ch2 = current_format_line_ptr[2];
+    uint8_t ch1 = heap_format_line_ptr->command[0];
+    uint8_t ch2 = heap_format_line_ptr->command[1];
 
     if (!isalpha(ch2))
         ch2 = 0x20;
-    struct macro* macro = first_macro_ptr;
+    macro_t* macro = first_macro_ptr;
 
     while (macro->next != NULL)
     {
@@ -184,7 +185,8 @@ uint8_t* prepare_output_line(uint8_t* read_limit, uint8_t** macro_cursor)
 
         if (read_limit != NULL)
         {
-            current_format_line_ptr = read_limit;
+            heap_format_line_ptr = (line_t*)read_limit;
+            current_format_line = (line_t*)read_limit;
 
             return read_limit;
         }
@@ -215,7 +217,8 @@ c91a7:
             if (next_ch == 0x0d)
             {
                 (*macro_cursor) += pos;
-                current_format_line_ptr = edit_buffer_base;
+                current_format_line = (line_t*)edit_buffer_base;
+                heap_format_line_ptr = (line_t*)edit_buffer_base;
 
                 return edit_buffer_base;
             }
@@ -254,8 +257,7 @@ c91a7:
             if (tmp_ch5 == 0x0d)
                 goto c9223;
             {
-                enum parse_register_result_t r =
-                    parse_register_reference(tmp_ch5);
+                parse_register_result_t r = parse_register_reference(tmp_ch5);
 
                 if (r == PARSE_REGISTER_MARKER || r == PARSE_REGISTER_VALUE)
                     goto c91f5;
@@ -273,8 +275,7 @@ c91a7:
             if (tmp_ch6 == 0x0d)
                 break;
             {
-                enum parse_register_result_t r_1 =
-                    parse_register_reference(tmp_ch6);
+                parse_register_result_t r_1 = parse_register_reference(tmp_ch6);
 
                 if (r_1 == PARSE_REGISTER_MARKER)
                     continue;
@@ -297,7 +298,7 @@ c9225:
     goto c91a7;
 }
 
-static enum parse_register_result_t parse_register_reference(uint8_t cur_ch)
+static parse_register_result_t parse_register_reference(uint8_t cur_ch)
 {
     if (cur_ch == 0x3e)
     {

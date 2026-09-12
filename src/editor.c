@@ -11,7 +11,7 @@
 #include "globals.h"
 
 // Render pipeline state for line drawing.
-struct render_state
+typedef struct render_state
 {
     uint8_t* line_ptr;  // pointer into the current edit line
     uint8_t pos;        // position in the edit line
@@ -22,7 +22,7 @@ struct render_state
     uint8_t char_width; // width accumulator
     uint8_t ch;         // current character
     bool prev_is_tab;   // whether the previous character was a tab expansion
-};
+} render_state_t;
 
 // Editor-only functions
 uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta);
@@ -36,7 +36,7 @@ void clear_screen(void);
 static void clear_to_eol(uint8_t fill_char, uint8_t line);
 static void cursor_off(void);
 static void cursor_on(void);
-void draw_line(struct render_state* rs, uint8_t* addr);
+void draw_line(render_state_t* rs, uint8_t* addr);
 void draw_prompt_characters(uint8_t first_char, uint8_t second_char);
 static void draw_ruler(void);
 static void draw_status_word(void);
@@ -53,9 +53,9 @@ uint8_t process_current_document_character(uint8_t* target_ptr,
     bool* is_tab);
 static void recalculate_cursor_xpos(void);
 void redraw_editor(void);
-static void render_char(struct render_state* rs);
-static void advance_to_next_char(struct render_state* rs);
-static void render_xchar(struct render_state* rs);
+static void render_char(render_state_t* rs);
+static void advance_to_next_char(render_state_t* rs);
+static void render_xchar(render_state_t* rs);
 area_status_t sanitise_area(void);
 static void set_marker(uint8_t marker_idx);
 static void set_marker_common(uint8_t marker_char);
@@ -70,7 +70,7 @@ static bool find_next_word_boundary(uint8_t src_idx);
 static bool insert_character_into_edit_buffer(uint8_t ch);
 static void set_xpos_to_line_length(void);
 static uint8_t compute_display_start_line(void);
-static void advance_to_next_char_and_render(struct render_state* rs);
+static void advance_to_next_char_and_render(render_state_t* rs);
 static uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr);
 static void unpack_line(uint8_t* target_ptr);
 static void update_markers_to_format_buffer(void);
@@ -573,7 +573,7 @@ static void cf6_split_line_key(void)
         split_pos = xpos;
     line_change_pending_flag++;
     uint8_t insert_offset = split_pos;
-    uint8_t first_char = current_format_line_ptr[0];
+    uint8_t first_char = ((uint8_t*)current_format_line)[0];
 
     command_prefix_t cp = check_for_command_prefix(first_char);
 
@@ -633,14 +633,15 @@ static void cf7_join_lines_key(void)
  */
 static void cf8_mark_as_ruler_key(void)
 {
-    current_format_line_ptr = edit_buffer_base;
+    current_format_line = (line_t*)edit_buffer_base;
+    heap_format_line_ptr = (line_t*)edit_buffer_base;
     uint8_t buf_idx = 0;
 
-    current_format_line_ptr[buf_idx] = 0x81;
+    ((uint8_t*)current_format_line)[buf_idx] = 0x81;
     buf_idx++;
-    current_format_line_ptr[buf_idx] = 0x2e;
+    ((uint8_t*)current_format_line)[buf_idx] = 0x2e;
     buf_idx++;
-    current_format_line_ptr[buf_idx] = 0x2e;
+    ((uint8_t*)current_format_line)[buf_idx] = 0x2e;
     line_counter++;
 
     if (!(edit_buffer_unpacked_flag & 0x80))
@@ -1732,8 +1733,9 @@ edit_command_loop:
 finished_editing_command:
     if (scratch_index == 0)
         return;
-    current_format_line_ptr = edit_buffer_base;
-    current_format_line_ptr[0] = 0x80;
+    current_format_line = (line_t*)edit_buffer_base;
+    heap_format_line_ptr = (line_t*)edit_buffer_base;
+    ((uint8_t*)current_format_line)[0] = 0x80;
     set_format_mode_bit7();
 }
 
@@ -1744,14 +1746,15 @@ finished_editing_command:
 static void sf9_delete_command_key(void)
 {
     uint8_t pos = 0;
-    uint8_t first_char = current_format_line_ptr[pos];
+    uint8_t first_char = ((uint8_t*)current_format_line)[pos];
 
     command_prefix_t cp = check_for_command_prefix(first_char);
 
     if (cp == NO_COMMAND_PREFIX)
         return;
-    current_format_line_ptr[pos] = pos;
-    current_format_line_ptr = current_line_buffer.text;
+    ((uint8_t*)current_format_line)[pos] = pos;
+    current_format_line = &current_line_buffer;
+    heap_format_line_ptr = &current_line_buffer;
     clear_format_mode_bit7();
     line_counter++;
     edit_buffer_dirty_flag++;
@@ -2570,7 +2573,7 @@ void set_marker_to_here(uint8_t marker_idx)
 
     if (len >= xpos)
     {
-        uint8_t first_char = current_format_line_ptr[0];
+        uint8_t first_char = ((uint8_t*)current_format_line)[0];
 
         command_prefix_t cp = check_for_command_prefix(first_char);
         len = xpos;
@@ -2944,7 +2947,7 @@ static void cursor_on(void)
  * @param rs render state
  * @param addr address of the document line
  */
-void draw_line(struct render_state* rs, uint8_t* addr)
+void draw_line(render_state_t* rs, uint8_t* addr)
 {
     rs->line_ptr = addr;
     scratch_line_ptr = addr;
@@ -3015,7 +3018,7 @@ static void draw_ruler(void)
     if (status_line_needs_redrawing_flag == 0)
         return;
     status_line_needs_redrawing_flag = 0;
-    struct render_state rs = {.line = 0};
+    render_state_t rs = {.line = 0};
 
     draw_line(&rs, current_ruler_ptr);
     flags_need_redrawing_flag = 1;
@@ -3064,7 +3067,7 @@ static void draw_status_word(void)
  */
 static uint8_t get_line_length(void)
 {
-    uint8_t first_char = *current_format_line_ptr;
+    uint8_t first_char = current_format_line->prefix_byte;
 
     command_prefix_t cp = check_for_command_prefix(first_char);
     uint8_t scan_pos = MAX_LINE_LENGTH;
@@ -3623,7 +3626,7 @@ ca3c1:
 
     do
     {
-        struct render_state rs = {.line = screen_row};
+        render_state_t rs = {.line = screen_row};
 
         draw_line(&rs, draw);
         uint8_t next_len = 0;
@@ -3654,9 +3657,14 @@ ca3de:
         if (line_counter != 0)
         {
             screen_row = ypos;
-            struct render_state rs_1 = {.line = screen_row};
+            render_state_t rs_1 = {.line = screen_row};
 
-            draw_line(&rs_1, current_format_line_ptr);
+            uint8_t* draw_ptr =
+                (current_format_line->prefix_byte == COMMAND_PREFIX ||
+                    current_format_line->prefix_byte == RULER_PREFIX)
+                    ? (uint8_t*)current_format_line
+                    : current_format_line->text;
+            draw_line(&rs_1, draw_ptr);
         }
         if (flags_need_redrawing_flag != 0)
             draw_status_word();
@@ -3701,7 +3709,7 @@ ca3de:
  * Handles highlighting, control codes, and clipping to screen width.
  * @param rs render state
  */
-static void render_char(struct render_state* rs)
+static void render_char(render_state_t* rs)
 {
     uint8_t char_to_render = rs->ch;
     uint8_t line_idx = rs->line;
@@ -3765,7 +3773,7 @@ ca523:
  * Accounts for hscroll before delegating to render_char.
  * @param rs render state
  */
-static void render_xchar(struct render_state* rs)
+static void render_xchar(render_state_t* rs)
 {
     rs->char_width++;
     uint8_t buf_off = rs->buf_off;
@@ -4350,7 +4358,7 @@ static uint8_t compute_display_start_line(void)
  * Reads and processes the next document character into the render state.
  * @param rs render state
  */
-static void advance_to_next_char(struct render_state* rs)
+static void advance_to_next_char(render_state_t* rs)
 {
     uint8_t pos = rs->pos;
 
@@ -4371,7 +4379,7 @@ static void advance_to_next_char(struct render_state* rs)
  * Combines character advance with rendering.
  * @param rs render state
  */
-static void advance_to_next_char_and_render(struct render_state* rs)
+static void advance_to_next_char_and_render(render_state_t* rs)
 {
     advance_to_next_char(rs);
     render_char(rs);
@@ -4422,8 +4430,10 @@ static void unpack_line(uint8_t* target_ptr)
             edit_buffer_unpacked_flag = first_byte;
         set_format_mode_bit7();
     }
-    current_format_line_ptr =
-        (cp != NO_COMMAND_PREFIX) ? target_ptr : current_line_buffer.text;
+    current_format_line = (line_t*)target_ptr;
+    heap_format_line_ptr = (line_t*)target_ptr;
+    uint8_t* dest = (cp != NO_COMMAND_PREFIX) ? (uint8_t*)current_format_line
+                                              : current_format_line->text;
     uint8_t copy_idx = 0;
 
     do
@@ -4432,7 +4442,7 @@ static void unpack_line(uint8_t* target_ptr)
 
         if (a2 == 0x0d)
             break;
-        current_format_line_ptr[copy_idx] = a2;
+        dest[copy_idx] = a2;
         copy_idx++;
     } while (copy_idx != 0);
     edit_line_len = copy_idx;
@@ -4455,9 +4465,14 @@ static void update_markers_to_format_buffer(void)
         if (!(idx == 0x0c))
         {
             {
-                markers_array[idx / 2] = current_format_line_ptr + offset;
+                uint8_t* base_ptr =
+                    (current_format_line->prefix_byte == COMMAND_PREFIX ||
+                        current_format_line->prefix_byte == RULER_PREFIX)
+                        ? (uint8_t*)current_format_line
+                        : current_format_line->text;
+                markers_array[idx / 2] = base_ptr + offset;
 
-                if (current_format_line_ptr + offset != NULL)
+                if (base_ptr + offset != NULL)
                     continue;
             }
         }
@@ -4643,7 +4658,12 @@ static bool write_line_back_to_document(void)
 
         edit_buffer_dirty_flag = copy_idx;
         edit_buffer_unpacked_flag = copy_idx;
-        area_size = current_format_line_ptr - &ram[0];
+        uint8_t* src_ptr =
+            (current_format_line->prefix_byte == COMMAND_PREFIX ||
+                current_format_line->prefix_byte == RULER_PREFIX)
+                ? (uint8_t*)current_format_line
+                : current_format_line->text;
+        area_size = src_ptr - &ram[0];
         uint8_t line_len = screen_column;
 
         edit_line_len = line_len;
@@ -4656,7 +4676,7 @@ static bool write_line_back_to_document(void)
             }
             else
             {
-                out_byte = current_format_line_ptr[copy_idx];
+                out_byte = src_ptr[copy_idx];
 
                 if (out_byte == 0x10)
                     out_byte = 0x20;

@@ -14,7 +14,7 @@ static void default_printer_on(void);
 static void default_printer_off(void);
 static void default_printer_microspace(void);
 static void default_printer_getflags(uint8_t* idx, uint8_t* pos);
-static const struct printer_driver default_printer_driver;
+static const printer_driver_t default_printer_driver;
 
 void bad_filename_error(void);
 static void set_rw_file_handle(uint8_t cur_ch);
@@ -25,16 +25,16 @@ void check_not_continuous_editing(void);
 void display_not_enough_memory(void);
 static void microspace_word_processor(uint8_t* pos);
 bool parse_decimal_number(int* value, uint8_t* pos);
-bool parse_optional_filename_from_command(struct scan_state* scan);
+bool parse_optional_filename_from_command(scan_state_t* scan);
 static void print_char_x_times(uint8_t cur_ch, uint8_t idx);
-void print_document(struct scan_state* scan);
+void print_document(scan_state_t* scan);
 static void print_loop(uint8_t* print_doc_ptr);
 static void print_newline(void);
 static void print_vertical_space(uint8_t idx);
 read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit);
 static void render_header_or_footer(uint8_t* insert_ptr);
 static void render_new_page(void);
-bool scan_input_buffer(uint8_t* buffer, struct scan_state* state);
+bool scan_input_buffer(uint8_t* buffer, scan_state_t* state);
 static void start_microspacing_if_active(uint8_t cur_ch);
 static void emit_microspacing_spaces(uint8_t cur_ch, uint8_t idx);
 static void compute_lines_remaining_on_page(void);
@@ -63,7 +63,7 @@ static bool evaluate_expression_from_fmt_cmd(
 static uint8_t get_current_fmt_cmd_byte(uint8_t* pos);
 static uint8_t get_next_fmt_cmd_byte(uint8_t* pos);
 
-enum formatting_command lookup_formatting_command(void);
+formatting_command_t lookup_formatting_command(void);
 static void store_to_output_buffer(uint8_t cur_ch, uint8_t* copy_ptr);
 static uint8_t process_header_footer_line(uint8_t* copy_ptr);
 static void write_output_buffer_to_format_line(uint8_t cur_ch);
@@ -88,7 +88,7 @@ static void write_output_buffer_to_format_line(uint8_t cur_ch)
 
         do
         {
-            current_format_line_ptr[pos] = cur_ch;
+            ((uint8_t*)heap_format_line_ptr)[pos] = cur_ch;
             pos++;
             idx--;
         } while (idx != 0);
@@ -96,7 +96,7 @@ static void write_output_buffer_to_format_line(uint8_t cur_ch)
     do
     {
         cur_ch = output_buffer[idx];
-        current_format_line_ptr[pos] = cur_ch;
+        ((uint8_t*)heap_format_line_ptr)[pos] = cur_ch;
         pos++;
         idx++;
     } while (cur_ch != 0x0d);
@@ -193,7 +193,7 @@ static uint8_t expand_line(void)
 c9537:
     for (;;)
     {
-        next_ch = current_format_line_ptr[pos];
+        next_ch = ((uint8_t*)heap_format_line_ptr)[pos];
         pos++;
 
         if (next_ch == 0x7c)
@@ -225,7 +225,7 @@ c9555:
     return idx;
 
 c955e:
-    next_ch = current_format_line_ptr[pos];
+    next_ch = ((uint8_t*)heap_format_line_ptr)[pos];
 
     if (next_ch == 0x0d)
         goto c953e;
@@ -267,14 +267,14 @@ static uint8_t process_header_footer_line(uint8_t* copy_ptr)
     search_target_len = 0;
     uint8_t pos = 3;
 
-    screen_column = current_format_line_ptr[pos];
+    screen_column = ((uint8_t*)heap_format_line_ptr)[pos];
     uint8_t idx = 0x3f;
 
     do
     {
         pos++;
         screen_row = pos;
-        next_ch = current_format_line_ptr[pos];
+        next_ch = ((uint8_t*)heap_format_line_ptr)[pos];
 
         if (next_ch == 0x0d)
         {
@@ -608,13 +608,13 @@ static const uint8_t commands_table[] =
  *
  * @return the matching command index or NO_FORMATTING_COMMAND if not found
  */
-enum formatting_command lookup_formatting_command(void)
+formatting_command_t lookup_formatting_command(void)
 {
     uint8_t tmp_ch4;
     uint8_t pos = 2;
-    uint8_t cur_ch = current_format_line_ptr[pos];
+    uint8_t cur_ch = ((uint8_t*)heap_format_line_ptr)[pos];
     pos--;
-    uint8_t next_ch = current_format_line_ptr[pos];
+    uint8_t next_ch = ((uint8_t*)heap_format_line_ptr)[pos];
     pos--;
     int index = 0;
     do
@@ -639,7 +639,7 @@ enum formatting_command lookup_formatting_command(void)
  * @param idx command index as returned by lookup_formatting_command
  * @return true if no formatted line was emitted, false otherwise
  */
-bool execute_formatting_command(enum formatting_command idx)
+bool execute_formatting_command(formatting_command_t idx)
 {
     formatted_line_written_flag = 0;
 
@@ -755,7 +755,7 @@ static bool parse_boolean_from_fmt_cmd(uint8_t* pos, uint8_t* value)
 
     if (cur_ch == 0)
         return true;
-    return parse_word_flag(current_format_line_ptr, pos, value);
+    return parse_word_flag((uint8_t*)heap_format_line_ptr, pos, value);
 }
 
 static const uint8_t on_off_table[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
@@ -926,7 +926,7 @@ static uint8_t get_current_fmt_cmd_byte(uint8_t* pos)
 {
     while (1)
     {
-        uint8_t val = current_format_line_ptr[*pos];
+        uint8_t val = ((uint8_t*)heap_format_line_ptr)[*pos];
 
         if (val == 0x0d)
             return 0;
@@ -1370,10 +1370,11 @@ bool parse_decimal_number(int* value, uint8_t* pos)
 {
     const char* start;
 
-    if (current_format_line_ptr == input_buffer)
+    if ((uint8_t*)heap_format_line_ptr == input_buffer ||
+        (uint8_t*)current_format_line == input_buffer)
         start = (const char*)&input_buffer[*pos];
     else
-        start = (const char*)&current_format_line_ptr[*pos];
+        start = (const char*)&((uint8_t*)heap_format_line_ptr)[*pos];
     char* end;
     *value = (int)strtoul(start, &end, 10);
     *pos += (uint8_t)(end - start);
@@ -1387,7 +1388,7 @@ bool parse_decimal_number(int* value, uint8_t* pos)
  * @param scan scan state holding the current buffer position
  * @return true if a filename was found, false if none
  */
-bool parse_optional_filename_from_command(struct scan_state* scan)
+bool parse_optional_filename_from_command(scan_state_t* scan)
 {
     if (scan_input_buffer(input_buffer, scan))
         return false;
@@ -1441,7 +1442,7 @@ static void print_char_x_times(uint8_t cur_ch, uint8_t idx)
  *
  * @param scan scan state for parsing the print command arguments
  */
-void print_document(struct scan_state* scan)
+void print_document(scan_state_t* scan)
 {
     check_not_continuous_editing();
     check_for_at_least_150_bytes_free();
@@ -1486,7 +1487,7 @@ c8f0d:
 static void print_loop(uint8_t* print_doc_ptr)
 {
     uint8_t idx;
-    enum formatting_command fmt_cmd_index;
+    formatting_command_t fmt_cmd_index;
     uint8_t* macro_cursor_ptr = NULL;
     bool is_tab = false;
 
@@ -1809,7 +1810,7 @@ c92d4:
  * @param state scan state holding the position and result character
  * @return true if no non-delimiter character was found, false otherwise
  */
-bool scan_input_buffer(uint8_t* buffer, struct scan_state* state)
+bool scan_input_buffer(uint8_t* buffer, scan_state_t* state)
 {
     state->pos = input_buffer_offset;
     state->ch = delimiter_char;
@@ -2143,9 +2144,9 @@ static void reset_print_registers(void)
     register_value_array['L' - 'A'] = tmp_ch2;
     uint8_t pos = 0x80;
 
-    highlight1_code = pos;
+    highlight_code[0] = pos;
     pos++;
-    highlight2_code = pos;
+    highlight_code[1] = pos;
     uint8_t tmp_ch3 = 4;
 
     top_margin = tmp_ch3;
@@ -2246,7 +2247,7 @@ static void default_printer_getflags(uint8_t* idx, uint8_t* pos)
     *pos = 0;
 }
 
-static const struct printer_driver default_printer_driver = {
+static const printer_driver_t default_printer_driver = {
     .print_char = default_print_char,
     .printer_on = default_printer_on,
     .printer_off = default_printer_off,

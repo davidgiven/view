@@ -4,12 +4,12 @@
 #include "io.h"
 #include <stdlib.h>
 #include <string.h>
-uint8_t* parse_mark_from_command(struct scan_state* scan);
+uint8_t* parse_mark_from_command(scan_state_t* scan);
 
 void file_error(void);
 void file_not_found_error(void);
-bool parse_integer_from_command(struct scan_state* scan, int* out);
-void parse_marks_from_command(struct scan_state* scan);
+bool parse_integer_from_command(scan_state_t* scan, int* out);
+void parse_marks_from_command(scan_state_t* scan);
 void reset_document_name_after_load(void);
 void set_document_name_to_filename_buffer(void);
 void zero_terminate_filename_buffer(void);
@@ -17,31 +17,31 @@ void zero_terminate_filename_buffer(void);
 static void bye_cmd(void);
 static void cmd_err_no_target(void);
 static void cmd_err_no_string(void);
-static void search_cmd(struct scan_state* scan);
-static void change_cmd(struct scan_state* scan);
-static void replace_cmd(struct scan_state* scan);
-static void screen_cmd(struct scan_state* scan);
-static void sheets_cmd(struct scan_state* scan);
-static void print_cmd(struct scan_state* scan);
-static void print_to_screen(struct scan_state* scan);
-static void edit_cmd(struct scan_state* scan);
-static void more_cmd(struct scan_state* scan);
+static void search_cmd(scan_state_t* scan);
+static void change_cmd(scan_state_t* scan);
+static void replace_cmd(scan_state_t* scan);
+static void screen_cmd(scan_state_t* scan);
+static void sheets_cmd(scan_state_t* scan);
+static void print_cmd(scan_state_t* scan);
+static void print_to_screen(scan_state_t* scan);
+static void edit_cmd(scan_state_t* scan);
+static void more_cmd(scan_state_t* scan);
 static void finish_cmd(void);
 static void quit_cmd(void);
 static void close_input_output_files(void);
-static void save_cmd_write_cmd(struct scan_state* scan);
-static void load_cmd(struct scan_state* scan);
-static void read_cmd(struct scan_state* scan);
+static void save_cmd_write_cmd(scan_state_t* scan);
+static void load_cmd(scan_state_t* scan);
+static void read_cmd(scan_state_t* scan);
 static void mode_cmd(void);
-static void microspace_cmd(struct scan_state* scan);
-static void setup_cmd(struct scan_state* scan);
-static void field_cmd(struct scan_state* scan);
-static void count_cmd(struct scan_state* scan);
-static void format_cmd(struct scan_state* scan);
+static void microspace_cmd(scan_state_t* scan);
+static void setup_cmd(scan_state_t* scan);
+static void field_cmd(scan_state_t* scan);
+static void count_cmd(scan_state_t* scan);
+static void format_cmd(scan_state_t* scan);
 static void new_cmd(void);
-static void fold_cmd(struct scan_state* scan);
-static void printer_cmd(struct scan_state* scan);
-static void name_cmd(struct scan_state* scan);
+static void fold_cmd(scan_state_t* scan);
+static void printer_cmd(scan_state_t* scan);
+static void name_cmd(scan_state_t* scan);
 
 /**
  * Exits the program.
@@ -57,7 +57,7 @@ static void bye_cmd(void)
  * @param cur_ch command index into the CLI jump table
  * @param scan scan state for argument parsing
  */
-void execute_cli_command(uint8_t cur_ch, struct scan_state* scan)
+void execute_cli_command(uint8_t cur_ch, scan_state_t* scan)
 {
     switch (cur_ch)
     {
@@ -172,7 +172,7 @@ void execute_cli_command(uint8_t cur_ch, struct scan_state* scan)
  *
  * @param scan scan state containing search and replace arguments
  */
-static void change_cmd(struct scan_state* scan)
+static void change_cmd(scan_state_t* scan)
 {
     cli_cmd_status_t st = process_cli_command(scan);
 
@@ -265,7 +265,7 @@ static void cmd_err_no_target(void)
  *
  * @param scan scan state containing optional marker range
  */
-static void count_cmd(struct scan_state* scan)
+static void count_cmd(scan_state_t* scan)
 {
     uint8_t idx;
     uint8_t tmp_ch3;
@@ -367,7 +367,7 @@ c86b8:
  *
  * @param scan scan state containing input and output filenames
  */
-static void edit_cmd(struct scan_state* scan)
+static void edit_cmd(scan_state_t* scan)
 {
     uint8_t cur_ch;
 
@@ -407,7 +407,7 @@ static void edit_cmd(struct scan_state* scan)
  *
  * @param scan scan state containing the field width value
  */
-static void field_cmd(struct scan_state* scan)
+static void field_cmd(scan_state_t* scan)
 {
     int value;
 
@@ -467,7 +467,7 @@ static void finish_cmd(void)
  *
  * @param scan scan state containing optional folding argument
  */
-static void fold_cmd(struct scan_state* scan)
+static void fold_cmd(scan_state_t* scan)
 {
     if (!(scan_input_buffer(input_buffer, scan)))
     {
@@ -506,7 +506,7 @@ c87b4:
  *
  * @param scan scan state containing optional marker range
  */
-static void format_cmd(struct scan_state* scan)
+static void format_cmd(scan_state_t* scan)
 {
     parse_marks_from_command(scan);
 
@@ -515,7 +515,8 @@ static void format_cmd(struct scan_state* scan)
         move_cursor_to_address(area_start_ptr);
         clear_format_mode_bit7();
         wipe_buffer(0x10, edit_buffer_base);
-        current_format_line_ptr = current_line_buffer.text;
+        current_format_line = &current_line_buffer;
+        heap_format_line_ptr = &current_line_buffer;
 
         do
         {
@@ -545,7 +546,7 @@ c8791:
  *
  * @param scan scan state containing the filename
  */
-static void load_cmd(struct scan_state* scan)
+static void load_cmd(scan_state_t* scan)
 {
     check_not_continuous_editing();
     parse_filename_from_command(scan);
@@ -563,7 +564,7 @@ static void load_cmd(struct scan_state* scan)
  *
  * @param scan scan state containing optional microspacing value
  */
-static void microspace_cmd(struct scan_state* scan)
+static void microspace_cmd(scan_state_t* scan)
 {
     prepare_printer_driver();
     int value;
@@ -610,7 +611,7 @@ static void mode_cmd(void)
  *
  * @param scan scan state containing optional marker
  */
-static void more_cmd(struct scan_state* scan)
+static void more_cmd(scan_state_t* scan)
 {
     check_continuous_editing();
     parse_marks_from_command(scan);
@@ -647,7 +648,7 @@ static void more_cmd(struct scan_state* scan)
  *
  * @param scan scan state containing optional filename
  */
-static void name_cmd(struct scan_state* scan)
+static void name_cmd(scan_state_t* scan)
 {
     check_not_continuous_editing();
     bool has_filename = parse_optional_filename_from_command(scan);
@@ -673,7 +674,7 @@ static void new_cmd(void)
  *
  * @param scan scan state containing optional marker range
  */
-static void print_cmd(struct scan_state* scan)
+static void print_cmd(scan_state_t* scan)
 {
     start_printing();
     print_to_screen(scan);
@@ -684,7 +685,7 @@ static void print_cmd(struct scan_state* scan)
  *
  * @param scan scan state containing optional marker range
  */
-static void print_to_screen(struct scan_state* scan)
+static void print_to_screen(scan_state_t* scan)
 {
     print_document(scan);
 
@@ -696,7 +697,7 @@ static void print_to_screen(struct scan_state* scan)
  *
  * @param scan scan state containing optional arguments
  */
-static void printer_cmd(struct scan_state* scan)
+static void printer_cmd(scan_state_t* scan)
 {
     print_cmd(scan);
 }
@@ -715,7 +716,7 @@ static void quit_cmd(void)
  *
  * @param scan scan state containing filename and optional markers
  */
-static void read_cmd(struct scan_state* scan)
+static void read_cmd(scan_state_t* scan)
 {
     parse_filename_from_command(scan);
     parse_marks_from_command(scan);
@@ -729,7 +730,7 @@ static void read_cmd(struct scan_state* scan)
  *
  * @param scan scan state containing search and replace strings
  */
-static void replace_cmd(struct scan_state* scan)
+static void replace_cmd(scan_state_t* scan)
 {
     cli_cmd_status_t st = process_cli_command(scan);
 
@@ -790,7 +791,7 @@ c8356:
  *
  * @param scan scan state containing optional filename and marker range
  */
-static void save_cmd_write_cmd(struct scan_state* scan)
+static void save_cmd_write_cmd(scan_state_t* scan)
 {
     if (!parse_optional_filename_from_command(scan))
     {
@@ -828,7 +829,7 @@ static void save_cmd_write_cmd(struct scan_state* scan)
  *
  * @param scan scan state containing optional marker range
  */
-static void screen_cmd(struct scan_state* scan)
+static void screen_cmd(scan_state_t* scan)
 {
     print_to_screen(scan);
 }
@@ -838,7 +839,7 @@ static void screen_cmd(struct scan_state* scan)
  *
  * @param scan scan state containing search target and optional range
  */
-static void search_cmd(struct scan_state* scan)
+static void search_cmd(scan_state_t* scan)
 {
     if (reset_command_parse_state(scan))
     {
@@ -874,7 +875,7 @@ static void search_cmd(struct scan_state* scan)
  *
  * @param scan scan state containing flag characters
  */
-static void setup_cmd(struct scan_state* scan)
+static void setup_cmd(scan_state_t* scan)
 {
     static const uint8_t c867d_data[] = {0x4e, 0x4a, 0x00, 0x49, 0x00};
     static const uint8_t c8681_data[] = {0x00, 0x00, 0xff};
@@ -948,7 +949,7 @@ static void setup_cmd(struct scan_state* scan)
  *
  * @param scan scan state containing optional marker range
  */
-static void sheets_cmd(struct scan_state* scan)
+static void sheets_cmd(scan_state_t* scan)
 {
     start_printing();
     print_document(scan);
@@ -1021,7 +1022,7 @@ void input_line_not_escaped(void)
 
     if (failed || screen_row >= 48)
         cli_putstring("Mistake\n");
-    struct scan_state scan;
+    scan_state_t scan;
 
     execute_cli_command(scratch_offset, &scan);
     run_cli();
@@ -1227,7 +1228,7 @@ void file_not_found_error(void)
  * @param out pointer to receive the parsed integer
  * @return true if an integer was parsed, false otherwise
  */
-bool parse_integer_from_command(struct scan_state* scan, int* out)
+bool parse_integer_from_command(scan_state_t* scan, int* out)
 {
     if (scan_input_buffer(input_buffer, scan))
         return false;
@@ -1249,7 +1250,7 @@ bool parse_integer_from_command(struct scan_state* scan, int* out)
  *
  * @param scan scan state for scanning markers
  */
-void parse_marks_from_command(struct scan_state* scan)
+void parse_marks_from_command(scan_state_t* scan)
 {
     reset_area_to_entire_document();
     uint8_t* start_mark = parse_mark_from_command(scan);
@@ -1309,7 +1310,7 @@ void zero_terminate_filename_buffer(void)
  * @param scan scan state for scanning the marker
  * @return pointer to the marker location, or NULL if no marker was present
  */
-uint8_t* parse_mark_from_command(struct scan_state* scan)
+uint8_t* parse_mark_from_command(scan_state_t* scan)
 {
     if (scan_input_buffer(input_buffer, scan))
         return NULL;

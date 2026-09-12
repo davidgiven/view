@@ -5,7 +5,7 @@
 
 // Format-command indices as returned by lookup_formatting_command(): each
 // two-letter code from commands_table in table order.
-enum formatting_command
+typedef enum formatting_command
 {
     FORMATTING_COMMAND_CE = 0,
     FORMATTING_COMMAND_RJ = 1,
@@ -31,12 +31,12 @@ enum formatting_command
     FORMATTING_COMMAND_LJ = 21,
     FORMATTING_COMMAND_PB = 22,
     NO_FORMATTING_COMMAND = -1
-};
+} formatting_command_t;
 
 // Functions defined in printing.c, called from view.c
-extern bool execute_formatting_command(enum formatting_command idx);
+extern bool execute_formatting_command(formatting_command_t idx);
 extern void prepare_printer_driver(void);
 extern void stop_printing(void);
-extern enum formatting_command lookup_formatting_command(void);
+extern formatting_command_t lookup_formatting_command(void);
 
 #endif
