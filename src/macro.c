@@ -29,7 +29,9 @@ static inline uint8_t* align_up_ptr(uint8_t* ptr)
 {
     uintptr_t addr = (uintptr_t)ptr;
     size_t align = alignof(struct macro);
+
     addr = (addr + align - 1) & ~(align - 1);
+
     return (uint8_t*)addr;
 }
 
@@ -67,8 +69,10 @@ void dm_fmt_cmd(void)
     if (macro_executing_flag != 0)
         return;
     struct macro* new_macro_ptr = last_macro_ptr;
+
     new_macro_ptr->name[0] = current_format_line_ptr[3] & 0xdf;
     uint8_t secondchar = current_format_line_ptr[4];
+
     if (isalpha(secondchar))
         secondchar &= 0xdf;
     else
@@ -77,19 +81,24 @@ void dm_fmt_cmd(void)
 
     uint8_t* write_ptr = (uint8_t*)new_macro_ptr;
     uint8_t* body = write_ptr + offsetof(struct macro, body);
+
     for (;;)
     {
         if (himem - body < 0x97)
         {
             display_not_enough_memory();
+
             return;
         }
         uint8_t* line_ptr = body;
+
         current_format_line_ptr = body;
+
         if (read_next_output_line(body, &line_ptr) == READ_BLOCK_DONE)
             return;
 
         command_prefix_t cp = check_for_command_prefix(body[0]);
+
         if (cp != NO_COMMAND_PREFIX &&
             lookup_formatting_command() == FORMATTING_COMMAND_EM)
             break;
@@ -114,6 +123,7 @@ void nested_macro_error(void)
     stop_printing();
     cli_putstring("Nested macro call");
     cli_putchar('\n');
+
     return_to_cli_prompt();
 }
 
@@ -127,9 +137,11 @@ bool macro_try_invoke(uint8_t** macro_cursor_ptr)
 {
     uint8_t ch1 = current_format_line_ptr[1];
     uint8_t ch2 = current_format_line_ptr[2];
+
     if (!isalpha(ch2))
         ch2 = 0x20;
     struct macro* macro = first_macro_ptr;
+
     while (macro->next != NULL)
     {
         if (macro->name[0] == ch1 && macro->name[1] == ch2)
@@ -137,10 +149,12 @@ bool macro_try_invoke(uint8_t** macro_cursor_ptr)
             if (macro_executing_flag != 0)
             {
                 nested_macro_error();
+
                 return true;
             }
             *macro_cursor_ptr = macro->body;
             macro_executing_flag = true;
+
             return true;
         }
         macro = macro->next;
@@ -159,40 +173,50 @@ bool macro_try_invoke(uint8_t** macro_cursor_ptr)
 uint8_t* prepare_output_line(uint8_t* read_limit, uint8_t** macro_cursor)
 {
     uint8_t tmp_ch5;
+
     if (!(macro_executing_flag != 0))
     {
     c9188_normal_entry:
         uint8_t* cursor = read_limit;
+
         if (read_next_output_line(read_limit, &cursor) == READ_BLOCK_DONE)
             return NULL;
+
         if (read_limit != NULL)
         {
             current_format_line_ptr = read_limit;
+
             return read_limit;
         }
     }
     uint8_t pos = 0;
     uint8_t idx = 0;
+
 c91a7:
     for (;;)
     {
         uint8_t next_ch = (*macro_cursor)[pos];
+
         if (next_ch == 4)
         {
             macro_executing_flag = 0;
+
             goto c9188_normal_entry;
         }
         if (next_ch == 0x40)
             break;
         pos++;
+
         for (;;)
         {
             ram[RAM_CURRENT_LINE_BUF + idx] = next_ch;
             idx++;
+
             if (next_ch == 0x0d)
             {
                 (*macro_cursor) += pos;
                 current_format_line_ptr = edit_buffer_base;
+
                 return edit_buffer_base;
             }
             if (idx < 0x83)
@@ -203,9 +227,11 @@ c91a7:
 
     pos++;
     uint8_t tmp_ch3 = (*macro_cursor)[pos];
+
     if (!(tmp_ch3 < 0x30))
     {
         tmp_ch3 -= 0x30;
+
         if (tmp_ch3 >= 0x0a)
             goto c9225;
         pos++;
@@ -213,45 +239,57 @@ c91a7:
         screen_column = tmp_ch3;
         screen_row = 0;
         uint8_t pos2 = 2;
+
         do
         {
             screen_column--;
+
             if ((int8_t)screen_column < 0)
                 goto c9209;
+
         c91f5:
             pos2++;
             tmp_ch5 = read_limit[pos2];
+
             if (tmp_ch5 == 0x0d)
                 goto c9223;
             {
                 enum parse_register_result_t r =
                     parse_register_reference(tmp_ch5);
+
                 if (r == PARSE_REGISTER_MARKER || r == PARSE_REGISTER_VALUE)
                     goto c91f5;
             }
         } while (tmp_ch5 == 0x2c);
+
         goto c91f5;
+
     c9209:
         do
         {
             pos2++;
             uint8_t tmp_ch6 = read_limit[pos2];
+
             if (tmp_ch6 == 0x0d)
                 break;
             {
                 enum parse_register_result_t r_1 =
                     parse_register_reference(tmp_ch6);
+
                 if (r_1 == PARSE_REGISTER_MARKER)
                     continue;
+
                 if (r_1 == PARSE_REGISTER_VALUE)
                     goto c921b;
             }
             if (tmp_ch6 == 0x2c)
                 break;
+
         c921b:
             ram[RAM_CURRENT_LINE_BUF + idx] = tmp_ch6;
             idx++;
         } while (idx < 0x82);
+
     c9223:
         pos = temp_save;
     }
@@ -265,12 +303,14 @@ static enum parse_register_result_t parse_register_reference(uint8_t cur_ch)
     {
         cur_ch = 0;
         screen_row = cur_ch;
+
         return PARSE_REGISTER_MARKER;
     }
     if (cur_ch == 0x3c)
     {
         cur_ch = 0x40;
         screen_row = cur_ch;
+
         return PARSE_REGISTER_MARKER;
     }
     if (cur_ch & screen_row)

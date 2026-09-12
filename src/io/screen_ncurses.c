@@ -65,18 +65,29 @@ uint8_t screen_getchar(void)
     if (ncurses_active)
     {
         int c = getch();
+
         switch (c)
         {
             case KEY_UP:
+
                 return SCREEN_KEY_UP;
+
             case KEY_DOWN:
+
                 return SCREEN_KEY_DOWN;
+
             case KEY_LEFT:
+
                 return SCREEN_KEY_LEFT;
+
             case KEY_RIGHT:
+
                 return SCREEN_KEY_RIGHT;
+
             case KEY_BACKSPACE:
+
                 return 0x7f;
+
             default:
                 return (uint8_t)(c & 0xff);
         }
@@ -98,7 +109,9 @@ uint16_t screen_getcursor(void)
     if (ncurses_active)
     {
         int row, col;
+
         getyx(stdscr, row, col);
+
         return (uint16_t)(row << 8) | (uint8_t)col;
     }
     return 0;
@@ -120,10 +133,13 @@ uint16_t screen_getsize(void)
     if (ncurses_active)
     {
         int h, w;
+
         getmaxyx(stdscr, h, w);
+
         return (uint16_t)((h - 1) << 8) | (uint8_t)(w - 1);
     }
     struct winsize ws;
+
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0 && ws.ws_row > 0)
         return (uint16_t)((ws.ws_row - 1) << 8) | (uint8_t)(ws.ws_col - 1);
     return (uint16_t)(23 << 8) | 79;
@@ -139,6 +155,7 @@ void screen_clear(void)
     else
     {
         static bool term_setup = false;
+
         if (!term_setup)
         {
             setupterm(NULL, STDOUT_FILENO, NULL);

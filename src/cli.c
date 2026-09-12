@@ -64,78 +64,103 @@ void execute_cli_command(uint8_t cur_ch, struct scan_state* scan)
         case 0:
             quit_cmd();
             break;
+
         case 1:
             new_cmd();
             break;
+
         case 2:
             format_cmd(scan);
             break;
+
         case 3:
             setup_cmd(scan);
             break;
+
         case 4:
             read_cmd(scan);
             break;
+
         case 5:
             more_cmd(scan);
             break;
+
         case 6:
             screen_cmd(scan);
             break;
+
         case 7:
             sheets_cmd(scan);
             break;
+
         case 8:
             save_cmd_write_cmd(scan);
             break;
+
         case 9:
             count_cmd(scan);
             break;
+
         case 10:
             field_cmd(scan);
             break;
+
         case 11:
             printer_cmd(scan);
             break;
+
         case 12:
             search_cmd(scan);
             break;
+
         case 13:
             clear_cmd();
             break;
+
         case 14:
             microspace_cmd(scan);
             break;
+
         case 15:
             fold_cmd(scan);
             break;
+
         case 16:
             name_cmd(scan);
             break;
+
         case 17:
             mode_cmd();
             break;
+
         case 18:
             finish_cmd();
             break;
+
         case 19:
             print_cmd(scan);
             break;
+
         case 20:
             change_cmd(scan);
             break;
+
         case 21:
             save_cmd_write_cmd(scan);
             break;
+
         case 22:
             edit_cmd(scan);
             break;
+
         case 23:
             replace_cmd(scan);
             break;
+
         case 24:
             load_cmd(scan);
             break;
+
         case 25:
             bye_cmd();
             break;
@@ -150,37 +175,46 @@ void execute_cli_command(uint8_t cur_ch, struct scan_state* scan)
 static void change_cmd(struct scan_state* scan)
 {
     cli_cmd_status_t st = process_cli_command(scan);
+
     if (st == CLI_CMD_NO_STRING)
     {
         cmd_err_no_string();
+
         return;
     }
     if (st == CLI_CMD_NO_TARGET)
     {
         cmd_err_no_target();
+
         return;
     }
     if (!scan_document_for_next_line())
     {
         cmd_err_no_string();
+
         return;
     }
     int change_count = 0;
+
     for (;;)
     {
         change_count++;
         move_cursor_to_address(doc_working_ptr);
         print_xpos = 0;
+
         if (check_area_memory(doc_working_ptr))
             goto c830d;
+
         if (scan_document_for_next_line())
             continue;
         break;
     }
     render_number_to_screen(change_count);
     cli_putstring(" string(s) changed\n");
+
     return_to_cli_prompt();
     return;
+
 c830d:
     display_not_enough_memory();
 }
@@ -202,6 +236,7 @@ static void close_input_output_files(void)
     file_edit_flags = 0;
     file_ptr = output_fp;
     close_file();
+
     return_to_cli_prompt();
 }
 
@@ -211,6 +246,7 @@ static void close_input_output_files(void)
 static void cmd_err_no_string(void)
 {
     cli_putstring("No string found\n");
+
     return_to_cli_prompt();
 }
 
@@ -220,6 +256,7 @@ static void cmd_err_no_string(void)
 static void cmd_err_no_target(void)
 {
     cli_putstring("No target given\n");
+
     return_to_cli_prompt();
 }
 
@@ -233,8 +270,10 @@ static void count_cmd(struct scan_state* scan)
     uint8_t idx;
     uint8_t tmp_ch3;
     static const uint8_t count_word_table[] = {
+
         0x52, 0x4a, 'C', 'E', 'L', 'J', 0};
     parse_marks_from_command(scan);
+
     if (sanitise_area() == AREA_EMPTY)
     {
         return_to_cli_prompt();
@@ -242,19 +281,26 @@ static void count_cmd(struct scan_state* scan)
     }
     uint8_t* line_ptr = area_start_ptr;
     int scan_ptr = 0;
+
     screen_column = 0;
     screen_row = 0;
+
 c86b8:
     uint8_t pos = 0;
+
     command_prefix_t cp = deref_and_check_for_command_prefix(pos, line_ptr);
+
     if (!(cp == NO_COMMAND_PREFIX))
     {
         idx = 0;
         pos++;
+
         do
         {
             uint8_t cur_ch = line_ptr[pos];
+
             pos++;
+
             if (!(cur_ch != count_word_table[idx]))
             {
                 if (line_ptr[pos] == count_word_table[idx + 1])
@@ -266,9 +312,12 @@ c86b8:
             idx++;
             idx++;
         } while (idx != 0);
+
     c86db:
         tmp_ch3 = 0x80;
+
         goto c86ff;
+
     c86df:
         line_ptr += 3;
     }
@@ -276,16 +325,19 @@ c86b8:
     {
         uint8_t pos2 = 0;
         bool is_tab = false;
+
         tmp_ch3 =
             process_current_document_character(line_ptr, &idx, &pos2, &is_tab);
         tmp_ch3 &= 0x7f;
         idx = 0;
+
         if (!((int8_t)screen_row < 0))
         {
             if (!(tmp_ch3 == 0x0d || tmp_ch3 == 0x20))
             {
             c86ff:
                 screen_column++;
+
                 if (screen_column != 0)
                     goto c8715;
             }
@@ -293,8 +345,10 @@ c86b8:
                 scan_ptr++;
         }
         screen_column = idx;
+
         if (tmp_ch3 == 0x0d)
             screen_row = idx;
+
     c8715:
         tmp_ch3 |= screen_row;
         screen_row = tmp_ch3;
@@ -304,6 +358,7 @@ c86b8:
         goto c86b8;
     render_number_to_screen(scan_ptr);
     cli_putstring(" word(s) counted.\n");
+
     return_to_cli_prompt();
 }
 
@@ -315,6 +370,7 @@ c86b8:
 static void edit_cmd(struct scan_state* scan)
 {
     uint8_t cur_ch;
+
     check_not_continuous_editing();
     parse_filename_from_command(scan);
     set_document_name_to_filename_buffer();
@@ -322,19 +378,24 @@ static void edit_cmd(struct scan_state* scan)
     parse_filename_from_command(scan);
     open_output_file();
     uint8_t idx = 0;
+
     input_file_empty_flag = idx;
+
     do
     {
         cur_ch = filename_buffer[idx];
+
         if (cur_ch == 0)
             cur_ch = 0x0d;
         output_filename[idx] = cur_ch;
         idx++;
     } while (cur_ch != 0x0d);
     initialise_document();
+
     if (read_first_chunk_from_input_file())
     {
         close_input_output_files();
+
         return_to_cli_prompt();
         return;
     }
@@ -349,19 +410,23 @@ static void edit_cmd(struct scan_state* scan)
 static void field_cmd(struct scan_state* scan)
 {
     int value;
+
     if (!parse_integer_from_command(scan, &value))
     {
         return_to_cli_prompt();
         return;
     }
     uint8_t cur_ch = value & 0xFF;
+
     if (cur_ch == 0x1b)
     {
         cli_putstring("Frump!\n");
+
         return_to_cli_prompt();
         return;
     }
     current_tab_key = cur_ch;
+
     return_to_cli_prompt();
 }
 
@@ -371,6 +436,7 @@ static void field_cmd(struct scan_state* scan)
 static void finish_cmd(void)
 {
     check_continuous_editing();
+
     while (1)
     {
         reset_area_to_entire_document();
@@ -381,9 +447,11 @@ static void finish_cmd(void)
         adjust_area_pointers(area_size);
         move_cursor_to_top_of_document();
         ensure_cr_at_document_top();
+
         if (input_file_empty_flag != 0)
         {
             close_input_output_files();
+
             return;
         }
         if (read_first_chunk_from_input_file())
@@ -404,9 +472,11 @@ static void fold_cmd(struct scan_state* scan)
     if (!(scan_input_buffer(input_buffer, scan)))
     {
         uint8_t cur_ch = input_buffer[scan->pos];
+
         if (cur_ch == '1')
         {
             folding_flag = 0;
+
             goto c87b4;
         }
         if (cur_ch == '0')
@@ -414,16 +484,20 @@ static void fold_cmd(struct scan_state* scan)
     }
 c87b4:
     cli_putstring("Folding ");
+
     if (((int8_t)folding_flag < 0))
     {
         cli_putstring("off\n");
+
         return_to_cli_prompt();
         return;
     }
     cli_putstring("on\n");
+
     return_to_cli_prompt();
     return;
     cli_putstring("Bad file\n");
+
     return_to_cli_prompt();
 }
 
@@ -435,17 +509,21 @@ c87b4:
 static void format_cmd(struct scan_state* scan)
 {
     parse_marks_from_command(scan);
+
     if (!(sanitise_area() == AREA_EMPTY))
     {
         move_cursor_to_address(area_start_ptr);
         clear_format_mode_bit7();
         wipe_buffer(0x10, edit_buffer_base);
         current_format_line_ptr = &ram[RAM_EDIT_BUFFER];
+
         do
         {
             format_result_t fr = format_paragraph();
+
             if (fr == FORMAT_MEMORY_FULL)
                 goto c8791;
+
             if (fr == FORMAT_AT_END)
                 break;
             cli_putchar(0x2e);
@@ -453,8 +531,10 @@ static void format_cmd(struct scan_state* scan)
         top_of_screen_line_ptr = &ram[RAM_MAX];
     }
     cli_putchar('\n');
+
     return_to_cli_prompt();
     return;
+
 c8791:
     cli_putchar('\n');
     display_not_enough_memory();
@@ -489,22 +569,29 @@ static void microspace_cmd(struct scan_state* scan)
     int value;
     bool parsed = parse_integer_from_command(scan, &value);
     uint8_t idx = 0x0a;
+
     if (parsed)
     {
         idx = value & 0xFF;
+
         if (idx == 0)
             return;
     }
     uint8_t pos;
+
     printer_driver_ptr->printer_getflags(&idx, &pos);
     uint8_t cur_ch = pos;
+
     cur_ch &= 1;
+
     if (cur_ch != 0)
     {
         microspacing_flag = idx;
+
         return;
     }
     cli_putstring("Driver does not support microspacing\n");
+
     return_to_cli_prompt();
 }
 
@@ -514,6 +601,7 @@ static void microspace_cmd(struct scan_state* scan)
 static void mode_cmd(void)
 {
     cli_putstring("Bad mode\n");
+
     return_to_cli_prompt();
 }
 
@@ -531,6 +619,7 @@ static void more_cmd(struct scan_state* scan)
     write_area_to_file();
     uint8_t pos = 0;
     uint8_t idx = ruler_buffer_len;
+
     do
     {
         current_ruler_buffer[pos] = current_ruler_ptr[pos];
@@ -541,6 +630,7 @@ static void more_cmd(struct scan_state* scan)
     adjust_area_pointers(area_size);
     move_cursor_to_top_of_document();
     check_for_at_least_150_bytes_free();
+
     if (input_file_empty_flag == 0)
     {
         if (read_next_chunk_from_input_file(top))
@@ -561,7 +651,9 @@ static void name_cmd(struct scan_state* scan)
 {
     check_not_continuous_editing();
     bool has_filename = parse_optional_filename_from_command(scan);
+
     file_edit_flags = 0;
+
     if (!has_filename)
         return;
     reset_document_name_after_load();
@@ -595,6 +687,7 @@ static void print_cmd(struct scan_state* scan)
 static void print_to_screen(struct scan_state* scan)
 {
     print_document(scan);
+
     return_to_cli_prompt();
 }
 
@@ -627,6 +720,7 @@ static void read_cmd(struct scan_state* scan)
     parse_filename_from_command(scan);
     parse_marks_from_command(scan);
     read_into_document();
+
     return_to_cli_prompt();
 }
 
@@ -638,45 +732,56 @@ static void read_cmd(struct scan_state* scan)
 static void replace_cmd(struct scan_state* scan)
 {
     cli_cmd_status_t st = process_cli_command(scan);
+
     if (st != CLI_CMD_OK)
     {
         cmd_err_no_target();
+
         return;
     }
     if (!scan_document_for_next_line())
     {
         cmd_err_no_string();
+
         return;
     }
     move_cursor_to_address(doc_working_ptr);
     enter_editor_mode();
+
 c832d:
     redraw_and_write_back();
     draw_prompt_characters('R', 'P');
     uint8_t cur_ch = screen_getchar();
+
     if (cur_ch == 0x1b)
         return;
     cur_ch &= 0xdf;
     uint8_t idx = 0;
+
     if (!(cur_ch == 0x59))
     {
         idx--;
+
         if (cur_ch != 0x4f)
             goto c8356;
     }
     print_xpos = idx;
     setup_area_pointers(doc_working_ptr);
+
     if (check_area_memory(doc_working_ptr))
     {
         show_memory_full_error();
         esc_key();
+
         return;
     }
     redraw_and_write_back();
+
 c8356:
     if (!scan_document_for_next_line())
         return;
     move_cursor_to_address(doc_working_ptr);
+
     goto c832d;
 }
 
@@ -690,12 +795,15 @@ static void save_cmd_write_cmd(struct scan_state* scan)
     if (!parse_optional_filename_from_command(scan))
     {
         uint8_t ch;
+
         if (!(file_edit_flags & 0x40))
         {
             bad_filename_error();
+
             return;
         }
         uint8_t idx = 0;
+
         do
         {
             ch = input_filename[idx];
@@ -704,12 +812,14 @@ static void save_cmd_write_cmd(struct scan_state* scan)
         } while (ch != 0x0d);
     }
     parse_marks_from_command(scan);
+
     if (sanitise_area() == AREA_EMPTY)
         return;
     open_output_file();
     write_area_to_file();
     fputc(0, file_ptr);
     close_file();
+
     return_to_cli_prompt();
 }
 
@@ -733,19 +843,25 @@ static void search_cmd(struct scan_state* scan)
     if (reset_command_parse_state(scan))
     {
         cmd_err_no_target();
+
         return;
     }
     parse_marks_from_command(scan);
+
     if (sanitise_area() == AREA_EMPTY)
     {
         cmd_err_no_string();
+
         return;
     }
     doc_ptr2 = area_start_ptr;
+
     doc_ptr3 = area_end_ptr;
+
     if (!scan_document_for_next_line())
     {
         cmd_err_no_string();
+
         return;
     }
     move_cursor_to_address(doc_working_ptr);
@@ -764,10 +880,13 @@ static void setup_cmd(struct scan_state* scan)
     static const uint8_t c8681_data[] = {0x00, 0x00, 0xff};
     uint8_t idx = 1;
     uint8_t fmt_flag_tmp = idx;
+
     idx--;
     uint8_t insert_flag_tmp = idx;
+
     idx--;
     uint8_t justify_flag_tmp = idx;
+
     do
     {
         if (scan_input_buffer(input_buffer, scan))
@@ -775,6 +894,7 @@ static void setup_cmd(struct scan_state* scan)
         scan->ch &= 0xdf;
         uint8_t idx2 = 0;
         uint8_t pos;
+
         do
         {
             if (scan->ch == c867d_data[idx2])
@@ -783,10 +903,13 @@ static void setup_cmd(struct scan_state* scan)
             pos = c867d_data[idx2];
         } while (pos != 0);
         cli_putstring("Bad flag\n");
+
         return_to_cli_prompt();
         return;
+
     c8669:
         uint8_t cur_ch = c8681_data[idx2];
+
         if (idx2 == 0)
             fmt_flag_tmp = cur_ch;
         else if (idx2 == 1)
@@ -796,15 +919,18 @@ static void setup_cmd(struct scan_state* scan)
         input_buffer_offset++;
     } while (input_buffer_offset != 0);
     uint8_t idx3 = 2;
+
     do
     {
         uint8_t next_ch;
+
         if (idx3 == 0)
             next_ch = fmt_flag_tmp;
         else if (idx3 == 1)
             next_ch = justify_flag_tmp;
         else
             next_ch = insert_flag_tmp;
+
         if (idx3 == 0)
             format_mode_flag = next_ch;
         else if (idx3 == 1)
@@ -813,6 +939,7 @@ static void setup_cmd(struct scan_state* scan)
             insert_mode_flag = next_ch;
         idx3--;
     } while (!((int8_t)idx3 < 0));
+
     return_to_cli_prompt();
 }
 
@@ -827,6 +954,7 @@ static void sheets_cmd(struct scan_state* scan)
     print_document(scan);
     stop_printing();
     cli_putchar('\n');
+
     return_to_cli_prompt();
 }
 
@@ -836,6 +964,7 @@ static void sheets_cmd(struct scan_state* scan)
 void start_printing(void)
 {
     cli_putstring("Sorry, can't print yet\n");
+
     return_to_cli_prompt();
 }
 
@@ -847,6 +976,7 @@ void start_printing(void)
 bool read_command_line(void)
 {
     input_buffer_offset = 0;
+
     return cli_readstring((char*)input_buffer, MAX_COMMAND_LENGTH);
 }
 
@@ -860,13 +990,16 @@ const uint8_t version_string[] = "VIEW\0B3.0 for CP/M-65";
 static void print_x_words_of_help(uint8_t idx)
 {
     uint8_t pos = 0;
+
     for (;;)
     {
         uint8_t cur_ch = version_string[pos];
+
         if (cur_ch == 0)
         {
             cur_ch = 0x20;
             idx--;
+
             if ((int8_t)idx < 0)
                 break;
         }
@@ -883,10 +1016,13 @@ static bool parse_command(uint8_t* input_buffer_offset);
 void input_line_not_escaped(void)
 {
     bool failed = parse_command(&input_buffer_offset);
+
     scratch_offset = screen_row;
+
     if (failed || screen_row >= 48)
         cli_putstring("Mistake\n");
     struct scan_state scan;
+
     execute_cli_command(scratch_offset, &scan);
     run_cli();
 }
@@ -899,9 +1035,11 @@ void cli_handler_impl(void)
     stop_printing();
     print_flags = 0;
     cli_putstring("=>");
+
     if (!read_command_line())
     {
         input_line_not_escaped();
+
         return;
     }
     run_editor();
@@ -919,11 +1057,13 @@ void run_cli(void)
     render_number_to_screen(compute_bytes_free());
     cli_putchar('\n');
     display_document_file_state();
+
     if (!((file_edit_flags & 0x40)))
     {
         if ((file_edit_flags & 1))
         {
             cli_putstring("Input file is ");
+
             if (input_file_empty_flag == 0)
                 cli_putstring("not ");
             cli_putstring("empty\n");
@@ -933,20 +1073,24 @@ void run_cli(void)
     {
         cli_putstring("Printer ");
         uint8_t idx = 0;
+
         do
         {
             uint8_t tmp_ch3 = printer_driver_name[idx];
+
             if (tmp_ch3 == 0x0d)
                 break;
             cli_putchar(tmp_ch3);
             idx++;
         } while (idx != 0);
+
         if (microspacing_flag != 0)
             cli_putstring(" (m)");
         cli_putchar('\n');
     }
     uint8_t idx2 = 0;
     uint8_t pos = 0;
+
     do
     {
         if (!(((uint8_t*)markers_array)[idx2 + 1] == 0))
@@ -967,9 +1111,11 @@ void run_cli(void)
         idx2++;
         idx2++;
     } while (idx2 != 0x0c);
+
     if (pos != 0)
         cli_putchar('\n');
     cli_putchar('\n');
+
     return_to_cli_prompt();
 }
 
@@ -984,56 +1130,71 @@ static bool parse_command(uint8_t* input_buffer_offset)
 {
     uint8_t pos;
     uint8_t cur_ch = 0xff;
+
     screen_row = cur_ch;
     uint8_t idx = cur_ch;
+
     for (;;)
     {
         pos = *input_buffer_offset;
         pos--;
         screen_row++;
+
         for (;;)
         {
             idx++;
             pos++;
             uint8_t next_ch = input_buffer[pos];
+
             next_ch &= 0xdf;
             temp_save = next_ch;
             uint8_t tmp_ch2 = parser_table[idx];
+
             if (tmp_ch2 == 0)
                 goto ca890;
+
             if (tmp_ch2 & 0x80)
                 goto ca87e;
             tmp_ch2 ^= 0x5b;
             screen_column = tmp_ch2;
             tmp_ch2 &= 0xdf;
+
             if (tmp_ch2 != temp_save)
                 break;
         }
         uint8_t tmp_ch3;
+
         do
         {
             idx++;
             tmp_ch3 = parser_table[idx];
+
             if (tmp_ch3 == 0)
                 goto ca890;
         } while (!(tmp_ch3 & 0x80));
         uint8_t tmp_ch4 = screen_column;
+
         tmp_ch4 &= 0x20;
+
         if (tmp_ch4 == 0)
             continue;
+
         if (input_buffer[pos] >= 0x30)
             continue;
         break;
     }
 ca87e:
     uint8_t tmp_ch6 = input_buffer[pos];
+
     if (tmp_ch6 < 0x30)
     {
         delimiter_char = tmp_ch6;
         pos++;
     }
     *input_buffer_offset = pos;
+
     return false;
+
 ca890:
     return true;
 }
@@ -1044,6 +1205,7 @@ ca890:
 void file_error(void)
 {
     cli_putstring("File error");
+
     return_to_cli_prompt();
 }
 
@@ -1054,6 +1216,7 @@ void file_not_found_error(void)
 {
     stop_printing();
     cli_putstring("File not found\n");
+
     return_to_cli_prompt();
 }
 
@@ -1072,9 +1235,12 @@ bool parse_integer_from_command(struct scan_state* scan, int* out)
     const char* start = (const char*)&input_buffer[pos];
     char* end;
     int parsed = (int)strtoul(start, &end, 10);
+
     (void)pos;
+
     if (out)
         *out = parsed;
+
     return (end != start);
 }
 
@@ -1087,10 +1253,12 @@ void parse_marks_from_command(struct scan_state* scan)
 {
     reset_area_to_entire_document();
     uint8_t* start_mark = parse_mark_from_command(scan);
+
     if (start_mark == NULL)
         return;
     area_start_ptr = start_mark;
     uint8_t* end_mark = parse_mark_from_command(scan);
+
     if (end_mark == NULL)
         return;
     area_end_ptr = end_mark;
@@ -1113,6 +1281,7 @@ void set_document_name_to_filename_buffer(void)
 {
     uint8_t cur_ch;
     uint8_t idx = 0;
+
     do
     {
         cur_ch = filename_buffer[idx];
@@ -1128,6 +1297,7 @@ void set_document_name_to_filename_buffer(void)
 void zero_terminate_filename_buffer(void)
 {
     uint8_t idx = 0;
+
     while (filename_buffer[idx] != 0x0d)
         idx++;
     filename_buffer[idx] = 0;
@@ -1146,15 +1316,18 @@ uint8_t* parse_mark_from_command(struct scan_state* scan)
     scan->pos++;
     input_buffer_offset = scan->pos;
     int marker_index = lookup_marker(scan->ch);
+
     if (marker_index == MARKER_INVALID)
     {
         cli_putstring("Bad marker\n");
+
         return_to_cli_prompt();
         return 0;
     }
     if (markers_array[marker_index] == 0)
     {
         cli_putstring("Marker not set\n");
+
         return_to_cli_prompt();
         return 0;
     }

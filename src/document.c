@@ -14,6 +14,7 @@ command_prefix_t check_for_command_prefix(uint8_t ch)
 {
     if (ch == COMMAND_BYTE)
         return COMMAND_PREFIX;
+
     if (ch == RULER_BYTE)
         return RULER_PREFIX;
     return NO_COMMAND_PREFIX;
@@ -29,6 +30,7 @@ control_code_t check_for_control_code(uint8_t cur_ch)
 {
     if (cur_ch == 0x1c)
         return HIGHLIGHT1_CODE;
+
     if (cur_ch == 0x1d)
         return HIGHLIGHT2_CODE;
     return NO_CONTROL_CODE;
@@ -75,18 +77,23 @@ command_prefix_t deref_and_check_for_command_prefix(
 void display_document_file_state(void)
 {
     uint8_t next_ch;
+
     stop_printing();
     cli_putstring("Editing ");
+
     if (file_edit_flags == 0)
     {
         cli_putstring("No File\n");
+
         return;
     }
 
     uint8_t pos = 0;
+
     for (;;)
     {
         next_ch = input_filename[pos];
+
         if (next_ch == 0x0d)
             break;
         cli_putchar(next_ch);
@@ -96,12 +103,15 @@ void display_document_file_state(void)
         goto c8a19;
     cli_putstring(" to ");
     pos = 0;
+
     for (;;)
     {
         next_ch = output_filename[pos];
         pos++;
+
     c8a19:
         cli_putchar(next_ch);
+
         if (next_ch == 0x0d)
             break;
     }
@@ -116,20 +126,26 @@ void display_document_file_state(void)
 void find_margins_of_current_ruler_buffer(void)
 {
     uint8_t pos = 0;
+
     ruler_right_stop = 0;
     ruler_left_stop = 0;
+
     do
     {
         uint8_t cur_ch = current_ruler_ptr[pos];
+
         if (cur_ch == 0x3e)
             ruler_left_stop = pos;
+
         if (cur_ch == 0x3c)
             ruler_right_stop = pos;
+
         if (cur_ch == 0x0d)
             break;
         pos++;
     } while (pos != MAX_LINE_LENGTH);
     ruler_buffer_len = pos;
+
     if (ruler_left_stop < ruler_right_stop)
         return;
     ruler_right_stop = 0;
@@ -147,6 +163,7 @@ void print_char(uint8_t cur_ch)
     if (cur_ch == 0x20)
     {
         print_xpos++;
+
         return;
     }
     if (cur_ch == 0x0d)
@@ -167,24 +184,29 @@ void print_char_just_to_screen(uint8_t cur_ch)
     if ((print_flags & 0x80))
     {
         printer_driver_ptr->print_char(cur_ch);
+
         return;
     }
     control_code_t cc = check_for_control_code(cur_ch);
+
     if (!(cc == NO_CONTROL_CODE))
     {
         {
             uint8_t saved_a = cur_ch;
+
             cur_ch = (cc == HIGHLIGHT1_CODE) ? 0x2d : 0x2a;
             screen_setstyle(STYLE_REVERSE);
             cli_putchar(cur_ch);
             cur_ch = saved_a;
         }
         screen_setstyle(0);
+
         return;
     }
     if (cur_ch == 0x0d)
     {
         cli_putchar('\n');
+
         return;
     }
     cli_putchar(cur_ch);
@@ -208,8 +230,10 @@ uint8_t process_document_character(uint8_t cur_ch, uint8_t* idx, bool* is_tab)
     {
         if ((cur_ch == 0x10) || cur_ch == 0x1a)
             goto ca5d5;
+
         if (cur_ch == 0x0b)
             goto ca5d9;
+
         if (cur_ch > 0x1a)
         {
             if (cur_ch < 0x20)
@@ -225,12 +249,16 @@ uint8_t process_document_character(uint8_t cur_ch, uint8_t* idx, bool* is_tab)
     ca5d1:
         *idx = 1;
         *is_tab = false;
+
         return cur_ch;
+
     ca5d5:
         do
         {
             cur_ch = 0x20;
+
             goto ca5d1;
+
         ca5d9:
             cur_ch = ruler_left_stop;
         } while (cur_ch == 0);
@@ -239,9 +267,11 @@ uint8_t process_document_character(uint8_t cur_ch, uint8_t* idx, bool* is_tab)
     else
     {
         uint8_t tab_pos = column_position;
+
         do
         {
             tab_pos++;
+
             if (tab_pos >= ruler_buffer_len)
                 goto ca5f8;
             cur_ch = current_ruler_ptr[tab_pos];
@@ -250,18 +280,23 @@ uint8_t process_document_character(uint8_t cur_ch, uint8_t* idx, bool* is_tab)
     }
     {
         bool no_borrow = (cur_ch >= column_position);
+
         cur_ch -= column_position;
         *idx = cur_ch;
+
         if (*idx == 0)
             goto ca5f8;
+
         if (no_borrow)
             goto ca5fa;
     }
 ca5f8:
     *idx = 1;
+
 ca5fa:
     cur_ch = 0x20;
     *is_tab = true;
+
     return cur_ch;
 }
 
@@ -281,6 +316,7 @@ void return_to_cli_prompt(void)
 void print_alignment_spaces(uint8_t cur_ch)
 {
     cur_ch = print_xpos;
+
     if (cur_ch == 0)
         return;
 
@@ -339,19 +375,24 @@ uint8_t create_default_ruler(uint8_t* ruler_addr)
 {
     uint8_t* line_ptr = ruler_addr;
     uint8_t pos = 0;
+
     for (;;)
     {
         uint8_t cur_ch = 0x2e;
+
         for (;;)
         {
             line_ptr[pos] = cur_ch;
             pos++;
             uint8_t next_ch = pos;
             uint8_t idx = next_ch;
+
             idx++;
             next_ch += 6;
+
             if (next_ch == screen_maxcolumn)
                 goto cb0ff;
+
             if (idx & 7)
                 break;
             cur_ch = 0x2a;
@@ -359,6 +400,7 @@ uint8_t create_default_ruler(uint8_t* ruler_addr)
     }
 cb0ff:
     line_ptr[pos] = 0x3c;
+
     return pos;
 }
 
@@ -369,6 +411,7 @@ cb0ff:
 uint8_t get_byte_from_file(void)
 {
     int c = fgetc(file_ptr);
+
     if (c == EOF || c == 0)
         return 0;
     return (uint8_t)c;
@@ -384,6 +427,7 @@ unsigned int* get_register_address(uint8_t cur_ch)
     if (!isalpha(cur_ch))
         return NULL;
     cur_ch &= 0xdf;
+
     return &register_value_array[cur_ch - 'A'];
 }
 
@@ -418,6 +462,7 @@ void initialise_document(void)
     input_buffer_offset = 0;
     page = oshwm + 0x101;
     uint8_t pos = 0;
+
     file_edit_flags = pos;
     xpos = pos;
     oshwm[pos] = 0xaa;
@@ -427,6 +472,7 @@ void initialise_document(void)
     edit_buffer_base = &ram[RAM_CURRENT_LINE_BUF];
     current_format_line_ptr = &ram[RAM_EDIT_BUFFER];
     uint8_t pos2 = create_default_ruler(&ram[RAM_CURRENT_RULER_BUF]);
+
     pos2++;
     ram[RAM_CURRENT_RULER_BUF + pos2] = 0x0d;
     ruler_index[0] = &ram[0];
@@ -447,9 +493,11 @@ int lookup_marker(uint8_t cur_ch)
     if (cur_ch < 0x31)
     {
         beep();
+
         return MARKER_INVALID;
     }
     cur_ch -= 0x31;
+
     if (cur_ch >= 6)
         return MARKER_INVALID;
     return cur_ch;
@@ -465,6 +513,7 @@ void move_cursor_to_address(uint8_t* addr)
 {
     uint8_t* next_line_start;
     uint8_t* cur = current_line_ptr;
+
     if (!(cur == addr))
     {
         if (cur > addr)
@@ -472,9 +521,11 @@ void move_cursor_to_address(uint8_t* addr)
             for (;;)
             {
                 uint8_t* line_ptr;
+
                 if (!find_previous_line(cur, &line_ptr))
                     goto cac20;
                 cur = line_ptr;
+
                 if (cur <= addr)
                     goto cac20;
             }
@@ -482,9 +533,11 @@ void move_cursor_to_address(uint8_t* addr)
         do
         {
             uint8_t pos;
+
             if (find_next_line(cur, &next_line_start, &pos))
                 break;
             cur = next_line_start + pos;
+
             if (cur >= addr)
             {
                 if (cur == addr)
@@ -494,18 +547,24 @@ void move_cursor_to_address(uint8_t* addr)
             check_for_embedded_ruler(next_line_start);
         } while (1);
         cur = next_line_start;
+
         goto cac20;
+
     cac1d:
         check_for_embedded_ruler(next_line_start);
     }
 cac20:
     current_line_ptr = cur;
     uint8_t idx = (uint8_t)(addr - current_line_ptr);
+
     command_prefix_t cp = check_for_command_prefix(current_line_ptr[0]);
+
     if (cp != NO_COMMAND_PREFIX)
     {
         uint8_t next_ch = idx;
+
         idx = 0;
+
         if (next_ch >= 3)
         {
             next_ch -= 3;
@@ -541,12 +600,15 @@ bool find_next_line(uint8_t* start, uint8_t** line_ptr, uint8_t* pos)
 {
     *line_ptr = start;
     *pos = 0;
+
     for (;;)
     {
         uint8_t cur_ch = (*line_ptr)[*pos];
+
         if (cur_ch == 0)
             return true;
         (*pos)++;
+
         if (cur_ch == 0x0d)
             break;
     }
@@ -563,16 +625,20 @@ bool find_previous_line(uint8_t* val, uint8_t** line_ptr)
 {
     uint8_t cur_ch;
     *line_ptr = val - 1;
+
     if (*line_ptr < page)
         return false;
+
     do
     {
         (*line_ptr)--;
         cur_ch = **line_ptr;
     } while (cur_ch != 0x0d);
     (*line_ptr)++;
+
     if (**line_ptr == RULER_BYTE)
         pop_from_ruler_index();
+
     return true;
 }
 
@@ -584,9 +650,11 @@ void open_input_file(void)
 {
     zero_terminate_filename_buffer();
     input_fp = fopen((char*)filename_buffer, "rb");
+
     if (!input_fp)
     {
         file_not_found_error();
+
         return;
     }
     file_ptr = input_fp;
@@ -600,9 +668,11 @@ void open_output_file(void)
 {
     zero_terminate_filename_buffer();
     output_fp = fopen((char*)filename_buffer, "wb");
+
     if (!output_fp)
     {
         file_error();
+
         return;
     }
     file_ptr = output_fp;
@@ -616,6 +686,7 @@ void pop_from_ruler_index(void)
 {
     status_line_needs_redrawing_flag++;
     uint8_t pos = ruler_index_ptr;
+
     pos++;
     pos++;
     load_current_ruler(pos);
@@ -630,6 +701,7 @@ void push_onto_ruler_index(uint8_t* target_ptr)
     {
         status_line_needs_redrawing_flag++;
         uint8_t stack_index = ruler_index_ptr - 2;
+
         ruler_index[stack_index >> 1] = target_ptr;
         load_current_ruler(stack_index);
     }
@@ -659,7 +731,9 @@ bool advance_to_next_line(uint8_t* line, uint8_t** line_ptr, uint8_t* pos)
     if (*line != RULER_BYTE)
         return find_next_line(line, line_ptr, pos);
     bool end = find_next_line(line, line_ptr, pos);
+
     if (!end)
         push_onto_ruler_index(line);
+
     return end;
 }

@@ -34,6 +34,7 @@ void screen_putchar(uint8_t cur_ch)
 uint8_t screen_getchar(void)
 {
     log_call("screen_getchar(65535)");
+
     return 0;
 }
 
@@ -45,6 +46,7 @@ void screen_setcursor(uint8_t xpos, uint8_t ypos)
 uint16_t screen_getcursor(void)
 {
     log_call("screen_getcursor()");
+
     return 0;
 }
 
@@ -56,6 +58,7 @@ void screen_setstyle(uint8_t cur_ch)
 uint16_t screen_getsize(void)
 {
     log_call("screen_getsize() -> (%d,%d)", 23, 79);
+
     return (uint16_t)(23 << 8) | 79;
 }
 

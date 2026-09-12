@@ -208,19 +208,23 @@ int main(int argc, char* argv[])
     (void)argc;
     (void)argv;
     int val = setjmp(env);
+
     if (val == JMP_CLI)
     {
         cli_handler_impl();
+
         return 0;
     }
     else if (val == JMP_EDITOR)
     {
         editor_loop_impl();
+
         return 0;
     }
     system_init();
     initialise_document();
     run_cli();
+
     return 0;
 }
 
@@ -237,6 +241,7 @@ static uint8_t read_next_command_byte(uint8_t* pos, bool* end)
     (*pos)++;
     uint8_t cur_ch = input_buffer[*pos];
     *end = (cur_ch == delimiter_char) || (cur_ch == 0x0d);
+
     return cur_ch;
 }
 
@@ -260,6 +265,7 @@ void setup_area_pointers(uint8_t* doc_working_ptr)
 {
     uint8_t* scan_ptr = doc_working_ptr;
     uint8_t idx = 0;
+
     if (!(scan_ptr == doc_ptr2))
     {
         if (*scan_ptr == 0x0d)
@@ -267,6 +273,7 @@ void setup_area_pointers(uint8_t* doc_working_ptr)
         scan_ptr++;
     }
     line_counter++;
+
     if (idx == 0)
         return;
     clamp_ptr6_to_document();
@@ -288,30 +295,39 @@ static uint8_t expand_escaped_string(uint8_t idx, uint8_t pos)
 {
     screen_column = idx;
     pos--;
+
     do
     {
         uint8_t cur_ch;
         _Bool end;
+
         cur_ch = read_next_command_byte(&pos, &end);
+
         if (end)
             break;
+
         if (!(cur_ch != 0x5e))
         {
             uint8_t next_ch = read_next_command_byte(&pos, &end);
+
             if (end)
                 break;
             screen_row = toupper(next_ch);
             idx = 0xfe;
+
             for (;;)
             {
                 idx += 2;
                 uint8_t table_idx = idx >> 1;
                 uint8_t tmp_ch3 = escaped_char_table[table_idx];
+
                 if (tmp_ch3 & 0x80)
                     break;
+
                 if (tmp_ch3 == screen_row)
                 {
                     cur_ch = escaped_value_table[table_idx];
+
                     if (cur_ch != 0)
                         goto c83ca;
                 }
@@ -320,6 +336,7 @@ static uint8_t expand_escaped_string(uint8_t idx, uint8_t pos)
         }
     c83ca:
         idx = search_target_len;
+
         if (idx == 0)
             cur_ch = upper_case_unless_folding(cur_ch);
         idx = screen_column;
@@ -328,6 +345,7 @@ static uint8_t expand_escaped_string(uint8_t idx, uint8_t pos)
     } while (screen_column != 0);
     idx = screen_column;
     input_buffer_offset = pos;
+
     return idx;
 }
 
@@ -343,16 +361,21 @@ cli_cmd_status_t process_cli_command(struct scan_state* scan)
 {
     if (reset_command_parse_state(scan))
         return CLI_CMD_NO_TARGET;
+
     if (!scan_input_buffer(input_buffer, scan))
     {
         cli_header_limit =
             expand_escaped_string(search_target_len, input_buffer_offset + 1);
     }
     parse_marks_from_command(scan);
+
     if (sanitise_area() == AREA_EMPTY)
         return CLI_CMD_NO_STRING;
+
     doc_ptr2 = area_start_ptr;
+
     doc_ptr3 = area_end_ptr;
+
     return CLI_CMD_OK;
 }
 
@@ -365,12 +388,16 @@ cli_cmd_status_t process_cli_command(struct scan_state* scan)
 bool reset_command_parse_state(struct scan_state* scan)
 {
     uint8_t idx = 0;
+
     search_target_len = idx;
     cli_header_limit = idx;
+
     if (scan_input_buffer(input_buffer, scan))
         return true;
     uint8_t idx2 = expand_escaped_string(0, scan->pos);
+
     search_target_len = idx2;
+
     return idx2 == 0;
 }
 
@@ -385,14 +412,19 @@ uint8_t* read_into_document(void)
     check_for_at_least_150_bytes_free();
     open_input_file();
     uint8_t* insert_ptr = area_start_ptr;
+
     move_cursor_to_address(area_start_ptr);
     uint8_t* space_limit = compute_required_space_for_insertion(insert_ptr);
+
     make_space_for_insertion(insert_ptr, space_limit - insert_ptr + 0x8b);
     uint8_t* cursor = insert_ptr;
+
     read_block_status_t status = read_block_from_file(&cursor, space_limit);
+
     if (status != READ_BLOCK_DONE)
         cli_putstring("Not all read in\n");
     scratch_scan_ptr = adjust_pointers(cursor, space_limit - cursor);
+
     return cursor;
 }
 
@@ -409,19 +441,24 @@ bool check_area_memory(uint8_t* doc_working_ptr)
     uint8_t tmp_ch4;
     uint8_t cur_ch = 0;
     uint8_t block_expansion_len = cur_ch;
+
     scratch_index = cur_ch;
     uint8_t pos = 0x14;
     uint8_t idx = search_target_len;
+
     if (!(idx != 0))
     {
     c8a5b:
         uint8_t next_ch = header_text_maybe[idx];
+
         if (!(next_ch != 1))
         {
             next_ch = scratch_index;
+
             if (next_ch >= cli_header_pos)
                 goto c8a86;
             scratch_index++;
+
             if (scratch_index != 0)
                 goto c8a84;
         }
@@ -430,10 +467,13 @@ bool check_area_memory(uint8_t* doc_working_ptr)
             while (1)
             {
                 uint8_t tmp_ch2 = output_buffer[pos];
+
                 pos++;
+
                 if (tmp_ch2 == 0)
                     goto c8a86;
                 block_expansion_len++;
+
                 if (pos >= cli_output_pos)
                     break;
             }
@@ -441,6 +481,7 @@ bool check_area_memory(uint8_t* doc_working_ptr)
         }
     c8a84:
         block_expansion_len++;
+
     c8a86:
         idx++;
     }
@@ -448,10 +489,12 @@ bool check_area_memory(uint8_t* doc_working_ptr)
         goto c8a5b;
     ptrdiff_t gap = doc_ptr2 - doc_working_ptr;
     uint8_t idx2 = block_expansion_len;
+
     if (gap < 256 && idx2 >= gap)
         idx2 = gap;
     uint8_t* insert_ptr = doc_working_ptr + idx2;
     ptrdiff_t delta = (ptrdiff_t)block_expansion_len - gap;
+
     if (delta < 0)
     {
         scratch_scan_ptr = adjust_pointers(insert_ptr, -delta);
@@ -462,36 +505,46 @@ bool check_area_memory(uint8_t* doc_working_ptr)
             return true;
     }
     uint8_t pos2 = 0;
+
     scratch_index = pos2;
+
     if (!(print_xpos & 0x80))
     {
         uint8_t idx3 = scratch_offset;
+
         do
         {
             tmp_ch3 = doc_working_ptr[pos2];
             pos2++;
+
             if (isalpha(tmp_ch3))
                 goto c8af3;
             print_xpos = (uint8_t)(print_xpos >> 1) | 0x80;
             idx3--;
         } while (idx3 != 0);
+
         goto c8b11;
+
     c8af3:
     {
         print_xpos = 0;
         tmp_ch4 = tmp_ch3;
     }
         tmp_ch4 &= 0x20;
+
         if (tmp_ch4 != 0)
             goto c8b11;
         scratch_index++;
         idx3--;
+
         if (!(idx3 == 0))
         {
             uint8_t tmp_ch5 = doc_working_ptr[pos2];
+
             if (!isalpha(tmp_ch5))
                 goto c8b11;
             tmp_ch5 &= 0x20;
+
             if (tmp_ch5 != 0)
                 goto c8b11;
         }
@@ -501,21 +554,28 @@ bool check_area_memory(uint8_t* doc_working_ptr)
 c8b11:
     uint8_t output_buf_pos = 0;
     uint8_t doc_write_pos = 0;
+
     scratch_offset = 0x14;
     uint8_t idx4 = search_target_len;
+
     if (idx4 != 0)
         goto c8b6b;
+
     do
     {
         uint8_t tmp_ch6 = header_text_maybe[idx4];
+
         temp_save = idx4;
+
         if (!(tmp_ch6 != 0x20))
         {
             uint8_t pos3 = scratch_offset;
+
             if (pos3 >= cli_output_pos)
                 goto c8b47;
             scratch_offset++;
             tmp_ch6 = output_buffer[pos3];
+
             if (tmp_ch6 == 0)
                 goto c8b6a;
             idx4--;
@@ -524,6 +584,7 @@ c8b11:
         {
             if (tmp_ch6 != 1)
                 goto c8b47;
+
             if (output_buf_pos >= cli_header_pos)
                 goto c8b6a;
             tmp_ch6 = output_buffer[output_buf_pos];
@@ -532,11 +593,13 @@ c8b11:
     c8b47:
         if (tmp_ch6 == 2)
             tmp_ch6 = 0x20;
+
         if (!(folding_flag & 0x80 || print_xpos != 0))
         {
             if (isalpha(tmp_ch6))
             {
                 tmp_ch6 |= 0x20;
+
                 if (scratch_index != 0)
                 {
                     scratch_index--;
@@ -545,12 +608,15 @@ c8b11:
             }
         }
         doc_working_ptr[doc_write_pos] = tmp_ch6;
+
         doc_write_pos++;
+
     c8b6a:
         idx4++;
     c8b6b:;
     } while (idx4 < cli_header_limit);
     split_line_at_wrap(doc_working_ptr);
+
     return false;
 }
 
@@ -563,13 +629,17 @@ c8b11:
 bool read_next_chunk_from_input_file(uint8_t* target_ptr)
 {
     uint8_t* space_limit = compute_space_available(target_ptr);
+
     file_ptr = input_fp;
     uint8_t* cursor = target_ptr;
+
     read_block_status_t status = read_block_from_file(&cursor, space_limit);
+
     if (status == READ_BLOCK_DONE)
         input_file_empty_flag++;
     *cursor = 0;
     top = cursor;
+
     return status == READ_BLOCK_EMPTY;
 }
 
@@ -591,6 +661,7 @@ void write_area_to_file(void)
     if (sanitise_area() == AREA_EMPTY)
         return;
     uint8_t* scan_ptr = area_start_ptr;
+
     do
     {
         fputc(*scan_ptr, file_ptr);
@@ -608,7 +679,9 @@ void write_area_to_file(void)
 static uint8_t* compute_space_common(uint8_t* target_ptr, ptrdiff_t scan_ptr)
 {
     ptrdiff_t size_delta = compute_bytes_free();
+
     scan_ptr >>= 2;
+
     if (scan_ptr >= 0x0400)
     {
         scan_ptr = 0x0404;
@@ -650,6 +723,7 @@ void parse_filename_from_command(struct scan_state* scan)
     if (!parse_optional_filename_from_command(scan))
     {
         bad_filename_error();
+
         return;
     }
 }
@@ -679,8 +753,10 @@ static void system_init(void)
     uint16_t size = screen_getsize();
     screen_maxcolumn = (uint8_t)(size & 0xff);
     screen_maxrow = (uint8_t)(size >> 8);
+
     if (screen_maxrow > MAX_LINES - 1)
         screen_maxrow = MAX_LINES - 1;
+
     if (screen_maxcolumn > MAX_COLUMNS - 1)
         screen_maxcolumn = MAX_COLUMNS - 1;
 }
