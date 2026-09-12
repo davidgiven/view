@@ -15,6 +15,7 @@
 
 #include "io.h"
 #include "globals.h"
+#include "macro.h"
 
 jmp_buf env;
 #define JMP_CLI 1
@@ -63,11 +64,9 @@ uint8_t* editor_ptr6;             /** Editor working pointer. */
 uint8_t* printer_ptr6;            /** Printer working pointer. */
 uint8_t* print_doc_ptr;           /** Document pointer used during printing. */
 const struct printer_driver* printer_driver_ptr; /** Active printer driver. */
-struct macro* first_macro_ptr; /** Head of macro linked list. */
-struct macro* last_macro_ptr;  /** Tail of macro linked list. */
-uint8_t* macro_cursor_ptr;     /** Cursor into current macro body. */
-uint8_t* oshwm;                /** Ruler stack base. */
-uint8_t* ruler_index[128];     /** Ruler index stack. */
+uint8_t* macro_cursor_ptr; /** Cursor into current macro body. */
+uint8_t* oshwm;            /** Ruler stack base. */
+uint8_t* ruler_index[128]; /** Ruler index stack. */
 uint8_t page_lines_remaining;
 uint8_t formatted_line_written_flag;
 uint8_t page_break_pending_flag;

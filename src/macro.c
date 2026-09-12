@@ -9,6 +9,20 @@
 #include "cli.h"
 #include "macro.h"
 
+// A macro definition stored in ram[].  Macros form a singly-linked list: a
+// node holds the address of the next macro (0 terminates the list) and the
+// two-character macro name; the macro body follows the header and is reached
+// through body[].
+struct macro
+{
+    struct macro* next;
+    char name[2];
+    uint8_t body[0];
+};
+
+static struct macro* first_macro_ptr;
+static struct macro* last_macro_ptr;
+
 enum parse_register_result_t
 {
     PARSE_REGISTER_MARKER,
@@ -19,6 +33,18 @@ enum parse_register_result_t
 static enum parse_register_result_t parse_register_reference(uint8_t cur_ch);
 static read_block_status_t read_next_output_line(
     uint8_t* limit, uint8_t** cursor);
+
+/**
+ * Initialises the macro list for a new print job.
+ *
+ * @param print_doc_ptr base pointer for the document print buffer
+ */
+void macro_init(uint8_t* print_doc_ptr)
+{
+    first_macro_ptr = (struct macro*)(print_doc_ptr + 0x8d);
+    last_macro_ptr = first_macro_ptr;
+    last_macro_ptr->next = 0;
+}
 
 /**
  * Handles the DM formatting command to define a macro.
@@ -78,6 +104,39 @@ void nested_macro_error(void)
     cli_putchar('\n');
     return_to_cli_prompt();
     return;
+}
+
+/**
+ * Tries to invoke a macro whose name matches the current format line.
+ *
+ * @param macro_cursor_ptr pointer to the macro cursor to update on success
+ * @return true if a macro was found and invoked, false otherwise
+ */
+bool macro_try_invoke(uint8_t** macro_cursor_ptr)
+{
+    uint8_t pos4 = 1;
+    uint8_t tmp_ch2 = current_format_line_ptr[pos4];
+    pos4++;
+    uint8_t tmp_ch3 = current_format_line_ptr[pos4];
+    if (!isalpha(tmp_ch3))
+        tmp_ch3 = 0x20;
+    struct macro* macro = first_macro_ptr;
+    while (macro->next != NULL)
+    {
+        if (macro->name[0] == tmp_ch2 && macro->name[1] == tmp_ch3)
+        {
+            if (macro_executing_flag != 0)
+            {
+                nested_macro_error();
+                return true;
+            }
+            *macro_cursor_ptr = macro->body;
+            macro_executing_flag = (*macro_cursor_ptr != NULL);
+            return true;
+        }
+        macro = macro->next;
+    }
+    return false;
 }
 
 /**

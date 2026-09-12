@@ -72,8 +72,8 @@ Functions defined in the source files and their callees (only calls to other fun
 - **parse_decimal_number** [a, current_format_line_ptr, input_buffer]
 - **parse_optional_filename_from_command** → bad_filename_error, scan_input_buffer [a, delimiter_char, filename_buffer, input_buffer, input_buffer_offset]
 - **print_char_x_times** → print_char
-- **print_document** → check_for_at_least_150_bytes_free, check_not_continuous_editing, find_margins_of_current_ruler_buffer, parse_optional_filename_from_command, print_loop, process_page_footer, reset_print_registers, scan_input_buffer, set_rw_file_handle [current_ruler_ptr, first_macro_ptr, input_buffer, last_macro_ptr, page, page_break_pending_flag, print_xpos, printing_from_file_flag, ram, top]
-- **print_loop** → execute_formatting_command, find_margins_of_current_ruler_buffer, microspace_word_processor, nested_macro_error, output_left_margin, prepare_output_line, print_char_x_times, print_vertical_space, process_page_footer, render_new_page, start_microspacing_if_active [a, column_position, current_format_line_ptr, current_ruler_buffer, first_macro_ptr, line_spacing, macro_executing_flag, microspacing_flag, page_break_pending_flag, page_lines_remaining, print_flags, register_value_array, scratch_offset]
+- **print_document** → check_for_at_least_150_bytes_free, check_not_continuous_editing, find_margins_of_current_ruler_buffer, macro_init, parse_optional_filename_from_command, print_loop, process_page_footer, reset_print_registers, scan_input_buffer, set_rw_file_handle [current_ruler_ptr, input_buffer, page, page_break_pending_flag, print_xpos, printing_from_file_flag, ram, top]
+- **print_loop** → execute_formatting_command, find_margins_of_current_ruler_buffer, macro_try_invoke, microspace_word_processor, output_left_margin, prepare_output_line, print_char_x_times, print_vertical_space, process_page_footer, render_new_page, start_microspacing_if_active [a, column_position, current_ruler_buffer, line_spacing, macro_executing_flag, microspacing_flag, page_break_pending_flag, page_lines_remaining, print_flags, register_value_array, scratch_offset]
 - **print_newline** → print_char
 - **print_vertical_space** → get_byte_from_file, print_char_x_times, write_byte_to_memory, write_cr_to_memory [a, screen_column, screen_row, temp_save]
 - **render_header_or_footer** → add_justification_spaces, compute_header_left_section, compute_header_middle_section, compute_header_odd_page_section, copy_header_footer_text, get_page_parity, get_right_margin, output_left_margin, print_output_buffer [a, column_position, page, scratch_index]
@@ -104,8 +104,10 @@ Functions defined in the source files and their callees (only calls to other fun
 
 ## macro
 
+- **macro_init** [a, first_macro_ptr, last_macro_ptr]
 - **dm_fmt_cmd** → display_not_enough_memory [a, current_format_line_ptr, himem, last_macro_ptr, macro_executing_flag]
-- **nested_macro_error** → return_to_cli_prompt, stop_printing
+- **nested_macro_error** → return_to_cli_prompt, stop_printing [a]
+- **macro_try_invoke** → nested_macro_error [current_format_line_ptr, first_macro_ptr, macro_executing_flag]
 - **prepare_output_line** [current_format_line_ptr, macro_executing_flag, printing_from_file_flag, ram, screen_column, screen_row, temp_save]
 
 ## document

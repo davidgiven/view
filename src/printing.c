@@ -1303,13 +1303,11 @@ void print_document(struct scan_state* scan)
     check_for_at_least_150_bytes_free();
     reset_print_registers();
     uint8_t* print_doc_ptr = top + 3;
-    first_macro_ptr = (struct macro*)(print_doc_ptr + 0x8d);
-    last_macro_ptr = first_macro_ptr;
+    macro_init(print_doc_ptr);
     uint8_t cur_ch = 0;
     page_break_pending_flag = cur_ch;
     print_xpos = cur_ch;
     printing_from_file_flag = cur_ch;
-    last_macro_ptr->next = 0;
     current_ruler_ptr = &ram[RAM_CURRENT_RULER_BUF];
     find_margins_of_current_ruler_buffer();
     if (!(!scan_input_buffer(input_buffer, scan)))
@@ -1388,34 +1386,15 @@ c8f30:
         }
         goto c8fce_l;
     c8f7a_l:
-        struct macro* macro;
-        macro = first_macro_ptr;
-        uint8_t pos4 = 1;
-        uint8_t tmp_ch2 = current_format_line_ptr[pos4];
-        pos4++;
-        uint8_t tmp_ch3 = current_format_line_ptr[pos4];
-        if (!isalpha(tmp_ch3))
-            tmp_ch3 = 0x20;
-    lookup_macro_name_l:
-        if (macro->next == NULL)
+        if (macro_try_invoke(&macro_cursor_ptr))
+        {
+            if (macro_executing_flag != 0)
+                continue;
+        }
+        else
+        {
             goto c8f6b_l;
-        if (!(macro->name[0] != tmp_ch2))
-        {
-            if (macro->name[1] == tmp_ch3)
-                goto c8fb9_l;
         }
-        macro = macro->next;
-        goto lookup_macro_name_l;
-    c8fb9_l:
-        if (macro_executing_flag != 0)
-        {
-            nested_macro_error();
-            return;
-        }
-        macro_cursor_ptr = macro->body;
-        macro_executing_flag = (macro_cursor_ptr != NULL);
-        if (macro_executing_flag != 0)
-            continue;
     c8fce_l:
         if (page_break_pending_flag == 0)
             render_new_page();
