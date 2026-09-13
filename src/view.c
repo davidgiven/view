@@ -66,51 +66,24 @@ uint8_t* page;                   /** Start of document heap. */
 uint8_t* top;                    /** End of document heap (first free byte). */
 uint8_t* himem;                  /** Top of available memory. */
 uint8_t* top_of_screen_line_ptr; /** Document line at top of screen. */
-uint8_t* editor_ptr6;            /** Editor working pointer. */
 uint8_t* printer_ptr6;           /** Printer working pointer. */
 uint8_t* print_doc_ptr;          /** Document pointer used during printing. */
 const printer_driver_t* printer_driver_ptr; /** Active printer driver. */
 uint8_t* macro_cursor_ptr;              /** Cursor into current macro body. */
 uint8_t* oshwm;                         /** Ruler stack base. */
 uint8_t* ruler_index[RULER_INDEX_SIZE]; /** Ruler index stack. */
-uint8_t page_lines_remaining;
-uint8_t formatted_line_written_flag;
-uint8_t page_break_pending_flag;
 uint8_t printing_from_file_flag;
 int saved_ruler_index_scroll; /** Index into ruler_index[] */
-int saved_ruler_index_redraw; /** Index into ruler_index[] */
-uint8_t editor_current_key;   /** Current key code in editor input loop. */
-uint8_t page_break_flag;      /** Page-break flag in print path. */
 uint8_t column_position;
 uint8_t ruler_buffer_len;
-uint8_t edit_line_len;
 uint8_t file_edit_flags;
-uint8_t ptr6_screen_row;
 uint8_t xpos;
 uint8_t input_file_empty_flag;
-uint8_t justify_overflow_counter; /** Word-break overflow counter for
-                                     justification. */
-uint8_t print_last_microspacing; /** Last microspacing value sent to printer. */
-uint8_t
-    justify_line_length; /** Line length for justification overflow check. */
-uint8_t print_extra_space_accum;     /** Extra-space accumulator for microspaced
-                                        printing. */
-uint8_t justify_extra_space_accum;   /** Extra-space accumulator for editor
-                                        justification. */
-uint8_t print_running_total_accum;   /** Running total for distributing extra
-                                        spacing (printing). */
-uint8_t justify_running_total_accum; /** Running total for distributing extra
-                                        spacing (editor). */
 uint8_t justify_gap_count;
-uint8_t format_src_index;
-uint8_t cli_output_pos;      /** Output buffer write index for CLI. */
-uint8_t editor_output_pos;   /** Output buffer write index for editor. */
-uint8_t cli_header_pos;      /** Header field position for CLI. */
-uint8_t editor_header_pos;   /** Header field position for editor. */
-uint8_t cli_header_limit;    /** Header loop limit for CLI. */
-uint8_t editor_header_limit; /** Header loop limit for editor. */
-uint8_t* doc_working_ptr;    /** Document working pointer. */
-uint8_t rw_file_handle;
+static uint8_t cli_output_pos;   /** Output buffer write index for CLI. */
+static uint8_t cli_header_pos;   /** Header field position for CLI. */
+static uint8_t cli_header_limit; /** Header loop limit for CLI. */
+uint8_t* doc_working_ptr;        /** Document working pointer. */
 uint8_t print_flags;
 uint8_t edit_buffer_dirty_flag;
 uint8_t edit_buffer_unpacked_flag;
@@ -131,29 +104,19 @@ uint8_t delimiter_char; /** Delimiter character used during parsing. */
 uint8_t
     line_format_status; /** Format status byte (marker count and flush tag). */
 uint8_t input_buffer_offset;
-uint8_t scratch_offset;     /** Generic scratch offset. */
-uint8_t scratch_index;      /** Generic scratch index. */
-uint8_t screen_row;         /** Generic screen row scratch. */
-uint8_t screen_column;      /** Generic screen column scratch. */
-uint8_t temp_save;          /** Generic temporary save. */
-uint8_t* scratch_line_ptr;  /** Generic scratch line pointer. */
-uint8_t* scratch_block_ptr; /** Generic scratch block pointer. */
-ptrdiff_t area_size;        /** Generic area size scratch. */
-uint8_t* scratch_scan_ptr;  /** Generic scan pointer. */
+uint8_t scratch_offset;    /** Generic scratch offset. */
+uint8_t scratch_index;     /** Generic scratch index. */
+uint8_t screen_row;        /** Generic screen row scratch. */
+uint8_t screen_column;     /** Generic screen column scratch. */
+uint8_t temp_save;         /** Generic temporary save. */
+uint8_t* scratch_line_ptr; /** Generic scratch line pointer. */
+ptrdiff_t area_size;       /** Generic area size scratch. */
+uint8_t* scratch_scan_ptr; /** Generic scan pointer. */
 FILE* file_ptr;
 
 uint8_t top_margin;
 uint8_t bottom_margin;
-uint8_t header_margin;
-uint8_t footer_margin;
-uint8_t page_length;
-uint8_t line_spacing;
-uint8_t footers_enabled_flag;
-uint8_t headers_enabled_flag;
-uint8_t rhs_extra_margin;
 uint8_t macro_executing_flag;
-uint8_t two_sided_flag;
-uint8_t left_margin;
 uint8_t highlight_code[2];
 uint8_t format_mode_flag;
 uint8_t justifying_flag;
@@ -174,7 +137,6 @@ pointer_array_t pointer_array;
 #define doc_ptr2 pointer_array.doc_ptr2
 #define doc_ptr3 pointer_array.doc_ptr3
 
-uint8_t printer_driver_block[0x100];
 uint8_t input_buffer[MAX_COMMAND_LENGTH];
 
 #define RAM_CURRENT_LINE_BUF 0x0545
@@ -183,7 +145,6 @@ uint8_t input_buffer[MAX_COMMAND_LENGTH];
 uint8_t output_buffer[MAX_LINE_LENGTH];
 
 uint8_t header_text_maybe[0x42];
-uint8_t footer_text_maybe[0x42];
 
 uint8_t filename_buffer[MAX_COMMAND_LENGTH];
 uint8_t output_filename[MAX_COMMAND_LENGTH];
@@ -193,7 +154,6 @@ unsigned int register_value_array[26];
 
 #define MAX_LINES 100
 #define MAX_COLUMNS 132
-uint8_t line_lengths[MAX_LINES];
 uint8_t input_filename[MAX_COMMAND_LENGTH];
 
 FILE* input_fp;

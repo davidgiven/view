@@ -9,6 +9,24 @@
 #include "document.h"
 #include "cli.h"
 
+static uint8_t footer_margin;
+static uint8_t footer_text_maybe[0x42];
+static uint8_t footers_enabled_flag;
+static uint8_t formatted_line_written_flag;
+static uint8_t header_margin;
+static uint8_t headers_enabled_flag;
+static uint8_t left_margin;
+static uint8_t line_spacing;
+static uint8_t page_break_flag;
+static uint8_t page_break_pending_flag;
+static uint8_t page_length;
+static uint8_t page_lines_remaining;
+static uint8_t print_extra_space_accum;
+static uint8_t print_last_microspacing;
+static uint8_t print_running_total_accum;
+static uint8_t rhs_extra_margin;
+static uint8_t rw_file_handle;
+static uint8_t two_sided_flag;
 static void default_print_char(uint8_t cur_ch);
 static void default_printer_on(void);
 static void default_printer_off(void);

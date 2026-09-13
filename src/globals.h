@@ -112,7 +112,7 @@ extern uint8_t *himem, *top, *page;
 extern uint8_t* print_doc_ptr;
 extern line_t* current_format_line;
 extern line_t* heap_format_line_ptr;
-extern uint8_t *scratch_line_ptr, *scratch_block_ptr, *scratch_scan_ptr;
+extern uint8_t *scratch_line_ptr, *scratch_scan_ptr;
 extern ptrdiff_t area_size;
 extern jmp_buf env;
 extern uint8_t* current_line_ptr;
@@ -121,24 +121,18 @@ extern uint8_t* macro_cursor_ptr;
 extern uint8_t* edit_buffer_base;
 extern uint8_t* oshwm;
 extern uint8_t* ruler_index[RULER_INDEX_SIZE];
-extern uint8_t* editor_ptr6;
 extern uint8_t* printer_ptr6;
 extern uint8_t* doc_working_ptr;
 
 // ── Document layout & ruler
 // ──────────────────────────────────────────────────────────
 
-extern uint8_t left_margin, line_spacing, top_margin, bottom_margin;
-extern uint8_t header_margin, footer_margin, page_length;
-extern uint8_t two_sided_flag, rhs_extra_margin;
-extern uint8_t footers_enabled_flag, headers_enabled_flag;
+extern uint8_t top_margin, bottom_margin;
 extern uint8_t format_mode_flag, justifying_flag;
 extern uint8_t highlight_code[2];
 extern uint8_t header_text_maybe[0x42];
-extern uint8_t footer_text_maybe[0x42];
 extern uint8_t ruler_right_stop, ruler_left_stop;
-extern uint8_t page_lines_remaining, page_break_pending_flag, search_target_len;
-extern uint8_t page_break_flag;
+extern uint8_t search_target_len;
 extern unsigned int register_value_array[26];
 extern const printer_driver_t* printer_driver_ptr;
 extern uint8_t* current_ruler_ptr;
@@ -154,19 +148,13 @@ extern uint8_t current_ruler_buffer[133];
 extern line_t current_line_buffer;
 extern uint8_t printer_driver_name[];
 extern int saved_ruler_index_scroll;
-extern int saved_ruler_index_redraw;
-extern uint8_t parser_table[];
 
 // ── Editor & screen state
 // ──────────────────────────────────────────────────────────
 
 extern uint8_t output_buffer[];
-extern uint8_t formatted_line_written_flag;
 extern uint8_t column_position;
 extern uint8_t line_counter;
-extern uint8_t format_src_index;
-extern uint8_t justify_nonspace_counter;
-extern uint8_t print_micro_divisor;
 extern uint8_t scratch_offset, scratch_index, screen_row, screen_column,
     temp_save;
 extern uint8_t print_flags, folding_flag, macro_executing_flag;
@@ -181,26 +169,20 @@ extern uint8_t line_change_pending_flag;
 extern uint8_t cursor_moved_flag;
 extern uint8_t xpos;
 extern uint8_t flags_need_redrawing_flag;
-extern uint8_t temp_save;
-extern uint8_t edit_line_len;
 extern uint8_t delimiter_char;
 extern uint8_t line_format_status;
-extern uint8_t screen_column;
 extern uint8_t scroll_repeat_count;
-extern uint8_t ptr6_screen_row;
 extern uint8_t hscroll_pos;
 extern uint8_t ypos;
 extern uint8_t screen_maxrow;
 extern uint8_t status_line_needs_redrawing_flag;
 extern uint8_t edit_buffer_dirty_flag;
-extern uint8_t line_lengths[];
 extern uint8_t display_start_row;
 extern int ruler_index_ptr;
 extern uint8_t screen_maxcolumn;
 
 // ── File I/O & CLI ──────────────────────────────────────────────────────────
 
-extern uint8_t editor_current_key;
 extern uint8_t input_filename[];
 extern uint8_t output_filename[];
 extern uint8_t file_edit_flags;
@@ -215,21 +197,7 @@ extern FILE* output_fp;
 // ── Printing & formatting
 // ──────────────────────────────────────────────────────────
 
-extern uint8_t rw_file_handle;
-extern uint8_t print_extra_space_accum;
-extern uint8_t justify_extra_space_accum;
-extern uint8_t print_running_total_accum;
-extern uint8_t justify_running_total_accum;
-extern uint8_t cli_output_pos;
-extern uint8_t editor_output_pos;
-extern uint8_t justify_overflow_counter;
-extern uint8_t print_last_microspacing;
-extern uint8_t justify_line_length;
 extern uint8_t printing_from_file_flag;
-extern uint8_t cli_header_pos;
-extern uint8_t editor_header_pos;
-extern uint8_t cli_header_limit;
-extern uint8_t editor_header_limit;
 
 // ─── Function declarations ────────────────────────────────────────────────
 
