@@ -1479,7 +1479,7 @@ void print_document(scan_state_t* scan)
     if (!(!scan_input_buffer(input_buffer, scan)))
     {
         printing_from_file_flag++;
-        printer_ptr6 = page;
+        printer_ptr6 = ram;
         print_loop(print_doc_ptr);
 
         goto c8f0d;

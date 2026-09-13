@@ -11,7 +11,6 @@ typedef uint16_t addr_t;
 extern uint8_t ram[655360];
 extern uint8_t* scratch_line_ptr; // was tmp01
 extern int ruler_index_ptr;
-extern uint8_t* oshwm;
 extern uint8_t* ruler_index[RULER_INDEX_SIZE];
 extern uint8_t* current_ruler_ptr;
 extern uint8_t ruler_left_stop;
@@ -62,7 +61,6 @@ int main(void)
     ram[ruler2_addr + 78] = 0x0d;
 
     {
-        oshwm = &ram[0x0800];
         ruler_index_ptr = 10;
         status_line_needs_redrawing_flag = 0;
         ruler_left_stop = ruler_right_stop = 0;
@@ -115,7 +113,6 @@ int main(void)
     }
 
     {
-        oshwm = &ram[0x0800];
         ruler_index_ptr = 10;
         push_onto_ruler_index(&ram[ruler1_addr - 3]);
 
@@ -127,7 +124,6 @@ int main(void)
     }
 
     {
-        oshwm = &ram[0x0800];
         ruler_index_ptr = 10;
         ruler_left_stop = ruler_right_stop = 0;
         screen_maxcolumn = 79;

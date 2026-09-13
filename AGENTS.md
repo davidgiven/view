@@ -42,17 +42,16 @@ screen row).
 
 ## `ram[]` memory layout
 
-The address space is split into fixed working buffers (below `oshwm` =
-`0x0800`) and the document heap (from `page` = `0x0901` upward to `top`).
+The document heap starts at `ram` = `0x0000` and grows upward to `top`.
 
 | Address range | Contents |
 |---|---|
 | `0x0545`–`0x05CB` | Unused (formerly **`current_line_buffer`** 135 bytes; now `current_line_buffer[138]` is a real C array in BSS – `src/view.c:57` / `src/globals.h:183` – not in `ram[]`; `RAM_EDIT_BUFFER` is `&current_line_buffer[3]`; 138 bytes to hold `MAX_LINE_LENGTH+3` plus `0x0d` terminator at `0x89`). |
 | `0x05CC`–`0x0653` | Unused (formerly 3-byte pad at `0x05CC` + `current_ruler_buffer` 133 bytes at `0x05CF`; now `current_ruler_buffer[133]` is a real C array in BSS – `src/view.c:55` / `src/globals.h:182` – not in `ram[]`). |
 | `0x0798`–`0x07CB` | Unused (formerly register value array 26×2 bytes for A–Z; now `register_value_array[26]` in BSS – `src/view.c:190` – not in `ram[]`). |
-| `0x0800` (`oshwm`) | Unused (formerly ruler stack base growing downward; now `ruler_index[128]` is a real C array in BSS – `src/view.c:71` / `src/globals.h:219` – `oshwm` still `&ram[0x0800]` only for `page` calculation, stack data not in `ram[]`). |
-| `0x0901` (`page`) | **Document heap start.** Lines stored contiguously, each terminated by `0x0d`, ending with `0x00`. `current_line_ptr` walks through this region. |
-| `page` … `top` | Active document content. `top` grows/shrinks as lines are inserted/deleted. |
+| `0x0800` | Unused (formerly ruler stack base growing downward; now `ruler_index[128]` is a real C array in BSS – `src/view.c:71` / `src/globals.h:218` – not in `ram[]`). |
+| `0x0000` (`ram`) | **Document heap start.** Lines stored contiguously, each terminated by `0x0d`, ending with `0x00`. `current_line_ptr` walks through this region. |
+| `ram` … `top` | Active document content. `top` grows/shrinks as lines are inserted/deleted. |
 | `top` … `0xFFFF` (`himem`) | Free RAM. |
 
 ### Data flow: document ↔ edit buffer
@@ -84,13 +83,13 @@ the document (`sub_caa97`), edits in the working buffer, and copies back
 
 | Variable | Points to |
 |---|---|
-| `current_line_ptr` | Walking cursor into the document heap (`page`..`top`) |
+| `current_line_ptr` | Walking cursor into the document heap (`ram`..`top`) |
 | `RAM_EDIT_BUFFER` | Constant `0x0548` (`current_line_buffer[3]`, formerly `ram[0x0548]`) — working copy of current document line |
 | `current_format_line_ptr` | Aliased to `RAM_EDIT_BUFFER` (`&current_line_buffer[3]`) during editing; may differ during printing |
 | `ptr1` | `current_line_buffer` (`&current_line_buffer[0]`, formerly `0x0545`) — base, 3 bytes before `RAM_EDIT_BUFFER` |
 | `ptr2`–`ptr6` | Various working pointers into the document heap |
 | `current_ruler_ptr` | Pointer into `current_ruler_buffer` (set from ruler stack) |
-| `page` / `top` | Document heap bounds |
+| `ram` / `top` | Document heap bounds |
 | `tmp0`–`tmp9` | Temporary 16-bit pointer pairs (low byte in `tmp_even`, high byte in `tmp_odd`) |
 
 ## Key files

@@ -607,7 +607,7 @@ static void load_cmd(scan_state_t* scan)
     check_not_continuous_editing();
     parse_filename_from_command(scan);
     initialise_document();
-    top = page;
+    top = ram;
     reset_area_to_entire_document();
     top = read_into_document();
     reset_document_name_after_load();

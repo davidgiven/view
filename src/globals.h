@@ -108,7 +108,7 @@ typedef struct pointer_array_t
 // ── Memory & heap ──────────────────────────────────────────────────────────
 
 extern uint8_t ram[655360];
-extern uint8_t *himem, *top, *page;
+extern uint8_t *himem, *top;
 extern uint8_t* print_doc_ptr;
 extern line_t* current_format_line;
 extern line_t* heap_format_line_ptr;
@@ -119,7 +119,6 @@ extern uint8_t* current_line_ptr;
 extern uint8_t* top_of_screen_line_ptr;
 extern uint8_t* macro_cursor_ptr;
 extern uint8_t* edit_buffer_base;
-extern uint8_t* oshwm;
 extern uint8_t* ruler_index[RULER_INDEX_SIZE];
 extern uint8_t* printer_ptr6;
 extern uint8_t* doc_working_ptr;

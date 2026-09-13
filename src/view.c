@@ -62,7 +62,6 @@ line_t*
 line_t* heap_format_line_ptr;    /** Heap formatting line pointer. */
 uint8_t* current_ruler_ptr;      /** Pointer into current ruler buffer. */
 uint8_t* current_line_ptr;       /** Walking cursor into document heap. */
-uint8_t* page;                   /** Start of document heap. */
 uint8_t* top;                    /** End of document heap (first free byte). */
 uint8_t* himem;                  /** Top of available memory. */
 uint8_t* top_of_screen_line_ptr; /** Document line at top of screen. */
@@ -70,7 +69,6 @@ uint8_t* printer_ptr6;           /** Printer working pointer. */
 uint8_t* print_doc_ptr;          /** Document pointer used during printing. */
 const printer_driver_t* printer_driver_ptr; /** Active printer driver. */
 uint8_t* macro_cursor_ptr;              /** Cursor into current macro body. */
-uint8_t* oshwm;                         /** Ruler stack base. */
 uint8_t* ruler_index[RULER_INDEX_SIZE]; /** Ruler index stack. */
 uint8_t printing_from_file_flag;
 int saved_ruler_index_scroll; /** Index into ruler_index[] */
@@ -613,7 +611,7 @@ bool read_next_chunk_from_input_file(uint8_t* target_ptr)
  */
 bool read_first_chunk_from_input_file(void)
 {
-    return read_next_chunk_from_input_file(page);
+    return read_next_chunk_from_input_file(ram);
 }
 
 /**
@@ -713,7 +711,6 @@ void check_continuous_editing(void)
 static void system_init(void)
 {
     himem = ram + sizeof(ram) - 1;
-    oshwm = &ram[0x0800];
     uint16_t size = screen_getsize();
     screen_maxcolumn = (uint8_t)(size & 0xff);
     screen_maxrow = (uint8_t)(size >> 8);

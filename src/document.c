@@ -342,16 +342,16 @@ void load_current_ruler(int pos)
 
 /**
  * Ensure the document contains at least one carriage return.
- * If the document is empty (page == top), inserts a CR at page and a
+ * If the document is empty (ram == top), inserts a CR at ram and a
  * terminating NUL at top.
  */
 void ensure_cr_at_document_top(void)
 {
-    if (page != top)
+    if (ram != top)
         return;
     top++;
-    current_line_ptr = page;
-    page[0] = 0x0d;
+    current_line_ptr = ram;
+    ram[0] = 0x0d;
     top[0] = 0;
 }
 
@@ -462,15 +462,13 @@ void initialise_document(void)
     delimiter_char = 0;
     line_format_status = 0;
     input_buffer_offset = 0;
-    page = oshwm + 0x101;
     uint8_t pos = 0;
 
     file_edit_flags = pos;
     xpos = pos;
-    oshwm[pos] = 0xaa;
-    page[-1] = 0x0d;
+    ram[pos] = 0xaa;
     ((uint8_t*)&current_line_buffer)[MAX_LINE_LENGTH - 1] = 0x0d;
-    top = page;
+    top = ram;
     edit_buffer_base = (uint8_t*)&current_line_buffer;
     current_format_line = &current_line_buffer;
     heap_format_line_ptr = &current_line_buffer;
@@ -592,12 +590,12 @@ cac20:
 }
 
 /**
- * Move the cursor to the start of the document (page).
+ * Move the cursor to the start of the document (ram).
  * Resets screen and ruler stack pointers and loads the initial ruler.
  */
 void move_cursor_to_top_of_document(void)
 {
-    current_line_ptr = page;
+    current_line_ptr = ram;
     xpos = 0;
     top_of_screen_line_ptr = &ram[RAM_MAX];
     ruler_index_ptr = RULER_INDEX_SIZE - 1;
@@ -640,18 +638,25 @@ bool find_next_line(uint8_t* start, uint8_t** line_ptr, uint8_t* pos)
  */
 bool find_previous_line(uint8_t* val, uint8_t** line_ptr)
 {
-    uint8_t cur_ch;
-    *line_ptr = val - 1;
-
-    if (*line_ptr < page)
+    if (val <= ram)
         return false;
 
-    do
+    uint8_t* p = val - 2;
+
+    while (p >= ram)
     {
-        (*line_ptr)--;
-        cur_ch = **line_ptr;
-    } while (cur_ch != 0x0d);
-    (*line_ptr)++;
+        if (*p == 0x0d)
+        {
+            *line_ptr = p + 1;
+
+            if (**line_ptr == RULER_PREFIX)
+                pop_from_ruler_index();
+
+            return true;
+        }
+        p--;
+    }
+    *line_ptr = ram;
 
     if (**line_ptr == RULER_PREFIX)
         pop_from_ruler_index();
@@ -722,12 +727,12 @@ void push_onto_ruler_index(uint8_t* target_ptr)
 
 /**
  * Reset the active area to cover the entire document.
- * Sets area_start_ptr to top and area_end_ptr to page.
+ * Sets area_start_ptr to top and area_end_ptr to ram.
  */
 void reset_area_to_entire_document(void)
 {
     area_start_ptr = top;
-    area_end_ptr = page;
+    area_end_ptr = ram;
 }
 
 /**
