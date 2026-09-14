@@ -93,28 +93,29 @@ static void render_number_to_callback(int value, void (*cb)(uint8_t));
 /**
  * Writes the contents of the output buffer to the current format line.
  *
- * @param cur_ch number of leading spaces to pad before the buffered text
+ * @param pad_len number of leading spaces to pad before the buffered text
  */
-static void write_output_buffer_to_format_line(uint8_t cur_ch)
+static void write_output_buffer_to_format_line(uint8_t pad_len)
 {
-    uint8_t pos = 3;
-    uint8_t idx = cur_ch;
+    uint8_t pos = 0;
+    uint8_t idx = pad_len;
 
     if (!(idx == 0))
     {
-        cur_ch = 0x20;
+        uint8_t space_char = 0x20;
 
         do
         {
-            ((uint8_t*)heap_format_line_ptr)[pos] = cur_ch;
+            heap_format_line_ptr->text[pos] = space_char;
             pos++;
             idx--;
         } while (idx != 0);
     }
+    uint8_t cur_ch;
     do
     {
         cur_ch = output_buffer[idx];
-        ((uint8_t*)heap_format_line_ptr)[pos] = cur_ch;
+        heap_format_line_ptr->text[pos] = cur_ch;
         pos++;
         idx++;
     } while (cur_ch != 0x0d);
@@ -136,28 +137,25 @@ static void lj_fmt_cmd(void)
  */
 static void ce_fmt_cmd(void)
 {
-    uint8_t cur_ch = expand_line();
+    uint8_t expanded_len = expand_line();
 
-    if (cur_ch == 0)
+    if (expanded_len == 0)
         return;
-    cur_ch >>= 1;
-    temp_save = cur_ch;
-    uint8_t next_ch = ruler_right_stop;
+    expanded_len >>= 1;
+    uint8_t line_len = ruler_right_stop;
 
-    if (next_ch == 0)
+    if (line_len == 0)
     {
-        write_output_buffer_to_format_line(next_ch);
-
+        write_output_buffer_to_format_line(line_len);
         return;
     }
-    next_ch -= ruler_left_stop;
-    next_ch >>= 1;
-    next_ch += ruler_left_stop + 1;
+    line_len -= ruler_left_stop;
+    line_len >>= 1;
+    line_len += ruler_left_stop + 1;
 
-    if (next_ch >= temp_save)
+    if (line_len >= expanded_len)
     {
-        write_output_buffer_to_format_line(next_ch - temp_save);
-
+        write_output_buffer_to_format_line(line_len - expanded_len);
         return;
     }
     write_output_buffer_to_format_line(0);
@@ -168,24 +166,23 @@ static void ce_fmt_cmd(void)
  */
 static void rj_fmt_cmd(void)
 {
-    uint8_t idx = expand_line();
+    uint8_t expanded_len = expand_line();
 
-    if (idx == 0)
+    if (expanded_len == 0)
         return;
-    idx--;
-    idx--;
+    expanded_len -= 2;
 
-    if (idx >= ruler_right_stop)
+    if (expanded_len >= ruler_right_stop)
     {
         write_output_buffer_to_format_line(0);
 
         return;
     }
-    screen_column = idx;
-    uint8_t next_ch = ruler_right_stop;
+    screen_column = expanded_len;
+    uint8_t pad_len = ruler_right_stop;
 
-    next_ch -= screen_column;
-    write_output_buffer_to_format_line(next_ch);
+    pad_len -= screen_column;
+    write_output_buffer_to_format_line(pad_len);
 }
 
 /**
@@ -203,7 +200,7 @@ static uint8_t expand_line(void)
     uint8_t idx = 0;
 
     screen_column = idx;
-    uint8_t pos = 3;
+    uint8_t pos = 0;
 
     if (get_current_fmt_cmd_byte(&pos) == 0)
         return idx;
@@ -211,7 +208,7 @@ static uint8_t expand_line(void)
 c9537:
     for (;;)
     {
-        next_ch = ((uint8_t*)heap_format_line_ptr)[pos];
+        next_ch = heap_format_line_ptr->text[pos];
         pos++;
 
         if (next_ch == 0x7c)
@@ -243,7 +240,7 @@ c9555:
     return idx;
 
 c955e:
-    next_ch = ((uint8_t*)heap_format_line_ptr)[pos];
+    next_ch = heap_format_line_ptr->text[pos];
 
     if (next_ch == 0x0d)
         goto c953e;
@@ -283,16 +280,16 @@ static uint8_t process_header_footer_line(uint8_t* copy_ptr)
 
     scratch_index = 0;
     search_target_len = 0;
-    uint8_t pos = 3;
+    uint8_t pos = 0;
 
-    screen_column = ((uint8_t*)heap_format_line_ptr)[pos];
+    int cur_ch = heap_format_line_ptr->text[pos];
     uint8_t idx = 0x3f;
 
     do
     {
         pos++;
-        screen_row = pos;
-        next_ch = ((uint8_t*)heap_format_line_ptr)[pos];
+        // int x = pos;
+        next_ch = heap_format_line_ptr->text[pos];
 
         if (next_ch == 0x0d)
         {
@@ -303,14 +300,14 @@ static uint8_t process_header_footer_line(uint8_t* copy_ptr)
             if (next_ch < 0x1b)
                 next_ch = 0x20;
 
-            if (next_ch == screen_column)
+            if (next_ch == cur_ch)
                 next_ch |= 0x80;
         }
         store_to_output_buffer(next_ch, copy_ptr);
 
         if (next_ch == 0x8d)
             goto c95aa;
-        pos = screen_row;
+        // pos = x;
         idx--;
     } while (idx != 0);
 
@@ -344,7 +341,7 @@ static void dh_fmt_cmd(void)
  */
 static void em_fmt_cmd(void)
 {
-    uint8_t pos = 3;
+    uint8_t pos = 0;
     uint8_t cur_ch = get_current_fmt_cmd_byte(&pos);
 
     if (cur_ch == 0)
@@ -364,7 +361,7 @@ static void em_fmt_cmd(void)
  */
 static void pl_fmt_cmd(void)
 {
-    uint8_t pos = 3;
+    uint8_t pos = 0;
 
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
@@ -376,7 +373,7 @@ static void pl_fmt_cmd(void)
  */
 static void ts_fmt_cmd(void)
 {
-    uint8_t pos = 3;
+    uint8_t pos = 0;
     uint8_t flag_value;
 
     if (parse_boolean_from_fmt_cmd(&pos, &flag_value))
@@ -392,7 +389,7 @@ static void ts_fmt_cmd(void)
  */
 static void tm_fmt_cmd(void)
 {
-    uint8_t pos = 3;
+    uint8_t pos = 0;
 
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
@@ -404,7 +401,7 @@ static void tm_fmt_cmd(void)
  */
 static void bm_fmt_cmd(void)
 {
-    uint8_t pos = 3;
+    uint8_t pos = 0;
 
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
@@ -416,7 +413,7 @@ static void bm_fmt_cmd(void)
  */
 static void hm_fmt_cmd(void)
 {
-    uint8_t pos = 3;
+    uint8_t pos = 0;
 
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
@@ -428,7 +425,7 @@ static void hm_fmt_cmd(void)
  */
 static void fm_fmt_cmd(void)
 {
-    uint8_t pos = 3;
+    uint8_t pos = 0;
 
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
@@ -440,7 +437,7 @@ static void fm_fmt_cmd(void)
  */
 static void lm_fmt_cmd(void)
 {
-    uint8_t pos = 3;
+    uint8_t pos = 0;
 
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
@@ -452,7 +449,7 @@ static void lm_fmt_cmd(void)
  */
 static void ls_fmt_cmd(void)
 {
-    uint8_t pos = 3;
+    uint8_t pos = 0;
 
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
@@ -464,7 +461,7 @@ static void ls_fmt_cmd(void)
  */
 static void pe_fmt_cmd(void)
 {
-    uint8_t pos = 3;
+    uint8_t pos = 0;
 
     uint16_t value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
@@ -545,7 +542,7 @@ static void page_eject_fmt(void)
  */
 static void fo_fmt_cmd(void)
 {
-    uint8_t pos = 3;
+    uint8_t pos = 0;
     uint8_t flag_value;
 
     if (parse_boolean_from_fmt_cmd(&pos, &flag_value))
@@ -558,7 +555,7 @@ static void fo_fmt_cmd(void)
  */
 static void he_fmt_cmd(void)
 {
-    uint8_t pos = 3;
+    uint8_t pos = 0;
     uint8_t flag_value;
 
     if (parse_boolean_from_fmt_cmd(&pos, &flag_value))
@@ -571,7 +568,7 @@ static void he_fmt_cmd(void)
  */
 static void pb_fmt_cmd(void)
 {
-    uint8_t pos = 3;
+    uint8_t pos = 0;
     uint8_t flag_value;
 
     if (parse_boolean_from_fmt_cmd(&pos, &flag_value))
@@ -584,7 +581,7 @@ static void pb_fmt_cmd(void)
  */
 static void ht_fmt_cmd(void)
 {
-    uint8_t pos = 3;
+    uint8_t pos = 0;
     uint8_t cur_ch = get_current_fmt_cmd_byte(&pos);
 
     if (cur_ch == 0)
@@ -630,10 +627,9 @@ formatting_command_t lookup_formatting_command(void)
 {
     uint8_t tmp_ch4;
     uint8_t pos = 2;
-    uint8_t cur_ch = ((uint8_t*)heap_format_line_ptr)[pos];
-    pos--;
-    uint8_t next_ch = ((uint8_t*)heap_format_line_ptr)[pos];
-    pos--;
+    uint8_t cur_ch = heap_format_line_ptr->command[1];
+    uint8_t next_ch = heap_format_line_ptr->command[0];
+    pos -= 2;
     int index = 0;
     do
     {
@@ -773,7 +769,7 @@ static bool parse_boolean_from_fmt_cmd(uint8_t* pos, uint8_t* value)
 
     if (cur_ch == 0)
         return true;
-    return parse_word_flag((uint8_t*)heap_format_line_ptr, pos, value);
+    return parse_word_flag(heap_format_line_ptr->text, pos, value);
 }
 
 static const uint8_t on_off_table[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
@@ -788,6 +784,7 @@ static const uint8_t on_off_table[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
  */
 static bool parse_word_flag(uint8_t* target_ptr, uint8_t* pos, uint8_t* value)
 {
+    uint8_t temp_save;
     uint8_t tmp_ch2;
     uint8_t cur_ch = target_ptr[*pos];
     uint8_t idx = cur_ch;
@@ -944,7 +941,7 @@ static uint8_t get_current_fmt_cmd_byte(uint8_t* pos)
 {
     while (1)
     {
-        uint8_t val = ((uint8_t*)heap_format_line_ptr)[*pos];
+        uint8_t val = heap_format_line_ptr->text[*pos];
 
         if (val == 0x0d)
             return 0;
@@ -1392,7 +1389,7 @@ bool parse_decimal_number(int* value, uint8_t* pos)
         (uint8_t*)current_format_line == input_buffer)
         start = (const char*)&input_buffer[*pos];
     else
-        start = (const char*)&((uint8_t*)heap_format_line_ptr)[*pos];
+        start = (const char*)&heap_format_line_ptr->text[*pos];
     char* end;
     *value = (int)strtoul(start, &end, 10);
     *pos += (uint8_t)(end - start);
@@ -1646,7 +1643,6 @@ read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit)
     uint8_t cur_ch = 0;
 
     screen_column = cur_ch;
-    temp_save = cur_ch;
 
 c8c95:
     do
@@ -1656,12 +1652,11 @@ c8c95:
         if (next_ch == 0)
         {
             eof_1 = true;
-
             goto c8cf2;
         }
         if (next_ch < 0x7f)
             goto c8caf;
-    } while (temp_save != 0);
+    } while (cur_ch != 0);
     command_prefix_t cp = check_for_command_prefix(next_ch);
 
     if (cp == NO_COMMAND_PREFIX)
@@ -1705,7 +1700,7 @@ c8cc8:
     eof_1 = false;
 
 c8cf2:
-    if (temp_save != 0)
+    if (cur_ch != 0)
         write_cr_to_memory(cursor);
 
     if (screen_row == 0)
@@ -2184,11 +2179,9 @@ static void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch)
 {
     **cursor = cur_ch;
     (*cursor)++;
-    temp_save = cur_ch;
 
     if (cur_ch != 0x0d)
         return;
-    temp_save = 0;
     screen_column = 0;
 }
 

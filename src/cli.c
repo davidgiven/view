@@ -1185,6 +1185,7 @@ void run_cli(void)
  */
 static bool parse_command(uint8_t* input_buffer_offset)
 {
+    uint8_t temp_save;
     uint8_t pos;
     uint8_t cur_ch = 0xff;
 
@@ -1208,7 +1209,7 @@ static bool parse_command(uint8_t* input_buffer_offset)
             uint8_t tmp_ch2 = parser_table[idx];
 
             if (tmp_ch2 == 0)
-                goto ca890;
+                return true;
 
             if (tmp_ch2 & 0x80)
                 goto ca87e;
@@ -1227,7 +1228,7 @@ static bool parse_command(uint8_t* input_buffer_offset)
             tmp_ch3 = parser_table[idx];
 
             if (tmp_ch3 == 0)
-                goto ca890;
+                return true;
         } while (!(tmp_ch3 & 0x80));
         uint8_t tmp_ch4 = screen_column;
 
@@ -1251,9 +1252,6 @@ ca87e:
     *input_buffer_offset = pos;
 
     return false;
-
-ca890:
-    return true;
 }
 
 /**

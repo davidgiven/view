@@ -1617,6 +1617,7 @@ static uint8_t control_key_to_ascii(uint8_t key_code)
  */
 static void delete_edit_buffer_bytes_at_xpos(uint8_t delete_count)
 {
+    uint8_t temp_save = 0;
     scratch_offset = delete_count;
     edit_buffer_dirty_flag++;
     uint8_t* size_delta = current_line_buffer.text;
@@ -1624,6 +1625,7 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t delete_count)
     uint8_t end_pos = scan_pos;
 
     end_pos += scratch_offset;
+    temp_save = end_pos;
 
     do
     {
@@ -2391,6 +2393,7 @@ void set_marker_to_here(uint8_t marker_idx)
  */
 void split_line_at_wrap(uint8_t* target_ptr)
 {
+    uint8_t temp_save;
     uint8_t acc3;
     uint8_t* scan_ptr = find_line_start(target_ptr);
 
@@ -2542,6 +2545,7 @@ void beep(void)
  */
 bool scan_document_for_next_line(void)
 {
+    uint8_t temp_save;
     if (search_target_len == 0)
         return false;
     editor_output_pos = 0x14;
@@ -2934,6 +2938,7 @@ static void home_cursor(void)
  */
 uint8_t justify_edit_buffer(uint8_t* target_ptr)
 {
+    uint8_t temp_save = 0;
     bool is_zero_1;
     uint8_t gap_idx = 0;
     uint8_t acc = justifying_flag;
@@ -3647,8 +3652,7 @@ void show_memory_full_error(void)
     uint8_t remaining_cols = screen_maxcolumn;
 
     line_lengths[0] = remaining_cols;
-    remaining_cols--;
-    remaining_cols--;
+    remaining_cols -= 2;
     uint8_t msg_idx = 0;
 
     for (;;)
@@ -4011,6 +4015,7 @@ c9aa5:
  */
 static bool find_next_word_boundary(uint8_t src_idx)
 {
+    uint8_t temp_save;
     uint8_t base_off = src_idx;
     uint8_t* scan_ptr = current_line_ptr + base_off + 1;
     uint8_t* insert_ptr = scan_ptr;
@@ -4412,6 +4417,7 @@ void wipe_buffer(uint8_t fill_value, uint8_t* target_ptr)
  */
 static bool write_line_back_to_document(void)
 {
+    uint8_t temp_save;
     uint8_t out_byte;
     uint8_t stored_byte;
 

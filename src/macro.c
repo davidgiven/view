@@ -173,6 +173,7 @@ bool macro_try_invoke(uint8_t** macro_cursor_ptr)
  */
 uint8_t* prepare_output_line(uint8_t* read_limit, uint8_t** macro_cursor)
 {
+    uint8_t temp_save;
     uint8_t tmp_ch5;
 
     if (!(macro_executing_flag != 0))

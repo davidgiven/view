@@ -255,6 +255,7 @@ static const uint8_t escaped_value_table[] = {
  */
 static uint8_t expand_escaped_string(uint8_t idx, uint8_t pos)
 {
+    uint8_t temp_save;
     screen_column = idx;
     pos--;
 
@@ -275,6 +276,7 @@ static uint8_t expand_escaped_string(uint8_t idx, uint8_t pos)
             if (end)
                 break;
             screen_row = toupper(next_ch);
+            temp_save = next_ch;
             idx = 0xfe;
 
             for (;;)
@@ -510,8 +512,7 @@ bool check_area_memory(uint8_t* doc_working_ptr)
             if (tmp_ch5 != 0)
                 goto c8b11;
         }
-        scratch_index--;
-        scratch_index--;
+        scratch_index -= 2;
     }
 c8b11:
     uint8_t output_buf_pos = 0;
@@ -526,8 +527,6 @@ c8b11:
     do
     {
         uint8_t tmp_ch6 = header_text_maybe[idx4];
-
-        temp_save = idx4;
 
         if (!(tmp_ch6 != 0x20))
         {
