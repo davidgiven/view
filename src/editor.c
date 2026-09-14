@@ -3600,13 +3600,11 @@ area_status_t sanitise_area(void)
     if (area_start_ptr >= area_end_ptr)
     {
         uint8_t* tmp = area_start_ptr;
-
         area_start_ptr = area_end_ptr;
         area_end_ptr = tmp;
     }
-    ptrdiff_t size_delta = area_end_ptr - area_start_ptr;
 
-    if (size_delta != 0)
+    if (area_end_ptr != area_start_ptr)
         return AREA_NOT_EMPTY;
     return AREA_EMPTY;
 }
@@ -4269,17 +4267,12 @@ static void update_markers_to_format_buffer(void)
 
         if (idx != 0x0c)
         {
-            {
-                uint8_t* base_ptr =
-                    (current_format_line->prefix_byte == COMMAND_PREFIX ||
-                        current_format_line->prefix_byte == RULER_PREFIX)
-                        ? (uint8_t*)current_format_line
-                        : current_format_line->text;
-                markers_array[idx / 2] = base_ptr + offset;
-
-                if (base_ptr + offset != NULL)
-                    continue;
-            }
+            uint8_t* base_ptr =
+                (current_format_line->prefix_byte == COMMAND_PREFIX ||
+                    current_format_line->prefix_byte == RULER_PREFIX)
+                    ? (uint8_t*)current_format_line
+                    : current_format_line->text;
+            markers_array[idx / 2] = base_ptr + offset;
         }
         uint8_t acc = current_line_ptr[offset];
 

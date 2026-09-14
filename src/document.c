@@ -467,15 +467,15 @@ void initialise_document(void)
     file_edit_flags = pos;
     xpos = pos;
     ram[pos] = 0xaa;
-    ((uint8_t*)&current_line_buffer)[MAX_LINE_LENGTH - 1] = 0x0d;
+    current_line_buffer.text[MAX_LINE_LENGTH - 1] = 0x0d;
     top = ram;
     edit_buffer_base = (uint8_t*)&current_line_buffer;
     current_format_line = &current_line_buffer;
     heap_format_line_ptr = &current_line_buffer;
-    uint8_t pos2 = create_default_ruler(current_ruler_buffer);
 
-    pos2++;
+    uint8_t pos2 = create_default_ruler(current_ruler_buffer) + 1;
     current_ruler_buffer[pos2] = 0x0d;
+
     ruler_index[0] = &ram[0];
     ruler_index[RULER_INDEX_SIZE - 1] =
         (uint8_t*)((uintptr_t)current_ruler_buffer - 3);

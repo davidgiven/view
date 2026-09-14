@@ -1154,9 +1154,8 @@ void display_not_enough_memory(void)
  */
 static void microspace_word_processor(uint8_t* pos)
 {
-    uint8_t tmp_ch3;
-    uint8_t tmp_ch2;
-    uint8_t tmp_ch21;
+    uint8_t current_byte;
+    uint8_t next_byte;
     uint8_t idx = 0;
 
     uint32_t accum_1 = 0;
@@ -1173,16 +1172,15 @@ static void microspace_word_processor(uint8_t* pos)
 c9048:
     do
     {
-        uint8_t cur_ch = idx;
         {
+            uint8_t cur_ch = idx;
             convert_char_for_printing(scratch_line_ptr[*pos], &idx, &is_tab);
-            tmp_ch2 = cur_ch;
+            idx = cur_ch;
         }
-        idx = tmp_ch2;
-        tmp_ch3 = scratch_line_ptr[*pos];
+        current_byte = scratch_line_ptr[*pos];
         (*pos)++;
 
-        if (tmp_ch3 != 0x1a)
+        if (current_byte != 0x1a)
             goto c906f;
 
         if ((screen_column & 0x80) == 0)
@@ -1200,22 +1198,22 @@ c9048:
         goto c908c;
 
     c906b:
-        tmp_ch3 = 0x20;
+        current_byte = 0x20;
         micro_overflow--;
 
     c906f:
-        if (tmp_ch3 < 0x20)
+        if (current_byte < 0x20)
             goto c9092;
 
-        if (tmp_ch3 != 0x20)
+        if (current_byte != 0x20)
             goto c9090;
     } while ((screen_column & 0x80) == 0);
-    uint8_t tmp_ch6 = micro_overflow;
+    uint8_t overflow_copy = micro_overflow;
 
-    if (tmp_ch6 == 0)
+    if (overflow_copy == 0)
         goto c908a;
 
-    if ((tmp_ch6 & 0x80) == 0)
+    if ((overflow_copy & 0x80) == 0)
     {
         micro_word_counter++;
         micro_overflow = 0;
@@ -1226,7 +1224,7 @@ c908a:
     micro_space_count++;
 
 c908c:
-    tmp_ch3 = 0x20;
+    current_byte = 0x20;
 
     goto c90b6;
 
@@ -1234,7 +1232,7 @@ c9090:
     accum_1 += 0x100;
 
 c9092:
-    if (tmp_ch3 != 9 && tmp_ch3 != 0x0b) {}
+    if (current_byte != 9 && current_byte != 0x0b) {}
     else
     {
         {
@@ -1244,27 +1242,27 @@ c9092:
             micro_space_count = 0;
             micro_overflow = 0;
             micro_word_counter = 0;
-            tmp_ch3 = tmp_ch3;
+            current_byte = current_byte;
         }
     }
 c90b6:
-    output_buffer[idx] = tmp_ch3;
+    output_buffer[idx] = current_byte;
     idx++;
 
-    if (tmp_ch3 != 0x0d)
+    if (current_byte != 0x0d)
     {
-        if (tmp_ch3 == 0x20)
+        if (current_byte == 0x20)
             goto c9048;
 
         if (micro_space_count == 0)
             goto c9048;
         accum_1 += ((uint32_t)micro_word_counter << 16) |
                    ((uint32_t)micro_space_count << 8) | micro_space_count;
-        uint8_t tmp_ch10 = 0;
+        uint8_t zero_val = 0;
 
-        micro_space_count = tmp_ch10;
-        micro_overflow = tmp_ch10;
-        micro_word_counter = tmp_ch10;
+        micro_space_count = zero_val;
+        micro_overflow = zero_val;
+        micro_word_counter = zero_val;
 
         goto c9048;
     }
@@ -1298,50 +1296,50 @@ c9101:
 
 c912b:
     (*pos)++;
-    uint8_t tmp_ch15 =
+    uint8_t converted_byte =
         convert_char_for_printing(output_buffer[(*pos)], &idx, &is_tab);
     {
-        uint8_t tmp_ch16 = column_position;
+        uint8_t column_copy = column_position;
 
-        if (tmp_ch16 != micro_word_start)
+        if (column_copy != micro_word_start)
         {
-            if (tmp_ch16 >= micro_word_start)
+            if (column_copy >= micro_word_start)
                 goto c9142;
         }
-        uint8_t tmp_ch17 = tmp_ch15;
+        uint8_t emit_byte = converted_byte;
 
-        print_char_x_times(tmp_ch17, idx);
+        print_char_x_times(emit_byte, idx);
 
         goto c9163;
 
     c9142:
-        tmp_ch17 = tmp_ch15;
+        emit_byte = converted_byte;
 
-        if (tmp_ch17 == 0x20)
+        if (emit_byte == 0x20)
         {
-            uint8_t tmp_ch18 = microspacing_flag;
+            uint8_t microspace_val = microspacing_flag;
 
-            tmp_ch18 += print_extra_space_accum;
-            idx = tmp_ch18;
-            uint8_t tmp_ch19 = print_running_total_accum;
+            microspace_val += print_extra_space_accum;
+            idx = microspace_val;
+            uint8_t running_total_copy = print_running_total_accum;
 
-            if (tmp_ch19 != 0)
+            if (running_total_copy != 0)
             {
                 idx++;
                 print_running_total_accum--;
             }
-            emit_microspacing_spaces(tmp_ch19, idx);
-            tmp_ch17 = 0x20;
+            emit_microspacing_spaces(running_total_copy, idx);
+            emit_byte = 0x20;
         }
         else
         {
             idx = microspacing_flag;
-            emit_microspacing_spaces(tmp_ch17, idx);
+            emit_microspacing_spaces(emit_byte, idx);
         }
-        print_char(tmp_ch17);
+        print_char(emit_byte);
 
     c9163:
-        if (tmp_ch17 != 0x0d)
+        if (emit_byte != 0x0d)
             goto c912b;
 
         goto c8ffb_inline;
@@ -1350,23 +1348,23 @@ c8fe6_inline:
     do
     {
         (*pos)++;
-        tmp_ch21 =
+        next_byte =
             convert_char_for_printing(scratch_line_ptr[*pos], &idx, &is_tab);
-        print_char_x_times(tmp_ch21, idx);
-    } while (tmp_ch21 != 0x0d);
+        print_char_x_times(next_byte, idx);
+    } while (next_byte != 0x0d);
     register_value_array['L' - 'A']++;
 
 c8ffb_inline:
     uint8_t idx2 = line_spacing;
-    uint8_t tmp_ch22 = page_lines_remaining - line_spacing - 1;
+    uint8_t remaining_lines = page_lines_remaining - line_spacing - 1;
 
     if (page_lines_remaining <= line_spacing)
     {
-        tmp_ch22 = 0;
+        remaining_lines = 0;
         idx2 = page_lines_remaining;
         idx2--;
     }
-    page_lines_remaining = tmp_ch22;
+    page_lines_remaining = remaining_lines;
     print_vertical_space(idx2);
 }
 
