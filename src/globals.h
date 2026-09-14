@@ -98,9 +98,9 @@ typedef struct pointer_array_t
     uint8_t* markers_array[6];
     uint8_t* area_start_ptr;
     uint8_t* area_end_ptr;
-    uint8_t* doc_ptr1;
-    uint8_t* doc_ptr2;
-    uint8_t* doc_ptr3;
+    uint8_t* area_insert_ptr;
+    uint8_t* search_cursor_ptr;
+    uint8_t* search_limit_ptr;
 } pointer_array_t;
 
 // ─── Global variables ───────────────────────────────────────────────────────
@@ -140,9 +140,9 @@ extern pointer_array_t pointer_array;
 #define markers_array pointer_array.markers_array
 #define area_start_ptr pointer_array.area_start_ptr
 #define area_end_ptr pointer_array.area_end_ptr
-#define doc_ptr1 pointer_array.doc_ptr1
-#define doc_ptr2 pointer_array.doc_ptr2
-#define doc_ptr3 pointer_array.doc_ptr3
+#define area_insert_ptr pointer_array.area_insert_ptr
+#define search_cursor_ptr pointer_array.search_cursor_ptr
+#define search_limit_ptr pointer_array.search_limit_ptr
 extern uint8_t current_ruler_buffer[133];
 extern line_t current_line_buffer;
 extern uint8_t printer_driver_name[];

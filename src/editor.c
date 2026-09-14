@@ -745,7 +745,7 @@ static void f11_copy_key(void)
         return;
     }
     check_pointer_in_area();
-    move_cursor_to_address(doc_ptr1);
+    move_cursor_to_address(area_insert_ptr);
 }
 
 /**
@@ -1173,7 +1173,7 @@ static void sf0_move_block_key(void)
     scroll_repeat_count = 0xff;
     adjust_area_pointers(area_size);
     ensure_cr_at_document_top();
-    move_cursor_to_address(doc_ptr1);
+    move_cursor_to_address(area_insert_ptr);
     clear_marks_1_2();
 }
 
@@ -1972,7 +1972,7 @@ static bool reset_area_to_marks_1_2(void)
         {
             area_end_ptr = markers_array[idx2];
             uint8_t marker_array_idx =
-                ((uint8_t*)&doc_ptr1 - (uint8_t*)markers_array) / 2;
+                ((uint8_t*)&area_insert_ptr - (uint8_t*)markers_array) / 2;
             set_marker_to_here(marker_array_idx);
             area_status_t status = sanitise_area();
 
@@ -2086,7 +2086,7 @@ static void move_cursor_down(uint8_t lines_to_move)
  */
 static void check_pointer_in_area(void)
 {
-    if (doc_ptr1 >= area_start_ptr && doc_ptr1 <= area_end_ptr)
+    if (area_insert_ptr >= area_start_ptr && area_insert_ptr <= area_end_ptr)
     {
         beep();
 
@@ -2094,7 +2094,7 @@ static void check_pointer_in_area(void)
     }
     move_cursor_to_address(area_start_ptr);
     area_size = area_end_ptr - area_start_ptr;
-    uint8_t* insert_ptr = doc_ptr1;
+    uint8_t* insert_ptr = area_insert_ptr;
 
     if (!make_space_for_insertion(insert_ptr, area_size))
     {
@@ -2102,7 +2102,7 @@ static void check_pointer_in_area(void)
         longjmp(env, JMP_EDITOR);
     }
     uint8_t* scan_ptr = area_start_ptr;
-    uint8_t* copy_ptr = doc_ptr1;
+    uint8_t* copy_ptr = area_insert_ptr;
 
     while (1)
     {
@@ -2113,11 +2113,11 @@ static void check_pointer_in_area(void)
         if (scan_ptr == area_end_ptr)
             break;
     }
-    doc_ptr1 = insert_ptr;
+    area_insert_ptr = insert_ptr;
     uint8_t* adjusted = copy_ptr - 1;
 
     split_line_at_wrap(adjusted);
-    split_line_at_wrap(doc_ptr1);
+    split_line_at_wrap(area_insert_ptr);
     display_start_row = 1;
     cursor_moved_flag = 1;
 }
@@ -2536,7 +2536,8 @@ void beep(void)
 
 /**
  * Scans for the next line matching the search.
- * Searches the document between doc_ptr2 and doc_ptr3 for the next match.
+ * Searches the document between search_cursor_ptr and search_limit_ptr for the
+ * next match.
  * @return true if a match was found
  */
 bool scan_document_for_next_line(void)
@@ -2548,10 +2549,10 @@ bool scan_document_for_next_line(void)
 
     editor_header_pos = 0;
     scratch_index = 0;
-    uint8_t* scan_ptr = doc_ptr2;
+    uint8_t* scan_ptr = search_cursor_ptr;
 
 c8b91:
-    if (scan_ptr >= doc_ptr3)
+    if (scan_ptr >= search_limit_ptr)
         return false;
     uint8_t pos = 0;
     uint8_t acc2 = *scan_ptr;
@@ -2560,7 +2561,7 @@ c8b91:
 
     if (cp != NO_COMMAND_PREFIX)
     {
-        doc_ptr2 = scan_ptr + 3;
+        search_cursor_ptr = scan_ptr + 3;
 
         return scan_document_for_next_line();
     }
@@ -2594,7 +2595,7 @@ c8b91:
     c8bdb:
         do
         {
-            doc_ptr2++;
+            search_cursor_ptr++;
 
             return scan_document_for_next_line();
 
@@ -2645,9 +2646,9 @@ c8c23:
     scan_ptr++;
 
 c8c3e:
-    doc_working_ptr = doc_ptr2;
+    doc_working_ptr = search_cursor_ptr;
 
-    doc_ptr2 = scan_ptr;
+    search_cursor_ptr = scan_ptr;
 
     return true;
 }

@@ -131,9 +131,9 @@ pointer_array_t pointer_array;
 #define markers_array pointer_array.markers_array
 #define area_start_ptr pointer_array.area_start_ptr
 #define area_end_ptr pointer_array.area_end_ptr
-#define doc_ptr1 pointer_array.doc_ptr1
-#define doc_ptr2 pointer_array.doc_ptr2
-#define doc_ptr3 pointer_array.doc_ptr3
+#define area_insert_ptr pointer_array.area_insert_ptr
+#define search_cursor_ptr pointer_array.search_cursor_ptr
+#define search_limit_ptr pointer_array.search_limit_ptr
 
 uint8_t input_buffer[MAX_COMMAND_LENGTH];
 
@@ -228,7 +228,7 @@ void setup_area_pointers(uint8_t* doc_working_ptr)
     uint8_t* scan_ptr = doc_working_ptr;
     uint8_t idx = 0;
 
-    if (!(scan_ptr == doc_ptr2))
+    if (!(scan_ptr == search_cursor_ptr))
     {
         if (*scan_ptr == 0x0d)
             idx++;
@@ -334,9 +334,9 @@ cli_cmd_status_t process_cli_command(scan_state_t* scan)
     if (sanitise_area() == AREA_EMPTY)
         return CLI_CMD_NO_STRING;
 
-    doc_ptr2 = area_start_ptr;
+    search_cursor_ptr = area_start_ptr;
 
-    doc_ptr3 = area_end_ptr;
+    search_limit_ptr = area_end_ptr;
 
     return CLI_CMD_OK;
 }
@@ -449,7 +449,7 @@ bool check_area_memory(uint8_t* doc_working_ptr)
     }
     if (idx < cli_header_limit)
         goto c8a5b;
-    ptrdiff_t gap = doc_ptr2 - doc_working_ptr;
+    ptrdiff_t gap = search_cursor_ptr - doc_working_ptr;
     uint8_t idx2 = block_expansion_len;
 
     if (gap < 256 && idx2 >= gap)

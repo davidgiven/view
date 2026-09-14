@@ -911,9 +911,9 @@ static void search_cmd(scan_state_t* scan)
 
         return;
     }
-    doc_ptr2 = area_start_ptr;
+    search_cursor_ptr = area_start_ptr;
 
-    doc_ptr3 = area_end_ptr;
+    search_limit_ptr = area_end_ptr;
 
     if (!scan_document_for_next_line())
     {
