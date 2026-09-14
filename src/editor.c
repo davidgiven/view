@@ -271,10 +271,10 @@ void editor_loop_impl(void)
         }
         recalculate_cursor_xpos();
 
-        if (!(ruler_left_stop == 0 || format_mode_flag & 0x80 ||
-                ruler_left_stop <= visual_column))
+        if (ruler_left_stop != 0 && (format_mode_flag & 0x80) == 0 &&
+            ruler_left_stop > visual_column)
         {
-            if (!(cursor_moved_flag != 0))
+            if (cursor_moved_flag == 0)
             {
                 uint8_t line_len = get_line_length();
 
@@ -322,7 +322,7 @@ void editor_loop_impl(void)
             key_code = 9;
         editor_current_key = key_code;
 
-        if (!(key_code < 0x20))
+        if (key_code >= 0x20)
         {
             if (key_code < 0x7f)
             {
@@ -658,7 +658,7 @@ static void cf8_mark_as_ruler_key(void)
     ((uint8_t*)current_format_line)[buf_idx] = 0x2e;
     line_counter++;
 
-    if (!(edit_buffer_unpacked_flag & 0x80))
+    if ((edit_buffer_unpacked_flag & 0x80) == 0)
     {
         edit_buffer_unpacked_flag = 0x80;
         edit_buffer_dirty_flag++;
@@ -1187,7 +1187,7 @@ static void sf11_copy_key(void)
     redraw_editor();
     uint8_t remaining = ruler_buffer_len;
 
-    if (!(remaining == 0))
+    if (remaining != 0)
     {
         uint8_t copy_idx = 0;
 
@@ -1246,7 +1246,7 @@ entry:
     uint8_t* line_ptr = current_line_buffer.text;
     uint8_t line_len = get_line_length();
 
-    if (!(line_len < xpos || line_len == xpos))
+    if (line_len >= xpos && line_len != xpos)
     {
         buf_pos = xpos;
     }
@@ -1362,7 +1362,7 @@ static void sf1_swap_case_key(void)
  */
 static void sf2_release_margins_key(void)
 {
-    if (!(format_mode_flag & 0x40))
+    if ((format_mode_flag & 0x40) == 0)
     {
         xpos = 0;
 
@@ -1631,7 +1631,7 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t delete_count)
     {
         delete_count = find_marker_at_position(scan_pos, size_delta);
 
-        if (!(delete_count == 0x0c))
+        if (delete_count != 0x0c)
         {
             uint16_t marker_addr =
                 (scan_pos >= temp_save) ? 3 + (scan_pos - scratch_offset) : 0;
@@ -1694,7 +1694,7 @@ static void enter_printable_character(void)
     }
     uint8_t mode_flag = insert_mode_flag;
 
-    if (!(mode_flag != 0))
+    if (mode_flag == 0)
     {
         uint8_t char_at_pos = current_line_buffer.text[check_pos];
 
@@ -1733,7 +1733,7 @@ c9c1d:
         if (scan_idx > xpos)
             goto c9c56;
 
-        if (!(scanned_char != 9))
+        if (scanned_char == 9)
         {
             {
                 bool is_tab = false;
@@ -1747,11 +1747,11 @@ c9c1d:
             if (scanned_char != 0)
                 goto c9c43;
         }
-        if (!(scanned_char != 0x0b))
+        if (scanned_char == 0x0b)
         {
             scanned_char = ruler_left_stop;
 
-            if (!(scanned_char == 0))
+            if (scanned_char != 0)
             {
                 mode_flag = column_position;
 
@@ -1908,7 +1908,7 @@ c9ca2:
         }
         uint8_t src_char = screen_column;
 
-        if (!(src_char != 0))
+        if (src_char == 0)
         {
             filler = 0x0d;
         }
@@ -1927,7 +1927,7 @@ c9ca2:
         scratch_index++;
         insert_ptr[dst_pos] = filler;
         screen_column--;
-    } while (!(screen_column & 0x80));
+    } while ((screen_column & 0x80) == 0);
     justify_edit_buffer(edit_buffer_base);
     write_line_back_to_document_safely();
     clamp_ptr6_to_document();
@@ -1962,7 +1962,7 @@ static bool reset_area_to_marks_1_2(void)
     if (idx1 == MARKER_INVALID)
         return true;
 
-    if (!(markers_array[idx1] == 0))
+    if (markers_array[idx1] != 0)
     {
         area_start_ptr = markers_array[idx1];
         int idx2 = lookup_marker(0x32);
@@ -2157,7 +2157,7 @@ void enter_editor_mode(void)
     {
         line_lengths[remaining_rows] = 0;
         remaining_rows--;
-    } while (!(remaining_rows & 0x80));
+    } while ((remaining_rows & 0x80) == 0);
     status_line_needs_redrawing_flag = 2;
     flags_need_redrawing_flag = 1;
 }
@@ -2195,7 +2195,7 @@ void draw_previous_word(
 {
     uint8_t pos = xpos;
     bool is_tab = false;
-    if (!(pos == 0))
+    if (pos != 0)
     {
         for (;;)
         {
@@ -2249,7 +2249,7 @@ bool adjust_margins_at_left_margin(void)
 
     flags_tmp &= 0x81;
 
-    if (!(flags_tmp != 0 || find_left_margin_stop() >= 0))
+    if (flags_tmp == 0 && find_left_margin_stop() < 0)
     {
         uint8_t line_len = get_line_length();
 
@@ -2257,7 +2257,7 @@ bool adjust_margins_at_left_margin(void)
         xpos = line_len;
         recalculate_cursor_xpos();
 
-        if (!(visual_column < ruler_left_stop))
+        if (visual_column >= ruler_left_stop)
         {
             insert_pos = screen_column;
             xpos = insert_pos;
@@ -2269,7 +2269,7 @@ bool adjust_margins_at_left_margin(void)
 
             insert_pos = xpos;
 
-            if (!(insert_pos >= screen_column))
+            if (insert_pos < screen_column)
             {
                 if (screen_column < ruler_left_stop)
                     goto caf2a;
@@ -2420,7 +2420,7 @@ void split_line_at_wrap(uint8_t* target_ptr)
 
             scan_pos++;
 
-            if (!(next_char == 0x20))
+            if (next_char != 0x20)
             {
                 if (next_char != 0x1a)
                     goto cac9c;
@@ -2478,7 +2478,7 @@ uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta)
             goto ca9e7;
         }
     ca9db:
-        if (!(slot_idx >= ARRAY_SIZE(markers_array)))
+        if (slot_idx < ARRAY_SIZE(markers_array))
             ((uint8_t**)&pointer_array)[slot_idx] = NULL;
         else
 
@@ -2717,7 +2717,7 @@ static void clear_to_eol(uint8_t fill_char, uint8_t line)
 {
     uint8_t line_len = line_lengths[line];
 
-    if (!(line_len == 0))
+    if (line_len != 0)
     {
         do
         {
@@ -3076,7 +3076,7 @@ c9871:
     wipe_buffer(0x1a, target_ptr);
     uint8_t acc10 = justify_overflow_counter;
 
-    if (!(acc10 == 0))
+    if (acc10 != 0)
     {
         uint8_t pos4 = 0;
 
@@ -3095,11 +3095,11 @@ c9871:
     {
         uint8_t acc12 = output_buffer[idx4];
 
-        if (!(acc12 != 0x20))
+        if (acc12 == 0x20)
         {
             uint8_t acc13 = scratch_index;
 
-            if (!(acc13 == 0))
+            if (acc13 != 0)
             {
                 temp_save = pos5;
                 uint8_t pos6 = column_position;
@@ -3151,7 +3151,7 @@ bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta)
 
     do
     {
-        if (!(((uint8_t**)&pointer_array)[slot_idx] < insert_ptr))
+        if (((uint8_t**)&pointer_array)[slot_idx] >= insert_ptr)
             ((uint8_t**)&pointer_array)[slot_idx] += size_delta;
         slot_idx++;
     } while (slot_idx != sizeof(pointer_array) / sizeof(uint8_t*));
@@ -3197,7 +3197,7 @@ static void recalculate_cursor_xpos(void)
     uint8_t acc_width = line_change_pending_flag;
     bool is_tab = false;
 
-    if (!(acc_width != 0))
+    if (acc_width == 0)
     {
         uint8_t scan_pos = acc_width;
 
@@ -3253,7 +3253,7 @@ void redraw_editor(void)
     uint8_t status_needs_redraw = status_line_needs_redrawing_flag;
     uint8_t saved_status_line_needs_redrawing_flag = status_needs_redraw;
 
-    if (!(edit_buffer_unpacked_flag == 0))
+    if (edit_buffer_unpacked_flag != 0)
     {
         uint8_t display_flag = display_start_row;
 
@@ -3382,7 +3382,7 @@ void redraw_editor(void)
     a_14 >>= 1;
     screen_column = a_14;
 
-    if (!(visual_column < hscroll_pos))
+    if (visual_column >= hscroll_pos)
     {
         if ((int)visual_column <= (int)hscroll_pos + (int)screen_maxcolumn - 4)
             goto ca395;
@@ -3408,7 +3408,7 @@ ca395:
     if (display_start_row == 0)
         goto ca3e7;
 
-    if (!((int8_t)display_start_row >= 0 || (int8_t)ptr6_screen_row < 0))
+    if ((int8_t)display_start_row < 0 && (int8_t)ptr6_screen_row >= 0)
     {
         screen_row = ptr6_screen_row;
         uint8_t a_21 = screen_maxrow;
@@ -3532,7 +3532,7 @@ static void render_char(render_state_t* rs)
     rs->col++;
     uint8_t pos = rs->pos;
 
-    if (!(pos == 0))
+    if (pos != 0)
     {
         uint8_t* size_delta = rs->line_ptr;
 
@@ -3670,7 +3670,7 @@ void show_memory_full_error(void)
     }
     screen_setstyle(0);
 
-    if (!(remaining_cols == 0))
+    if (remaining_cols != 0)
     {
         do
         {
@@ -3736,7 +3736,7 @@ static bool process_char_for_output(
     screen_column = (screen_column >> 1) | (carry_in ? 0x80 : 0);
     (*out_char) = current_line_buffer.text[buf_idx];
     output_buffer[buf_idx] = (*out_char);
-    if (!((*out_char) != 9))
+    if ((*out_char) == 9)
     {
         {
             bool is_tab = false;
@@ -3750,11 +3750,11 @@ static bool process_char_for_output(
         if ((*out_char) != 0)
             goto c995c;
     }
-    if (!((*out_char) != 0x0b))
+    if ((*out_char) == 0x0b)
     {
         (*out_char) = ruler_left_stop;
 
-        if (!((*out_char) == 0))
+        if ((*out_char) != 0)
         {
             *char_width_out = column_position;
 
@@ -3862,7 +3862,7 @@ c99c9:
         src_pos++;
         format_src_index = src_pos;
 
-        if (!(cur_byte != 9))
+        if (cur_byte == 9)
         {
             {
                 bool is_tab = false;
@@ -3908,7 +3908,7 @@ c99c9:
     cur_byte = 0x0b;
 
 c9a11:
-    if (!(cur_byte != 0x0d))
+    if (cur_byte == 0x0d)
     {
         src_pos--;
 
@@ -3924,7 +3924,7 @@ c9a21:
     tmp_pos = editor_output_pos;
     is_space = 0;
 
-    if (!(cur_byte != 0x20))
+    if (cur_byte == 0x20)
     {
         is_space++;
 
@@ -3948,7 +3948,7 @@ c9a40:
 
     justify_gap_count = is_space;
 
-    if (!(old_l0046_high || cur_byte == 0x20))
+    if (!(old_l0046_high) && cur_byte != 0x20)
     {
         if (tmp_pos >= MAX_LINE_LENGTH + 1)
             goto c9a60;
@@ -3990,7 +3990,7 @@ c9a60:
 
     at_end_1 = advance_to_next_doc_line();
 
-    if (!(line_format_status == 0))
+    if (line_format_status != 0)
     {
         goto c998a;
 
@@ -4034,7 +4034,7 @@ static bool find_next_word_boundary(uint8_t src_idx)
         if (cp != NO_COMMAND_PREFIX || next_char == 0x0d)
             goto c9b2f;
 
-        if (!(src_idx != 0))
+        if (src_idx == 0)
         {
             temp_save = src_idx;
 
@@ -4063,7 +4063,7 @@ static bool find_next_word_boundary(uint8_t src_idx)
     c9b06:
         uint8_t check_char = insert_ptr[src_idx];
 
-        if (!(check_char != 0x20))
+        if (check_char == 0x20)
         {
             if (ruler_left_stop == 0 || temp_save == 0 || screen_column != 0)
                 goto c9b2f;
@@ -4077,7 +4077,7 @@ static bool find_next_word_boundary(uint8_t src_idx)
         src_idx++;
     } while (src_idx != 0);
 
-    if (!(ruler_left_stop == 0 || temp_save == 0 || screen_column != 0))
+    if (ruler_left_stop != 0 && temp_save != 0 && screen_column == 0)
     {
     c9b2f:
         return true;
@@ -4131,7 +4131,7 @@ static uint8_t compute_display_start_line(void)
 
     rows_needed++;
 
-    if (!(scroll_repeat_count & 0x80))
+    if ((scroll_repeat_count & 0x80) == 0)
     {
         if (scroll_repeat_count != 0)
             rows_needed = ypos;
@@ -4204,7 +4204,7 @@ static uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr)
 
     do
     {
-        if (!(scan_ptr != markers_array[slot_idx / 2]))
+        if (scan_ptr == markers_array[slot_idx / 2])
             goto ca558;
         slot_idx++;
         slot_idx++;
@@ -4267,7 +4267,7 @@ static void update_markers_to_format_buffer(void)
     {
         uint8_t idx = find_marker_at_position(offset, size_delta);
 
-        if (!(idx == 0x0c))
+        if (idx != 0x0c)
         {
             {
                 uint8_t* base_ptr =
@@ -4421,7 +4421,7 @@ static bool write_line_back_to_document(void)
     uint8_t out_byte;
     uint8_t stored_byte;
 
-    if (!(edit_buffer_unpacked_flag == 0))
+    if (edit_buffer_unpacked_flag != 0)
     {
         uint8_t* insert_ptr = current_line_ptr;
 
@@ -4476,7 +4476,7 @@ static bool write_line_back_to_document(void)
 
         do
         {
-            if (!(line_len != 0))
+            if (line_len == 0)
             {
                 out_byte = 0x0d;
             }

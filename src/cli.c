@@ -346,7 +346,7 @@ c86b8:
 
     command_prefix_t cp = deref_and_check_for_command_prefix(pos, line_ptr);
 
-    if (!(cp == NO_COMMAND_PREFIX))
+    if (cp != NO_COMMAND_PREFIX)
     {
         idx = 0;
         pos++;
@@ -357,7 +357,7 @@ c86b8:
 
             pos++;
 
-            if (!(cur_ch != count_word_table[idx]))
+            if (cur_ch == count_word_table[idx])
             {
                 if (line_ptr[pos] == count_word_table[idx + 1])
                     goto c86df;
@@ -387,9 +387,9 @@ c86b8:
         tmp_ch3 &= 0x7f;
         idx = 0;
 
-        if (!((int8_t)screen_row < 0))
+        if ((int8_t)screen_row >= 0)
         {
-            if (!(tmp_ch3 == 0x0d || tmp_ch3 == 0x20))
+            if (tmp_ch3 != 0x0d && tmp_ch3 != 0x20)
             {
             c86ff:
                 screen_column++;
@@ -566,7 +566,7 @@ static void format_cmd(scan_state_t* scan)
 {
     parse_marks_from_command(scan);
 
-    if (!(sanitise_area() == AREA_EMPTY))
+    if (sanitise_area() != AREA_EMPTY)
     {
         move_cursor_to_address(area_start_ptr);
         clear_format_mode_bit7();
@@ -815,7 +815,7 @@ c832d:
     cur_ch &= 0xdf;
     uint8_t idx = 0;
 
-    if (!(cur_ch == 0x59))
+    if (cur_ch != 0x59)
     {
         idx--;
 
@@ -853,7 +853,7 @@ static void save_cmd_write_cmd(scan_state_t* scan)
     {
         uint8_t ch;
 
-        if (!(file_edit_flags & 0x40))
+        if ((file_edit_flags & 0x40) == 0)
         {
             bad_filename_error();
 
@@ -995,7 +995,7 @@ static void setup_cmd(scan_state_t* scan)
         else
             insert_mode_flag = next_ch;
         idx3--;
-    } while (!((int8_t)idx3 < 0));
+    } while ((int8_t)idx3 >= 0);
 
     return_to_cli_prompt();
 }
@@ -1115,7 +1115,7 @@ void run_cli(void)
     cli_putchar('\n');
     display_document_file_state();
 
-    if (!((file_edit_flags & 0x40)))
+    if ((file_edit_flags & 0x40) == 0)
     {
         if ((file_edit_flags & 1))
         {
@@ -1126,7 +1126,7 @@ void run_cli(void)
             cli_putstring("empty\n");
         }
     }
-    if (!(printer_driver_name[0] == 0))
+    if (printer_driver_name[0] != 0)
     {
         cli_putstring("Printer ");
         uint8_t idx = 0;
@@ -1150,9 +1150,9 @@ void run_cli(void)
 
     do
     {
-        if (!(((uint8_t*)markers_array)[idx2 + 1] == 0))
+        if (((uint8_t*)markers_array)[idx2 + 1] != 0)
         {
-            if (!(pos != 0))
+            if (pos == 0)
             {
                 screen_column = idx2;
                 cli_putstring("Marker(s) set ");
@@ -1229,7 +1229,7 @@ static bool parse_command(uint8_t* input_buffer_offset)
 
             if (tmp_ch3 == 0)
                 return true;
-        } while (!(tmp_ch3 & 0x80));
+        } while ((tmp_ch3 & 0x80) == 0);
         uint8_t tmp_ch4 = screen_column;
 
         tmp_ch4 &= 0x20;

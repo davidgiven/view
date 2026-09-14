@@ -176,7 +176,7 @@ uint8_t* prepare_output_line(uint8_t* read_limit, uint8_t** macro_cursor)
     uint8_t temp_save;
     uint8_t tmp_ch5;
 
-    if (!(macro_executing_flag != 0))
+    if (macro_executing_flag == 0)
     {
     c9188_normal_entry:
         uint8_t* cursor = read_limit;
@@ -232,7 +232,7 @@ c91a7:
     pos++;
     uint8_t tmp_ch3 = (*macro_cursor)[pos];
 
-    if (!(tmp_ch3 < 0x30))
+    if (tmp_ch3 >= 0x30)
     {
         tmp_ch3 -= 0x30;
 

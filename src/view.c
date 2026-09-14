@@ -228,7 +228,7 @@ void setup_area_pointers(uint8_t* doc_working_ptr)
     uint8_t* scan_ptr = doc_working_ptr;
     uint8_t idx = 0;
 
-    if (!(scan_ptr == search_cursor_ptr))
+    if (scan_ptr != search_cursor_ptr)
     {
         if (*scan_ptr == 0x0d)
             idx++;
@@ -269,7 +269,7 @@ static uint8_t expand_escaped_string(uint8_t idx, uint8_t pos)
         if (end)
             break;
 
-        if (!(cur_ch != 0x5e))
+        if (cur_ch == 0x5e)
         {
             uint8_t next_ch = read_next_command_byte(&pos, &end);
 
@@ -410,12 +410,12 @@ bool check_area_memory(uint8_t* doc_working_ptr)
     uint8_t pos = 0x14;
     uint8_t idx = search_target_len;
 
-    if (!(idx != 0))
+    if (idx == 0)
     {
     c8a5b:
         uint8_t next_ch = header_text_maybe[idx];
 
-        if (!(next_ch != 1))
+        if (next_ch == 1)
         {
             next_ch = scratch_index;
 
@@ -426,7 +426,7 @@ bool check_area_memory(uint8_t* doc_working_ptr)
             if (scratch_index != 0)
                 goto c8a84;
         }
-        if (!(next_ch != 0x20 || pos >= cli_output_pos))
+        if (next_ch == 0x20 && pos < cli_output_pos)
         {
             while (1)
             {
@@ -472,7 +472,7 @@ bool check_area_memory(uint8_t* doc_working_ptr)
 
     scratch_index = pos2;
 
-    if (!(print_xpos & 0x80))
+    if ((print_xpos & 0x80) == 0)
     {
         uint8_t idx3 = scratch_offset;
 
@@ -501,7 +501,7 @@ bool check_area_memory(uint8_t* doc_working_ptr)
         scratch_index++;
         idx3--;
 
-        if (!(idx3 == 0))
+        if (idx3 != 0)
         {
             uint8_t tmp_ch5 = doc_working_ptr[pos2];
 
@@ -528,7 +528,7 @@ c8b11:
     {
         uint8_t tmp_ch6 = header_text_maybe[idx4];
 
-        if (!(tmp_ch6 != 0x20))
+        if (tmp_ch6 == 0x20)
         {
             uint8_t pos3 = scratch_offset;
 
@@ -555,7 +555,7 @@ c8b11:
         if (tmp_ch6 == 2)
             tmp_ch6 = 0x20;
 
-        if (!(folding_flag & 0x80 || print_xpos != 0))
+        if ((folding_flag & 0x80) == 0 && print_xpos == 0)
         {
             if (isalpha(tmp_ch6))
             {
@@ -695,7 +695,7 @@ void parse_filename_from_command(scan_state_t* scan)
  */
 void check_continuous_editing(void)
 {
-    if (!((file_edit_flags & 0x40)))
+    if ((file_edit_flags & 0x40) == 0)
     {
         if (file_edit_flags & 1)
             return;

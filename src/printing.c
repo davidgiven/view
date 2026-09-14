@@ -77,7 +77,7 @@ static bool parse_word_flag(uint8_t* target_ptr, uint8_t* pos, uint8_t* value);
 static bool parse_boolean_from_fmt_cmd(uint8_t* pos, uint8_t* value);
 static void page_eject_fmt(void);
 static bool evaluate_expression_from_fmt_cmd(
-    uint16_t* result, uint8_t* pos, uint8_t idx);
+    int* result, uint8_t* pos, uint8_t idx);
 static uint8_t get_current_fmt_cmd_byte(uint8_t* pos);
 static uint8_t get_next_fmt_cmd_byte(uint8_t* pos);
 
@@ -100,7 +100,7 @@ static void write_output_buffer_to_format_line(uint8_t pad_len)
     uint8_t pos = 0;
     uint8_t idx = pad_len;
 
-    if (!(idx == 0))
+    if (idx != 0)
     {
         uint8_t space_char = 0x20;
 
@@ -233,7 +233,7 @@ c9537:
         }
     }
 c9555:
-    if (!(print_flags & 0x80))
+    if ((print_flags & 0x80) == 0)
         return idx;
     idx -= screen_column;
 
@@ -351,7 +351,7 @@ static void em_fmt_cmd(void)
 
     if (register_value == NULL)
         return;
-    uint16_t reg_value;
+    int reg_value;
     evaluate_expression_from_fmt_cmd(&reg_value, &pos, 0);
     *register_value = reg_value;
 }
@@ -363,7 +363,7 @@ static void pl_fmt_cmd(void)
 {
     uint8_t pos = 0;
 
-    uint16_t value;
+    int value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
     page_length = value;
 }
@@ -379,7 +379,7 @@ static void ts_fmt_cmd(void)
     if (parse_boolean_from_fmt_cmd(&pos, &flag_value))
         return;
     two_sided_flag = flag_value;
-    uint16_t value;
+    int value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
     rhs_extra_margin = value;
 }
@@ -391,7 +391,7 @@ static void tm_fmt_cmd(void)
 {
     uint8_t pos = 0;
 
-    uint16_t value;
+    int value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
     top_margin = value;
 }
@@ -403,7 +403,7 @@ static void bm_fmt_cmd(void)
 {
     uint8_t pos = 0;
 
-    uint16_t value;
+    int value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
     bottom_margin = value;
 }
@@ -415,7 +415,7 @@ static void hm_fmt_cmd(void)
 {
     uint8_t pos = 0;
 
-    uint16_t value;
+    int value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
     header_margin = value;
 }
@@ -427,7 +427,7 @@ static void fm_fmt_cmd(void)
 {
     uint8_t pos = 0;
 
-    uint16_t value;
+    int value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
     footer_margin = value;
 }
@@ -439,7 +439,7 @@ static void lm_fmt_cmd(void)
 {
     uint8_t pos = 0;
 
-    uint16_t value;
+    int value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
     left_margin = value;
 }
@@ -451,7 +451,7 @@ static void ls_fmt_cmd(void)
 {
     uint8_t pos = 0;
 
-    uint16_t value;
+    int value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
     line_spacing = value;
 }
@@ -463,7 +463,7 @@ static void pe_fmt_cmd(void)
 {
     uint8_t pos = 0;
 
-    uint16_t value;
+    int value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
 
     if (value == 0)
@@ -499,7 +499,7 @@ static void op_fmt_cmd(void)
 {
     uint8_t cur_ch = (uint8_t)register_value_array['P' - 'A'];
 
-    if (!(cur_ch & 1))
+    if ((cur_ch & 1) == 0)
     {
         page_eject_fmt();
 
@@ -588,7 +588,7 @@ static void ht_fmt_cmd(void)
         return;
     uint8_t idx = cur_ch;
 
-    if (!(idx == 0x2d))
+    if (idx != 0x2d)
     {
         if (idx != 0x2a)
             goto c9719;
@@ -598,7 +598,7 @@ static void ht_fmt_cmd(void)
     goto c9725;
 
 c9719:
-    uint16_t value;
+    int value;
     evaluate_expression_from_fmt_cmd(&value, &pos, idx);
     cur_ch = value;
 
@@ -610,7 +610,7 @@ c9719:
         return;
 
 c9725:
-    uint16_t highlight_value;
+    int highlight_value;
     evaluate_expression_from_fmt_cmd(&highlight_value, &pos, idx);
     highlight_code[cur_ch] = highlight_value;
 }
@@ -789,7 +789,7 @@ static bool parse_word_flag(uint8_t* target_ptr, uint8_t* pos, uint8_t* value)
     uint8_t cur_ch = target_ptr[*pos];
     uint8_t idx = cur_ch;
 
-    if (!(idx == 0x31))
+    if (idx != 0x31)
     {
         cur_ch = 0;
 
@@ -816,7 +816,7 @@ c9788:
     } while (tmp_ch2 == on_off_table[idx2]);
     uint8_t tmp_ch3 = on_off_table[idx2];
 
-    if (!((int8_t)tmp_ch3 < 0))
+    if ((int8_t)tmp_ch3 >= 0)
     {
         if (tmp_ch3 < 0x20)
         {
@@ -860,12 +860,11 @@ c97ae:
  * @return true if a term was parsed, false if the argument was empty
  */
 static bool evaluate_expression_from_fmt_cmd(
-    uint16_t* result, uint8_t* pos, uint8_t idx)
+    int* result, uint8_t* pos, uint8_t idx)
 {
     int insert_ptr = 0;
-    uint8_t cur_ch = 0;
     int scan_ptr = 0;
-    scratch_offset = cur_ch;
+    int scratch_offset = 0;
     for (;;)
     {
         uint8_t next_ch = get_current_fmt_cmd_byte(pos);
@@ -878,28 +877,25 @@ static bool evaluate_expression_from_fmt_cmd(
         }
         if (next_ch == 0x7c)
         {
-            uint8_t tmp_ch2 = get_next_fmt_cmd_byte(pos);
+            next_ch = get_next_fmt_cmd_byte(pos);
 
-            if (tmp_ch2 == 0)
+            if (next_ch == 0)
                 goto c9821;
             (*pos)++;
-            render_register(tmp_ch2, idx);
+            render_register(next_ch, idx);
         }
         else
         {
-            int parsed;
-
-            parse_decimal_number(&parsed, pos);
-            scan_ptr = (uint16_t)parsed;
+            parse_decimal_number(&scan_ptr, pos);
         }
         uint8_t count = scratch_offset;
 
-        if (!(count == 0))
+        if (count != 0)
         {
             scratch_offset = 0;
             count--;
 
-            if (!(count == 0))
+            if (count != 0)
             {
                 scan_ptr = insert_ptr - scan_ptr;
 
@@ -915,7 +911,7 @@ static bool evaluate_expression_from_fmt_cmd(
             goto c9821;
         uint8_t count_1 = 1;
 
-        if (!(tmp_ch4 == '+'))
+        if (tmp_ch4 != '+')
         {
             count_1++;
 
@@ -1135,7 +1131,7 @@ void check_not_continuous_editing(void)
     if ((file_edit_flags & 0x40))
         return;
 
-    if (!(file_edit_flags & 1))
+    if ((file_edit_flags & 1) == 0)
         return;
     display_document_file_state();
 }
@@ -1189,7 +1185,7 @@ c9048:
         if (tmp_ch3 != 0x1a)
             goto c906f;
 
-        if (!(screen_column & 0x80))
+        if ((screen_column & 0x80) == 0)
             break;
 
         if (micro_space_count == 0)
@@ -1213,13 +1209,13 @@ c9048:
 
         if (tmp_ch3 != 0x20)
             goto c9090;
-    } while (!(screen_column & 0x80));
+    } while ((screen_column & 0x80) == 0);
     uint8_t tmp_ch6 = micro_overflow;
 
     if (tmp_ch6 == 0)
         goto c908a;
 
-    if (!(tmp_ch6 & 0x80))
+    if ((tmp_ch6 & 0x80) == 0)
     {
         micro_word_counter++;
         micro_overflow = 0;
@@ -1238,7 +1234,7 @@ c9090:
     accum_1 += 0x100;
 
 c9092:
-    if (!(tmp_ch3 == 9 || tmp_ch3 == 0x0b)) {}
+    if (tmp_ch3 != 9 && tmp_ch3 != 0x0b) {}
     else
     {
         {
@@ -1255,7 +1251,7 @@ c90b6:
     output_buffer[idx] = tmp_ch3;
     idx++;
 
-    if (!(tmp_ch3 == 0x0d))
+    if (tmp_ch3 != 0x0d)
     {
         if (tmp_ch3 == 0x20)
             goto c9048;
@@ -1272,7 +1268,7 @@ c90b6:
 
         goto c9048;
     }
-    if (!(accum_1 >> 16 == 0))
+    if (accum_1 >> 16 != 0)
     {
         if (ruler_right_stop == 0)
             goto c90f8;
@@ -1307,7 +1303,7 @@ c912b:
     {
         uint8_t tmp_ch16 = column_position;
 
-        if (!(tmp_ch16 == micro_word_start))
+        if (tmp_ch16 != micro_word_start)
         {
             if (tmp_ch16 >= micro_word_start)
                 goto c9142;
@@ -1321,7 +1317,7 @@ c912b:
     c9142:
         tmp_ch17 = tmp_ch15;
 
-        if (!(tmp_ch17 != 0x20))
+        if (tmp_ch17 == 0x20)
         {
             uint8_t tmp_ch18 = microspacing_flag;
 
@@ -1442,7 +1438,7 @@ bool parse_optional_filename_from_command(scan_state_t* scan)
  */
 static void print_char_x_times(uint8_t cur_ch, uint8_t idx)
 {
-    if (!(idx == 0))
+    if (idx != 0)
     {
         do
         {
@@ -1530,7 +1526,7 @@ c8f30:
         scratch_offset = pos;
         command_prefix_t cp = deref_and_check_for_command_prefix(pos, cursor);
 
-        if (!(cp == NO_COMMAND_PREFIX))
+        if (cp != NO_COMMAND_PREFIX)
         {
             scratch_offset = 3;
 
@@ -1664,7 +1660,7 @@ c8c95:
     screen_column = 0xfd;
 
 c8caf:
-    if (!(next_ch >= 0x20))
+    if (next_ch < 0x20)
     {
         control_code_t cc = check_for_control_code(next_ch);
 
@@ -1679,7 +1675,7 @@ c8caf:
 c8cc8:
     uint8_t idx3 = 1;
 
-    if (!(next_ch == 0x0d))
+    if (next_ch != 0x0d)
     {
         idx3--;
 
@@ -1730,7 +1726,7 @@ static void render_header_or_footer(uint8_t* text)
     print_output_buffer();
     uint8_t idx = copy_header_footer_text(compute_header_middle_section(text));
 
-    if (!(idx == 0))
+    if (idx != 0)
     {
         idx--;
         uint8_t tmp_ch3 = idx;
@@ -1790,7 +1786,7 @@ static void render_new_page(void)
         if (next_ch == 0x4d)
             goto c92d4;
 
-        if (!(next_ch != 0x51))
+        if (next_ch == 0x51)
         {
             stop_printing();
             cli_putchar('\n');
@@ -1855,7 +1851,7 @@ bool scan_input_buffer(uint8_t* buffer, scan_state_t* state)
  */
 static void start_microspacing_if_active(uint8_t cur_ch)
 {
-    if (!(print_flags & 0x80))
+    if ((print_flags & 0x80) == 0)
         return;
 
     if (microspacing_flag == 0)
@@ -1893,7 +1889,7 @@ static void compute_lines_remaining_on_page(void)
 {
     uint8_t idx = page_length;
 
-    if (!(page_break_flag == 0))
+    if (page_break_flag != 0)
     {
         idx = 1;
         uint8_t next_ch = page_length;

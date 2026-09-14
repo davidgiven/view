@@ -190,7 +190,7 @@ void print_char_just_to_screen(uint8_t cur_ch)
     }
     control_code_t cc = check_for_control_code(cur_ch);
 
-    if (!(cc == NO_CONTROL_CODE))
+    if (cc != NO_CONTROL_CODE)
     {
         {
             uint8_t saved_a = cur_ch;
@@ -227,7 +227,7 @@ void print_char_just_to_screen(uint8_t cur_ch)
  */
 uint8_t process_document_character(uint8_t cur_ch, uint8_t* idx, bool* is_tab)
 {
-    if (!(cur_ch == 9))
+    if (cur_ch != 9)
     {
         if ((cur_ch == 0x10) || cur_ch == 0x1a)
             goto ca5d5;
@@ -516,7 +516,7 @@ void move_cursor_to_address(uint8_t* addr)
     uint8_t* next_line_start;
     uint8_t* cur = current_line_ptr;
 
-    if (!(cur == addr))
+    if (cur != addr)
     {
         if (cur > addr)
         {
