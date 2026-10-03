@@ -898,7 +898,7 @@ read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit)
     int idx3;
 
     screen_column = 0;
-    do
+    for (;;)
     {
         do
         {
@@ -943,7 +943,9 @@ read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit)
         }
         screen_column++;
         write_byte_to_memory(cursor, next_ch);
-    } while (idx3 == 0 || *cursor < limit);
+        if (!(idx3 == 0 || *cursor < limit))
+            break;
+    }
     eof_1 = false;
 
 c8cf2:
