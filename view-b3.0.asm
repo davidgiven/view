@@ -1430,7 +1430,7 @@ l80f2 = brk_handler_ptr+1
     beq c882f                                                         ; 87e0: f0 4d       .M
     jsr test_for_cassette_filesystem                                  ; 87e2: 20 7d 8e     }.
     bcc c8801                                                         ; 87e5: 90 1a       ..
-    jsr sub_c8849                                                     ; 87e7: 20 49 88     I.
+    jsr get_file_length                                               ; 87e7: 20 49 88     I.
     beq c87d1                                                         ; 87ea: f0 e5       ..
     lda l050c                                                         ; 87ec: ad 0c 05    ...
     ora l050d                                                         ; 87ef: 0d 0d 05    ...
@@ -1488,8 +1488,9 @@ l80f2 = brk_handler_ptr+1
     beq return_8                                                      ; 8844: f0 f2       ..
     jmp ca6fe                                                         ; 8846: 4c fe a6    L..
 
+; ***************************************************************************************
 ; &8849 referenced 2 times by &87e7, &8883
-.sub_c8849
+.get_file_length
     lda #5                                                            ; 8849: a9 05       ..
     jsr do_osfile_with_filename                                       ; 884b: 20 4c 89     L.
     tay                                                               ; 884e: a8          .
@@ -1520,7 +1521,7 @@ l80f2 = brk_handler_ptr+1
     jsr error_if_cassette_filesystem                                  ; 887a: 20 63 8e     c.
     jsr initialise_document_if_document_bad                           ; 887d: 20 ca af     ..
     jsr parse_filename_from_command                                   ; 8880: 20 1f 8e     ..
-    jsr sub_c8849                                                     ; 8883: 20 49 88     I.
+    jsr get_file_length                                               ; 8883: 20 49 88     I.
     beq return_8                                                      ; 8886: f0 b0       ..
     lda l050c                                                         ; 8888: ad 0c 05    ...
     ora l050d                                                         ; 888b: 0d 0d 05    ...
@@ -10283,6 +10284,7 @@ save pydis_start, pydis_end
 ;     first_macro_ptr+1:                      2
 ;     flush_formatted_line:                   2
 ;     format_paragraph:                       2
+;     get_file_length:                        2
 ;     get_next_fmt_cmd_byte:                  2
 ;     get_register_address:                   2
 ;     get_right_margin:                       2
@@ -10348,7 +10350,6 @@ save pydis_start, pydis_end
 ;     scan_string_length:                     2
 ;     set_marker_to_here:                     2
 ;     setup_CRTC_10_write:                    2
-;     sub_c8849:                              2
 ;     sub_ca94a:                              2
 ;     system_init:                            2
 ;     test_for_cassette_filesystem:           2

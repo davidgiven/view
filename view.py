@@ -521,6 +521,7 @@ subroutine(0xA0F2, "cf5_default_ruler_key")
 subroutine(0x9DB1, "cf6_split_line_key")
 subroutine(0x9EA1, "cf7_join_lines_key")
 subroutine(0x9F3B, "cf8_mark_as_ruler_key")
+subroutine(0x8849, "get_file_length")
 
 expr(0x8D86, "0")
 expr(0x8D8E, "0")
