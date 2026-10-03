@@ -7,9 +7,6 @@
 
 #include "globals.h"
 
-/* Forward declarations */
-int main(int argc, char* argv[]);
-
 /**
  * Program entry point.
  * Allocates document memory and enters VIEW.

@@ -38,324 +38,136 @@ typedef struct render_state
     bool prev_is_tab;   // whether the previous character was a tab expansion
 } render_state_t;
 
-// Editor-only functions
-uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta);
-static bool advance_to_next_doc_line(void);
-void beep(void);
+area_status_t sanitise_area(void);
+bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta);
 bool scan_document_for_next_line(void);
-static void insert_line_into_document(uint8_t* target_ptr);
-static void update_line_length(void);
-void clamp_ptr6_to_document(void);
-void clear_screen(void);
+bool write_line_back_to_document(void);
+format_result_t format_paragraph(void);
+static bool adjust_margins_at_left_margin(void);
+static bool advance_to_next_doc_line(void);
+static bool find_next_word_boundary(uint8_t src_idx);
+static bool insert_byte_at_xpos(uint8_t insert_pos);
+static bool insert_character_into_edit_buffer(uint8_t ch);
+static bool insert_edit_buffer_bytes_at_xpos(uint8_t count);
+static bool process_char_for_output( uint8_t buf_idx, bool carry_in, uint8_t* char_width_out, uint8_t* out_char);
+static bool reset_area_to_marks_1_2(void);
+static int find_left_margin_stop(void);
+static int prompt_for_marker(void);
+static uint8_t compute_display_start_line(void);
+static uint8_t control_key_to_ascii(uint8_t key_code);
+static void advance_current_line_pointer(void);
+static void advance_to_next_char(render_state_t* rs);
+static void advance_to_next_char_and_render(render_state_t* rs);
+static void append_to_output_buffer(uint8_t byte_to_append);
+static void cf0_delete_block_key(void);
+static void cf1_next_match_key(void);
+static void cf2_format_mode_key(void);
+static void cf3_justify_mode_key(void);
+static void cf4_insert_mode_key(void);
+static void cf5_default_ruler_key(void);
+static void cf6_split_line_key(void);
+static void cf7_join_lines_key(void);
+static void cf8_mark_as_ruler_key(void);
+static void check_pointer_in_area(void);
+static void clear_marks_1_2(void);
 static void clear_to_eol(uint8_t fill_char, uint8_t line);
-void cursor_off(void);
 static void cursor_on(void);
+static void delete_edit_buffer_bytes_at_xpos(uint8_t delete_count);
+static void delete_key(void);
 static void draw_line(render_state_t* rs, uint8_t* addr);
-void draw_prompt_characters(uint8_t first_char, uint8_t second_char);
+static void draw_previous_word( uint8_t* word_boundary, bool* is_start_of_line, uint8_t* char_width);
 static void draw_ruler(void);
 static void draw_status_word(void);
-uint8_t get_line_length(void);
+static void enter_printable_character(void);
+static void f0_format_block_key(void);
+static void f11_copy_key(void);
+static void f12_left_key(void);
+static void f13_right_key(void);
+static void f14_down_key(void);
+static void f15_up_key(void);
+static void f1_top_of_text_key(void);
+static void f2_bottom_of_text_key(void);
+static void f3_delete_to_eol_key(void);
+static void f4_beginning_of_line_key(void);
+static void f5_end_of_line_key(void);
+static void f6_insert_line_key(void);
+static void f7_delete_line_key(void);
+static void f8_insert_char_key(void);
+static void f9_delete_char_key(void);
+static bool flush_formatted_line(void);
 static void go_to_marker(uint8_t marker_idx);
 static void go_to_marker_n(uint8_t marker);
-uint8_t justify_edit_buffer(uint8_t* target_ptr);
-bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta);
-void memory_full(void);
-uint8_t process_current_document_character(uint8_t* target_ptr,
-    uint8_t* char_width_out,
-    uint8_t* pos_inout,
-    bool* is_tab);
+static void insert_at_left_margin(void);
+static void insert_line_at_cursor(uint8_t* target_ptr);
+static void insert_line_into_document(uint8_t* target_ptr);
+static void k_command_key(void);
+static void move_cursor_down(uint8_t lines_to_move);
+static void move_cursor_up(uint8_t lines_to_move);
+static void move_to_previous_line(void);
+static void o_command_key(void);
+static void q_command_key(void);
 static void recalculate_cursor_xpos(void);
 static void redraw_editor(void);
 static void render_char(render_state_t* rs);
-static void advance_to_next_char(render_state_t* rs);
 static void render_xchar(render_state_t* rs);
-area_status_t sanitise_area(void);
+static void return_key(void);
+static void return_to_editor_loop(void);
+static void set_format_mode_bit7(void);
 static void set_marker(uint8_t marker_idx);
 static void set_marker_common(uint8_t marker_char);
-void show_memory_full_error(void);
-void adjust_area_pointers(ptrdiff_t size_delta);
-static void append_to_output_buffer(uint8_t byte_to_append);
-uint8_t upper_case_unless_folding(uint8_t ch);
-static bool process_char_for_output(
-    uint8_t buf_idx, bool carry_in, uint8_t* char_width_out, uint8_t* out_char);
-format_result_t format_paragraph(void);
-static bool find_next_word_boundary(uint8_t src_idx);
-static bool insert_character_into_edit_buffer(uint8_t ch);
 static void set_xpos_to_line_length(void);
-static uint8_t compute_display_start_line(void);
-static void advance_to_next_char_and_render(render_state_t* rs);
-uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr);
+static void sf0_move_block_key(void);
+static void sf11_copy_key(void);
+static void sf12_left_key(void);
+static void sf13_right_key(void);
+static void sf14_down_key(void);
+static void sf15_up_key(void);
+static void sf1_swap_case_key(void);
+static void sf2_release_margins_key(void);
+static void sf3_delete_to_char_key(void);
+static void sf4_highlight1_key(void);
+static void sf5_highlight2_key(void);
+static void sf6_go_to_marker_key(void);
+static void sf7_set_marker_key(void);
+static void sf8_edit_command_key(void);
+static void sf9_delete_command_key(void);
+static void tab_highlight_common(uint8_t char_to_insert);
+static void tab_key(void);
 static void unpack_line(uint8_t* target_ptr);
-void update_markers_to_format_buffer(void);
-void check_for_embedded_ruler(uint8_t* target_ptr);
-uint8_t* find_line_start(uint8_t* target_ptr);
-static int find_left_margin_stop(void);
-static void insert_at_left_margin(void);
-static bool insert_byte_at_xpos(uint8_t insert_pos);
 static void unpack_line_into_buffer(uint8_t* target_ptr);
+static void update_line_length(void);
+uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr);
+uint8_t get_line_length(void);
+uint8_t justify_edit_buffer(uint8_t* target_ptr);
+uint8_t justify_edit_buffer(uint8_t* target_ptr);
+uint8_t process_current_document_character(uint8_t* target_ptr, uint8_t* char_width_out, uint8_t* pos_inout, bool* is_tab);
+uint8_t upper_case_unless_folding(uint8_t ch);
+uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta);
+uint8_t* find_line_start(uint8_t* target_ptr);
+void adjust_area_pointers(ptrdiff_t size_delta);
+void beep(void);
+void check_for_embedded_ruler(uint8_t* target_ptr);
+void clamp_ptr6_to_document(void);
+void clear_format_mode_bit7(void);
+void clear_screen(void);
+void cursor_off(void);
+void draw_prompt_characters(uint8_t first_char, uint8_t second_char);
+void editor_loop_impl(void);
+void enter_editor_mode(void);
+void esc_key(void);
+void go_to_marker(uint8_t marker_idx);
+void home_cursor(void);
+void memory_full(void);
+void redraw_and_write_back(void);
+void run_editor(void);
+void set_marker_to_here(uint8_t marker_idx);
+void show_memory_full_error(void);
+void split_line_at_wrap(uint8_t* target_ptr);
+void update_markers_to_format_buffer(void);
 void wipe_buffer(uint8_t fill_value, uint8_t* target_ptr);
-bool write_line_back_to_document(void);
 void write_line_back_to_document_safely(void);
 
-void enter_editor_mode(void);
-void clear_format_mode_bit7(void);
-static void set_format_mode_bit7(void);
-static void draw_previous_word(
-    uint8_t* word_boundary, bool* is_start_of_line, uint8_t* char_width);
-static bool adjust_margins_at_left_margin(void);
-static bool insert_edit_buffer_bytes_at_xpos(uint8_t count);
-void set_marker_to_here(uint8_t marker_idx);
-void split_line_at_wrap(uint8_t* target_ptr);
-
-// Editor-internal helper functions
-
-static void advance_current_line_pointer(void);
-
-static void clear_marks_1_2(void);
-
-static uint8_t control_key_to_ascii(uint8_t key_code);
-
-static void delete_edit_buffer_bytes_at_xpos(uint8_t delete_count);
-
-static void enter_printable_character(void);
-
-static int prompt_for_marker(void);
-
-static bool reset_area_to_marks_1_2(void);
-
-static void insert_line_at_cursor(uint8_t* target_ptr);
-
-static void move_to_previous_line(void);
-
-static void move_cursor_up(uint8_t lines_to_move);
-
-static void move_cursor_down(uint8_t lines_to_move);
-
-static void check_pointer_in_area(void);
-
-static void tab_highlight_common(uint8_t char_to_insert);
-
-// Forward declarations for key handler functions
-
-static void cf0_delete_block_key(void);
-
-static void cf1_next_match_key(void);
-
-static void cf2_format_mode_key(void);
-
-static void cf3_justify_mode_key(void);
-
-static void cf4_insert_mode_key(void);
-
-static void cf5_default_ruler_key(void);
-
-static void cf6_split_line_key(void);
-
-static void cf7_join_lines_key(void);
-
-static void cf8_mark_as_ruler_key(void);
-
-static void delete_key(void);
-
-static void f0_format_block_key(void);
-
-static void f11_copy_key(void);
-
-static void f12_left_key(void);
-
-static void f14_down_key(void);
-
-static void f15_up_key(void);
-
-static void f1_top_of_text_key(void);
-
-static void f2_bottom_of_text_key(void);
-
-static void f3_delete_to_eol_key(void);
-
-static void f4_beginning_of_line_key(void);
-
-static void f5_end_of_line_key(void);
-
-static void f6_insert_line_key(void);
-
-static void f7_delete_line_key(void);
-
-static void f8_insert_char_key(void);
-
-static void f9_delete_char_key(void);
-
-static void k_command_key(void);
-
-static void o_command_key(void);
-
-static void q_command_key(void);
-
-static void sf0_move_block_key(void);
-
-static void sf11_copy_key(void);
-
-static void sf12_left_key(void);
-
-static void sf13_right_key(void);
-
-static void sf14_down_key(void);
-
-static void sf15_up_key(void);
-
-static void sf1_swap_case_key(void);
-
-static void sf2_release_margins_key(void);
-
-static void sf3_delete_to_char_key(void);
-
-static void sf4_highlight1_key(void);
-
-static void sf5_highlight2_key(void);
-
-static void sf6_go_to_marker_key(void);
-
-static void sf7_set_marker_key(void);
-
-static void sf8_edit_command_key(void);
-
-static void sf9_delete_command_key(void);
-
-static void tab_key(void);
-
-static void set_marker(uint8_t marker_idx);
-
-static void set_marker_common(uint8_t marker_char);
-
-[[nodiscard]] static bool flush_formatted_line(void)
-{
-    line_format_status = (uint8_t)(line_format_status << 1) | 1;
-    edit_line_len = format_src_index - 1;
-    edit_buffer_unpacked_flag++;
-
-    if (!write_line_back_to_document())
-        return false;
-    return true;
-}
-
 static const uint8_t memory_full_message[] = "Memory full - Press ESCAPE";
-
-void go_to_marker(uint8_t marker_idx);
-
-/* Forward declarations for sorted functions (root first) */
-void run_editor(void);
-void editor_loop_impl(void);
-static void cf1_next_match_key(void);
-static void cf4_insert_mode_key(void);
-static void cf7_join_lines_key(void);
-static void delete_key(void);
-void esc_key(void);
-static void f0_format_block_key(void);
-static void f12_left_key(void);
-static void f14_down_key(void);
-static void f15_up_key(void);
-static void f7_delete_line_key(void);
-static void f8_insert_char_key(void);
-static void f9_delete_char_key(void);
-static void k_command_key(void);
-static void cf0_delete_block_key(void);
-static void f11_copy_key(void);
-static void o_command_key(void);
-static void cf2_format_mode_key(void);
-static void cf3_justify_mode_key(void);
-static void cf5_default_ruler_key(void);
-static void q_command_key(void);
-static void cf6_split_line_key(void);
-static void f1_top_of_text_key(void);
-static void f2_bottom_of_text_key(void);
-static void f3_delete_to_eol_key(void);
-static void f5_end_of_line_key(void);
-static void sf0_move_block_key(void);
-static void sf11_copy_key(void);
-static void cf8_mark_as_ruler_key(void);
-static void f6_insert_line_key(void);
-static void sf12_left_key(void);
-static void sf13_right_key(void);
-static void sf14_down_key(void);
-static void sf15_up_key(void);
-static void sf1_swap_case_key(void);
-static void sf2_release_margins_key(void);
-static void f4_beginning_of_line_key(void);
-static void sf3_delete_to_char_key(void);
-static void sf4_highlight1_key(void);
-static void sf5_highlight2_key(void);
-static void sf6_go_to_marker_key(void);
-static void sf7_set_marker_key(void);
-static void sf8_edit_command_key(void);
-static void sf9_delete_command_key(void);
-static void tab_key(void);
-static void clear_marks_1_2(void);
-static uint8_t control_key_to_ascii(uint8_t key_code);
-static void delete_edit_buffer_bytes_at_xpos(uint8_t delete_count);
-static void enter_printable_character(void);
-static void return_to_editor_loop(void);
-static void return_key(void);
-static void advance_current_line_pointer(void);
-static int prompt_for_marker(void);
-static bool reset_area_to_marks_1_2(void);
-static void insert_line_at_cursor(uint8_t* target_ptr);
-static void move_to_previous_line(void);
-static void move_cursor_up(uint8_t lines_to_move);
-static void move_cursor_down(uint8_t lines_to_move);
-static void check_pointer_in_area(void);
-static void tab_highlight_common(uint8_t char_to_insert);
-static void f13_right_key(void);
-void enter_editor_mode(void);
-static void draw_previous_word(
-    uint8_t* word_boundary, bool* is_start_of_line, uint8_t* char_width);
-static bool adjust_margins_at_left_margin(void);
-bool scan_document_for_next_line(void);
-static void insert_line_into_document(uint8_t* target_ptr);
-void clamp_ptr6_to_document(void);
-void clear_screen(void);
-static void go_to_marker_n(uint8_t marker);
-void memory_full(void);
-static void set_marker_common(uint8_t marker_char);
-static void set_marker(uint8_t marker_idx);
-static void go_to_marker(uint8_t marker_idx);
-static void update_line_length(void);
-void show_memory_full_error(void);
-static void append_to_output_buffer(uint8_t byte_to_append);
-format_result_t format_paragraph(void);
-static bool advance_to_next_doc_line(void);
-uint8_t justify_edit_buffer(uint8_t* target_ptr);
-static bool process_char_for_output(
-    uint8_t buf_idx, bool carry_in, uint8_t* char_width_out, uint8_t* out_char);
-static bool find_next_word_boundary(uint8_t src_idx);
-static bool insert_character_into_edit_buffer(uint8_t ch);
-static void set_xpos_to_line_length(void);
-static void insert_at_left_margin(void);
-static int find_left_margin_stop(void);
-static bool insert_byte_at_xpos(uint8_t insert_pos);
-static bool insert_edit_buffer_bytes_at_xpos(uint8_t count);
-void redraw_and_write_back(void);
-static void redraw_editor(void);
-void cursor_off(void);
-static void cursor_on(void);
-static void draw_ruler(void);
-static void draw_line(render_state_t* rs, uint8_t* addr);
-static void clear_to_eol(uint8_t fill_char, uint8_t line);
-static void draw_status_word(void);
-void home_cursor(void);
-static void recalculate_cursor_xpos(void);
-static void render_xchar(render_state_t* rs);
-static uint8_t compute_display_start_line(void);
-static void advance_to_next_char_and_render(render_state_t* rs);
-static void render_char(render_state_t* rs);
-static void advance_to_next_char(render_state_t* rs);
-uint8_t process_current_document_character(uint8_t* target_ptr,
-    uint8_t* char_width_out,
-    uint8_t* pos_inout,
-    bool* is_tab);
-static void unpack_line_into_buffer(uint8_t* target_ptr);
-static void unpack_line(uint8_t* target_ptr);
-void clear_format_mode_bit7(void);
-static void set_format_mode_bit7(void);
 
 /**
  * Enters editor mode.
@@ -2901,6 +2713,17 @@ c9a60:
     }
 c9aa5:
     return at_end_1 ? FORMAT_AT_END : FORMAT_OK;
+}
+
+static bool flush_formatted_line(void)
+{
+    line_format_status = (uint8_t)(line_format_status << 1) | 1;
+    edit_line_len = format_src_index - 1;
+    edit_buffer_unpacked_flag++;
+
+    if (!write_line_back_to_document())
+        return false;
+    return true;
 }
 
 /**

@@ -27,64 +27,62 @@ static uint8_t print_running_total_accum;
 static uint8_t rhs_extra_margin;
 static uint8_t rw_file_handle;
 static uint8_t two_sided_flag;
-static void default_print_char(uint8_t cur_ch);
-static void default_printer_on(void);
-static void default_printer_off(void);
-static void default_printer_microspace(void);
-static void default_printer_getflags(uint8_t* idx, uint8_t* pos);
-static const printer_driver_t default_printer_driver;
 
-void bad_filename_error(void);
-static void set_rw_file_handle(uint8_t cur_ch);
-static void process_page_footer(void);
-static void print_output_buffer(void);
-static uint8_t scan_string_length(uint8_t y_start, uint8_t* insert_ptr);
-void check_not_continuous_editing(void);
-void display_not_enough_memory(void);
-static void microspace_word_processor(uint8_t* pos);
 bool parse_decimal_number(int* value, uint8_t* pos);
 bool parse_optional_filename_from_command(scan_state_t* scan);
-static void print_char_x_times(uint8_t cur_ch, uint8_t idx);
-void print_document(scan_state_t* scan);
-static void print_loop(uint8_t* print_doc_ptr);
-static void print_newline(void);
-static void print_vertical_space(uint8_t idx);
-read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit);
-static void render_header_or_footer(uint8_t* insert_ptr);
-static void render_new_page(void);
 bool scan_input_buffer(uint8_t* buffer, scan_state_t* state);
-static void start_microspacing_if_active(uint8_t cur_ch);
-static void emit_microspacing_spaces(uint8_t cur_ch, uint8_t idx);
-static void compute_lines_remaining_on_page(void);
-static uint8_t* compute_header_left_section(uint8_t* insert_ptr);
-static uint8_t* compute_header_middle_section(uint8_t* insert_ptr);
-static uint8_t* compute_header_odd_page_section(uint8_t* insert_ptr);
-static uint8_t get_line_width(uint8_t* insert_ptr);
-static uint8_t get_right_margin(void);
-static uint8_t copy_header_footer_text(uint8_t* copy_ptr);
+formatting_command_t lookup_formatting_command(void);
+read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit);
+static bool evaluate_expression_from_fmt_cmd(
+    int* result, uint8_t* pos, uint8_t idx);
 static bool get_page_parity(void);
-static void output_left_margin(void);
+static bool parse_boolean_from_fmt_cmd(uint8_t* pos, uint8_t* value);
+static bool parse_word_flag(uint8_t* target_ptr, uint8_t* pos, uint8_t* value);
+static const printer_driver_t default_printer_driver;
 static uint8_t add_justification_spaces(uint8_t idx);
 static uint8_t convert_char_for_printing(
     uint8_t cur_ch, uint8_t* idx, bool* is_tab);
+static uint8_t copy_header_footer_text(uint8_t* copy_ptr);
+static uint8_t expand_line(void);
+static uint8_t get_current_fmt_cmd_byte(uint8_t* pos);
+static uint8_t get_line_width(uint8_t* insert_ptr);
+static uint8_t get_next_fmt_cmd_byte(uint8_t* pos);
+static uint8_t get_right_margin(void);
+static uint8_t process_header_footer_line(uint8_t* copy_ptr);
+static uint8_t scan_string_length(uint8_t y_start, uint8_t* insert_ptr);
+static uint8_t* compute_header_left_section(uint8_t* insert_ptr);
+static uint8_t* compute_header_middle_section(uint8_t* insert_ptr);
+static uint8_t* compute_header_odd_page_section(uint8_t* insert_ptr);
+static void compute_lines_remaining_on_page(void);
+static void default_print_char(uint8_t cur_ch);
+static void default_printer_getflags(uint8_t* idx, uint8_t* pos);
+static void default_printer_microspace(void);
+static void default_printer_off(void);
+static void default_printer_on(void);
+static void emit_microspacing_spaces(uint8_t cur_ch, uint8_t idx);
+static void microspace_word_processor(uint8_t* pos);
+static void output_left_margin(void);
+static void page_eject_fmt(void);
+static void print_char_x_times(uint8_t cur_ch, uint8_t idx);
+static void print_loop(uint8_t* print_doc_ptr);
+static void print_newline(void);
+static void print_output_buffer(void);
+static void print_vertical_space(uint8_t idx);
+static void process_page_footer(void);
+static void render_header_or_footer(uint8_t* insert_ptr);
+static void render_new_page(void);
 static void reset_print_registers(void);
+static void set_rw_file_handle(uint8_t cur_ch);
+static void start_microspacing_if_active(uint8_t cur_ch);
+static void store_to_output_buffer(uint8_t cur_ch, uint8_t* copy_ptr);
+static void write_output_buffer_to_format_line(uint8_t cur_ch);
+static void write_output_buffer_to_format_line(uint8_t cur_ch);
+void bad_filename_error(void);
+void check_not_continuous_editing(void);
+void display_not_enough_memory(void);
+void print_document(scan_state_t* scan);
 void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch);
 void write_cr_to_memory(uint8_t** cursor);
-
-static uint8_t expand_line(void);
-static void write_output_buffer_to_format_line(uint8_t cur_ch);
-static bool parse_word_flag(uint8_t* target_ptr, uint8_t* pos, uint8_t* value);
-static bool parse_boolean_from_fmt_cmd(uint8_t* pos, uint8_t* value);
-static void page_eject_fmt(void);
-static bool evaluate_expression_from_fmt_cmd(
-    int* result, uint8_t* pos, uint8_t idx);
-static uint8_t get_current_fmt_cmd_byte(uint8_t* pos);
-static uint8_t get_next_fmt_cmd_byte(uint8_t* pos);
-
-formatting_command_t lookup_formatting_command(void);
-static void store_to_output_buffer(uint8_t cur_ch, uint8_t* copy_ptr);
-static uint8_t process_header_footer_line(uint8_t* copy_ptr);
-static void write_output_buffer_to_format_line(uint8_t cur_ch);
 
 static const uint8_t commands_table[] =
     "CERJDFDHDMEMSRPETMBMPLTSFOHEHTHMFMLMLSOPEPLJPB";
@@ -116,7 +114,6 @@ static const printer_driver_t default_printer_driver = {
 };
 
 /* Forward declarations for sorted functions (root first) */
-static void emit_to_output_buffer_callback(uint8_t digit);
 void print_document(scan_state_t* scan);
 static void set_rw_file_handle(uint8_t cur_ch);
 static void print_loop(uint8_t* print_doc_ptr);
@@ -188,21 +185,6 @@ static void default_printer_on(void);
 static void default_printer_off(void);
 static void default_printer_microspace(void);
 static void default_printer_getflags(uint8_t* idx, uint8_t* pos);
-
-/**
- * Callback that writes a digit character into the output buffer.
- *
- * @param digit character to emit
- */
-static void emit_to_output_buffer_callback(uint8_t digit)
-{
-    {
-        output_buffer[screen_row] = digit;
-
-        if (screen_row < MAX_LINE_LENGTH - 2)
-            screen_row++;
-    }
-}
 
 /**
  * Main entry point for printing the current document.

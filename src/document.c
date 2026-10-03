@@ -6,61 +6,59 @@
 #include <stdio.h>
 #include <string.h>
 
-static uint8_t* compute_space_common(uint8_t* target_ptr, ptrdiff_t scan_ptr);
-static uint8_t* compute_space_available(uint8_t* target_ptr);
-static uint8_t* compute_required_space_for_insertion(uint8_t* target_ptr);
-void split_line_at_wrap(uint8_t* target_ptr);
-void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch);
-void write_cr_to_memory(uint8_t** cursor);
-
-/* Forward declarations for sorted functions (root first) */
-command_prefix_t deref_and_check_for_command_prefix(
-    uint8_t pos, uint8_t* target_ptr);
-void display_document_file_state(void);
-void close_file(void);
-unsigned int* get_register_address(uint8_t cur_ch);
-void initialise_document(void);
-void ensure_cr_at_document_top(void);
-uint8_t create_default_ruler(uint8_t* ruler_addr);
-int lookup_marker(uint8_t cur_ch);
-void move_cursor_to_top_of_document(void);
-void open_output_file(void);
-void reset_area_to_entire_document(void);
+area_status_t sanitise_area(void);
 bool advance_to_next_line(uint8_t* line, uint8_t** line_ptr, uint8_t* pos);
-void adjust_area_pointers(ptrdiff_t size_delta);
 bool check_area_memory(uint8_t* doc_working_ptr);
-bool read_first_chunk_from_input_file(void);
-uint8_t* read_into_document(void);
-void check_for_at_least_150_bytes_free(void);
-void move_cursor_to_address(uint8_t* addr);
 bool find_next_line(uint8_t* start, uint8_t** line_ptr, uint8_t* pos);
 bool find_previous_line(uint8_t* val, uint8_t** line_ptr);
-void open_input_file(void);
-void pop_from_ruler_index(void);
-static void check_for_embedded_ruler(uint8_t* target_ptr);
-void push_onto_ruler_index(uint8_t* target_ptr);
-void load_current_ruler(int pos);
-void find_margins_of_current_ruler_buffer(void);
-static uint8_t* compute_required_space_for_insertion(uint8_t* target_ptr);
+bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta);
+bool read_first_chunk_from_input_file(void);
 bool read_next_chunk_from_input_file(uint8_t* target_ptr);
+bool write_line_back_to_document(void);
+command_prefix_t deref_and_check_for_command_prefix(
+    uint8_t pos, uint8_t* target_ptr);
+int compute_bytes_free(void);
+int lookup_marker(uint8_t cur_ch);
+read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit);
+static uint8_t get_byte_from_file(void);
+static uint8_t* compute_required_space_for_insertion(uint8_t* target_ptr);
+static uint8_t* compute_required_space_for_insertion(uint8_t* target_ptr);
+static uint8_t* compute_space_available(uint8_t* target_ptr);
 static uint8_t* compute_space_available(uint8_t* target_ptr);
 static uint8_t* compute_space_common(uint8_t* target_ptr, ptrdiff_t scan_ptr);
-int compute_bytes_free(void);
-read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit);
+static uint8_t* compute_space_common(uint8_t* target_ptr, ptrdiff_t scan_ptr);
+static uint8_t* find_line_start(uint8_t* target_ptr);
+static void check_for_embedded_ruler(uint8_t* target_ptr);
+uint8_t create_default_ruler(uint8_t* ruler_addr);
+uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr);
+uint8_t get_line_length(void);
+uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta);
+uint8_t* read_into_document(void);
+unsigned int* get_register_address(uint8_t cur_ch);
+void adjust_area_pointers(ptrdiff_t size_delta);
+void check_for_at_least_150_bytes_free(void);
+void close_file(void);
+void display_document_file_state(void);
+void ensure_cr_at_document_top(void);
+void find_margins_of_current_ruler_buffer(void);
+void initialise_document(void);
+void load_current_ruler(int pos);
+void move_cursor_to_address(uint8_t* addr);
+void move_cursor_to_top_of_document(void);
+void open_input_file(void);
+void open_output_file(void);
+void pop_from_ruler_index(void);
+void push_onto_ruler_index(uint8_t* target_ptr);
+void reset_area_to_entire_document(void);
 void set_marker_to_here(uint8_t marker_idx);
 void setup_area_pointers(uint8_t* doc_working_ptr);
 void split_line_at_wrap(uint8_t* target_ptr);
-static uint8_t* find_line_start(uint8_t* target_ptr);
+void split_line_at_wrap(uint8_t* target_ptr);
 void update_markers_to_format_buffer(void);
 void write_area_to_file(void);
-area_status_t sanitise_area(void);
+void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch);
+void write_cr_to_memory(uint8_t** cursor);
 void write_line_back_to_document_safely(void);
-bool write_line_back_to_document(void);
-uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta);
-uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr);
-uint8_t get_line_length(void);
-bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta);
-static uint8_t get_byte_from_file(void);
 
 /**
  * Dereference a document pointer at an offset and test for command prefix.

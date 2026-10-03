@@ -5,19 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-static uint8_t* parse_mark_from_command(scan_state_t* scan);
-
-void file_error(void);
-void file_not_found_error(void);
-static bool parse_integer_from_command(scan_state_t* scan, int* out);
-static void parse_marks_from_command(scan_state_t* scan);
-static void reset_document_name_after_load(void);
-static void set_document_name_to_filename_buffer(void);
-void zero_terminate_filename_buffer(void);
 
 /** Command table for CLI parsing. Encodes command names and flags. */
 // clang-format off
-static uint8_t parser_table[] = {
+static const uint8_t parser_table[] = {
     // QUIT -> 0, flag=1
     0x0a, 0x0e, 0x12, 0x0f, 0x81,
     // NEW -> 1, flag=0
@@ -71,101 +62,104 @@ static uint8_t parser_table[] = {
     0};
 // clang-format on
 
-static void bye_cmd(void);
-static void cmd_err_no_target(void);
-static void cmd_err_no_string(void);
-static void search_cmd(scan_state_t* scan);
-static void change_cmd(scan_state_t* scan);
-static void replace_cmd(scan_state_t* scan);
-static void screen_cmd(scan_state_t* scan);
-static void sheets_cmd(scan_state_t* scan);
-static void print_cmd(scan_state_t* scan);
-static void print_to_screen(scan_state_t* scan);
-static void edit_cmd(scan_state_t* scan);
-static void more_cmd(scan_state_t* scan);
-static void finish_cmd(void);
-static void quit_cmd(void);
-static void close_input_output_files(void);
-static void save_cmd_write_cmd(scan_state_t* scan);
-static void load_cmd(scan_state_t* scan);
-static void read_cmd(scan_state_t* scan);
-static void mode_cmd(void);
-static void microspace_cmd(scan_state_t* scan);
-static void setup_cmd(scan_state_t* scan);
-static void field_cmd(scan_state_t* scan);
-static void count_cmd(scan_state_t* scan);
-static void format_cmd(scan_state_t* scan);
-static void new_cmd(void);
-static void fold_cmd(scan_state_t* scan);
-static void printer_cmd(scan_state_t* scan);
-static void name_cmd(scan_state_t* scan);
-
-const uint8_t version_string[] = "VIEW\0B3.0 for CP/M-65";
-
-static bool parse_command(uint8_t* input_buffer_offset);
+static const uint8_t version_string[] = "VIEW\0B3.0 for CP/M-65";
 
 static const uint8_t escaped_char_table[] = {
     '?', 'T', 'C', 'S', 'L', 'Z', '-', '*', 0xff};
 static const uint8_t escaped_value_table[] = {
     1, 9, 0x0d, 2, 0x0b, 0x1a, 0x1c, 0x1d, 0xff};
 
-static uint8_t read_next_command_byte(uint8_t* pos, bool* end);
-
-/* Forward declarations */
-void cli_handler_impl(void);
-static bool read_command_line(void);
-static void input_line_not_escaped(void);
-static void execute_cli_command(uint8_t cur_ch, scan_state_t* scan);
-static void bye_cmd(void);
-static void change_cmd(scan_state_t* scan);
-static void count_cmd(scan_state_t* scan);
-static void edit_cmd(scan_state_t* scan);
-static void field_cmd(scan_state_t* scan);
-static void finish_cmd(void);
-static void fold_cmd(scan_state_t* scan);
-static void format_cmd(scan_state_t* scan);
-static void load_cmd(scan_state_t* scan);
-void clear_cmd(void);
-static void microspace_cmd(scan_state_t* scan);
-static void mode_cmd(void);
-static void more_cmd(scan_state_t* scan);
-static void name_cmd(scan_state_t* scan);
-static void new_cmd(void);
-static void printer_cmd(scan_state_t* scan);
-static void print_cmd(scan_state_t* scan);
-static void quit_cmd(void);
-static void close_input_output_files(void);
-static void read_cmd(scan_state_t* scan);
-static void replace_cmd(scan_state_t* scan);
-static void save_cmd_write_cmd(scan_state_t* scan);
-static void screen_cmd(scan_state_t* scan);
-static void print_to_screen(scan_state_t* scan);
-static void search_cmd(scan_state_t* scan);
-static void cmd_err_no_string(void);
-static void cmd_err_no_target(void);
-static void setup_cmd(scan_state_t* scan);
-static void sheets_cmd(scan_state_t* scan);
-void start_printing(void);
-void run_cli(void);
-static void print_x_words_of_help(uint8_t idx);
-static bool parse_command(uint8_t* input_buffer_offset);
-void file_error(void);
-void file_not_found_error(void);
-static bool parse_integer_from_command(scan_state_t* scan, int* out);
-static void reset_document_name_after_load(void);
-static void set_document_name_to_filename_buffer(void);
-void zero_terminate_filename_buffer(void);
-static void check_continuous_editing(void);
-void check_not_continuous_editing(void);
-static void parse_filename_from_command(scan_state_t* scan);
 bool parse_optional_filename_from_command(scan_state_t* scan);
-static void bad_filename_error(void);
-static cli_cmd_status_t process_cli_command(scan_state_t* scan);
-static void parse_marks_from_command(scan_state_t* scan);
-static uint8_t* parse_mark_from_command(scan_state_t* scan);
+static bool parse_command(uint8_t* input_buffer_offset);
+static bool parse_integer_from_command(scan_state_t* scan, int* out);
+static bool parse_integer_from_command(scan_state_t* scan, int* out);
+static bool read_command_line(void);
 static bool reset_command_parse_state(scan_state_t* scan);
+static cli_cmd_status_t process_cli_command(scan_state_t* scan);
 static uint8_t expand_escaped_string(uint8_t idx, uint8_t pos);
 static uint8_t read_next_command_byte(uint8_t* pos, bool* end);
+static uint8_t read_next_command_byte(uint8_t* pos, bool* end);
+static uint8_t* parse_mark_from_command(scan_state_t* scan);
+static uint8_t* parse_mark_from_command(scan_state_t* scan);
+static void bad_filename_error(void);
+static void bye_cmd(void);
+static void bye_cmd(void);
+static void change_cmd(scan_state_t* scan);
+static void change_cmd(scan_state_t* scan);
+static void check_continuous_editing(void);
+static void close_input_output_files(void);
+static void close_input_output_files(void);
+static void cmd_err_no_string(void);
+static void cmd_err_no_string(void);
+static void cmd_err_no_target(void);
+static void cmd_err_no_target(void);
+static void count_cmd(scan_state_t* scan);
+static void count_cmd(scan_state_t* scan);
+static void edit_cmd(scan_state_t* scan);
+static void edit_cmd(scan_state_t* scan);
+static void execute_cli_command(uint8_t cur_ch, scan_state_t* scan);
+static void field_cmd(scan_state_t* scan);
+static void field_cmd(scan_state_t* scan);
+static void finish_cmd(void);
+static void finish_cmd(void);
+static void fold_cmd(scan_state_t* scan);
+static void fold_cmd(scan_state_t* scan);
+static void format_cmd(scan_state_t* scan);
+static void format_cmd(scan_state_t* scan);
+static void input_line_not_escaped(void);
+static void load_cmd(scan_state_t* scan);
+static void load_cmd(scan_state_t* scan);
+static void microspace_cmd(scan_state_t* scan);
+static void microspace_cmd(scan_state_t* scan);
+static void mode_cmd(void);
+static void mode_cmd(void);
+static void more_cmd(scan_state_t* scan);
+static void more_cmd(scan_state_t* scan);
+static void name_cmd(scan_state_t* scan);
+static void name_cmd(scan_state_t* scan);
+static void new_cmd(void);
+static void new_cmd(void);
+static void parse_filename_from_command(scan_state_t* scan);
+static void parse_marks_from_command(scan_state_t* scan);
+static void parse_marks_from_command(scan_state_t* scan);
+static void print_cmd(scan_state_t* scan);
+static void print_cmd(scan_state_t* scan);
+static void print_to_screen(scan_state_t* scan);
+static void print_to_screen(scan_state_t* scan);
+static void print_x_words_of_help(uint8_t idx);
+static void printer_cmd(scan_state_t* scan);
+static void printer_cmd(scan_state_t* scan);
+static void quit_cmd(void);
+static void quit_cmd(void);
+static void read_cmd(scan_state_t* scan);
+static void read_cmd(scan_state_t* scan);
+static void replace_cmd(scan_state_t* scan);
+static void replace_cmd(scan_state_t* scan);
+static void reset_document_name_after_load(void);
+static void reset_document_name_after_load(void);
+static void save_cmd_write_cmd(scan_state_t* scan);
+static void save_cmd_write_cmd(scan_state_t* scan);
+static void screen_cmd(scan_state_t* scan);
+static void screen_cmd(scan_state_t* scan);
+static void search_cmd(scan_state_t* scan);
+static void search_cmd(scan_state_t* scan);
+static void set_document_name_to_filename_buffer(void);
+static void set_document_name_to_filename_buffer(void);
+static void setup_cmd(scan_state_t* scan);
+static void setup_cmd(scan_state_t* scan);
+static void sheets_cmd(scan_state_t* scan);
+static void sheets_cmd(scan_state_t* scan);
+void check_not_continuous_editing(void);
+void clear_cmd(void);
+void cli_handler_impl(void);
+void file_error(void);
+void file_error(void);
+void file_not_found_error(void);
+void file_not_found_error(void);
+void run_cli(void);
+void start_printing(void);
+void zero_terminate_filename_buffer(void);
+void zero_terminate_filename_buffer(void);
 
 /**
  * Main CLI handler loop, prompting for and dispatching commands.
