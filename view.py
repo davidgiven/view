@@ -94,7 +94,7 @@ labelword(0x0B, "page")
 labelword(0x0D, "top")
 labelword(0x0F, "himem")
 labelword(0x11, "top_of_screen_line_ptr")
-labelword(0x13, "ptr6")  # C: editor_ptr6, printer_ptr6 (was ptr6) - split, view.py generic
+labelword(0x13, "ptr6")  # C: editor_ptr6, print_source_ptr (was ptr6) - split, view.py generic
 labelword(0x15, "print_doc_ptr")  # was ptr5 - print document pointer
 labelword(0x19, "first_macro_ptr")
 labelword(0x1B, "last_macro_ptr")

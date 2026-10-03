@@ -120,7 +120,7 @@ extern uint8_t* top_of_screen_line_ptr;
 extern uint8_t* macro_cursor_ptr;
 extern uint8_t* edit_buffer_base;
 extern uint8_t* ruler_index[RULER_INDEX_SIZE];
-extern uint8_t* printer_ptr6;
+extern uint8_t* print_source_ptr;
 extern uint8_t* doc_working_ptr;
 
 // ── Document layout & ruler

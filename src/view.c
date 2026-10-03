@@ -65,8 +65,9 @@ uint8_t* current_line_ptr;       /** Walking cursor into document heap. */
 uint8_t* top;                    /** End of document heap (first free byte). */
 uint8_t* himem;                  /** Top of available memory. */
 uint8_t* top_of_screen_line_ptr; /** Document line at top of screen. */
-uint8_t* printer_ptr6;           /** Printer working pointer. */
-uint8_t* print_doc_ptr;          /** Document pointer used during printing. */
+uint8_t*
+    print_source_ptr;   /** Source pointer for printing document from memory. */
+uint8_t* print_doc_ptr; /** Document pointer used during printing. */
 const printer_driver_t* printer_driver_ptr; /** Active printer driver. */
 uint8_t* macro_cursor_ptr;              /** Cursor into current macro body. */
 uint8_t* ruler_index[RULER_INDEX_SIZE]; /** Ruler index stack. */

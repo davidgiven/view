@@ -336,11 +336,11 @@ static read_block_status_t read_next_output_line(
     uint8_t pos = 0;
     do
     {
-        a2 = printer_ptr6[pos];
+        a2 = print_source_ptr[pos];
         if (a2 == 0)
             return READ_BLOCK_DONE;
         (*cursor)[pos] = a2;
-        printer_ptr6++;
+        print_source_ptr++;
         (*cursor)++;
     } while (a2 != 0x0d);
     return READ_BLOCK_MORE;
