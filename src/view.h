@@ -41,7 +41,8 @@ extern uint8_t* current_line_ptr;
 extern uint8_t* top_of_screen_line_ptr;
 extern uint8_t* macro_cursor_ptr;
 extern uint8_t* edit_buffer_base;
-extern uint8_t* ruler_index[RULER_INDEX_SIZE];
+extern uint8_t** ruler_index;
+extern size_t ruler_index_size;
 extern uint8_t* print_source_ptr;
 extern uint8_t* doc_working_ptr;
 

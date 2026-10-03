@@ -11,7 +11,8 @@ typedef uint16_t addr_t;
 typedef uint16_t addr_t;
 extern uint8_t* scratch_line_ptr; // was tmp01
 extern int ruler_index_ptr;
-extern uint8_t* ruler_index[RULER_INDEX_SIZE];
+extern uint8_t** ruler_index;
+extern size_t ruler_index_size;
 extern uint8_t* current_ruler_ptr;
 extern uint8_t ruler_left_stop;
 extern uint8_t ruler_right_stop;
@@ -50,6 +51,13 @@ int main(void)
         if (!ram)
             return 1;
         himem = ram + 655360 - 1;
+    }
+    if (!ruler_index)
+    {
+        ruler_index_size = DEFAULT_RULER_INDEX_SIZE;
+        ruler_index = calloc(ruler_index_size, sizeof(uint8_t*));
+        if (!ruler_index)
+            return 1;
     }
     memset(ram, 0, 655360);
 

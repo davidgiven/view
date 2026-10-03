@@ -13,7 +13,7 @@
 #define MAX_COMMAND_LENGTH 68
 #define RAM_MAX 0xffff
 #define CTRL(c) ((uint8_t)((c) & 0x1f))
-#define RULER_INDEX_SIZE 128
+#define DEFAULT_RULER_INDEX_SIZE 128
 
 #define JMP_CLI 1
 #define JMP_EDITOR 2

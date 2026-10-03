@@ -55,8 +55,10 @@ uint8_t*
     print_source_ptr;   /** Source pointer for printing document from memory. */
 uint8_t* print_doc_ptr; /** Document pointer used during printing. */
 const printer_driver_t* printer_driver_ptr; /** Active printer driver. */
-uint8_t* macro_cursor_ptr;              /** Cursor into current macro body. */
-uint8_t* ruler_index[RULER_INDEX_SIZE]; /** Ruler index stack. */
+uint8_t* macro_cursor_ptr; /** Cursor into current macro body. */
+uint8_t** ruler_index;     /** Ruler index stack. */
+size_t ruler_index_size =
+    DEFAULT_RULER_INDEX_SIZE; /** Size of ruler index stack. */
 uint8_t printing_from_file_flag;
 int saved_ruler_index_scroll; /** Index into ruler_index[] */
 uint8_t column_position;
