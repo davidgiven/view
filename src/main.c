@@ -10,6 +10,7 @@
 #include "globals.h"
 #include "view.h"
 
+#if defined(TEST_HARNESS)
 /**
  * Parse an unsigned long command-line value and validate it.
  * @param arg argument string from optarg
@@ -35,6 +36,7 @@ static bool parse_ulong_option(
     *out = v;
     return true;
 }
+#endif
 
 /**
  * Program entry point.
@@ -48,8 +50,10 @@ int main(int argc, char* argv[])
     size_t ram_size = 655360;
 
     static struct option long_options[] = {
+#if defined(TEST_HARNESS)
         {"ram",    required_argument, 0, 0},
         {"rulers", required_argument, 0, 0},
+#endif
         {0,        0,                 0, 0}
     };
 
@@ -60,6 +64,7 @@ int main(int argc, char* argv[])
     {
         switch (opt)
         {
+#if defined(TEST_HARNESS)
             case 0:
                 if (strcmp(long_options[option_index].name, "ram") == 0)
                 {
@@ -76,12 +81,17 @@ int main(int argc, char* argv[])
                     ruler_index_size = (size_t)v;
                 }
                 break;
+#endif
 
             case '?':
             default:
+#if defined(TEST_HARNESS)
                 fprintf(stderr,
                     "Usage: %s [--ram=size] [--rulers=count]\n",
                     argv[0]);
+#else
+                fprintf(stderr, "Usage: %s\n", argv[0]);
+#endif
                 return 1;
         }
     }

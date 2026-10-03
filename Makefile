@@ -21,7 +21,7 @@ SRC_INTERACTIVE = src/io/cli_readline.c
 SRC_TEST = src/io/cli_stdio.c
 
 OBJ_COMMON = $(addprefix $(OBJ_DIR)/, view.o main.o printing.o macro.o document.o editor.o cli.o screen_ncurses.o)
-OBJ_COMMON_TEST = $(addprefix $(OBJ_DIR)/, view.o main.o printing.o macro.o document.o editor.o cli.o screen_ncurses_test.o)
+OBJ_COMMON_TEST = $(addprefix $(OBJ_DIR)/, view.o main_test.o printing.o macro.o document.o editor.o cli.o screen_ncurses_test.o)
 
 OBJ_INTERACTIVE = $(OBJ_COMMON) $(OBJ_DIR)/cli_readline.o
 OBJ_TEST = $(OBJ_COMMON_TEST) $(OBJ_DIR)/cli_stdio.o
@@ -33,6 +33,9 @@ $(OBJ_DIR)/%.o: src/io/%.c | $(OBJ_DIR)
 	$(CC) $(CFLAGS) $(DEPFLAGS) -c -o $@ $<
 
 $(OBJ_DIR)/screen_ncurses_test.o: src/io/screen_ncurses.c | $(OBJ_DIR)
+	$(CC) $(CFLAGS) $(DEPFLAGS) -DTEST_HARNESS -c -o $@ $<
+
+$(OBJ_DIR)/main_test.o: src/main.c | $(OBJ_DIR)
 	$(CC) $(CFLAGS) $(DEPFLAGS) -DTEST_HARNESS -c -o $@ $<
 
 $(OBJ_DIR)/view_nomain.o: src/view.c | $(OBJ_DIR)
