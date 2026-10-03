@@ -2,9 +2,28 @@
 #define VIEW_H
 
 #include "globals.h"
+#include "document.h"
+#include "printing.h"
 
 #include <setjmp.h>
 #include <stdio.h>
+
+typedef enum
+{
+    NO_CONTROL_CODE = 0,
+    HIGHLIGHT1_CODE, /* 0x1c highlight 1 toggle */
+    HIGHLIGHT2_CODE, /* 0x1d highlight 2 toggle */
+} control_code_t;
+
+typedef struct pointer_array_t
+{
+    uint8_t* markers_array[6];
+    uint8_t* area_start_ptr;
+    uint8_t* area_end_ptr;
+    uint8_t* area_insert_ptr;
+    uint8_t* search_cursor_ptr;
+    uint8_t* search_limit_ptr;
+} pointer_array_t;
 
 // ─── Global variables (defined in view.c) ───────────────────────────────
 

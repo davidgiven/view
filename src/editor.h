@@ -3,6 +3,18 @@
 
 #include "globals.h"
 
+typedef enum
+{
+    FORMAT_OK,         /** Formatting succeeded. */
+    FORMAT_AT_END,     /** Reached end of document. */
+    FORMAT_MEMORY_FULL /** Document write failed due to insufficient memory. */
+} format_result_t;
+
+typedef struct edit_state
+{
+    uint8_t pos;
+} edit_state_t;
+
 // ─── Global variables (defined in editor.c) ────────────────────────────
 
 extern uint8_t edit_line_len;

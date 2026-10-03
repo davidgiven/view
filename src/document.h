@@ -4,6 +4,40 @@
 #include "globals.h"
 #include "io.h"
 
+typedef enum
+{
+    NO_COMMAND_PREFIX = 0,
+    COMMAND_PREFIX = 0x80, /* format command */
+    RULER_PREFIX = 0x81,   /* ruler line */
+} command_prefix_t;
+
+typedef enum
+{
+    AREA_NOT_EMPTY,
+    AREA_EMPTY
+} area_status_t;
+
+typedef enum
+{
+    READ_BLOCK_EMPTY, /* Nothing was read. */
+    READ_BLOCK_DONE,  /* Reached end of file. */
+    READ_BLOCK_MORE   /* Block filled to limit, more data remains. */
+} read_block_status_t;
+
+typedef struct __attribute__((packed, aligned(1))) line
+{
+    uint8_t prefix_byte;
+    uint8_t command[2];
+    uint8_t text[MAX_LINE_LENGTH];
+    uint8_t extra[3];
+} line_t;
+
+typedef struct scan_state
+{
+    uint8_t ch;  // character found at the scan position
+    uint8_t pos; // index of that character into input_buffer
+} scan_state_t;
+
 typedef enum marker_lookup_result_t
 {
     MARKER_INVALID = -1

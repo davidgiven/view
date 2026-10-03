@@ -21,7 +21,7 @@ extern uint8_t screen_maxcolumn;
 
 void push_onto_ruler_index(uint8_t* ptr);
 void pop_from_ruler_index(void);
-void create_default_ruler(uint8_t* ruler_addr);
+uint8_t create_default_ruler(uint8_t* ruler_addr);
 
 static int test_failures;
 
