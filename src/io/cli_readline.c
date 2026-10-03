@@ -7,12 +7,20 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+/**
+ * Writes a single character to the CLI output.
+ * @param c character to output
+ */
 void cli_putchar(uint8_t c)
 {
     putchar(c);
     fflush(stdout);
 }
 
+/**
+ * Writes a string to the CLI output.
+ * @param s null-terminated string to output
+ */
 void cli_putstring(const char* s)
 {
     fputs(s, stdout);
@@ -21,6 +29,13 @@ void cli_putstring(const char* s)
 
 static int escape_pressed;
 
+/**
+ * Readline handler for the Escape key.
+ * Marks Escape as pressed and aborts the current readline.
+ * @param count unused repeat count
+ * @param key unused key code
+ * @return 0 always
+ */
 static int escape_handler(int count, int key)
 {
     (void)count;
@@ -33,6 +48,13 @@ static int escape_handler(int count, int key)
     return 0;
 }
 
+/**
+ * Reads a line from CLI input via readline.
+ * Handles Escape to enter the editor and CR termination.
+ * @param buf destination buffer
+ * @param size size of the destination buffer
+ * @return true if Escape was pressed, false otherwise
+ */
 bool cli_readstring(char* buf, size_t size)
 {
     escape_pressed = 0;

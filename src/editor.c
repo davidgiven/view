@@ -2072,6 +2072,13 @@ void enter_editor_mode(void)
     flags_need_redrawing_flag = 1;
 }
 
+/**
+ * Draws the previous word boundary from the cursor.
+ * Scans backward to find the start of the previous word.
+ * @param word_boundary output for the boundary character
+ * @param is_start_of_line output true if at start of line
+ * @param char_width output for character width
+ */
 static void draw_previous_word(
     uint8_t* word_boundary, bool* is_start_of_line, uint8_t* char_width)
 {
@@ -2684,6 +2691,11 @@ c9aa5:
     return at_end_1 ? FORMAT_AT_END : FORMAT_OK;
 }
 
+/**
+ * Flushes the current formatted line to the document.
+ * Writes the edit buffer back and reports memory exhaustion.
+ * @return true if the write failed due to insufficient memory, false otherwise
+ */
 static bool flush_formatted_line(void)
 {
     line_format_status = (uint8_t)(line_format_status << 1) | 1;
@@ -2916,6 +2928,15 @@ c9871:
     return idx4;
 }
 
+/**
+ * Processes a character for justification output.
+ * Handles tab and margin translation and updates column state.
+ * @param buf_idx index in the line buffer
+ * @param carry_in carry flag for column calculation
+ * @param char_width_out output for character width
+ * @param out_char output for processed character
+ * @return true if the character was handled as a margin/tab, false otherwise
+ */
 static bool process_char_for_output(
     uint8_t buf_idx, bool carry_in, uint8_t* char_width_out, uint8_t* out_char)
 {
@@ -3848,6 +3869,15 @@ static void advance_to_next_char(render_state_t* rs)
     rs->char_width = column_position;
 }
 
+/**
+ * Processes the current document character and advances the position.
+ * Wraps process_document_character for the editor render pipeline.
+ * @param target_ptr line buffer to read from
+ * @param char_width_out output for character width
+ * @param pos_inout cursor into target_ptr, advanced by one
+ * @param is_tab tab-state carried between characters
+ * @return processed character
+ */
 uint8_t process_current_document_character(uint8_t* target_ptr,
     uint8_t* char_width_out,
     uint8_t* pos_inout,

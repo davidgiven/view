@@ -113,6 +113,11 @@ void dm_fmt_cmd(void)
     last_macro_ptr = (macro_t*)(void*)write_ptr;
 }
 
+/**
+ * Aligns a pointer up to the macro alignment.
+ * @param ptr pointer to align
+ * @return aligned pointer
+ */
 static inline uint8_t* align_up_ptr(uint8_t* ptr)
 {
     uintptr_t addr = (uintptr_t)ptr;
@@ -301,6 +306,12 @@ c9225:
     goto c91a7;
 }
 
+/**
+ * Parses a register reference character.
+ * Distinguishes markers, values and other characters.
+ * @param cur_ch character to parse
+ * @return parse result
+ */
 static parse_register_result_t parse_register_reference(uint8_t cur_ch)
 {
     if (cur_ch == 0x3e)

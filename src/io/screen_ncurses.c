@@ -11,6 +11,10 @@
 #include <assert.h>
 static bool ncurses_active;
 
+/**
+ * Enters ncurses screen mode.
+ * Initialises ncurses and configures input modes.
+ */
 void screen_enter(void)
 {
     if (ncurses_active)
@@ -25,6 +29,10 @@ void screen_enter(void)
     ncurses_active = true;
 }
 
+/**
+ * Leaves ncurses screen mode.
+ * Restores the terminal to normal state.
+ */
 void screen_leave(void)
 {
     if (!ncurses_active)
@@ -33,6 +41,10 @@ void screen_leave(void)
     ncurses_active = false;
 }
 
+/**
+ * Writes a character to the screen.
+ * @param cur_ch character to display
+ */
 void screen_putchar(uint8_t cur_ch)
 {
     assert(cur_ch != 0 && "screen_putchar called with NUL");
@@ -60,6 +72,11 @@ void screen_putchar(uint8_t cur_ch)
     }
 }
 
+/**
+ * Reads a character from the screen input.
+ * Maps ncurses keys to internal codes.
+ * @return key code
+ */
 uint8_t screen_getchar(void)
 {
     if (ncurses_active)
@@ -98,12 +115,21 @@ uint8_t screen_getchar(void)
     }
 }
 
+/**
+ * Sets the cursor position.
+ * @param xpos column
+ * @param ypos row
+ */
 void screen_setcursor(uint8_t xpos, uint8_t ypos)
 {
     if (ncurses_active)
         move(ypos, xpos);
 }
 
+/**
+ * Gets the current cursor position.
+ * @return packed position (row in high byte, column in low byte)
+ */
 uint16_t screen_getcursor(void)
 {
     if (ncurses_active)
@@ -117,6 +143,10 @@ uint16_t screen_getcursor(void)
     return 0;
 }
 
+/**
+ * Sets the screen style.
+ * @param cur_ch non-zero for reverse video, zero for normal
+ */
 void screen_setstyle(uint8_t cur_ch)
 {
     if (ncurses_active)
@@ -128,6 +158,10 @@ void screen_setstyle(uint8_t cur_ch)
     }
 }
 
+/**
+ * Gets the screen size.
+ * @return packed size (rows in high byte, columns in low byte)
+ */
 uint16_t screen_getsize(void)
 {
     if (ncurses_active)
@@ -145,6 +179,9 @@ uint16_t screen_getsize(void)
     return (uint16_t)(23 << 8) | 79;
 }
 
+/**
+ * Clears the screen.
+ */
 void screen_clear(void)
 {
     if (ncurses_active)
@@ -166,6 +203,9 @@ void screen_clear(void)
     }
 }
 
+/**
+ * Scrolls the screen up by one line.
+ */
 void screen_scrollup(void)
 {
     if (ncurses_active)
@@ -176,6 +216,9 @@ void screen_scrollup(void)
     }
 }
 
+/**
+ * Scrolls the screen down by one line.
+ */
 void screen_scrolldown(void)
 {
     if (ncurses_active)
@@ -186,6 +229,10 @@ void screen_scrolldown(void)
     }
 }
 
+/**
+ * Enables or disables the cursor.
+ * @param on true to show the cursor, false to hide it
+ */
 void screen_enablecursor(bool on)
 {
     if (ncurses_active)
