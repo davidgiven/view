@@ -159,41 +159,27 @@ FILE* input_fp;
 FILE* output_fp;
 
 /**
- * Program entry point.
+ * Run VIEW.
  * Establishes longjmp targets for CLI and editor, initializes system and
  * document, and enters the CLI loop.
- * @param argc argument count (unused)
- * @param argv argument vector (unused)
- * @return exit status
  */
-int main(int argc, char* argv[])
+void run_view(void)
 {
-    (void)argc;
-    (void)argv;
-
     switch (setjmp(env))
     {
         case JMP_CLI:
             cli_handler_impl();
-            return 0;
+            return;
 
         case JMP_EDITOR:
             editor_loop_impl();
-            return 0;
+            return;
 
         default:
-            ram = malloc(655360);
-            if (!ram)
-            {
-                perror("malloc");
-                return 1;
-            }
-            himem = ram + 655360 - 1;
-
             system_init();
             initialise_document();
             run_cli();
-            return 0;
+            return;
     }
 }
 

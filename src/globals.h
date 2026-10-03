@@ -262,6 +262,10 @@ extern bool scan_input_buffer(uint8_t* buffer, scan_state_t* state);
 extern format_result_t format_paragraph(void);
 extern void print_document(scan_state_t* scan);
 
+// ── Main ──────────────────────────────────────────────────────────
+
+extern void run_view(void);
+
 // ── CLI & command parsing
 // ──────────────────────────────────────────────────────────
 
