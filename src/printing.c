@@ -8,6 +8,7 @@
 #include "macro.h"
 #include "document.h"
 #include "cli.h"
+#include "view.h"
 
 static uint8_t footer_margin;
 static uint8_t footer_text_maybe[0x42];

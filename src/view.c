@@ -15,6 +15,7 @@
 #include "io.h"
 
 #include "globals.h"
+#include "view.h"
 #include "macro.h"
 #include "printing.h"
 

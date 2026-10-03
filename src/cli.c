@@ -1,6 +1,7 @@
 #include "cli.h"
 #include "document.h"
 #include "printing.h"
+#include "view.h"
 #include "io.h"
 #include <stdlib.h>
 #include <string.h>

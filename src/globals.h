@@ -207,21 +207,6 @@ extern uint8_t edit_line_len;
 
 // ── Utility ──────────────────────────────────────────────────────────
 
-extern command_prefix_t check_for_command_prefix(uint8_t ch);
-extern control_code_t check_for_control_code(uint8_t cur_ch);
-extern void render_number_to_screen(int val);
-extern void render_register(uint8_t cur_ch, uint8_t idx);
-extern uint8_t upper_case_unless_folding(uint8_t ch);
-extern bool parse_decimal_number(int* value, uint8_t* pos);
-extern void display_not_enough_memory(void);
-extern void beep(void);
-extern void wipe_buffer(uint8_t fill_value, uint8_t* target_ptr);
-extern void draw_prompt_characters(uint8_t first_char, uint8_t second_char);
-extern uint8_t process_document_character(
-    uint8_t cur_ch, uint8_t* idx, bool* is_tab);
-extern void print_char(uint8_t cur_ch);
-extern void print_alignment_spaces(uint8_t cur_ch);
-extern void return_to_cli_prompt(void);
 extern void show_memory_full_error(void);
 extern void clear_screen(void);
 extern void memory_full(void);
@@ -264,13 +249,8 @@ extern uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta);
 extern bool parse_optional_filename_from_command(scan_state_t* scan);
 extern read_block_status_t read_block_from_file(
     uint8_t** cursor, uint8_t* limit);
-extern bool scan_input_buffer(uint8_t* buffer, scan_state_t* state);
 extern format_result_t format_paragraph(void);
 extern void print_document(scan_state_t* scan);
-
-// ── Main ──────────────────────────────────────────────────────────
-
-extern void run_view(void);
 
 // ── CLI & command parsing
 // ──────────────────────────────────────────────────────────

@@ -1,4 +1,5 @@
 #include "document.h"
+#include "view.h"
 #include "io.h"
 #include "printing.h"
 #include <assert.h>

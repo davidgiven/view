@@ -9,6 +9,7 @@
 #include "printing.h"
 #include "document.h"
 #include "cli.h"
+#include "view.h"
 #include "macro.h"
 
 // A macro definition stored in ram[].  Macros form a singly-linked list: a

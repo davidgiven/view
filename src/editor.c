@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "globals.h"
+#include "view.h"
 
 uint8_t edit_line_len;
 static uint8_t editor_current_key;
