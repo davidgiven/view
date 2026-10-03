@@ -68,6 +68,13 @@ bin/test_ruler_index: tests/test_ruler_index.c $(OBJ_DIR)/view_nomain.o $(OBJ_DI
 	mkdir -p bin
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
+compile_commands.json: Makefile
+	@python3 -c 'import json, pathlib, shlex; \
+	cc = "$(CC)"; cflags = shlex.split("$(CFLAGS)"); srcs = "$(sort $(SRC_COMMON) $(SRC_INTERACTIVE) $(SRC_TEST))".split(); \
+	d = "$(CURDIR)"; entries = [{"directory": d, "file": d + "/" + s, "arguments": [cc] + cflags + ["-c", d + "/" + s]} for s in srcs]; \
+	pathlib.Path("compile_commands.json").write_text(json.dumps(entries, indent=2) + "\n")'
+	@echo "Generated compile_commands.json with $$(python3 -c "import json; print(len(json.load(open(\"compile_commands.json\"))))") entries"
+
 .PHONY: test test-render clean
 
 test: bin/render_number bin/test_ruler bin/test_justify bin/test_ruler_index bin/view_for_testing
