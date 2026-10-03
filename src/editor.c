@@ -223,14 +223,139 @@ static void sf9_delete_command_key(void);
 
 static void tab_key(void);
 
-/**
- * Returns to the editor main loop.
- * Uses longjmp to re-enter the editor event loop.
- */
-void return_to_editor_loop(void)
+static void set_marker(uint8_t marker_idx);
+
+static void set_marker_common(uint8_t marker_char);
+
+[[nodiscard]] static bool flush_formatted_line(void)
 {
-    longjmp(env, JMP_EDITOR);
+    line_format_status = (uint8_t)(line_format_status << 1) | 1;
+    edit_line_len = format_src_index - 1;
+    edit_buffer_unpacked_flag++;
+
+    if (!write_line_back_to_document())
+        return false;
+    return true;
 }
+
+static const uint8_t memory_full_message[] = "Memory full - Press ESCAPE";
+
+void go_to_marker(uint8_t marker_idx);
+
+/* Forward declarations for sorted functions (root first) */
+void run_editor(void);
+void editor_loop_impl(void);
+static void cf1_next_match_key(void);
+static void cf4_insert_mode_key(void);
+static void cf7_join_lines_key(void);
+static void delete_key(void);
+void esc_key(void);
+static void f0_format_block_key(void);
+static void f12_left_key(void);
+static void f14_down_key(void);
+static void f15_up_key(void);
+static void f7_delete_line_key(void);
+static void f8_insert_char_key(void);
+static void f9_delete_char_key(void);
+static void k_command_key(void);
+static void cf0_delete_block_key(void);
+static void f11_copy_key(void);
+static void o_command_key(void);
+static void cf2_format_mode_key(void);
+static void cf3_justify_mode_key(void);
+static void cf5_default_ruler_key(void);
+static void q_command_key(void);
+static void cf6_split_line_key(void);
+static void f1_top_of_text_key(void);
+static void f2_bottom_of_text_key(void);
+static void f3_delete_to_eol_key(void);
+static void f5_end_of_line_key(void);
+static void sf0_move_block_key(void);
+static void sf11_copy_key(void);
+static void cf8_mark_as_ruler_key(void);
+static void f6_insert_line_key(void);
+static void sf12_left_key(void);
+static void sf13_right_key(void);
+static void sf14_down_key(void);
+static void sf15_up_key(void);
+static void sf1_swap_case_key(void);
+static void sf2_release_margins_key(void);
+static void f4_beginning_of_line_key(void);
+static void sf3_delete_to_char_key(void);
+static void sf4_highlight1_key(void);
+static void sf5_highlight2_key(void);
+static void sf6_go_to_marker_key(void);
+static void sf7_set_marker_key(void);
+static void sf8_edit_command_key(void);
+static void sf9_delete_command_key(void);
+static void tab_key(void);
+static void clear_marks_1_2(void);
+static uint8_t control_key_to_ascii(uint8_t key_code);
+static void delete_edit_buffer_bytes_at_xpos(uint8_t delete_count);
+static void enter_printable_character(void);
+void return_to_editor_loop(void);
+void return_key(void);
+static void advance_current_line_pointer(void);
+static int prompt_for_marker(void);
+static bool reset_area_to_marks_1_2(void);
+static void insert_line_at_cursor(uint8_t* target_ptr);
+static void move_to_previous_line(void);
+static void move_cursor_up(uint8_t lines_to_move);
+static void move_cursor_down(uint8_t lines_to_move);
+static void check_pointer_in_area(void);
+static void tab_highlight_common(uint8_t char_to_insert);
+void f13_right_key(void);
+void enter_editor_mode(void);
+void draw_previous_word(
+    uint8_t* word_boundary, bool* is_start_of_line, uint8_t* char_width);
+bool adjust_margins_at_left_margin(void);
+bool scan_document_for_next_line(void);
+static void insert_line_into_document(uint8_t* target_ptr);
+void clamp_ptr6_to_document(void);
+void clear_screen(void);
+static void go_to_marker_n(uint8_t marker);
+void memory_full(void);
+static void set_marker_common(uint8_t marker_char);
+static void set_marker(uint8_t marker_idx);
+static void go_to_marker(uint8_t marker_idx);
+static void update_line_length(void);
+void show_memory_full_error(void);
+static void append_to_output_buffer(uint8_t byte_to_append);
+format_result_t format_paragraph(void);
+static bool advance_to_next_doc_line(void);
+uint8_t justify_edit_buffer(uint8_t* target_ptr);
+static bool process_char_for_output(
+    uint8_t buf_idx, bool carry_in, uint8_t* char_width_out, uint8_t* out_char);
+static bool find_next_word_boundary(uint8_t src_idx);
+static bool insert_character_into_edit_buffer(uint8_t ch);
+static void set_xpos_to_line_length(void);
+static void insert_at_left_margin(void);
+static int find_left_margin_stop(void);
+static bool insert_byte_at_xpos(uint8_t insert_pos);
+bool insert_edit_buffer_bytes_at_xpos(uint8_t count);
+void redraw_and_write_back(void);
+void redraw_editor(void);
+void cursor_off(void);
+void cursor_on(void);
+static void draw_ruler(void);
+void draw_line(render_state_t* rs, uint8_t* addr);
+void clear_to_eol(uint8_t fill_char, uint8_t line);
+static void draw_status_word(void);
+void home_cursor(void);
+static void recalculate_cursor_xpos(void);
+static void render_xchar(render_state_t* rs);
+static uint8_t compute_display_start_line(void);
+static void advance_to_next_char_and_render(render_state_t* rs);
+static void render_char(render_state_t* rs);
+static void advance_to_next_char(render_state_t* rs);
+uint8_t process_current_document_character(uint8_t* target_ptr,
+    uint8_t* char_width_out,
+    uint8_t* pos_inout,
+    bool* is_tab);
+static void unpack_line_into_buffer(uint8_t* target_ptr);
+static void unpack_line(uint8_t* target_ptr);
+void clear_format_mode_bit7(void);
+void set_format_mode_bit7(void);
 
 /**
  * Enters editor mode.
@@ -483,28 +608,6 @@ void editor_loop_impl(void)
 }
 
 /**
- * Deletes the block defined by markers 1 and 2.
- * Resets the area to markers 1 and 2, moves the cursor, and deletes the block.
- */
-static void cf0_delete_block_key(void)
-{
-    write_line_back_to_document_safely();
-    cursor_moved_flag++;
-
-    if (reset_area_to_marks_1_2())
-    {
-        beep();
-
-        return;
-    }
-    move_cursor_to_address(area_start_ptr);
-    clamp_ptr6_to_document();
-    adjust_area_pointers(area_size);
-    ensure_cr_at_document_top();
-    clear_marks_1_2();
-}
-
-/**
  * Moves to the next search match.
  * Scans the document for the next occurrence of the search target.
  */
@@ -522,34 +625,6 @@ static void cf1_next_match_key(void)
 }
 
 /**
- * Toggles format mode.
- * Flips the format-mode flag between states and marks the status bar for
- * redraw.
- */
-static void cf2_format_mode_key(void)
-{
-    uint8_t new_flags = format_mode_flag;
-
-    new_flags &= 0xbf;
-
-    if (format_mode_flag & 0x40)
-        new_flags |= 1;
-    new_flags ^= 1;
-    format_mode_flag = new_flags;
-    flags_need_redrawing_flag++;
-}
-
-/**
- * Toggles justification mode.
- * Inverts the justification flag and marks the status bar for redraw.
- */
-static void cf3_justify_mode_key(void)
-{
-    justifying_flag ^= 0xff;
-    flags_need_redrawing_flag++;
-}
-
-/**
  * Toggles insert mode.
  * Inverts the insert-mode flag and marks the status bar for redraw.
  */
@@ -557,54 +632,6 @@ static void cf4_insert_mode_key(void)
 {
     insert_mode_flag ^= 0xff;
     flags_need_redrawing_flag++;
-}
-
-/**
- * Inserts a line with the default ruler.
- * Creates a new line and installs the default ruler definition.
- */
-static void cf5_default_ruler_key(void)
-{
-    f6_insert_line_key();
-    redraw_editor();
-    cf8_mark_as_ruler_key();
-    create_default_ruler(current_line_buffer.text);
-}
-
-/**
- * Splits the current line at the cursor.
- * Writes the buffer back and inserts a new line at the cursor column, handling
- * command prefixes.
- */
-static void cf6_split_line_key(void)
-{
-    write_line_back_to_document_safely();
-    uint8_t line_len = get_line_length();
-    uint8_t split_pos = line_len;
-
-    if (line_len >= xpos)
-        split_pos = xpos;
-    line_change_pending_flag++;
-    uint8_t insert_offset = split_pos;
-    uint8_t first_char = ((uint8_t*)current_format_line)[0];
-
-    command_prefix_t cp = check_for_command_prefix(first_char);
-
-    if (cp != NO_COMMAND_PREFIX)
-    {
-        insert_offset++;
-        insert_offset++;
-        insert_offset++;
-    }
-    uint32_t sum = (uint32_t)(current_line_ptr - &ram[0]) + insert_offset;
-
-    if (sum > 0xffff)
-    {
-        f6_insert_line_key();
-
-        return;
-    }
-    insert_line_into_document(&ram[(uint16_t)sum]);
 }
 
 /**
@@ -638,31 +665,6 @@ static void cf7_join_lines_key(void)
     split_line_at_wrap(current_line_ptr);
     line_change_pending_flag++;
     clamp_ptr6_to_document();
-}
-
-/**
- * Marks the current line as a ruler.
- * Writes a ruler marker into the edit buffer and enables format mode.
- */
-static void cf8_mark_as_ruler_key(void)
-{
-    current_format_line = (line_t*)edit_buffer_base;
-    heap_format_line_ptr = (line_t*)edit_buffer_base;
-    uint8_t buf_idx = 0;
-
-    ((uint8_t*)current_format_line)[buf_idx] = 0x81;
-    buf_idx++;
-    ((uint8_t*)current_format_line)[buf_idx] = 0x2e;
-    buf_idx++;
-    ((uint8_t*)current_format_line)[buf_idx] = 0x2e;
-    line_counter++;
-
-    if ((edit_buffer_unpacked_flag & 0x80) == 0)
-    {
-        edit_buffer_unpacked_flag = 0x80;
-        edit_buffer_dirty_flag++;
-    }
-    set_format_mode_bit7();
 }
 
 /**
@@ -730,24 +732,6 @@ static void f0_format_block_key(void)
 }
 
 /**
- * Copies the defined block to the cursor.
- * Validates the area and copies it to the current position.
- */
-static void f11_copy_key(void)
-{
-    write_line_back_to_document_safely();
-
-    if (reset_area_to_marks_1_2())
-    {
-        beep();
-
-        return;
-    }
-    check_pointer_in_area();
-    move_cursor_to_address(area_insert_ptr);
-}
-
-/**
  * Moves the cursor left one character.
  * Decrements the cursor column if not at column zero.
  */
@@ -756,18 +740,6 @@ static void f12_left_key(void)
     if (visual_column == 0)
         return;
     xpos--;
-}
-
-/**
- * Moves the cursor right one character.
- * Increments the cursor column up to the maximum line length.
- * void
- */
-void f13_right_key(void)
-{
-    if (xpos >= MAX_LINE_LENGTH)
-        return;
-    xpos++;
 }
 
 /**
@@ -802,73 +774,6 @@ static void f15_up_key(void)
     current_line_ptr = line_ptr;
     line_change_pending_flag++;
     cursor_moved_flag++;
-}
-
-/**
- * Moves the cursor to the top of the document.
- * Scrolls to the first line and unpacks it into the edit buffer.
- */
-static void f1_top_of_text_key(void)
-{
-    scroll_repeat_count = 0xff;
-    move_cursor_up(0xff);
-    unpack_line(edit_buffer_base);
-}
-
-/**
- * Moves the cursor to the bottom of the document.
- * Scrolls to the last line, unpacks it, and moves to line end.
- */
-static void f2_bottom_of_text_key(void)
-{
-    scroll_repeat_count = 0xff;
-    move_cursor_down(0xff);
-    unpack_line(edit_buffer_base);
-    set_xpos_to_line_length();
-}
-
-/**
- * Deletes from the cursor to the end of the line.
- * Removes all characters from the cursor to the maximum line length.
- */
-static void f3_delete_to_eol_key(void)
-{
-    uint8_t bytes_to_delete = MAX_LINE_LENGTH;
-
-    bytes_to_delete -= xpos;
-    line_counter++;
-    delete_edit_buffer_bytes_at_xpos(bytes_to_delete);
-}
-
-/**
- * Moves the cursor to the beginning of the line.
- * Sets the cursor column to zero and marks cursor movement.
- */
-static void f4_beginning_of_line_key(void)
-{
-    cursor_moved_flag++;
-    xpos = 0;
-}
-
-/**
- * Moves the cursor to the end of the line.
- * Sets the cursor column to the current line length.
- */
-static void f5_end_of_line_key(void)
-{
-    cursor_moved_flag++;
-    set_xpos_to_line_length();
-}
-
-/**
- * Inserts a new empty line at the cursor.
- * Writes the buffer back and inserts a line break at the current line.
- */
-static void f6_insert_line_key(void)
-{
-    write_line_back_to_document_safely();
-    line_change_pending_flag++;
-    insert_line_at_cursor(current_line_ptr);
 }
 
 /**
@@ -985,6 +890,46 @@ static void k_command_key(void)
 }
 
 /**
+ * Deletes the block defined by markers 1 and 2.
+ * Resets the area to markers 1 and 2, moves the cursor, and deletes the block.
+ */
+static void cf0_delete_block_key(void)
+{
+    write_line_back_to_document_safely();
+    cursor_moved_flag++;
+
+    if (reset_area_to_marks_1_2())
+    {
+        beep();
+
+        return;
+    }
+    move_cursor_to_address(area_start_ptr);
+    clamp_ptr6_to_document();
+    adjust_area_pointers(area_size);
+    ensure_cr_at_document_top();
+    clear_marks_1_2();
+}
+
+/**
+ * Copies the defined block to the cursor.
+ * Validates the area and copies it to the current position.
+ */
+static void f11_copy_key(void)
+{
+    write_line_back_to_document_safely();
+
+    if (reset_area_to_marks_1_2())
+    {
+        beep();
+
+        return;
+    }
+    check_pointer_in_area();
+    move_cursor_to_address(area_insert_ptr);
+}
+
+/**
  * Handles the O-command prefix.
  * Prompts for a follow-up key and dispatches to formatting and ruler
  * operations.
@@ -1048,6 +993,46 @@ static void o_command_key(void)
 
             return;
     }
+}
+
+/**
+ * Toggles format mode.
+ * Flips the format-mode flag between states and marks the status bar for
+ * redraw.
+ */
+static void cf2_format_mode_key(void)
+{
+    uint8_t new_flags = format_mode_flag;
+
+    new_flags &= 0xbf;
+
+    if (format_mode_flag & 0x40)
+        new_flags |= 1;
+    new_flags ^= 1;
+    format_mode_flag = new_flags;
+    flags_need_redrawing_flag++;
+}
+
+/**
+ * Toggles justification mode.
+ * Inverts the justification flag and marks the status bar for redraw.
+ */
+static void cf3_justify_mode_key(void)
+{
+    justifying_flag ^= 0xff;
+    flags_need_redrawing_flag++;
+}
+
+/**
+ * Inserts a line with the default ruler.
+ * Creates a new line and installs the default ruler definition.
+ */
+static void cf5_default_ruler_key(void)
+{
+    f6_insert_line_key();
+    redraw_editor();
+    cf8_mark_as_ruler_key();
+    create_default_ruler(current_line_buffer.text);
 }
 
 /**
@@ -1132,25 +1117,85 @@ static void q_command_key(void)
 }
 
 /**
- * Handles the Return key.
- * Writes the buffer back and moves the cursor to the next line at column zero.
+ * Splits the current line at the cursor.
+ * Writes the buffer back and inserts a new line at the cursor column, handling
+ * command prefixes.
  */
-void return_key(void)
+static void cf6_split_line_key(void)
 {
     write_line_back_to_document_safely();
-    xpos = 0;
-    uint8_t* line_ptr;
-    uint8_t next_line_len;
+    uint8_t line_len = get_line_length();
+    uint8_t split_pos = line_len;
 
-    if (!find_next_line(current_line_ptr, &line_ptr, &next_line_len))
+    if (line_len >= xpos)
+        split_pos = xpos;
+    line_change_pending_flag++;
+    uint8_t insert_offset = split_pos;
+    uint8_t first_char = ((uint8_t*)current_format_line)[0];
+
+    command_prefix_t cp = check_for_command_prefix(first_char);
+
+    if (cp != NO_COMMAND_PREFIX)
     {
-        advance_current_line_pointer();
+        insert_offset++;
+        insert_offset++;
+        insert_offset++;
+    }
+    uint32_t sum = (uint32_t)(current_line_ptr - &ram[0]) + insert_offset;
+
+    if (sum > 0xffff)
+    {
+        f6_insert_line_key();
 
         return;
     }
-    uint16_t sum = (current_line_ptr - &ram[0]) + next_line_len;
-    insert_line_at_cursor(&ram[sum]);
-    advance_current_line_pointer();
+    insert_line_into_document(&ram[(uint16_t)sum]);
+}
+
+/**
+ * Moves the cursor to the top of the document.
+ * Scrolls to the first line and unpacks it into the edit buffer.
+ */
+static void f1_top_of_text_key(void)
+{
+    scroll_repeat_count = 0xff;
+    move_cursor_up(0xff);
+    unpack_line(edit_buffer_base);
+}
+
+/**
+ * Moves the cursor to the bottom of the document.
+ * Scrolls to the last line, unpacks it, and moves to line end.
+ */
+static void f2_bottom_of_text_key(void)
+{
+    scroll_repeat_count = 0xff;
+    move_cursor_down(0xff);
+    unpack_line(edit_buffer_base);
+    set_xpos_to_line_length();
+}
+
+/**
+ * Deletes from the cursor to the end of the line.
+ * Removes all characters from the cursor to the maximum line length.
+ */
+static void f3_delete_to_eol_key(void)
+{
+    uint8_t bytes_to_delete = MAX_LINE_LENGTH;
+
+    bytes_to_delete -= xpos;
+    line_counter++;
+    delete_edit_buffer_bytes_at_xpos(bytes_to_delete);
+}
+
+/**
+ * Moves the cursor to the end of the line.
+ * Sets the cursor column to the current line length.
+ */
+static void f5_end_of_line_key(void)
+{
+    cursor_moved_flag++;
+    set_xpos_to_line_length();
 }
 
 /**
@@ -1200,6 +1245,42 @@ static void sf11_copy_key(void)
         } while (remaining != 0);
     }
     cf8_mark_as_ruler_key();
+}
+
+/**
+ * Marks the current line as a ruler.
+ * Writes a ruler marker into the edit buffer and enables format mode.
+ */
+static void cf8_mark_as_ruler_key(void)
+{
+    current_format_line = (line_t*)edit_buffer_base;
+    heap_format_line_ptr = (line_t*)edit_buffer_base;
+    uint8_t buf_idx = 0;
+
+    ((uint8_t*)current_format_line)[buf_idx] = 0x81;
+    buf_idx++;
+    ((uint8_t*)current_format_line)[buf_idx] = 0x2e;
+    buf_idx++;
+    ((uint8_t*)current_format_line)[buf_idx] = 0x2e;
+    line_counter++;
+
+    if ((edit_buffer_unpacked_flag & 0x80) == 0)
+    {
+        edit_buffer_unpacked_flag = 0x80;
+        edit_buffer_dirty_flag++;
+    }
+    set_format_mode_bit7();
+}
+
+/**
+ * Inserts a new empty line at the cursor.
+ * Writes the buffer back and inserts a line break at the current line.
+ */
+static void f6_insert_line_key(void)
+{
+    write_line_back_to_document_safely();
+    line_change_pending_flag++;
+    insert_line_at_cursor(current_line_ptr);
 }
 
 /**
@@ -1308,10 +1389,6 @@ ca00f:
     xpos = buf_pos;
 }
 
-static void set_marker(uint8_t marker_idx);
-
-static void set_marker_common(uint8_t marker_char);
-
 /**
  * Moves the cursor down by a page.
  * Advances the cursor by screen height lines.
@@ -1376,6 +1453,16 @@ static void sf2_release_margins_key(void)
         return;
     }
     xpos = (uint8_t)margin_pos;
+}
+
+/**
+ * Moves the cursor to the beginning of the line.
+ * Sets the cursor column to zero and marks cursor movement.
+ */
+static void f4_beginning_of_line_key(void)
+{
+    cursor_moved_flag++;
+    xpos = 0;
 }
 
 /**
@@ -1566,22 +1653,6 @@ static void sf9_delete_command_key(void)
 static void tab_key(void)
 {
     tab_highlight_common(9);
-}
-
-/**
- * Advances to the next line.
- * Moves the current line pointer to the following line and marks cursor
- * movement.
- */
-static void advance_current_line_pointer(void)
-{
-    cursor_moved_flag++;
-    uint8_t* line_ptr;
-    uint8_t line_len;
-
-    if (advance_to_next_line(current_line_ptr, &line_ptr, &line_len))
-        return;
-    current_line_ptr += line_len;
 }
 
 /**
@@ -1936,6 +2007,53 @@ c9ca2:
 }
 
 /**
+ * Returns to the editor main loop.
+ * Uses longjmp to re-enter the editor event loop.
+ */
+void return_to_editor_loop(void)
+{
+    longjmp(env, JMP_EDITOR);
+}
+
+/**
+ * Handles the Return key.
+ * Writes the buffer back and moves the cursor to the next line at column zero.
+ */
+void return_key(void)
+{
+    write_line_back_to_document_safely();
+    xpos = 0;
+    uint8_t* line_ptr;
+    uint8_t next_line_len;
+
+    if (!find_next_line(current_line_ptr, &line_ptr, &next_line_len))
+    {
+        advance_current_line_pointer();
+
+        return;
+    }
+    uint16_t sum = (current_line_ptr - &ram[0]) + next_line_len;
+    insert_line_at_cursor(&ram[sum]);
+    advance_current_line_pointer();
+}
+
+/**
+ * Advances to the next line.
+ * Moves the current line pointer to the following line and marks cursor
+ * movement.
+ */
+static void advance_current_line_pointer(void)
+{
+    cursor_moved_flag++;
+    uint8_t* line_ptr;
+    uint8_t line_len;
+
+    if (advance_to_next_line(current_line_ptr, &line_ptr, &line_len))
+        return;
+    current_line_ptr += line_len;
+}
+
+/**
  * Prompts for a marker key.
  * Displays the marker prompt and reads a key, returning its marker index.
  * @return marker index 0-5 or MARKER_INVALID
@@ -2140,6 +2258,18 @@ static void tab_highlight_common(uint8_t char_to_insert)
 }
 
 /**
+ * Moves the cursor right one character.
+ * Increments the cursor column up to the maximum line length.
+ * void
+ */
+void f13_right_key(void)
+{
+    if (xpos >= MAX_LINE_LENGTH)
+        return;
+    xpos++;
+}
+
+/**
  * Initialises the editor mode.
  * Clears the screen and resets editor state variables.
  */
@@ -2159,34 +2289,6 @@ void enter_editor_mode(void)
     } while ((remaining_rows & 0x80) == 0);
     status_line_needs_redrawing_flag = 2;
     flags_need_redrawing_flag = 1;
-}
-
-/**
- * Clears format-mode bit 7.
- * Clears the high bit of the format mode flag and marks redraw if changed.
- */
-void clear_format_mode_bit7(void)
-{
-    uint8_t old = format_mode_flag;
-
-    format_mode_flag &= ~0x80;
-
-    if (old != format_mode_flag)
-        flags_need_redrawing_flag++;
-}
-
-/**
- * Sets format-mode bit 7.
- * Sets the high bit of the format mode flag and marks redraw if changed.
- */
-void set_format_mode_bit7(void)
-{
-    uint8_t old = format_mode_flag;
-
-    format_mode_flag |= 0x80;
-
-    if (old != format_mode_flag)
-        flags_need_redrawing_flag++;
 }
 
 void draw_previous_word(
@@ -2282,110 +2384,6 @@ bool adjust_margins_at_left_margin(void)
         line_counter++;
     }
     return false;
-}
-
-/**
- * Inserts bytes at the cursor in the edit buffer.
- * Makes room at the cursor by shifting existing content right.
- * @param idx number of bytes to insert
- * @return true on success, false if overflow or out of space
- */
-bool insert_edit_buffer_bytes_at_xpos(uint8_t count)
-{
-    if (xpos >= MAX_LINE_LENGTH)
-    {
-        beep();
-
-        return false;
-    }
-    scratch_offset = count;
-    uint8_t acc1 = get_line_length();
-
-    acc1 += scratch_offset;
-
-    if (acc1 < scratch_offset)
-    {
-        beep();
-
-        return false;
-    }
-    if (acc1 >= MAX_LINE_LENGTH + 1)
-    {
-        beep();
-
-        return false;
-    }
-    edit_buffer_dirty_flag++;
-    uint8_t* size_delta = current_line_buffer.text;
-    uint8_t scan_pos = MAX_LINE_LENGTH;
-
-cae27:
-    scan_pos--;
-    count = 0;
-    uint8_t tail_len = scan_pos;
-
-    tail_len += scratch_offset;
-
-    if (tail_len >= scratch_offset)
-    {
-        if (tail_len < MAX_LINE_LENGTH)
-            count = tail_len;
-    }
-    scratch_index = count;
-
-    for (;;)
-    {
-        uint8_t idx = find_marker_at_position(scan_pos, size_delta);
-
-        if (idx == 0x0c)
-            goto cae52;
-        uint16_t marker_addr = scratch_index ? 3 + scratch_index : 0;
-        markers_array[idx / 2] =
-            marker_addr ? ((uint8_t*)&current_line_buffer + (marker_addr))
-                        : NULL;
-    }
-cae52:
-    if (scan_pos != xpos)
-        goto cae27;
-    int copy_len = MAX_LINE_LENGTH - (int)xpos - (int)scratch_offset;
-
-    if (copy_len > 0)
-    {
-        memmove(&current_line_buffer.text[xpos + scratch_offset],
-            &current_line_buffer.text[xpos],
-            (size_t)copy_len);
-    }
-    return true;
-}
-
-/**
- * Advances to the next document line.
- * Zeroes xpos and moves current_line_ptr past the current CR.
- * @return true if at end of document
- */
-static bool advance_to_next_doc_line(void)
-{
-    xpos = 0;
-    uint8_t* line_ptr;
-    uint8_t line_len;
-    bool end_of_document =
-        find_next_line(current_line_ptr, &line_ptr, &line_len);
-
-    if (!end_of_document)
-        current_line_ptr = line_ptr + line_len;
-
-    return end_of_document;
-}
-
-[[nodiscard]] static bool flush_formatted_line(void)
-{
-    line_format_status = (uint8_t)(line_format_status << 1) | 1;
-    edit_line_len = format_src_index - 1;
-    edit_buffer_unpacked_flag++;
-
-    if (!write_line_back_to_document())
-        return false;
-    return true;
 }
 
 /**
@@ -2528,15 +2526,6 @@ static void insert_line_into_document(uint8_t* target_ptr)
 }
 
 /**
- * Updates the stored line length.
- * Copies the current screen width into line_lengths for the current row.
- */
-static void update_line_length(void)
-{
-    line_lengths[ypos] = screen_maxcolumn;
-}
-
-/**
  * Clamps the editor pointer to the current line.
  * Ensures editor_ptr6 does not advance beyond current_line_ptr and resets
  * display flags.
@@ -2559,154 +2548,6 @@ void clear_screen(void)
 }
 
 /**
- * Clears to the end of the line.
- * Fills the remainder of the screen line with the given character.
- * @param acc fill character
- * @param line screen line index
- */
-void clear_to_eol(uint8_t fill_char, uint8_t line)
-{
-    uint8_t line_len = line_lengths[line];
-
-    if (line_len != 0)
-    {
-        do
-        {
-            screen_putchar(fill_char);
-            line_lengths[line]--;
-        } while (line_lengths[line] != 0);
-    }
-}
-
-/**
- * Disables the cursor.
- * Hides the cursor via the screen driver.
- */
-void cursor_off(void)
-{
-    screen_enablecursor(0);
-}
-
-/**
- * Enables the cursor.
- * Shows the cursor via the screen driver.
- */
-void cursor_on(void)
-{
-    screen_enablecursor(1);
-}
-
-/**
- * Renders a document line to the screen.
- * Formats and draws a line with correct highlighting and horizontal scrolling.
- * @param rs render state
- * @param addr address of the document line
- */
-void draw_line(render_state_t* rs, uint8_t* addr)
-{
-    rs->line_ptr = addr;
-    scratch_line_ptr = addr;
-    screen_setcursor(0, rs->line);
-    rs->pos = 0;
-    rs->col = 0;
-    rs->buf_off = 0;
-    rs->char_width = 0;
-    command_prefix_t f =
-        deref_and_check_for_command_prefix(0, scratch_line_ptr);
-
-    if (f == NO_COMMAND_PREFIX || hscroll_pos != 0)
-    {
-        rs->ch = 0x20;
-        render_char(rs);
-        render_char(rs);
-    }
-    else
-    {
-        rs->pos = 1;
-        advance_to_next_char_and_render(rs);
-        advance_to_next_char_and_render(rs);
-        rs->ch = 0x20;
-    }
-    render_char(rs);
-
-    do
-    {
-        advance_to_next_char(rs);
-
-        do
-        {
-            render_xchar(rs);
-            rs->width--;
-        } while (rs->width != 0);
-    } while (rs->ch != 0x0d);
-    clear_to_eol(0x20, rs->line);
-    clear_to_eol(0x20, rs->line);
-    line_lengths[rs->line] = rs->col;
-}
-
-/**
- * Draws the ruler line.
- * Renders the current ruler at the top row if a redraw is needed.
- */
-static void draw_ruler(void)
-{
-    if (status_line_needs_redrawing_flag == 0)
-        return;
-    status_line_needs_redrawing_flag = 0;
-    render_state_t rs = {.line = 0};
-
-    draw_line(&rs, current_ruler_ptr);
-    flags_need_redrawing_flag = 1;
-}
-
-/**
- * Draws the status bar.
- * Shows format, justify, and insert mode indicators.
- */
-static void draw_status_word(void)
-{
-    flags_need_redrawing_flag = 0;
-    home_cursor();
-    uint8_t status_char = 0x46;
-    uint8_t fmt_flags = format_mode_flag;
-
-    if (fmt_flags != 0)
-    {
-        status_char = 0x4d;
-        fmt_flags &= 0xc0;
-
-        if (fmt_flags == 0)
-            status_char = 0x20;
-    }
-    screen_putchar(status_char);
-    uint8_t acc2 = 0x4a;
-
-    if (justifying_flag != 0)
-        acc2 = 0x20;
-    screen_putchar(acc2);
-
-    if (insert_mode_flag != 0)
-    {
-        home_cursor();
-
-        return;
-    }
-    home_cursor();
-}
-
-/**
- * Jumps to a marker.
- * Moves the cursor to the address stored in the marker.
- * @param idx marker index
- */
-static void go_to_marker(uint8_t marker_idx)
-{
-    move_cursor_to_address(markers_array[marker_idx]);
-    display_start_row = 1;
-    update_line_length();
-}
-
-/**
  * Jumps to a numbered marker.
  * Writes the buffer back and jumps to the marker identified by the given
  * character.
@@ -2722,12 +2563,363 @@ static void go_to_marker_n(uint8_t marker)
 }
 
 /**
- * Moves the cursor to the home position.
- * Sets the cursor to row 0, column 0.
+ * Handles memory-full condition.
+ * Displays an error and returns to the editor loop.
  */
-void home_cursor(void)
+void memory_full(void)
 {
-    screen_setcursor(0, 0);
+    show_memory_full_error();
+    longjmp(env, JMP_EDITOR);
+}
+
+/**
+ * Common handler for setting numbered markers.
+ * Writes the buffer, looks up the marker index, and sets it.
+ * @param acc marker character
+ */
+static void set_marker_common(uint8_t marker_char)
+{
+    write_line_back_to_document_safely();
+    int idx = lookup_marker(marker_char);
+
+    set_marker(idx);
+}
+
+/**
+ * Sets a marker.
+ * Stores the current position in the given marker and marks display for update.
+ * @param idx marker index
+ */
+static void set_marker(uint8_t marker_idx)
+{
+    set_marker_to_here(marker_idx);
+    display_start_row = 1;
+    update_line_length();
+}
+
+/**
+ * Jumps to a marker.
+ * Moves the cursor to the address stored in the marker.
+ * @param idx marker index
+ */
+static void go_to_marker(uint8_t marker_idx)
+{
+    move_cursor_to_address(markers_array[marker_idx]);
+    display_start_row = 1;
+    update_line_length();
+}
+
+/**
+ * Updates the stored line length.
+ * Copies the current screen width into line_lengths for the current row.
+ */
+static void update_line_length(void)
+{
+    line_lengths[ypos] = screen_maxcolumn;
+}
+
+/**
+ * Displays a memory-full error message.
+ * Shows an inverted message and waits for Escape.
+ */
+void show_memory_full_error(void)
+{
+    uint8_t key_code;
+
+    cursor_off();
+    screen_setcursor(3, 0);
+    screen_setstyle(STYLE_REVERSE);
+    uint8_t remaining_cols = screen_maxcolumn;
+
+    line_lengths[0] = remaining_cols;
+    remaining_cols -= 2;
+    uint8_t msg_idx = 0;
+
+    for (;;)
+    {
+        uint8_t msg_char = memory_full_message[msg_idx];
+
+        if (msg_char == 0)
+            break;
+        msg_idx++;
+        remaining_cols--;
+
+        if (remaining_cols == 0)
+            break;
+        screen_putchar(msg_char);
+    }
+    screen_setstyle(0);
+
+    if (remaining_cols != 0)
+    {
+        do
+        {
+            screen_putchar(0x20);
+            remaining_cols--;
+        } while (remaining_cols != 0);
+    }
+    edit_buffer_unpacked_flag = 0;
+    clear_cmd();
+
+    do
+    {
+        beep();
+        key_code = screen_getchar();
+    } while (key_code != 0x1b);
+    cursor_on();
+    status_line_needs_redrawing_flag = 1;
+    display_start_row = 1;
+}
+
+/**
+ * Appends a byte to the output buffer.
+ * Writes the byte if space remains in the editor output buffer.
+ * @param acc byte to append
+ */
+static void append_to_output_buffer(uint8_t byte_to_append)
+{
+    if (editor_output_pos >= MAX_LINE_LENGTH)
+        return;
+    output_buffer[editor_output_pos] = byte_to_append;
+    editor_output_pos++;
+}
+
+/**
+ * Formats the current paragraph.
+ * Processes the line at current_line_ptr, handling margins, tabs, and word
+ * wrap.
+ * @return FORMAT_OK, FORMAT_AT_END, or FORMAT_MEMORY_FULL
+ */
+format_result_t format_paragraph(void)
+{
+    uint8_t cur_byte;
+    uint8_t left_stop_tmp;
+    uint8_t a_15;
+    uint8_t is_space;
+
+    cursor_moved_flag++;
+    print_xpos = 4;
+    uint8_t out_pos = 0;
+
+    input_buffer_offset = out_pos;
+    line_format_status = out_pos;
+    uint8_t first_char = current_line_ptr[out_pos];
+
+    command_prefix_t cp = check_for_command_prefix(first_char);
+
+    if (cp != NO_COMMAND_PREFIX)
+        return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
+
+c998a:
+    uint8_t fmt_flags = format_mode_flag;
+
+    fmt_flags &= 0x81;
+
+    if (fmt_flags != 0)
+        return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
+
+    if (ruler_right_stop == 0)
+        return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
+
+    if (ruler_right_stop < ruler_left_stop)
+        return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
+    uint8_t available_width = ruler_right_stop - ruler_left_stop + 2;
+
+    scratch_offset = available_width;
+    wipe_buffer(0x10, edit_buffer_base);
+    uint8_t* size_delta = current_line_ptr;
+    uint8_t tmp_pos = 0;
+    uint8_t soft_hyphen_flag = 0;
+
+    format_src_index = tmp_pos;
+    column_position = tmp_pos;
+    soft_hyphen_flag = tmp_pos;
+    justify_gap_count = tmp_pos;
+    bottom_margin = tmp_pos;
+
+c99b6:
+    editor_output_pos = tmp_pos;
+    uint8_t src_pos = format_src_index;
+
+    do
+    {
+        uint8_t idx = find_marker_at_position(src_pos, size_delta);
+
+        if (idx == 0x0c)
+            break;
+        markers_array[idx / 2] = 0;
+        line_format_status++;
+    } while (line_format_status != 0);
+
+c99c9:
+    do
+    {
+        cur_byte = current_line_ptr[src_pos];
+        src_pos++;
+        format_src_index = src_pos;
+
+        if (cur_byte == 9)
+        {
+            {
+                bool is_tab = false;
+
+                (void)process_document_character(cur_byte, &is_space, &is_tab);
+            }
+            is_space--;
+            uint8_t col_tmp = is_space;
+
+            col_tmp += column_position;
+            column_position = col_tmp;
+            cur_byte = 9;
+
+            goto c9a21;
+        }
+        if (cur_byte != 0x1a)
+            goto c99ee;
+
+        do
+        {
+            if (justify_gap_count != 0)
+                goto c99c9;
+            cur_byte = 0x20;
+
+            goto c9a2e;
+
+        c99ee:
+            if (cur_byte != 0x0b)
+                goto c9a11;
+            is_space = input_buffer_offset;
+        } while (is_space != 0 || soft_hyphen_flag != 0);
+        soft_hyphen_flag++;
+        left_stop_tmp = ruler_left_stop;
+    } while (left_stop_tmp == 0);
+
+    if (column_position < ruler_left_stop)
+    {
+        column_position = left_stop_tmp;
+        column_position--;
+    }
+    left_stop_tmp += scratch_offset;
+    scratch_offset = left_stop_tmp;
+    cur_byte = 0x0b;
+
+c9a11:
+    if (cur_byte == 0x0d)
+    {
+        src_pos--;
+
+        if (src_pos == 0)
+            return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
+
+        if (find_next_word_boundary(src_pos))
+            goto c9a87;
+        cur_byte = 0x20;
+        input_buffer_offset = cur_byte;
+    }
+c9a21:
+    tmp_pos = editor_output_pos;
+    is_space = 0;
+
+    if (cur_byte == 0x20)
+    {
+        is_space++;
+
+        if ((justify_gap_count & 0x80))
+            goto c9a40;
+    }
+c9a2e:
+    tmp_pos = editor_output_pos;
+    current_line_buffer.text[tmp_pos] = cur_byte;
+
+    if (cur_byte == 0x20)
+        bottom_margin = (uint8_t)(bottom_margin >> 1) | 0x80;
+    tmp_pos++;
+    control_code_t cc = check_for_control_code(cur_byte);
+
+    if (cc == NO_CONTROL_CODE)
+        column_position++;
+
+c9a40:
+    bool old_l0046_high = (justify_gap_count & 0x80) != 0;
+
+    justify_gap_count = is_space;
+
+    if (!(old_l0046_high) && cur_byte != 0x20)
+    {
+        if (tmp_pos >= MAX_LINE_LENGTH + 1)
+            goto c9a60;
+
+        if (bottom_margin == 0)
+            goto c9a58;
+
+        if (column_position >= scratch_offset)
+            goto c9a60;
+    }
+c9a58:
+    if (tmp_pos >= 0x86)
+        tmp_pos--;
+
+    goto c99b6;
+
+c9a60:
+    format_src_index++;
+
+    do
+    {
+        format_src_index--;
+        tmp_pos--;
+
+        if (tmp_pos == 0)
+            return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
+        uint8_t saved_byte = current_line_buffer.text[tmp_pos];
+        {
+            current_line_buffer.text[tmp_pos] = 0x10;
+            a_15 = saved_byte;
+        }
+    } while (a_15 != 0x20);
+    insert_at_left_margin();
+    justify_edit_buffer(edit_buffer_base);
+
+    if (flush_formatted_line())
+        return FORMAT_MEMORY_FULL;
+    bool at_end_1;
+
+    at_end_1 = advance_to_next_doc_line();
+
+    if (line_format_status != 0)
+    {
+        goto c998a;
+
+    c9a87:
+        insert_at_left_margin();
+
+        if (flush_formatted_line())
+            return FORMAT_MEMORY_FULL;
+        at_end_1 = advance_to_next_doc_line();
+
+        goto c9aa5;
+    }
+c9aa5:
+    return at_end_1 ? FORMAT_AT_END : FORMAT_OK;
+}
+
+/**
+ * Advances to the next document line.
+ * Zeroes xpos and moves current_line_ptr past the current CR.
+ * @return true if at end of document
+ */
+static bool advance_to_next_doc_line(void)
+{
+    xpos = 0;
+    uint8_t* line_ptr;
+    uint8_t line_len;
+    bool end_of_document =
+        find_next_line(current_line_ptr, &line_ptr, &line_len);
+
+    if (!end_of_document)
+        current_line_ptr = line_ptr + line_len;
+
+    return end_of_document;
 }
 
 /**
@@ -2932,78 +3124,312 @@ c9871:
     return idx4;
 }
 
-/**
- * Handles memory-full condition.
- * Displays an error and returns to the editor loop.
- */
-void memory_full(void)
+static bool process_char_for_output(
+    uint8_t buf_idx, bool carry_in, uint8_t* char_width_out, uint8_t* out_char)
 {
-    show_memory_full_error();
-    longjmp(env, JMP_EDITOR);
-}
-
-static const uint8_t memory_full_message[] = "Memory full - Press ESCAPE";
-
-uint8_t process_current_document_character(uint8_t* target_ptr,
-    uint8_t* char_width_out,
-    uint8_t* pos_inout,
-    bool* is_tab)
-{
-    uint8_t cur_byte = target_ptr[*pos_inout];
-    (*pos_inout)++;
-    uint8_t processed_char =
-        process_document_character(cur_byte, char_width_out, is_tab);
-    return processed_char;
-}
-
-/**
- * Recalculates the cursor column.
- * Walks the edit line to map visual column to buffer position, handling tabs.
- */
-static void recalculate_cursor_xpos(void)
-{
-    uint8_t char_width;
-    uint8_t* line_ptr = current_line_buffer.text;
-    uint8_t acc_width = line_change_pending_flag;
-    bool is_tab = false;
-
-    if (acc_width == 0)
+    screen_column = (screen_column >> 1) | (carry_in ? 0x80 : 0);
+    (*out_char) = current_line_buffer.text[buf_idx];
+    output_buffer[buf_idx] = (*out_char);
+    if ((*out_char) == 9)
     {
-        uint8_t scan_pos = acc_width;
-
-        do
         {
-            if (scan_pos == xpos)
-                goto ca63d;
-            column_position = acc_width;
-            (void)process_current_document_character(
-                line_ptr, &char_width, &scan_pos, &is_tab);
-            acc_width = char_width;
-            acc_width += column_position;
-        } while (acc_width >= column_position);
+            bool is_tab = false;
+
+            (*out_char) = process_document_character(
+                (*out_char), char_width_out, &is_tab);
+        }
+        (*out_char) = *char_width_out;
+        (*out_char) += column_position;
+
+        if ((*out_char) != 0)
+            goto c995c;
     }
-    acc_width = 0;
-    line_change_pending_flag = acc_width;
-    uint8_t buf_pos = acc_width;
+    if ((*out_char) == 0x0b)
+    {
+        (*out_char) = ruler_left_stop;
+
+        if ((*out_char) != 0)
+        {
+            *char_width_out = column_position;
+
+            if (*char_width_out != 0)
+            {
+                if (*char_width_out >= ruler_left_stop)
+                {
+                    (*char_width_out)++;
+                    (*out_char) = *char_width_out;
+                }
+            }
+        c995c:
+            column_position = (*out_char);
+            justify_overflow_counter = buf_idx;
+            justify_overflow_counter++;
+            (*out_char) = 0;
+            justify_gap_count = (*out_char);
+
+            return true;
+        }
+    c9967:
+        (*out_char) = 0x20;
+    }
+    if ((*out_char) < 0x1b)
+        goto c9967;
+
+    if ((*out_char) < 0x20)
+        return false;
+    column_position++;
+
+    return column_position == 0;
+}
+
+/**
+ * Finds the next word boundary for wrapping.
+ * Scans forward to locate a suitable wrap point.
+ * @param pos current source index
+ * @return true if wrap is needed
+ */
+static bool find_next_word_boundary(uint8_t src_idx)
+{
+    uint8_t temp_save;
+    uint8_t base_off = src_idx;
+    uint8_t* scan_ptr = current_line_ptr + base_off + 1;
+    uint8_t* insert_ptr = scan_ptr;
+
+    src_idx = 0;
+    screen_column = src_idx;
 
     do
     {
-        column_position = acc_width;
-        (void)process_current_document_character(
-            line_ptr, &char_width, &buf_pos, &is_tab);
-        acc_width = char_width;
-        acc_width += column_position;
-    } while (acc_width < visual_column);
+        uint8_t next_char = insert_ptr[src_idx];
 
-    if (acc_width != visual_column)
+        if (next_char == 0)
+            goto c9b2f;
+        command_prefix_t cp = check_for_command_prefix(next_char);
+
+        if (cp != NO_COMMAND_PREFIX || next_char == 0x0d)
+            goto c9b2f;
+
+        if (src_idx == 0)
+        {
+            temp_save = src_idx;
+
+            goto c9aef;
+
+        c9ae9:
+            scan_ptr++;
+
+        c9aef:
+            uint8_t scan_char = scan_ptr[src_idx];
+
+            if (scan_char == 0 || scan_char == 0x0d)
+                goto c9b06;
+
+            if (scan_char == 9)
+                goto c9b2f;
+
+            if (scan_char == 0x0b)
+            {
+                temp_save |= 0x80;
+
+                if (scan_char >= 0x0b)
+                    goto c9ae9;
+            }
+        }
+    c9b06:
+        uint8_t check_char = insert_ptr[src_idx];
+
+        if (check_char == 0x20)
+        {
+            if (ruler_left_stop == 0 || temp_save == 0 || screen_column != 0)
+                goto c9b2f;
+        }
+        else
+        {
+            if (check_char != 0x0b)
+                break;
+            screen_column = check_char;
+        }
+        src_idx++;
+    } while (src_idx != 0);
+
+    if (ruler_left_stop != 0 && temp_save != 0 && screen_column == 0)
     {
-        acc_width = column_position;
-        buf_pos--;
+    c9b2f:
+        return true;
     }
-    xpos = buf_pos;
+    return false;
+}
 
-ca63d:
-    visual_column = acc_width;
+/**
+ * Inserts a character into the edit buffer.
+ * Makes room and stores the character at the cursor.
+ * @param acc character to insert
+ * @return true on success
+ */
+static bool insert_character_into_edit_buffer(uint8_t ch)
+{
+    bool ok;
+    {
+        ok = insert_edit_buffer_bytes_at_xpos(1);
+        ch = ch;
+    }
+    if (!ok)
+        return false;
+    current_line_buffer.text[xpos] = ch;
+    line_counter++;
+
+    return true;
+}
+
+/**
+ * Sets the cursor to the end of the line.
+ * Updates xpos to the current line length.
+ */
+static void set_xpos_to_line_length(void)
+{
+    xpos = get_line_length();
+}
+
+/**
+ * Inserts at the left margin if needed.
+ * Ensures a margin tab exists by inserting one at column zero.
+ */
+static void insert_at_left_margin(void)
+{
+    if (find_left_margin_stop() < 0)
+        insert_byte_at_xpos(0);
+}
+
+/**
+ * find_left_margin_stop: Finds the left margin stop (0x0b) in the edit line.
+ *
+ * @return the position after the 0x0b in the edit line, or -1 if no margin
+ *         stop was found.
+ */
+static int find_left_margin_stop(void)
+{
+    uint8_t scan_pos = 0;
+
+    if (ruler_left_stop != 0)
+    {
+        do
+        {
+            uint8_t scanned_char = current_line_buffer.text[scan_pos];
+
+            scan_pos++;
+
+            if (scanned_char == 0x0b)
+                return scan_pos;
+        } while (scan_pos < MAX_LINE_LENGTH);
+
+        return -1;
+    }
+    return scan_pos;
+}
+
+/**
+ * Inserts a margin byte at a position.
+ * Inserts a single margin tab at the given position.
+ * @param pos position
+ * @return true on success
+ */
+static bool insert_byte_at_xpos(uint8_t insert_pos)
+{
+    bool ok;
+    uint8_t saved_xpos = xpos;
+
+    xpos = insert_pos;
+    ok = insert_edit_buffer_bytes_at_xpos(1);
+
+    if (ok)
+        current_line_buffer.text[xpos] = 0x0b;
+    xpos = saved_xpos;
+
+    return ok;
+}
+
+/**
+ * Inserts bytes at the cursor in the edit buffer.
+ * Makes room at the cursor by shifting existing content right.
+ * @param idx number of bytes to insert
+ * @return true on success, false if overflow or out of space
+ */
+bool insert_edit_buffer_bytes_at_xpos(uint8_t count)
+{
+    if (xpos >= MAX_LINE_LENGTH)
+    {
+        beep();
+
+        return false;
+    }
+    scratch_offset = count;
+    uint8_t acc1 = get_line_length();
+
+    acc1 += scratch_offset;
+
+    if (acc1 < scratch_offset)
+    {
+        beep();
+
+        return false;
+    }
+    if (acc1 >= MAX_LINE_LENGTH + 1)
+    {
+        beep();
+
+        return false;
+    }
+    edit_buffer_dirty_flag++;
+    uint8_t* size_delta = current_line_buffer.text;
+    uint8_t scan_pos = MAX_LINE_LENGTH;
+
+cae27:
+    scan_pos--;
+    count = 0;
+    uint8_t tail_len = scan_pos;
+
+    tail_len += scratch_offset;
+
+    if (tail_len >= scratch_offset)
+    {
+        if (tail_len < MAX_LINE_LENGTH)
+            count = tail_len;
+    }
+    scratch_index = count;
+
+    for (;;)
+    {
+        uint8_t idx = find_marker_at_position(scan_pos, size_delta);
+
+        if (idx == 0x0c)
+            goto cae52;
+        uint16_t marker_addr = scratch_index ? 3 + scratch_index : 0;
+        markers_array[idx / 2] =
+            marker_addr ? ((uint8_t*)&current_line_buffer + (marker_addr))
+                        : NULL;
+    }
+cae52:
+    if (scan_pos != xpos)
+        goto cae27;
+    int copy_len = MAX_LINE_LENGTH - (int)xpos - (int)scratch_offset;
+
+    if (copy_len > 0)
+    {
+        memmove(&current_line_buffer.text[xpos + scratch_offset],
+            &current_line_buffer.text[xpos],
+            (size_t)copy_len);
+    }
+    return true;
+}
+
+/**
+ * Clear the unpacked flag, redraw the editor, and write the edit buffer back.
+ */
+void redraw_and_write_back(void)
+{
+    edit_buffer_unpacked_flag = 0;
+    redraw_editor();
+    write_line_back_to_document_safely();
 }
 
 /**
@@ -3280,6 +3706,272 @@ ca3de:
 }
 
 /**
+ * Disables the cursor.
+ * Hides the cursor via the screen driver.
+ */
+void cursor_off(void)
+{
+    screen_enablecursor(0);
+}
+
+/**
+ * Enables the cursor.
+ * Shows the cursor via the screen driver.
+ */
+void cursor_on(void)
+{
+    screen_enablecursor(1);
+}
+
+/**
+ * Draws the ruler line.
+ * Renders the current ruler at the top row if a redraw is needed.
+ */
+static void draw_ruler(void)
+{
+    if (status_line_needs_redrawing_flag == 0)
+        return;
+    status_line_needs_redrawing_flag = 0;
+    render_state_t rs = {.line = 0};
+
+    draw_line(&rs, current_ruler_ptr);
+    flags_need_redrawing_flag = 1;
+}
+
+/**
+ * Renders a document line to the screen.
+ * Formats and draws a line with correct highlighting and horizontal scrolling.
+ * @param rs render state
+ * @param addr address of the document line
+ */
+void draw_line(render_state_t* rs, uint8_t* addr)
+{
+    rs->line_ptr = addr;
+    scratch_line_ptr = addr;
+    screen_setcursor(0, rs->line);
+    rs->pos = 0;
+    rs->col = 0;
+    rs->buf_off = 0;
+    rs->char_width = 0;
+    command_prefix_t f =
+        deref_and_check_for_command_prefix(0, scratch_line_ptr);
+
+    if (f == NO_COMMAND_PREFIX || hscroll_pos != 0)
+    {
+        rs->ch = 0x20;
+        render_char(rs);
+        render_char(rs);
+    }
+    else
+    {
+        rs->pos = 1;
+        advance_to_next_char_and_render(rs);
+        advance_to_next_char_and_render(rs);
+        rs->ch = 0x20;
+    }
+    render_char(rs);
+
+    do
+    {
+        advance_to_next_char(rs);
+
+        do
+        {
+            render_xchar(rs);
+            rs->width--;
+        } while (rs->width != 0);
+    } while (rs->ch != 0x0d);
+    clear_to_eol(0x20, rs->line);
+    clear_to_eol(0x20, rs->line);
+    line_lengths[rs->line] = rs->col;
+}
+
+/**
+ * Clears to the end of the line.
+ * Fills the remainder of the screen line with the given character.
+ * @param acc fill character
+ * @param line screen line index
+ */
+void clear_to_eol(uint8_t fill_char, uint8_t line)
+{
+    uint8_t line_len = line_lengths[line];
+
+    if (line_len != 0)
+    {
+        do
+        {
+            screen_putchar(fill_char);
+            line_lengths[line]--;
+        } while (line_lengths[line] != 0);
+    }
+}
+
+/**
+ * Draws the status bar.
+ * Shows format, justify, and insert mode indicators.
+ */
+static void draw_status_word(void)
+{
+    flags_need_redrawing_flag = 0;
+    home_cursor();
+    uint8_t status_char = 0x46;
+    uint8_t fmt_flags = format_mode_flag;
+
+    if (fmt_flags != 0)
+    {
+        status_char = 0x4d;
+        fmt_flags &= 0xc0;
+
+        if (fmt_flags == 0)
+            status_char = 0x20;
+    }
+    screen_putchar(status_char);
+    uint8_t acc2 = 0x4a;
+
+    if (justifying_flag != 0)
+        acc2 = 0x20;
+    screen_putchar(acc2);
+
+    if (insert_mode_flag != 0)
+    {
+        home_cursor();
+
+        return;
+    }
+    home_cursor();
+}
+
+/**
+ * Moves the cursor to the home position.
+ * Sets the cursor to row 0, column 0.
+ */
+void home_cursor(void)
+{
+    screen_setcursor(0, 0);
+}
+
+/**
+ * Recalculates the cursor column.
+ * Walks the edit line to map visual column to buffer position, handling tabs.
+ */
+static void recalculate_cursor_xpos(void)
+{
+    uint8_t char_width;
+    uint8_t* line_ptr = current_line_buffer.text;
+    uint8_t acc_width = line_change_pending_flag;
+    bool is_tab = false;
+
+    if (acc_width == 0)
+    {
+        uint8_t scan_pos = acc_width;
+
+        do
+        {
+            if (scan_pos == xpos)
+                goto ca63d;
+            column_position = acc_width;
+            (void)process_current_document_character(
+                line_ptr, &char_width, &scan_pos, &is_tab);
+            acc_width = char_width;
+            acc_width += column_position;
+        } while (acc_width >= column_position);
+    }
+    acc_width = 0;
+    line_change_pending_flag = acc_width;
+    uint8_t buf_pos = acc_width;
+
+    do
+    {
+        column_position = acc_width;
+        (void)process_current_document_character(
+            line_ptr, &char_width, &buf_pos, &is_tab);
+        acc_width = char_width;
+        acc_width += column_position;
+    } while (acc_width < visual_column);
+
+    if (acc_width != visual_column)
+    {
+        acc_width = column_position;
+        buf_pos--;
+    }
+    xpos = buf_pos;
+
+ca63d:
+    visual_column = acc_width;
+}
+
+/**
+ * Renders a character with horizontal scroll.
+ * Accounts for hscroll before delegating to render_char.
+ * @param rs render state
+ */
+static void render_xchar(render_state_t* rs)
+{
+    rs->char_width++;
+    uint8_t buf_off = rs->buf_off;
+
+    rs->buf_off++;
+
+    if (buf_off < hscroll_pos)
+        return;
+    render_char(rs);
+}
+
+/**
+ * Computes the top display line.
+ * Walks backward from current_line_ptr to find the top-of-screen line.
+ * @return display start adjustment
+ */
+static uint8_t compute_display_start_line(void)
+{
+    ruler_index_ptr = saved_ruler_index_redraw;
+    uint8_t half_rows = screen_maxrow;
+
+    display_start_row = half_rows;
+    half_rows >>= 1;
+    uint8_t rows_needed = half_rows;
+
+    rows_needed++;
+
+    if ((scroll_repeat_count & 0x80) == 0)
+    {
+        if (scroll_repeat_count != 0)
+            rows_needed = ypos;
+    }
+    uint8_t* line = current_line_ptr;
+
+    for (;;)
+    {
+        rows_needed--;
+
+        if (rows_needed == 0)
+            break;
+        uint8_t* line_ptr;
+
+        if (!find_previous_line(line, &line_ptr))
+            break;
+        line = line_ptr;
+        continue;
+    }
+    top_of_screen_line_ptr = line;
+    saved_ruler_index_scroll = ruler_index_ptr;
+    ruler_index_ptr = saved_ruler_index_redraw;
+
+    return rows_needed;
+}
+
+/**
+ * Advances and renders the next character.
+ * Combines character advance with rendering.
+ * @param rs render state
+ */
+static void advance_to_next_char_and_render(render_state_t* rs)
+{
+    advance_to_next_char(rs);
+    render_char(rs);
+}
+
+/**
  * Renders a character with attributes.
  * Handles highlighting, control codes, and clipping to screen width.
  * @param rs render state
@@ -3344,544 +4036,6 @@ ca523:
 }
 
 /**
- * Renders a character with horizontal scroll.
- * Accounts for hscroll before delegating to render_char.
- * @param rs render state
- */
-static void render_xchar(render_state_t* rs)
-{
-    rs->char_width++;
-    uint8_t buf_off = rs->buf_off;
-
-    rs->buf_off++;
-
-    if (buf_off < hscroll_pos)
-        return;
-    render_char(rs);
-}
-
-/**
- * Sets a marker.
- * Stores the current position in the given marker and marks display for update.
- * @param idx marker index
- */
-static void set_marker(uint8_t marker_idx)
-{
-    set_marker_to_here(marker_idx);
-    display_start_row = 1;
-    update_line_length();
-}
-
-void go_to_marker(uint8_t marker_idx);
-
-/**
- * Common handler for setting numbered markers.
- * Writes the buffer, looks up the marker index, and sets it.
- * @param acc marker character
- */
-static void set_marker_common(uint8_t marker_char)
-{
-    write_line_back_to_document_safely();
-    int idx = lookup_marker(marker_char);
-
-    set_marker(idx);
-}
-
-/**
- * Displays a memory-full error message.
- * Shows an inverted message and waits for Escape.
- */
-void show_memory_full_error(void)
-{
-    uint8_t key_code;
-
-    cursor_off();
-    screen_setcursor(3, 0);
-    screen_setstyle(STYLE_REVERSE);
-    uint8_t remaining_cols = screen_maxcolumn;
-
-    line_lengths[0] = remaining_cols;
-    remaining_cols -= 2;
-    uint8_t msg_idx = 0;
-
-    for (;;)
-    {
-        uint8_t msg_char = memory_full_message[msg_idx];
-
-        if (msg_char == 0)
-            break;
-        msg_idx++;
-        remaining_cols--;
-
-        if (remaining_cols == 0)
-            break;
-        screen_putchar(msg_char);
-    }
-    screen_setstyle(0);
-
-    if (remaining_cols != 0)
-    {
-        do
-        {
-            screen_putchar(0x20);
-            remaining_cols--;
-        } while (remaining_cols != 0);
-    }
-    edit_buffer_unpacked_flag = 0;
-    clear_cmd();
-
-    do
-    {
-        beep();
-        key_code = screen_getchar();
-    } while (key_code != 0x1b);
-    cursor_on();
-    status_line_needs_redrawing_flag = 1;
-    display_start_row = 1;
-}
-
-/**
- * Appends a byte to the output buffer.
- * Writes the byte if space remains in the editor output buffer.
- * @param acc byte to append
- */
-static void append_to_output_buffer(uint8_t byte_to_append)
-{
-    if (editor_output_pos >= MAX_LINE_LENGTH)
-        return;
-    output_buffer[editor_output_pos] = byte_to_append;
-    editor_output_pos++;
-}
-
-static bool process_char_for_output(
-    uint8_t buf_idx, bool carry_in, uint8_t* char_width_out, uint8_t* out_char)
-{
-    screen_column = (screen_column >> 1) | (carry_in ? 0x80 : 0);
-    (*out_char) = current_line_buffer.text[buf_idx];
-    output_buffer[buf_idx] = (*out_char);
-    if ((*out_char) == 9)
-    {
-        {
-            bool is_tab = false;
-
-            (*out_char) = process_document_character(
-                (*out_char), char_width_out, &is_tab);
-        }
-        (*out_char) = *char_width_out;
-        (*out_char) += column_position;
-
-        if ((*out_char) != 0)
-            goto c995c;
-    }
-    if ((*out_char) == 0x0b)
-    {
-        (*out_char) = ruler_left_stop;
-
-        if ((*out_char) != 0)
-        {
-            *char_width_out = column_position;
-
-            if (*char_width_out != 0)
-            {
-                if (*char_width_out >= ruler_left_stop)
-                {
-                    (*char_width_out)++;
-                    (*out_char) = *char_width_out;
-                }
-            }
-        c995c:
-            column_position = (*out_char);
-            justify_overflow_counter = buf_idx;
-            justify_overflow_counter++;
-            (*out_char) = 0;
-            justify_gap_count = (*out_char);
-
-            return true;
-        }
-    c9967:
-        (*out_char) = 0x20;
-    }
-    if ((*out_char) < 0x1b)
-        goto c9967;
-
-    if ((*out_char) < 0x20)
-        return false;
-    column_position++;
-
-    return column_position == 0;
-}
-
-/**
- * Formats the current paragraph.
- * Processes the line at current_line_ptr, handling margins, tabs, and word
- * wrap.
- * @return FORMAT_OK, FORMAT_AT_END, or FORMAT_MEMORY_FULL
- */
-format_result_t format_paragraph(void)
-{
-    uint8_t cur_byte;
-    uint8_t left_stop_tmp;
-    uint8_t a_15;
-    uint8_t is_space;
-
-    cursor_moved_flag++;
-    print_xpos = 4;
-    uint8_t out_pos = 0;
-
-    input_buffer_offset = out_pos;
-    line_format_status = out_pos;
-    uint8_t first_char = current_line_ptr[out_pos];
-
-    command_prefix_t cp = check_for_command_prefix(first_char);
-
-    if (cp != NO_COMMAND_PREFIX)
-        return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
-
-c998a:
-    uint8_t fmt_flags = format_mode_flag;
-
-    fmt_flags &= 0x81;
-
-    if (fmt_flags != 0)
-        return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
-
-    if (ruler_right_stop == 0)
-        return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
-
-    if (ruler_right_stop < ruler_left_stop)
-        return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
-    uint8_t available_width = ruler_right_stop - ruler_left_stop + 2;
-
-    scratch_offset = available_width;
-    wipe_buffer(0x10, edit_buffer_base);
-    uint8_t* size_delta = current_line_ptr;
-    uint8_t tmp_pos = 0;
-    uint8_t soft_hyphen_flag = 0;
-
-    format_src_index = tmp_pos;
-    column_position = tmp_pos;
-    soft_hyphen_flag = tmp_pos;
-    justify_gap_count = tmp_pos;
-    bottom_margin = tmp_pos;
-
-c99b6:
-    editor_output_pos = tmp_pos;
-    uint8_t src_pos = format_src_index;
-
-    do
-    {
-        uint8_t idx = find_marker_at_position(src_pos, size_delta);
-
-        if (idx == 0x0c)
-            break;
-        markers_array[idx / 2] = 0;
-        line_format_status++;
-    } while (line_format_status != 0);
-
-c99c9:
-    do
-    {
-        cur_byte = current_line_ptr[src_pos];
-        src_pos++;
-        format_src_index = src_pos;
-
-        if (cur_byte == 9)
-        {
-            {
-                bool is_tab = false;
-
-                (void)process_document_character(cur_byte, &is_space, &is_tab);
-            }
-            is_space--;
-            uint8_t col_tmp = is_space;
-
-            col_tmp += column_position;
-            column_position = col_tmp;
-            cur_byte = 9;
-
-            goto c9a21;
-        }
-        if (cur_byte != 0x1a)
-            goto c99ee;
-
-        do
-        {
-            if (justify_gap_count != 0)
-                goto c99c9;
-            cur_byte = 0x20;
-
-            goto c9a2e;
-
-        c99ee:
-            if (cur_byte != 0x0b)
-                goto c9a11;
-            is_space = input_buffer_offset;
-        } while (is_space != 0 || soft_hyphen_flag != 0);
-        soft_hyphen_flag++;
-        left_stop_tmp = ruler_left_stop;
-    } while (left_stop_tmp == 0);
-
-    if (column_position < ruler_left_stop)
-    {
-        column_position = left_stop_tmp;
-        column_position--;
-    }
-    left_stop_tmp += scratch_offset;
-    scratch_offset = left_stop_tmp;
-    cur_byte = 0x0b;
-
-c9a11:
-    if (cur_byte == 0x0d)
-    {
-        src_pos--;
-
-        if (src_pos == 0)
-            return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
-
-        if (find_next_word_boundary(src_pos))
-            goto c9a87;
-        cur_byte = 0x20;
-        input_buffer_offset = cur_byte;
-    }
-c9a21:
-    tmp_pos = editor_output_pos;
-    is_space = 0;
-
-    if (cur_byte == 0x20)
-    {
-        is_space++;
-
-        if ((justify_gap_count & 0x80))
-            goto c9a40;
-    }
-c9a2e:
-    tmp_pos = editor_output_pos;
-    current_line_buffer.text[tmp_pos] = cur_byte;
-
-    if (cur_byte == 0x20)
-        bottom_margin = (uint8_t)(bottom_margin >> 1) | 0x80;
-    tmp_pos++;
-    control_code_t cc = check_for_control_code(cur_byte);
-
-    if (cc == NO_CONTROL_CODE)
-        column_position++;
-
-c9a40:
-    bool old_l0046_high = (justify_gap_count & 0x80) != 0;
-
-    justify_gap_count = is_space;
-
-    if (!(old_l0046_high) && cur_byte != 0x20)
-    {
-        if (tmp_pos >= MAX_LINE_LENGTH + 1)
-            goto c9a60;
-
-        if (bottom_margin == 0)
-            goto c9a58;
-
-        if (column_position >= scratch_offset)
-            goto c9a60;
-    }
-c9a58:
-    if (tmp_pos >= 0x86)
-        tmp_pos--;
-
-    goto c99b6;
-
-c9a60:
-    format_src_index++;
-
-    do
-    {
-        format_src_index--;
-        tmp_pos--;
-
-        if (tmp_pos == 0)
-            return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
-        uint8_t saved_byte = current_line_buffer.text[tmp_pos];
-        {
-            current_line_buffer.text[tmp_pos] = 0x10;
-            a_15 = saved_byte;
-        }
-    } while (a_15 != 0x20);
-    insert_at_left_margin();
-    justify_edit_buffer(edit_buffer_base);
-
-    if (flush_formatted_line())
-        return FORMAT_MEMORY_FULL;
-    bool at_end_1;
-
-    at_end_1 = advance_to_next_doc_line();
-
-    if (line_format_status != 0)
-    {
-        goto c998a;
-
-    c9a87:
-        insert_at_left_margin();
-
-        if (flush_formatted_line())
-            return FORMAT_MEMORY_FULL;
-        at_end_1 = advance_to_next_doc_line();
-
-        goto c9aa5;
-    }
-c9aa5:
-    return at_end_1 ? FORMAT_AT_END : FORMAT_OK;
-}
-
-/**
- * Finds the next word boundary for wrapping.
- * Scans forward to locate a suitable wrap point.
- * @param pos current source index
- * @return true if wrap is needed
- */
-static bool find_next_word_boundary(uint8_t src_idx)
-{
-    uint8_t temp_save;
-    uint8_t base_off = src_idx;
-    uint8_t* scan_ptr = current_line_ptr + base_off + 1;
-    uint8_t* insert_ptr = scan_ptr;
-
-    src_idx = 0;
-    screen_column = src_idx;
-
-    do
-    {
-        uint8_t next_char = insert_ptr[src_idx];
-
-        if (next_char == 0)
-            goto c9b2f;
-        command_prefix_t cp = check_for_command_prefix(next_char);
-
-        if (cp != NO_COMMAND_PREFIX || next_char == 0x0d)
-            goto c9b2f;
-
-        if (src_idx == 0)
-        {
-            temp_save = src_idx;
-
-            goto c9aef;
-
-        c9ae9:
-            scan_ptr++;
-
-        c9aef:
-            uint8_t scan_char = scan_ptr[src_idx];
-
-            if (scan_char == 0 || scan_char == 0x0d)
-                goto c9b06;
-
-            if (scan_char == 9)
-                goto c9b2f;
-
-            if (scan_char == 0x0b)
-            {
-                temp_save |= 0x80;
-
-                if (scan_char >= 0x0b)
-                    goto c9ae9;
-            }
-        }
-    c9b06:
-        uint8_t check_char = insert_ptr[src_idx];
-
-        if (check_char == 0x20)
-        {
-            if (ruler_left_stop == 0 || temp_save == 0 || screen_column != 0)
-                goto c9b2f;
-        }
-        else
-        {
-            if (check_char != 0x0b)
-                break;
-            screen_column = check_char;
-        }
-        src_idx++;
-    } while (src_idx != 0);
-
-    if (ruler_left_stop != 0 && temp_save != 0 && screen_column == 0)
-    {
-    c9b2f:
-        return true;
-    }
-    return false;
-}
-
-/**
- * Inserts a character into the edit buffer.
- * Makes room and stores the character at the cursor.
- * @param acc character to insert
- * @return true on success
- */
-static bool insert_character_into_edit_buffer(uint8_t ch)
-{
-    bool ok;
-    {
-        ok = insert_edit_buffer_bytes_at_xpos(1);
-        ch = ch;
-    }
-    if (!ok)
-        return false;
-    current_line_buffer.text[xpos] = ch;
-    line_counter++;
-
-    return true;
-}
-
-/**
- * Sets the cursor to the end of the line.
- * Updates xpos to the current line length.
- */
-static void set_xpos_to_line_length(void)
-{
-    xpos = get_line_length();
-}
-
-/**
- * Computes the top display line.
- * Walks backward from current_line_ptr to find the top-of-screen line.
- * @return display start adjustment
- */
-static uint8_t compute_display_start_line(void)
-{
-    ruler_index_ptr = saved_ruler_index_redraw;
-    uint8_t half_rows = screen_maxrow;
-
-    display_start_row = half_rows;
-    half_rows >>= 1;
-    uint8_t rows_needed = half_rows;
-
-    rows_needed++;
-
-    if ((scroll_repeat_count & 0x80) == 0)
-    {
-        if (scroll_repeat_count != 0)
-            rows_needed = ypos;
-    }
-    uint8_t* line = current_line_ptr;
-
-    for (;;)
-    {
-        rows_needed--;
-
-        if (rows_needed == 0)
-            break;
-        uint8_t* line_ptr;
-
-        if (!find_previous_line(line, &line_ptr))
-            break;
-        line = line_ptr;
-        continue;
-    }
-    top_of_screen_line_ptr = line;
-    saved_ruler_index_scroll = ruler_index_ptr;
-    ruler_index_ptr = saved_ruler_index_redraw;
-
-    return rows_needed;
-}
-
-/**
  * Advances the render state to the next character.
  * Reads and processes the next document character into the render state.
  * @param rs render state
@@ -3902,15 +4056,29 @@ static void advance_to_next_char(render_state_t* rs)
     rs->char_width = column_position;
 }
 
-/**
- * Advances and renders the next character.
- * Combines character advance with rendering.
- * @param rs render state
- */
-static void advance_to_next_char_and_render(render_state_t* rs)
+uint8_t process_current_document_character(uint8_t* target_ptr,
+    uint8_t* char_width_out,
+    uint8_t* pos_inout,
+    bool* is_tab)
 {
-    advance_to_next_char(rs);
-    render_char(rs);
+    uint8_t cur_byte = target_ptr[*pos_inout];
+    (*pos_inout)++;
+    uint8_t processed_char =
+        process_document_character(cur_byte, char_width_out, is_tab);
+    return processed_char;
+}
+
+/**
+ * Unpacks the current line into a buffer if needed.
+ * Checks the unpacked flag before delegating to unpack_line.
+ * @param target_ptr destination buffer
+ */
+static void unpack_line_into_buffer(uint8_t* target_ptr)
+{
+    if (edit_buffer_unpacked_flag != 0)
+        return;
+    edit_buffer_unpacked_flag = 1;
+    unpack_line(target_ptr);
 }
 
 /**
@@ -3952,82 +4120,29 @@ static void unpack_line(uint8_t* target_ptr)
 }
 
 /**
- * find_left_margin_stop: Finds the left margin stop (0x0b) in the edit line.
- *
- * @return the position after the 0x0b in the edit line, or -1 if no margin
- *         stop was found.
+ * Clears format-mode bit 7.
+ * Clears the high bit of the format mode flag and marks redraw if changed.
  */
-static int find_left_margin_stop(void)
+void clear_format_mode_bit7(void)
 {
-    uint8_t scan_pos = 0;
+    uint8_t old = format_mode_flag;
 
-    if (ruler_left_stop != 0)
-    {
-        do
-        {
-            uint8_t scanned_char = current_line_buffer.text[scan_pos];
+    format_mode_flag &= ~0x80;
 
-            scan_pos++;
-
-            if (scanned_char == 0x0b)
-                return scan_pos;
-        } while (scan_pos < MAX_LINE_LENGTH);
-
-        return -1;
-    }
-    return scan_pos;
+    if (old != format_mode_flag)
+        flags_need_redrawing_flag++;
 }
 
 /**
- * Inserts at the left margin if needed.
- * Ensures a margin tab exists by inserting one at column zero.
+ * Sets format-mode bit 7.
+ * Sets the high bit of the format mode flag and marks redraw if changed.
  */
-static void insert_at_left_margin(void)
+void set_format_mode_bit7(void)
 {
-    if (find_left_margin_stop() < 0)
-        insert_byte_at_xpos(0);
-}
+    uint8_t old = format_mode_flag;
 
-/**
- * Inserts a margin byte at a position.
- * Inserts a single margin tab at the given position.
- * @param pos position
- * @return true on success
- */
-static bool insert_byte_at_xpos(uint8_t insert_pos)
-{
-    bool ok;
-    uint8_t saved_xpos = xpos;
+    format_mode_flag |= 0x80;
 
-    xpos = insert_pos;
-    ok = insert_edit_buffer_bytes_at_xpos(1);
-
-    if (ok)
-        current_line_buffer.text[xpos] = 0x0b;
-    xpos = saved_xpos;
-
-    return ok;
-}
-
-/**
- * Unpacks the current line into a buffer if needed.
- * Checks the unpacked flag before delegating to unpack_line.
- * @param target_ptr destination buffer
- */
-static void unpack_line_into_buffer(uint8_t* target_ptr)
-{
-    if (edit_buffer_unpacked_flag != 0)
-        return;
-    edit_buffer_unpacked_flag = 1;
-    unpack_line(target_ptr);
-}
-
-/**
- * Clear the unpacked flag, redraw the editor, and write the edit buffer back.
- */
-void redraw_and_write_back(void)
-{
-    edit_buffer_unpacked_flag = 0;
-    redraw_editor();
-    write_line_back_to_document_safely();
+    if (old != format_mode_flag)
+        flags_need_redrawing_flag++;
 }

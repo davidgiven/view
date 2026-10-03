@@ -86,36 +86,428 @@ static void store_to_output_buffer(uint8_t cur_ch, uint8_t* copy_ptr);
 static uint8_t process_header_footer_line(uint8_t* copy_ptr);
 static void write_output_buffer_to_format_line(uint8_t cur_ch);
 
+static const uint8_t commands_table[] =
+    "CERJDFDHDMEMSRPETMBMPLTSFOHEHTHMFMLMLSOPEPLJPB";
+
+static const uint8_t on_off_table[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
+
 /**
- * Writes the contents of the output buffer to the current format line.
+ * Emits microspacing spaces while preserving the character being printed.
  *
- * @param pad_len number of leading spaces to pad before the buffered text
+ * @param cur_ch character to preserve across the printer callback
+ * @param idx requested microspacing amount
  */
-static void write_output_buffer_to_format_line(uint8_t pad_len)
+
+/**
+ * Converts cur_ch character for printing and updates its display width.
+ *
+ * @param cur_ch character to convert
+ * @param[out] idx converted character width
+ * @param is_tab tab-state carried between characters
+ * @return converted character
+ */
+
+static const printer_driver_t default_printer_driver = {
+    .print_char = default_print_char,
+    .printer_on = default_printer_on,
+    .printer_off = default_printer_off,
+    .printer_microspace = default_printer_microspace,
+    .printer_getflags = default_printer_getflags,
+};
+
+/* Forward declarations for sorted functions (root first) */
+static void emit_to_output_buffer_callback(uint8_t digit);
+void print_document(scan_state_t* scan);
+static void set_rw_file_handle(uint8_t cur_ch);
+static void print_loop(uint8_t* print_doc_ptr);
+formatting_command_t lookup_formatting_command(void);
+bool execute_formatting_command(formatting_command_t idx);
+static void lj_fmt_cmd(void);
+static void ce_fmt_cmd(void);
+static void rj_fmt_cmd(void);
+static void write_output_buffer_to_format_line(uint8_t pad_len);
+static uint8_t expand_line(void);
+static void df_fmt_cmd(void);
+static void dh_fmt_cmd(void);
+static uint8_t process_header_footer_line(uint8_t* copy_ptr);
+static void store_to_output_buffer(uint8_t cur_ch, uint8_t* copy_ptr);
+static void em_fmt_cmd(void);
+static void pl_fmt_cmd(void);
+static void ts_fmt_cmd(void);
+static void tm_fmt_cmd(void);
+static void bm_fmt_cmd(void);
+static void hm_fmt_cmd(void);
+static void fm_fmt_cmd(void);
+static void lm_fmt_cmd(void);
+static void ls_fmt_cmd(void);
+static void pe_fmt_cmd(void);
+static void op_fmt_cmd(void);
+static void ep_fmt_cmd(void);
+static void eject_two_pages(void);
+static void page_eject_fmt(void);
+static void fo_fmt_cmd(void);
+static void he_fmt_cmd(void);
+static void pb_fmt_cmd(void);
+static void ht_fmt_cmd(void);
+static bool parse_boolean_from_fmt_cmd(uint8_t* pos, uint8_t* value);
+static bool parse_word_flag(uint8_t* target_ptr, uint8_t* pos, uint8_t* value);
+static bool evaluate_expression_from_fmt_cmd(
+    int* result, uint8_t* pos, uint8_t idx);
+static uint8_t get_next_fmt_cmd_byte(uint8_t* pos);
+static uint8_t get_current_fmt_cmd_byte(uint8_t* pos);
+static void process_page_footer(void);
+static void microspace_word_processor(uint8_t* pos);
+static void render_new_page(void);
+static void print_newline(void);
+static void print_vertical_space(uint8_t idx);
+static void render_header_or_footer(uint8_t* text);
+static void print_output_buffer(void);
+static void start_microspacing_if_active(uint8_t cur_ch);
+static void emit_microspacing_spaces(uint8_t cur_ch, uint8_t idx);
+static uint8_t* compute_header_left_section(uint8_t* insert_ptr);
+static uint8_t* compute_header_middle_section(uint8_t* insert_ptr);
+static uint8_t* compute_header_odd_page_section(uint8_t* insert_ptr);
+static uint8_t get_line_width(uint8_t* insert_ptr);
+static uint8_t scan_string_length(uint8_t pos, uint8_t* insert_ptr);
+static uint8_t get_right_margin(void);
+static uint8_t copy_header_footer_text(uint8_t* text);
+static void output_left_margin(void);
+static bool get_page_parity(void);
+static uint8_t add_justification_spaces(uint8_t idx);
+static void print_char_x_times(uint8_t cur_ch, uint8_t idx);
+static uint8_t convert_char_for_printing(
+    uint8_t cur_ch, uint8_t* idx, bool* is_tab);
+static void reset_print_registers(void);
+static void compute_lines_remaining_on_page(void);
+void write_cr_to_memory(uint8_t** cursor);
+void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch);
+void stop_printing(void);
+void prepare_printer_driver(void);
+static void default_print_char(uint8_t cur_ch);
+static void default_printer_on(void);
+static void default_printer_off(void);
+static void default_printer_microspace(void);
+static void default_printer_getflags(uint8_t* idx, uint8_t* pos);
+
+/**
+ * Callback that writes a digit character into the output buffer.
+ *
+ * @param digit character to emit
+ */
+static void emit_to_output_buffer_callback(uint8_t digit)
 {
-    uint8_t pos = 0;
-    uint8_t idx = pad_len;
-
-    if (idx != 0)
     {
-        uint8_t space_char = 0x20;
+        output_buffer[screen_row] = digit;
 
+        if (screen_row < MAX_LINE_LENGTH - 2)
+            screen_row++;
+    }
+}
+
+/**
+ * Main entry point for printing the current document.
+ *
+ * @param scan scan state for parsing the print command arguments
+ */
+void print_document(scan_state_t* scan)
+{
+    check_not_continuous_editing();
+    check_for_at_least_150_bytes_free();
+    reset_print_registers();
+    uint8_t* print_doc_ptr = top + 3;
+
+    macro_init(print_doc_ptr);
+    uint8_t cur_ch = 0;
+
+    page_break_pending_flag = cur_ch;
+    print_xpos = cur_ch;
+    printing_from_file_flag = cur_ch;
+    current_ruler_ptr = current_ruler_buffer;
+    find_margins_of_current_ruler_buffer();
+
+    if (!(!scan_input_buffer(input_buffer, scan)))
+    {
+        printing_from_file_flag++;
+        print_source_ptr = ram;
+        print_loop(print_doc_ptr);
+
+        goto c8f0d;
+    }
+c8f0d:
+    if (parse_optional_filename_from_command(scan))
+    {
+        set_rw_file_handle(0x0d);
+        print_loop(print_doc_ptr);
+
+        goto c8f0d;
+    }
+    if ((int8_t)page_break_pending_flag >= 0)
+        return;
+    process_page_footer();
+}
+
+/**
+ * Sets the read/write file handle for the current operation.
+ *
+ * @param cur_ch handle value to store
+ */
+static void set_rw_file_handle(uint8_t cur_ch)
+{
+    rw_file_handle = cur_ch;
+}
+
+/**
+ * Core print loop that processes lines and formatting commands.
+ *
+ * @param print_doc_ptr pointer to the read limit for the document data
+ */
+static void print_loop(uint8_t* print_doc_ptr)
+{
+    uint8_t idx;
+    formatting_command_t fmt_cmd_index;
+    uint8_t* macro_cursor_ptr = NULL;
+    bool is_tab = false;
+
+c8f30:
+    while (1)
+    {
+        uint8_t tmp_ch10;
+        uint8_t next_ch;
+        uint8_t cur_ch = page_break_pending_flag;
+
+        if (cur_ch != 0)
+        {
+            cur_ch = page_lines_remaining;
+
+            if (cur_ch == 0)
+                process_page_footer();
+        }
+        uint8_t* cursor = prepare_output_line(print_doc_ptr, &macro_cursor_ptr);
+
+        if (cursor == NULL)
+            return;
+        start_microspacing_if_active(cur_ch);
+        uint8_t pos = 0;
+
+        scratch_offset = pos;
+        command_prefix_t cp = deref_and_check_for_command_prefix(pos, cursor);
+
+        if (cp != NO_COMMAND_PREFIX)
+        {
+            scratch_offset = 3;
+
+            if (*cursor != RULER_PREFIX)
+                goto c8f6e_l;
+            uint8_t pos3 = 3;
+
+            idx = 0;
+
+            do
+            {
+                next_ch = cursor[pos3];
+                current_ruler_buffer[idx] = next_ch;
+                pos3++;
+                idx++;
+            } while (next_ch != 0x0d);
+            find_margins_of_current_ruler_buffer();
+
+        c8f6b_l:
+            goto c8f30;
+
+        c8f6e_l:
+            fmt_cmd_index = lookup_formatting_command();
+
+            if (fmt_cmd_index == NO_FORMATTING_COMMAND)
+                goto c8f7a_l;
+
+            if (execute_formatting_command(fmt_cmd_index))
+                goto c8f6b_l;
+        }
+        goto c8fce_l;
+
+    c8f7a_l:
+        if (macro_try_invoke(&macro_cursor_ptr))
+        {
+            if (macro_executing_flag != 0)
+                continue;
+        }
+        else
+        {
+            goto c8f6b_l;
+        }
+    c8fce_l:
+        if (page_break_pending_flag == 0)
+            render_new_page();
+        output_left_margin();
+        column_position = 0;
+        uint8_t pos5 = scratch_offset;
+
+        if (((int8_t)print_flags < 0))
+        {
+            if (microspacing_flag != 0)
+            {
+                microspace_word_processor(&pos5);
+                continue;
+            }
+        }
         do
         {
-            heap_format_line_ptr->text[pos] = space_char;
-            pos++;
+            uint8_t tmp_ch9 = cursor[pos5];
+
+            pos5++;
+            tmp_ch10 = convert_char_for_printing(tmp_ch9, &idx, &is_tab);
+            print_char_x_times(tmp_ch10, idx);
+        } while (tmp_ch10 != 0x0d);
+        register_value_array['L' - 'A']++;
+        idx = line_spacing;
+        uint8_t tmp_ch11 = page_lines_remaining - line_spacing - 1;
+
+        if (page_lines_remaining <= line_spacing)
+        {
+            tmp_ch11 = 0;
+            idx = page_lines_remaining;
             idx--;
-        } while (idx != 0);
+        }
+        page_lines_remaining = tmp_ch11;
+        print_vertical_space(idx);
     }
-    uint8_t cur_ch;
+}
+
+/**
+ * Looks up the two-letter formatting command at the current line.
+ *
+ * @return the matching command index or NO_FORMATTING_COMMAND if not found
+ */
+formatting_command_t lookup_formatting_command(void)
+{
+    uint8_t tmp_ch4;
+    uint8_t pos = 2;
+    uint8_t cur_ch = heap_format_line_ptr->command[1];
+    uint8_t next_ch = heap_format_line_ptr->command[0];
+    pos -= 2;
+    int index = 0;
     do
     {
-        cur_ch = output_buffer[idx];
-        heap_format_line_ptr->text[pos] = cur_ch;
+        if (next_ch == commands_table[pos])
+        {
+            if (cur_ch == commands_table[pos + 1])
+                return index;
+        }
+        index++;
         pos++;
-        idx++;
-    } while (cur_ch != 0x0d);
-    formatted_line_written_flag++;
+        pos++;
+        tmp_ch4 = commands_table[pos];
+    } while (tmp_ch4 != 0);
+
+    return NO_FORMATTING_COMMAND;
+}
+
+/**
+ * Executes a formatting command by index.
+ *
+ * @param idx command index as returned by lookup_formatting_command
+ * @return true if no formatted line was emitted, false otherwise
+ */
+bool execute_formatting_command(formatting_command_t idx)
+{
+    formatted_line_written_flag = 0;
+
+    switch (idx)
+    {
+        case FORMATTING_COMMAND_CE:
+            ce_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_RJ:
+            rj_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_DF:
+            df_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_DH:
+            dh_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_DM:
+            dm_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_EM:
+            break;
+
+        case FORMATTING_COMMAND_SR:
+            em_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_PE:
+            pe_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_TM:
+            tm_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_BM:
+            bm_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_PL:
+            pl_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_TS:
+            ts_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_FO:
+            fo_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_HE:
+            he_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_HT:
+            ht_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_HM:
+            hm_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_FM:
+            fm_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_LM:
+            lm_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_LS:
+            ls_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_OP:
+            op_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_EP:
+            ep_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_LJ:
+            lj_fmt_cmd();
+            break;
+
+        case FORMATTING_COMMAND_PB:
+            pb_fmt_cmd();
+            break;
+
+        case NO_FORMATTING_COMMAND:
+    }
+    return formatted_line_written_flag == 0;
 }
 
 /**
@@ -179,6 +571,38 @@ static void rj_fmt_cmd(void)
 
     pad_len -= screen_column;
     write_output_buffer_to_format_line(pad_len);
+}
+
+/**
+ * Writes the contents of the output buffer to the current format line.
+ *
+ * @param pad_len number of leading spaces to pad before the buffered text
+ */
+static void write_output_buffer_to_format_line(uint8_t pad_len)
+{
+    uint8_t pos = 0;
+    uint8_t idx = pad_len;
+
+    if (idx != 0)
+    {
+        uint8_t space_char = 0x20;
+
+        do
+        {
+            heap_format_line_ptr->text[pos] = space_char;
+            pos++;
+            idx--;
+        } while (idx != 0);
+    }
+    uint8_t cur_ch;
+    do
+    {
+        cur_ch = output_buffer[idx];
+        heap_format_line_ptr->text[pos] = cur_ch;
+        pos++;
+        idx++;
+    } while (cur_ch != 0x0d);
+    formatted_line_written_flag++;
 }
 
 /**
@@ -250,18 +674,19 @@ c955e:
 }
 
 /**
- * Stores a byte into the header/footer output buffer at the current index.
- *
- * @param cur_ch byte to store
- * @param copy_ptr destination buffer (header or footer text area)
+ * Handles the DF formatting command to define footer text.
  */
-static void store_to_output_buffer(uint8_t cur_ch, uint8_t* copy_ptr)
+static void df_fmt_cmd(void)
 {
-    uint8_t pos = scratch_index;
+    process_header_footer_line(footer_text_maybe);
+}
 
-    copy_ptr[pos] = cur_ch;
-    pos++;
-    scratch_index = pos;
+/**
+ * Handles the DH formatting command to define header text.
+ */
+static void dh_fmt_cmd(void)
+{
+    process_header_footer_line(header_text_maybe);
 }
 
 /**
@@ -316,19 +741,18 @@ c95aa:
 }
 
 /**
- * Handles the DF formatting command to define footer text.
+ * Stores a byte into the header/footer output buffer at the current index.
+ *
+ * @param cur_ch byte to store
+ * @param copy_ptr destination buffer (header or footer text area)
  */
-static void df_fmt_cmd(void)
+static void store_to_output_buffer(uint8_t cur_ch, uint8_t* copy_ptr)
 {
-    process_header_footer_line(footer_text_maybe);
-}
+    uint8_t pos = scratch_index;
 
-/**
- * Handles the DH formatting command to define header text.
- */
-static void dh_fmt_cmd(void)
-{
-    process_header_footer_line(header_text_maybe);
+    copy_ptr[pos] = cur_ch;
+    pos++;
+    scratch_index = pos;
 }
 
 /**
@@ -480,15 +904,6 @@ static void pe_fmt_cmd(void)
 }
 
 /**
- * Ejects two consecutive pages.
- */
-static void eject_two_pages(void)
-{
-    page_eject_fmt();
-    page_eject_fmt();
-}
-
-/**
  * Handles the OP formatting command to eject to an odd page.
  */
 static void op_fmt_cmd(void)
@@ -520,6 +935,15 @@ static void ep_fmt_cmd(void)
     }
     cur_ch >>= 1;
     eject_two_pages();
+}
+
+/**
+ * Ejects two consecutive pages.
+ */
+static void eject_two_pages(void)
+{
+    page_eject_fmt();
+    page_eject_fmt();
 }
 
 /**
@@ -611,146 +1035,6 @@ c9725:
     highlight_code[cur_ch] = highlight_value;
 }
 
-static const uint8_t commands_table[] =
-    "CERJDFDHDMEMSRPETMBMPLTSFOHEHTHMFMLMLSOPEPLJPB";
-
-/**
- * Looks up the two-letter formatting command at the current line.
- *
- * @return the matching command index or NO_FORMATTING_COMMAND if not found
- */
-formatting_command_t lookup_formatting_command(void)
-{
-    uint8_t tmp_ch4;
-    uint8_t pos = 2;
-    uint8_t cur_ch = heap_format_line_ptr->command[1];
-    uint8_t next_ch = heap_format_line_ptr->command[0];
-    pos -= 2;
-    int index = 0;
-    do
-    {
-        if (next_ch == commands_table[pos])
-        {
-            if (cur_ch == commands_table[pos + 1])
-                return index;
-        }
-        index++;
-        pos++;
-        pos++;
-        tmp_ch4 = commands_table[pos];
-    } while (tmp_ch4 != 0);
-
-    return NO_FORMATTING_COMMAND;
-}
-
-/**
- * Executes a formatting command by index.
- *
- * @param idx command index as returned by lookup_formatting_command
- * @return true if no formatted line was emitted, false otherwise
- */
-bool execute_formatting_command(formatting_command_t idx)
-{
-    formatted_line_written_flag = 0;
-
-    switch (idx)
-    {
-        case FORMATTING_COMMAND_CE:
-            ce_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_RJ:
-            rj_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_DF:
-            df_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_DH:
-            dh_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_DM:
-            dm_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_EM:
-            break;
-
-        case FORMATTING_COMMAND_SR:
-            em_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_PE:
-            pe_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_TM:
-            tm_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_BM:
-            bm_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_PL:
-            pl_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_TS:
-            ts_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_FO:
-            fo_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_HE:
-            he_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_HT:
-            ht_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_HM:
-            hm_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_FM:
-            fm_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_LM:
-            lm_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_LS:
-            ls_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_OP:
-            op_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_EP:
-            ep_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_LJ:
-            lj_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_PB:
-            pb_fmt_cmd();
-            break;
-
-        case NO_FORMATTING_COMMAND:
-    }
-    return formatted_line_written_flag == 0;
-}
-
 /**
  * Parses a boolean value from the current format command argument.
  *
@@ -767,8 +1051,6 @@ static bool parse_boolean_from_fmt_cmd(uint8_t* pos, uint8_t* value)
         return true;
     return parse_word_flag(heap_format_line_ptr->text, pos, value);
 }
-
-static const uint8_t on_off_table[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
 
 /**
  * Parses a word-based flag such as ON/OFF from the format line.
@@ -924,6 +1206,19 @@ c9821:
 }
 
 /**
+ * Advances past one byte and reads the next non-space byte.
+ *
+ * @param pos cursor into the line
+ * @return the next non-space byte, or 0 if at end
+ */
+static uint8_t get_next_fmt_cmd_byte(uint8_t* pos)
+{
+    (*pos)++;
+
+    return get_current_fmt_cmd_byte(pos);
+}
+
+/**
  * Reads the next non-space byte from the current format command line.
  *
  * @param pos cursor into the line, advanced past spaces
@@ -945,44 +1240,6 @@ static uint8_t get_current_fmt_cmd_byte(uint8_t* pos)
 }
 
 /**
- * Advances past one byte and reads the next non-space byte.
- *
- * @param pos cursor into the line
- * @return the next non-space byte, or 0 if at end
- */
-static uint8_t get_next_fmt_cmd_byte(uint8_t* pos)
-{
-    (*pos)++;
-
-    return get_current_fmt_cmd_byte(pos);
-}
-
-/**
- * Callback that writes a digit character into the output buffer.
- *
- * @param digit character to emit
- */
-static void emit_to_output_buffer_callback(uint8_t digit)
-{
-    {
-        output_buffer[screen_row] = digit;
-
-        if (screen_row < MAX_LINE_LENGTH - 2)
-            screen_row++;
-    }
-}
-
-/**
- * Sets the read/write file handle for the current operation.
- *
- * @param cur_ch handle value to store
- */
-static void set_rw_file_handle(uint8_t cur_ch)
-{
-    rw_file_handle = cur_ch;
-}
-
-/**
  * Handles page footer processing including vertical spacing and footer
  * rendering.
  */
@@ -1001,49 +1258,6 @@ static void process_page_footer(void)
     register_value_array['P' - 'A']++;
     register_value_array['L' - 'A'] = 1;
     page_break_pending_flag = 0;
-}
-
-/**
- * Prints the contents of the output buffer to the printer.
- */
-static void print_output_buffer(void)
-{
-    uint8_t pos = 0;
-    uint8_t idx = temp_save;
-
-    if (idx == 0)
-        return;
-    bool is_tab = false;
-
-    do
-    {
-        uint8_t idx3 = idx;
-
-        print_char(
-            convert_char_for_printing(output_buffer[pos], &idx3, &is_tab));
-        pos++;
-        idx--;
-    } while (idx != 0);
-}
-
-/**
- * Scans a header/footer string to find the length of a section.
- *
- * @param pos starting position
- * @param insert_ptr pointer to the string data
- * @return position of the terminator
- */
-static uint8_t scan_string_length(uint8_t pos, uint8_t* insert_ptr)
-{
-    uint8_t cur_ch;
-
-    do
-    {
-        pos++;
-        cur_ch = insert_ptr[pos];
-    } while ((int8_t)cur_ch >= 0);
-
-    return pos;
 }
 
 /**
@@ -1268,180 +1482,49 @@ c8ffb_inline:
 }
 
 /**
- * Prints a character repeatedly.
- *
- * @param cur_ch character to print
- * @param idx number of times to print
+ * Renders a new page including headers, margins and page number prompt.
  */
-static void print_char_x_times(uint8_t cur_ch, uint8_t idx)
+static void render_new_page(void)
 {
-    if (idx != 0)
+    page_break_pending_flag = 0x81;
+
+    if (print_flags & 0x40)
     {
-        do
+        stop_printing();
+        cli_putstring("\nPage ");
+        render_number_to_screen(register_value_array['P' - 'A']);
+        cli_putstring("..");
+        uint8_t next_ch = screen_getchar();
+
+        next_ch &= 0xdf;
+
+        if (next_ch == 0x4d)
+            goto c92d4;
+
+        if (next_ch == 0x51)
         {
-            print_char(cur_ch);
-            idx--;
-        } while (idx != 0);
-    }
-}
+            stop_printing();
+            cli_putchar('\n');
 
-/**
- * Main entry point for printing the current document.
- *
- * @param scan scan state for parsing the print command arguments
- */
-void print_document(scan_state_t* scan)
-{
-    check_not_continuous_editing();
-    check_for_at_least_150_bytes_free();
-    reset_print_registers();
-    uint8_t* print_doc_ptr = top + 3;
-
-    macro_init(print_doc_ptr);
-    uint8_t cur_ch = 0;
-
-    page_break_pending_flag = cur_ch;
-    print_xpos = cur_ch;
-    printing_from_file_flag = cur_ch;
-    current_ruler_ptr = current_ruler_buffer;
-    find_margins_of_current_ruler_buffer();
-
-    if (!(!scan_input_buffer(input_buffer, scan)))
-    {
-        printing_from_file_flag++;
-        print_source_ptr = ram;
-        print_loop(print_doc_ptr);
-
-        goto c8f0d;
-    }
-c8f0d:
-    if (parse_optional_filename_from_command(scan))
-    {
-        set_rw_file_handle(0x0d);
-        print_loop(print_doc_ptr);
-
-        goto c8f0d;
-    }
-    if ((int8_t)page_break_pending_flag >= 0)
-        return;
-    process_page_footer();
-}
-
-/**
- * Core print loop that processes lines and formatting commands.
- *
- * @param print_doc_ptr pointer to the read limit for the document data
- */
-static void print_loop(uint8_t* print_doc_ptr)
-{
-    uint8_t idx;
-    formatting_command_t fmt_cmd_index;
-    uint8_t* macro_cursor_ptr = NULL;
-    bool is_tab = false;
-
-c8f30:
-    while (1)
-    {
-        uint8_t tmp_ch10;
-        uint8_t next_ch;
-        uint8_t cur_ch = page_break_pending_flag;
-
-        if (cur_ch != 0)
-        {
-            cur_ch = page_lines_remaining;
-
-            if (cur_ch == 0)
-                process_page_footer();
-        }
-        uint8_t* cursor = prepare_output_line(print_doc_ptr, &macro_cursor_ptr);
-
-        if (cursor == NULL)
+            return_to_cli_prompt();
             return;
-        start_microspacing_if_active(cur_ch);
-        uint8_t pos = 0;
-
-        scratch_offset = pos;
-        command_prefix_t cp = deref_and_check_for_command_prefix(pos, cursor);
-
-        if (cp != NO_COMMAND_PREFIX)
-        {
-            scratch_offset = 3;
-
-            if (*cursor != RULER_PREFIX)
-                goto c8f6e_l;
-            uint8_t pos3 = 3;
-
-            idx = 0;
-
-            do
-            {
-                next_ch = cursor[pos3];
-                current_ruler_buffer[idx] = next_ch;
-                pos3++;
-                idx++;
-            } while (next_ch != 0x0d);
-            find_margins_of_current_ruler_buffer();
-
-        c8f6b_l:
-            goto c8f30;
-
-        c8f6e_l:
-            fmt_cmd_index = lookup_formatting_command();
-
-            if (fmt_cmd_index == NO_FORMATTING_COMMAND)
-                goto c8f7a_l;
-
-            if (execute_formatting_command(fmt_cmd_index))
-                goto c8f6b_l;
         }
-        goto c8fce_l;
-
-    c8f7a_l:
-        if (macro_try_invoke(&macro_cursor_ptr))
-        {
-            if (macro_executing_flag != 0)
-                continue;
-        }
-        else
-        {
-            goto c8f6b_l;
-        }
-    c8fce_l:
-        if (page_break_pending_flag == 0)
-            render_new_page();
-        output_left_margin();
-        column_position = 0;
-        uint8_t pos5 = scratch_offset;
-
-        if (((int8_t)print_flags < 0))
-        {
-            if (microspacing_flag != 0)
-            {
-                microspace_word_processor(&pos5);
-                continue;
-            }
-        }
-        do
-        {
-            uint8_t tmp_ch9 = cursor[pos5];
-
-            pos5++;
-            tmp_ch10 = convert_char_for_printing(tmp_ch9, &idx, &is_tab);
-            print_char_x_times(tmp_ch10, idx);
-        } while (tmp_ch10 != 0x0d);
-        register_value_array['L' - 'A']++;
-        idx = line_spacing;
-        uint8_t tmp_ch11 = page_lines_remaining - line_spacing - 1;
-
-        if (page_lines_remaining <= line_spacing)
-        {
-            tmp_ch11 = 0;
-            idx = page_lines_remaining;
-            idx--;
-        }
-        page_lines_remaining = tmp_ch11;
-        print_vertical_space(idx);
+        start_printing();
     }
+c92d4:
+    if (page_break_flag == 0)
+    {
+        compute_lines_remaining_on_page();
+
+        return;
+    }
+    print_vertical_space(top_margin);
+
+    if (headers_enabled_flag != 0)
+        render_header_or_footer(header_text_maybe);
+    print_newline();
+    print_vertical_space(header_margin);
+    compute_lines_remaining_on_page();
 }
 
 /**
@@ -1522,49 +1605,26 @@ c9355:
 }
 
 /**
- * Renders a new page including headers, margins and page number prompt.
+ * Prints the contents of the output buffer to the printer.
  */
-static void render_new_page(void)
+static void print_output_buffer(void)
 {
-    page_break_pending_flag = 0x81;
+    uint8_t pos = 0;
+    uint8_t idx = temp_save;
 
-    if (print_flags & 0x40)
-    {
-        stop_printing();
-        cli_putstring("\nPage ");
-        render_number_to_screen(register_value_array['P' - 'A']);
-        cli_putstring("..");
-        uint8_t next_ch = screen_getchar();
-
-        next_ch &= 0xdf;
-
-        if (next_ch == 0x4d)
-            goto c92d4;
-
-        if (next_ch == 0x51)
-        {
-            stop_printing();
-            cli_putchar('\n');
-
-            return_to_cli_prompt();
-            return;
-        }
-        start_printing();
-    }
-c92d4:
-    if (page_break_flag == 0)
-    {
-        compute_lines_remaining_on_page();
-
+    if (idx == 0)
         return;
-    }
-    print_vertical_space(top_margin);
+    bool is_tab = false;
 
-    if (headers_enabled_flag != 0)
-        render_header_or_footer(header_text_maybe);
-    print_newline();
-    print_vertical_space(header_margin);
-    compute_lines_remaining_on_page();
+    do
+    {
+        uint8_t idx3 = idx;
+
+        print_char(
+            convert_char_for_printing(output_buffer[pos], &idx3, &is_tab));
+        pos++;
+        idx--;
+    } while (idx != 0);
 }
 
 /**
@@ -1585,12 +1645,6 @@ static void start_microspacing_if_active(uint8_t cur_ch)
 }
 
 /**
- * Emits microspacing spaces while preserving the character being printed.
- *
- * @param cur_ch character to preserve across the printer callback
- * @param idx requested microspacing amount
- */
-/**
  * Emits microspacing adjustments for the current character.
  *
  * @param cur_ch character being printed
@@ -1603,39 +1657,6 @@ static void emit_microspacing_spaces(uint8_t cur_ch, uint8_t idx)
     print_alignment_spaces(cur_ch);
     print_last_microspacing = idx;
     printer_driver_ptr->printer_microspace();
-}
-
-/**
- * Computes the number of lines remaining on the current page.
- */
-static void compute_lines_remaining_on_page(void)
-{
-    uint8_t idx = page_length;
-
-    if (page_break_flag != 0)
-    {
-        idx = 1;
-        uint8_t next_ch = page_length;
-
-        if (next_ch < top_margin)
-            goto c930d;
-        next_ch -= top_margin;
-
-        if (next_ch < header_margin)
-            goto c930d;
-        next_ch -= header_margin;
-
-        if (next_ch < bottom_margin)
-            goto c930d;
-        next_ch -= bottom_margin;
-
-        if (next_ch < footer_margin)
-            goto c930d;
-        next_ch -= footer_margin;
-        idx = next_ch;
-    }
-c930d:
-    page_lines_remaining = idx;
 }
 
 /**
@@ -1696,6 +1717,26 @@ static uint8_t* compute_header_odd_page_section(uint8_t* insert_ptr)
 static uint8_t get_line_width(uint8_t* insert_ptr)
 {
     return scan_string_length(0xff, insert_ptr);
+}
+
+/**
+ * Scans a header/footer string to find the length of a section.
+ *
+ * @param pos starting position
+ * @param insert_ptr pointer to the string data
+ * @return position of the terminator
+ */
+static uint8_t scan_string_length(uint8_t pos, uint8_t* insert_ptr)
+{
+    uint8_t cur_ch;
+
+    do
+    {
+        pos++;
+        cur_ch = insert_ptr[pos];
+    } while ((int8_t)cur_ch >= 0);
+
+    return pos;
 }
 
 /**
@@ -1766,18 +1807,6 @@ static uint8_t copy_header_footer_text(uint8_t* text)
 }
 
 /**
- * Determines the page parity for two-sided printing.
- *
- * @return true for even page handling, false for odd
- */
-static bool get_page_parity(void)
-{
-    if (two_sided_flag == 0)
-        return true;
-    return (register_value_array['P' - 'A'] & 1) != 0;
-}
-
-/**
  * Outputs left margin spaces, adjusting for two-sided printing.
  */
 static void output_left_margin(void)
@@ -1791,6 +1820,18 @@ static void output_left_margin(void)
             cur_ch += rhs_extra_margin;
     }
     print_char_x_times(0x20, cur_ch);
+}
+
+/**
+ * Determines the page parity for two-sided printing.
+ *
+ * @return true for even page handling, false for odd
+ */
+static bool get_page_parity(void)
+{
+    if (two_sided_flag == 0)
+        return true;
+    return (register_value_array['P' - 'A'] & 1) != 0;
 }
 
 /**
@@ -1813,13 +1854,23 @@ static uint8_t add_justification_spaces(uint8_t idx)
 }
 
 /**
- * Converts cur_ch character for printing and updates its display width.
+ * Prints a character repeatedly.
  *
- * @param cur_ch character to convert
- * @param[out] idx converted character width
- * @param is_tab tab-state carried between characters
- * @return converted character
+ * @param cur_ch character to print
+ * @param idx number of times to print
  */
+static void print_char_x_times(uint8_t cur_ch, uint8_t idx)
+{
+    if (idx != 0)
+    {
+        do
+        {
+            print_char(cur_ch);
+            idx--;
+        } while (idx != 0);
+    }
+}
+
 /**
  * Converts a character for printing and updates display width.
  *
@@ -1889,6 +1940,49 @@ static void reset_print_registers(void)
 }
 
 /**
+ * Computes the number of lines remaining on the current page.
+ */
+static void compute_lines_remaining_on_page(void)
+{
+    uint8_t idx = page_length;
+
+    if (page_break_flag != 0)
+    {
+        idx = 1;
+        uint8_t next_ch = page_length;
+
+        if (next_ch < top_margin)
+            goto c930d;
+        next_ch -= top_margin;
+
+        if (next_ch < header_margin)
+            goto c930d;
+        next_ch -= header_margin;
+
+        if (next_ch < bottom_margin)
+            goto c930d;
+        next_ch -= bottom_margin;
+
+        if (next_ch < footer_margin)
+            goto c930d;
+        next_ch -= footer_margin;
+        idx = next_ch;
+    }
+c930d:
+    page_lines_remaining = idx;
+}
+
+/**
+ * Writes a carriage return to the memory buffer.
+ *
+ * @param cursor pointer to the write cursor
+ */
+void write_cr_to_memory(uint8_t** cursor)
+{
+    write_byte_to_memory(cursor, 0x0d);
+}
+
+/**
  * Writes a byte to the memory buffer and advances the cursor.
  *
  * @param cursor pointer to the write cursor, updated after the write
@@ -1902,16 +1996,6 @@ void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch)
     if (cur_ch != 0x0d)
         return;
     screen_column = 0;
-}
-
-/**
- * Writes a carriage return to the memory buffer.
- *
- * @param cursor pointer to the write cursor
- */
-void write_cr_to_memory(uint8_t** cursor)
-{
-    write_byte_to_memory(cursor, 0x0d);
 }
 
 /**
@@ -1976,11 +2060,3 @@ static void default_printer_getflags(uint8_t* idx, uint8_t* pos)
     *idx = 0;
     *pos = 0;
 }
-
-static const printer_driver_t default_printer_driver = {
-    .print_char = default_print_char,
-    .printer_on = default_printer_on,
-    .printer_off = default_printer_off,
-    .printer_microspace = default_printer_microspace,
-    .printer_getflags = default_printer_getflags,
-};

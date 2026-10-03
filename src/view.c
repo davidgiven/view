@@ -143,6 +143,29 @@ uint8_t input_filename[MAX_COMMAND_LENGTH];
 FILE* input_fp;
 FILE* output_fp;
 
+/* Forward declarations for sorted functions (root first) */
+void run_view(void);
+static void system_init(void);
+void beep(void);
+command_prefix_t check_for_command_prefix(uint8_t ch);
+void display_not_enough_memory(void);
+void draw_prompt_characters(uint8_t first_char, uint8_t second_char);
+bool parse_decimal_number(int* value, uint8_t* pos);
+uint8_t process_document_character(uint8_t cur_ch, uint8_t* idx, bool* is_tab);
+static void emit_to_output_buffer_callback(uint8_t digit);
+void render_number_to_screen(int val);
+void render_register(uint8_t cur_ch, uint8_t idx);
+void render_number_to_output_buffer(uint16_t value, uint8_t start_x);
+void render_number_to_callback(int value, void (*cb)(uint8_t));
+void return_to_cli_prompt(void);
+bool scan_input_buffer(uint8_t* buffer, scan_state_t* state);
+uint8_t upper_case_unless_folding(uint8_t ch);
+void wipe_buffer(uint8_t fill_value, uint8_t* target_ptr);
+control_code_t check_for_control_code(uint8_t cur_ch);
+void print_char(uint8_t cur_ch);
+void print_alignment_spaces(uint8_t cur_ch);
+void print_char_just_to_screen(uint8_t cur_ch);
+
 /**
  * Run VIEW.
  * Establishes longjmp targets for CLI and editor, initializes system and
@@ -211,22 +234,6 @@ command_prefix_t check_for_command_prefix(uint8_t ch)
 }
 
 /**
- * Check whether a character is a highlight control code.
- * @param cur_ch character to test
- * @return HIGHLIGHT1_CODE for 0x1c, HIGHLIGHT2_CODE for 0x1d, NO_CONTROL_CODE
- * otherwise
- */
-control_code_t check_for_control_code(uint8_t cur_ch)
-{
-    if (cur_ch == 0x1c)
-        return HIGHLIGHT1_CODE;
-
-    if (cur_ch == 0x1d)
-        return HIGHLIGHT2_CODE;
-    return NO_CONTROL_CODE;
-}
-
-/**
  * Displays a memory exhaustion error and stops printing.
  */
 void display_not_enough_memory(void)
@@ -278,85 +285,6 @@ bool parse_decimal_number(int* value, uint8_t* pos)
     *pos += (uint8_t)(end - start);
 
     return (end != start);
-}
-
-/**
- * Flush pending alignment spaces to the output.
- * Prints print_xpos spaces and resets the counter.
- * @param cur_ch unused, retained for call-site compatibility
- */
-void print_alignment_spaces(uint8_t cur_ch)
-{
-    cur_ch = print_xpos;
-
-    if (cur_ch == 0)
-        return;
-
-    do
-    {
-        print_char_just_to_screen(' ');
-        print_xpos--;
-    } while (print_xpos != 0);
-}
-
-/**
- * Print a character with alignment handling.
- * Spaces increment the pending alignment count; carriage returns reset it.
- * Other characters are flushed via alignment and then rendered.
- * @param cur_ch character to print
- */
-void print_char(uint8_t cur_ch)
-{
-    if (cur_ch == 0x20)
-    {
-        print_xpos++;
-
-        return;
-    }
-    if (cur_ch == 0x0d)
-        print_xpos = 0;
-    print_alignment_spaces(cur_ch);
-    print_char_just_to_screen(cur_ch);
-}
-
-/**
- * Render a character directly to screen or printer.
- * If printer output is enabled, delegates to the printer driver.
- * Otherwise handles highlight codes by rendering '-' or '*' in reverse
- * video and translates carriage return to newline.
- * @param cur_ch character to render
- */
-void print_char_just_to_screen(uint8_t cur_ch)
-{
-    if ((print_flags & 0x80))
-    {
-        printer_driver_ptr->print_char(cur_ch);
-
-        return;
-    }
-    control_code_t cc = check_for_control_code(cur_ch);
-
-    if (cc != NO_CONTROL_CODE)
-    {
-        {
-            uint8_t saved_a = cur_ch;
-
-            cur_ch = (cc == HIGHLIGHT1_CODE) ? 0x2d : 0x2a;
-            screen_setstyle(STYLE_REVERSE);
-            cli_putchar(cur_ch);
-            cur_ch = saved_a;
-        }
-        screen_setstyle(0);
-
-        return;
-    }
-    if (cur_ch == 0x0d)
-    {
-        cli_putchar('\n');
-
-        return;
-    }
-    cli_putchar(cur_ch);
 }
 
 /**
@@ -448,31 +376,6 @@ ca5fa:
 }
 
 /**
- * Renders a number as decimal by invoking a callback for each digit.
- *
- * @param value number to render
- * @param cb callback invoked for each digit character
- */
-void render_number_to_callback(int value, void (*cb)(uint8_t))
-{
-    char buf[12];
-
-    snprintf(buf, sizeof(buf), "%d", value);
-
-    for (char* p = buf; *p; p++)
-    {
-        uint8_t cur_ch = (uint8_t)*p;
-
-        if (cur_ch >= '0' && cur_ch <= '9')
-        {
-            cur_ch -= '0';
-            cur_ch |= 0x30;
-        }
-        cb(cur_ch);
-    }
-}
-
-/**
  * Callback that writes a digit character into the output buffer.
  *
  * @param digit character to emit
@@ -485,18 +388,6 @@ static void emit_to_output_buffer_callback(uint8_t digit)
         if (screen_row < MAX_LINE_LENGTH - 2)
             screen_row++;
     }
-}
-
-/**
- * Renders a 16-bit number into the output buffer.
- *
- * @param value number to render
- * @param start_x starting offset in the output buffer
- */
-void render_number_to_output_buffer(uint16_t value, uint8_t start_x)
-{
-    screen_row = start_x;
-    render_number_to_callback(value, emit_to_output_buffer_callback);
 }
 
 /**
@@ -521,6 +412,43 @@ void render_register(uint8_t cur_ch, uint8_t idx)
 
     if (register_value != NULL)
         render_number_to_output_buffer(*register_value, idx);
+}
+
+/**
+ * Renders a 16-bit number into the output buffer.
+ *
+ * @param value number to render
+ * @param start_x starting offset in the output buffer
+ */
+void render_number_to_output_buffer(uint16_t value, uint8_t start_x)
+{
+    screen_row = start_x;
+    render_number_to_callback(value, emit_to_output_buffer_callback);
+}
+
+/**
+ * Renders a number as decimal by invoking a callback for each digit.
+ *
+ * @param value number to render
+ * @param cb callback invoked for each digit character
+ */
+void render_number_to_callback(int value, void (*cb)(uint8_t))
+{
+    char buf[12];
+
+    snprintf(buf, sizeof(buf), "%d", value);
+
+    for (char* p = buf; *p; p++)
+    {
+        uint8_t cur_ch = (uint8_t)*p;
+
+        if (cur_ch >= '0' && cur_ch <= '9')
+        {
+            cur_ch -= '0';
+            cur_ch |= 0x30;
+        }
+        cb(cur_ch);
+    }
 }
 
 /**
@@ -593,4 +521,99 @@ void wipe_buffer(uint8_t fill_value, uint8_t* target_ptr)
         idx++;
         remaining--;
     } while (remaining != 0);
+}
+
+/**
+ * Check whether a character is a highlight control code.
+ * @param cur_ch character to test
+ * @return HIGHLIGHT1_CODE for 0x1c, HIGHLIGHT2_CODE for 0x1d, NO_CONTROL_CODE
+ * otherwise
+ */
+control_code_t check_for_control_code(uint8_t cur_ch)
+{
+    if (cur_ch == 0x1c)
+        return HIGHLIGHT1_CODE;
+
+    if (cur_ch == 0x1d)
+        return HIGHLIGHT2_CODE;
+    return NO_CONTROL_CODE;
+}
+
+/**
+ * Print a character with alignment handling.
+ * Spaces increment the pending alignment count; carriage returns reset it.
+ * Other characters are flushed via alignment and then rendered.
+ * @param cur_ch character to print
+ */
+void print_char(uint8_t cur_ch)
+{
+    if (cur_ch == 0x20)
+    {
+        print_xpos++;
+
+        return;
+    }
+    if (cur_ch == 0x0d)
+        print_xpos = 0;
+    print_alignment_spaces(cur_ch);
+    print_char_just_to_screen(cur_ch);
+}
+
+/**
+ * Flush pending alignment spaces to the output.
+ * Prints print_xpos spaces and resets the counter.
+ * @param cur_ch unused, retained for call-site compatibility
+ */
+void print_alignment_spaces(uint8_t cur_ch)
+{
+    cur_ch = print_xpos;
+
+    if (cur_ch == 0)
+        return;
+
+    do
+    {
+        print_char_just_to_screen(' ');
+        print_xpos--;
+    } while (print_xpos != 0);
+}
+
+/**
+ * Render a character directly to screen or printer.
+ * If printer output is enabled, delegates to the printer driver.
+ * Otherwise handles highlight codes by rendering '-' or '*' in reverse
+ * video and translates carriage return to newline.
+ * @param cur_ch character to render
+ */
+void print_char_just_to_screen(uint8_t cur_ch)
+{
+    if ((print_flags & 0x80))
+    {
+        printer_driver_ptr->print_char(cur_ch);
+
+        return;
+    }
+    control_code_t cc = check_for_control_code(cur_ch);
+
+    if (cc != NO_CONTROL_CODE)
+    {
+        {
+            uint8_t saved_a = cur_ch;
+
+            cur_ch = (cc == HIGHLIGHT1_CODE) ? 0x2d : 0x2a;
+            screen_setstyle(STYLE_REVERSE);
+            cli_putchar(cur_ch);
+            cur_ch = saved_a;
+        }
+        screen_setstyle(0);
+
+        return;
+    }
+    if (cur_ch == 0x0d)
+    {
+        cli_putchar('\n');
+
+        return;
+    }
+    cli_putchar(cur_ch);
 }

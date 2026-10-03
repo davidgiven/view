@@ -100,12 +100,118 @@ static void fold_cmd(scan_state_t* scan);
 static void printer_cmd(scan_state_t* scan);
 static void name_cmd(scan_state_t* scan);
 
+const uint8_t version_string[] = "VIEW\0B3.0 for CP/M-65";
+
+static bool parse_command(uint8_t* input_buffer_offset);
+
+static const uint8_t escaped_char_table[] = {
+    '?', 'T', 'C', 'S', 'L', 'Z', '-', '*', 0xff};
+static const uint8_t escaped_value_table[] = {
+    1, 9, 0x0d, 2, 0x0b, 0x1a, 0x1c, 0x1d, 0xff};
+
+static uint8_t read_next_command_byte(uint8_t* pos, bool* end);
+
+/* Forward declarations */
+void cli_handler_impl(void);
+bool read_command_line(void);
+void input_line_not_escaped(void);
+void execute_cli_command(uint8_t cur_ch, scan_state_t* scan);
+static void bye_cmd(void);
+static void change_cmd(scan_state_t* scan);
+static void count_cmd(scan_state_t* scan);
+static void edit_cmd(scan_state_t* scan);
+static void field_cmd(scan_state_t* scan);
+static void finish_cmd(void);
+static void fold_cmd(scan_state_t* scan);
+static void format_cmd(scan_state_t* scan);
+static void load_cmd(scan_state_t* scan);
+void clear_cmd(void);
+static void microspace_cmd(scan_state_t* scan);
+static void mode_cmd(void);
+static void more_cmd(scan_state_t* scan);
+static void name_cmd(scan_state_t* scan);
+static void new_cmd(void);
+static void printer_cmd(scan_state_t* scan);
+static void print_cmd(scan_state_t* scan);
+static void quit_cmd(void);
+static void close_input_output_files(void);
+static void read_cmd(scan_state_t* scan);
+static void replace_cmd(scan_state_t* scan);
+static void save_cmd_write_cmd(scan_state_t* scan);
+static void screen_cmd(scan_state_t* scan);
+static void print_to_screen(scan_state_t* scan);
+static void search_cmd(scan_state_t* scan);
+static void cmd_err_no_string(void);
+static void cmd_err_no_target(void);
+static void setup_cmd(scan_state_t* scan);
+static void sheets_cmd(scan_state_t* scan);
+void start_printing(void);
+void run_cli(void);
+static void print_x_words_of_help(uint8_t idx);
+static bool parse_command(uint8_t* input_buffer_offset);
+void file_error(void);
+void file_not_found_error(void);
+bool parse_integer_from_command(scan_state_t* scan, int* out);
+void reset_document_name_after_load(void);
+void set_document_name_to_filename_buffer(void);
+void zero_terminate_filename_buffer(void);
+void check_continuous_editing(void);
+void check_not_continuous_editing(void);
+void parse_filename_from_command(scan_state_t* scan);
+bool parse_optional_filename_from_command(scan_state_t* scan);
+void bad_filename_error(void);
+cli_cmd_status_t process_cli_command(scan_state_t* scan);
+void parse_marks_from_command(scan_state_t* scan);
+uint8_t* parse_mark_from_command(scan_state_t* scan);
+bool reset_command_parse_state(scan_state_t* scan);
+static uint8_t expand_escaped_string(uint8_t idx, uint8_t pos);
+static uint8_t read_next_command_byte(uint8_t* pos, bool* end);
+
 /**
- * Exits the program.
+ * Main CLI handler loop, prompting for and dispatching commands.
  */
-static void bye_cmd(void)
+void cli_handler_impl(void)
 {
-    exit(0);
+    stop_printing();
+    print_flags = 0;
+    cli_putstring("=>");
+
+    if (!read_command_line())
+    {
+        input_line_not_escaped();
+
+        return;
+    }
+    run_editor();
+}
+
+/**
+ * Reads a command line from the CLI input.
+ *
+ * @return true if the line was empty, false otherwise
+ */
+bool read_command_line(void)
+{
+    input_buffer_offset = 0;
+
+    return cli_readstring((char*)input_buffer, MAX_COMMAND_LENGTH);
+}
+
+/**
+ * Parses and dispatches a non-escaped CLI input line.
+ */
+void input_line_not_escaped(void)
+{
+    bool failed = parse_command(&input_buffer_offset);
+
+    scratch_offset = screen_row;
+
+    if (failed || screen_row >= 48)
+        cli_putstring("Mistake\n");
+    scan_state_t scan;
+
+    execute_cli_command(scratch_offset, &scan);
+    run_cli();
 }
 
 /**
@@ -225,6 +331,14 @@ void execute_cli_command(uint8_t cur_ch, scan_state_t* scan)
 }
 
 /**
+ * Exits the program.
+ */
+static void bye_cmd(void)
+{
+    exit(0);
+}
+
+/**
  * Replaces all occurrences of the search string in the document area.
  *
  * @param scan scan state containing search and replace arguments
@@ -274,47 +388,6 @@ static void change_cmd(scan_state_t* scan)
 
 c830d:
     display_not_enough_memory();
-}
-
-/**
- * Clears all document markers.
- */
-void clear_cmd(void)
-{
-    memset(markers_array, 0, sizeof(markers_array));
-}
-
-/**
- * Closes the output file, resets editing flags and returns to the CLI prompt.
- */
-static void close_input_output_files(void)
-{
-    input_file_empty_flag = 0;
-    file_edit_flags = 0;
-    file_ptr = output_fp;
-    close_file();
-
-    return_to_cli_prompt();
-}
-
-/**
- * Reports a "No string found" error and returns to the CLI prompt.
- */
-static void cmd_err_no_string(void)
-{
-    cli_putstring("No string found\n");
-
-    return_to_cli_prompt();
-}
-
-/**
- * Reports a "No target given" error and returns to the CLI prompt.
- */
-static void cmd_err_no_target(void)
-{
-    cli_putstring("No target given\n");
-
-    return_to_cli_prompt();
 }
 
 /**
@@ -617,6 +690,14 @@ static void load_cmd(scan_state_t* scan)
 }
 
 /**
+ * Clears all document markers.
+ */
+void clear_cmd(void)
+{
+    memset(markers_array, 0, sizeof(markers_array));
+}
+
+/**
  * Configures microspacing via the printer driver.
  *
  * @param scan scan state containing optional microspacing value
@@ -727,6 +808,16 @@ static void new_cmd(void)
 }
 
 /**
+ * Handles the printer command and delegates to printing.
+ *
+ * @param scan scan state containing optional arguments
+ */
+static void printer_cmd(scan_state_t* scan)
+{
+    print_cmd(scan);
+}
+
+/**
  * Initiates printing and previews the document on screen.
  *
  * @param scan scan state containing optional marker range
@@ -738,34 +829,25 @@ static void print_cmd(scan_state_t* scan)
 }
 
 /**
- * Prints the document for screen preview and returns to the CLI prompt.
- *
- * @param scan scan state containing optional marker range
- */
-static void print_to_screen(scan_state_t* scan)
-{
-    print_document(scan);
-
-    return_to_cli_prompt();
-}
-
-/**
- * Handles the printer command and delegates to printing.
- *
- * @param scan scan state containing optional arguments
- */
-static void printer_cmd(scan_state_t* scan)
-{
-    print_cmd(scan);
-}
-
-/**
  * Checks editing state and closes input/output files to quit.
  */
 static void quit_cmd(void)
 {
     check_continuous_editing();
     close_input_output_files();
+}
+
+/**
+ * Closes the output file, resets editing flags and returns to the CLI prompt.
+ */
+static void close_input_output_files(void)
+{
+    input_file_empty_flag = 0;
+    file_edit_flags = 0;
+    file_ptr = output_fp;
+    close_file();
+
+    return_to_cli_prompt();
 }
 
 /**
@@ -892,6 +974,18 @@ static void screen_cmd(scan_state_t* scan)
 }
 
 /**
+ * Prints the document for screen preview and returns to the CLI prompt.
+ *
+ * @param scan scan state containing optional marker range
+ */
+static void print_to_screen(scan_state_t* scan)
+{
+    print_document(scan);
+
+    return_to_cli_prompt();
+}
+
+/**
  * Searches for the target string and enters the editor at the match.
  *
  * @param scan scan state containing search target and optional range
@@ -925,6 +1019,26 @@ static void search_cmd(scan_state_t* scan)
     move_cursor_to_address(doc_working_ptr);
     enter_editor_mode();
     longjmp(env, JMP_EDITOR);
+}
+
+/**
+ * Reports a "No string found" error and returns to the CLI prompt.
+ */
+static void cmd_err_no_string(void)
+{
+    cli_putstring("No string found\n");
+
+    return_to_cli_prompt();
+}
+
+/**
+ * Reports a "No target given" error and returns to the CLI prompt.
+ */
+static void cmd_err_no_target(void)
+{
+    cli_putstring("No target given\n");
+
+    return_to_cli_prompt();
 }
 
 /**
@@ -1027,83 +1141,6 @@ void start_printing(void)
 }
 
 /**
- * Reads a command line from the CLI input.
- *
- * @return true if the line was empty, false otherwise
- */
-bool read_command_line(void)
-{
-    input_buffer_offset = 0;
-
-    return cli_readstring((char*)input_buffer, MAX_COMMAND_LENGTH);
-}
-
-const uint8_t version_string[] = "VIEW\0B3.0 for CP/M-65";
-
-/**
- * Prints a number of words from the help and version string.
- *
- * @param idx number of words to print beyond the first
- */
-static void print_x_words_of_help(uint8_t idx)
-{
-    uint8_t pos = 0;
-
-    for (;;)
-    {
-        uint8_t cur_ch = version_string[pos];
-
-        if (cur_ch == 0)
-        {
-            cur_ch = 0x20;
-            idx--;
-
-            if ((int8_t)idx < 0)
-                break;
-        }
-        cli_putchar(cur_ch);
-        pos++;
-    }
-}
-
-static bool parse_command(uint8_t* input_buffer_offset);
-
-/**
- * Parses and dispatches a non-escaped CLI input line.
- */
-void input_line_not_escaped(void)
-{
-    bool failed = parse_command(&input_buffer_offset);
-
-    scratch_offset = screen_row;
-
-    if (failed || screen_row >= 48)
-        cli_putstring("Mistake\n");
-    scan_state_t scan;
-
-    execute_cli_command(scratch_offset, &scan);
-    run_cli();
-}
-
-/**
- * Main CLI handler loop, prompting for and dispatching commands.
- */
-void cli_handler_impl(void)
-{
-    stop_printing();
-    print_flags = 0;
-    cli_putstring("=>");
-
-    if (!read_command_line())
-    {
-        input_line_not_escaped();
-
-        return;
-    }
-    run_editor();
-}
-
-/**
  * Displays the CLI status screen and returns to the prompt.
  */
 void run_cli(void)
@@ -1175,6 +1212,32 @@ void run_cli(void)
     cli_putchar('\n');
 
     return_to_cli_prompt();
+}
+
+/**
+ * Prints a number of words from the help and version string.
+ *
+ * @param idx number of words to print beyond the first
+ */
+static void print_x_words_of_help(uint8_t idx)
+{
+    uint8_t pos = 0;
+
+    for (;;)
+    {
+        uint8_t cur_ch = version_string[pos];
+
+        if (cur_ch == 0)
+        {
+            cur_ch = 0x20;
+            idx--;
+
+            if ((int8_t)idx < 0)
+                break;
+        }
+        cli_putchar(cur_ch);
+        pos++;
+    }
 }
 
 /**
@@ -1301,26 +1364,6 @@ bool parse_integer_from_command(scan_state_t* scan, int* out)
 }
 
 /**
- * Parses zero to two marker arguments to define the operation area.
- *
- * @param scan scan state for scanning markers
- */
-void parse_marks_from_command(scan_state_t* scan)
-{
-    reset_area_to_entire_document();
-    uint8_t* start_mark = parse_mark_from_command(scan);
-
-    if (start_mark == NULL)
-        return;
-    area_start_ptr = start_mark;
-    uint8_t* end_mark = parse_mark_from_command(scan);
-
-    if (end_mark == NULL)
-        return;
-    area_end_ptr = end_mark;
-}
-
-/**
  * Marks the document as loaded and updates the document name from the filename
  * buffer.
  */
@@ -1360,6 +1403,147 @@ void zero_terminate_filename_buffer(void)
 }
 
 /**
+ * Verify that continuous editing is active.
+ * Displays the document file state when continuous editing is not enabled.
+ */
+void check_continuous_editing(void)
+{
+    if ((file_edit_flags & 0x40) == 0)
+    {
+        if (file_edit_flags & 1)
+            return;
+    }
+    display_document_file_state();
+}
+
+/**
+ * Verifies the editor is not in continuous editing mode.
+ *
+ * Displays the file state if editing is active.
+ */
+void check_not_continuous_editing(void)
+{
+    if ((file_edit_flags & 0x40))
+        return;
+
+    if ((file_edit_flags & 1) == 0)
+        return;
+    display_document_file_state();
+}
+
+/**
+ * Parse a mandatory filename from the command line.
+ * Reports an error if no filename is present.
+ * @param scan scan state pointing into the command buffer
+ */
+void parse_filename_from_command(scan_state_t* scan)
+{
+    if (!parse_optional_filename_from_command(scan))
+    {
+        bad_filename_error();
+
+        return;
+    }
+}
+
+/**
+ * Parses an optional filename from the input buffer.
+ *
+ * @param scan scan state holding the current buffer position
+ * @return true if a filename was found, false if none
+ */
+bool parse_optional_filename_from_command(scan_state_t* scan)
+{
+    if (scan_input_buffer(input_buffer, scan))
+        return false;
+    uint8_t idx = 0;
+
+    while (1)
+    {
+        scan->ch = input_buffer[scan->pos];
+
+        if (scan->ch == 0x0d)
+            break;
+        scan->pos++;
+
+        if (scan->ch == delimiter_char)
+            break;
+        filename_buffer[idx] = scan->ch;
+        idx++;
+
+        if (idx == MAX_COMMAND_LENGTH - 1)
+        {
+            bad_filename_error();
+            break;
+        }
+    }
+    filename_buffer[idx] = 0x0d;
+    input_buffer_offset = scan->pos;
+
+    return true;
+}
+
+/**
+ * Reports a bad filename error and returns to the command prompt.
+ */
+void bad_filename_error(void)
+{
+    cli_putstring("Bad filename\n");
+
+    return_to_cli_prompt();
+}
+
+/**
+ * Process a CLI command from the input buffer.
+ * Parses the search string and marks, sanitises the area, and copies area
+ * pointers to the working pointers.
+ * @param scan scan state containing current parse position
+ * @return CLI_CMD_NO_TARGET if no command, CLI_CMD_NO_STRING if area empty,
+ * CLI_CMD_OK otherwise
+ */
+cli_cmd_status_t process_cli_command(scan_state_t* scan)
+{
+    if (reset_command_parse_state(scan))
+        return CLI_CMD_NO_TARGET;
+
+    if (!scan_input_buffer(input_buffer, scan))
+    {
+        cli_header_limit =
+            expand_escaped_string(search_target_len, input_buffer_offset + 1);
+    }
+    parse_marks_from_command(scan);
+
+    if (sanitise_area() == AREA_EMPTY)
+        return CLI_CMD_NO_STRING;
+
+    search_cursor_ptr = area_start_ptr;
+
+    search_limit_ptr = area_end_ptr;
+
+    return CLI_CMD_OK;
+}
+
+/**
+ * Parses zero to two marker arguments to define the operation area.
+ *
+ * @param scan scan state for scanning markers
+ */
+void parse_marks_from_command(scan_state_t* scan)
+{
+    reset_area_to_entire_document();
+    uint8_t* start_mark = parse_mark_from_command(scan);
+
+    if (start_mark == NULL)
+        return;
+    area_start_ptr = start_mark;
+    uint8_t* end_mark = parse_mark_from_command(scan);
+
+    if (end_mark == NULL)
+        return;
+    area_end_ptr = end_mark;
+}
+
+/**
  * Parses a single marker reference from the command.
  *
  * @param scan scan state for scanning the marker
@@ -1391,50 +1575,26 @@ uint8_t* parse_mark_from_command(scan_state_t* scan)
 }
 
 /**
- * Reports a bad filename error and returns to the command prompt.
+ * Reset command parse state and extract the search target length.
+ * Scans the input buffer and expands any escaped search string.
+ * @param scan scan state to initialise
+ * @return true if no search string was found, false otherwise
  */
-void bad_filename_error(void)
+bool reset_command_parse_state(scan_state_t* scan)
 {
-    cli_putstring("Bad filename\n");
+    uint8_t idx = 0;
 
-    return_to_cli_prompt();
+    search_target_len = idx;
+    cli_header_limit = idx;
+
+    if (scan_input_buffer(input_buffer, scan))
+        return true;
+    uint8_t idx2 = expand_escaped_string(0, scan->pos);
+
+    search_target_len = idx2;
+
+    return idx2 == 0;
 }
-
-/**
- * Verify that continuous editing is active.
- * Displays the document file state when continuous editing is not enabled.
- */
-void check_continuous_editing(void)
-{
-    if ((file_edit_flags & 0x40) == 0)
-    {
-        if (file_edit_flags & 1)
-            return;
-    }
-    display_document_file_state();
-}
-
-/**
- * Verifies the editor is not in continuous editing mode.
- *
- * Displays the file state if editing is active.
- */
-void check_not_continuous_editing(void)
-{
-    if ((file_edit_flags & 0x40))
-        return;
-
-    if ((file_edit_flags & 1) == 0)
-        return;
-    display_document_file_state();
-}
-
-static const uint8_t escaped_char_table[] = {
-    '?', 'T', 'C', 'S', 'L', 'Z', '-', '*', 0xff};
-static const uint8_t escaped_value_table[] = {
-    1, 9, 0x0d, 2, 0x0b, 0x1a, 0x1c, 0x1d, 0xff};
-
-static uint8_t read_next_command_byte(uint8_t* pos, bool* end);
 
 /**
  * Expand an escaped string from the input buffer into the header text buffer.
@@ -1504,88 +1664,6 @@ static uint8_t expand_escaped_string(uint8_t idx, uint8_t pos)
 }
 
 /**
- * Parse a mandatory filename from the command line.
- * Reports an error if no filename is present.
- * @param scan scan state pointing into the command buffer
- */
-void parse_filename_from_command(scan_state_t* scan)
-{
-    if (!parse_optional_filename_from_command(scan))
-    {
-        bad_filename_error();
-
-        return;
-    }
-}
-
-/**
- * Parses an optional filename from the input buffer.
- *
- * @param scan scan state holding the current buffer position
- * @return true if a filename was found, false if none
- */
-bool parse_optional_filename_from_command(scan_state_t* scan)
-{
-    if (scan_input_buffer(input_buffer, scan))
-        return false;
-    uint8_t idx = 0;
-
-    while (1)
-    {
-        scan->ch = input_buffer[scan->pos];
-
-        if (scan->ch == 0x0d)
-            break;
-        scan->pos++;
-
-        if (scan->ch == delimiter_char)
-            break;
-        filename_buffer[idx] = scan->ch;
-        idx++;
-
-        if (idx == MAX_COMMAND_LENGTH - 1)
-        {
-            bad_filename_error();
-            break;
-        }
-    }
-    filename_buffer[idx] = 0x0d;
-    input_buffer_offset = scan->pos;
-
-    return true;
-}
-
-/**
- * Process a CLI command from the input buffer.
- * Parses the search string and marks, sanitises the area, and copies area
- * pointers to the working pointers.
- * @param scan scan state containing current parse position
- * @return CLI_CMD_NO_TARGET if no command, CLI_CMD_NO_STRING if area empty,
- * CLI_CMD_OK otherwise
- */
-cli_cmd_status_t process_cli_command(scan_state_t* scan)
-{
-    if (reset_command_parse_state(scan))
-        return CLI_CMD_NO_TARGET;
-
-    if (!scan_input_buffer(input_buffer, scan))
-    {
-        cli_header_limit =
-            expand_escaped_string(search_target_len, input_buffer_offset + 1);
-    }
-    parse_marks_from_command(scan);
-
-    if (sanitise_area() == AREA_EMPTY)
-        return CLI_CMD_NO_STRING;
-
-    search_cursor_ptr = area_start_ptr;
-
-    search_limit_ptr = area_end_ptr;
-
-    return CLI_CMD_OK;
-}
-
-/**
  * Read the next byte from the input buffer.
  * Advances the position and reports whether the byte terminates the current
  * token.
@@ -1600,26 +1678,4 @@ static uint8_t read_next_command_byte(uint8_t* pos, bool* end)
     *end = (cur_ch == delimiter_char) || (cur_ch == 0x0d);
 
     return cur_ch;
-}
-
-/**
- * Reset command parse state and extract the search target length.
- * Scans the input buffer and expands any escaped search string.
- * @param scan scan state to initialise
- * @return true if no search string was found, false otherwise
- */
-bool reset_command_parse_state(scan_state_t* scan)
-{
-    uint8_t idx = 0;
-
-    search_target_len = idx;
-    cli_header_limit = idx;
-
-    if (scan_input_buffer(input_buffer, scan))
-        return true;
-    uint8_t idx2 = expand_escaped_string(0, scan->pos);
-
-    search_target_len = idx2;
-
-    return idx2 == 0;
 }

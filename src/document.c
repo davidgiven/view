@@ -13,25 +13,54 @@ void split_line_at_wrap(uint8_t* target_ptr);
 void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch);
 void write_cr_to_memory(uint8_t** cursor);
 
-/**
- * Compute free bytes between document top and himem.
- * @return number of free bytes (himem - top)
- */
-int compute_bytes_free(void)
-{
-    return (int)(himem - top);
-}
-
-/**
- * Ensure at least 150 bytes are free.
- * Displays a memory error and does not return if less than 150 bytes remain.
- */
-void check_for_at_least_150_bytes_free(void)
-{
-    if (compute_bytes_free() >= LINE_LENGTH_SPARE)
-        return;
-    display_not_enough_memory();
-}
+/* Forward declarations for sorted functions (root first) */
+command_prefix_t deref_and_check_for_command_prefix(
+    uint8_t pos, uint8_t* target_ptr);
+void display_document_file_state(void);
+void close_file(void);
+unsigned int* get_register_address(uint8_t cur_ch);
+void initialise_document(void);
+void ensure_cr_at_document_top(void);
+uint8_t create_default_ruler(uint8_t* ruler_addr);
+int lookup_marker(uint8_t cur_ch);
+void move_cursor_to_top_of_document(void);
+void open_output_file(void);
+void reset_area_to_entire_document(void);
+bool advance_to_next_line(uint8_t* line, uint8_t** line_ptr, uint8_t* pos);
+void adjust_area_pointers(ptrdiff_t size_delta);
+bool check_area_memory(uint8_t* doc_working_ptr);
+bool read_first_chunk_from_input_file(void);
+uint8_t* read_into_document(void);
+void check_for_at_least_150_bytes_free(void);
+void move_cursor_to_address(uint8_t* addr);
+bool find_next_line(uint8_t* start, uint8_t** line_ptr, uint8_t* pos);
+bool find_previous_line(uint8_t* val, uint8_t** line_ptr);
+void open_input_file(void);
+void pop_from_ruler_index(void);
+void check_for_embedded_ruler(uint8_t* target_ptr);
+void push_onto_ruler_index(uint8_t* target_ptr);
+void load_current_ruler(int pos);
+void find_margins_of_current_ruler_buffer(void);
+static uint8_t* compute_required_space_for_insertion(uint8_t* target_ptr);
+bool read_next_chunk_from_input_file(uint8_t* target_ptr);
+static uint8_t* compute_space_available(uint8_t* target_ptr);
+static uint8_t* compute_space_common(uint8_t* target_ptr, ptrdiff_t scan_ptr);
+int compute_bytes_free(void);
+read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit);
+void set_marker_to_here(uint8_t marker_idx);
+void setup_area_pointers(uint8_t* doc_working_ptr);
+void split_line_at_wrap(uint8_t* target_ptr);
+uint8_t* find_line_start(uint8_t* target_ptr);
+void update_markers_to_format_buffer(void);
+void write_area_to_file(void);
+area_status_t sanitise_area(void);
+void write_line_back_to_document_safely(void);
+bool write_line_back_to_document(void);
+uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta);
+uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr);
+uint8_t get_line_length(void);
+bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta);
+uint8_t get_byte_from_file(void);
 
 /**
  * Dereference a document pointer at an offset and test for command prefix.
@@ -95,68 +124,6 @@ void display_document_file_state(void)
 }
 
 /**
- * Scan the current ruler buffer for left and right margin stops.
- * Sets ruler_left_stop to the position of '>' and ruler_right_stop to the
- * position of '<'. If the left stop is not strictly before the right stop,
- * both are reset to zero. Also updates ruler_buffer_len.
- */
-void find_margins_of_current_ruler_buffer(void)
-{
-    uint8_t pos = 0;
-
-    ruler_right_stop = 0;
-    ruler_left_stop = 0;
-
-    do
-    {
-        uint8_t cur_ch = current_ruler_ptr[pos];
-
-        if (cur_ch == 0x3e)
-            ruler_left_stop = pos;
-
-        if (cur_ch == 0x3c)
-            ruler_right_stop = pos;
-
-        if (cur_ch == 0x0d)
-            break;
-        pos++;
-    } while (pos != MAX_LINE_LENGTH);
-    ruler_buffer_len = pos;
-
-    if (ruler_left_stop < ruler_right_stop)
-        return;
-    ruler_right_stop = 0;
-    ruler_left_stop = 0;
-}
-
-/**
- * Load the ruler at the given index and recompute margins.
- * @param pos element index into the ruler index stack (0 .. RULER_INDEX_SIZE-1)
- */
-void load_current_ruler(int pos)
-{
-    assert(pos >= 0 && pos < RULER_INDEX_SIZE);
-    ruler_index_ptr = pos;
-    current_ruler_ptr = ruler_index[pos] + 3;
-    find_margins_of_current_ruler_buffer();
-}
-
-/**
- * Ensure the document contains at least one carriage return.
- * If the document is empty (ram == top), inserts a CR at ram and a
- * terminating NUL at top.
- */
-void ensure_cr_at_document_top(void)
-{
-    if (ram != top)
-        return;
-    top++;
-    current_line_ptr = ram;
-    ram[0] = 0x0d;
-    top[0] = 0;
-}
-
-/**
  * Close the currently open file if any.
  */
 void close_file(void)
@@ -166,58 +133,6 @@ void close_file(void)
         fclose(file_ptr);
         file_ptr = NULL;
     }
-}
-
-/**
- * Create a default ruler with tab stops every six columns.
- * Fills the buffer with '.' and '*' tab markers and terminates with '<'.
- * @param ruler_addr destination buffer for the ruler
- * @return offset of the terminating '<' character
- */
-uint8_t create_default_ruler(uint8_t* ruler_addr)
-{
-    uint8_t* line_ptr = ruler_addr;
-    uint8_t pos = 0;
-
-    for (;;)
-    {
-        uint8_t cur_ch = 0x2e;
-
-        for (;;)
-        {
-            line_ptr[pos] = cur_ch;
-            pos++;
-            uint8_t next_ch = pos;
-            uint8_t idx = next_ch;
-
-            idx++;
-            next_ch += 6;
-
-            if (next_ch == screen_maxcolumn)
-                goto cb0ff;
-
-            if (idx & 7)
-                break;
-            cur_ch = 0x2a;
-        }
-    }
-cb0ff:
-    line_ptr[pos] = 0x3c;
-
-    return pos;
-}
-
-/**
- * Read one byte from the current file.
- * @return next byte, or 0 on EOF or NUL
- */
-uint8_t get_byte_from_file(void)
-{
-    int c = fgetc(file_ptr);
-
-    if (c == EOF || c == 0)
-        return 0;
-    return (uint8_t)c;
 }
 
 /**
@@ -286,6 +201,60 @@ void initialise_document(void)
 }
 
 /**
+ * Ensure the document contains at least one carriage return.
+ * If the document is empty (ram == top), inserts a CR at ram and a
+ * terminating NUL at top.
+ */
+void ensure_cr_at_document_top(void)
+{
+    if (ram != top)
+        return;
+    top++;
+    current_line_ptr = ram;
+    ram[0] = 0x0d;
+    top[0] = 0;
+}
+
+/**
+ * Create a default ruler with tab stops every six columns.
+ * Fills the buffer with '.' and '*' tab markers and terminates with '<'.
+ * @param ruler_addr destination buffer for the ruler
+ * @return offset of the terminating '<' character
+ */
+uint8_t create_default_ruler(uint8_t* ruler_addr)
+{
+    uint8_t* line_ptr = ruler_addr;
+    uint8_t pos = 0;
+
+    for (;;)
+    {
+        uint8_t cur_ch = 0x2e;
+
+        for (;;)
+        {
+            line_ptr[pos] = cur_ch;
+            pos++;
+            uint8_t next_ch = pos;
+            uint8_t idx = next_ch;
+
+            idx++;
+            next_ch += 6;
+
+            if (next_ch == screen_maxcolumn)
+                goto cb0ff;
+
+            if (idx & 7)
+                break;
+            cur_ch = 0x2a;
+        }
+    }
+cb0ff:
+    line_ptr[pos] = 0x3c;
+
+    return pos;
+}
+
+/**
  * Convert a marker character to its zero-based index.
  * @param cur_ch character '1'..'6' to look up
  * @return 0..5 for valid markers, MARKER_INVALID otherwise; beeps if
@@ -307,90 +276,6 @@ int lookup_marker(uint8_t cur_ch)
 }
 
 /**
- * Move the cursor to the document address containing the given pointer.
- * Scans forward or backward from the current line to locate the line that
- * contains the target address and updates current_line_ptr and xpos.
- * @param addr target address within the document heap
- */
-void move_cursor_to_address(uint8_t* addr)
-{
-    uint8_t* next_line_start;
-    uint8_t* cur = current_line_ptr;
-
-    if (cur != addr)
-    {
-        if (cur > addr)
-        {
-            for (;;)
-            {
-                uint8_t* line_ptr;
-
-                if (!find_previous_line(cur, &line_ptr))
-                    goto cac20;
-                cur = line_ptr;
-
-                if (cur <= addr)
-                    goto cac20;
-            }
-        }
-        do
-        {
-            uint8_t pos;
-
-            if (find_next_line(cur, &next_line_start, &pos))
-                break;
-            cur = next_line_start + pos;
-
-            if (cur >= addr)
-            {
-                if (cur == addr)
-                    goto cac1d;
-                break;
-            }
-            check_for_embedded_ruler(next_line_start);
-        } while (1);
-        cur = next_line_start;
-
-        goto cac20;
-
-    cac1d:
-        check_for_embedded_ruler(next_line_start);
-    }
-cac20:
-    current_line_ptr = cur;
-    uint8_t idx = (uint8_t)(addr - current_line_ptr);
-    {
-        FILE* _log = fopen("/tmp/view.log", "a");
-        if (_log)
-        {
-            fprintf(_log,
-                "move_cursor_to_address cur %p addr %p idx %d xpos %d\n",
-                (void*)cur,
-                (void*)addr,
-                idx,
-                idx);
-            fclose(_log);
-        }
-    }
-
-    command_prefix_t cp = check_for_command_prefix(current_line_ptr[0]);
-
-    if (cp != NO_COMMAND_PREFIX)
-    {
-        uint8_t next_ch = idx;
-
-        idx = 0;
-
-        if (next_ch >= 3)
-        {
-            next_ch -= 3;
-            idx = next_ch;
-        }
-    }
-    xpos = idx;
-}
-
-/**
  * Move the cursor to the start of the document (ram).
  * Resets screen and ruler stack pointers and loads the initial ruler.
  */
@@ -402,85 +287,6 @@ void move_cursor_to_top_of_document(void)
     ruler_index_ptr = RULER_INDEX_SIZE - 1;
     saved_ruler_index_scroll = RULER_INDEX_SIZE - 1;
     load_current_ruler(RULER_INDEX_SIZE - 1);
-}
-
-/**
- * Find the end of the current line.
- * Scans from start until CR (0x0d) or NUL.
- * @param start address to start scanning
- * @param line_ptr on return, set to start
- * @param pos on return, offset of the byte past the CR or of the NUL
- * @return true if the terminator is NUL (end of document), false if CR
- */
-bool find_next_line(uint8_t* start, uint8_t** line_ptr, uint8_t* pos)
-{
-    *line_ptr = start;
-    *pos = 0;
-
-    for (;;)
-    {
-        uint8_t cur_ch = (*line_ptr)[*pos];
-
-        if (cur_ch == 0)
-            return true;
-        (*pos)++;
-
-        if (cur_ch == 0x0d)
-            break;
-    }
-    return (*line_ptr)[*pos] == 0;
-}
-
-/**
- * Find the start of the previous line.
- * @param val address just past the current line
- * @param line_ptr on return, set to the start of the previous line
- * @return false if already at the start of the document, true otherwise
- */
-bool find_previous_line(uint8_t* val, uint8_t** line_ptr)
-{
-    if (val <= ram)
-        return false;
-
-    uint8_t* p = val - 2;
-
-    while (p >= ram)
-    {
-        if (*p == 0x0d)
-        {
-            *line_ptr = p + 1;
-
-            if (**line_ptr == RULER_PREFIX)
-                pop_from_ruler_index();
-
-            return true;
-        }
-        p--;
-    }
-    *line_ptr = ram;
-
-    if (**line_ptr == RULER_PREFIX)
-        pop_from_ruler_index();
-
-    return true;
-}
-
-/**
- * Open the input file named in filename_buffer for reading.
- * On failure, reports file not found.
- */
-void open_input_file(void)
-{
-    zero_terminate_filename_buffer();
-    input_fp = fopen((char*)filename_buffer, "rb");
-
-    if (!input_fp)
-    {
-        file_not_found_error();
-
-        return;
-    }
-    file_ptr = input_fp;
 }
 
 /**
@@ -499,31 +305,6 @@ void open_output_file(void)
         return;
     }
     file_ptr = output_fp;
-}
-
-/**
- * Pop the most recent ruler from the ruler index stack.
- * Increments the status line redraw flag and loads the previous ruler.
- */
-void pop_from_ruler_index(void)
-{
-    status_line_needs_redrawing_flag++;
-    int pos = ruler_index_ptr + 1;
-    assert(pos >= 0 && pos < RULER_INDEX_SIZE);
-    load_current_ruler(pos);
-}
-
-/**
- * Push a ruler address onto the ruler index stack.
- * @param target_ptr address of the ruler line to push
- */
-void push_onto_ruler_index(uint8_t* target_ptr)
-{
-    status_line_needs_redrawing_flag++;
-    int stack_index = ruler_index_ptr - 1;
-    assert(stack_index >= 0 && stack_index < RULER_INDEX_SIZE);
-    ruler_index[stack_index] = target_ptr;
-    load_current_ruler(stack_index);
 }
 
 /**
@@ -568,54 +349,6 @@ void adjust_area_pointers(ptrdiff_t size_delta)
 
     scratch_scan_ptr = adjust_pointers(insert_ptr, size_delta);
     split_line_at_wrap(insert_ptr);
-}
-
-/**
- * Adjusts pointers after a document size change.
- * Updates all heap pointers for an insertion or deletion and moves the heap
- * content.
- * @param insert_ptr base of changed region
- * @param size_delta signed size change (negative for deletion)
- * @return pointer to the end of the moved region
- */
-uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta)
-{
-    uint8_t* copy_ptr = insert_ptr;
-    uint8_t* local_tmp89 = insert_ptr + size_delta;
-    uint8_t slot_idx = 0;
-
-    do
-    {
-        {
-            uint8_t* slot_ptr = ((uint8_t**)&pointer_array)[slot_idx];
-
-            if (slot_ptr < insert_ptr)
-                goto ca9f1;
-
-            if (slot_ptr < local_tmp89)
-                goto ca9db;
-
-            goto ca9e7;
-        }
-    ca9db:
-        if (slot_idx < ARRAY_SIZE(markers_array))
-            ((uint8_t**)&pointer_array)[slot_idx] = NULL;
-        else
-
-        ca9e7:
-        {
-            ((uint8_t**)&pointer_array)[slot_idx] -= size_delta;
-        }
-        ca9f1:
-            slot_idx++;
-    } while (slot_idx != sizeof(pointer_array) / sizeof(uint8_t*));
-    {
-        size_t copy_len = strlen((char*)local_tmp89) + 1;
-
-        memmove(copy_ptr, local_tmp89, copy_len);
-        top = copy_ptr + copy_len - 1;
-    }
-    return local_tmp89;
 }
 
 /**
@@ -808,6 +541,228 @@ c8b11:
 }
 
 /**
+ * Read the first chunk of the input file starting at the document page.
+ * @return true if the block read was empty, false otherwise
+ */
+bool read_first_chunk_from_input_file(void)
+{
+    return read_next_chunk_from_input_file(ram);
+}
+
+/**
+ * Read the input file into the document at the current area start.
+ * Ensures free space, computes insertion limits, reads a block, and adjusts
+ * document pointers.
+ * @return pointer to the byte after the inserted data
+ */
+uint8_t* read_into_document(void)
+{
+    check_for_at_least_150_bytes_free();
+    open_input_file();
+    uint8_t* insert_ptr = area_start_ptr;
+
+    move_cursor_to_address(area_start_ptr);
+    uint8_t* space_limit = compute_required_space_for_insertion(insert_ptr);
+
+    make_space_for_insertion(insert_ptr, space_limit - insert_ptr + 0x8b);
+    uint8_t* cursor = insert_ptr;
+
+    read_block_status_t status = read_block_from_file(&cursor, space_limit);
+
+    if (status != READ_BLOCK_DONE)
+        cli_putstring("Not all read in\n");
+    scratch_scan_ptr = adjust_pointers(cursor, space_limit - cursor);
+
+    return cursor;
+}
+
+/**
+ * Ensure at least 150 bytes are free.
+ * Displays a memory error and does not return if less than 150 bytes remain.
+ */
+void check_for_at_least_150_bytes_free(void)
+{
+    if (compute_bytes_free() >= LINE_LENGTH_SPARE)
+        return;
+    display_not_enough_memory();
+}
+
+/**
+ * Move the cursor to the document address containing the given pointer.
+ * Scans forward or backward from the current line to locate the line that
+ * contains the target address and updates current_line_ptr and xpos.
+ * @param addr target address within the document heap
+ */
+void move_cursor_to_address(uint8_t* addr)
+{
+    uint8_t* next_line_start;
+    uint8_t* cur = current_line_ptr;
+
+    if (cur != addr)
+    {
+        if (cur > addr)
+        {
+            for (;;)
+            {
+                uint8_t* line_ptr;
+
+                if (!find_previous_line(cur, &line_ptr))
+                    goto cac20;
+                cur = line_ptr;
+
+                if (cur <= addr)
+                    goto cac20;
+            }
+        }
+        do
+        {
+            uint8_t pos;
+
+            if (find_next_line(cur, &next_line_start, &pos))
+                break;
+            cur = next_line_start + pos;
+
+            if (cur >= addr)
+            {
+                if (cur == addr)
+                    goto cac1d;
+                break;
+            }
+            check_for_embedded_ruler(next_line_start);
+        } while (1);
+        cur = next_line_start;
+
+        goto cac20;
+
+    cac1d:
+        check_for_embedded_ruler(next_line_start);
+    }
+cac20:
+    current_line_ptr = cur;
+    uint8_t idx = (uint8_t)(addr - current_line_ptr);
+    {
+        FILE* _log = fopen("/tmp/view.log", "a");
+        if (_log)
+        {
+            fprintf(_log,
+                "move_cursor_to_address cur %p addr %p idx %d xpos %d\n",
+                (void*)cur,
+                (void*)addr,
+                idx,
+                idx);
+            fclose(_log);
+        }
+    }
+
+    command_prefix_t cp = check_for_command_prefix(current_line_ptr[0]);
+
+    if (cp != NO_COMMAND_PREFIX)
+    {
+        uint8_t next_ch = idx;
+
+        idx = 0;
+
+        if (next_ch >= 3)
+        {
+            next_ch -= 3;
+            idx = next_ch;
+        }
+    }
+    xpos = idx;
+}
+
+/**
+ * Find the end of the current line.
+ * Scans from start until CR (0x0d) or NUL.
+ * @param start address to start scanning
+ * @param line_ptr on return, set to start
+ * @param pos on return, offset of the byte past the CR or of the NUL
+ * @return true if the terminator is NUL (end of document), false if CR
+ */
+bool find_next_line(uint8_t* start, uint8_t** line_ptr, uint8_t* pos)
+{
+    *line_ptr = start;
+    *pos = 0;
+
+    for (;;)
+    {
+        uint8_t cur_ch = (*line_ptr)[*pos];
+
+        if (cur_ch == 0)
+            return true;
+        (*pos)++;
+
+        if (cur_ch == 0x0d)
+            break;
+    }
+    return (*line_ptr)[*pos] == 0;
+}
+
+/**
+ * Find the start of the previous line.
+ * @param val address just past the current line
+ * @param line_ptr on return, set to the start of the previous line
+ * @return false if already at the start of the document, true otherwise
+ */
+bool find_previous_line(uint8_t* val, uint8_t** line_ptr)
+{
+    if (val <= ram)
+        return false;
+
+    uint8_t* p = val - 2;
+
+    while (p >= ram)
+    {
+        if (*p == 0x0d)
+        {
+            *line_ptr = p + 1;
+
+            if (**line_ptr == RULER_PREFIX)
+                pop_from_ruler_index();
+
+            return true;
+        }
+        p--;
+    }
+    *line_ptr = ram;
+
+    if (**line_ptr == RULER_PREFIX)
+        pop_from_ruler_index();
+
+    return true;
+}
+
+/**
+ * Open the input file named in filename_buffer for reading.
+ * On failure, reports file not found.
+ */
+void open_input_file(void)
+{
+    zero_terminate_filename_buffer();
+    input_fp = fopen((char*)filename_buffer, "rb");
+
+    if (!input_fp)
+    {
+        file_not_found_error();
+
+        return;
+    }
+    file_ptr = input_fp;
+}
+
+/**
+ * Pop the most recent ruler from the ruler index stack.
+ * Increments the status line redraw flag and loads the previous ruler.
+ */
+void pop_from_ruler_index(void)
+{
+    status_line_needs_redrawing_flag++;
+    int pos = ruler_index_ptr + 1;
+    assert(pos >= 0 && pos < RULER_INDEX_SIZE);
+    load_current_ruler(pos);
+}
+
+/**
  * Checks for an embedded ruler.
  * Pushes the ruler stack if the line starts with a ruler byte.
  * @param target_ptr line pointer
@@ -819,6 +774,66 @@ void check_for_embedded_ruler(uint8_t* target_ptr)
 }
 
 /**
+ * Push a ruler address onto the ruler index stack.
+ * @param target_ptr address of the ruler line to push
+ */
+void push_onto_ruler_index(uint8_t* target_ptr)
+{
+    status_line_needs_redrawing_flag++;
+    int stack_index = ruler_index_ptr - 1;
+    assert(stack_index >= 0 && stack_index < RULER_INDEX_SIZE);
+    ruler_index[stack_index] = target_ptr;
+    load_current_ruler(stack_index);
+}
+
+/**
+ * Load the ruler at the given index and recompute margins.
+ * @param pos element index into the ruler index stack (0 .. RULER_INDEX_SIZE-1)
+ */
+void load_current_ruler(int pos)
+{
+    assert(pos >= 0 && pos < RULER_INDEX_SIZE);
+    ruler_index_ptr = pos;
+    current_ruler_ptr = ruler_index[pos] + 3;
+    find_margins_of_current_ruler_buffer();
+}
+
+/**
+ * Scan the current ruler buffer for left and right margin stops.
+ * Sets ruler_left_stop to the position of '>' and ruler_right_stop to the
+ * position of '<'. If the left stop is not strictly before the right stop,
+ * both are reset to zero. Also updates ruler_buffer_len.
+ */
+void find_margins_of_current_ruler_buffer(void)
+{
+    uint8_t pos = 0;
+
+    ruler_right_stop = 0;
+    ruler_left_stop = 0;
+
+    do
+    {
+        uint8_t cur_ch = current_ruler_ptr[pos];
+
+        if (cur_ch == 0x3e)
+            ruler_left_stop = pos;
+
+        if (cur_ch == 0x3c)
+            ruler_right_stop = pos;
+
+        if (cur_ch == 0x0d)
+            break;
+        pos++;
+    } while (pos != MAX_LINE_LENGTH);
+    ruler_buffer_len = pos;
+
+    if (ruler_left_stop < ruler_right_stop)
+        return;
+    ruler_right_stop = 0;
+    ruler_left_stop = 0;
+}
+
+/**
  * Compute required space for a fresh insertion at the target pointer.
  * @param target_ptr insertion point
  * @return limit pointer for the insertion
@@ -826,6 +841,29 @@ void check_for_embedded_ruler(uint8_t* target_ptr)
 static uint8_t* compute_required_space_for_insertion(uint8_t* target_ptr)
 {
     return compute_space_common(target_ptr, 0);
+}
+
+/**
+ * Read the next chunk of the input file into the document.
+ * Computes available space, reads a block, and updates the document top.
+ * @param target_ptr destination address in the document heap
+ * @return true if the block read was empty, false otherwise
+ */
+bool read_next_chunk_from_input_file(uint8_t* target_ptr)
+{
+    uint8_t* space_limit = compute_space_available(target_ptr);
+
+    file_ptr = input_fp;
+    uint8_t* cursor = target_ptr;
+
+    read_block_status_t status = read_block_from_file(&cursor, space_limit);
+
+    if (status == READ_BLOCK_DONE)
+        input_file_empty_flag++;
+    *cursor = 0;
+    top = cursor;
+
+    return status == READ_BLOCK_EMPTY;
 }
 
 /**
@@ -863,111 +901,12 @@ static uint8_t* compute_space_common(uint8_t* target_ptr, ptrdiff_t scan_ptr)
 }
 
 /**
- * Finds the start of the current line.
- * Scans backward for the preceding CR.
- * @param target_ptr pointer within line
- * @return pointer to line start
+ * Compute free bytes between document top and himem.
+ * @return number of free bytes (himem - top)
  */
-uint8_t* find_line_start(uint8_t* target_ptr)
+int compute_bytes_free(void)
 {
-    while (1)
-    {
-        if (target_ptr == ram)
-            return target_ptr - 1;
-        target_ptr--;
-        uint8_t acc = target_ptr[0];
-
-        if (acc == 0x0d)
-            break;
-    }
-    return target_ptr;
-}
-
-/**
- * Finds a marker at a buffer position.
- * Checks if any marker points at the given edit-buffer offset.
- * @param pos buffer position
- * @param target_ptr base pointer
- * @return marker index or 0x0c if none
- */
-uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr)
-{
-    uint8_t* scan_ptr = target_ptr + buf_offset;
-    uint8_t slot_idx = 0;
-
-    do
-    {
-        if (scan_ptr == markers_array[slot_idx / 2])
-            goto ca558;
-        slot_idx++;
-        slot_idx++;
-    } while (slot_idx != 0x0c);
-
-    return 0x0c;
-
-ca558:
-    return slot_idx;
-}
-
-/**
- * Returns the length of the current edit line.
- * Scans the edit buffer for the last non-fill byte, adjusting for command
- * prefixes.
- * @return line length in characters
- */
-uint8_t get_line_length(void)
-{
-    uint8_t first_char = current_format_line->prefix_byte;
-
-    command_prefix_t cp = check_for_command_prefix(first_char);
-    uint8_t scan_pos = MAX_LINE_LENGTH;
-
-    do
-    {
-        scan_pos--;
-
-        if (current_line_buffer.text[scan_pos] != 0x10)
-            goto cab06;
-    } while (scan_pos != 0);
-    scan_pos--;
-
-cab06:
-    scan_pos++;
-
-    if (cp != NO_COMMAND_PREFIX)
-        scan_pos += 3;
-
-    return scan_pos;
-}
-
-/**
- * Makes space for an insertion in the heap.
- * Shifts heap content and adjusts pointers; checks against himem.
- * @param insert_ptr insertion point
- * @param size_delta bytes to create
- * @return true if space was made
- */
-bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta)
-{
-    uint8_t* copy_ptr = top;
-    uint8_t* scan_ptr = top + size_delta;
-
-    if (scan_ptr >= himem)
-        return false;
-    top = scan_ptr;
-    uint8_t slot_idx = 0;
-
-    do
-    {
-        if (((uint8_t**)&pointer_array)[slot_idx] >= insert_ptr)
-            ((uint8_t**)&pointer_array)[slot_idx] += size_delta;
-        slot_idx++;
-    } while (slot_idx != sizeof(pointer_array) / sizeof(uint8_t*));
-    size_t copy_len = (size_t)(copy_ptr - insert_ptr) + 1;
-
-    memmove(insert_ptr + size_delta, insert_ptr, copy_len);
-
-    return true;
+    return (int)(himem - top);
 }
 
 /**
@@ -1050,84 +989,6 @@ c8cf2:
     if (eof_1)
         return READ_BLOCK_DONE;
     return READ_BLOCK_MORE;
-}
-
-/**
- * Read the first chunk of the input file starting at the document page.
- * @return true if the block read was empty, false otherwise
- */
-bool read_first_chunk_from_input_file(void)
-{
-    return read_next_chunk_from_input_file(ram);
-}
-
-/**
- * Read the input file into the document at the current area start.
- * Ensures free space, computes insertion limits, reads a block, and adjusts
- * document pointers.
- * @return pointer to the byte after the inserted data
- */
-uint8_t* read_into_document(void)
-{
-    check_for_at_least_150_bytes_free();
-    open_input_file();
-    uint8_t* insert_ptr = area_start_ptr;
-
-    move_cursor_to_address(area_start_ptr);
-    uint8_t* space_limit = compute_required_space_for_insertion(insert_ptr);
-
-    make_space_for_insertion(insert_ptr, space_limit - insert_ptr + 0x8b);
-    uint8_t* cursor = insert_ptr;
-
-    read_block_status_t status = read_block_from_file(&cursor, space_limit);
-
-    if (status != READ_BLOCK_DONE)
-        cli_putstring("Not all read in\n");
-    scratch_scan_ptr = adjust_pointers(cursor, space_limit - cursor);
-
-    return cursor;
-}
-
-/**
- * Read the next chunk of the input file into the document.
- * Computes available space, reads a block, and updates the document top.
- * @param target_ptr destination address in the document heap
- * @return true if the block read was empty, false otherwise
- */
-bool read_next_chunk_from_input_file(uint8_t* target_ptr)
-{
-    uint8_t* space_limit = compute_space_available(target_ptr);
-
-    file_ptr = input_fp;
-    uint8_t* cursor = target_ptr;
-
-    read_block_status_t status = read_block_from_file(&cursor, space_limit);
-
-    if (status == READ_BLOCK_DONE)
-        input_file_empty_flag++;
-    *cursor = 0;
-    top = cursor;
-
-    return status == READ_BLOCK_EMPTY;
-}
-
-/**
- * Sanitises the defined area.
- * Ensures area pointers are ordered and checks for emptiness.
- * @return AREA_NOT_EMPTY or AREA_EMPTY
- */
-area_status_t sanitise_area(void)
-{
-    if (area_start_ptr >= area_end_ptr)
-    {
-        uint8_t* tmp = area_start_ptr;
-        area_start_ptr = area_end_ptr;
-        area_end_ptr = tmp;
-    }
-
-    if (area_end_ptr != area_start_ptr)
-        return AREA_NOT_EMPTY;
-    return AREA_EMPTY;
 }
 
 /**
@@ -1246,6 +1107,27 @@ void split_line_at_wrap(uint8_t* target_ptr)
 }
 
 /**
+ * Finds the start of the current line.
+ * Scans backward for the preceding CR.
+ * @param target_ptr pointer within line
+ * @return pointer to line start
+ */
+uint8_t* find_line_start(uint8_t* target_ptr)
+{
+    while (1)
+    {
+        if (target_ptr == ram)
+            return target_ptr - 1;
+        target_ptr--;
+        uint8_t acc = target_ptr[0];
+
+        if (acc == 0x0d)
+            break;
+    }
+    return target_ptr;
+}
+
+/**
  * Updates markers to point into the format buffer.
  * Retargets markers from document heap into the current format line.
  */
@@ -1290,6 +1172,36 @@ void write_area_to_file(void)
         fputc(*scan_ptr, file_ptr);
         scan_ptr++;
     } while (scan_ptr != area_end_ptr);
+}
+
+/**
+ * Sanitises the defined area.
+ * Ensures area pointers are ordered and checks for emptiness.
+ * @return AREA_NOT_EMPTY or AREA_EMPTY
+ */
+area_status_t sanitise_area(void)
+{
+    if (area_start_ptr >= area_end_ptr)
+    {
+        uint8_t* tmp = area_start_ptr;
+        area_start_ptr = area_end_ptr;
+        area_end_ptr = tmp;
+    }
+
+    if (area_end_ptr != area_start_ptr)
+        return AREA_NOT_EMPTY;
+    return AREA_EMPTY;
+}
+
+/**
+ * Safely writes the edit buffer back.
+ * Writes the buffer and invokes memory-full handling on failure.
+ */
+void write_line_back_to_document_safely(void)
+{
+    if (!write_line_back_to_document())
+        return;
+    memory_full();
 }
 
 /**
@@ -1394,12 +1306,149 @@ bool write_line_back_to_document(void)
 }
 
 /**
- * Safely writes the edit buffer back.
- * Writes the buffer and invokes memory-full handling on failure.
+ * Adjusts pointers after a document size change.
+ * Updates all heap pointers for an insertion or deletion and moves the heap
+ * content.
+ * @param insert_ptr base of changed region
+ * @param size_delta signed size change (negative for deletion)
+ * @return pointer to the end of the moved region
  */
-void write_line_back_to_document_safely(void)
+uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta)
 {
-    if (!write_line_back_to_document())
-        return;
-    memory_full();
+    uint8_t* copy_ptr = insert_ptr;
+    uint8_t* local_tmp89 = insert_ptr + size_delta;
+    uint8_t slot_idx = 0;
+
+    do
+    {
+        {
+            uint8_t* slot_ptr = ((uint8_t**)&pointer_array)[slot_idx];
+
+            if (slot_ptr < insert_ptr)
+                goto ca9f1;
+
+            if (slot_ptr < local_tmp89)
+                goto ca9db;
+
+            goto ca9e7;
+        }
+    ca9db:
+        if (slot_idx < ARRAY_SIZE(markers_array))
+            ((uint8_t**)&pointer_array)[slot_idx] = NULL;
+        else
+
+        ca9e7:
+        {
+            ((uint8_t**)&pointer_array)[slot_idx] -= size_delta;
+        }
+        ca9f1:
+            slot_idx++;
+    } while (slot_idx != sizeof(pointer_array) / sizeof(uint8_t*));
+    {
+        size_t copy_len = strlen((char*)local_tmp89) + 1;
+
+        memmove(copy_ptr, local_tmp89, copy_len);
+        top = copy_ptr + copy_len - 1;
+    }
+    return local_tmp89;
+}
+
+/**
+ * Finds a marker at a buffer position.
+ * Checks if any marker points at the given edit-buffer offset.
+ * @param pos buffer position
+ * @param target_ptr base pointer
+ * @return marker index or 0x0c if none
+ */
+uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr)
+{
+    uint8_t* scan_ptr = target_ptr + buf_offset;
+    uint8_t slot_idx = 0;
+
+    do
+    {
+        if (scan_ptr == markers_array[slot_idx / 2])
+            goto ca558;
+        slot_idx++;
+        slot_idx++;
+    } while (slot_idx != 0x0c);
+
+    return 0x0c;
+
+ca558:
+    return slot_idx;
+}
+
+/**
+ * Returns the length of the current edit line.
+ * Scans the edit buffer for the last non-fill byte, adjusting for command
+ * prefixes.
+ * @return line length in characters
+ */
+uint8_t get_line_length(void)
+{
+    uint8_t first_char = current_format_line->prefix_byte;
+
+    command_prefix_t cp = check_for_command_prefix(first_char);
+    uint8_t scan_pos = MAX_LINE_LENGTH;
+
+    do
+    {
+        scan_pos--;
+
+        if (current_line_buffer.text[scan_pos] != 0x10)
+            goto cab06;
+    } while (scan_pos != 0);
+    scan_pos--;
+
+cab06:
+    scan_pos++;
+
+    if (cp != NO_COMMAND_PREFIX)
+        scan_pos += 3;
+
+    return scan_pos;
+}
+
+/**
+ * Makes space for an insertion in the heap.
+ * Shifts heap content and adjusts pointers; checks against himem.
+ * @param insert_ptr insertion point
+ * @param size_delta bytes to create
+ * @return true if space was made
+ */
+bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta)
+{
+    uint8_t* copy_ptr = top;
+    uint8_t* scan_ptr = top + size_delta;
+
+    if (scan_ptr >= himem)
+        return false;
+    top = scan_ptr;
+    uint8_t slot_idx = 0;
+
+    do
+    {
+        if (((uint8_t**)&pointer_array)[slot_idx] >= insert_ptr)
+            ((uint8_t**)&pointer_array)[slot_idx] += size_delta;
+        slot_idx++;
+    } while (slot_idx != sizeof(pointer_array) / sizeof(uint8_t*));
+    size_t copy_len = (size_t)(copy_ptr - insert_ptr) + 1;
+
+    memmove(insert_ptr + size_delta, insert_ptr, copy_len);
+
+    return true;
+}
+
+/**
+ * Read one byte from the current file.
+ * @return next byte, or 0 on EOF or NUL
+ */
+uint8_t get_byte_from_file(void)
+{
+    int c = fgetc(file_ptr);
+
+    if (c == EOF || c == 0)
+        return 0;
+    return (uint8_t)c;
 }
