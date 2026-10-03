@@ -52,7 +52,7 @@ int compute_bytes_free(void)
  */
 void check_for_at_least_150_bytes_free(void)
 {
-    if (compute_bytes_free() >= 0x96)
+    if (compute_bytes_free() >= LINE_LENGTH_SPARE)
         return;
     display_not_enough_memory();
 }

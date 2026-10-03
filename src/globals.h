@@ -11,6 +11,7 @@
 // ────────────────────────────────────────────────────────────────
 
 #define MAX_LINE_LENGTH 132
+#define LINE_LENGTH_SPARE 150
 #define ARRAY_SIZE(cur_ch) (sizeof(cur_ch) / sizeof((cur_ch)[0]))
 #define MAX_COMMAND_LENGTH 68
 #define JMP_CLI 1

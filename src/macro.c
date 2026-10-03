@@ -84,7 +84,7 @@ void dm_fmt_cmd(void)
 
     for (;;)
     {
-        if (himem - body < 0x97)
+        if (himem - body <= LINE_LENGTH_SPARE)
         {
             display_not_enough_memory();
 
@@ -275,19 +275,14 @@ c91a7:
 
             if (tmp_ch6 == 0x0d)
                 break;
-            {
-                parse_register_result_t r_1 = parse_register_reference(tmp_ch6);
 
-                if (r_1 == PARSE_REGISTER_MARKER)
-                    continue;
+            parse_register_result_t r_1 = parse_register_reference(tmp_ch6);
+            if (r_1 == PARSE_REGISTER_MARKER)
+                continue;
 
-                if (r_1 == PARSE_REGISTER_VALUE)
-                    goto c921b;
-            }
-            if (tmp_ch6 == 0x2c)
+            if ((r_1 != PARSE_REGISTER_VALUE) && (tmp_ch6 == 0x2c))
                 break;
 
-        c921b:
             ((uint8_t*)&current_line_buffer)[idx] = tmp_ch6;
             idx++;
         } while (idx < 0x82);
