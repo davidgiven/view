@@ -198,6 +198,10 @@ extern FILE* output_fp;
 // ──────────────────────────────────────────────────────────
 
 extern uint8_t printing_from_file_flag;
+extern uint8_t cli_header_limit;
+extern uint8_t cli_header_pos;
+extern uint8_t cli_output_pos;
+extern uint8_t edit_line_len;
 
 // ─── Function declarations ────────────────────────────────────────────────
 
@@ -206,6 +210,9 @@ extern uint8_t printing_from_file_flag;
 extern command_prefix_t check_for_command_prefix(uint8_t ch);
 extern control_code_t check_for_control_code(uint8_t cur_ch);
 extern void render_number_to_screen(int val);
+extern void render_register(uint8_t cur_ch, uint8_t idx);
+extern void render_number_to_output_buffer(uint16_t value, uint8_t start_x);
+extern void render_number_to_callback(int value, void (*cb)(uint8_t));
 extern uint8_t upper_case_unless_folding(uint8_t ch);
 extern bool parse_decimal_number(int* value, uint8_t* pos);
 extern void display_not_enough_memory(void);
@@ -215,6 +222,9 @@ extern void draw_prompt_characters(uint8_t first_char, uint8_t second_char);
 extern void show_memory_full_error(void);
 extern void bad_filename_error(void);
 extern void clear_screen(void);
+extern void memory_full(void);
+extern void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch);
+extern void write_cr_to_memory(uint8_t** cursor);
 
 // ── Document handling
 // ──────────────────────────────────────────────────────────

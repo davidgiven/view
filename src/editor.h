@@ -8,6 +8,10 @@ extern void return_to_editor_loop(void);
 extern void esc_key(void);
 extern void return_key(void);
 extern void f13_right_key(void);
+extern void cursor_off(void);
+extern void cursor_on(void);
+extern void home_cursor(void);
+extern void clear_to_eol(uint8_t fill_char, uint8_t line);
 
 // Functions in view.c called by editor key handlers
 extern uint8_t create_default_ruler(uint8_t* ruler_addr);

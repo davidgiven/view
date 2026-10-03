@@ -4,6 +4,7 @@
 #include "io.h"
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 uint8_t* parse_mark_from_command(scan_state_t* scan);
 
 void file_error(void);
@@ -1387,4 +1388,238 @@ uint8_t* parse_mark_from_command(scan_state_t* scan)
         return 0;
     }
     return markers_array[marker_index];
+}
+
+/**
+ * Reports a bad filename error and returns to the command prompt.
+ */
+void bad_filename_error(void)
+{
+    cli_putstring("Bad filename\n");
+
+    return_to_cli_prompt();
+}
+
+/**
+ * Verify that continuous editing is active.
+ * Displays the document file state when continuous editing is not enabled.
+ */
+void check_continuous_editing(void)
+{
+    if ((file_edit_flags & 0x40) == 0)
+    {
+        if (file_edit_flags & 1)
+            return;
+    }
+    display_document_file_state();
+}
+
+/**
+ * Verifies the editor is not in continuous editing mode.
+ *
+ * Displays the file state if editing is active.
+ */
+void check_not_continuous_editing(void)
+{
+    if ((file_edit_flags & 0x40))
+        return;
+
+    if ((file_edit_flags & 1) == 0)
+        return;
+    display_document_file_state();
+}
+
+static const uint8_t escaped_char_table[] = {
+    '?', 'T', 'C', 'S', 'L', 'Z', '-', '*', 0xff};
+static const uint8_t escaped_value_table[] = {
+    1, 9, 0x0d, 2, 0x0b, 0x1a, 0x1c, 0x1d, 0xff};
+
+static uint8_t read_next_command_byte(uint8_t* pos, bool* end);
+
+/**
+ * Expand an escaped string from the input buffer into the header text buffer.
+ * Handles caret escapes and optional case folding.
+ * @param idx starting index in the header text buffer
+ * @param pos starting position in the input buffer
+ * @return updated header text length
+ */
+static uint8_t expand_escaped_string(uint8_t idx, uint8_t pos)
+{
+    uint8_t temp_save;
+    screen_column = idx;
+    pos--;
+
+    do
+    {
+        uint8_t cur_ch;
+        bool end;
+
+        cur_ch = read_next_command_byte(&pos, &end);
+
+        if (end)
+            break;
+
+        if (cur_ch == 0x5e)
+        {
+            uint8_t next_ch = read_next_command_byte(&pos, &end);
+
+            if (end)
+                break;
+            screen_row = toupper(next_ch);
+            temp_save = next_ch;
+            idx = 0xfe;
+
+            for (;;)
+            {
+                idx += 2;
+                uint8_t table_idx = idx >> 1;
+                uint8_t tmp_ch3 = escaped_char_table[table_idx];
+
+                if (tmp_ch3 & 0x80)
+                    break;
+
+                if (tmp_ch3 == screen_row)
+                {
+                    cur_ch = escaped_value_table[table_idx];
+
+                    if (cur_ch != 0)
+                        goto c83ca;
+                }
+            }
+            cur_ch = temp_save;
+        }
+    c83ca:
+        idx = search_target_len;
+
+        if (idx == 0)
+            cur_ch = upper_case_unless_folding(cur_ch);
+        idx = screen_column;
+        header_text_maybe[idx] = cur_ch;
+        screen_column++;
+    } while (screen_column != 0);
+    idx = screen_column;
+    input_buffer_offset = pos;
+
+    return idx;
+}
+
+/**
+ * Parse a mandatory filename from the command line.
+ * Reports an error if no filename is present.
+ * @param scan scan state pointing into the command buffer
+ */
+void parse_filename_from_command(scan_state_t* scan)
+{
+    if (!parse_optional_filename_from_command(scan))
+    {
+        bad_filename_error();
+
+        return;
+    }
+}
+
+/**
+ * Parses an optional filename from the input buffer.
+ *
+ * @param scan scan state holding the current buffer position
+ * @return true if a filename was found, false if none
+ */
+bool parse_optional_filename_from_command(scan_state_t* scan)
+{
+    if (scan_input_buffer(input_buffer, scan))
+        return false;
+    uint8_t idx = 0;
+
+    while (1)
+    {
+        scan->ch = input_buffer[scan->pos];
+
+        if (scan->ch == 0x0d)
+            break;
+        scan->pos++;
+
+        if (scan->ch == delimiter_char)
+            break;
+        filename_buffer[idx] = scan->ch;
+        idx++;
+
+        if (idx == MAX_COMMAND_LENGTH - 1)
+        {
+            bad_filename_error();
+            break;
+        }
+    }
+    filename_buffer[idx] = 0x0d;
+    input_buffer_offset = scan->pos;
+
+    return true;
+}
+
+/**
+ * Process a CLI command from the input buffer.
+ * Parses the search string and marks, sanitises the area, and copies area
+ * pointers to the working pointers.
+ * @param scan scan state containing current parse position
+ * @return CLI_CMD_NO_TARGET if no command, CLI_CMD_NO_STRING if area empty,
+ * CLI_CMD_OK otherwise
+ */
+cli_cmd_status_t process_cli_command(scan_state_t* scan)
+{
+    if (reset_command_parse_state(scan))
+        return CLI_CMD_NO_TARGET;
+
+    if (!scan_input_buffer(input_buffer, scan))
+    {
+        cli_header_limit =
+            expand_escaped_string(search_target_len, input_buffer_offset + 1);
+    }
+    parse_marks_from_command(scan);
+
+    if (sanitise_area() == AREA_EMPTY)
+        return CLI_CMD_NO_STRING;
+
+    search_cursor_ptr = area_start_ptr;
+
+    search_limit_ptr = area_end_ptr;
+
+    return CLI_CMD_OK;
+}
+
+/**
+ * Read the next byte from the input buffer.
+ * Advances the position and reports whether the byte terminates the current
+ * token.
+ * @param pos pointer to current buffer index, incremented on entry
+ * @param end output flag set when byte equals delimiter or carriage return
+ * @return the byte at the new position
+ */
+static uint8_t read_next_command_byte(uint8_t* pos, bool* end)
+{
+    (*pos)++;
+    uint8_t cur_ch = input_buffer[*pos];
+    *end = (cur_ch == delimiter_char) || (cur_ch == 0x0d);
+
+    return cur_ch;
+}
+
+/**
+ * Reset command parse state and extract the search target length.
+ * Scans the input buffer and expands any escaped search string.
+ * @param scan scan state to initialise
+ * @return true if no search string was found, false otherwise
+ */
+bool reset_command_parse_state(scan_state_t* scan)
+{
+    uint8_t idx = 0;
+
+    search_target_len = idx;
+    cli_header_limit = idx;
+
+    if (scan_input_buffer(input_buffer, scan))
+        return true;
+    uint8_t idx2 = expand_escaped_string(0, scan->pos);
+
+    search_target_len = idx2;
+
+    return idx2 == 0;
 }

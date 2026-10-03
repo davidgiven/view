@@ -68,8 +68,8 @@ static uint8_t add_justification_spaces(uint8_t idx);
 static uint8_t convert_char_for_printing(
     uint8_t cur_ch, uint8_t* idx, bool* is_tab);
 static void reset_print_registers(void);
-static void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch);
-static void write_cr_to_memory(uint8_t** cursor);
+void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch);
+void write_cr_to_memory(uint8_t** cursor);
 
 static uint8_t expand_line(void);
 static void write_output_buffer_to_format_line(uint8_t cur_ch);
@@ -85,10 +85,6 @@ formatting_command_t lookup_formatting_command(void);
 static void store_to_output_buffer(uint8_t cur_ch, uint8_t* copy_ptr);
 static uint8_t process_header_footer_line(uint8_t* copy_ptr);
 static void write_output_buffer_to_format_line(uint8_t cur_ch);
-void render_register(uint8_t cur_ch, uint8_t idx);
-static void render_number_to_output_buffer(uint16_t value, uint8_t start_x);
-static void emit_to_output_buffer_callback(uint8_t digit);
-static void render_number_to_callback(int value, void (*cb)(uint8_t));
 
 /**
  * Writes the contents of the output buffer to the current format line.
@@ -962,32 +958,6 @@ static uint8_t get_next_fmt_cmd_byte(uint8_t* pos)
 }
 
 /**
- * Expands a register reference into the output buffer.
- *
- * @param cur_ch register name character
- * @param idx position in the output buffer where expansion starts
- */
-void render_register(uint8_t cur_ch, uint8_t idx)
-{
-    unsigned int* register_value = get_register_address(cur_ch);
-
-    if (register_value != NULL)
-        render_number_to_output_buffer(*register_value, idx);
-}
-
-/**
- * Renders a 16-bit number into the output buffer.
- *
- * @param value number to render
- * @param start_x starting offset in the output buffer
- */
-static void render_number_to_output_buffer(uint16_t value, uint8_t start_x)
-{
-    screen_row = start_x;
-    render_number_to_callback(value, emit_to_output_buffer_callback);
-}
-
-/**
  * Callback that writes a digit character into the output buffer.
  *
  * @param digit character to emit
@@ -1000,51 +970,6 @@ static void emit_to_output_buffer_callback(uint8_t digit)
         if (screen_row < MAX_LINE_LENGTH - 2)
             screen_row++;
     }
-}
-
-/**
- * Renders a number to the screen via the console output.
- *
- * @param val value to display
- */
-void render_number_to_screen(int val)
-{
-    render_number_to_callback(val, cli_putchar);
-}
-
-/**
- * Renders a number as decimal by invoking a callback for each digit.
- *
- * @param value number to render
- * @param cb callback invoked for each digit character
- */
-static void render_number_to_callback(int value, void (*cb)(uint8_t))
-{
-    char buf[12];
-
-    snprintf(buf, sizeof(buf), "%d", value);
-
-    for (char* p = buf; *p; p++)
-    {
-        uint8_t cur_ch = (uint8_t)*p;
-
-        if (cur_ch >= '0' && cur_ch <= '9')
-        {
-            cur_ch -= '0';
-            cur_ch |= 0x30;
-        }
-        cb(cur_ch);
-    }
-}
-
-/**
- * Reports a bad filename error and returns to the command prompt.
- */
-void bad_filename_error(void)
-{
-    cli_putstring("Bad filename\n");
-
-    return_to_cli_prompt();
 }
 
 /**
@@ -1119,32 +1044,6 @@ static uint8_t scan_string_length(uint8_t pos, uint8_t* insert_ptr)
     } while ((int8_t)cur_ch >= 0);
 
     return pos;
-}
-
-/**
- * Verifies the editor is not in continuous editing mode.
- *
- * Displays the file state if editing is active.
- */
-void check_not_continuous_editing(void)
-{
-    if ((file_edit_flags & 0x40))
-        return;
-
-    if ((file_edit_flags & 1) == 0)
-        return;
-    display_document_file_state();
-}
-
-/**
- * Displays a memory exhaustion error and stops printing.
- */
-void display_not_enough_memory(void)
-{
-    stop_printing();
-    cli_putstring("Not enough memory\n");
-
-    return_to_cli_prompt();
 }
 
 /**
@@ -1369,66 +1268,6 @@ c8ffb_inline:
 }
 
 /**
- * Parses a decimal number from the current format line.
- *
- * @param value output for the parsed integer
- * @param pos cursor into the line, advanced past digits
- * @return true if digits were parsed, false otherwise
- */
-bool parse_decimal_number(int* value, uint8_t* pos)
-{
-    const char* start;
-
-    if ((uint8_t*)heap_format_line_ptr == input_buffer ||
-        (uint8_t*)current_format_line == input_buffer)
-        start = (const char*)&input_buffer[*pos];
-    else
-        start = (const char*)&heap_format_line_ptr->text[*pos];
-    char* end;
-    *value = (int)strtoul(start, &end, 10);
-    *pos += (uint8_t)(end - start);
-
-    return (end != start);
-}
-
-/**
- * Parses an optional filename from the input buffer.
- *
- * @param scan scan state holding the current buffer position
- * @return true if a filename was found, false if none
- */
-bool parse_optional_filename_from_command(scan_state_t* scan)
-{
-    if (scan_input_buffer(input_buffer, scan))
-        return false;
-    uint8_t idx = 0;
-
-    while (1)
-    {
-        scan->ch = input_buffer[scan->pos];
-
-        if (scan->ch == 0x0d)
-            break;
-        scan->pos++;
-
-        if (scan->ch == delimiter_char)
-            break;
-        filename_buffer[idx] = scan->ch;
-        idx++;
-
-        if (idx == MAX_COMMAND_LENGTH - 1)
-        {
-            bad_filename_error();
-            break;
-        }
-    }
-    filename_buffer[idx] = 0x0d;
-    input_buffer_offset = scan->pos;
-
-    return true;
-}
-
-/**
  * Prints a character repeatedly.
  *
  * @param cur_ch character to print
@@ -1624,88 +1463,6 @@ static void print_vertical_space(uint8_t idx)
 }
 
 /**
- * Reads a block of data from the file into the memory buffer.
- *
- * @param cursor pointer to the current write position, updated on return
- * @param limit upper bound for the write position
- * @return status indicating empty, done or more data available
- */
-read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit)
-{
-    uint8_t next_ch;
-    bool eof_1;
-    uint8_t cur_ch = 0;
-
-    screen_column = cur_ch;
-
-c8c95:
-    do
-    {
-        next_ch = get_byte_from_file();
-
-        if (next_ch == 0)
-        {
-            eof_1 = true;
-            goto c8cf2;
-        }
-        if (next_ch < 0x7f)
-            goto c8caf;
-    } while (cur_ch != 0);
-    command_prefix_t cp = check_for_command_prefix(next_ch);
-
-    if (cp == NO_COMMAND_PREFIX)
-        goto c8c95;
-    screen_column = 0xfd;
-
-c8caf:
-    if (next_ch < 0x20)
-    {
-        control_code_t cc = check_for_control_code(next_ch);
-
-        if (cc != NO_CONTROL_CODE || next_ch == 0x1a || next_ch == 0x0d ||
-            next_ch == 0x0b)
-
-            goto c8cc8;
-
-        if (next_ch != 9)
-            goto c8c95;
-    }
-c8cc8:
-    uint8_t idx3 = 1;
-
-    if (next_ch != 0x0d)
-    {
-        idx3--;
-
-        if (screen_column == MAX_LINE_LENGTH)
-        {
-            {
-                write_cr_to_memory(&scratch_line_ptr);
-                next_ch = next_ch;
-            }
-            idx3++;
-        }
-    }
-    screen_column++;
-    write_byte_to_memory(cursor, next_ch);
-
-    if (idx3 == 0 || *cursor < limit)
-        goto c8c95;
-    eof_1 = false;
-
-c8cf2:
-    if (cur_ch != 0)
-        write_cr_to_memory(cursor);
-
-    if (screen_row == 0)
-        return READ_BLOCK_EMPTY;
-
-    if (eof_1)
-        return READ_BLOCK_DONE;
-    return READ_BLOCK_MORE;
-}
-
-/**
  * Renders header or footer text with justification and spacing.
  *
  * @param text pointer to the header or footer text data
@@ -1808,38 +1565,6 @@ c92d4:
     print_newline();
     print_vertical_space(header_margin);
     compute_lines_remaining_on_page();
-}
-
-/**
- * Scans the input buffer for the next non-delimiter character.
- *
- * @param buffer text to scan
- * @param state scan state holding the position and result character
- * @return true if no non-delimiter character was found, false otherwise
- */
-bool scan_input_buffer(uint8_t* buffer, scan_state_t* state)
-{
-    state->pos = input_buffer_offset;
-    state->ch = delimiter_char;
-
-    if (state->ch == 0x0d)
-        return true;
-
-    while (1)
-    {
-        state->ch = buffer[state->pos];
-
-        if (state->ch == 0x0d)
-            return true;
-
-        if (state->ch != delimiter_char)
-            return false;
-        state->pos++;
-
-        if (state->pos == 0)
-            break;
-    }
-    return true;
 }
 
 /**
@@ -2169,7 +1894,7 @@ static void reset_print_registers(void)
  * @param cursor pointer to the write cursor, updated after the write
  * @param cur_ch byte to write
  */
-static void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch)
+void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch)
 {
     **cursor = cur_ch;
     (*cursor)++;
@@ -2184,7 +1909,7 @@ static void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch)
  *
  * @param cursor pointer to the write cursor
  */
-static void write_cr_to_memory(uint8_t** cursor)
+void write_cr_to_memory(uint8_t** cursor)
 {
     write_byte_to_memory(cursor, 0x0d);
 }

@@ -4,38 +4,14 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <string.h>
 
-/**
- * Check whether a byte is a command or ruler prefix.
- * @param ch byte to test
- * @return COMMAND_PREFIX for 0x80, RULER_PREFIX for 0x81, NO_COMMAND_PREFIX
- * otherwise
- */
-command_prefix_t check_for_command_prefix(uint8_t ch)
-{
-    if (ch == COMMAND_PREFIX)
-        return COMMAND_PREFIX;
-
-    if (ch == RULER_PREFIX)
-        return RULER_PREFIX;
-    return NO_COMMAND_PREFIX;
-}
-
-/**
- * Check whether a character is a highlight control code.
- * @param cur_ch character to test
- * @return HIGHLIGHT1_CODE for 0x1c, HIGHLIGHT2_CODE for 0x1d, NO_CONTROL_CODE
- * otherwise
- */
-control_code_t check_for_control_code(uint8_t cur_ch)
-{
-    if (cur_ch == 0x1c)
-        return HIGHLIGHT1_CODE;
-
-    if (cur_ch == 0x1d)
-        return HIGHLIGHT2_CODE;
-    return NO_CONTROL_CODE;
-}
+static uint8_t* compute_space_common(uint8_t* target_ptr, ptrdiff_t scan_ptr);
+static uint8_t* compute_space_available(uint8_t* target_ptr);
+static uint8_t* compute_required_space_for_insertion(uint8_t* target_ptr);
+void split_line_at_wrap(uint8_t* target_ptr);
+void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch);
+void write_cr_to_memory(uint8_t** cursor);
 
 /**
  * Compute free bytes between document top and himem.
@@ -151,181 +127,6 @@ void find_margins_of_current_ruler_buffer(void)
         return;
     ruler_right_stop = 0;
     ruler_left_stop = 0;
-}
-
-/**
- * Print a character with alignment handling.
- * Spaces increment the pending alignment count; carriage returns reset it.
- * Other characters are flushed via alignment and then rendered.
- * @param cur_ch character to print
- */
-void print_char(uint8_t cur_ch)
-{
-    if (cur_ch == 0x20)
-    {
-        print_xpos++;
-
-        return;
-    }
-    if (cur_ch == 0x0d)
-        print_xpos = 0;
-    print_alignment_spaces(cur_ch);
-    print_char_just_to_screen(cur_ch);
-}
-
-/**
- * Render a character directly to screen or printer.
- * If printer output is enabled, delegates to the printer driver.
- * Otherwise handles highlight codes by rendering '-' or '*' in reverse
- * video and translates carriage return to newline.
- * @param cur_ch character to render
- */
-void print_char_just_to_screen(uint8_t cur_ch)
-{
-    if ((print_flags & 0x80))
-    {
-        printer_driver_ptr->print_char(cur_ch);
-
-        return;
-    }
-    control_code_t cc = check_for_control_code(cur_ch);
-
-    if (cc != NO_CONTROL_CODE)
-    {
-        {
-            uint8_t saved_a = cur_ch;
-
-            cur_ch = (cc == HIGHLIGHT1_CODE) ? 0x2d : 0x2a;
-            screen_setstyle(STYLE_REVERSE);
-            cli_putchar(cur_ch);
-            cur_ch = saved_a;
-        }
-        screen_setstyle(0);
-
-        return;
-    }
-    if (cur_ch == 0x0d)
-    {
-        cli_putchar('\n');
-
-        return;
-    }
-    cli_putchar(cur_ch);
-}
-
-/**
- * Process one document character, performing tab, ruler and highlight-code
- * expansion.
- * @param cur_ch character from the current edit line to process
- * @param idx on return, holds 1 on ordinary paths or the tab offset (index of
- * the first '*' ruler stop beyond column_position) on the tab path
- * @param is_tab on entry, the previous tab-expansion state for this walk; on
- * return, true if tab expansion was performed for cur_ch, false otherwise
- * @return processed character, normally 0x20 (space); tabs and characters below
- * 0x1a map to space, and characters in [0x1a, 0x20) map to highlight codes when
- * printer output is enabled
- */
-uint8_t process_document_character(uint8_t cur_ch, uint8_t* idx, bool* is_tab)
-{
-    if (cur_ch != 9)
-    {
-        if ((cur_ch == 0x10) || cur_ch == 0x1a)
-            goto ca5d5;
-
-        if (cur_ch == 0x0b)
-            goto ca5d9;
-
-        if (cur_ch > 0x1a)
-        {
-            if (cur_ch < 0x20)
-            {
-                if ((print_flags & 0x80))
-                {
-                    cur_ch = (uint8_t)(cur_ch - 0x1b - 1);
-                    *idx = cur_ch;
-                    cur_ch = highlight_code[*idx];
-                }
-            }
-        }
-    ca5d1:
-        *idx = 1;
-        *is_tab = false;
-
-        return cur_ch;
-
-    ca5d5:
-        do
-        {
-            cur_ch = 0x20;
-
-            goto ca5d1;
-
-        ca5d9:
-            cur_ch = ruler_left_stop;
-        } while (cur_ch == 0);
-        cur_ch--;
-    }
-    else
-    {
-        uint8_t tab_pos = column_position;
-
-        do
-        {
-            tab_pos++;
-
-            if (tab_pos >= ruler_buffer_len)
-                goto ca5f8;
-            cur_ch = current_ruler_ptr[tab_pos];
-        } while (cur_ch != 0x2a);
-        cur_ch = tab_pos;
-    }
-    {
-        bool no_borrow = (cur_ch >= column_position);
-
-        cur_ch -= column_position;
-        *idx = cur_ch;
-
-        if (*idx == 0)
-            goto ca5f8;
-
-        if (no_borrow)
-            goto ca5fa;
-    }
-ca5f8:
-    *idx = 1;
-
-ca5fa:
-    cur_ch = 0x20;
-    *is_tab = true;
-
-    return cur_ch;
-}
-
-/**
- * Return control to the CLI prompt via longjmp.
- */
-void return_to_cli_prompt(void)
-{
-    longjmp(env, JMP_CLI);
-}
-
-/**
- * Flush pending alignment spaces to the output.
- * Prints print_xpos spaces and resets the counter.
- * @param cur_ch unused, retained for call-site compatibility
- */
-void print_alignment_spaces(uint8_t cur_ch)
-{
-    cur_ch = print_xpos;
-
-    if (cur_ch == 0)
-        return;
-
-    do
-    {
-        print_char_just_to_screen(' ');
-        print_xpos--;
-    } while (print_xpos != 0);
 }
 
 /**
@@ -754,4 +555,851 @@ bool advance_to_next_line(uint8_t* line, uint8_t** line_ptr, uint8_t* pos)
         push_onto_ruler_index(line);
 
     return end;
+}
+
+/**
+ * Adjusts area pointers after an edit.
+ * Applies heap adjustment and re-wraps lines at the area start.
+ * @param size_delta size change
+ */
+void adjust_area_pointers(ptrdiff_t size_delta)
+{
+    uint8_t* insert_ptr = area_start_ptr;
+
+    scratch_scan_ptr = adjust_pointers(insert_ptr, size_delta);
+    split_line_at_wrap(insert_ptr);
+}
+
+/**
+ * Adjusts pointers after a document size change.
+ * Updates all heap pointers for an insertion or deletion and moves the heap
+ * content.
+ * @param insert_ptr base of changed region
+ * @param size_delta signed size change (negative for deletion)
+ * @return pointer to the end of the moved region
+ */
+uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta)
+{
+    uint8_t* copy_ptr = insert_ptr;
+    uint8_t* local_tmp89 = insert_ptr + size_delta;
+    uint8_t slot_idx = 0;
+
+    do
+    {
+        {
+            uint8_t* slot_ptr = ((uint8_t**)&pointer_array)[slot_idx];
+
+            if (slot_ptr < insert_ptr)
+                goto ca9f1;
+
+            if (slot_ptr < local_tmp89)
+                goto ca9db;
+
+            goto ca9e7;
+        }
+    ca9db:
+        if (slot_idx < ARRAY_SIZE(markers_array))
+            ((uint8_t**)&pointer_array)[slot_idx] = NULL;
+        else
+
+        ca9e7:
+        {
+            ((uint8_t**)&pointer_array)[slot_idx] -= size_delta;
+        }
+        ca9f1:
+            slot_idx++;
+    } while (slot_idx != sizeof(pointer_array) / sizeof(uint8_t*));
+    {
+        size_t copy_len = strlen((char*)local_tmp89) + 1;
+
+        memmove(copy_ptr, local_tmp89, copy_len);
+        top = copy_ptr + copy_len - 1;
+    }
+    return local_tmp89;
+}
+
+/**
+ * Check that the area at the working pointer fits in memory and rebuild the
+ * line. Expands or shrinks the document gap as needed and reformats the line
+ * content with case handling.
+ * @param doc_working_ptr pointer to the document line to check
+ * @return true if memory allocation failed, false otherwise
+ */
+bool check_area_memory(uint8_t* doc_working_ptr)
+{
+    uint8_t tmp_ch3;
+    uint8_t tmp_ch4;
+    uint8_t cur_ch = 0;
+    uint8_t block_expansion_len = cur_ch;
+
+    scratch_index = cur_ch;
+    uint8_t pos = 0x14;
+    uint8_t idx = search_target_len;
+
+    if (idx == 0)
+    {
+    c8a5b:
+        uint8_t next_ch = header_text_maybe[idx];
+
+        if (next_ch == 1)
+        {
+            next_ch = scratch_index;
+
+            if (next_ch >= cli_header_pos)
+                goto c8a86;
+            scratch_index++;
+
+            if (scratch_index != 0)
+                goto c8a84;
+        }
+        if (next_ch == 0x20 && pos < cli_output_pos)
+        {
+            while (1)
+            {
+                uint8_t tmp_ch2 = output_buffer[pos];
+
+                pos++;
+
+                if (tmp_ch2 == 0)
+                    goto c8a86;
+                block_expansion_len++;
+
+                if (pos >= cli_output_pos)
+                    break;
+            }
+            block_expansion_len--;
+        }
+    c8a84:
+        block_expansion_len++;
+
+    c8a86:
+        idx++;
+    }
+    if (idx < cli_header_limit)
+        goto c8a5b;
+    ptrdiff_t gap = search_cursor_ptr - doc_working_ptr;
+    uint8_t idx2 = block_expansion_len;
+
+    if (gap < 256 && idx2 >= gap)
+        idx2 = gap;
+    uint8_t* insert_ptr = doc_working_ptr + idx2;
+    ptrdiff_t delta = (ptrdiff_t)block_expansion_len - gap;
+
+    if (delta < 0)
+    {
+        scratch_scan_ptr = adjust_pointers(insert_ptr, -delta);
+    }
+    else if (delta > 0)
+    {
+        if (!make_space_for_insertion(insert_ptr, delta))
+            return true;
+    }
+    uint8_t pos2 = 0;
+
+    scratch_index = pos2;
+
+    if ((print_xpos & 0x80) == 0)
+    {
+        uint8_t idx3 = scratch_offset;
+
+        do
+        {
+            tmp_ch3 = doc_working_ptr[pos2];
+            pos2++;
+
+            if (isalpha(tmp_ch3))
+                goto c8af3;
+            print_xpos = (uint8_t)(print_xpos >> 1) | 0x80;
+            idx3--;
+        } while (idx3 != 0);
+
+        goto c8b11;
+
+    c8af3:
+    {
+        print_xpos = 0;
+        tmp_ch4 = tmp_ch3;
+    }
+        tmp_ch4 &= 0x20;
+
+        if (tmp_ch4 != 0)
+            goto c8b11;
+        scratch_index++;
+        idx3--;
+
+        if (idx3 != 0)
+        {
+            uint8_t tmp_ch5 = doc_working_ptr[pos2];
+
+            if (!isalpha(tmp_ch5))
+                goto c8b11;
+            tmp_ch5 &= 0x20;
+
+            if (tmp_ch5 != 0)
+                goto c8b11;
+        }
+        scratch_index -= 2;
+    }
+c8b11:
+    uint8_t output_buf_pos = 0;
+    uint8_t doc_write_pos = 0;
+
+    scratch_offset = 0x14;
+    uint8_t idx4 = search_target_len;
+
+    if (idx4 != 0)
+        goto c8b6b;
+
+    do
+    {
+        uint8_t tmp_ch6 = header_text_maybe[idx4];
+
+        if (tmp_ch6 == 0x20)
+        {
+            uint8_t pos3 = scratch_offset;
+
+            if (pos3 >= cli_output_pos)
+                goto c8b47;
+            scratch_offset++;
+            tmp_ch6 = output_buffer[pos3];
+
+            if (tmp_ch6 == 0)
+                goto c8b6a;
+            idx4--;
+        }
+        else
+        {
+            if (tmp_ch6 != 1)
+                goto c8b47;
+
+            if (output_buf_pos >= cli_header_pos)
+                goto c8b6a;
+            tmp_ch6 = output_buffer[output_buf_pos];
+            output_buf_pos++;
+        }
+    c8b47:
+        if (tmp_ch6 == 2)
+            tmp_ch6 = 0x20;
+
+        if ((folding_flag & 0x80) == 0 && print_xpos == 0)
+        {
+            if (isalpha(tmp_ch6))
+            {
+                tmp_ch6 |= 0x20;
+
+                if (scratch_index != 0)
+                {
+                    scratch_index--;
+                    tmp_ch6 &= 0xdf;
+                }
+            }
+        }
+        doc_working_ptr[doc_write_pos] = tmp_ch6;
+
+        doc_write_pos++;
+
+    c8b6a:
+        idx4++;
+    c8b6b:;
+    } while (idx4 < cli_header_limit);
+    split_line_at_wrap(doc_working_ptr);
+
+    return false;
+}
+
+/**
+ * Checks for an embedded ruler.
+ * Pushes the ruler stack if the line starts with a ruler byte.
+ * @param target_ptr line pointer
+ */
+void check_for_embedded_ruler(uint8_t* target_ptr)
+{
+    if (*target_ptr == RULER_PREFIX)
+        push_onto_ruler_index(target_ptr);
+}
+
+/**
+ * Compute required space for a fresh insertion at the target pointer.
+ * @param target_ptr insertion point
+ * @return limit pointer for the insertion
+ */
+static uint8_t* compute_required_space_for_insertion(uint8_t* target_ptr)
+{
+    return compute_space_common(target_ptr, 0);
+}
+
+/**
+ * Compute available space for insertion at the target pointer.
+ * @param target_ptr insertion point
+ * @return limit pointer for the insertion
+ */
+static uint8_t* compute_space_available(uint8_t* target_ptr)
+{
+    return compute_space_common(target_ptr, compute_bytes_free());
+}
+
+/**
+ * Compute the free-space limit for an insertion at the target pointer.
+ * Applies the common clamping logic for available versus required space.
+ * @param target_ptr insertion point in the document heap
+ * @param scan_ptr size hint (quarter-scaled free count or zero)
+ * @return pointer to the computed limit
+ */
+static uint8_t* compute_space_common(uint8_t* target_ptr, ptrdiff_t scan_ptr)
+{
+    ptrdiff_t size_delta = compute_bytes_free();
+
+    scan_ptr >>= 2;
+
+    if (scan_ptr >= 0x0400)
+    {
+        scan_ptr = 0x0404;
+        size_delta -= scan_ptr;
+    }
+    else
+        size_delta -= scan_ptr + 1;
+
+    return target_ptr + size_delta - 0x8b;
+}
+
+/**
+ * Finds the start of the current line.
+ * Scans backward for the preceding CR.
+ * @param target_ptr pointer within line
+ * @return pointer to line start
+ */
+uint8_t* find_line_start(uint8_t* target_ptr)
+{
+    while (1)
+    {
+        if (target_ptr == ram)
+            return target_ptr - 1;
+        target_ptr--;
+        uint8_t acc = target_ptr[0];
+
+        if (acc == 0x0d)
+            break;
+    }
+    return target_ptr;
+}
+
+/**
+ * Finds a marker at a buffer position.
+ * Checks if any marker points at the given edit-buffer offset.
+ * @param pos buffer position
+ * @param target_ptr base pointer
+ * @return marker index or 0x0c if none
+ */
+uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr)
+{
+    uint8_t* scan_ptr = target_ptr + buf_offset;
+    uint8_t slot_idx = 0;
+
+    do
+    {
+        if (scan_ptr == markers_array[slot_idx / 2])
+            goto ca558;
+        slot_idx++;
+        slot_idx++;
+    } while (slot_idx != 0x0c);
+
+    return 0x0c;
+
+ca558:
+    return slot_idx;
+}
+
+/**
+ * Returns the length of the current edit line.
+ * Scans the edit buffer for the last non-fill byte, adjusting for command
+ * prefixes.
+ * @return line length in characters
+ */
+uint8_t get_line_length(void)
+{
+    uint8_t first_char = current_format_line->prefix_byte;
+
+    command_prefix_t cp = check_for_command_prefix(first_char);
+    uint8_t scan_pos = MAX_LINE_LENGTH;
+
+    do
+    {
+        scan_pos--;
+
+        if (current_line_buffer.text[scan_pos] != 0x10)
+            goto cab06;
+    } while (scan_pos != 0);
+    scan_pos--;
+
+cab06:
+    scan_pos++;
+
+    if (cp != NO_COMMAND_PREFIX)
+        scan_pos += 3;
+
+    return scan_pos;
+}
+
+/**
+ * Makes space for an insertion in the heap.
+ * Shifts heap content and adjusts pointers; checks against himem.
+ * @param insert_ptr insertion point
+ * @param size_delta bytes to create
+ * @return true if space was made
+ */
+bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta)
+{
+    uint8_t* copy_ptr = top;
+    uint8_t* scan_ptr = top + size_delta;
+
+    if (scan_ptr >= himem)
+        return false;
+    top = scan_ptr;
+    uint8_t slot_idx = 0;
+
+    do
+    {
+        if (((uint8_t**)&pointer_array)[slot_idx] >= insert_ptr)
+            ((uint8_t**)&pointer_array)[slot_idx] += size_delta;
+        slot_idx++;
+    } while (slot_idx != sizeof(pointer_array) / sizeof(uint8_t*));
+    size_t copy_len = (size_t)(copy_ptr - insert_ptr) + 1;
+
+    memmove(insert_ptr + size_delta, insert_ptr, copy_len);
+
+    return true;
+}
+
+/**
+ * Reads a block of data from the file into the memory buffer.
+ *
+ * @param cursor pointer to the current write position, updated on return
+ * @param limit upper bound for the write position
+ * @return status indicating empty, done or more data available
+ */
+read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit)
+{
+    uint8_t next_ch;
+    bool eof_1;
+    uint8_t cur_ch = 0;
+
+    screen_column = cur_ch;
+
+c8c95:
+    do
+    {
+        next_ch = get_byte_from_file();
+
+        if (next_ch == 0)
+        {
+            eof_1 = true;
+            goto c8cf2;
+        }
+        if (next_ch < 0x7f)
+            goto c8caf;
+    } while (cur_ch != 0);
+    command_prefix_t cp = check_for_command_prefix(next_ch);
+
+    if (cp == NO_COMMAND_PREFIX)
+        goto c8c95;
+    screen_column = 0xfd;
+
+c8caf:
+    if (next_ch < 0x20)
+    {
+        control_code_t cc = check_for_control_code(next_ch);
+
+        if (cc != NO_CONTROL_CODE || next_ch == 0x1a || next_ch == 0x0d ||
+            next_ch == 0x0b)
+
+            goto c8cc8;
+
+        if (next_ch != 9)
+            goto c8c95;
+    }
+c8cc8:
+    uint8_t idx3 = 1;
+
+    if (next_ch != 0x0d)
+    {
+        idx3--;
+
+        if (screen_column == MAX_LINE_LENGTH)
+        {
+            {
+                write_cr_to_memory(&scratch_line_ptr);
+                next_ch = next_ch;
+            }
+            idx3++;
+        }
+    }
+    screen_column++;
+    write_byte_to_memory(cursor, next_ch);
+
+    if (idx3 == 0 || *cursor < limit)
+        goto c8c95;
+    eof_1 = false;
+
+c8cf2:
+    if (cur_ch != 0)
+        write_cr_to_memory(cursor);
+
+    if (screen_row == 0)
+        return READ_BLOCK_EMPTY;
+
+    if (eof_1)
+        return READ_BLOCK_DONE;
+    return READ_BLOCK_MORE;
+}
+
+/**
+ * Read the first chunk of the input file starting at the document page.
+ * @return true if the block read was empty, false otherwise
+ */
+bool read_first_chunk_from_input_file(void)
+{
+    return read_next_chunk_from_input_file(ram);
+}
+
+/**
+ * Read the input file into the document at the current area start.
+ * Ensures free space, computes insertion limits, reads a block, and adjusts
+ * document pointers.
+ * @return pointer to the byte after the inserted data
+ */
+uint8_t* read_into_document(void)
+{
+    check_for_at_least_150_bytes_free();
+    open_input_file();
+    uint8_t* insert_ptr = area_start_ptr;
+
+    move_cursor_to_address(area_start_ptr);
+    uint8_t* space_limit = compute_required_space_for_insertion(insert_ptr);
+
+    make_space_for_insertion(insert_ptr, space_limit - insert_ptr + 0x8b);
+    uint8_t* cursor = insert_ptr;
+
+    read_block_status_t status = read_block_from_file(&cursor, space_limit);
+
+    if (status != READ_BLOCK_DONE)
+        cli_putstring("Not all read in\n");
+    scratch_scan_ptr = adjust_pointers(cursor, space_limit - cursor);
+
+    return cursor;
+}
+
+/**
+ * Read the next chunk of the input file into the document.
+ * Computes available space, reads a block, and updates the document top.
+ * @param target_ptr destination address in the document heap
+ * @return true if the block read was empty, false otherwise
+ */
+bool read_next_chunk_from_input_file(uint8_t* target_ptr)
+{
+    uint8_t* space_limit = compute_space_available(target_ptr);
+
+    file_ptr = input_fp;
+    uint8_t* cursor = target_ptr;
+
+    read_block_status_t status = read_block_from_file(&cursor, space_limit);
+
+    if (status == READ_BLOCK_DONE)
+        input_file_empty_flag++;
+    *cursor = 0;
+    top = cursor;
+
+    return status == READ_BLOCK_EMPTY;
+}
+
+/**
+ * Sanitises the defined area.
+ * Ensures area pointers are ordered and checks for emptiness.
+ * @return AREA_NOT_EMPTY or AREA_EMPTY
+ */
+area_status_t sanitise_area(void)
+{
+    if (area_start_ptr >= area_end_ptr)
+    {
+        uint8_t* tmp = area_start_ptr;
+        area_start_ptr = area_end_ptr;
+        area_end_ptr = tmp;
+    }
+
+    if (area_end_ptr != area_start_ptr)
+        return AREA_NOT_EMPTY;
+    return AREA_EMPTY;
+}
+
+/**
+ * Sets a marker to the current position.
+ * Computes the document address for the cursor and stores it in the marker
+ * array.
+ * @param idx marker index
+ */
+void set_marker_to_here(uint8_t marker_idx)
+{
+    uint8_t tmp_pos;
+
+    (void)tmp_pos;
+    uint8_t len = get_line_length();
+
+    if (len >= xpos)
+    {
+        uint8_t first_char = ((uint8_t*)current_format_line)[0];
+
+        command_prefix_t cp = check_for_command_prefix(first_char);
+        len = xpos;
+
+        if (cp != NO_COMMAND_PREFIX)
+            len += 3;
+    }
+    uint16_t marker_addr = (current_line_ptr - &ram[0]) + len;
+    markers_array[marker_idx] = &ram[marker_addr];
+}
+
+/**
+ * Set up area pointers for the line at the working pointer.
+ * Increments the line counter and clamps the visible pointer when the line
+ * contains a carriage return.
+ * @param doc_working_ptr pointer to the document line to inspect
+ */
+void setup_area_pointers(uint8_t* doc_working_ptr)
+{
+    uint8_t* scan_ptr = doc_working_ptr;
+    uint8_t idx = 0;
+
+    if (scan_ptr != search_cursor_ptr)
+    {
+        if (*scan_ptr == 0x0d)
+            idx++;
+        scan_ptr++;
+    }
+    line_counter++;
+
+    if (idx == 0)
+        return;
+    clamp_ptr6_to_document();
+}
+
+/**
+ * Splits a line at wrap position.
+ * Inserts carriage returns at word boundaries to enforce line length limits.
+ * @param target_ptr pointer within the line to split
+ */
+void split_line_at_wrap(uint8_t* target_ptr)
+{
+    uint8_t temp_save;
+    uint8_t acc3;
+    uint8_t* scan_ptr = find_line_start(target_ptr);
+
+    do
+    {
+        screen_column = 0;
+        uint8_t copy_len = MAX_LINE_LENGTH + 1;
+        uint8_t scan_pos = 1;
+        uint8_t scan_char = scan_ptr[scan_pos];
+
+        command_prefix_t cp = check_for_command_prefix(scan_char);
+
+        if (cp != NO_COMMAND_PREFIX)
+        {
+            copy_len++;
+            copy_len++;
+            copy_len++;
+        }
+        temp_save = copy_len;
+
+        do
+        {
+            uint8_t next_char = scan_ptr[scan_pos];
+
+            scan_pos++;
+
+            if (next_char != 0x20)
+            {
+                if (next_char != 0x1a)
+                    goto cac9c;
+            }
+            screen_column = scan_pos;
+
+        cac9c:
+            if (next_char == 0x0d)
+                return;
+        } while (scan_pos == temp_save || scan_pos < temp_save);
+
+        if (screen_column == 0)
+        {
+            acc3 = temp_save;
+
+            goto cacad;
+        }
+        acc3 = screen_column;
+
+    cacad:
+        uint8_t* insert_ptr = scan_ptr + acc3;
+
+        scan_ptr = insert_ptr;
+        make_space_for_insertion(insert_ptr, 1);
+        insert_ptr[0] = 0x0d;
+        scan_ptr = insert_ptr;
+    } while (((uint8_t*)&scan_ptr)[1] != 0);
+}
+
+/**
+ * Updates markers to point into the format buffer.
+ * Retargets markers from document heap into the current format line.
+ */
+void update_markers_to_format_buffer(void)
+{
+    uint8_t* size_delta = current_line_ptr;
+    uint8_t offset = 0;
+
+    do
+    {
+        uint8_t idx = find_marker_at_position(offset, size_delta);
+
+        if (idx != 0x0c)
+        {
+            uint8_t* base_ptr =
+                (current_format_line->prefix_byte == COMMAND_PREFIX ||
+                    current_format_line->prefix_byte == RULER_PREFIX)
+                    ? (uint8_t*)current_format_line
+                    : current_format_line->text;
+            markers_array[idx / 2] = base_ptr + offset;
+        }
+        uint8_t acc = current_line_ptr[offset];
+
+        if (acc == 0x0d)
+            return;
+        offset++;
+    } while (offset != 0);
+}
+
+/**
+ * Write the sanitised document area to the output file.
+ * Iterates from area start to area end and writes each byte.
+ */
+void write_area_to_file(void)
+{
+    if (sanitise_area() == AREA_EMPTY)
+        return;
+    uint8_t* scan_ptr = area_start_ptr;
+
+    do
+    {
+        fputc(*scan_ptr, file_ptr);
+        scan_ptr++;
+    } while (scan_ptr != area_end_ptr);
+}
+
+/**
+ * Writes the edit buffer back to the document.
+ * Computes size delta, adjusts heap, and copies the line including marker
+ * updates.
+ * @return true if write failed due to memory
+ */
+bool write_line_back_to_document(void)
+{
+    uint8_t temp_save;
+    uint8_t out_byte;
+    uint8_t stored_byte;
+
+    if (edit_buffer_unpacked_flag != 0)
+    {
+        uint8_t* insert_ptr = current_line_ptr;
+
+        area_size = 0;
+        screen_column = get_line_length();
+        uint8_t old_len = edit_line_len;
+        {
+            uint8_t minuend = old_len;
+
+            old_len -= screen_column;
+
+            if (minuend < screen_column)
+                goto ca8df;
+
+            if (old_len == 0)
+                goto ca8ed;
+        }
+        area_size = old_len;
+        scratch_scan_ptr = adjust_pointers(insert_ptr, area_size);
+
+        goto ca8ed;
+
+    ca8df:
+        temp_save = old_len;
+        uint8_t neg_len = 0;
+
+        neg_len -= temp_save;
+        area_size = neg_len;
+
+        if (!make_space_for_insertion(insert_ptr, area_size))
+            return true;
+
+    ca8ed:
+        if (((int8_t)edit_buffer_unpacked_flag < 0))
+        {
+            if (edit_buffer_dirty_flag != 0)
+                clamp_ptr6_to_document();
+        }
+        uint8_t copy_idx = 0;
+
+        edit_buffer_dirty_flag = copy_idx;
+        edit_buffer_unpacked_flag = copy_idx;
+        uint8_t* src_ptr =
+            (current_format_line->prefix_byte == COMMAND_PREFIX ||
+                current_format_line->prefix_byte == RULER_PREFIX)
+                ? (uint8_t*)current_format_line
+                : current_format_line->text;
+        area_size = src_ptr - &ram[0];
+        uint8_t line_len = screen_column;
+
+        edit_line_len = line_len;
+
+        do
+        {
+            if (line_len == 0)
+            {
+                out_byte = 0x0d;
+            }
+            else
+            {
+                out_byte = src_ptr[copy_idx];
+
+                if (out_byte == 0x10)
+                    out_byte = 0x20;
+            }
+            {
+                uint16_t val;
+
+                do
+                {
+                    uint8_t idx =
+                        find_marker_at_position(copy_idx, &ram[area_size]);
+
+                    if (idx == 0x0c)
+                        break;
+                    val = (current_line_ptr - &ram[0]) + copy_idx;
+                    markers_array[idx / 2] = &ram[val];
+                } while (val != 0);
+                stored_byte = out_byte;
+            }
+            current_line_ptr[copy_idx] = stored_byte;
+            copy_idx++;
+            line_len--;
+        } while (stored_byte != 0x0d);
+    }
+    return false;
+}
+
+/**
+ * Safely writes the edit buffer back.
+ * Writes the buffer and invokes memory-full handling on failure.
+ */
+void write_line_back_to_document_safely(void)
+{
+    if (!write_line_back_to_document())
+        return;
+    memory_full();
 }

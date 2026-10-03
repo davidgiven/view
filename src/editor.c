@@ -10,7 +10,7 @@
 
 #include "globals.h"
 
-static uint8_t edit_line_len;
+uint8_t edit_line_len;
 static uint8_t editor_current_key;
 static uint8_t editor_header_pos;
 static uint8_t editor_output_pos;
@@ -47,20 +47,19 @@ static void insert_line_into_document(uint8_t* target_ptr);
 static void update_line_length(void);
 void clamp_ptr6_to_document(void);
 void clear_screen(void);
-static void clear_to_eol(uint8_t fill_char, uint8_t line);
-static void cursor_off(void);
-static void cursor_on(void);
+void clear_to_eol(uint8_t fill_char, uint8_t line);
+void cursor_off(void);
+void cursor_on(void);
 void draw_line(render_state_t* rs, uint8_t* addr);
 void draw_prompt_characters(uint8_t first_char, uint8_t second_char);
 static void draw_ruler(void);
 static void draw_status_word(void);
-static uint8_t get_line_length(void);
+uint8_t get_line_length(void);
 static void go_to_marker(uint8_t marker_idx);
 static void go_to_marker_n(uint8_t marker);
-static void home_cursor(void);
 uint8_t justify_edit_buffer(uint8_t* target_ptr);
 bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta);
-static void memory_full(void);
+void memory_full(void);
 uint8_t process_current_document_character(uint8_t* target_ptr,
     uint8_t* char_width_out,
     uint8_t* pos_inout,
@@ -85,17 +84,17 @@ static bool insert_character_into_edit_buffer(uint8_t ch);
 static void set_xpos_to_line_length(void);
 static uint8_t compute_display_start_line(void);
 static void advance_to_next_char_and_render(render_state_t* rs);
-static uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr);
+uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr);
 static void unpack_line(uint8_t* target_ptr);
-static void update_markers_to_format_buffer(void);
+void update_markers_to_format_buffer(void);
 void check_for_embedded_ruler(uint8_t* target_ptr);
-static uint8_t* find_line_start(uint8_t* target_ptr);
+uint8_t* find_line_start(uint8_t* target_ptr);
 static int find_left_margin_stop(void);
 static void insert_at_left_margin(void);
 static bool insert_byte_at_xpos(uint8_t insert_pos);
 static void unpack_line_into_buffer(uint8_t* target_ptr);
 void wipe_buffer(uint8_t fill_value, uint8_t* target_ptr);
-static bool write_line_back_to_document(void);
+bool write_line_back_to_document(void);
 void write_line_back_to_document_safely(void);
 
 void enter_editor_mode(void);
@@ -2360,145 +2359,6 @@ cae52:
 }
 
 /**
- * Sets a marker to the current position.
- * Computes the document address for the cursor and stores it in the marker
- * array.
- * @param idx marker index
- */
-void set_marker_to_here(uint8_t marker_idx)
-{
-    uint8_t tmp_pos;
-
-    (void)tmp_pos;
-    uint8_t len = get_line_length();
-
-    if (len >= xpos)
-    {
-        uint8_t first_char = ((uint8_t*)current_format_line)[0];
-
-        command_prefix_t cp = check_for_command_prefix(first_char);
-        len = xpos;
-
-        if (cp != NO_COMMAND_PREFIX)
-            len += 3;
-    }
-    uint16_t marker_addr = (current_line_ptr - &ram[0]) + len;
-    markers_array[marker_idx] = &ram[marker_addr];
-}
-
-/**
- * Splits a line at wrap position.
- * Inserts carriage returns at word boundaries to enforce line length limits.
- * @param target_ptr pointer within the line to split
- */
-void split_line_at_wrap(uint8_t* target_ptr)
-{
-    uint8_t temp_save;
-    uint8_t acc3;
-    uint8_t* scan_ptr = find_line_start(target_ptr);
-
-    do
-    {
-        screen_column = 0;
-        uint8_t copy_len = MAX_LINE_LENGTH + 1;
-        uint8_t scan_pos = 1;
-        uint8_t scan_char = scan_ptr[scan_pos];
-
-        command_prefix_t cp = check_for_command_prefix(scan_char);
-
-        if (cp != NO_COMMAND_PREFIX)
-        {
-            copy_len++;
-            copy_len++;
-            copy_len++;
-        }
-        temp_save = copy_len;
-
-        do
-        {
-            uint8_t next_char = scan_ptr[scan_pos];
-
-            scan_pos++;
-
-            if (next_char != 0x20)
-            {
-                if (next_char != 0x1a)
-                    goto cac9c;
-            }
-            screen_column = scan_pos;
-
-        cac9c:
-            if (next_char == 0x0d)
-                return;
-        } while (scan_pos == temp_save || scan_pos < temp_save);
-
-        if (screen_column == 0)
-        {
-            acc3 = temp_save;
-
-            goto cacad;
-        }
-        acc3 = screen_column;
-
-    cacad:
-        uint8_t* insert_ptr = scan_ptr + acc3;
-
-        scan_ptr = insert_ptr;
-        make_space_for_insertion(insert_ptr, 1);
-        insert_ptr[0] = 0x0d;
-        scan_ptr = insert_ptr;
-    } while (((uint8_t*)&scan_ptr)[1] != 0);
-}
-
-/**
- * Adjusts pointers after a document size change.
- * Updates all heap pointers for an insertion or deletion and moves the heap
- * content.
- * @param insert_ptr base of changed region
- * @param size_delta signed size change (negative for deletion)
- * @return pointer to the end of the moved region
- */
-uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta)
-{
-    uint8_t* copy_ptr = insert_ptr;
-    uint8_t* local_tmp89 = insert_ptr + size_delta;
-    uint8_t slot_idx = 0;
-
-    do
-    {
-        {
-            uint8_t* slot_ptr = ((uint8_t**)&pointer_array)[slot_idx];
-
-            if (slot_ptr < insert_ptr)
-                goto ca9f1;
-
-            if (slot_ptr < local_tmp89)
-                goto ca9db;
-
-            goto ca9e7;
-        }
-    ca9db:
-        if (slot_idx < ARRAY_SIZE(markers_array))
-            ((uint8_t**)&pointer_array)[slot_idx] = NULL;
-        else
-
-        ca9e7:
-        {
-            ((uint8_t**)&pointer_array)[slot_idx] -= size_delta;
-        }
-        ca9f1:
-            slot_idx++;
-    } while (slot_idx != sizeof(pointer_array) / sizeof(uint8_t*));
-    {
-        size_t copy_len = strlen((char*)local_tmp89) + 1;
-
-        memmove(copy_ptr, local_tmp89, copy_len);
-        top = copy_ptr + copy_len - 1;
-    }
-    return local_tmp89;
-}
-
-/**
  * Advances to the next document line.
  * Zeroes xpos and moves current_line_ptr past the current CR.
  * @return true if at end of document
@@ -2526,15 +2386,6 @@ static bool advance_to_next_doc_line(void)
     if (!write_line_back_to_document())
         return false;
     return true;
-}
-
-/**
- * Emits a beep.
- * Sends a bell character to the output.
- */
-void beep(void)
-{
-    cli_putchar(7);
 }
 
 /**
@@ -2713,7 +2564,7 @@ void clear_screen(void)
  * @param acc fill character
  * @param line screen line index
  */
-static void clear_to_eol(uint8_t fill_char, uint8_t line)
+void clear_to_eol(uint8_t fill_char, uint8_t line)
 {
     uint8_t line_len = line_lengths[line];
 
@@ -2731,7 +2582,7 @@ static void clear_to_eol(uint8_t fill_char, uint8_t line)
  * Disables the cursor.
  * Hides the cursor via the screen driver.
  */
-static void cursor_off(void)
+void cursor_off(void)
 {
     screen_enablecursor(0);
 }
@@ -2740,7 +2591,7 @@ static void cursor_off(void)
  * Enables the cursor.
  * Shows the cursor via the screen driver.
  */
-static void cursor_on(void)
+void cursor_on(void)
 {
     screen_enablecursor(1);
 }
@@ -2794,26 +2645,6 @@ void draw_line(render_state_t* rs, uint8_t* addr)
 }
 
 /**
- * Draws prompt characters.
- * Displays two inverted prompt characters at the top-left and restores the
- * cursor.
- * @param idx first prompt character
- * @param pos second prompt character
- */
-void draw_prompt_characters(uint8_t first_char, uint8_t second_char)
-{
-    uint16_t saved_cursor_pos = screen_getcursor();
-    cursor_off();
-    home_cursor();
-    screen_setstyle(STYLE_REVERSE);
-    screen_putchar(first_char);
-    screen_putchar(second_char);
-    screen_setstyle(0);
-    screen_putchar(0x20);
-    screen_setcursor(saved_cursor_pos & 0xff, saved_cursor_pos >> 8);
-}
-
-/**
  * Draws the ruler line.
  * Renders the current ruler at the top row if a redraw is needed.
  */
@@ -2864,37 +2695,6 @@ static void draw_status_word(void)
 }
 
 /**
- * Returns the length of the current edit line.
- * Scans the edit buffer for the last non-fill byte, adjusting for command
- * prefixes.
- * @return line length in characters
- */
-static uint8_t get_line_length(void)
-{
-    uint8_t first_char = current_format_line->prefix_byte;
-
-    command_prefix_t cp = check_for_command_prefix(first_char);
-    uint8_t scan_pos = MAX_LINE_LENGTH;
-
-    do
-    {
-        scan_pos--;
-
-        if (current_line_buffer.text[scan_pos] != 0x10)
-            goto cab06;
-    } while (scan_pos != 0);
-    scan_pos--;
-
-cab06:
-    scan_pos++;
-
-    if (cp != NO_COMMAND_PREFIX)
-        scan_pos += 3;
-
-    return scan_pos;
-}
-
-/**
  * Jumps to a marker.
  * Moves the cursor to the address stored in the marker.
  * @param idx marker index
@@ -2925,7 +2725,7 @@ static void go_to_marker_n(uint8_t marker)
  * Moves the cursor to the home position.
  * Sets the cursor to row 0, column 0.
  */
-static void home_cursor(void)
+void home_cursor(void)
 {
     screen_setcursor(0, 0);
 }
@@ -3133,40 +2933,10 @@ c9871:
 }
 
 /**
- * Makes space for an insertion in the heap.
- * Shifts heap content and adjusts pointers; checks against himem.
- * @param insert_ptr insertion point
- * @param size_delta bytes to create
- * @return true if space was made
- */
-bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta)
-{
-    uint8_t* copy_ptr = top;
-    uint8_t* scan_ptr = top + size_delta;
-
-    if (scan_ptr >= himem)
-        return false;
-    top = scan_ptr;
-    uint8_t slot_idx = 0;
-
-    do
-    {
-        if (((uint8_t**)&pointer_array)[slot_idx] >= insert_ptr)
-            ((uint8_t**)&pointer_array)[slot_idx] += size_delta;
-        slot_idx++;
-    } while (slot_idx != sizeof(pointer_array) / sizeof(uint8_t*));
-    size_t copy_len = (size_t)(copy_ptr - insert_ptr) + 1;
-
-    memmove(insert_ptr + size_delta, insert_ptr, copy_len);
-
-    return true;
-}
-
-/**
  * Handles memory-full condition.
  * Displays an error and returns to the editor loop.
  */
-static void memory_full(void)
+void memory_full(void)
 {
     show_memory_full_error();
     longjmp(env, JMP_EDITOR);
@@ -3591,25 +3361,6 @@ static void render_xchar(render_state_t* rs)
 }
 
 /**
- * Sanitises the defined area.
- * Ensures area pointers are ordered and checks for emptiness.
- * @return AREA_NOT_EMPTY or AREA_EMPTY
- */
-area_status_t sanitise_area(void)
-{
-    if (area_start_ptr >= area_end_ptr)
-    {
-        uint8_t* tmp = area_start_ptr;
-        area_start_ptr = area_end_ptr;
-        area_end_ptr = tmp;
-    }
-
-    if (area_end_ptr != area_start_ptr)
-        return AREA_NOT_EMPTY;
-    return AREA_EMPTY;
-}
-
-/**
  * Sets a marker.
  * Stores the current position in the given marker and marks display for update.
  * @param idx marker index
@@ -3690,19 +3441,6 @@ void show_memory_full_error(void)
 }
 
 /**
- * Adjusts area pointers after an edit.
- * Applies heap adjustment and re-wraps lines at the area start.
- * @param size_delta size change
- */
-void adjust_area_pointers(ptrdiff_t size_delta)
-{
-    uint8_t* insert_ptr = area_start_ptr;
-
-    scratch_scan_ptr = adjust_pointers(insert_ptr, size_delta);
-    split_line_at_wrap(insert_ptr);
-}
-
-/**
  * Appends a byte to the output buffer.
  * Writes the byte if space remains in the editor output buffer.
  * @param acc byte to append
@@ -3713,19 +3451,6 @@ static void append_to_output_buffer(uint8_t byte_to_append)
         return;
     output_buffer[editor_output_pos] = byte_to_append;
     editor_output_pos++;
-}
-
-/**
- * Converts to uppercase unless folding is enabled.
- * Returns the character uppercased when folding is off.
- * @param acc input character
- * @return possibly uppercased character
- */
-uint8_t upper_case_unless_folding(uint8_t ch)
-{
-    if (folding_flag & 0x80)
-        return ch;
-    return toupper(ch);
 }
 
 static bool process_char_for_output(
@@ -4189,32 +3914,6 @@ static void advance_to_next_char_and_render(render_state_t* rs)
 }
 
 /**
- * Finds a marker at a buffer position.
- * Checks if any marker points at the given edit-buffer offset.
- * @param pos buffer position
- * @param target_ptr base pointer
- * @return marker index or 0x0c if none
- */
-static uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr)
-{
-    uint8_t* scan_ptr = target_ptr + buf_offset;
-    uint8_t slot_idx = 0;
-
-    do
-    {
-        if (scan_ptr == markers_array[slot_idx / 2])
-            goto ca558;
-        slot_idx++;
-        slot_idx++;
-    } while (slot_idx != 0x0c);
-
-    return 0x0c;
-
-ca558:
-    return slot_idx;
-}
-
-/**
  * Unpacks a document line into the edit buffer.
  * Fills the buffer, handles command prefixes, and copies line content.
  * @param target_ptr destination buffer
@@ -4250,68 +3949,6 @@ static void unpack_line(uint8_t* target_ptr)
     } while (copy_idx != 0);
     edit_line_len = copy_idx;
     target_ptr[0x89] = 0x0d;
-}
-
-/**
- * Updates markers to point into the format buffer.
- * Retargets markers from document heap into the current format line.
- */
-static void update_markers_to_format_buffer(void)
-{
-    uint8_t* size_delta = current_line_ptr;
-    uint8_t offset = 0;
-
-    do
-    {
-        uint8_t idx = find_marker_at_position(offset, size_delta);
-
-        if (idx != 0x0c)
-        {
-            uint8_t* base_ptr =
-                (current_format_line->prefix_byte == COMMAND_PREFIX ||
-                    current_format_line->prefix_byte == RULER_PREFIX)
-                    ? (uint8_t*)current_format_line
-                    : current_format_line->text;
-            markers_array[idx / 2] = base_ptr + offset;
-        }
-        uint8_t acc = current_line_ptr[offset];
-
-        if (acc == 0x0d)
-            return;
-        offset++;
-    } while (offset != 0);
-}
-
-/**
- * Checks for an embedded ruler.
- * Pushes the ruler stack if the line starts with a ruler byte.
- * @param target_ptr line pointer
- */
-void check_for_embedded_ruler(uint8_t* target_ptr)
-{
-    if (*target_ptr == RULER_PREFIX)
-        push_onto_ruler_index(target_ptr);
-}
-
-/**
- * Finds the start of the current line.
- * Scans backward for the preceding CR.
- * @param target_ptr pointer within line
- * @return pointer to line start
- */
-static uint8_t* find_line_start(uint8_t* target_ptr)
-{
-    while (1)
-    {
-        if (target_ptr == ram)
-            return target_ptr - 1;
-        target_ptr--;
-        uint8_t acc = target_ptr[0];
-
-        if (acc == 0x0d)
-            break;
-    }
-    return target_ptr;
 }
 
 /**
@@ -4386,132 +4023,11 @@ static void unpack_line_into_buffer(uint8_t* target_ptr)
 }
 
 /**
- * Fills a buffer with a constant.
- * Writes the given value across the buffer length.
- * @param acc fill value
- * @param target_ptr destination
+ * Clear the unpacked flag, redraw the editor, and write the edit buffer back.
  */
-void wipe_buffer(uint8_t fill_value, uint8_t* target_ptr)
+void redraw_and_write_back(void)
 {
-    uint8_t idx = 0;
-    uint8_t remaining = 0x89;
-
-    do
-    {
-        target_ptr[idx] = fill_value;
-        idx++;
-        remaining--;
-    } while (remaining != 0);
-}
-
-/**
- * Writes the edit buffer back to the document.
- * Computes size delta, adjusts heap, and copies the line including marker
- * updates.
- * @return true if write failed due to memory
- */
-static bool write_line_back_to_document(void)
-{
-    uint8_t temp_save;
-    uint8_t out_byte;
-    uint8_t stored_byte;
-
-    if (edit_buffer_unpacked_flag != 0)
-    {
-        uint8_t* insert_ptr = current_line_ptr;
-
-        area_size = 0;
-        screen_column = get_line_length();
-        uint8_t old_len = edit_line_len;
-        {
-            uint8_t minuend = old_len;
-
-            old_len -= screen_column;
-
-            if (minuend < screen_column)
-                goto ca8df;
-
-            if (old_len == 0)
-                goto ca8ed;
-        }
-        area_size = old_len;
-        scratch_scan_ptr = adjust_pointers(insert_ptr, area_size);
-
-        goto ca8ed;
-
-    ca8df:
-        temp_save = old_len;
-        uint8_t neg_len = 0;
-
-        neg_len -= temp_save;
-        area_size = neg_len;
-
-        if (!make_space_for_insertion(insert_ptr, area_size))
-            return true;
-
-    ca8ed:
-        if (((int8_t)edit_buffer_unpacked_flag < 0))
-        {
-            if (edit_buffer_dirty_flag != 0)
-                clamp_ptr6_to_document();
-        }
-        uint8_t copy_idx = 0;
-
-        edit_buffer_dirty_flag = copy_idx;
-        edit_buffer_unpacked_flag = copy_idx;
-        uint8_t* src_ptr =
-            (current_format_line->prefix_byte == COMMAND_PREFIX ||
-                current_format_line->prefix_byte == RULER_PREFIX)
-                ? (uint8_t*)current_format_line
-                : current_format_line->text;
-        area_size = src_ptr - &ram[0];
-        uint8_t line_len = screen_column;
-
-        edit_line_len = line_len;
-
-        do
-        {
-            if (line_len == 0)
-            {
-                out_byte = 0x0d;
-            }
-            else
-            {
-                out_byte = src_ptr[copy_idx];
-
-                if (out_byte == 0x10)
-                    out_byte = 0x20;
-            }
-            {
-                uint16_t val;
-
-                do
-                {
-                    uint8_t idx =
-                        find_marker_at_position(copy_idx, &ram[area_size]);
-
-                    if (idx == 0x0c)
-                        break;
-                    val = (current_line_ptr - &ram[0]) + copy_idx;
-                    markers_array[idx / 2] = &ram[val];
-                } while (val != 0);
-                stored_byte = out_byte;
-            }
-            current_line_ptr[copy_idx] = stored_byte;
-            copy_idx++;
-            line_len--;
-        } while (stored_byte != 0x0d);
-    }
-    return false;
-}
-
-/**
- * Safely writes the edit buffer back.
- * Writes the buffer and invokes memory-full handling on failure.
- */
-void write_line_back_to_document_safely(void)
-{
-    if (!write_line_back_to_document())
-        return;
-    memory_full();
+    edit_buffer_unpacked_flag = 0;
+    redraw_editor();
+    write_line_back_to_document_safely();
 }
