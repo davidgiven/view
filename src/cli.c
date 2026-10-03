@@ -94,7 +94,6 @@ static void finish_cmd(void);
 static void fold_cmd(scan_state_t* scan);
 static void format_cmd(scan_state_t* scan);
 static void input_line_not_escaped(void);
-static void load_cmd(scan_state_t* scan);
 static void microspace_cmd(scan_state_t* scan);
 static void mode_cmd(void);
 static void more_cmd(scan_state_t* scan);
@@ -626,7 +625,7 @@ c8791:
  *
  * @param scan scan state containing the filename
  */
-static void load_cmd(scan_state_t* scan)
+void load_cmd(scan_state_t* scan)
 {
     check_not_continuous_editing();
     parse_filename_from_command(scan);

@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cli.h"
+#include "document.h"
 #include "globals.h"
 #include "view.h"
 
@@ -37,6 +39,25 @@ static bool parse_ulong_option(
     return true;
 }
 #endif
+
+static const char* initial_filename = NULL;
+
+/**
+ * Callback invoked by run_view() to load the initial file.
+ * Copies the filename into input_buffer and invokes load_cmd().
+ */
+static void initial_load_callback(void)
+{
+    size_t len = strlen(initial_filename);
+
+    if (len >= MAX_COMMAND_LENGTH)
+        len = MAX_COMMAND_LENGTH - 1;
+    memcpy(input_buffer, initial_filename, len);
+    input_buffer[len] = 0x0d;
+    scan_state_t scan = {};
+
+    load_cmd(&scan);
+}
 
 /**
  * Program entry point.
@@ -87,13 +108,29 @@ int main(int argc, char* argv[])
             default:
 #if defined(TEST_HARNESS)
                 fprintf(stderr,
-                    "Usage: %s [--ram=size] [--rulers=count]\n",
+                    "Usage: %s [--ram=size] [--rulers=count] [filename]\n",
                     argv[0]);
 #else
-                fprintf(stderr, "Usage: %s\n", argv[0]);
+                fprintf(stderr, "Usage: %s [filename]\n", argv[0]);
 #endif
                 return 1;
         }
+    }
+
+    if (optind < argc)
+    {
+        if (argc - optind > 1)
+        {
+#if defined(TEST_HARNESS)
+            fprintf(stderr,
+                "Usage: %s [--ram=size] [--rulers=count] [filename]\n",
+                argv[0]);
+#else
+            fprintf(stderr, "Usage: %s [filename]\n", argv[0]);
+#endif
+            return 1;
+        }
+        initial_filename = argv[optind];
     }
 
     ram = malloc(ram_size);
@@ -111,6 +148,9 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    run_view(NULL);
+    if (initial_filename != NULL)
+        run_view(initial_load_callback);
+    else
+        run_view(NULL);
     return 0;
 }

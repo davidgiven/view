@@ -271,5 +271,32 @@ class CliTests(unittest.TestCase):
         )
 
 
+class CommandLineLoadTests(unittest.TestCase):
+
+    def test_load_via_command_line(self):
+        proc = PtyProcess([VIEW_BIN, "examples/horse.v"])
+        try:
+            output = proc.read_until(b"=>", timeout=0.5)
+            self.assertIn(
+                b"Editing examples/horse.v",
+                output,
+                f"Expected 'Editing examples/horse.v' in output, got: {repr(output)}",
+            )
+        finally:
+            proc.close()
+
+    def test_invalid_file_via_command_line(self):
+        proc = PtyProcess([VIEW_BIN, "missing.v"])
+        try:
+            output = proc.read_until(b"=>", timeout=0.5)
+            self.assertIn(
+                b"File not found",
+                output,
+                f"Expected 'File not found' in output, got: {repr(output)}",
+            )
+        finally:
+            proc.close()
+
+
 if __name__ == "__main__":
     unittest.main()
