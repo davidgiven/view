@@ -121,7 +121,7 @@ void print_document(scan_state_t* scan);
 static void set_rw_file_handle(uint8_t cur_ch);
 static void print_loop(uint8_t* print_doc_ptr);
 formatting_command_t lookup_formatting_command(void);
-bool execute_formatting_command(formatting_command_t idx);
+static bool execute_formatting_command(formatting_command_t idx);
 static void lj_fmt_cmd(void);
 static void ce_fmt_cmd(void);
 static void rj_fmt_cmd(void);
@@ -408,7 +408,7 @@ formatting_command_t lookup_formatting_command(void)
  * @param idx command index as returned by lookup_formatting_command
  * @return true if no formatted line was emitted, false otherwise
  */
-bool execute_formatting_command(formatting_command_t idx)
+static bool execute_formatting_command(formatting_command_t idx)
 {
     formatted_line_written_flag = 0;
 

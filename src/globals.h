@@ -211,8 +211,6 @@ extern command_prefix_t check_for_command_prefix(uint8_t ch);
 extern control_code_t check_for_control_code(uint8_t cur_ch);
 extern void render_number_to_screen(int val);
 extern void render_register(uint8_t cur_ch, uint8_t idx);
-extern void render_number_to_output_buffer(uint16_t value, uint8_t start_x);
-extern void render_number_to_callback(int value, void (*cb)(uint8_t));
 extern uint8_t upper_case_unless_folding(uint8_t ch);
 extern bool parse_decimal_number(int* value, uint8_t* pos);
 extern void display_not_enough_memory(void);
@@ -220,7 +218,6 @@ extern void beep(void);
 extern void wipe_buffer(uint8_t fill_value, uint8_t* target_ptr);
 extern void draw_prompt_characters(uint8_t first_char, uint8_t second_char);
 extern void show_memory_full_error(void);
-extern void bad_filename_error(void);
 extern void clear_screen(void);
 extern void memory_full(void);
 extern void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch);
@@ -231,15 +228,11 @@ extern void write_cr_to_memory(uint8_t** cursor);
 
 extern bool check_area_memory(uint8_t* doc_line_ptr);
 extern void setup_area_pointers(uint8_t* doc_line_ptr);
-extern void set_document_name_to_filename_buffer(void);
 extern bool read_first_chunk_from_input_file(void);
-extern void check_continuous_editing(void);
 extern area_status_t sanitise_area(void);
-extern void parse_marks_from_command(scan_state_t* scan);
 extern void write_area_to_file(void);
 extern bool read_next_chunk_from_input_file(uint8_t* target_ptr);
 extern uint8_t* read_into_document(void);
-extern void reset_document_name_after_load(void);
 extern bool scan_document_for_next_line(void);
 extern uint8_t process_current_document_character(uint8_t* target_ptr,
     uint8_t* char_width_out,
@@ -256,12 +249,10 @@ extern void run_editor(void);
 extern void clear_cmd(void);
 extern void enter_editor_mode(void);
 extern void clear_format_mode_bit7(void);
-extern void redraw_editor(void);
 extern void write_line_back_to_document_safely(void);
 extern void clamp_ptr6_to_document(void);
 extern bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta);
 extern uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta);
-extern void check_for_embedded_ruler(uint8_t* target_ptr);
 
 // ── Printing ──────────────────────────────────────────────────────────
 
@@ -279,13 +270,8 @@ extern void run_view(void);
 // ── CLI & command parsing
 // ──────────────────────────────────────────────────────────
 
-extern bool reset_command_parse_state(scan_state_t* scan);
-extern cli_cmd_status_t process_cli_command(scan_state_t* scan);
-extern void parse_filename_from_command(scan_state_t* scan);
-extern bool parse_integer_from_command(scan_state_t* scan, int* out);
 extern void zero_terminate_filename_buffer(void);
 extern void file_not_found_error(void);
 extern void file_error(void);
-extern uint8_t* parse_mark_from_command(scan_state_t* scan);
 
 #endif

@@ -47,10 +47,10 @@ static void insert_line_into_document(uint8_t* target_ptr);
 static void update_line_length(void);
 void clamp_ptr6_to_document(void);
 void clear_screen(void);
-void clear_to_eol(uint8_t fill_char, uint8_t line);
+static void clear_to_eol(uint8_t fill_char, uint8_t line);
 void cursor_off(void);
-void cursor_on(void);
-void draw_line(render_state_t* rs, uint8_t* addr);
+static void cursor_on(void);
+static void draw_line(render_state_t* rs, uint8_t* addr);
 void draw_prompt_characters(uint8_t first_char, uint8_t second_char);
 static void draw_ruler(void);
 static void draw_status_word(void);
@@ -65,7 +65,7 @@ uint8_t process_current_document_character(uint8_t* target_ptr,
     uint8_t* pos_inout,
     bool* is_tab);
 static void recalculate_cursor_xpos(void);
-void redraw_editor(void);
+static void redraw_editor(void);
 static void render_char(render_state_t* rs);
 static void advance_to_next_char(render_state_t* rs);
 static void render_xchar(render_state_t* rs);
@@ -99,11 +99,11 @@ void write_line_back_to_document_safely(void);
 
 void enter_editor_mode(void);
 void clear_format_mode_bit7(void);
-void set_format_mode_bit7(void);
-void draw_previous_word(
+static void set_format_mode_bit7(void);
+static void draw_previous_word(
     uint8_t* word_boundary, bool* is_start_of_line, uint8_t* char_width);
-bool adjust_margins_at_left_margin(void);
-bool insert_edit_buffer_bytes_at_xpos(uint8_t count);
+static bool adjust_margins_at_left_margin(void);
+static bool insert_edit_buffer_bytes_at_xpos(uint8_t count);
 void set_marker_to_here(uint8_t marker_idx);
 void split_line_at_wrap(uint8_t* target_ptr);
 
@@ -293,8 +293,8 @@ static void clear_marks_1_2(void);
 static uint8_t control_key_to_ascii(uint8_t key_code);
 static void delete_edit_buffer_bytes_at_xpos(uint8_t delete_count);
 static void enter_printable_character(void);
-void return_to_editor_loop(void);
-void return_key(void);
+static void return_to_editor_loop(void);
+static void return_key(void);
 static void advance_current_line_pointer(void);
 static int prompt_for_marker(void);
 static bool reset_area_to_marks_1_2(void);
@@ -304,11 +304,11 @@ static void move_cursor_up(uint8_t lines_to_move);
 static void move_cursor_down(uint8_t lines_to_move);
 static void check_pointer_in_area(void);
 static void tab_highlight_common(uint8_t char_to_insert);
-void f13_right_key(void);
+static void f13_right_key(void);
 void enter_editor_mode(void);
-void draw_previous_word(
+static void draw_previous_word(
     uint8_t* word_boundary, bool* is_start_of_line, uint8_t* char_width);
-bool adjust_margins_at_left_margin(void);
+static bool adjust_margins_at_left_margin(void);
 bool scan_document_for_next_line(void);
 static void insert_line_into_document(uint8_t* target_ptr);
 void clamp_ptr6_to_document(void);
@@ -332,14 +332,14 @@ static void set_xpos_to_line_length(void);
 static void insert_at_left_margin(void);
 static int find_left_margin_stop(void);
 static bool insert_byte_at_xpos(uint8_t insert_pos);
-bool insert_edit_buffer_bytes_at_xpos(uint8_t count);
+static bool insert_edit_buffer_bytes_at_xpos(uint8_t count);
 void redraw_and_write_back(void);
-void redraw_editor(void);
+static void redraw_editor(void);
 void cursor_off(void);
-void cursor_on(void);
+static void cursor_on(void);
 static void draw_ruler(void);
-void draw_line(render_state_t* rs, uint8_t* addr);
-void clear_to_eol(uint8_t fill_char, uint8_t line);
+static void draw_line(render_state_t* rs, uint8_t* addr);
+static void clear_to_eol(uint8_t fill_char, uint8_t line);
 static void draw_status_word(void);
 void home_cursor(void);
 static void recalculate_cursor_xpos(void);
@@ -355,7 +355,7 @@ uint8_t process_current_document_character(uint8_t* target_ptr,
 static void unpack_line_into_buffer(uint8_t* target_ptr);
 static void unpack_line(uint8_t* target_ptr);
 void clear_format_mode_bit7(void);
-void set_format_mode_bit7(void);
+static void set_format_mode_bit7(void);
 
 /**
  * Enters editor mode.
@@ -2010,7 +2010,7 @@ c9ca2:
  * Returns to the editor main loop.
  * Uses longjmp to re-enter the editor event loop.
  */
-void return_to_editor_loop(void)
+static void return_to_editor_loop(void)
 {
     longjmp(env, JMP_EDITOR);
 }
@@ -2019,7 +2019,7 @@ void return_to_editor_loop(void)
  * Handles the Return key.
  * Writes the buffer back and moves the cursor to the next line at column zero.
  */
-void return_key(void)
+static void return_key(void)
 {
     write_line_back_to_document_safely();
     xpos = 0;
@@ -2262,7 +2262,7 @@ static void tab_highlight_common(uint8_t char_to_insert)
  * Increments the cursor column up to the maximum line length.
  * void
  */
-void f13_right_key(void)
+static void f13_right_key(void)
 {
     if (xpos >= MAX_LINE_LENGTH)
         return;
@@ -2291,7 +2291,7 @@ void enter_editor_mode(void)
     flags_need_redrawing_flag = 1;
 }
 
-void draw_previous_word(
+static void draw_previous_word(
     uint8_t* word_boundary, bool* is_start_of_line, uint8_t* char_width)
 {
     uint8_t pos = xpos;
@@ -2343,7 +2343,7 @@ caf55:
  * Adjusts cursor and inserts margin tab when typing at the left edge.
  * @return true if insertion failed
  */
-bool adjust_margins_at_left_margin(void)
+static bool adjust_margins_at_left_margin(void)
 {
     uint8_t insert_pos;
     uint8_t flags_tmp = format_mode_flag;
@@ -3354,7 +3354,7 @@ static bool insert_byte_at_xpos(uint8_t insert_pos)
  * @param idx number of bytes to insert
  * @return true on success, false if overflow or out of space
  */
-bool insert_edit_buffer_bytes_at_xpos(uint8_t count)
+static bool insert_edit_buffer_bytes_at_xpos(uint8_t count)
 {
     if (xpos >= MAX_LINE_LENGTH)
     {
@@ -3436,7 +3436,7 @@ void redraw_and_write_back(void)
  * Redraws the entire editor display.
  * Handles scrolling, line rendering, status, and cursor placement.
  */
-void redraw_editor(void)
+static void redraw_editor(void)
 {
     uint8_t next_line_len;
     uint8_t rows_remaining;
@@ -3718,7 +3718,7 @@ void cursor_off(void)
  * Enables the cursor.
  * Shows the cursor via the screen driver.
  */
-void cursor_on(void)
+static void cursor_on(void)
 {
     screen_enablecursor(1);
 }
@@ -3744,7 +3744,7 @@ static void draw_ruler(void)
  * @param rs render state
  * @param addr address of the document line
  */
-void draw_line(render_state_t* rs, uint8_t* addr)
+static void draw_line(render_state_t* rs, uint8_t* addr)
 {
     rs->line_ptr = addr;
     scratch_line_ptr = addr;
@@ -3792,7 +3792,7 @@ void draw_line(render_state_t* rs, uint8_t* addr)
  * @param acc fill character
  * @param line screen line index
  */
-void clear_to_eol(uint8_t fill_char, uint8_t line)
+static void clear_to_eol(uint8_t fill_char, uint8_t line)
 {
     uint8_t line_len = line_lengths[line];
 
@@ -4137,7 +4137,7 @@ void clear_format_mode_bit7(void)
  * Sets format-mode bit 7.
  * Sets the high bit of the format mode flag and marks redraw if changed.
  */
-void set_format_mode_bit7(void)
+static void set_format_mode_bit7(void)
 {
     uint8_t old = format_mode_flag;
 

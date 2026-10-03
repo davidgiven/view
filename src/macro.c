@@ -44,7 +44,7 @@ void macro_init(uint8_t* print_doc_ptr);
 void dm_fmt_cmd(void);
 static inline uint8_t* align_up_ptr(uint8_t* ptr);
 bool macro_try_invoke(uint8_t** macro_cursor_ptr);
-void nested_macro_error(void);
+static void nested_macro_error(void);
 uint8_t* prepare_output_line(uint8_t* read_limit, uint8_t** macro_cursor);
 static parse_register_result_t parse_register_reference(uint8_t cur_ch);
 static read_block_status_t read_next_output_line(
@@ -165,7 +165,7 @@ bool macro_try_invoke(uint8_t** macro_cursor_ptr)
 /**
  * Reports a nested macro call error and aborts printing.
  */
-void nested_macro_error(void)
+static void nested_macro_error(void)
 {
     stop_printing();
     cli_putstring("Nested macro call");

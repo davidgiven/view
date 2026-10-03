@@ -155,8 +155,8 @@ uint8_t process_document_character(uint8_t cur_ch, uint8_t* idx, bool* is_tab);
 static void emit_to_output_buffer_callback(uint8_t digit);
 void render_number_to_screen(int val);
 void render_register(uint8_t cur_ch, uint8_t idx);
-void render_number_to_output_buffer(uint16_t value, uint8_t start_x);
-void render_number_to_callback(int value, void (*cb)(uint8_t));
+static void render_number_to_output_buffer(uint16_t value, uint8_t start_x);
+static void render_number_to_callback(int value, void (*cb)(uint8_t));
 void return_to_cli_prompt(void);
 bool scan_input_buffer(uint8_t* buffer, scan_state_t* state);
 uint8_t upper_case_unless_folding(uint8_t ch);
@@ -164,7 +164,7 @@ void wipe_buffer(uint8_t fill_value, uint8_t* target_ptr);
 control_code_t check_for_control_code(uint8_t cur_ch);
 void print_char(uint8_t cur_ch);
 void print_alignment_spaces(uint8_t cur_ch);
-void print_char_just_to_screen(uint8_t cur_ch);
+static void print_char_just_to_screen(uint8_t cur_ch);
 
 /**
  * Run VIEW.
@@ -420,7 +420,7 @@ void render_register(uint8_t cur_ch, uint8_t idx)
  * @param value number to render
  * @param start_x starting offset in the output buffer
  */
-void render_number_to_output_buffer(uint16_t value, uint8_t start_x)
+static void render_number_to_output_buffer(uint16_t value, uint8_t start_x)
 {
     screen_row = start_x;
     render_number_to_callback(value, emit_to_output_buffer_callback);
@@ -432,7 +432,7 @@ void render_number_to_output_buffer(uint16_t value, uint8_t start_x)
  * @param value number to render
  * @param cb callback invoked for each digit character
  */
-void render_number_to_callback(int value, void (*cb)(uint8_t))
+static void render_number_to_callback(int value, void (*cb)(uint8_t))
 {
     char buf[12];
 
@@ -585,7 +585,7 @@ void print_alignment_spaces(uint8_t cur_ch)
  * video and translates carriage return to newline.
  * @param cur_ch character to render
  */
-void print_char_just_to_screen(uint8_t cur_ch)
+static void print_char_just_to_screen(uint8_t cur_ch)
 {
     if ((print_flags & 0x80))
     {

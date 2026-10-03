@@ -26,11 +26,6 @@ bool macro_try_invoke(uint8_t** macro_cursor_ptr);
 void dm_fmt_cmd(void);
 
 /**
- * Reports a nested macro call error and aborts printing.
- */
-void nested_macro_error(void);
-
-/**
  * Prepares the next line for printing, handling macro expansion.
  *
  * @param read_limit upper bound for reading document data

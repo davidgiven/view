@@ -12,7 +12,6 @@ extern command_prefix_t deref_and_check_for_command_prefix(
 extern void display_document_file_state(void);
 extern void find_margins_of_current_ruler_buffer(void);
 extern void print_char(uint8_t cur_ch);
-extern void print_char_just_to_screen(uint8_t cur_ch);
 extern uint8_t process_document_character(
     uint8_t cur_ch, uint8_t* idx, bool* is_tab);
 extern void return_to_cli_prompt(void);
@@ -27,8 +26,6 @@ extern void ensure_cr_at_document_top(void);
 extern void close_file(void);
 
 extern uint8_t create_default_ruler(uint8_t* ruler_addr);
-
-extern uint8_t get_byte_from_file(void);
 
 extern unsigned int* get_register_address(uint8_t cur_ch);
 

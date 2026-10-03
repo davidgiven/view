@@ -3,7 +3,6 @@
 
 #include "globals.h"
 
-extern void execute_cli_command(uint8_t cur_ch, scan_state_t* scan);
 extern void start_printing(void);
 extern void clear_cmd(void);
 extern void run_cli(void);

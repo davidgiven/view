@@ -37,7 +37,7 @@ bool find_next_line(uint8_t* start, uint8_t** line_ptr, uint8_t* pos);
 bool find_previous_line(uint8_t* val, uint8_t** line_ptr);
 void open_input_file(void);
 void pop_from_ruler_index(void);
-void check_for_embedded_ruler(uint8_t* target_ptr);
+static void check_for_embedded_ruler(uint8_t* target_ptr);
 void push_onto_ruler_index(uint8_t* target_ptr);
 void load_current_ruler(int pos);
 void find_margins_of_current_ruler_buffer(void);
@@ -50,7 +50,7 @@ read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit);
 void set_marker_to_here(uint8_t marker_idx);
 void setup_area_pointers(uint8_t* doc_working_ptr);
 void split_line_at_wrap(uint8_t* target_ptr);
-uint8_t* find_line_start(uint8_t* target_ptr);
+static uint8_t* find_line_start(uint8_t* target_ptr);
 void update_markers_to_format_buffer(void);
 void write_area_to_file(void);
 area_status_t sanitise_area(void);
@@ -60,7 +60,7 @@ uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta);
 uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr);
 uint8_t get_line_length(void);
 bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta);
-uint8_t get_byte_from_file(void);
+static uint8_t get_byte_from_file(void);
 
 /**
  * Dereference a document pointer at an offset and test for command prefix.
@@ -767,7 +767,7 @@ void pop_from_ruler_index(void)
  * Pushes the ruler stack if the line starts with a ruler byte.
  * @param target_ptr line pointer
  */
-void check_for_embedded_ruler(uint8_t* target_ptr)
+static void check_for_embedded_ruler(uint8_t* target_ptr)
 {
     if (*target_ptr == RULER_PREFIX)
         push_onto_ruler_index(target_ptr);
@@ -1112,7 +1112,7 @@ void split_line_at_wrap(uint8_t* target_ptr)
  * @param target_ptr pointer within line
  * @return pointer to line start
  */
-uint8_t* find_line_start(uint8_t* target_ptr)
+static uint8_t* find_line_start(uint8_t* target_ptr)
 {
     while (1)
     {
@@ -1444,7 +1444,7 @@ bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta)
  * Read one byte from the current file.
  * @return next byte, or 0 on EOF or NUL
  */
-uint8_t get_byte_from_file(void)
+static uint8_t get_byte_from_file(void)
 {
     int c = fgetc(file_ptr);
 

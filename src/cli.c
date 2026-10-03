@@ -5,14 +5,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-uint8_t* parse_mark_from_command(scan_state_t* scan);
+static uint8_t* parse_mark_from_command(scan_state_t* scan);
 
 void file_error(void);
 void file_not_found_error(void);
-bool parse_integer_from_command(scan_state_t* scan, int* out);
-void parse_marks_from_command(scan_state_t* scan);
-void reset_document_name_after_load(void);
-void set_document_name_to_filename_buffer(void);
+static bool parse_integer_from_command(scan_state_t* scan, int* out);
+static void parse_marks_from_command(scan_state_t* scan);
+static void reset_document_name_after_load(void);
+static void set_document_name_to_filename_buffer(void);
 void zero_terminate_filename_buffer(void);
 
 /** Command table for CLI parsing. Encodes command names and flags. */
@@ -113,9 +113,9 @@ static uint8_t read_next_command_byte(uint8_t* pos, bool* end);
 
 /* Forward declarations */
 void cli_handler_impl(void);
-bool read_command_line(void);
-void input_line_not_escaped(void);
-void execute_cli_command(uint8_t cur_ch, scan_state_t* scan);
+static bool read_command_line(void);
+static void input_line_not_escaped(void);
+static void execute_cli_command(uint8_t cur_ch, scan_state_t* scan);
 static void bye_cmd(void);
 static void change_cmd(scan_state_t* scan);
 static void count_cmd(scan_state_t* scan);
@@ -151,19 +151,19 @@ static void print_x_words_of_help(uint8_t idx);
 static bool parse_command(uint8_t* input_buffer_offset);
 void file_error(void);
 void file_not_found_error(void);
-bool parse_integer_from_command(scan_state_t* scan, int* out);
-void reset_document_name_after_load(void);
-void set_document_name_to_filename_buffer(void);
+static bool parse_integer_from_command(scan_state_t* scan, int* out);
+static void reset_document_name_after_load(void);
+static void set_document_name_to_filename_buffer(void);
 void zero_terminate_filename_buffer(void);
-void check_continuous_editing(void);
+static void check_continuous_editing(void);
 void check_not_continuous_editing(void);
-void parse_filename_from_command(scan_state_t* scan);
+static void parse_filename_from_command(scan_state_t* scan);
 bool parse_optional_filename_from_command(scan_state_t* scan);
-void bad_filename_error(void);
-cli_cmd_status_t process_cli_command(scan_state_t* scan);
-void parse_marks_from_command(scan_state_t* scan);
-uint8_t* parse_mark_from_command(scan_state_t* scan);
-bool reset_command_parse_state(scan_state_t* scan);
+static void bad_filename_error(void);
+static cli_cmd_status_t process_cli_command(scan_state_t* scan);
+static void parse_marks_from_command(scan_state_t* scan);
+static uint8_t* parse_mark_from_command(scan_state_t* scan);
+static bool reset_command_parse_state(scan_state_t* scan);
 static uint8_t expand_escaped_string(uint8_t idx, uint8_t pos);
 static uint8_t read_next_command_byte(uint8_t* pos, bool* end);
 
@@ -190,7 +190,7 @@ void cli_handler_impl(void)
  *
  * @return true if the line was empty, false otherwise
  */
-bool read_command_line(void)
+static bool read_command_line(void)
 {
     input_buffer_offset = 0;
 
@@ -200,7 +200,7 @@ bool read_command_line(void)
 /**
  * Parses and dispatches a non-escaped CLI input line.
  */
-void input_line_not_escaped(void)
+static void input_line_not_escaped(void)
 {
     bool failed = parse_command(&input_buffer_offset);
 
@@ -220,7 +220,7 @@ void input_line_not_escaped(void)
  * @param cur_ch command index into the CLI jump table
  * @param scan scan state for argument parsing
  */
-void execute_cli_command(uint8_t cur_ch, scan_state_t* scan)
+static void execute_cli_command(uint8_t cur_ch, scan_state_t* scan)
 {
     switch (cur_ch)
     {
@@ -1346,7 +1346,7 @@ void file_not_found_error(void)
  * @param out pointer to receive the parsed integer
  * @return true if an integer was parsed, false otherwise
  */
-bool parse_integer_from_command(scan_state_t* scan, int* out)
+static bool parse_integer_from_command(scan_state_t* scan, int* out)
 {
     if (scan_input_buffer(input_buffer, scan))
         return false;
@@ -1367,7 +1367,7 @@ bool parse_integer_from_command(scan_state_t* scan, int* out)
  * Marks the document as loaded and updates the document name from the filename
  * buffer.
  */
-void reset_document_name_after_load(void)
+static void reset_document_name_after_load(void)
 {
     file_edit_flags = 0x40;
     set_document_name_to_filename_buffer();
@@ -1376,7 +1376,7 @@ void reset_document_name_after_load(void)
 /**
  * Copies the filename buffer into the document name storage.
  */
-void set_document_name_to_filename_buffer(void)
+static void set_document_name_to_filename_buffer(void)
 {
     uint8_t cur_ch;
     uint8_t idx = 0;
@@ -1406,7 +1406,7 @@ void zero_terminate_filename_buffer(void)
  * Verify that continuous editing is active.
  * Displays the document file state when continuous editing is not enabled.
  */
-void check_continuous_editing(void)
+static void check_continuous_editing(void)
 {
     if ((file_edit_flags & 0x40) == 0)
     {
@@ -1436,7 +1436,7 @@ void check_not_continuous_editing(void)
  * Reports an error if no filename is present.
  * @param scan scan state pointing into the command buffer
  */
-void parse_filename_from_command(scan_state_t* scan)
+static void parse_filename_from_command(scan_state_t* scan)
 {
     if (!parse_optional_filename_from_command(scan))
     {
@@ -1486,7 +1486,7 @@ bool parse_optional_filename_from_command(scan_state_t* scan)
 /**
  * Reports a bad filename error and returns to the command prompt.
  */
-void bad_filename_error(void)
+static void bad_filename_error(void)
 {
     cli_putstring("Bad filename\n");
 
@@ -1501,7 +1501,7 @@ void bad_filename_error(void)
  * @return CLI_CMD_NO_TARGET if no command, CLI_CMD_NO_STRING if area empty,
  * CLI_CMD_OK otherwise
  */
-cli_cmd_status_t process_cli_command(scan_state_t* scan)
+static cli_cmd_status_t process_cli_command(scan_state_t* scan)
 {
     if (reset_command_parse_state(scan))
         return CLI_CMD_NO_TARGET;
@@ -1528,7 +1528,7 @@ cli_cmd_status_t process_cli_command(scan_state_t* scan)
  *
  * @param scan scan state for scanning markers
  */
-void parse_marks_from_command(scan_state_t* scan)
+static void parse_marks_from_command(scan_state_t* scan)
 {
     reset_area_to_entire_document();
     uint8_t* start_mark = parse_mark_from_command(scan);
@@ -1549,7 +1549,7 @@ void parse_marks_from_command(scan_state_t* scan)
  * @param scan scan state for scanning the marker
  * @return pointer to the marker location, or NULL if no marker was present
  */
-uint8_t* parse_mark_from_command(scan_state_t* scan)
+static uint8_t* parse_mark_from_command(scan_state_t* scan)
 {
     if (scan_input_buffer(input_buffer, scan))
         return NULL;
@@ -1580,7 +1580,7 @@ uint8_t* parse_mark_from_command(scan_state_t* scan)
  * @param scan scan state to initialise
  * @return true if no search string was found, false otherwise
  */
-bool reset_command_parse_state(scan_state_t* scan)
+static bool reset_command_parse_state(scan_state_t* scan)
 {
     uint8_t idx = 0;
 

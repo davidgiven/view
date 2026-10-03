@@ -34,7 +34,6 @@ typedef enum formatting_command
 } formatting_command_t;
 
 // Functions defined in printing.c, called from view.c
-extern bool execute_formatting_command(formatting_command_t idx);
 extern void prepare_printer_driver(void);
 extern void stop_printing(void);
 extern formatting_command_t lookup_formatting_command(void);
