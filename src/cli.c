@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 
 /** Command table for CLI parsing. Encodes command names and flags. */
 // clang-format off
@@ -629,10 +630,40 @@ void load_cmd(scan_state_t* scan)
 {
     check_not_continuous_editing();
     parse_filename_from_command(scan);
+    open_input_file();
+
+    fseek(input_fp, 0, SEEK_END);
+    int length = ftell(input_fp);
+    fseek(input_fp, 0, SEEK_SET);
+
+    if (length > (himem - ram - LINE_LENGTH_SPARE))
+    {
+        close_file();
+        display_not_enough_memory();
+    }
+
     initialise_document();
     top = ram;
-    reset_area_to_entire_document();
-    top = read_into_document();
+    while (length != 0)
+    {
+        size_t bytes_read = fread(top, 1, length, input_fp);
+        if (ferror(input_fp))
+        {
+            close_file();
+            initialise_document();
+            cli_putstring("I/O error: ");
+            cli_putstring(strerror(errno));
+            cli_putstring("\n");
+            return_to_cli_prompt();
+        }
+        length -= bytes_read;
+        top += bytes_read;
+    }
+
+    /* top points at the trailing 0, not the byte after it. */
+    top--;
+
+    close_file();
     reset_document_name_after_load();
     clear_cmd();
     move_cursor_to_top_of_document();

@@ -57,6 +57,7 @@ static void initial_load_callback(void)
     scan_state_t scan = {};
 
     load_cmd(&scan);
+    run_cli();
 }
 
 /**

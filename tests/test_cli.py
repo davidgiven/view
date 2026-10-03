@@ -271,6 +271,30 @@ class CliTests(unittest.TestCase):
         )
 
 
+class LowMemoryCliTests(unittest.TestCase):
+    """Tests with a restricted RAM size (--ram=1024)."""
+
+    def setUp(self):
+        self.proc = PtyProcess([VIEW_BIN, "--ram=1024"])
+
+    def tearDown(self):
+        self.proc.close()
+
+    def test_load_horse_with_low_ram_shows_error(self):
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("load examples/horse.v")
+        output = self.proc.read_until(b"=>", timeout=1.0)
+        self.assertIn(
+            b"Not enough memory",
+            output,
+            f"Expected 'Not enough memory' error with --ram=1024, got: {repr(output)}",
+        )
+        self.assertTrue(
+            output.endswith(b"=>"),
+            f"Expected output to end with prompt, got: {repr(output[-40:])}",
+        )
+
+
 class CommandLineLoadTests(unittest.TestCase):
 
     def test_load_via_command_line(self):

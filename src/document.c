@@ -714,11 +714,8 @@ void open_input_file(void)
     input_fp = fopen((char*)filename_buffer, "rb");
 
     if (!input_fp)
-    {
         file_not_found_error();
 
-        return;
-    }
     file_ptr = input_fp;
 }
 

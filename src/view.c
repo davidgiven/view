@@ -176,7 +176,8 @@ void run_view(void (*callback)(void))
             initialise_document();
             if (callback != NULL)
                 callback();
-            run_cli();
+            else
+                run_cli();
             return;
     }
 }
