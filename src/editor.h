@@ -3,25 +3,20 @@
 
 #include "globals.h"
 
-extern void editor_loop_impl(void);
-extern void esc_key(void);
-extern void cursor_off(void);
-extern void home_cursor(void);
-
-// Functions in view.c called by editor key handlers
-extern uint8_t create_default_ruler(uint8_t* ruler_addr);
-extern bool find_next_line(uint8_t* start, uint8_t** line_ptr, uint8_t* pos);
-extern bool find_previous_line(uint8_t* val, uint8_t** line_ptr);
-extern bool advance_to_next_line(
-    uint8_t* line, uint8_t** line_ptr, uint8_t* pos);
-extern void run_cli(void);
-extern void move_cursor_to_address(uint8_t* addr);
-
-// Additional view.c functions called by moved editor helpers
-extern int lookup_marker(uint8_t cur_ch);
-
-extern void split_line_at_wrap(uint8_t* target_ptr);
-extern void set_marker_to_here(uint8_t idx);
+extern bool scan_document_for_next_line(void);
+extern format_result_t format_paragraph(void);
 extern uint8_t justify_edit_buffer(uint8_t* target_ptr);
-extern uint8_t create_default_ruler(uint8_t* ruler_addr);
+extern void clamp_ptr6_to_document(void);
+extern void clear_format_mode_bit7(void);
+extern void clear_screen(void);
+extern void cursor_off(void);
+extern void editor_loop_impl(void);
+extern void enter_editor_mode(void);
+extern void esc_key(void);
+extern void home_cursor(void);
+extern void memory_full(void);
+extern void redraw_and_write_back(void);
+extern void run_editor(void);
+extern void show_memory_full_error(void);
+
 #endif

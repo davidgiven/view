@@ -10,7 +10,7 @@ typedef struct macro macro_t;
  *
  * @param print_doc_ptr base pointer for the document print buffer
  */
-void macro_init(uint8_t* print_doc_ptr);
+extern void macro_init(uint8_t* print_doc_ptr);
 
 /**
  * Tries to invoke a macro whose name matches the current format line.
@@ -18,12 +18,12 @@ void macro_init(uint8_t* print_doc_ptr);
  * @param macro_cursor_ptr pointer to the macro cursor to update on success
  * @return true if a macro was found and invoked, false otherwise
  */
-bool macro_try_invoke(uint8_t** macro_cursor_ptr);
+extern bool macro_try_invoke(uint8_t** macro_cursor_ptr);
 
 /**
  * Handles the DM formatting command to define a macro.
  */
-void dm_fmt_cmd(void);
+extern void dm_fmt_cmd(void);
 
 /**
  * Prepares the next line for printing, handling macro expansion.
@@ -33,6 +33,6 @@ void dm_fmt_cmd(void);
  * execute
  * @return pointer to the prepared line, or NULL when no more output remains
  */
-uint8_t* prepare_output_line(uint8_t* read_limit, uint8_t** macro_cursor);
+extern uint8_t* prepare_output_line(uint8_t* read_limit, uint8_t** macro_cursor);
 
 #endif

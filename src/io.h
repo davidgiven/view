@@ -5,11 +5,10 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-// ─── CLI ──────────────────────────────────────────────────────
 extern void cli_putchar(uint8_t c);
 extern void cli_putstring(const char* s);
 extern bool cli_readstring(char* buf, size_t size);
-// ─── Screen ───────────────────────────────────────────────────
+
 #define STYLE_NORMAL 0
 #define STYLE_REVERSE 1
 

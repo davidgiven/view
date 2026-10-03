@@ -28,11 +28,6 @@ static uint8_t rhs_extra_margin;
 static uint8_t rw_file_handle;
 static uint8_t two_sided_flag;
 
-bool parse_decimal_number(int* value, uint8_t* pos);
-bool parse_optional_filename_from_command(scan_state_t* scan);
-bool scan_input_buffer(uint8_t* buffer, scan_state_t* state);
-formatting_command_t lookup_formatting_command(void);
-read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit);
 static bool evaluate_expression_from_fmt_cmd(
     int* result, uint8_t* pos, uint8_t idx);
 static bool get_page_parity(void);
@@ -76,13 +71,6 @@ static void set_rw_file_handle(uint8_t cur_ch);
 static void start_microspacing_if_active(uint8_t cur_ch);
 static void store_to_output_buffer(uint8_t cur_ch, uint8_t* copy_ptr);
 static void write_output_buffer_to_format_line(uint8_t cur_ch);
-static void write_output_buffer_to_format_line(uint8_t cur_ch);
-void bad_filename_error(void);
-void check_not_continuous_editing(void);
-void display_not_enough_memory(void);
-void print_document(scan_state_t* scan);
-void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch);
-void write_cr_to_memory(uint8_t** cursor);
 
 static const uint8_t commands_table[] =
     "CERJDFDHDMEMSRPETMBMPLTSFOHEHTHMFMLMLSOPEPLJPB";
@@ -114,10 +102,8 @@ static const printer_driver_t default_printer_driver = {
 };
 
 /* Forward declarations for sorted functions (root first) */
-void print_document(scan_state_t* scan);
 static void set_rw_file_handle(uint8_t cur_ch);
 static void print_loop(uint8_t* print_doc_ptr);
-formatting_command_t lookup_formatting_command(void);
 static bool execute_formatting_command(formatting_command_t idx);
 static void lj_fmt_cmd(void);
 static void ce_fmt_cmd(void);
@@ -176,10 +162,6 @@ static uint8_t convert_char_for_printing(
     uint8_t cur_ch, uint8_t* idx, bool* is_tab);
 static void reset_print_registers(void);
 static void compute_lines_remaining_on_page(void);
-void write_cr_to_memory(uint8_t** cursor);
-void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch);
-void stop_printing(void);
-void prepare_printer_driver(void);
 static void default_print_char(uint8_t cur_ch);
 static void default_printer_on(void);
 static void default_printer_off(void);

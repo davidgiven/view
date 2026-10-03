@@ -217,6 +217,11 @@ extern void display_not_enough_memory(void);
 extern void beep(void);
 extern void wipe_buffer(uint8_t fill_value, uint8_t* target_ptr);
 extern void draw_prompt_characters(uint8_t first_char, uint8_t second_char);
+extern uint8_t process_document_character(
+    uint8_t cur_ch, uint8_t* idx, bool* is_tab);
+extern void print_char(uint8_t cur_ch);
+extern void print_alignment_spaces(uint8_t cur_ch);
+extern void return_to_cli_prompt(void);
 extern void show_memory_full_error(void);
 extern void clear_screen(void);
 extern void memory_full(void);

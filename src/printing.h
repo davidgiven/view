@@ -33,9 +33,11 @@ typedef enum formatting_command
     NO_FORMATTING_COMMAND = -1
 } formatting_command_t;
 
-// Functions defined in printing.c, called from view.c
-extern void prepare_printer_driver(void);
-extern void stop_printing(void);
 extern formatting_command_t lookup_formatting_command(void);
+extern void prepare_printer_driver(void);
+extern void print_document(scan_state_t* scan);
+extern void stop_printing(void);
+extern void write_byte_to_memory(uint8_t** cursor, uint8_t cur_ch);
+extern void write_cr_to_memory(uint8_t** cursor);
 
 #endif

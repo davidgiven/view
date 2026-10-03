@@ -1,6 +1,7 @@
 #include "editor.h"
 
 #include "document.h"
+#include "cli.h"
 
 #include "io.h"
 
@@ -38,18 +39,14 @@ typedef struct render_state
     bool prev_is_tab;   // whether the previous character was a tab expansion
 } render_state_t;
 
-area_status_t sanitise_area(void);
-bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta);
-bool scan_document_for_next_line(void);
-bool write_line_back_to_document(void);
-format_result_t format_paragraph(void);
 static bool adjust_margins_at_left_margin(void);
 static bool advance_to_next_doc_line(void);
 static bool find_next_word_boundary(uint8_t src_idx);
 static bool insert_byte_at_xpos(uint8_t insert_pos);
 static bool insert_character_into_edit_buffer(uint8_t ch);
 static bool insert_edit_buffer_bytes_at_xpos(uint8_t count);
-static bool process_char_for_output( uint8_t buf_idx, bool carry_in, uint8_t* char_width_out, uint8_t* out_char);
+static bool process_char_for_output(
+    uint8_t buf_idx, bool carry_in, uint8_t* char_width_out, uint8_t* out_char);
 static bool reset_area_to_marks_1_2(void);
 static int find_left_margin_stop(void);
 static int prompt_for_marker(void);
@@ -75,7 +72,8 @@ static void cursor_on(void);
 static void delete_edit_buffer_bytes_at_xpos(uint8_t delete_count);
 static void delete_key(void);
 static void draw_line(render_state_t* rs, uint8_t* addr);
-static void draw_previous_word( uint8_t* word_boundary, bool* is_start_of_line, uint8_t* char_width);
+static void draw_previous_word(
+    uint8_t* word_boundary, bool* is_start_of_line, uint8_t* char_width);
 static void draw_ruler(void);
 static void draw_status_word(void);
 static void enter_printable_character(void);
@@ -136,36 +134,6 @@ static void tab_key(void);
 static void unpack_line(uint8_t* target_ptr);
 static void unpack_line_into_buffer(uint8_t* target_ptr);
 static void update_line_length(void);
-uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr);
-uint8_t get_line_length(void);
-uint8_t justify_edit_buffer(uint8_t* target_ptr);
-uint8_t justify_edit_buffer(uint8_t* target_ptr);
-uint8_t process_current_document_character(uint8_t* target_ptr, uint8_t* char_width_out, uint8_t* pos_inout, bool* is_tab);
-uint8_t upper_case_unless_folding(uint8_t ch);
-uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta);
-uint8_t* find_line_start(uint8_t* target_ptr);
-void adjust_area_pointers(ptrdiff_t size_delta);
-void beep(void);
-void check_for_embedded_ruler(uint8_t* target_ptr);
-void clamp_ptr6_to_document(void);
-void clear_format_mode_bit7(void);
-void clear_screen(void);
-void cursor_off(void);
-void draw_prompt_characters(uint8_t first_char, uint8_t second_char);
-void editor_loop_impl(void);
-void enter_editor_mode(void);
-void esc_key(void);
-void go_to_marker(uint8_t marker_idx);
-void home_cursor(void);
-void memory_full(void);
-void redraw_and_write_back(void);
-void run_editor(void);
-void set_marker_to_here(uint8_t marker_idx);
-void show_memory_full_error(void);
-void split_line_at_wrap(uint8_t* target_ptr);
-void update_markers_to_format_buffer(void);
-void wipe_buffer(uint8_t fill_value, uint8_t* target_ptr);
-void write_line_back_to_document_safely(void);
 
 static const uint8_t memory_full_message[] = "Memory full - Press ESCAPE";
 

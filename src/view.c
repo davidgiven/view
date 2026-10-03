@@ -143,27 +143,11 @@ uint8_t input_filename[MAX_COMMAND_LENGTH];
 FILE* input_fp;
 FILE* output_fp;
 
-bool parse_decimal_number(int* value, uint8_t* pos);
-bool scan_input_buffer(uint8_t* buffer, scan_state_t* state);
-command_prefix_t check_for_command_prefix(uint8_t ch);
-control_code_t check_for_control_code(uint8_t cur_ch);
 static void emit_to_output_buffer_callback(uint8_t digit);
 static void print_char_just_to_screen(uint8_t cur_ch);
 static void render_number_to_callback(int value, void (*cb)(uint8_t));
 static void render_number_to_output_buffer(uint16_t value, uint8_t start_x);
 static void system_init(void);
-uint8_t process_document_character(uint8_t cur_ch, uint8_t* idx, bool* is_tab);
-uint8_t upper_case_unless_folding(uint8_t ch);
-void beep(void);
-void display_not_enough_memory(void);
-void draw_prompt_characters(uint8_t first_char, uint8_t second_char);
-void print_alignment_spaces(uint8_t cur_ch);
-void print_char(uint8_t cur_ch);
-void render_number_to_screen(int val);
-void render_register(uint8_t cur_ch, uint8_t idx);
-void return_to_cli_prompt(void);
-void run_view(void);
-void wipe_buffer(uint8_t fill_value, uint8_t* target_ptr);
 
 /**
  * Run VIEW.
