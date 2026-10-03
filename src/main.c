@@ -111,6 +111,6 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    run_view();
+    run_view(NULL);
     return 0;
 }

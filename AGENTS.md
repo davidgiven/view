@@ -12,6 +12,8 @@ root has a `.clang-format` config.
 
 - Use Javadoc-style (`/** ... */`) comments above functions, with `@param`
   / `@return` tags where relevant.
+- Whenever making changes to a function which has a Javadoc comment, check
+  to see whether the comment needs updating, and do so if required.
 
 ## Build and test
 

@@ -156,8 +156,10 @@ static void system_init(void);
  * Run VIEW.
  * Establishes longjmp targets for CLI and editor, initializes system and
  * document, and enters the CLI loop.
+ * @param callback optional callback invoked just before entering the CLI loop;
+ *                 if NULL, no callback is invoked
  */
-void run_view(void)
+void run_view(void (*callback)(void))
 {
     switch (setjmp(env))
     {
@@ -172,6 +174,8 @@ void run_view(void)
         default:
             system_init();
             initialise_document();
+            if (callback != NULL)
+                callback();
             run_cli();
             return;
     }

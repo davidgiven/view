@@ -141,7 +141,7 @@ extern void print_char(uint8_t cur_ch);
 extern void render_number_to_screen(int val);
 extern void render_register(uint8_t cur_ch, uint8_t idx);
 extern void return_to_cli_prompt(void);
-extern void run_view(void);
+extern void run_view(void (*callback)(void));
 extern void wipe_buffer(uint8_t fill_value, uint8_t* target_ptr);
 
 #endif
