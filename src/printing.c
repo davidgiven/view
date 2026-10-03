@@ -550,11 +550,9 @@ static void write_output_buffer_to_format_line(uint8_t pad_len)
 
     if (idx != 0)
     {
-        uint8_t space_char = 0x20;
-
         do
         {
-            heap_format_line_ptr->text[pos] = space_char;
+            heap_format_line_ptr->text[pos] = 0x20;
             pos++;
             idx--;
         } while (idx != 0);

@@ -872,71 +872,60 @@ int compute_bytes_free(void)
  */
 read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit)
 {
-    uint8_t next_ch;
+    int next_ch;
     bool eof_1;
-    uint8_t cur_ch = 0;
+    int idx3;
 
-    screen_column = cur_ch;
-
-c8c95:
+    screen_column = 0;
     do
     {
-        next_ch = get_byte_from_file();
-
-        if (next_ch == 0)
+        do
         {
-            eof_1 = true;
-            goto c8cf2;
+            next_ch = get_byte_from_file();
+
+            if (next_ch == 0)
+            {
+                eof_1 = true;
+                goto c8cf2;
+            }
+            if (next_ch < 0x7f)
+                goto c8caf;
+        } while (check_for_command_prefix(next_ch) == NO_COMMAND_PREFIX);
+
+        screen_column = 0xfd;
+
+    c8caf:
+        if (next_ch < 0x20)
+        {
+            control_code_t cc = check_for_control_code(next_ch);
+
+            if (cc != NO_CONTROL_CODE || next_ch == 0x1a || next_ch == 0x0d ||
+                next_ch == 0x0b)
+                goto c8cc8;
+
+            if (next_ch != 9)
+                continue;
         }
-        if (next_ch < 0x7f)
-            goto c8caf;
-    } while (cur_ch != 0);
-    command_prefix_t cp = check_for_command_prefix(next_ch);
+    c8cc8:
+        idx3 = 1;
 
-    if (cp == NO_COMMAND_PREFIX)
-        goto c8c95;
-    screen_column = 0xfd;
-
-c8caf:
-    if (next_ch < 0x20)
-    {
-        control_code_t cc = check_for_control_code(next_ch);
-
-        if (cc != NO_CONTROL_CODE || next_ch == 0x1a || next_ch == 0x0d ||
-            next_ch == 0x0b)
-
-            goto c8cc8;
-
-        if (next_ch != 9)
-            goto c8c95;
-    }
-c8cc8:
-    uint8_t idx3 = 1;
-
-    if (next_ch != 0x0d)
-    {
-        idx3--;
-
-        if (screen_column == MAX_LINE_LENGTH)
+        if (next_ch != 0x0d)
         {
+            idx3--;
+
+            if (screen_column == MAX_LINE_LENGTH)
             {
                 write_cr_to_memory(&scratch_line_ptr);
                 next_ch = next_ch;
+                idx3++;
             }
-            idx3++;
         }
-    }
-    screen_column++;
-    write_byte_to_memory(cursor, next_ch);
-
-    if (idx3 == 0 || *cursor < limit)
-        goto c8c95;
+        screen_column++;
+        write_byte_to_memory(cursor, next_ch);
+    } while (idx3 == 0 || *cursor < limit);
     eof_1 = false;
 
 c8cf2:
-    if (cur_ch != 0)
-        write_cr_to_memory(cursor);
-
     if (screen_row == 0)
         return READ_BLOCK_EMPTY;
 

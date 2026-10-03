@@ -36,15 +36,11 @@ typedef enum parse_register_result_t
     PARSE_REGISTER_OTHER,
 } parse_register_result_t;
 
-static parse_register_result_t parse_register_reference(uint8_t cur_ch);
-static read_block_status_t read_next_output_line(
-    uint8_t* limit, uint8_t** cursor);
-
 static inline uint8_t* align_up_ptr(uint8_t* ptr);
 static void nested_macro_error(void);
-static parse_register_result_t parse_register_reference(uint8_t cur_ch);
+static parse_register_result_t parse_register_reference(int cur_ch);
 static read_block_status_t read_next_output_line(
-    uint8_t* limit, uint8_t** cursor);
+    uint8_t** cursor, uint8_t* limit);
 
 /**
  * Initialises the macro list for a new print job.
@@ -92,7 +88,7 @@ void dm_fmt_cmd(void)
         heap_format_line_ptr = (line_t*)body;
         current_format_line = (line_t*)body;
 
-        if (read_next_output_line(body, &line_ptr) == READ_BLOCK_DONE)
+        if (read_next_output_line(&line_ptr, body) == READ_BLOCK_DONE)
             return;
 
         command_prefix_t cp = check_for_command_prefix(body[0]);
@@ -193,7 +189,7 @@ uint8_t* prepare_output_line(uint8_t* read_limit, uint8_t** macro_cursor)
     c9188_normal_entry:
         uint8_t* cursor = read_limit;
 
-        if (read_next_output_line(read_limit, &cursor) == READ_BLOCK_DONE)
+        if (read_next_output_line(&cursor, read_limit) == READ_BLOCK_DONE)
             return NULL;
 
         if (read_limit != NULL)
@@ -312,7 +308,7 @@ c9225:
  * @param cur_ch character to parse
  * @return parse result
  */
-static parse_register_result_t parse_register_reference(uint8_t cur_ch)
+static parse_register_result_t parse_register_reference(int cur_ch)
 {
     if (cur_ch == 0x3e)
     {
@@ -341,18 +337,18 @@ static parse_register_result_t parse_register_reference(uint8_t cur_ch)
  * @return status indicating completion
  */
 static read_block_status_t read_next_output_line(
-    uint8_t* limit, uint8_t** cursor)
+    uint8_t** cursor, uint8_t* limit)
 {
-    uint8_t a2;
     if (printing_from_file_flag == 0)
         return read_block_from_file(cursor, limit);
-    uint8_t pos = 0;
+
+    uint8_t a2;
     do
     {
-        a2 = print_source_ptr[pos];
+        a2 = *print_source_ptr;
         if (a2 == 0)
             return READ_BLOCK_DONE;
-        (*cursor)[pos] = a2;
+        **cursor = a2;
         print_source_ptr++;
         (*cursor)++;
     } while (a2 != 0x0d);
