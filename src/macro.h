@@ -33,6 +33,7 @@ extern void dm_fmt_cmd(void);
  * execute
  * @return pointer to the prepared line, or NULL when no more output remains
  */
-extern uint8_t* prepare_output_line(uint8_t* read_limit, uint8_t** macro_cursor);
+extern uint8_t* prepare_output_line(
+    uint8_t* read_limit, uint8_t** macro_cursor);
 
 #endif

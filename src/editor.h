@@ -3,6 +3,12 @@
 
 #include "globals.h"
 
+// ─── Global variables (defined in editor.c) ────────────────────────────
+
+extern uint8_t edit_line_len;
+
+// ─── Function declarations (defined in editor.c) ───────────────────────
+
 extern bool scan_document_for_next_line(void);
 extern format_result_t format_paragraph(void);
 extern uint8_t justify_edit_buffer(uint8_t* target_ptr);
@@ -18,5 +24,9 @@ extern void memory_full(void);
 extern void redraw_and_write_back(void);
 extern void run_editor(void);
 extern void show_memory_full_error(void);
+extern uint8_t process_current_document_character(uint8_t* target_ptr,
+    uint8_t* char_width_out,
+    uint8_t* pos_inout,
+    bool* is_tab);
 
 #endif

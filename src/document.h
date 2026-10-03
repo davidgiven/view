@@ -10,7 +10,8 @@ typedef enum marker_lookup_result_t
 } marker_lookup_result_t;
 
 extern area_status_t sanitise_area(void);
-extern bool advance_to_next_line( uint8_t* line, uint8_t** line_ptr, uint8_t* pos);
+extern bool advance_to_next_line(
+    uint8_t* line, uint8_t** line_ptr, uint8_t* pos);
 extern bool check_area_memory(uint8_t* doc_working_ptr);
 extern bool find_next_line(uint8_t* start, uint8_t** line_ptr, uint8_t* pos);
 extern bool find_previous_line(uint8_t* val, uint8_t** line_ptr);
@@ -18,10 +19,12 @@ extern bool make_space_for_insertion(uint8_t* insert_ptr, ptrdiff_t size_delta);
 extern bool read_first_chunk_from_input_file(void);
 extern bool read_next_chunk_from_input_file(uint8_t* target_ptr);
 extern bool write_line_back_to_document(void);
-extern command_prefix_t deref_and_check_for_command_prefix( uint8_t pos, uint8_t* target_ptr);
+extern command_prefix_t deref_and_check_for_command_prefix(
+    uint8_t pos, uint8_t* target_ptr);
 extern int compute_bytes_free(void);
 extern int lookup_marker(uint8_t cur_ch);
-extern read_block_status_t read_block_from_file( uint8_t** cursor, uint8_t* limit);
+extern read_block_status_t read_block_from_file(
+    uint8_t** cursor, uint8_t* limit);
 extern uint8_t create_default_ruler(uint8_t* ruler_addr);
 extern uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr);
 extern uint8_t get_line_length(void);

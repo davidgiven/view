@@ -3,6 +3,7 @@
 #include "printing.h"
 #include "view.h"
 #include "io.h"
+#include "editor.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>

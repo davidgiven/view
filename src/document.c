@@ -2,6 +2,8 @@
 #include "view.h"
 #include "io.h"
 #include "printing.h"
+#include "cli.h"
+#include "editor.h"
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>

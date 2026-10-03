@@ -6,6 +6,7 @@ typedef uint16_t addr_t;
 #include <stdio.h>
 #include <stdlib.h>
 #include "globals.h"
+#include "view.h"
 
 typedef uint16_t addr_t;
 extern uint8_t* scratch_line_ptr; // was tmp01
