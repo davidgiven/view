@@ -1195,5 +1195,73 @@ class EditorTests(unittest.TestCase):
         self._assert_screen_lines(screen, expected)
 
 
+class LowMemoryEditorTests(unittest.TestCase):
+    """Tests with a restricted RAM size (--ram=1024), mirroring LowMemoryCliTests."""
+
+    def setUp(self):
+        self.proc = PtyProcess([VIEW_BIN, "--ram=1024"])
+
+    def tearDown(self):
+        self.proc.close()
+
+    def _drain_editor(self):
+        """Drain PTY output with a short idle timeout (resets per character)."""
+        data = b""
+        while True:
+            r, _, _ = select.select([self.proc.master_fd], [], [], 0.005)
+            if not r:
+                break
+            try:
+                chunk = os.read(self.proc.master_fd, 4096)
+                if not chunk:
+                    break
+                data += chunk
+            except OSError:
+                break
+        return data
+
+    def test_load_horse_with_low_ram_shows_error(self):
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("load examples/horse.v")
+        output = self.proc.read_until(b"=>", timeout=1.0)
+        self.assertIn(
+            b"Not enough memory",
+            output,
+            f"Expected 'Not enough memory' error with --ram=1024, got: {repr(output)}",
+        )
+        self.assertTrue(
+            output.endswith(b"=>"),
+            f"Expected output to end with prompt, got: {repr(output[-40:])}",
+        )
+
+    def test_editor_shows_memory_full(self):
+        # Enter editor empty, then type enough to exhaust 1kB RAM.
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("")
+        self._drain_editor()
+        # 1500 bytes exceeds the 1022 bytes free and triggers Memory full.
+        self.proc.write(b"a" * 1500)
+        raw = self._drain_editor()
+        screen = pyte.Screen(80, 24)
+        stream = pyte.Stream(screen)
+        stream.feed(raw.decode("latin-1"))
+        self.assertIn(
+            "Memory full - Press ESCAPE",
+            screen.display[0],
+            f"Expected 'Memory full - Press ESCAPE' on status line, got: {repr(screen.display[0])}",
+        )
+        # Dismiss the error with ESCAPE and verify status line clears.
+        self.proc.write(b"\x1b")
+        raw = self._drain_editor()
+        screen = pyte.Screen(80, 24)
+        stream = pyte.Stream(screen)
+        stream.feed(raw.decode("latin-1"))
+        # After ESCAPE the status line should no longer show the error.
+        self.assertNotIn(
+            "Memory full",
+            screen.display[0],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
