@@ -4,8 +4,10 @@ typedef uint16_t addr_t;
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-extern uint8_t ram[65536];
+extern uint8_t* ram;
+extern uint8_t* himem;
 extern uint8_t* scratch_line_ptr; // was tmp01
 extern uint8_t screen_maxcolumn;
 extern void create_default_ruler(uint8_t* ruler_addr);
@@ -32,7 +34,14 @@ int main(void)
 
     uint16_t ruler_addr = 0x8000;
     screen_maxcolumn = 79;
-    memset(ram, 0, sizeof(ram));
+    if (!ram)
+    {
+        ram = malloc(655360);
+        if (!ram)
+            return 1;
+        himem = ram + 655360 - 1;
+    }
+    memset(ram, 0, 655360);
 
     create_default_ruler(&ram[ruler_addr]);
 

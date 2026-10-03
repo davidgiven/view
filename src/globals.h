@@ -108,7 +108,7 @@ typedef struct pointer_array_t
 
 // ── Memory & heap ──────────────────────────────────────────────────────────
 
-extern uint8_t ram[655360];
+extern uint8_t* ram;
 extern uint8_t *himem, *top;
 extern uint8_t* print_doc_ptr;
 extern line_t* current_format_line;

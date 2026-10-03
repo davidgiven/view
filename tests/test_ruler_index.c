@@ -4,11 +4,10 @@ typedef uint16_t addr_t;
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "globals.h"
 
 typedef uint16_t addr_t;
-
-extern uint8_t ram[655360];
 extern uint8_t* scratch_line_ptr; // was tmp01
 extern int ruler_index_ptr;
 extern uint8_t* ruler_index[RULER_INDEX_SIZE];
@@ -44,7 +43,14 @@ int main(void)
     test_failures = 0;
 
     screen_maxcolumn = 79;
-    memset(ram, 0, sizeof(ram));
+    if (!ram)
+    {
+        ram = malloc(655360);
+        if (!ram)
+            return 1;
+        himem = ram + 655360 - 1;
+    }
+    memset(ram, 0, 655360);
 
     addr_t ruler1_addr = 0x7000;
     for (int i = 0; i < 78; i++)

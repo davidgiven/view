@@ -4,6 +4,7 @@ typedef uint16_t addr_t;
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 typedef uint16_t addr_t;
 
@@ -15,7 +16,8 @@ typedef struct __attribute__((packed, aligned(1))) line
     uint8_t extra[3];
 } line_t;
 
-extern uint8_t ram[65536];
+extern uint8_t* ram;
+extern uint8_t* himem;
 extern uint8_t justifying_flag;
 extern uint8_t ruler_left_stop;
 extern uint8_t ruler_right_stop;
@@ -51,7 +53,14 @@ static int test_failures;
 
 static void setup_edit_buffer(const char* text)
 {
-    memset(ram, 0, sizeof(ram));
+    if (!ram)
+    {
+        ram = malloc(655360);
+        if (!ram)
+            return;
+        himem = ram + 655360 - 1;
+    }
+    memset(ram, 0, 655360);
     memset(&current_line_buffer, 0x10, sizeof(current_line_buffer));
     int len = strlen(text);
     for (int i = 0; i < len; i++)

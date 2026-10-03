@@ -4303,6 +4303,8 @@ static uint8_t* find_line_start(uint8_t* target_ptr)
 {
     while (1)
     {
+        if (target_ptr == ram)
+            return target_ptr - 1;
         target_ptr--;
         uint8_t acc = target_ptr[0];
 

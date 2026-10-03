@@ -50,7 +50,7 @@ static uint8_t* compute_required_space_for_insertion(uint8_t* target_ptr);
 #include "cli.h"
 #include "editor.h"
 
-uint8_t ram[655360];
+uint8_t* ram;
 
 uint8_t current_ruler_buffer[133];
 
@@ -170,25 +170,31 @@ int main(int argc, char* argv[])
 {
     (void)argc;
     (void)argv;
-    int val = setjmp(env);
 
-    if (val == JMP_CLI)
+    switch (setjmp(env))
     {
-        cli_handler_impl();
+        case JMP_CLI:
+            cli_handler_impl();
+            return 0;
 
-        return 0;
+        case JMP_EDITOR:
+            editor_loop_impl();
+            return 0;
+
+        default:
+            ram = malloc(655360);
+            if (!ram)
+            {
+                perror("malloc");
+                return 1;
+            }
+            himem = ram + 655360 - 1;
+
+            system_init();
+            initialise_document();
+            run_cli();
+            return 0;
     }
-    else if (val == JMP_EDITOR)
-    {
-        editor_loop_impl();
-
-        return 0;
-    }
-    system_init();
-    initialise_document();
-    run_cli();
-
-    return 0;
 }
 
 /**
@@ -710,7 +716,6 @@ void check_continuous_editing(void)
  */
 static void system_init(void)
 {
-    himem = ram + sizeof(ram) - 1;
     uint16_t size = screen_getsize();
     screen_maxcolumn = (uint8_t)(size & 0xff);
     screen_maxrow = (uint8_t)(size >> 8);
