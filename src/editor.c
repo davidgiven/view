@@ -3811,49 +3811,49 @@ static void render_char(render_state_t* rs)
     if (col >= screen_maxcolumn)
     {
         rs->ch = char_to_render;
-
         return;
     }
     rs->col++;
     uint8_t pos = rs->pos;
+    bool inverted = false;
 
     if (pos != 0)
     {
-        uint8_t* size_delta = rs->line_ptr;
-
-        col = find_marker_at_position(rs->pos - 1, size_delta);
-
-        if (col >= 2)
-            goto ca514;
-        col = 0;
-
-        if (col & 0x80)
+        uint8_t marker = find_marker_at_position(pos - 1, rs->line_ptr);
+        /* Only markers 0 and 1 are displayed. */
+        if (marker < 2)
         {
-            rs->ch = char_to_render;
-
-            goto ca523;
+            screen_setstyle(STYLE_REVERSE);
+            inverted = true;
         }
-        if (col != 0)
-            goto ca514;
-        screen_setstyle(STYLE_REVERSE);
     }
-ca514:
-    pos = char_to_render;
-    control_code_t f = check_for_control_code(pos);
 
+    control_code_t f = check_for_control_code(char_to_render);
     if (f != NO_CONTROL_CODE)
     {
-        if (f == HIGHLIGHT1_CODE)
-            pos = 0x2d;
-        else
-            pos = 0x2a;
-    }
-ca523:
-    if (pos == 0x0d || pos == 0x00)
-        pos = 0x20;
-    screen_putchar(pos);
+        char repl = (f == HIGHLIGHT1_CODE) ? '-' : '*';
+        // highlight chars are rendered inverted via bcs/bcc ca50e at a51c/a520
+        if (!inverted)
+        {
+            screen_setstyle(STYLE_REVERSE);
+            inverted = true;
+        }
+        uint8_t out = repl;
 
-    if (col == 0)
+        if (out == 0x0D)
+            out = 0x20;
+        screen_putchar(out);
+        if (inverted)
+            screen_setstyle(0);
+        rs->ch = char_to_render;
+        return;
+    }
+
+    uint8_t out = char_to_render;
+    if (out == 0x0d || out == 0x00)
+        out = 0x20;
+    screen_putchar(out);
+    if (inverted)
         screen_setstyle(0);
     rs->ch = char_to_render;
 }
