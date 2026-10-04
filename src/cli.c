@@ -1147,18 +1147,7 @@ void run_cli(void)
     if (printer_driver_name[0] != 0)
     {
         cli_putstring("Printer ");
-        uint8_t idx = 0;
-
-        do
-        {
-            uint8_t tmp_ch3 = printer_driver_name[idx];
-
-            if (tmp_ch3 == 0x0d)
-                break;
-            cli_putchar(tmp_ch3);
-            idx++;
-        } while (idx != 0);
-
+        cli_putstring((char*)printer_driver_name);
         if (microspacing_flag != 0)
             cli_putstring(" (m)");
         cli_putchar('\n');

@@ -52,8 +52,6 @@ command_prefix_t deref_and_check_for_command_prefix(
  */
 void display_document_file_state(void)
 {
-    uint8_t next_ch;
-
     stop_printing();
     cli_putstring("Editing ");
 
@@ -63,32 +61,12 @@ void display_document_file_state(void)
         return;
     }
 
-    uint8_t pos = 0;
-
-    for (;;)
+    cli_putstring((char*)input_filename);
+    if (!(file_edit_flags & 0x40))
     {
-        next_ch = input_filename[pos];
-
-        if (next_ch == 0x0d)
-            break;
-        cli_putchar(next_ch);
-        pos++;
-    }
-    if ((file_edit_flags & 0x40))
-        goto c8a19;
-    cli_putstring(" to ");
-    pos = 0;
-
-    for (;;)
-    {
-        next_ch = output_filename[pos];
-        pos++;
-
-    c8a19:
-        cli_putchar(next_ch);
-
-        if (next_ch == 0x0d)
-            break;
+        cli_putstring(" to ");
+        cli_putstring((char*)output_filename);
+        cli_putchar('\n');
     }
     cli_putchar('\n');
 }

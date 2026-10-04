@@ -13,7 +13,7 @@ extern void cli_putchar(uint8_t c);
 
 /**
  * Writes a string to the CLI output.
- * @param s null-terminated string to output
+ * @param s string terminated by '\0' or '\r'
  */
 extern void cli_putstring(const char* s);
 

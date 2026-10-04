@@ -14,11 +14,12 @@ void cli_putchar(uint8_t c)
 
 /**
  * Writes a string to the CLI output.
- * @param s null-terminated string to output
+ * @param s string terminated by '\0' or '\r'
  */
 void cli_putstring(const char* s)
 {
-    fputs(s, stdout);
+    for (; *s != '\0' && *s != '\r'; s++)
+        putchar(*s);
     fflush(stdout);
 }
 
