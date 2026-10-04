@@ -60,7 +60,6 @@ void display_document_file_state(void)
     if (file_edit_flags == 0)
     {
         cli_putstring("No File\n");
-
         return;
     }
 
@@ -91,6 +90,7 @@ void display_document_file_state(void)
         if (next_ch == 0x0d)
             break;
     }
+    cli_putchar('\n');
 }
 
 /**

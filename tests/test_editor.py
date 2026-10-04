@@ -1151,6 +1151,7 @@ class EditorTests(unittest.TestCase):
             r"\s+",
             r"Bytes free \d+\s+",
             r"Editing examples/horse\.v\s+",
+            r"\s+",
             r"=>\s+",
         ]
         for i, exp in enumerate(expected_re):

@@ -1163,9 +1163,9 @@ void run_cli(void)
             cli_putstring(" (m)");
         cli_putchar('\n');
     }
+
     uint8_t idx2 = 0;
     uint8_t pos = 0;
-
     do
     {
         if (((uint8_t*)markers_array)[idx2 + 1] != 0)
