@@ -1193,30 +1193,24 @@ void run_cli(void)
         cli_putchar('\n');
     }
 
-    uint8_t idx2 = 0;
-    uint8_t pos = 0;
+    uint8_t i = 0;
+    bool markers = false;
     do
     {
-        if (((uint8_t*)markers_array)[idx2 + 1] != 0)
+        if (markers_array[i])
         {
-            if (pos == 0)
+            if (!markers)
             {
-                screen_column = idx2;
                 cli_putstring("Marker(s) set ");
-                idx2 = screen_column;
-                pos = 1;
+                markers = true;
             }
             else
-            {
-                screen_putchar(0x2c);
-            }
-            screen_putchar((idx2 >> 1) + 0x31);
+                screen_putchar(',');
+            screen_putchar(i + '1');
         }
-        idx2++;
-        idx2++;
-    } while (idx2 != 0x0c);
-
-    if (pos != 0)
+        i++;
+    } while (i != NUM_MARKERS);
+    if (markers)
         cli_putchar('\n');
     cli_putchar('\n');
 
