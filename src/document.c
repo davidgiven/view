@@ -573,19 +573,6 @@ void move_cursor_to_address(uint8_t* addr)
 cac20:
     current_line_ptr = cur;
     uint8_t idx = (uint8_t)(addr - current_line_ptr);
-    {
-        FILE* _log = fopen("/tmp/view.log", "a");
-        if (_log)
-        {
-            fprintf(_log,
-                "move_cursor_to_address cur %p addr %p idx %d xpos %d\n",
-                (void*)cur,
-                (void*)addr,
-                idx,
-                idx);
-            fclose(_log);
-        }
-    }
 
     command_prefix_t cp = check_for_command_prefix(current_line_ptr[0]);
 
