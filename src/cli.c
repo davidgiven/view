@@ -67,6 +67,37 @@ static const uint8_t parser_table[] = {
     0};
 // clang-format on
 
+enum command
+{
+    COMMAND_INVALID = -1,
+    COMMAND_QUIT = 0,
+    COMMAND_NEW,
+    COMMAND_FORMAT,
+    COMMAND_SETUP,
+    COMMAND_READ,
+    COMMAND_MORE,
+    COMMAND_SCREEN,
+    COMMAND_SHEETS,
+    COMMAND_SAVE,
+    COMMAND_COUNT,
+    COMMAND_FIELD,
+    COMMAND_PRINTER,
+    COMMAND_SEARCH,
+    COMMAND_CLEAR,
+    COMMAND_MICROSPACE,
+    COMMAND_FOLD,
+    COMMAND_NAME,
+    COMMAND_MODE,
+    COMMAND_FINISH,
+    COMMAND_PRINT,
+    COMMAND_CHANGE,
+    COMMAND_WRITE,
+    COMMAND_EDIT,
+    COMMAND_REPLACE,
+    COMMAND_LOAD,
+    COMMAND_BYE,
+};
+
 static const uint8_t version_string[] = "C-VIEW\0A4.0";
 
 static const uint8_t escaped_char_table[] = {
@@ -74,7 +105,7 @@ static const uint8_t escaped_char_table[] = {
 static const uint8_t escaped_value_table[] = {
     1, 9, 0x0d, 2, 0x0b, 0x1a, 0x1c, 0x1d, 0xff};
 
-static bool parse_command(uint8_t* input_buffer_offset);
+static enum command parse_command(uint8_t* input_buffer_offset);
 static bool parse_integer_from_command(scan_state_t* scan, int* out);
 static bool read_command_line(void);
 static bool reset_command_parse_state(scan_state_t* scan);
@@ -91,7 +122,7 @@ static void cmd_err_no_string(void);
 static void cmd_err_no_target(void);
 static void count_cmd(scan_state_t* scan);
 static void edit_cmd(scan_state_t* scan);
-static void execute_cli_command(uint8_t cur_ch, scan_state_t* scan);
+static void execute_cli_command(enum command cur_ch, scan_state_t* scan);
 static void field_cmd(scan_state_t* scan);
 static void finish_cmd(void);
 static void fold_cmd(scan_state_t* scan);
@@ -154,18 +185,16 @@ static bool read_command_line(void)
  */
 static void input_line_not_escaped(void)
 {
-    bool failed = parse_command(&input_buffer_offset);
+    enum command cmd = parse_command(&input_buffer_offset);
 
-    scratch_offset = screen_row;
-
-    if (failed || screen_row >= 48)
+    if (cmd == COMMAND_INVALID)
     {
         cli_putstring("Mistake\n");
         return_to_cli_prompt();
     }
-    scan_state_t scan;
 
-    execute_cli_command(scratch_offset, &scan);
+    scan_state_t scan = {};
+    execute_cli_command(cmd, &scan);
     run_cli();
 }
 
@@ -175,112 +204,115 @@ static void input_line_not_escaped(void)
  * @param cur_ch command index into the CLI jump table
  * @param scan scan state for argument parsing
  */
-static void execute_cli_command(uint8_t cur_ch, scan_state_t* scan)
+static void execute_cli_command(enum command cur_ch, scan_state_t* scan)
 {
     switch (cur_ch)
     {
-        case 0:
+        case COMMAND_QUIT:
             quit_cmd();
             break;
 
-        case 1:
+        case COMMAND_NEW:
             new_cmd();
             break;
 
-        case 2:
+        case COMMAND_FORMAT:
             format_cmd(scan);
             break;
 
-        case 3:
+        case COMMAND_SETUP:
             setup_cmd(scan);
             break;
 
-        case 4:
+        case COMMAND_READ:
             read_cmd(scan);
             break;
 
-        case 5:
+        case COMMAND_MORE:
             more_cmd(scan);
             break;
 
-        case 6:
+        case COMMAND_SCREEN:
             screen_cmd(scan);
             break;
 
-        case 7:
+        case COMMAND_SHEETS:
             sheets_cmd(scan);
             break;
 
-        case 8:
+        case COMMAND_SAVE:
             save_cmd_write_cmd(scan);
             break;
 
-        case 9:
+        case COMMAND_COUNT:
             count_cmd(scan);
             break;
 
-        case 10:
+        case COMMAND_FIELD:
             field_cmd(scan);
             break;
 
-        case 11:
+        case COMMAND_PRINTER:
             printer_cmd(scan);
             break;
 
-        case 12:
+        case COMMAND_SEARCH:
             search_cmd(scan);
             break;
 
-        case 13:
+        case COMMAND_CLEAR:
             clear_cmd();
             break;
 
-        case 14:
+        case COMMAND_MICROSPACE:
             microspace_cmd(scan);
             break;
 
-        case 15:
+        case COMMAND_FOLD:
             fold_cmd(scan);
             break;
 
-        case 16:
+        case COMMAND_NAME:
             name_cmd(scan);
             break;
 
-        case 17:
+        case COMMAND_MODE:
             mode_cmd();
             break;
 
-        case 18:
+        case COMMAND_FINISH:
             finish_cmd();
             break;
 
-        case 19:
+        case COMMAND_PRINT:
             print_cmd(scan);
             break;
 
-        case 20:
+        case COMMAND_CHANGE:
             change_cmd(scan);
             break;
 
-        case 21:
+        case COMMAND_WRITE:
             save_cmd_write_cmd(scan);
             break;
 
-        case 22:
+        case COMMAND_EDIT:
             edit_cmd(scan);
             break;
 
-        case 23:
+        case COMMAND_REPLACE:
             replace_cmd(scan);
             break;
 
-        case 24:
+        case COMMAND_LOAD:
             load_cmd(scan);
             break;
 
-        case 25:
+        case COMMAND_BYE:
             bye_cmd();
+            break;
+
+        case COMMAND_INVALID:
             break;
     }
 }
@@ -1219,22 +1251,20 @@ static void print_x_words_of_help(uint8_t idx)
  *
  * @param input_buffer_offset pointer to current offset in the input buffer;
  * updated to position after the command
- * @return true on parse failure, false on success
+ * @return command on success, COMMAND_INVALID on failure
  */
-static bool parse_command(uint8_t* input_buffer_offset)
+static enum command parse_command(uint8_t* input_buffer_offset)
 {
     uint8_t temp_save;
     uint8_t pos;
-    uint8_t cur_ch = 0xff;
-
-    screen_row = cur_ch;
-    uint8_t idx = cur_ch;
+    int command_index = -1;
+    uint8_t idx = 0xff;
 
     for (;;)
     {
         pos = *input_buffer_offset;
         pos--;
-        screen_row++;
+        command_index++;
 
         for (;;)
         {
@@ -1247,7 +1277,7 @@ static bool parse_command(uint8_t* input_buffer_offset)
             uint8_t tmp_ch2 = parser_table[idx];
 
             if (tmp_ch2 == 0)
-                return true;
+                return COMMAND_INVALID;
 
             if (tmp_ch2 & 0x80)
                 goto ca87e;
@@ -1266,7 +1296,7 @@ static bool parse_command(uint8_t* input_buffer_offset)
             tmp_ch3 = parser_table[idx];
 
             if (tmp_ch3 == 0)
-                return true;
+                return COMMAND_INVALID;
         } while ((tmp_ch3 & 0x80) == 0);
         uint8_t tmp_ch4 = screen_column;
 
@@ -1289,7 +1319,7 @@ ca87e:
     }
     *input_buffer_offset = pos;
 
-    return false;
+    return (enum command)command_index;
 }
 
 /**

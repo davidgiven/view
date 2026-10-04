@@ -848,6 +848,7 @@ int compute_bytes_free(void)
  */
 read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit)
 {
+    uint8_t* start = *cursor;
     int next_ch;
     bool eof_1;
     int idx3;
@@ -904,7 +905,7 @@ read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit)
     eof_1 = false;
 
 c8cf2:
-    if (screen_row == 0)
+    if (*cursor == start)
         return READ_BLOCK_EMPTY;
 
     if (eof_1)
