@@ -1147,7 +1147,7 @@ class EditorTests(unittest.TestCase):
         stream = pyte.Stream(screen)
         stream.feed(output.decode("latin-1"))
         expected_re = [
-            r"VIEW B3\.0 for CP/M-65\s+",
+            r"C-VIEW A4\.0\s+",
             r"\s+",
             r"Bytes free \d+\s+",
             r"Editing examples/horse\.v\s+",

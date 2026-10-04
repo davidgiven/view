@@ -65,7 +65,7 @@ static const uint8_t parser_table[] = {
     0};
 // clang-format on
 
-static const uint8_t version_string[] = "VIEW\0B3.0 for CP/M-65";
+static const uint8_t version_string[] = "C-VIEW\0A4.0";
 
 static const uint8_t escaped_char_table[] = {
     '?', 'T', 'C', 'S', 'L', 'Z', '-', '*', 0xff};
