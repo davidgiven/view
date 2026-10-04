@@ -66,6 +66,72 @@ The `scripts` directory contains a number of helper scripts which were used
 during the decompilation process. Don't trust these to work, or indeed do
 anything useful; they're only there for my reference.
 
+The BBC Micro has ten function keys numbered from 0, and the original version of
+VIEW is controlled almost exclusively by these. These aren't available on
+other systems, so I've reworked it to use semi-WordStar controls.
+
+<dl>
+    <dt>^E, ^S, ^D, ^X</dt>
+    <dd>Cursor movement. (You can also use the cursor keys, if your computer has them.)</dd>
+    <dt>^Q^S, ^Q^D</dt>
+    <dd>Begining of line, end of line. </dd>
+    <dt>^A, ^F</dt>
+    <dd>Word left, word right.</dd>
+    <dt>^R, ^C</dt>
+    <dd>Page up, page down.</dd>
+    <dt>^Q^R, ^Q^C</dt>
+    <dd>Top of file, bottom of file.</dd>
+    <dt>^G, ^H</dt>
+    <dd>Delete one character, insert one character.</dd>
+    <dt>^P</dt>
+    <dd>Swap case.</dd>
+    <dt>^Y, ^N</dt>
+    <dd>Delete, insert one line.</dd>
+    <dt>^Q^Y</dt>
+    <dd>Delete to end of line.</dD>
+    <dt>^V</dt>
+    <dd>Toggle insert mode.</dd>
+    <dt>^B</dt>
+    <dd>Reformat current paragraph.</dd>
+    <dt>^T</dt>
+    <dd>Delete to character.</dd>
+    <dt>^L</dt>
+    <dd>Next search match (when searching).</dd>
+    <dt>^J, ^Q^J</dt>
+    <dd>Join lines, split lines.</dd>
+    <dt>^K^M, ^K1, ^K2, ^K3, ^K4, ^K5, ^K6</dt>
+    <dd>Set marker.</dd>
+    <dt>^Q^M, ^Q1, ^Q2, ^Q3, ^Q4, ^Q5, ^Q6</dt>
+    <dd>Go to marker.</dd>
+    <dt>^O^J</dt>
+    <dd>Toggle justification.</dd>
+    <dt>^O^F</dt>
+    <dd>Toggle format mode.</dd>
+    <dt>^O^X</dt>
+    <dd>Margin release</dd>
+    <dt>^O^C, ^O^D</dt>
+    <dd>Edit command, delete command.</dd>
+    <dt>^O^M, ^O^R, ^O^S</dt>
+    <dd>Mark current line as ruler, copy current ruler, copy standard ruler.</dd>
+    <dt>^O^U, ^O^B</dt>
+    <dd>Toggle highlight 1, toggle hightlight 2.</dd>
+    <dt>^K^C, ^K^V, ^K^Y</dt>
+    <dd>Copy block, move block, delete block.</dd>
+</dl>
+
+The following features aren't supported:
+
+- changing screen mode
+- printing
+- star commands (yes, this means you can't get a directory listing from inside
+    VIEW --- sorry)
+
+But everything else should work!
+
+There is one extra CLI-mode command:
+
+- `BYE` --- exits back to the shell.
+
 ## AI disclosure
 
 Machine assistance was used extensively for the decompilation and translation to
@@ -85,8 +151,8 @@ Github](https://github.com/skswales)).
 He was killed in a racing accident in 1995.
 
 The additional decompilation work is owned by me, David Given, and I hereby
-declare that all my work is CC0 licensed. You may contact me at dg@cowlark.com,
-or visit my website at http://www.cowlark.com.  There may or may not be anything
+declare that all my work is CC0 licensed. You may contact me at <dg@cowlark.com>,
+or visit my website at <http://www.cowlark.com>.  There may or may not be anything
 interesting there.
 
 # License
