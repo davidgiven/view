@@ -4,13 +4,6 @@
 #include "globals.h"
 #include "document.h"
 
-typedef enum
-{
-    CLI_CMD_OK,        /** Command parsed and processed. */
-    CLI_CMD_NO_TARGET, /** No command given. */
-    CLI_CMD_NO_STRING  /** Area empty or no search string. */
-} cli_cmd_status_t;
-
 extern void start_printing(void);
 extern void clear_cmd(void);
 extern void run_cli(void);

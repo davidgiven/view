@@ -67,7 +67,7 @@ static const uint8_t parser_table[] = {
     0};
 // clang-format on
 
-enum command
+typedef enum
 {
     COMMAND_INVALID = -1,
     COMMAND_QUIT = 0,
@@ -96,7 +96,14 @@ enum command
     COMMAND_REPLACE,
     COMMAND_LOAD,
     COMMAND_BYE,
-};
+} cli_command_t;
+
+typedef enum
+{
+    CLI_CMD_OK,        /** Command parsed and processed. */
+    CLI_CMD_NO_TARGET, /** No command given. */
+    CLI_CMD_NO_STRING, /** Area empty or no search string. */
+} cli_cmd_status_t;
 
 static const uint8_t version_string[] = "C-VIEW\0A4.0";
 
@@ -105,7 +112,7 @@ static const uint8_t escaped_char_table[] = {
 static const uint8_t escaped_value_table[] = {
     1, 9, 0x0d, 2, 0x0b, 0x1a, 0x1c, 0x1d, 0xff};
 
-static enum command parse_command(uint8_t* input_buffer_offset);
+static cli_command_t parse_command(uint8_t* input_buffer_offset);
 static bool parse_integer_from_command(scan_state_t* scan, int* out);
 static bool read_command_line(void);
 static bool reset_command_parse_state(scan_state_t* scan);
@@ -122,7 +129,7 @@ static void cmd_err_no_string(void);
 static void cmd_err_no_target(void);
 static void count_cmd(scan_state_t* scan);
 static void edit_cmd(scan_state_t* scan);
-static void execute_cli_command(enum command cur_ch, scan_state_t* scan);
+static void execute_cli_command(cli_command_t cur_ch, scan_state_t* scan);
 static void field_cmd(scan_state_t* scan);
 static void finish_cmd(void);
 static void fold_cmd(scan_state_t* scan);
@@ -185,7 +192,7 @@ static bool read_command_line(void)
  */
 static void input_line_not_escaped(void)
 {
-    enum command cmd = parse_command(&input_buffer_offset);
+    cli_command_t cmd = parse_command(&input_buffer_offset);
 
     if (cmd == COMMAND_INVALID)
     {
@@ -204,7 +211,7 @@ static void input_line_not_escaped(void)
  * @param cur_ch command index into the CLI jump table
  * @param scan scan state for argument parsing
  */
-static void execute_cli_command(enum command cur_ch, scan_state_t* scan)
+static void execute_cli_command(cli_command_t cur_ch, scan_state_t* scan)
 {
     switch (cur_ch)
     {
@@ -1253,7 +1260,7 @@ static void print_x_words_of_help(uint8_t idx)
  * updated to position after the command
  * @return command on success, COMMAND_INVALID on failure
  */
-static enum command parse_command(uint8_t* input_buffer_offset)
+static cli_command_t parse_command(uint8_t* input_buffer_offset)
 {
     uint8_t temp_save;
     uint8_t pos;
@@ -1319,7 +1326,7 @@ ca87e:
     }
     *input_buffer_offset = pos;
 
-    return (enum command)command_index;
+    return (cli_command_t)command_index;
 }
 
 /**
