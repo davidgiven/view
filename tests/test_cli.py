@@ -270,6 +270,30 @@ class CliTests(unittest.TestCase):
             f"Expected 'Frump!' in output for FIELD 27, got: {repr(output)}",
         )
 
+    def test_invalid_command_shows_mistake(self):
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("INVALID")
+        output = self.proc.read_until(b"=>", timeout=0.5)
+        self.assertIn(
+            b"Mistake",
+            output,
+            f"Expected 'Mistake' in output for invalid command, got: {repr(output)}",
+        )
+        self.assertNotIn(
+            b"Bytes free",
+            output,
+            f"Expected 'Bytes free' banner not to appear for invalid command, got: {repr(output)}",
+        )
+        self.assertNotIn(
+            b"Byte free",
+            output,
+            f"Expected 'Byte free' banner not to appear for invalid command, got: {repr(output)}",
+        )
+        self.assertTrue(
+            output.endswith(b"=>"),
+            f"Expected output to end with prompt, got: {repr(output[-40:])}",
+        )
+
 
 class LowMemoryCliTests(unittest.TestCase):
     """Tests with a restricted RAM size (--ram=1024)."""

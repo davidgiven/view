@@ -62,6 +62,8 @@ static const uint8_t parser_table[] = {
     9, 0x3e, 0x2b, 0x37, 0x3a, 0x38, 0x3e, 0x81,
     // LOAD -> 24, flag=0
     0x17, 0x34, 0x3a, 0x3f, 0x80,
+    // BYE -> 25, flag=1
+    0x19, 0x22, 0x3e, 0x80,
     0};
 // clang-format on
 
@@ -157,7 +159,10 @@ static void input_line_not_escaped(void)
     scratch_offset = screen_row;
 
     if (failed || screen_row >= 48)
+    {
         cli_putstring("Mistake\n");
+        return_to_cli_prompt();
+    }
     scan_state_t scan;
 
     execute_cli_command(scratch_offset, &scan);
