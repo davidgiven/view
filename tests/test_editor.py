@@ -1316,6 +1316,33 @@ class EditorTests(unittest.TestCase):
         ]
         self._assert_screen_lines(screen, expected)
 
+    def test_escape_and_reenter_editor(self):
+        """Enter text, ESC to CLI, re-enter editor and verify screen."""
+        screen = self._enter_editor_empty()
+        self.proc.write(b"hello world")
+        raw = self._drain_editor()
+        pyte.Stream(screen).feed(raw.decode("latin-1"))
+        # Escape back to CLI
+        self.proc.write(b"\x1b")
+        cli_output = self.proc.read_until(b"=>", timeout=1.0)
+        self.assertIn(
+            b"=>",
+            cli_output,
+            f"Expected CLI prompt after ESC, got: {repr(cli_output[-200:])}",
+        )
+        # Re-enter editor
+        self.proc.writeline("")
+        raw = self._drain_editor()
+        screen2 = pyte.Screen(80, 24)
+        stream = pyte.Stream(screen2)
+        stream.feed(raw.decode("latin-1"))
+        expected = [
+            "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+            "   hello world                                                                  ",
+            "********************************************************************************",
+        ]
+        self._assert_screen_lines(screen2, expected)
+
 
 class LowMemoryEditorTests(unittest.TestCase):
     """Tests with a restricted RAM size (--ram=1024), mirroring LowMemoryCliTests."""

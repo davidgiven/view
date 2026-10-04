@@ -2080,6 +2080,7 @@ void enter_editor_mode(void)
     } while ((remaining_rows & 0x80) == 0);
     status_line_needs_redrawing_flag = 2;
     flags_need_redrawing_flag = 1;
+    display_start_row = 1;
 }
 
 /**
