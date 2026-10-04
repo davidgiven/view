@@ -13,6 +13,11 @@ rulers, editing of files bigger than will fit in memory (crudely),
 search-and-replace, word count, text styles, and so on. It also features
 loadable printer drivers so that it will work with a variety of printers.
 
+<div style="text-align: center">
+<a href="doc/bbcmicro.png"><img src="doc/bbcmicro.png" style="width:40%" alt="Original VIEW running on a BBC Master"></a>
+<a href="doc/term.png"><img src="doc/term.png" style="width:40%" alt="C-VIEW running on Linux"></a>
+</div>
+
 This project contains two things:
 
 - a copy of the original ROM for version B3.0, a mostly-symbolified disassembly
@@ -20,7 +25,7 @@ of it using ZornsLemma's [py8dis](https://github.com/ZornsLemma/py8dis]), plus a
 port of it to my own [CP/M-65](https://github.com/davidgiven/cpm65) operating
 system (which does also run on the BBC Micro, for maximum recursion).
 
-- a decompiled and reverse engineer port of it into portable C, which will run
+- a decompiled and reverse engineered port of it into portable C, which will run
 on most systems with stdio and some means of doing direct screen access (by
 default it uses ncurses).
 
