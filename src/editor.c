@@ -687,6 +687,7 @@ static void cf0_delete_block_key(void)
     }
     move_cursor_to_address(area_start_ptr);
     clamp_ptr6_to_document();
+    area_size = area_end_ptr - area_start_ptr;
     adjust_area_pointers(area_size);
     ensure_cr_at_document_top();
     clear_marks_1_2();
@@ -1864,18 +1865,27 @@ static bool reset_area_to_marks_1_2(void)
     {
         area_start_ptr = markers_array[idx1];
         int idx2 = lookup_marker(0x32);
-
         if (idx2 == MARKER_INVALID)
             return true;
 
         if (markers_array[idx2] != 0)
         {
             area_end_ptr = markers_array[idx2];
-            uint8_t marker_array_idx =
-                ((uint8_t*)&area_insert_ptr - (uint8_t*)markers_array) / 2;
-            set_marker_to_here(marker_array_idx);
-            area_status_t status = sanitise_area();
+            int len = get_line_length();
+            if (len >= xpos)
+            {
+                uint8_t first_char = ((uint8_t*)current_format_line)[0];
+                command_prefix_t cp = check_for_command_prefix(first_char);
+                len = xpos;
 
+                if (cp != NO_COMMAND_PREFIX)
+                    len += 3;
+            }
+
+            size_t marker_addr = (current_line_ptr - &ram[0]) + len;
+            area_insert_ptr = &ram[marker_addr];
+
+            area_status_t status = sanitise_area();
             if (status == AREA_NOT_EMPTY)
                 return false;
         }
@@ -2002,7 +2012,7 @@ static void check_pointer_in_area(void)
         longjmp(env, JMP_EDITOR);
     }
     uint8_t* scan_ptr = area_start_ptr;
-    uint8_t* copy_ptr = area_insert_ptr;
+    uint8_t* copy_ptr = insert_ptr;
 
     while (1)
     {

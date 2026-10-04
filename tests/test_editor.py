@@ -1012,6 +1012,104 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_block_copy(self):
+        """Block copy (^K C) duplicates the block defined by markers 1 and 2."""
+        self._test_enter_editor_and_type(
+            b"AAA"
+            + CTRL_M
+            + b"BBB"
+            + CTRL_M
+            + b"CCC"
+            + CTRL_Q
+            + CTRL_R
+            + CTRL_Q
+            + CTRL_S
+            + CTRL_K
+            + b"1"
+            + KEY_DOWN
+            + CTRL_Q
+            + CTRL_S
+            + CTRL_K
+            + b"2"
+            + CTRL_Q
+            + CTRL_C
+            + CTRL_M
+            + CTRL_K
+            + b"C",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   AAA                                                                          ",
+                "   BBB                                                                          ",
+                "   CCC                                                                          ",
+                "   AAA                                                                          ",
+                "                                                                                ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_block_move(self):
+        """Block move (^K V) relocates the block defined by markers 1 and 2."""
+        self._test_enter_editor_and_type(
+            b"AAA"
+            + CTRL_M
+            + b"BBB"
+            + CTRL_M
+            + b"CCC"
+            + CTRL_Q
+            + CTRL_R
+            + CTRL_Q
+            + CTRL_S
+            + CTRL_K
+            + b"1"
+            + KEY_DOWN
+            + CTRL_Q
+            + CTRL_S
+            + CTRL_K
+            + b"2"
+            + CTRL_Q
+            + CTRL_C
+            + CTRL_M
+            + CTRL_K
+            + b"V",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   BBB                                                                          ",
+                "   CCC                                                                          ",
+                "   AAA                                                                          ",
+                "                                                                                ",
+                "********************************************************************************",
+            ],
+        )
+
+    def test_block_delete(self):
+        """Block delete (^K Y) removes the block defined by markers 1 and 2."""
+        self._test_enter_editor_and_type(
+            b"AAA"
+            + CTRL_M
+            + b"BBB"
+            + CTRL_M
+            + b"CCC"
+            + CTRL_Q
+            + CTRL_R
+            + CTRL_Q
+            + CTRL_S
+            + CTRL_K
+            + b"1"
+            + KEY_DOWN
+            + CTRL_Q
+            + CTRL_S
+            + CTRL_K
+            + b"2"
+            + CTRL_K
+            + b"Y",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   BBB                                                                          ",
+                "   CCC                                                                          ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_indent(self):
         self._test_enter_editor_and_type(
             CTRL_O + CTRL_S + b"       >" + CTRL_M + b"hello",
