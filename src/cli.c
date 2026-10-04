@@ -704,9 +704,6 @@ void load_cmd(scan_state_t* scan)
         top += bytes_read;
     }
 
-    /* top points at the trailing 0, not the byte after it. */
-    top--;
-
     close_file();
     reset_document_name_after_load();
     clear_cmd();
@@ -981,7 +978,6 @@ static void save_cmd_write_cmd(scan_state_t* scan)
         return;
     open_output_file();
     write_area_to_file();
-    fputc(0, file_ptr);
     close_file();
 
     return_to_cli_prompt();
