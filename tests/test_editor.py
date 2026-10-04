@@ -1012,6 +1012,29 @@ class EditorTests(unittest.TestCase):
             ],
         )
 
+    def test_marker_moves_on_insert_before(self):
+        """Inserting text before a marker moves the marker forward."""
+        self._test_enter_editor_and_type(
+            b"hello world"
+            + CTRL_Q
+            + CTRL_S
+            + KEY_RIGHT * 6
+            + CTRL_K
+            + b"1"
+            + CTRL_Q
+            + CTRL_S
+            + CTRL_V
+            + b"XX"
+            + CTRL_Q
+            + b"1"
+            + b"Y",
+            [
+                "FJ .......*.......*.......*.......*.......*.......*.......*.......*.......*.<   ",
+                "   XXhello Yworld                                                               ",
+                "********************************************************************************",
+            ],
+        )
+
     def test_block_copy(self):
         """Block copy (^K C) duplicates the block defined by markers 1 and 2."""
         self._test_enter_editor_and_type(
