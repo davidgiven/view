@@ -1264,5 +1264,63 @@ class LowMemoryEditorTests(unittest.TestCase):
         )
 
 
+class RulerOverflowTests(unittest.TestCase):
+    """Tests with a restricted ruler stack (--rulers=4) and overflow."""
+
+    def setUp(self):
+        self.proc = PtyProcess([VIEW_BIN, "--rulers=4"])
+
+    def tearDown(self):
+        self.proc.close()
+
+    def _drain_editor(self):
+        """Drain PTY output with a short idle timeout (resets per character)."""
+        data = b""
+        while True:
+            r, _, _ = select.select([self.proc.master_fd], [], [], 0.005)
+            if not r:
+                break
+            try:
+                chunk = os.read(self.proc.master_fd, 4096)
+                if not chunk:
+                    break
+                data += chunk
+            except OSError:
+                break
+        return data
+
+    def test_six_rulers_with_four_slots(self):
+        """Create a process with --rulers=4 and add six rulers to overflow the stack."""
+        self.proc.read_until(b"=>", timeout=0.5)
+        self.proc.writeline("")
+        raw = self._drain_editor()
+        screen = pyte.Screen(80, 24)
+        stream = pyte.Stream(screen)
+        stream.feed(raw.decode("latin-1"))
+        all_output = b""
+        for _ in range(6):
+            self.proc.write(CTRL_O + CTRL_S)
+            raw = self._drain_editor()
+            all_output += raw
+            stream.feed(raw.decode("latin-1"))
+        joined = "\n".join(screen.display)
+
+        self.assertIn(
+            b"Not enough memory",
+            all_output,
+            f"Expected 'Not enough memory' after ruler overflow, got: {repr(all_output[-800:])}",
+        )
+        self.assertIn(
+            b"=>",
+            all_output,
+            f"Expected CLI prompt after overflow, got: {repr(all_output[-500:])}",
+        )
+        # Verify process still alive after handling overflow.
+        try:
+            os.kill(self.proc.pid, 0)
+        except OSError:
+            self.fail("Editor process died after ruler overflow")
+
+
 if __name__ == "__main__":
     unittest.main()

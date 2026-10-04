@@ -711,7 +711,8 @@ void push_onto_ruler_index(uint8_t* target_ptr)
 {
     status_line_needs_redrawing_flag++;
     int stack_index = ruler_index_ptr - 1;
-    assert(stack_index >= 0 && (size_t)stack_index < ruler_index_size);
+    if (stack_index < 0 || (size_t)stack_index >= ruler_index_size)
+        display_not_enough_memory();
     ruler_index[stack_index] = target_ptr;
     load_current_ruler(stack_index);
 }
