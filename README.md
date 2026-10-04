@@ -13,16 +13,23 @@ rulers, editing of files bigger than will fit in memory (crudely),
 search-and-replace, word count, text styles, and so on. It also features
 loadable printer drivers so that it will work with a variety of printers.
 
-This project contains a copy of the original ROM for version B3.0, a
-mostly-symbolified disassembly of it using ZornsLemma's
-[py8dis](https://github.com/ZornsLemma/py8dis]), and a port of it to my own
-[CP/M-65](https://github.com/davidgiven/cpm65) operating system (which does also
-run on the BBC Micro, for maximum recursion).
+This project contains two things:
+
+- a copy of the original ROM for version B3.0, a mostly-symbolified disassembly
+of it using ZornsLemma's [py8dis](https://github.com/ZornsLemma/py8dis]), plus a
+port of it to my own [CP/M-65](https://github.com/davidgiven/cpm65) operating
+system (which does also run on the BBC Micro, for maximum recursion).
+
+- a decompiled and reverse engineer port of it into portable C, which will run
+on most systems with stdio and some means of doing direct screen access (by
+default it uses ncurses).
 
 You might want to [read the manual](ViewGuide.pdf). You're unlikely to get
 anywhere without it.
 
 # How?
+
+## The disassembly
 
 The disassembly is controlled by the `view.py` Python script, which contains
 information about what symbols are defined where. (These names were made up
@@ -39,6 +46,27 @@ highly abstract and hardware-independent.
 
 See [README-CPM.md](README-CPM.md) for more information on the CP/M-65 version.
 
+## The C port
+
+This lives in the `src` directory, and when you run the makefile you'll get a
+binary in `bin/view`. I've taken the liberty of changing the startup banner to
+display it as `C-VIEW B4.0` to distinguish it from the OG View. You can build it
+on its own with `make bin/view`, or run the tests with `make tests`.
+
+By default it uses readline for the command prompt and ncurses for the editor.
+You can easily swap these out for other libraries --- see the contents of
+`src/io`. There's a comprehensive test suite in `tests`.
+
+The `scripts` directory contains a number of helper scripts which were used
+during the decompilation process. Don't trust these to work, or indeed do
+anything useful; they're only there for my reference.
+
+## AI disclosure
+
+Machine assistance was used extensively for the decompilation and translation to
+C, as well as determining what all the various functions do. (Anyone who thinks
+this made it easy is welcome to examine the commit history and see just how long
+it took.) All the files in `scripts` were vibe coded, crudely.
 
 # Who?
 
@@ -51,9 +79,10 @@ Github](https://github.com/skswales)).
 
 He was killed in a racing accident in 1995.
 
-The decompilation is owned by me, David Given, and I hereby declare that all my
-work is CC0 licensed. You may contact me at dg@cowlark.com, or visit my website
-at http://www.cowlark.com.  There may or may not be anything interesting there.
+The additional decompilation work is owned by me, David Given, and I hereby
+declare that all my work is CC0 licensed. You may contact me at dg@cowlark.com,
+or visit my website at http://www.cowlark.com.  There may or may not be anything
+interesting there.
 
 # License
 
