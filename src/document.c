@@ -203,7 +203,7 @@ int lookup_marker(uint8_t cur_ch)
     }
     cur_ch -= 0x31;
 
-    if (cur_ch >= 6)
+    if (cur_ch >= NUM_MARKERS)
         return MARKER_INVALID;
     return cur_ch;
 }
@@ -1050,14 +1050,14 @@ void update_markers_to_format_buffer(void)
     {
         uint8_t idx = find_marker_at_position(offset, size_delta);
 
-        if (idx != 0x0c)
+        if (idx != NUM_MARKERS)
         {
             uint8_t* base_ptr =
                 (current_format_line->prefix_byte == COMMAND_PREFIX ||
                     current_format_line->prefix_byte == RULER_PREFIX)
                     ? (uint8_t*)current_format_line
                     : current_format_line->text;
-            markers_array[idx / 2] = base_ptr + offset;
+            markers_array[idx] = base_ptr + offset;
         }
         uint8_t acc = current_line_ptr[offset];
 
@@ -1200,10 +1200,10 @@ bool write_line_back_to_document(void)
                     uint8_t idx =
                         find_marker_at_position(copy_idx, &ram[area_size]);
 
-                    if (idx == 0x0c)
+                    if (idx == NUM_MARKERS)
                         break;
                     val = (current_line_ptr - &ram[0]) + copy_idx;
-                    markers_array[idx / 2] = &ram[val];
+                    markers_array[idx] = &ram[val];
                 } while (val != 0);
                 stored_byte = out_byte;
             }
@@ -1268,7 +1268,7 @@ uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta)
  * Checks if any marker points at the given edit-buffer offset.
  * @param pos buffer position
  * @param target_ptr base pointer
- * @return marker index or 0x0c if none
+ * @return marker index or NUM_MARKERS if none
  */
 uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr)
 {
@@ -1277,13 +1277,12 @@ uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr)
 
     do
     {
-        if (scan_ptr == markers_array[slot_idx / 2])
+        if (scan_ptr == markers_array[slot_idx])
             goto ca558;
         slot_idx++;
-        slot_idx++;
-    } while (slot_idx != 0x0c);
+    } while (slot_idx != NUM_MARKERS);
 
-    return 0x0c;
+    return NUM_MARKERS;
 
 ca558:
     return slot_idx;

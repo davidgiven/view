@@ -17,7 +17,7 @@ typedef enum
 
 typedef struct pointer_array_t
 {
-    uint8_t* markers_array[6];
+    uint8_t* markers_array[NUM_MARKERS];
     uint8_t* area_start_ptr;
     uint8_t* area_end_ptr;
     uint8_t* area_insert_ptr;

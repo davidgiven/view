@@ -1483,11 +1483,11 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t delete_count)
     {
         delete_count = find_marker_at_position(scan_pos, size_delta);
 
-        if (delete_count != 0x0c)
+        if (delete_count != NUM_MARKERS)
         {
             uint16_t marker_addr =
                 (scan_pos >= temp_save) ? 3 + (scan_pos - scratch_offset) : 0;
-            markers_array[delete_count / 2] =
+            markers_array[delete_count] =
                 marker_addr ? ((uint8_t*)&current_line_buffer + (marker_addr))
                             : NULL;
             continue;
@@ -1539,9 +1539,9 @@ static void enter_printable_character(void)
     uint8_t check_pos = xpos;
     uint8_t idx = find_marker_at_position(check_pos, size_delta);
 
-    if (idx != 0x0c)
+    if (idx != NUM_MARKERS)
     {
-        if (idx < 4)
+        if (idx < 2)
             line_counter++;
     }
     uint8_t mode_flag = insert_mode_flag;
@@ -1747,12 +1747,12 @@ c9ca2:
             uint8_t marker_index =
                 find_marker_at_position(src_pos, marker_base_ptr);
 
-            if (marker_index == 0x0c)
+            if (marker_index == NUM_MARKERS)
                 break;
             {
                 uint8_t* val_ptr = insert_ptr + scratch_index;
 
-                markers_array[marker_index / 2] = val_ptr;
+                markers_array[marker_index] = val_ptr;
 
                 if (insert_ptr - &ram[0] + scratch_index >= 0x10000)
                     break;
@@ -2543,9 +2543,9 @@ c99b6:
     {
         uint8_t idx = find_marker_at_position(src_pos, size_delta);
 
-        if (idx == 0x0c)
+        if (idx == NUM_MARKERS)
             break;
-        markers_array[idx / 2] = 0;
+        markers_array[idx] = 0;
         line_format_status++;
     } while (line_format_status != 0);
 
@@ -3224,10 +3224,10 @@ cae27:
     {
         uint8_t idx = find_marker_at_position(scan_pos, size_delta);
 
-        if (idx == 0x0c)
+        if (idx == NUM_MARKERS)
             goto cae52;
         uint16_t marker_addr = scratch_index ? 3 + scratch_index : 0;
-        markers_array[idx / 2] =
+        markers_array[idx] =
             marker_addr ? ((uint8_t*)&current_line_buffer + (marker_addr))
                         : NULL;
     }
@@ -3823,7 +3823,7 @@ static void render_char(render_state_t* rs)
 
         col = find_marker_at_position(rs->pos - 1, size_delta);
 
-        if (col >= 4)
+        if (col >= 2)
             goto ca514;
         col = 0;
 
