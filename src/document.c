@@ -10,27 +10,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void ensure_ruler_index_allocated(void);
 static uint8_t get_byte_from_file(void);
 static uint8_t* compute_required_space_for_insertion(uint8_t* target_ptr);
 static uint8_t* compute_space_available(uint8_t* target_ptr);
 static uint8_t* compute_space_common(uint8_t* target_ptr, ptrdiff_t scan_ptr);
 static uint8_t* find_line_start(uint8_t* target_ptr);
 static void check_for_embedded_ruler(uint8_t* target_ptr);
-
-/**
- * Ensure ruler_index is allocated.
- * Lazily allocates the ruler index stack if not already allocated by main().
- */
-static void ensure_ruler_index_allocated(void)
-{
-    if (ruler_index)
-        return;
-    if (ruler_index_size == 0)
-        ruler_index_size = DEFAULT_RULER_INDEX_SIZE;
-    ruler_index = calloc(ruler_index_size, sizeof(uint8_t*));
-    assert(ruler_index != NULL);
-}
 
 /**
  * Dereference a document pointer at an offset and test for command prefix.
@@ -104,7 +89,6 @@ unsigned int* get_register_address(uint8_t cur_ch)
  */
 void initialise_document(void)
 {
-    ensure_ruler_index_allocated();
     printer_driver_name[0] = 0;
     format_mode_flag = 0;
     justifying_flag = 0;
@@ -230,7 +214,6 @@ int lookup_marker(uint8_t cur_ch)
  */
 void move_cursor_to_top_of_document(void)
 {
-    ensure_ruler_index_allocated();
     current_line_ptr = ram;
     xpos = 0;
     top_of_screen_line_ptr = &ram[RAM_MAX];
@@ -703,7 +686,6 @@ void open_input_file(void)
  */
 void pop_from_ruler_index(void)
 {
-    ensure_ruler_index_allocated();
     status_line_needs_redrawing_flag++;
     int pos = ruler_index_ptr + 1;
     assert(pos >= 0 && (size_t)pos < ruler_index_size);
@@ -727,7 +709,6 @@ static void check_for_embedded_ruler(uint8_t* target_ptr)
  */
 void push_onto_ruler_index(uint8_t* target_ptr)
 {
-    ensure_ruler_index_allocated();
     status_line_needs_redrawing_flag++;
     int stack_index = ruler_index_ptr - 1;
     assert(stack_index >= 0 && (size_t)stack_index < ruler_index_size);
@@ -741,7 +722,6 @@ void push_onto_ruler_index(uint8_t* target_ptr)
  */
 void load_current_ruler(int pos)
 {
-    ensure_ruler_index_allocated();
     assert(pos >= 0 && (size_t)pos < ruler_index_size);
     ruler_index_ptr = pos;
     current_ruler_ptr = ruler_index[pos] + 3;
