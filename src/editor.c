@@ -3194,276 +3194,276 @@ void redraw_and_write_back(void)
 }
 
 /**
- * Redraws the entire editor display.
- * Handles scrolling, line rendering, status, and cursor placement.
+ * Scrolls down if the current line immediately precedes the visible text.
+ * @return true if one row was scrolled
  */
-static void redraw_editor(void)
+static bool scroll_editor_down_one_line(void)
 {
-    uint8_t next_line_len;
-    uint8_t rows_remaining;
-    uint8_t* draw;
-
-    cursor_off();
-    int ruler_idx = ruler_index_ptr;
-
-    saved_ruler_index_redraw = ruler_idx;
-    uint8_t status_needs_redraw = status_line_needs_redrawing_flag;
-    uint8_t saved_status_line_needs_redrawing_flag = status_needs_redraw;
-
-    if (edit_buffer_unpacked_flag != 0)
+    ruler_index_ptr = saved_ruler_index_scroll;
+    if (top_of_screen_line_ptr < top)
     {
-        uint8_t display_flag = display_start_row;
+        uint8_t* previous_line;
+        find_previous_line(top_of_screen_line_ptr, &previous_line);
+        scratch_line_ptr = previous_line;
+        if (scratch_line_ptr == current_line_ptr)
+        {
+            top_of_screen_line_ptr = scratch_line_ptr;
+            uint8_t row = screen_maxrow;
+            do
+            {
+                line_lengths[row] = line_lengths[row - 1];
+                row--;
+            } while (row != 0);
+            screen_scrolldown();
+            screen_setcursor(0, 1);
+            return true;
+        }
+    }
+    return false;
+}
 
-        display_flag |= scroll_repeat_count;
+/**
+ * Scrolls up one row to reveal the line below the visible text.
+ */
+static void scroll_editor_up_one_line(void)
+{
+    // The current line is just below the visible rows.
+    uint8_t row = 0;
+    do
+    {
+        line_lengths[row] = line_lengths[row + 1];
+        row++;
+    } while (row != screen_maxrow);
+    ptr6_screen_row--;
+    line_lengths[0] = screen_maxcolumn;
+    ruler_index_ptr = saved_ruler_index_scroll;
+    uint8_t* next_line;
+    uint8_t next_line_len;
+    advance_to_next_line(top_of_screen_line_ptr, &next_line, &next_line_len);
+    scratch_line_ptr = next_line;
+    top_of_screen_line_ptr += next_line_len;
+    screen_scrollup();
+    screen_setcursor(0, screen_maxrow);
+}
 
-        if (display_flag != 0)
-            goto ca28e;
+/**
+ * Scans visible lines and tracks the first row needing a partial redraw.
+ * @return current line or end-of-document row, or screen_maxrow + 1 if below
+ * screen
+ */
+static uint8_t find_current_line_screen_row(void)
+{
+    uint8_t* walk = top_of_screen_line_ptr;
+    uint8_t cursor_row = 0;
+    do
+    {
+        cursor_row++;
+        if (walk == editor_ptr6)
+            ptr6_screen_row = cursor_row;
+        if (walk == current_line_ptr)
+            break;
+
+        uint8_t* next_line;
+        uint8_t next_line_len;
+        if (advance_to_next_line(walk, &next_line, &next_line_len))
+            break;
+        scratch_line_ptr = next_line + next_line_len;
+        walk = scratch_line_ptr;
+    } while (cursor_row <= screen_maxrow);
+
+    return cursor_row;
+}
+
+/**
+ * Keeps the current line visible and updates its screen row.
+ * @return true if a single-row scroll requires a status refresh
+ */
+static bool position_editor_viewport(void)
+{
+    bool scrolled = false;
+    uint8_t cursor_row = 1;
+
+    if (current_line_ptr < top_of_screen_line_ptr)
+    {
+        if (scroll_repeat_count == 0)
+            scrolled = scroll_editor_down_one_line();
+        if (!scrolled)
+            (void)compute_display_start_line();
     }
     else
+        ruler_index_ptr = saved_ruler_index_scroll;
 
-    ca28e:
+    if (!scrolled)
     {
-        if (current_line_ptr < top_of_screen_line_ptr)
-            goto ca29c;
-        else
-
-            goto ca2dc;
-
-    ca29c:
-        if (scroll_repeat_count != 0)
-            goto ca30d;
-        ruler_index_ptr = saved_ruler_index_scroll;
-
-        if (top_of_screen_line_ptr >= top)
-            goto ca30d;
+        for (;;)
         {
-            uint8_t* nav_ptr;
+            cursor_row = find_current_line_screen_row();
 
-            find_previous_line(top_of_screen_line_ptr, &nav_ptr);
-            scratch_line_ptr = nav_ptr;
-        }
-        if (scratch_line_ptr != current_line_ptr)
-            goto ca30d;
-        top_of_screen_line_ptr = scratch_line_ptr;
-        uint8_t tmp_idx = screen_maxrow;
-
-        do
-        {
-            uint8_t line_len = line_lengths[tmp_idx - 1];
-
-            line_lengths[tmp_idx] = line_len;
-            tmp_idx--;
-        } while (tmp_idx != 0);
-        screen_scrolldown();
-        screen_setcursor(0, 1);
-        uint8_t row = 1;
-
-        goto ca351;
-
-    ca2dc:
-        ruler_index_ptr = saved_ruler_index_scroll;
-
-    ca2e0:
-        uint8_t walk_idx = 0;
-        uint8_t* walk = top_of_screen_line_ptr;
-
-        do
-        {
-            walk_idx++;
-
-            if (walk == editor_ptr6)
-                ptr6_screen_row = walk_idx;
-
-            if (walk == current_line_ptr)
-                goto ca313;
+            if (cursor_row <= screen_maxrow)
+                break;
+            if (scroll_repeat_count != 0)
             {
-                uint8_t* nav_ptr;
-
-                if (advance_to_next_line(walk, &nav_ptr, &next_line_len))
-                    goto ca313;
-                scratch_line_ptr = nav_ptr;
+                (void)compute_display_start_line();
+                continue;
             }
-            scratch_line_ptr += next_line_len;
-            walk = scratch_line_ptr;
-        } while (walk_idx <= screen_maxrow);
 
-    ca30d:
-        do
-        {
-            (void)compute_display_start_line();
-
-            goto ca2e0;
-
-        ca313:
-            if (walk_idx <= screen_maxrow)
-                goto ca35e;
-        } while (scroll_repeat_count != 0);
-        uint8_t shift_idx = 0;
-
-        do
-        {
-            uint8_t next_len2 = line_lengths[shift_idx + 1];
-
-            line_lengths[shift_idx] = next_len2;
-            shift_idx++;
-        } while (shift_idx != screen_maxrow);
-        ptr6_screen_row--;
-        line_lengths[0] = screen_maxcolumn;
-        ruler_index_ptr = saved_ruler_index_scroll;
-        {
-            uint8_t* nav_ptr;
-
-            advance_to_next_line(
-                top_of_screen_line_ptr, &nav_ptr, &next_line_len);
-            scratch_line_ptr = nav_ptr;
+            scroll_editor_up_one_line();
+            cursor_row = screen_maxrow;
+            scrolled = true;
+            break;
         }
-        top_of_screen_line_ptr += next_line_len;
-        screen_scrollup();
-        screen_setcursor(0, screen_maxrow);
-        row = screen_maxrow;
-
-    ca351:
-        saved_ruler_index_scroll = ruler_index_ptr;
-        saved_status_line_needs_redrawing_flag++;
-        line_counter++;
-        walk_idx = row;
-
-    ca35e:
-        ypos = walk_idx;
     }
-        load_current_ruler(saved_ruler_index_redraw);
+
+    if (scrolled)
+    {
+        saved_ruler_index_scroll = ruler_index_ptr;
+        line_counter++;
+    }
+    ypos = cursor_row;
+    return scrolled;
+}
+
+/**
+ * Restores the current ruler and keeps the cursor within the horizontal
+ * viewport.
+ * @return true if horizontal scrolling requires a full redraw
+ */
+static bool adjust_editor_horizontal_scroll(void)
+{
+    load_current_ruler(saved_ruler_index_redraw);
     unpack_line_into_buffer(edit_buffer_base);
     recalculate_cursor_xpos();
-    uint8_t a_14 = screen_maxcolumn;
+    screen_column = screen_maxcolumn >> 1;
 
-    a_14 >>= 1;
-    screen_column = a_14;
-
-    if (visual_column >= hscroll_pos)
+    if (visual_column < hscroll_pos ||
+        (int)visual_column > (int)hscroll_pos + (int)screen_maxcolumn - 4)
     {
-        if ((int)visual_column <= (int)hscroll_pos + (int)screen_maxcolumn - 4)
-            goto ca395;
+        hscroll_pos =
+            visual_column < screen_column ? 0 : visual_column - screen_column;
+        display_start_row = 1;
+        write_line_back_to_document_safely();
+        return true;
     }
-    uint8_t a_16 = visual_column;
+    return false;
+}
 
-    if (a_16 < screen_column)
-        a_16 = 0;
-    else
-        a_16 -= screen_column;
-    hscroll_pos = a_16;
-    uint8_t a_17 = 1;
-
-    display_start_row = a_17;
-    saved_status_line_needs_redrawing_flag = a_17;
-    write_line_back_to_document_safely();
-
-ca395:
-    uint8_t a_18 = saved_status_line_needs_redrawing_flag;
-
-    status_line_needs_redrawing_flag = a_18;
-
-    if (display_start_row == 0)
-        goto ca3e7;
-
-    if ((int8_t)display_start_row < 0 && (int8_t)ptr6_screen_row >= 0)
+/**
+ * Renders invalidated document rows, clears rows past the end, and restores the
+ * ruler.
+ */
+static void redraw_editor_rows(void)
+{
+    uint8_t rows_remaining;
+    uint8_t* draw;
+    if ((int8_t)display_start_row < 0 && (int8_t)ptr6_screen_row >= 0 &&
+        editor_ptr6 != NULL)
     {
         screen_row = ptr6_screen_row;
-        uint8_t a_21 = screen_maxrow;
-
-        a_21 -= ptr6_screen_row;
-        rows_remaining = a_21;
-        rows_remaining++;
+        rows_remaining = screen_maxrow - ptr6_screen_row + 1;
         draw = editor_ptr6;
-
-        if (editor_ptr6 != NULL)
-            goto ca3c1;
     }
-    load_current_ruler(saved_ruler_index_scroll);
-    screen_row = 1;
-    draw = top_of_screen_line_ptr;
-    rows_remaining = screen_maxrow;
-
-ca3c1:
+    else
+    {
+        load_current_ruler(saved_ruler_index_scroll);
+        screen_row = 1;
+        draw = top_of_screen_line_ptr;
+        rows_remaining = screen_maxrow;
+    }
     scratch_index = rows_remaining;
 
     do
     {
         render_state_t rs = {.line = screen_row};
-
         draw_line(&rs, draw);
         uint8_t next_len = 0;
+        uint8_t* next_line = scratch_line_ptr;
+        if (advance_to_next_line(next_line, &next_line, &next_len))
         {
-            uint8_t* nav_ptr = scratch_line_ptr;
-
-            if (advance_to_next_line(nav_ptr, &nav_ptr, &next_len))
-                goto ca422;
-            scratch_line_ptr = nav_ptr;
+            scratch_index--;
+            if (scratch_index != 0)
+            {
+                // Mark the end of the document, then clear the other rows.
+                screen_column = (uint8_t)(screen_maxcolumn + 1);
+                line_lengths[screen_row + 1] = screen_column;
+                uint8_t fill = 0x2a;
+                do
+                {
+                    screen_row++;
+                    screen_setcursor(0, screen_row);
+                    clear_to_eol(fill, screen_row);
+                    line_lengths[screen_row] = screen_column;
+                    screen_column = 0;
+                    fill = 0x20;
+                    scratch_index--;
+                } while (scratch_index != 0);
+            }
+            break;
         }
-        scratch_line_ptr += next_len;
+        scratch_line_ptr = next_line + next_len;
         draw = scratch_line_ptr;
         screen_row++;
         scratch_index--;
     } while (scratch_index != 0);
 
-ca3de:
-    do
+    line_counter = 0;
+    load_current_ruler(saved_ruler_index_redraw);
+}
+
+/**
+ * Clears pending redraw state and restores the visible cursor.
+ */
+static void finish_editor_redraw(void)
+{
+    uint8_t cursor_column = visual_column - hscroll_pos + 3;
+    display_start_row = 0;
+    line_counter = 0;
+    scroll_repeat_count = 0;
+    editor_ptr6 = &ram[RAM_MAX];
+    screen_setcursor(cursor_column, ypos);
+    cursor_on();
+}
+
+/**
+ * Redraws the editor display and places the cursor.
+ * Positions the viewport, renders invalidated rows, and refreshes the ruler
+ * and status indicators before restoring the cursor.
+ */
+static void redraw_editor(void)
+{
+    cursor_off();
+    saved_ruler_index_redraw = ruler_index_ptr;
+    uint8_t status_needs_redraw = status_line_needs_redrawing_flag;
+
+    if (edit_buffer_unpacked_flag == 0 || display_start_row != 0 ||
+        scroll_repeat_count != 0)
     {
-        line_counter = 0;
-        load_current_ruler(saved_ruler_index_redraw);
+        if (position_editor_viewport())
+            status_needs_redraw++;
+    }
+    if (adjust_editor_horizontal_scroll())
+        status_needs_redraw = 1;
+    status_line_needs_redrawing_flag = status_needs_redraw;
 
-    ca3e7:
-        unpack_line_into_buffer(edit_buffer_base);
-        update_markers_to_format_buffer();
-        draw_ruler();
+    if (display_start_row != 0)
+        redraw_editor_rows();
 
-        if (line_counter != 0)
-        {
-            screen_row = ypos;
-            render_state_t rs_1 = {.line = screen_row};
-
-            uint8_t* draw_ptr =
-                (current_format_line->prefix_byte == COMMAND_PREFIX ||
-                    current_format_line->prefix_byte == RULER_PREFIX)
-                    ? (uint8_t*)current_format_line
-                    : current_format_line->text;
-            draw_line(&rs_1, draw_ptr);
-        }
-        if (flags_need_redrawing_flag != 0)
-            draw_status_word();
-        uint8_t a_27 = visual_column;
-
-        a_27 -= hscroll_pos;
-        a_27 += 3;
-        display_start_row = 0;
-        line_counter = 0;
-        scroll_repeat_count = 0;
-        editor_ptr6 = &ram[RAM_MAX];
-        screen_setcursor(a_27, ypos);
-        cursor_on();
-
-        return;
-
-    ca422:
-        scratch_index--;
-    } while (scratch_index == 0);
-    uint8_t a_28 = screen_maxcolumn + 1;
-
-    line_lengths[screen_row + 1] = a_28;
-    screen_column = a_28;
-    uint8_t a_29 = 0x2a;
-
-    do
+    unpack_line_into_buffer(edit_buffer_base);
+    update_markers_to_format_buffer();
+    draw_ruler();
+    if (line_counter != 0)
     {
-        screen_row++;
-        screen_setcursor(0, screen_row);
-        clear_to_eol(a_29, screen_row);
-        line_lengths[screen_row] = screen_column;
-        screen_column = 0;
-        a_29 = 0x20;
-        scratch_index--;
-    } while (scratch_index != 0);
-
-    goto ca3de;
+        screen_row = ypos;
+        render_state_t rs = {.line = screen_row};
+        uint8_t* draw_ptr =
+            (current_format_line->prefix_byte == COMMAND_PREFIX ||
+                current_format_line->prefix_byte == RULER_PREFIX)
+                ? (uint8_t*)current_format_line
+                : current_format_line->text;
+        draw_line(&rs, draw_ptr);
+    }
+    if (flags_need_redrawing_flag != 0)
+        draw_status_word();
+    finish_editor_redraw();
 }
 
 /**
