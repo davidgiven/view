@@ -85,7 +85,7 @@ l004a                           = &004a
 doc_working_ptr                 = &004b
 rw_file_handle                  = &004d
 error_handling_mode             = &004e
-format_mode_flag                = &004f
+format_mode_flags               = &004f
 justifying_flag                 = &0050
 insert_mode_flag                = &0051
 is_tube_flag                    = &0052
@@ -100,7 +100,7 @@ __end_pointer_array             = &0069
 print_flags                     = &0069
 edit_input_file_handle          = &006a
 edit_output_file_handle         = &006b
-microspacing_flag               = &006c
+microspacing_count              = &006c
 edit_buffer_dirty_flag          = &006d
 edit_buffer_unpacked_flag       = &006e
 line_buffer_needs_unpacking_flag = &006e
@@ -444,7 +444,7 @@ l80f2 = brk_handler_ptr+1
     bne loop_c819a                                                    ; 81a5: d0 f3       ..
 ; &81a7 referenced 1 time by &819f
 .c81a7
-    lda microspacing_flag                                             ; 81a7: a5 6c       .l
+    lda microspacing_count                                            ; 81a7: a5 6c       .l
     beq c81b3                                                         ; 81a9: f0 08       ..
     jsr print_inline_string                                           ; 81ab: 20 fa a7     ..
     equs " (m)"                                                       ; 81ae: 20 28 6d...  (m
@@ -1141,7 +1141,7 @@ l80f2 = brk_handler_ptr+1
     tya                                                               ; 860f: 98          .
     and #1                                                            ; 8610: 29 01       ).
     beq c8617                                                         ; 8612: f0 03       ..
-    stx microspacing_flag                                             ; 8614: 86 6c       .l
+    stx microspacing_count                                            ; 8614: 86 6c       .l
 ; &8616 referenced 1 time by &8606
 .return_7
     rts                                                               ; 8616: 60          `
@@ -1189,7 +1189,7 @@ l80f2 = brk_handler_ptr+1
 ; &8674 referenced 1 time by &8679
 .loop_c8674
     lda tmp6,x                                                        ; 8674: b5 8b       ..
-    sta format_mode_flag,x                                            ; 8676: 95 4f       .O
+    sta format_mode_flags,x                                           ; 8676: 95 4f       .O
     dex                                                               ; 8678: ca          .
     bpl loop_c8674                                                    ; 8679: 10 f9       ..
     bmi c869b                                                         ; 867b: 30 1e       0.             ; ALWAYS branch
@@ -1472,7 +1472,7 @@ l80f2 = brk_handler_ptr+1
 ; &8834 referenced 1 time by &882d
 .c8834
     lda #0                                                            ; 8834: a9 00       ..
-    sta microspacing_flag                                             ; 8836: 85 6c       .l
+    sta microspacing_count                                            ; 8836: 85 6c       .l
 ; &8838 referenced 3 times by &8844, &8860, &8886
 .return_8
     rts                                                               ; 8838: 60          `
@@ -2844,7 +2844,7 @@ l80f2 = brk_handler_ptr+1
     ldy scratch_offset                                                ; 8fdc: a4 80       ..
     lda __end_pointer_array                                           ; 8fde: a5 69       .i
     bpl c8fe6                                                         ; 8fe0: 10 04       ..
-    lda microspacing_flag                                             ; 8fe2: a5 6c       .l
+    lda microspacing_count                                            ; 8fe2: a5 6c       .l
     bne c9034                                                         ; 8fe4: d0 4e       .N
 ; &8fe6 referenced 3 times by &8fe0, &8ff1, &90fe
 .c8fe6
@@ -3047,7 +3047,7 @@ l80f2 = brk_handler_ptr+1
     asl l0045                                                         ; 910a: 06 45       .E
     bcc c9115                                                         ; 910c: 90 07       ..
     clc                                                               ; 910e: 18          .
-    adc microspacing_flag                                             ; 910f: 65 6c       el
+    adc microspacing_count                                            ; 910f: 65 6c       el
     bcc c9115                                                         ; 9111: 90 02       ..
     inc tmp9                                                          ; 9113: e6 8e       ..
 ; &9115 referenced 2 times by &910c, &9111
@@ -3084,7 +3084,7 @@ l80f2 = brk_handler_ptr+1
     pla                                                               ; 9142: 68          h
     cmp #&20 ; ' '                                                    ; 9143: c9 20       .
     bne c915b                                                         ; 9145: d0 14       ..
-    lda microspacing_flag                                             ; 9147: a5 6c       .l
+    lda microspacing_count                                            ; 9147: a5 6c       .l
     clc                                                               ; 9149: 18          .
     adc l0044                                                         ; 914a: 65 44       eD
     tax                                                               ; 914c: aa          .
@@ -3100,7 +3100,7 @@ l80f2 = brk_handler_ptr+1
 
 ; &915b referenced 1 time by &9145
 .c915b
-    ldx microspacing_flag                                             ; 915b: a6 6c       .l
+    ldx microspacing_count                                            ; 915b: a6 6c       .l
     jsr emit_microspacing_spaces                                      ; 915d: 20 73 91     s.
 ; &9160 referenced 1 time by &9159
 .c9160
@@ -3116,7 +3116,7 @@ l80f2 = brk_handler_ptr+1
 .start_microspacing_if_active
     ldx __end_pointer_array                                           ; 916a: a6 69       .i
     bpl return_25                                                     ; 916c: 10 15       ..
-    ldx microspacing_flag                                             ; 916e: a6 6c       .l
+    ldx microspacing_count                                            ; 916e: a6 6c       .l
     bne c9177                                                         ; 9170: d0 05       ..
     rts                                                               ; 9172: 60          `
 
@@ -3758,7 +3758,7 @@ l80f2 = brk_handler_ptr+1
     ldx default_printer_driver_ptr                                    ; 9494: ae b1 94    ...
     ldy l94b2                                                         ; 9497: ac b2 94    ...
     lda #0                                                            ; 949a: a9 00       ..
-    sta microspacing_flag                                             ; 949c: 85 6c       .l
+    sta microspacing_count                                            ; 949c: 85 6c       .l
 ; &949e referenced 1 time by &9492
 .c949e
     stx printer_driver_ptr                                            ; 949e: 86 17       ..
@@ -4738,7 +4738,7 @@ l94b2 = default_printer_driver_ptr+1
     beq c9974                                                         ; 9988: f0 ea       ..
 ; &998a referenced 1 time by &9a84
 .c998a
-    lda format_mode_flag                                              ; 998a: a5 4f       .O
+    lda format_mode_flags                                             ; 998a: a5 4f       .O
     and #&81                                                          ; 998c: 29 81       ).
     bne c9974                                                         ; 998e: d0 e4       ..
     lda ruler_right_stop                                              ; 9990: a5 3e       .>
@@ -5045,7 +5045,7 @@ l94b2 = default_printer_driver_ptr+1
 ; ***************************************************************************************
 ; &9b36 referenced 5 times by &9bc7, &9bcd, &9c7f, &9d25, &a947
 .editor_loop
-    lda format_mode_flag                                              ; 9b36: a5 4f       .O
+    lda format_mode_flags                                             ; 9b36: a5 4f       .O
     pha                                                               ; 9b38: 48          H
     lda line_buffer_needs_unpacking_flag                              ; 9b39: a5 6e       .n
     bne c9b44                                                         ; 9b3b: d0 07       ..
@@ -5058,7 +5058,7 @@ l94b2 = default_printer_driver_ptr+1
     jsr recalculate_cursor_xpos                                       ; 9b44: 20 08 a6     ..
     lda ruler_left_stop                                               ; 9b47: a5 3f       .?
     beq c9b73                                                         ; 9b49: f0 28       .(
-    ldx format_mode_flag                                              ; 9b4b: a6 4f       .O
+    ldx format_mode_flags                                             ; 9b4b: a6 4f       .O
     bmi c9b73                                                         ; 9b4d: 30 24       0$
     cmp visual_column                                                 ; 9b4f: c5 72       .r
     bcc c9b73                                                         ; 9b51: 90 20       .
@@ -5066,10 +5066,10 @@ l94b2 = default_printer_driver_ptr+1
     ldx cursor_moved_flag                                             ; 9b55: a6 7d       .}
     bne c9b6a                                                         ; 9b57: d0 11       ..
     jsr get_line_length                                               ; 9b59: 20 f1 aa     ..
-    lda format_mode_flag                                              ; 9b5c: a5 4f       .O
+    lda format_mode_flags                                             ; 9b5c: a5 4f       .O
     cpy xpos                                                          ; 9b5e: c4 40       .@
     bcs c9b84                                                         ; 9b60: b0 22       ."
-    bit format_mode_flag                                              ; 9b62: 24 4f       $O
+    bit format_mode_flags                                             ; 9b62: 24 4f       $O
     bvs c9b6a                                                         ; 9b64: 70 04       p.
     sty xpos                                                          ; 9b66: 84 40       .@
     bvc c9b84                                                         ; 9b68: 50 1a       P.             ; ALWAYS branch
@@ -5082,7 +5082,7 @@ l94b2 = default_printer_driver_ptr+1
     jsr recalculate_cursor_xpos                                       ; 9b70: 20 08 a6     ..
 ; &9b73 referenced 4 times by &9b49, &9b4d, &9b51, &9b53
 .c9b73
-    lda format_mode_flag                                              ; 9b73: a5 4f       .O
+    lda format_mode_flags                                             ; 9b73: a5 4f       .O
     and #&bf                                                          ; 9b75: 29 bf       ).
     pha                                                               ; 9b77: 48          H
     jsr find_left_margin_stop                                         ; 9b78: 20 c2 ae     ..
@@ -5096,9 +5096,9 @@ l94b2 = default_printer_driver_ptr+1
     ora #&40 ; '@'                                                    ; 9b84: 09 40       .@
 ; &9b86 referenced 3 times by &9b7c, &9b80, &9b82
 .c9b86
-    sta format_mode_flag                                              ; 9b86: 85 4f       .O
+    sta format_mode_flags                                             ; 9b86: 85 4f       .O
     pla                                                               ; 9b88: 68          h
-    cmp format_mode_flag                                              ; 9b89: c5 4f       .O
+    cmp format_mode_flags                                             ; 9b89: c5 4f       .O
     beq c9b8f                                                         ; 9b8b: f0 02       ..
     inc flags_need_redrawing_flag                                     ; 9b8d: e6 75       .u
 ; &9b8f referenced 1 time by &9b8b
@@ -5252,7 +5252,7 @@ l94b2 = default_printer_driver_ptr+1
     beq c9c7f                                                         ; 9c6b: f0 12       ..
     lda ruler_right_stop                                              ; 9c6d: a5 3e       .>
     beq c9c7f                                                         ; 9c6f: f0 0e       ..
-    lda format_mode_flag                                              ; 9c71: a5 4f       .O
+    lda format_mode_flags                                             ; 9c71: a5 4f       .O
     bne c9c7f                                                         ; 9c73: d0 0a       ..
     sta tmp7                                                          ; 9c75: 85 8c       ..
     tya                                                               ; 9c77: 98          .
@@ -5634,7 +5634,7 @@ l94b2 = default_printer_driver_ptr+1
 
 ; ***************************************************************************************
 .sf2_release_margins_key
-    bit format_mode_flag                                              ; 9e86: 24 4f       $O
+    bit format_mode_flags                                             ; 9e86: 24 4f       $O
     bvc c9e94                                                         ; 9e88: 50 0a       P.
     jsr find_left_margin_stop                                         ; 9e8a: 20 c2 ae     ..
     bcs f4_beginning_of_line_key                                      ; 9e8d: b0 03       ..
@@ -6126,15 +6126,15 @@ l94b2 = default_printer_driver_ptr+1
 
 ; ***************************************************************************************
 .cf2_format_mode_key
-    lda format_mode_flag                                              ; a154: a5 4f       .O
+    lda format_mode_flags                                             ; a154: a5 4f       .O
     and #&bf                                                          ; a156: 29 bf       ).
-    bit format_mode_flag                                              ; a158: 24 4f       $O
+    bit format_mode_flags                                             ; a158: 24 4f       $O
     bvc ca15e                                                         ; a15a: 50 02       P.
     ora #1                                                            ; a15c: 09 01       ..
 ; &a15e referenced 1 time by &a15a
 .ca15e
     eor #1                                                            ; a15e: 49 01       I.
-    sta format_mode_flag                                              ; a160: 85 4f       .O
+    sta format_mode_flags                                             ; a160: 85 4f       .O
     inc flags_need_redrawing_flag                                     ; a162: e6 75       .u
     rts                                                               ; a164: 60          `
 
@@ -7028,7 +7028,7 @@ l94b2 = default_printer_driver_ptr+1
     sta flags_need_redrawing_flag                                     ; a653: 85 75       .u
     jsr home_cursor                                                   ; a655: 20 7f a6     ..
     ldx #&46 ; 'F'                                                    ; a658: a2 46       .F
-    lda format_mode_flag                                              ; a65a: a5 4f       .O
+    lda format_mode_flags                                             ; a65a: a5 4f       .O
     beq ca666                                                         ; a65c: f0 08       ..
     ldx #&4d ; 'M'                                                    ; a65e: a2 4d       .M
     and #&c0                                                          ; a660: 29 c0       ).
@@ -8770,7 +8770,7 @@ la8a5 = ca8a4+1
 ; ***************************************************************************************
 ; &aef4 referenced 2 times by &9bd8, &9e3b
 .adjust_margins_at_left_margin
-    lda format_mode_flag                                              ; aef4: a5 4f       .O
+    lda format_mode_flags                                             ; aef4: a5 4f       .O
     and #&81                                                          ; aef6: 29 81       ).
     bne caf31                                                         ; aef8: d0 37       .7
     jsr find_left_margin_stop                                         ; aefa: 20 c2 ae     ..
@@ -8858,11 +8858,11 @@ la8a5 = ca8a4+1
 ; &af60 referenced 1 time by &af5d
 .caf60
     php                                                               ; af60: 08          .
-    lda format_mode_flag                                              ; af61: a5 4f       .O
-    rol format_mode_flag                                              ; af63: 26 4f       &O
+    lda format_mode_flags                                             ; af61: a5 4f       .O
+    rol format_mode_flags                                             ; af63: 26 4f       &O
     plp                                                               ; af65: 28          (
-    ror format_mode_flag                                              ; af66: 66 4f       fO
-    cmp format_mode_flag                                              ; af68: c5 4f       .O
+    ror format_mode_flags                                             ; af66: 66 4f       fO
+    cmp format_mode_flags                                             ; af68: c5 4f       .O
     beq return_80                                                     ; af6a: f0 02       ..
     inc flags_need_redrawing_flag                                     ; af6c: e6 75       .u
 ; &af6e referenced 1 time by &af6a
@@ -8965,7 +8965,7 @@ la8a5 = ca8a4+1
 .cafdc
     lda #0                                                            ; afdc: a9 00       ..
     sta printer_driver_name                                           ; afde: 8d 84 07    ...
-    sta format_mode_flag                                              ; afe1: 85 4f       .O
+    sta format_mode_flags                                             ; afe1: 85 4f       .O
     sta justifying_flag                                               ; afe3: 85 50       .P
     sta insert_mode_flag                                              ; afe5: 85 51       .Q
     ldx #&14                                                          ; afe7: a2 14       ..
@@ -9798,7 +9798,7 @@ save pydis_start, pydis_end
 ;     ruler_left_stop:                       23
 ;     write_line_back_to_document_or_error:  23
 ;     tmp3:                                  22
-;     format_mode_flag:                      21
+;     format_mode_flags:                     21
 ;     osbyte:                                21
 ;     output_buffer:                         19
 ;     area_start_ptr:                        18
@@ -9864,7 +9864,7 @@ save pydis_start, pydis_end
 ;     exit_from_service_call:                 9
 ;     flags_need_redrawing_flag:              9
 ;     l0044:                                  9
-;     microspacing_flag:                      9
+;     microspacing_count:                     9
 ;     rw_file_handle:                         9
 ;     scan_document_for_next_line:            9
 ;     screen_maxcolumn:                       9
