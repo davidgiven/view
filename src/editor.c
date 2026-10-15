@@ -2598,205 +2598,177 @@ static format_result_t advance_to_next_doc_line(void)
 }
 
 /**
- * Justifies the edit buffer line.
- * Distributes extra spaces between words to align to the right margin.
- * @param target_ptr buffer to justify
- * @return last processed character
+ * Copies the source bytes to output_buffer and counts gaps between words.
+ * @param last_column output for the display column of the last word character
+ * @param char_width output for the last processed character width
+ * @return false if trailing-space adjustment underflowed the gap count
  */
-uint8_t justify_edit_buffer(uint8_t* target_ptr)
+static bool scan_justification_gaps(uint8_t* last_column, uint8_t* char_width)
 {
-    uint8_t temp_save = 0;
-    bool is_zero_1;
-    uint8_t gap_idx = 0;
-    uint8_t acc = justifying_flag;
+    uint8_t pos = 0;
+    uint8_t cur_char;
+    bool handled = process_char_for_output(pos, true, char_width, &cur_char);
+    bool in_word = !handled && cur_char != 0x20;
 
-    if (acc != 0)
-        return gap_idx;
-    justify_gap_count = acc;
-    column_position = acc;
-    justify_overflow_counter = acc;
-    uint8_t cur_char = ruler_right_stop;
-
-    if (cur_char == 0)
-        return gap_idx;
-    justify_line_length = get_line_length();
-    uint8_t scan_pos = 0;
-
-    goto c9861;
-
-c9847:
-    do
+    for (;;)
     {
-        cur_char = column_position;
-        temp_save = cur_char;
-        scan_pos++;
-
-        if (scan_pos == justify_line_length)
-            goto c9871;
-        bool is_zero =
-            process_char_for_output(scan_pos, false, &gap_idx, &cur_char);
-
-        if (is_zero)
-            goto c985c;
-    } while (cur_char != 0x20);
-    justify_gap_count++;
-
-c985c:
-    do
-    {
-        scan_pos++;
-
-        if (scan_pos == justify_line_length)
-            goto c986d;
-
-    c9861:
-        is_zero_1 =
-            process_char_for_output(scan_pos, true, &gap_idx, &cur_char);
-    } while (is_zero_1);
-
-    if (cur_char != 0x20)
-        goto c9847;
-
-    goto c985c;
-
-c986d:
-    justify_gap_count--;
-
-    if (justify_gap_count & 0x80)
-        return gap_idx;
-
-c9871:
-    uint8_t acc2 = justify_gap_count;
-
-    if (acc2 == 0)
-        return gap_idx;
-    uint8_t acc3 = ruler_right_stop;
-
-    if (acc3 < temp_save)
-        return gap_idx;
-    acc3 -= temp_save;
-    uint8_t idx1 = (uint8_t)(acc3 + 1);
-    uint8_t extra = (uint8_t)(acc3 + 1 + justify_line_length);
-
-    if (extra >= MAX_LINE_LENGTH)
-    {
-        temp_save = (uint8_t)(extra - MAX_LINE_LENGTH);
-        idx1 = (uint8_t)(idx1 - temp_save);
-    }
-    screen_row = idx1;
-    uint16_t scan_ptr = idx1;
-    uint8_t acc4 = scan_ptr % justify_gap_count;
-
-    uint16_t quotient_tmp = scan_ptr / justify_gap_count;
-    justify_running_total_accum = acc4;
-    uint8_t acc5 = quotient_tmp & 0xff;
-
-    justify_extra_space_accum = acc5;
-    uint8_t pos1 = 0;
-    uint8_t idx2 = justify_gap_count;
-    uint8_t acc6 = pos1;
-
-    do
-    {
-        input_buffer[pos1] = acc6;
-        pos1++;
-        idx2--;
-    } while (idx2 != 0);
-    uint8_t pos2 = print_xpos;
-
-    pos2++;
-
-    if (pos2 >= justify_gap_count)
-        pos2 = 1;
-    pos2--;
-    uint8_t idx3 = justify_gap_count;
-
-    do
-    {
-        uint8_t acc7 = justify_running_total_accum;
-
-        if (acc7 != 0)
+        if (in_word)
+            *last_column = column_position;
+        pos++;
+        if (pos == justify_line_length)
         {
-            acc7 = 1;
+            if (!in_word)
+            {
+                justify_gap_count--;
+                if (justify_gap_count & 0x80)
+                    return false;
+            }
+            return true;
+        }
+        handled = process_char_for_output(pos, !in_word, char_width, &cur_char);
+        if (in_word && !handled && cur_char == 0x20)
+            justify_gap_count++;
+        in_word = !handled && cur_char != 0x20;
+    }
+}
+
+/**
+ * Distributes padding between gaps, rotating the starting gap between lines.
+ * @param extra_spaces total number of extra spaces to insert
+ */
+static void distribute_justification_spaces(uint8_t extra_spaces)
+{
+    screen_row = extra_spaces;
+    justify_running_total_accum = extra_spaces % justify_gap_count;
+    justify_extra_space_accum = extra_spaces / justify_gap_count;
+    memset(input_buffer, 0, justify_gap_count);
+    uint8_t gap_pos = print_xpos;
+
+    gap_pos++;
+
+    if (gap_pos >= justify_gap_count)
+        gap_pos = 1;
+    gap_pos--;
+    uint8_t gaps_to_fill = justify_gap_count;
+
+    do
+    {
+        uint8_t gap_spaces = justify_running_total_accum;
+
+        if (gap_spaces != 0)
+        {
+            gap_spaces = 1;
             justify_running_total_accum--;
         }
-        acc7 += justify_extra_space_accum;
-        input_buffer[pos2] = acc7;
-        uint8_t acc8 = screen_row;
-        uint8_t acc9 = acc8 - input_buffer[pos2];
+        gap_spaces += justify_extra_space_accum;
+        input_buffer[gap_pos] = gap_spaces;
+        screen_row -= input_buffer[gap_pos];
+        gap_pos++;
 
-        screen_row = acc9;
-        pos2++;
+        if (gap_pos >= justify_gap_count)
+            gap_pos = 0;
 
-        if (pos2 >= justify_gap_count)
-            pos2 = 0;
-
-        if (acc9 == 0)
+        if (screen_row == 0)
             break;
-        idx3--;
-    } while (idx3 != 0);
-    print_xpos = pos2;
-    uint8_t pos3 = 0;
+        gaps_to_fill--;
+    } while (gaps_to_fill != 0);
+    print_xpos = gap_pos;
+}
 
-    scratch_index = pos3;
-    column_position = pos3;
+/**
+ * Rebuilds the line from saved bytes and the per-gap padding in input_buffer.
+ * @param target_ptr buffer to clear before rebuilding the current line
+ * @return source position after the last copied byte
+ */
+static uint8_t rebuild_justified_line(uint8_t* target_ptr)
+{
+    scratch_index = 0;
+    column_position = 0;
     wipe_buffer(0x1a, target_ptr);
-    uint8_t acc10 = justify_overflow_counter;
+    uint8_t prefix_length = justify_overflow_counter;
 
-    if (acc10 != 0)
+    if (prefix_length != 0)
     {
-        uint8_t pos4 = 0;
+        uint8_t prefix_pos = 0;
 
         do
         {
-            uint8_t acc11 = output_buffer[pos4];
-
-            current_line_buffer.text[pos4] = acc11;
-            pos4++;
-        } while (pos4 != justify_overflow_counter);
+            current_line_buffer.text[prefix_pos] = output_buffer[prefix_pos];
+            prefix_pos++;
+        } while (prefix_pos != justify_overflow_counter);
     }
-    uint8_t pos5 = justify_overflow_counter;
-    uint8_t idx4 = justify_overflow_counter;
+    uint8_t dest_pos = justify_overflow_counter;
+    uint8_t src_pos = justify_overflow_counter;
 
     do
     {
-        uint8_t acc12 = output_buffer[idx4];
+        uint8_t cur_byte = output_buffer[src_pos];
 
-        if (acc12 == 0x20)
+        if (cur_byte == 0x20)
         {
-            uint8_t acc13 = scratch_index;
+            uint8_t gap_spaces = scratch_index;
 
-            if (acc13 != 0)
+            if (gap_spaces != 0)
             {
-                temp_save = pos5;
-                uint8_t pos6 = column_position;
+                uint8_t gap = column_position;
 
-                if (pos6 < justify_gap_count)
-                    acc13 = input_buffer[pos6];
-                acc13 += temp_save;
+                if (gap < justify_gap_count)
+                    gap_spaces = input_buffer[gap];
+                gap_spaces += dest_pos;
                 column_position++;
-                pos5 = acc13;
+                dest_pos = gap_spaces;
                 scratch_index = 0;
             }
-            acc12 = 0x20;
+            cur_byte = 0x20;
         }
         else
         {
             scratch_index++;
         }
-        current_line_buffer.text[pos5] = acc12;
-        pos5++;
-        idx4++;
-    } while (idx4 != justify_line_length);
+        current_line_buffer.text[dest_pos] = cur_byte;
+        dest_pos++;
+        src_pos++;
+    } while (src_pos != justify_line_length);
 
-    while (1)
+    while (dest_pos < MAX_LINE_LENGTH)
     {
-        if (pos5 >= MAX_LINE_LENGTH)
-            return idx4;
-        current_line_buffer.text[pos5] = 0x10;
-        pos5++;
+        current_line_buffer.text[dest_pos] = 0x10;
+        dest_pos++;
     }
-    return idx4;
+    return src_pos;
+}
+
+/**
+ * Justifies the edit buffer line.
+ * Counts word gaps, distributes padding, and rebuilds the line to the right
+ * margin.
+ * @param target_ptr buffer to justify
+ * @return last processed character width if skipped, otherwise source line
+ * length
+ */
+uint8_t justify_edit_buffer(uint8_t* target_ptr)
+{
+    uint8_t char_width = 0;
+    uint8_t last_column = 0;
+    if (justifying_flag != 0)
+        return char_width;
+    justify_gap_count = 0;
+    column_position = 0;
+    justify_overflow_counter = 0;
+    if (ruler_right_stop == 0)
+        return char_width;
+    justify_line_length = get_line_length();
+
+    if (!scan_justification_gaps(&last_column, &char_width) ||
+        justify_gap_count == 0 || ruler_right_stop < last_column)
+        return char_width;
+
+    uint8_t extra_spaces = (uint8_t)(ruler_right_stop - last_column + 1);
+    uint8_t expanded_length = (uint8_t)(extra_spaces + justify_line_length);
+    if (expanded_length >= MAX_LINE_LENGTH)
+        extra_spaces -= expanded_length - MAX_LINE_LENGTH;
+    distribute_justification_spaces(extra_spaces);
+    return rebuild_justified_line(target_ptr);
 }
 
 /**

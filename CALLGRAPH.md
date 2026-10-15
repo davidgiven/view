@@ -235,7 +235,10 @@ Functions defined in the source files and their callees (only calls to other fun
 - **go_to_marker** → move_cursor_to_address, update_line_length [a, display_start_row, markers_array]
 - **go_to_marker_n** → go_to_marker, lookup_marker, write_line_back_to_document_safely [markers_array]
 - **home_cursor**
-- **justify_edit_buffer** → get_line_length, wipe_buffer [column_position, current_line_buffer, input_buffer, justify_gap_count, justifying_flag, output_buffer, print_xpos, ruler_right_stop, scratch_index, screen_row, temp_save]
+- **scan_justification_gaps** [column_position, justify_gap_count]
+- **distribute_justification_spaces** [input_buffer, justify_gap_count, print_xpos, screen_row]
+- **rebuild_justified_line** → wipe_buffer [column_position, current_line_buffer, input_buffer, justify_gap_count, output_buffer, scratch_index]
+- **justify_edit_buffer** → distribute_justification_spaces, get_line_length, process_document_character, rebuild_justified_line, scan_justification_gaps [a, column_position, current_line_buffer, justify_gap_count, justifying_flag, output_buffer, ruler_left_stop, ruler_right_stop, screen_column]
 - **memory_full** → process_document_character, show_memory_full_error [memory_full_message]
 - **recalculate_cursor_xpos** [column_position, current_line_buffer, line_change_pending_flag, visual_column, xpos]
 - **scroll_editor_down_one_line** → find_previous_line [current_line_ptr, line_lengths, ruler_index_ptr, saved_ruler_index_scroll, screen_maxrow, top, top_of_screen_line_ptr]
