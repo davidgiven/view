@@ -448,7 +448,7 @@ c8b11:
         if (tmp_ch6 == 2)
             tmp_ch6 = 0x20;
 
-        if ((folding_flag & 0x80) == 0 && print_xpos == 0)
+        if (folding_flag && print_xpos == 0)
         {
             if (isalpha(tmp_ch6))
             {

@@ -80,7 +80,8 @@ extern uint8_t column_position;
 extern uint8_t line_counter;
 extern uint8_t scratch_offset, scratch_index, screen_row, screen_column,
     temp_save;
-extern uint8_t print_flags, folding_flag;
+extern uint8_t print_flags;
+extern bool folding_flag;
 extern bool macro_executing_flag;
 extern uint8_t print_xpos;
 extern uint8_t justify_gap_count;

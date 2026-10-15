@@ -581,13 +581,13 @@ static void fold_cmd(scan_state_t* scan)
     {
         uint8_t cur_ch = input_buffer[scan->pos];
         if (cur_ch == '1')
-            folding_flag = 0;
+            folding_flag = true;
         else if (cur_ch == '0')
-            folding_flag = 0x80;
+            folding_flag = false;
     }
 
     cli_putstring("Folding ");
-    cli_putstring((folding_flag & 0x80) ? "off\n" : "on\n");
+    cli_putstring(folding_flag ? "on\n" : "off\n");
     return_to_cli_prompt();
 }
 

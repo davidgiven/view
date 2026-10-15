@@ -112,7 +112,7 @@ uint8_t screen_maxrow;
 uint8_t screen_maxcolumn;
 uint8_t microspacing_count;
 uint8_t current_tab_key;
-uint8_t folding_flag;
+bool folding_flag = true;
 uint8_t ruler_right_stop;
 uint8_t ruler_left_stop;
 
@@ -483,14 +483,14 @@ bool scan_input_buffer(uint8_t* buffer, scan_state_t* state)
 }
 
 /**
- * Converts to uppercase unless folding is enabled.
- * Returns the character uppercased when folding is off.
+ * Converts a character to uppercase when folding is enabled.
+ * Leaves the character unchanged when folding is disabled.
  * @param acc input character
  * @return possibly uppercased character
  */
 uint8_t upper_case_unless_folding(uint8_t ch)
 {
-    if (folding_flag & 0x80)
+    if (!folding_flag)
         return ch;
     return toupper(ch);
 }
