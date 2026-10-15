@@ -334,6 +334,7 @@ static void bye_cmd(void)
 
 /**
  * Replaces all occurrences of the search string in the document area.
+ * Reports the replacement count, or stops if a replacement exhausts memory.
  *
  * @param scan scan state containing search and replace arguments
  */
@@ -361,128 +362,110 @@ static void change_cmd(scan_state_t* scan)
     }
     int change_count = 0;
 
-    for (;;)
+    do
     {
         change_count++;
         move_cursor_to_address(doc_working_ptr);
         print_xpos = 0;
 
         if (check_area_memory(doc_working_ptr))
-            goto c830d;
-
-        if (scan_document_for_next_line())
-            continue;
-        break;
-    }
+        {
+            display_not_enough_memory();
+            return;
+        }
+    } while (scan_document_for_next_line());
     render_number_to_screen(change_count);
     cli_putstring(" string(s) changed\n");
 
     return_to_cli_prompt();
-    return;
-
-c830d:
-    display_not_enough_memory();
 }
 
 /**
- * Counts words in the document area handling command prefixes and punctuation.
- *
+ * Counts words in the document area.
+ * Counts text following RJ, CE, and LJ commands, and skips other command lines.
+ * Tracks words using processed characters and reports the total at the CLI.
  * @param scan scan state containing optional marker range
  */
 static void count_cmd(scan_state_t* scan)
 {
-    uint8_t idx;
-    uint8_t tmp_ch3;
-    static const uint8_t count_word_table[] = {
-
-        0x52, 0x4a, 'C', 'E', 'L', 'J', 0};
+    static const uint8_t counted_commands[] = {'R', 'J', 'C', 'E', 'L', 'J', 0};
     parse_marks_from_command(scan);
-
     if (sanitise_area() == AREA_EMPTY)
     {
         return_to_cli_prompt();
         return;
     }
-    uint8_t* line_ptr = area_start_ptr;
-    int scan_ptr = 0;
 
+    uint8_t* line_ptr = area_start_ptr;
+    int word_count = 0;
     screen_column = 0;
     screen_row = 0;
-
-c86b8:
-    uint8_t pos = 0;
-
-    command_prefix_t cp = deref_and_check_for_command_prefix(pos, line_ptr);
-
-    if (cp != NO_COMMAND_PREFIX)
+    do
     {
-        idx = 0;
-        pos++;
-
-        do
+        uint8_t ch;
+        uint8_t reset_column = 0;
+        bool skip_command = false;
+        if (deref_and_check_for_command_prefix(0, line_ptr) !=
+            NO_COMMAND_PREFIX)
         {
-            uint8_t cur_ch = line_ptr[pos];
-
-            pos++;
-
-            if (cur_ch == count_word_table[idx])
+            uint8_t command_idx = 0;
+            bool count_command_text = false;
+            do
             {
-                if (line_ptr[pos] == count_word_table[idx + 1])
-                    goto c86df;
-            }
-            if (count_word_table[idx + 2] == 0)
-                goto c86db;
-            pos--;
-            idx++;
-            idx++;
-        } while (idx != 0);
+                if (line_ptr[1] == counted_commands[command_idx] &&
+                    line_ptr[2] == counted_commands[command_idx + 1])
+                {
+                    count_command_text = true;
+                    break;
+                }
+                if (counted_commands[command_idx + 2] == 0)
+                    break;
+                command_idx += 2;
+            } while (command_idx != 0);
 
-    c86db:
-        tmp_ch3 = 0x80;
-
-        goto c86ff;
-
-    c86df:
-        line_ptr += 3;
-    }
-    else
-    {
-        uint8_t pos2 = 0;
-        bool is_tab = false;
-
-        tmp_ch3 =
-            process_current_document_character(line_ptr, &idx, &pos2, &is_tab);
-        tmp_ch3 &= 0x7f;
-        idx = 0;
-
-        if ((int8_t)screen_row >= 0)
-        {
-            if (tmp_ch3 != 0x0d && tmp_ch3 != 0x20)
+            if (count_command_text)
             {
-            c86ff:
-                screen_column++;
-
-                if (screen_column != 0)
-                    goto c8715;
+                line_ptr += 3;
+                continue;
             }
-            if (screen_column != 0)
-                scan_ptr++;
+            ch = 0x80;
+            skip_command = true;
+            // Preserve the command-table scratch value on counter overflow.
+            reset_column = command_idx;
         }
-        screen_column = idx;
+        else
+        {
+            uint8_t pos = 0;
+            uint8_t char_width;
+            bool is_tab = false;
+            ch = process_current_document_character(
+                     line_ptr, &char_width, &pos, &is_tab) &
+                 0x7f;
+        }
 
-        if (tmp_ch3 == 0x0d)
-            screen_row = idx;
-
-    c8715:
-        tmp_ch3 |= screen_row;
-        screen_row = tmp_ch3;
+        bool word_continues = false;
+        if (skip_command || (int8_t)screen_row >= 0)
+        {
+            if (skip_command || (ch != 0x0d && ch != 0x20))
+            {
+                screen_column++;
+                word_continues = screen_column != 0;
+            }
+            if (!word_continues && screen_column != 0)
+                word_count++;
+        }
+        if (!word_continues)
+        {
+            screen_column = reset_column;
+            if (ch == 0x0d)
+                screen_row = reset_column;
+        }
+        screen_row |= ch;
         line_ptr++;
-    }
-    if (line_ptr != area_end_ptr)
-        goto c86b8;
-    render_number_to_screen(scan_ptr);
-    cli_putstring(" word(s) counted.\n");
+    } while (line_ptr != area_end_ptr);
 
+    render_number_to_screen(word_count);
+    cli_putstring(" word(s) counted.\n");
     return_to_cli_prompt();
 }
 
@@ -587,41 +570,24 @@ static void finish_cmd(void)
 }
 
 /**
- * Toggles or reports the folding mode.
- *
+ * Sets or reports the folding mode.
+ * Accepts 1 to enable folding and 0 to disable it; other arguments leave the
+ * mode unchanged. Reports the resulting mode and returns to the CLI prompt.
  * @param scan scan state containing optional folding argument
  */
 static void fold_cmd(scan_state_t* scan)
 {
-    if (!(scan_input_buffer(input_buffer, scan)))
+    if (!scan_input_buffer(input_buffer, scan))
     {
         uint8_t cur_ch = input_buffer[scan->pos];
-
         if (cur_ch == '1')
-        {
             folding_flag = 0;
-
-            goto c87b4;
-        }
-        if (cur_ch == '0')
+        else if (cur_ch == '0')
             folding_flag = 0x80;
     }
-c87b4:
+
     cli_putstring("Folding ");
-
-    if (((int8_t)folding_flag < 0))
-    {
-        cli_putstring("off\n");
-
-        return_to_cli_prompt();
-        return;
-    }
-    cli_putstring("on\n");
-
-    return_to_cli_prompt();
-    return;
-    cli_putstring("Bad file\n");
-
+    cli_putstring((folding_flag & 0x80) ? "off\n" : "on\n");
     return_to_cli_prompt();
 }
 
