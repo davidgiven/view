@@ -262,7 +262,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **format_paragraph** → advance_to_next_doc_line, build_formatted_line, flush_formatted_line, insert_at_left_margin, justify_edit_buffer [current_line_ptr, cursor_moved_flag, format_mode_flags, input_buffer_offset, line_format_status_flag, print_xpos, ruler_left_stop, ruler_right_stop]
 - **flush_formatted_line** → write_line_back_to_document [current_line_ptr, edit_buffer_unpacked_flag, edit_line_len, format_src_index, line_format_status_flag, xpos]
 - **advance_to_next_doc_line** → find_next_line [current_line_ptr, xpos]
-- **find_next_word_boundary** [a, current_line_ptr, ruler_left_stop, screen_column, temp_save]
+- **find_next_word_boundary** [a, current_line_ptr, ruler_left_stop, screen_column]
 - **insert_character_into_edit_buffer** → insert_edit_buffer_bytes_at_xpos [current_line_buffer, line_counter, xpos]
 - **set_xpos_to_line_length** → get_line_length [current_line_ptr, top, xpos]
 - **compute_display_start_line** → find_previous_line [current_line_ptr, display_start_row, ruler_index_ptr, saved_ruler_index_redraw, saved_ruler_index_scroll, screen_maxrow, scroll_repeat_count, top_of_screen_line_ptr, ypos]

@@ -2031,50 +2031,40 @@ static void draw_previous_word(
 }
 
 /**
- * Handles margin adjustment at the left margin.
- * Adjusts cursor and inserts margin tab when typing at the left edge.
- * @return true if insertion failed
+ * Inserts a missing left-margin stop when formatting permits it.
+ * Checks the line's final visual column to choose an insertion point and
+ * adjusts xpos to account for the inserted stop and the left margin.
+ * @return true if insertion failed, false if successful or no stop was needed
  */
 static bool adjust_margins_at_left_margin(void)
 {
+    if ((format_mode_flags & 0x81) != 0 || find_left_margin_stop() >= 0)
+        return false;
+
+    uint8_t line_len = get_line_length();
+    screen_column = xpos;
+    xpos = line_len;
+    recalculate_cursor_xpos();
+    uint8_t saved_xpos = screen_column;
     uint8_t insert_pos;
-    uint8_t flags_tmp = format_mode_flags;
 
-    flags_tmp &= 0x81;
-
-    if (flags_tmp == 0 && find_left_margin_stop() < 0)
+    if (visual_column >= ruler_left_stop)
     {
-        uint8_t line_len = get_line_length();
-
-        screen_column = xpos;
-        xpos = line_len;
-        recalculate_cursor_xpos();
-
-        if (visual_column >= ruler_left_stop)
-        {
-            insert_pos = screen_column;
-            xpos = insert_pos;
-            xpos++;
-        }
-        else
-        {
-            uint8_t acc3 = screen_column;
-
-            insert_pos = xpos;
-
-            if (insert_pos < screen_column)
-            {
-                if (screen_column < ruler_left_stop)
-                    goto caf2a;
-                acc3 = screen_column - ruler_left_stop + xpos + 1;
-            }
-            xpos = acc3;
-        }
-    caf2a:
-        if (!insert_byte_at_xpos(insert_pos))
-            return true;
-        line_counter++;
+        insert_pos = saved_xpos;
+        xpos = insert_pos + 1;
     }
+    else
+    {
+        insert_pos = xpos;
+        if (insert_pos >= saved_xpos)
+            xpos = saved_xpos;
+        else if (saved_xpos >= ruler_left_stop)
+            xpos = saved_xpos - ruler_left_stop + insert_pos + 1;
+    }
+
+    if (!insert_byte_at_xpos(insert_pos))
+        return true;
+    line_counter++;
     return false;
 }
 
@@ -2775,147 +2765,108 @@ uint8_t justify_edit_buffer(uint8_t* target_ptr)
 
 /**
  * Processes a character for justification output.
- * Handles tab and margin translation and updates column state.
+ * Saves the original byte, expands tabs and margin stops, and updates columns.
  * @param buf_idx index in the line buffer
- * @param carry_in carry flag for column calculation
- * @param char_width_out output for character width
- * @param out_char output for processed character
- * @return true if the character was handled as a margin/tab, false otherwise
+ * @param carry_in bit shifted into screen_column
+ * @param char_width_out output for tab width or margin calculation scratch;
+ *        unchanged for ordinary characters
+ * @param out_char output for the normalized byte, or zero after positioning
+ * @return true after tab/margin positioning or column counter overflow
  */
 static bool process_char_for_output(
     uint8_t buf_idx, bool carry_in, uint8_t* char_width_out, uint8_t* out_char)
 {
     screen_column = (screen_column >> 1) | (carry_in ? 0x80 : 0);
-    (*out_char) = current_line_buffer.text[buf_idx];
-    output_buffer[buf_idx] = (*out_char);
-    if ((*out_char) == 9)
+    *out_char = current_line_buffer.text[buf_idx];
+    output_buffer[buf_idx] = *out_char;
+    bool positioned = false;
+
+    if (*out_char == 9)
     {
-        {
-            bool is_tab = false;
-
-            (*out_char) = process_document_character(
-                (*out_char), char_width_out, &is_tab);
-        }
-        (*out_char) = *char_width_out;
-        (*out_char) += column_position;
-
-        if ((*out_char) != 0)
-            goto c995c;
+        bool is_tab = false;
+        (void)process_document_character(*out_char, char_width_out, &is_tab);
+        *out_char = *char_width_out + column_position;
+        positioned = *out_char != 0;
     }
-    if ((*out_char) == 0x0b)
+    else if (*out_char == 0x0b)
     {
-        (*out_char) = ruler_left_stop;
-
-        if ((*out_char) != 0)
+        *out_char = ruler_left_stop;
+        if (ruler_left_stop != 0)
         {
             *char_width_out = column_position;
-
-            if (*char_width_out != 0)
+            if (*char_width_out != 0 && *char_width_out >= ruler_left_stop)
             {
-                if (*char_width_out >= ruler_left_stop)
-                {
-                    (*char_width_out)++;
-                    (*out_char) = *char_width_out;
-                }
+                (*char_width_out)++;
+                *out_char = *char_width_out;
             }
-        c995c:
-            column_position = (*out_char);
-            justify_overflow_counter = buf_idx;
-            justify_overflow_counter++;
-            (*out_char) = 0;
-            justify_gap_count = (*out_char);
-
-            return true;
+            positioned = true;
         }
-    c9967:
-        (*out_char) = 0x20;
     }
-    if ((*out_char) < 0x1b)
-        goto c9967;
 
-    if ((*out_char) < 0x20)
+    if (positioned)
+    {
+        column_position = *out_char;
+        justify_overflow_counter = buf_idx + 1;
+        *out_char = 0;
+        justify_gap_count = 0;
+        return true;
+    }
+    if (*out_char < 0x1b)
+        *out_char = 0x20;
+    if (*out_char < 0x20)
         return false;
     column_position++;
-
     return column_position == 0;
 }
 
 /**
- * Finds the next word boundary for wrapping.
- * Scans forward to locate a suitable wrap point.
- * @param pos current source index
- * @return true if wrap is needed
+ * Checks whether formatting should stop before the next source line.
+ * Examines leading spaces, margin stops, and tabs to decide whether that line
+ * can continue the paragraph; records a leading margin stop in screen_column.
+ * @param src_idx index of the current line's carriage return
+ * @return true if the next line should start a separate paragraph
  */
 static bool find_next_word_boundary(uint8_t src_idx)
 {
-    uint8_t temp_save;
-    uint8_t base_off = src_idx;
-    uint8_t* scan_ptr = current_line_ptr + base_off + 1;
-    uint8_t* insert_ptr = scan_ptr;
-
-    src_idx = 0;
-    screen_column = src_idx;
+    uint8_t* next_line = current_line_ptr + src_idx + 1;
+    uint8_t pos = 0;
+    bool leading_margin = false;
+    screen_column = 0;
 
     do
     {
-        uint8_t next_char = insert_ptr[src_idx];
+        uint8_t ch = next_line[pos];
+        if (ch == 0 || check_for_command_prefix(ch) != NO_COMMAND_PREFIX ||
+            ch == 0x0d)
+            return true;
 
-        if (next_char == 0)
-            goto c9b2f;
-        command_prefix_t cp = check_for_command_prefix(next_char);
-
-        if (cp != NO_COMMAND_PREFIX || next_char == 0x0d)
-            goto c9b2f;
-
-        if (src_idx == 0)
+        if (pos == 0)
         {
-            temp_save = src_idx;
-
-            goto c9aef;
-
-        c9ae9:
-            scan_ptr++;
-
-        c9aef:
-            uint8_t scan_char = scan_ptr[src_idx];
-
-            if (scan_char == 0 || scan_char == 0x0d)
-                goto c9b06;
-
-            if (scan_char == 9)
-                goto c9b2f;
-
-            if (scan_char == 0x0b)
+            uint8_t* scan = next_line;
+            while (*scan == 0x0b)
             {
-                temp_save |= 0x80;
-
-                if (scan_char >= 0x0b)
-                    goto c9ae9;
+                leading_margin = true;
+                scan++;
             }
+            if (*scan == 9)
+                return true;
         }
-    c9b06:
-        uint8_t check_char = insert_ptr[src_idx];
 
-        if (check_char == 0x20)
+        if (ch == 0x20)
         {
-            if (ruler_left_stop == 0 || temp_save == 0 || screen_column != 0)
-                goto c9b2f;
+            if (ruler_left_stop == 0 || !leading_margin || screen_column != 0)
+                return true;
         }
         else
         {
-            if (check_char != 0x0b)
+            if (ch != 0x0b)
                 break;
-            screen_column = check_char;
+            screen_column = ch;
         }
-        src_idx++;
-    } while (src_idx != 0);
+        pos++;
+    } while (pos != 0);
 
-    if (ruler_left_stop != 0 && temp_save != 0 && screen_column == 0)
-    {
-    c9b2f:
-        return true;
-    }
-    return false;
+    return ruler_left_stop != 0 && leading_margin && screen_column == 0;
 }
 
 /**
@@ -3008,75 +2959,49 @@ static bool insert_byte_at_xpos(uint8_t insert_pos)
 
 /**
  * Inserts bytes at the cursor in the edit buffer.
- * Makes room at the cursor by shifting existing content right.
- * @param idx number of bytes to insert
- * @return true on success, false if overflow or out of space
+ * Retargets markers and shifts existing content right without filling the gap.
+ * @param count number of bytes to insert
+ * @return true on success, false if the cursor or expanded line exceeds the
+ * buffer
  */
 static bool insert_edit_buffer_bytes_at_xpos(uint8_t count)
 {
     if (xpos >= MAX_LINE_LENGTH)
     {
         beep();
-
         return false;
     }
     scratch_offset = count;
-    uint8_t acc1 = get_line_length();
-
-    acc1 += scratch_offset;
-
-    if (acc1 < scratch_offset)
+    unsigned int new_length = (unsigned int)get_line_length() + count;
+    if (new_length > MAX_LINE_LENGTH)
     {
         beep();
-
         return false;
     }
-    if (acc1 >= MAX_LINE_LENGTH + 1)
-    {
-        beep();
 
-        return false;
-    }
     edit_buffer_dirty_flag = true;
-    uint8_t* size_delta = current_line_buffer.text;
+    uint8_t* marker_base = current_line_buffer.text;
     uint8_t scan_pos = MAX_LINE_LENGTH;
-
-cae27:
-    scan_pos--;
-    count = 0;
-    uint8_t tail_len = scan_pos;
-
-    tail_len += scratch_offset;
-
-    if (tail_len >= scratch_offset)
+    do
     {
-        if (tail_len < MAX_LINE_LENGTH)
-            count = tail_len;
-    }
-    scratch_index = count;
+        scan_pos--;
+        unsigned int shifted_pos = (unsigned int)scan_pos + scratch_offset;
+        scratch_index = shifted_pos < MAX_LINE_LENGTH ? shifted_pos : 0;
+        for (;;)
+        {
+            uint8_t idx = find_marker_at_position(scan_pos, marker_base);
+            if (idx == NUM_MARKERS)
+                break;
+            markers_array[idx] =
+                scratch_index ? current_line_buffer.text + scratch_index : NULL;
+        }
+    } while (scan_pos != xpos);
 
-    for (;;)
-    {
-        uint8_t idx = find_marker_at_position(scan_pos, size_delta);
-
-        if (idx == NUM_MARKERS)
-            goto cae52;
-        uint16_t marker_addr = scratch_index ? 3 + scratch_index : 0;
-        markers_array[idx] =
-            marker_addr ? ((uint8_t*)&current_line_buffer + (marker_addr))
-                        : NULL;
-    }
-cae52:
-    if (scan_pos != xpos)
-        goto cae27;
     int copy_len = MAX_LINE_LENGTH - (int)xpos - (int)scratch_offset;
-
     if (copy_len > 0)
-    {
         memmove(&current_line_buffer.text[xpos + scratch_offset],
             &current_line_buffer.text[xpos],
             (size_t)copy_len);
-    }
     return true;
 }
 
@@ -3509,53 +3434,53 @@ void home_cursor(void)
 }
 
 /**
- * Recalculates the cursor column.
- * Walks the edit line to map visual column to buffer position, handling tabs.
+ * Synchronizes the cursor's buffer position and visual column.
+ * Normally calculates visual_column from xpos. After a line change, or if
+ * column arithmetic overflows, maps visual_column back to a buffer position,
+ * stopping before a tab that would overshoot the requested column.
  */
 static void recalculate_cursor_xpos(void)
 {
     uint8_t char_width;
     uint8_t* line_ptr = current_line_buffer.text;
-    uint8_t acc_width = line_change_pending_flag;
+    uint8_t column = 0;
     bool is_tab = false;
 
-    if (acc_width == 0)
+    if (line_change_pending_flag == 0)
     {
-        uint8_t scan_pos = acc_width;
-
+        uint8_t scan_pos = 0;
         do
         {
             if (scan_pos == xpos)
-                goto ca63d;
-            column_position = acc_width;
+            {
+                visual_column = column;
+                return;
+            }
+            column_position = column;
             (void)process_current_document_character(
                 line_ptr, &char_width, &scan_pos, &is_tab);
-            acc_width = char_width;
-            acc_width += column_position;
-        } while (acc_width >= column_position);
+            column = (uint8_t)(column_position + char_width);
+        } while (column >= column_position);
     }
-    acc_width = 0;
-    line_change_pending_flag = acc_width;
-    uint8_t buf_pos = acc_width;
 
+    column = 0;
+    line_change_pending_flag = 0;
+    uint8_t buf_pos = 0;
     do
     {
-        column_position = acc_width;
+        column_position = column;
         (void)process_current_document_character(
             line_ptr, &char_width, &buf_pos, &is_tab);
-        acc_width = char_width;
-        acc_width += column_position;
-    } while (acc_width < visual_column);
+        column = (uint8_t)(column_position + char_width);
+    } while (column < visual_column);
 
-    if (acc_width != visual_column)
+    if (column != visual_column)
     {
-        acc_width = column_position;
+        column = column_position;
         buf_pos--;
     }
     xpos = buf_pos;
-
-ca63d:
-    visual_column = acc_width;
+    visual_column = column;
 }
 
 /**
