@@ -593,6 +593,7 @@ static void fold_cmd(scan_state_t* scan)
 
 /**
  * Formats the document area paragraph by paragraph.
+ * Reports progress and stops at the area end, document end, or memory failure.
  *
  * @param scan scan state containing optional marker range
  */
@@ -610,25 +611,24 @@ static void format_cmd(scan_state_t* scan)
 
         do
         {
-            format_result_t fr = format_paragraph();
+            format_result_t result = format_paragraph();
 
-            if (fr == FORMAT_MEMORY_FULL)
-                goto c8791;
+            if (result == FORMAT_MEMORY_FULL)
+            {
+                cli_putchar('\n');
+                display_not_enough_memory();
+                return;
+            }
 
-            if (fr == FORMAT_AT_END)
+            if (result == FORMAT_AT_END)
                 break;
-            cli_putchar(0x2e);
+            cli_putchar('.');
         } while (current_line_ptr < area_end_ptr);
         top_of_screen_line_ptr = &ram[RAM_MAX];
     }
     cli_putchar('\n');
 
     return_to_cli_prompt();
-    return;
-
-c8791:
-    cli_putchar('\n');
-    display_not_enough_memory();
 }
 
 /**
@@ -852,64 +852,53 @@ static void read_cmd(scan_state_t* scan)
 }
 
 /**
- * Performs interactive search and replace prompting for each match.
- *
+ * Performs interactive search and replace, prompting for each match.
+ * Accepts Y or O to replace, skips on other keys, and stops on Escape,
+ * search exhaustion, or memory failure.
  * @param scan scan state containing search and replace strings
  */
 static void replace_cmd(scan_state_t* scan)
 {
-    cli_cmd_status_t st = process_cli_command(scan);
-
-    if (st != CLI_CMD_OK)
+    cli_cmd_status_t status = process_cli_command(scan);
+    if (status != CLI_CMD_OK)
     {
         cmd_err_no_target();
-
         return;
     }
     if (!scan_document_for_next_line())
     {
         cmd_err_no_string();
-
         return;
     }
     move_cursor_to_address(doc_working_ptr);
     enter_editor_mode();
 
-c832d:
-    redraw_and_write_back();
-    draw_prompt_characters('R', 'P');
-    uint8_t cur_ch = screen_getchar();
-
-    if (cur_ch == 0x1b)
-        return;
-    cur_ch &= 0xdf;
-    uint8_t idx = 0;
-
-    if (cur_ch != 0x59)
+    for (;;)
     {
-        idx--;
+        redraw_and_write_back();
+        draw_prompt_characters('R', 'P');
+        uint8_t key_code = screen_getchar();
+        if (key_code == 0x1b)
+            return;
+        key_code &= 0xdf;
 
-        if (cur_ch != 0x4f)
-            goto c8356;
+        if (key_code == 'Y' || key_code == 'O')
+        {
+            print_xpos = key_code == 'Y' ? 0 : 0xff;
+            setup_area_pointers(doc_working_ptr);
+            if (check_area_memory(doc_working_ptr))
+            {
+                show_memory_full_error();
+                esc_key();
+                return;
+            }
+            redraw_and_write_back();
+        }
+
+        if (!scan_document_for_next_line())
+            return;
+        move_cursor_to_address(doc_working_ptr);
     }
-    print_xpos = idx;
-    setup_area_pointers(doc_working_ptr);
-
-    if (check_area_memory(doc_working_ptr))
-    {
-        show_memory_full_error();
-        esc_key();
-
-        return;
-    }
-    redraw_and_write_back();
-
-c8356:
-    if (!scan_document_for_next_line())
-        return;
-    move_cursor_to_address(doc_working_ptr);
-
-    goto c832d;
 }
 
 /**
@@ -1028,76 +1017,41 @@ static void cmd_err_no_target(void)
 }
 
 /**
- * Parses flag letters to configure formatting, justification and insert modes.
- *
+ * Resets formatting, justification, and insert modes using the setup flags.
+ * Defaults to formatting disabled, justification disabled, and overwrite mode.
+ * Accepts N to enable formatting and J to enable justification; rejects other
+ * flags without changing the current modes.
  * @param scan scan state containing flag characters
  */
 static void setup_cmd(scan_state_t* scan)
 {
-    static const uint8_t c867d_data[] = {0x4e, 0x4a, 0x00, 0x49, 0x00};
-    static const uint8_t c8681_data[] = {0x00, 0x00, 0xff};
-    uint8_t idx = 1;
-    uint8_t fmt_flag_tmp = idx;
-
-    idx--;
-    uint8_t insert_flag_tmp = idx;
-
-    idx--;
-    uint8_t justify_flag_tmp = idx;
+    uint8_t new_format_flags = 1;
+    bool new_justifying_flag = true;
 
     do
     {
         if (scan_input_buffer(input_buffer, scan))
             break;
         scan->ch &= 0xdf;
-        uint8_t idx2 = 0;
-        uint8_t pos;
-
-        do
+        switch (scan->ch)
         {
-            if (scan->ch == c867d_data[idx2])
-                goto c8669;
-            idx2++;
-            pos = c867d_data[idx2];
-        } while (pos != 0);
-        cli_putstring("Bad flag\n");
-
-        return_to_cli_prompt();
-        return;
-
-    c8669:
-        uint8_t cur_ch = c8681_data[idx2];
-
-        if (idx2 == 0)
-            fmt_flag_tmp = cur_ch;
-        else if (idx2 == 1)
-            justify_flag_tmp = cur_ch;
-        else
-            insert_flag_tmp = cur_ch;
+            case 'N':
+                new_format_flags = 0;
+                break;
+            case 'J':
+                new_justifying_flag = false;
+                break;
+            default:
+                cli_putstring("Bad flag\n");
+                return_to_cli_prompt();
+                return;
+        }
         input_buffer_offset++;
     } while (input_buffer_offset != 0);
-    uint8_t idx3 = 2;
 
-    do
-    {
-        uint8_t next_ch;
-
-        if (idx3 == 0)
-            next_ch = fmt_flag_tmp;
-        else if (idx3 == 1)
-            next_ch = justify_flag_tmp;
-        else
-            next_ch = insert_flag_tmp;
-
-        if (idx3 == 0)
-            format_mode_flags = next_ch;
-        else if (idx3 == 1)
-            justifying_flag = next_ch != 0;
-        else
-            insert_mode_flag = next_ch != 0;
-        idx3--;
-    } while ((int8_t)idx3 >= 0);
-
+    insert_mode_flag = false;
+    justifying_flag = new_justifying_flag;
+    format_mode_flags = new_format_flags;
     return_to_cli_prompt();
 }
 
@@ -1210,78 +1164,64 @@ static void print_x_words_of_help(uint8_t idx)
 }
 
 /**
- * Parses a command name from the input buffer against the parser table.
- *
- * @param input_buffer_offset pointer to current offset in the input buffer;
- * updated to position after the command
+ * Parses a command name or table-marked abbreviation from the input buffer.
+ * Matches without regard to case. A following byte below '0' becomes the
+ * delimiter and is consumed before returning the argument offset.
+ * @param input_buffer_offset current input offset, updated past the command
+ *        and any consumed delimiter on success; unchanged on failure
  * @return command on success, COMMAND_INVALID on failure
  */
 static cli_command_t parse_command(uint8_t* input_buffer_offset)
 {
-    uint8_t temp_save;
+    uint8_t table_idx = 0;
     uint8_t pos;
-    int command_index = -1;
-    uint8_t idx = 0xff;
+    int command_index = 0;
 
     for (;;)
     {
         pos = *input_buffer_offset;
-        pos--;
-        command_index++;
-
+        bool full_match = false;
         for (;;)
         {
-            idx++;
-            pos++;
-            uint8_t next_ch = input_buffer[pos];
-
-            next_ch &= 0xdf;
-            temp_save = next_ch;
-            uint8_t tmp_ch2 = parser_table[idx];
-
-            if (tmp_ch2 == 0)
+            uint8_t encoded_char = parser_table[table_idx];
+            if (encoded_char == 0)
                 return COMMAND_INVALID;
-
-            if (tmp_ch2 & 0x80)
-                goto ca87e;
-            tmp_ch2 ^= 0x5b;
-            screen_column = tmp_ch2;
-            tmp_ch2 &= 0xdf;
-
-            if (tmp_ch2 != temp_save)
+            if (encoded_char & 0x80)
+            {
+                full_match = true;
                 break;
+            }
+            uint8_t command_char = encoded_char ^ 0x5b;
+            screen_column = command_char;
+            if ((command_char & 0xdf) != (input_buffer[pos] & 0xdf))
+                break;
+            table_idx++;
+            pos++;
         }
-        uint8_t tmp_ch3;
+        if (full_match)
+            break;
 
+        // Skip the rest of this table entry before trying another command.
         do
         {
-            idx++;
-            tmp_ch3 = parser_table[idx];
-
-            if (tmp_ch3 == 0)
+            table_idx++;
+            if (parser_table[table_idx] == 0)
                 return COMMAND_INVALID;
-        } while ((tmp_ch3 & 0x80) == 0);
-        uint8_t tmp_ch4 = screen_column;
+        } while ((parser_table[table_idx] & 0x80) == 0);
 
-        tmp_ch4 &= 0x20;
-
-        if (tmp_ch4 == 0)
-            continue;
-
-        if (input_buffer[pos] >= 0x30)
-            continue;
-        break;
+        if ((screen_column & 0x20) != 0 && input_buffer[pos] < '0')
+            break;
+        table_idx++;
+        command_index++;
     }
-ca87e:
-    uint8_t tmp_ch6 = input_buffer[pos];
 
-    if (tmp_ch6 < 0x30)
+    uint8_t separator = input_buffer[pos];
+    if (separator < '0')
     {
-        delimiter_char = tmp_ch6;
+        delimiter_char = separator;
         pos++;
     }
     *input_buffer_offset = pos;
-
     return (cli_command_t)command_index;
 }
 
@@ -1564,70 +1504,49 @@ static bool reset_command_parse_state(scan_state_t* scan)
 }
 
 /**
- * Expand an escaped string from the input buffer into the header text buffer.
- * Handles caret escapes and optional case folding.
+ * Expands a token from the input buffer into the header text buffer.
+ * Decodes caret escapes, leaving unknown escapes as their literal character.
+ * Applies case folding to search text and records the final input position.
  * @param idx starting index in the header text buffer
  * @param pos starting position in the input buffer
  * @return updated header text length
  */
 static uint8_t expand_escaped_string(uint8_t idx, uint8_t pos)
 {
-    uint8_t temp_save;
     screen_column = idx;
     pos--;
-
     do
     {
-        uint8_t cur_ch;
         bool end;
-
-        cur_ch = read_next_command_byte(&pos, &end);
-
+        uint8_t cur_ch = read_next_command_byte(&pos, &end);
         if (end)
             break;
 
-        if (cur_ch == 0x5e)
+        if (cur_ch == '^')
         {
-            uint8_t next_ch = read_next_command_byte(&pos, &end);
-
+            cur_ch = read_next_command_byte(&pos, &end);
             if (end)
                 break;
-            screen_row = toupper(next_ch);
-            temp_save = next_ch;
-            idx = 0xfe;
-
-            for (;;)
+            screen_row = toupper(cur_ch);
+            for (uint8_t table_idx = 0;
+                (escaped_char_table[table_idx] & 0x80) == 0;
+                table_idx++)
             {
-                idx += 2;
-                uint8_t table_idx = idx >> 1;
-                uint8_t tmp_ch3 = escaped_char_table[table_idx];
-
-                if (tmp_ch3 & 0x80)
-                    break;
-
-                if (tmp_ch3 == screen_row)
+                if (escaped_char_table[table_idx] == screen_row &&
+                    escaped_value_table[table_idx] != 0)
                 {
                     cur_ch = escaped_value_table[table_idx];
-
-                    if (cur_ch != 0)
-                        goto c83ca;
+                    break;
                 }
             }
-            cur_ch = temp_save;
         }
-    c83ca:
-        idx = search_target_len;
 
-        if (idx == 0)
+        if (search_target_len == 0)
             cur_ch = upper_case_unless_folding(cur_ch);
-        idx = screen_column;
-        header_text_maybe[idx] = cur_ch;
-        screen_column++;
+        header_text_maybe[screen_column++] = cur_ch;
     } while (screen_column != 0);
-    idx = screen_column;
     input_buffer_offset = pos;
-
-    return idx;
+    return screen_column;
 }
 
 /**
