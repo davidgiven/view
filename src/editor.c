@@ -150,241 +150,178 @@ void run_editor(void)
 
 /**
  * Main editor event loop.
- * Handles cursor positioning, screen redraw, and key dispatch for the editor.
+ * Each iteration prepares the current line and cursor, redraws the screen,
+ * then dispatches one key before repeating.
  */
 void editor_loop_impl(void)
 {
-    uint8_t tmp_flags;
-
     screen_enter();
 
     for (;;)
-    {
-    editor_loop:
     {
         uint8_t saved_fmt = format_mode_flag;
         uint8_t unpacked_flag = edit_buffer_unpacked_flag;
 
         if (unpacked_flag == 0)
         {
-            uint8_t unpacked_flag_copy;
-            {
-                unpack_line(edit_buffer_base);
-                unpacked_flag_copy = unpacked_flag;
-            }
-            edit_buffer_unpacked_flag = unpacked_flag_copy;
+            unpack_line(edit_buffer_base);
+            edit_buffer_unpacked_flag = unpacked_flag;
         }
         recalculate_cursor_xpos();
 
         if (ruler_left_stop != 0 && (format_mode_flag & 0x80) == 0 &&
             ruler_left_stop > visual_column)
         {
-            if (cursor_moved_flag == 0)
+            bool move_to_margin = cursor_moved_flag != 0;
+
+            if (!move_to_margin)
             {
                 uint8_t line_len = get_line_length();
 
-                tmp_flags = format_mode_flag;
-
-                if (line_len >= xpos)
-                    goto c9b84_;
-
-                if (format_mode_flag & 0x40)
-                    goto c9b6a_;
-                xpos = line_len;
+                if (line_len < xpos)
+                {
+                    if (format_mode_flag & 0x40)
+                        move_to_margin = true;
+                    else
+                        xpos = line_len;
+                }
             }
-            else
 
-            c9b6a_:
+            if (move_to_margin)
             {
                 visual_column = ruler_left_stop;
                 line_change_pending_flag++;
                 recalculate_cursor_xpos();
-                uint8_t masked_flags = format_mode_flag;
+                uint8_t masked_flags = format_mode_flag & 0xbf;
+                int margin_pos = find_left_margin_stop();
 
-                masked_flags &= 0xbf;
-                {
-                    int margin_pos = find_left_margin_stop();
-
-                    tmp_flags = masked_flags;
-
-                    if (margin_pos < 0 || margin_pos <= xpos)
-                        goto c9b86_;
-                }
-                tmp_flags |= 0x40;
+                // Preserve the format flags unless a margin stop lies ahead.
+                if (margin_pos >= 0 && margin_pos > xpos)
+                    format_mode_flag = masked_flags | 0x40;
             }
-            c9b84_:
-                format_mode_flag = tmp_flags;
         }
-    c9b86_:
         if (saved_fmt != format_mode_flag)
             flags_need_redrawing_flag++;
         cursor_moved_flag = 0;
         redraw_editor();
-    }
+
         uint8_t key_code = screen_getchar();
 
         if (key_code == current_tab_key)
             key_code = 9;
         editor_current_key = key_code;
 
-        if (key_code >= 0x20)
+        if (key_code >= 0x20 && key_code < 0x7f)
         {
-            if (key_code < 0x7f)
-            {
-                enter_printable_character();
-
-                goto editor_loop;
-            }
+            enter_printable_character();
+            continue;
         }
         switch (key_code)
         {
             case CTRL('['):
                 esc_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('M'):
-
                 return_key();
-
-                goto editor_loop;
+                break;
 
             case 0x7f:
                 delete_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('I'):
                 tab_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('E'):
-                f15_up_key();
-
-                goto editor_loop;
-
             case SCREEN_KEY_UP:
                 f15_up_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('S'):
-                f12_left_key();
-
-                goto editor_loop;
-
             case SCREEN_KEY_LEFT:
                 f12_left_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('D'):
-                f13_right_key();
-
-                goto editor_loop;
-
             case SCREEN_KEY_RIGHT:
                 f13_right_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('X'):
-                f14_down_key();
-
-                goto editor_loop;
-
             case SCREEN_KEY_DOWN:
                 f14_down_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('A'):
                 sf12_left_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('F'):
                 sf13_right_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('C'):
                 sf14_down_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('R'):
                 sf15_up_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('G'):
                 f9_delete_char_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('H'):
                 f8_insert_char_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('Y'):
                 f7_delete_line_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('V'):
                 cf4_insert_mode_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('N'):
                 f6_insert_line_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('B'):
                 f0_format_block_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('T'):
                 sf3_delete_to_char_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('L'):
                 cf1_next_match_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('J'):
                 cf7_join_lines_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('P'):
                 sf1_swap_case_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('O'):
                 o_command_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('Q'):
                 q_command_key();
-
-                goto editor_loop;
+                break;
 
             case CTRL('K'):
                 k_command_key();
-
-                goto editor_loop;
+                break;
         }
-        goto editor_loop;
     }
 }
 
