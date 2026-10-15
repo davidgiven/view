@@ -25,7 +25,7 @@ extern uint8_t column_position, justify_gap_count;
 extern uint8_t scratch_index, screen_row, screen_column, temp_save;
 extern uint8_t print_xpos;
 extern uint8_t input_buffer_offset;
-extern line_t* current_format_line;
+extern uint8_t* current_format_line;
 extern line_t* heap_format_line_ptr;
 extern uint8_t* current_line_ptr;
 extern uint8_t* edit_buffer_base; // was ptr1
@@ -74,7 +74,7 @@ static void setup_edit_buffer(const char* text)
 static void init_globals(const char* text, uint8_t jf, uint8_t rstop)
 {
     setup_edit_buffer(text);
-    current_format_line = &current_line_buffer;
+    current_format_line = (uint8_t*)&current_line_buffer;
     heap_format_line_ptr = &current_line_buffer;
     current_line_ptr = current_line_buffer.text;
     edit_buffer_base = (uint8_t*)&current_line_buffer; // was ptr1

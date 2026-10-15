@@ -43,8 +43,7 @@ uint8_t current_ruler_buffer[133];
 line_t current_line_buffer;
 
 uint8_t* edit_buffer_base; /** Base of edit buffer. */
-line_t*
-    current_format_line; /** Current formatting line pointer (edit buffer). */
+uint8_t* current_format_line;    /** Raw formatting buffer bytes. */
 line_t* heap_format_line_ptr;    /** Heap formatting line pointer. */
 uint8_t* current_ruler_ptr;      /** Pointer into current ruler buffer. */
 uint8_t* current_line_ptr;       /** Walking cursor into document heap. */
@@ -267,7 +266,7 @@ bool parse_decimal_number(int* value, uint8_t* pos)
     const char* start;
 
     if ((uint8_t*)heap_format_line_ptr == input_buffer ||
-        (uint8_t*)current_format_line == input_buffer)
+        current_format_line == input_buffer)
         start = (const char*)&input_buffer[*pos];
     else
         start = (const char*)&heap_format_line_ptr->text[*pos];

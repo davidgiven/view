@@ -850,7 +850,7 @@ static void cf6_split_line_key(void)
         split_pos = xpos;
     line_change_pending_flag++;
     uint8_t insert_offset = split_pos;
-    uint8_t first_char = ((uint8_t*)current_format_line)[0];
+    uint8_t first_char = current_format_line[0];
 
     command_prefix_t cp = check_for_command_prefix(first_char);
 
@@ -972,15 +972,15 @@ static void sf11_copy_key(void)
  */
 static void cf8_mark_as_ruler_key(void)
 {
-    current_format_line = (line_t*)edit_buffer_base;
+    current_format_line = edit_buffer_base;
     heap_format_line_ptr = (line_t*)edit_buffer_base;
     uint8_t buf_idx = 0;
 
-    ((uint8_t*)current_format_line)[buf_idx] = 0x81;
+    current_format_line[buf_idx] = 0x81;
     buf_idx++;
-    ((uint8_t*)current_format_line)[buf_idx] = 0x2e;
+    current_format_line[buf_idx] = 0x2e;
     buf_idx++;
-    ((uint8_t*)current_format_line)[buf_idx] = 0x2e;
+    current_format_line[buf_idx] = 0x2e;
     line_counter++;
 
     if ((edit_buffer_unpacked_flag & 0x80) == 0)
@@ -1337,9 +1337,9 @@ edit_command_loop:
 finished_editing_command:
     if (scratch_index == 0)
         return;
-    current_format_line = (line_t*)edit_buffer_base;
+    current_format_line = edit_buffer_base;
     heap_format_line_ptr = (line_t*)edit_buffer_base;
-    ((uint8_t*)current_format_line)[0] = 0x80;
+    current_format_line[0] = 0x80;
     set_format_mode_bit7();
 }
 
@@ -1350,14 +1350,14 @@ finished_editing_command:
 static void sf9_delete_command_key(void)
 {
     uint8_t pos = 0;
-    uint8_t first_char = ((uint8_t*)current_format_line)[pos];
+    uint8_t first_char = current_format_line[pos];
 
     command_prefix_t cp = check_for_command_prefix(first_char);
 
     if (cp == NO_COMMAND_PREFIX)
         return;
-    ((uint8_t*)current_format_line)[pos] = pos;
-    current_format_line = &current_line_buffer;
+    current_format_line[pos] = pos;
+    current_format_line = (uint8_t*)&current_line_buffer;
     heap_format_line_ptr = &current_line_buffer;
     clear_format_mode_bit7();
     line_counter++;
@@ -1811,7 +1811,7 @@ static bool reset_area_to_marks_1_2(void)
             int len = get_line_length();
             if (len >= xpos)
             {
-                uint8_t first_char = ((uint8_t*)current_format_line)[0];
+                uint8_t first_char = current_format_line[0];
                 command_prefix_t cp = check_for_command_prefix(first_char);
                 len = xpos;
 
@@ -3454,11 +3454,10 @@ static void redraw_editor(void)
     {
         screen_row = ypos;
         render_state_t rs = {.line = screen_row};
-        uint8_t* draw_ptr =
-            (current_format_line->prefix_byte == COMMAND_PREFIX ||
-                current_format_line->prefix_byte == RULER_PREFIX)
-                ? (uint8_t*)current_format_line
-                : current_format_line->text;
+        uint8_t* draw_ptr = (current_format_line[0] == COMMAND_PREFIX ||
+                                current_format_line[0] == RULER_PREFIX)
+                                ? current_format_line
+                                : current_format_line + offsetof(line_t, text);
         draw_line(&rs, draw_ptr);
     }
     if (flags_need_redrawing_flag != 0)
@@ -3870,10 +3869,11 @@ static void unpack_line(uint8_t* target_ptr)
             edit_buffer_unpacked_flag = first_byte;
         set_format_mode_bit7();
     }
-    current_format_line = (line_t*)target_ptr;
+    current_format_line = target_ptr;
     heap_format_line_ptr = (line_t*)target_ptr;
-    uint8_t* dest = (cp != NO_COMMAND_PREFIX) ? (uint8_t*)current_format_line
-                                              : current_format_line->text;
+    uint8_t* dest = (cp != NO_COMMAND_PREFIX)
+                        ? current_format_line
+                        : current_format_line + offsetof(line_t, text);
     uint8_t copy_idx = 0;
 
     do

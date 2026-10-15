@@ -32,7 +32,7 @@ typedef struct pointer_array_t
 extern uint8_t* ram;
 extern uint8_t *himem, *top;
 extern uint8_t* print_doc_ptr;
-extern line_t* current_format_line;
+extern uint8_t* current_format_line;
 extern line_t* heap_format_line_ptr;
 extern uint8_t *scratch_line_ptr, *scratch_scan_ptr;
 extern ptrdiff_t area_size;

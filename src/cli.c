@@ -639,7 +639,7 @@ static void format_cmd(scan_state_t* scan)
         move_cursor_to_address(area_start_ptr);
         clear_format_mode_bit7();
         wipe_buffer(0x10, edit_buffer_base);
-        current_format_line = &current_line_buffer;
+        current_format_line = (uint8_t*)&current_line_buffer;
         heap_format_line_ptr = &current_line_buffer;
 
         do

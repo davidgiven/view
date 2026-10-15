@@ -119,7 +119,7 @@ void initialise_document(void)
     current_line_buffer.text[MAX_LINE_LENGTH - 1] = 0x0d;
     top = ram;
     edit_buffer_base = (uint8_t*)&current_line_buffer;
-    current_format_line = &current_line_buffer;
+    current_format_line = (uint8_t*)&current_line_buffer;
     heap_format_line_ptr = &current_line_buffer;
 
     uint8_t pos2 = create_default_ruler(current_ruler_buffer) + 1;
@@ -916,7 +916,7 @@ void set_marker_to_here(uint8_t marker_idx)
 
     if (len >= xpos)
     {
-        uint8_t first_char = ((uint8_t*)current_format_line)[0];
+        uint8_t first_char = current_format_line[0];
 
         command_prefix_t cp = check_for_command_prefix(first_char);
         len = xpos;
@@ -1053,10 +1053,10 @@ void update_markers_to_format_buffer(void)
         if (idx != NUM_MARKERS)
         {
             uint8_t* base_ptr =
-                (current_format_line->prefix_byte == COMMAND_PREFIX ||
-                    current_format_line->prefix_byte == RULER_PREFIX)
-                    ? (uint8_t*)current_format_line
-                    : current_format_line->text;
+                (current_format_line[0] == COMMAND_PREFIX ||
+                    current_format_line[0] == RULER_PREFIX)
+                    ? current_format_line
+                    : current_format_line + offsetof(line_t, text);
             markers_array[idx] = base_ptr + offset;
         }
         uint8_t acc = current_line_ptr[offset];
@@ -1169,11 +1169,10 @@ bool write_line_back_to_document(void)
 
         edit_buffer_dirty_flag = copy_idx;
         edit_buffer_unpacked_flag = copy_idx;
-        uint8_t* src_ptr =
-            (current_format_line->prefix_byte == COMMAND_PREFIX ||
-                current_format_line->prefix_byte == RULER_PREFIX)
-                ? (uint8_t*)current_format_line
-                : current_format_line->text;
+        uint8_t* src_ptr = (current_format_line[0] == COMMAND_PREFIX ||
+                               current_format_line[0] == RULER_PREFIX)
+                               ? current_format_line
+                               : current_format_line + offsetof(line_t, text);
         area_size = src_ptr - &ram[0];
         uint8_t line_len = screen_column;
 
@@ -1296,7 +1295,7 @@ ca558:
  */
 uint8_t get_line_length(void)
 {
-    uint8_t first_char = current_format_line->prefix_byte;
+    uint8_t first_char = current_format_line[0];
 
     command_prefix_t cp = check_for_command_prefix(first_char);
     uint8_t scan_pos = MAX_LINE_LENGTH;

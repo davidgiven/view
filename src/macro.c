@@ -86,7 +86,7 @@ void dm_fmt_cmd(void)
         uint8_t* line_ptr = body;
 
         heap_format_line_ptr = (line_t*)body;
-        current_format_line = (line_t*)body;
+        current_format_line = body;
 
         if (read_next_output_line(&line_ptr, body) == READ_BLOCK_DONE)
             return;
@@ -195,7 +195,7 @@ uint8_t* prepare_output_line(uint8_t* read_limit, uint8_t** macro_cursor)
         if (read_limit != NULL)
         {
             heap_format_line_ptr = (line_t*)read_limit;
-            current_format_line = (line_t*)read_limit;
+            current_format_line = read_limit;
 
             return read_limit;
         }
@@ -226,7 +226,7 @@ c91a7:
             if (next_ch == 0x0d)
             {
                 (*macro_cursor) += pos;
-                current_format_line = (line_t*)edit_buffer_base;
+                current_format_line = edit_buffer_base;
                 heap_format_line_ptr = (line_t*)edit_buffer_base;
 
                 return edit_buffer_base;
