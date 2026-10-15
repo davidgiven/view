@@ -1034,78 +1034,65 @@ static void sf12_left_key(void)
 
 /**
  * Moves the cursor right by one word.
- * Scans forward across words and wraps to the next line if needed.
+ * Skips the rest of the current word and following spaces. At or beyond the
+ * line end, enters the next line, skipping its leading spaces if present.
  */
 static void sf13_right_key(void)
 {
-    uint8_t buf_pos;
-    bool is_tab;
-
-entry:
-    uint8_t* line_ptr = current_line_buffer.text;
-    uint8_t line_len = get_line_length();
-
-    if (line_len >= xpos && line_len != xpos)
-    {
-        buf_pos = xpos;
-    }
-    else
-    {
-        uint8_t next_line_len;
-
-        xpos = next_line_len;
-        write_line_back_to_document_safely();
-
-        if (advance_to_next_line(current_line_ptr, &line_ptr, &next_line_len))
-            return;
-        current_line_ptr += next_line_len;
-        unpack_line(edit_buffer_base);
-        scroll_repeat_count--;
-        xpos = 0;
-
-        if (get_line_length() == xpos)
-            return;
-        next_line_len = 0;
-        is_tab = false;
-        uint8_t cur_char;
-        uint8_t char_width;
-
-        cur_char = process_current_document_character(
-            current_line_buffer.text, &char_width, &next_line_len, &is_tab);
-
-        if (cur_char != 0x20)
-            return;
-
-        goto entry;
-    }
     for (;;)
     {
-        if (buf_pos >= line_len)
-            goto ca00f;
-        uint8_t char_width;
-        uint8_t cur_char2 = process_current_document_character(
-            line_ptr, &char_width, &buf_pos, &is_tab);
+        uint8_t line_len = get_line_length();
+        bool is_tab = false;
 
-        if (cur_char2 != 0x20)
+        if (xpos >= line_len)
+        {
+            uint8_t* next_line;
+            uint8_t next_line_len;
+
+            xpos = 0;
+            write_line_back_to_document_safely();
+            if (advance_to_next_line(
+                    current_line_ptr, &next_line, &next_line_len))
+                return;
+            current_line_ptr += next_line_len;
+            unpack_line(edit_buffer_base);
+            scroll_repeat_count--;
+            xpos = 0;
+
+            if (get_line_length() == 0)
+                return;
+            uint8_t first_pos = 0;
+            uint8_t char_width;
+            uint8_t first_char = process_current_document_character(
+                current_line_buffer.text, &char_width, &first_pos, &is_tab);
+            if (first_char != 0x20)
+                return;
             continue;
-        break;
-    }
-    for (;;)
-    {
-        if (buf_pos >= line_len)
-            goto ca00f;
-        uint8_t char_width;
-        uint8_t cur_char3 = process_current_document_character(
-            line_ptr, &char_width, &buf_pos, &is_tab);
+        }
 
-        if (cur_char3 == 0x20)
-            continue;
-        break;
+        uint8_t buf_pos = xpos;
+        while (buf_pos < line_len)
+        {
+            uint8_t char_width;
+            uint8_t cur_char = process_current_document_character(
+                current_line_buffer.text, &char_width, &buf_pos, &is_tab);
+            if (cur_char == 0x20)
+                break;
+        }
+        while (buf_pos < line_len)
+        {
+            uint8_t char_width;
+            uint8_t cur_char = process_current_document_character(
+                current_line_buffer.text, &char_width, &buf_pos, &is_tab);
+            if (cur_char != 0x20)
+            {
+                xpos = buf_pos - 1;
+                return;
+            }
+        }
+        xpos = buf_pos;
+        return;
     }
-    buf_pos--;
-
-ca00f:
-    xpos = buf_pos;
 }
 
 /**
