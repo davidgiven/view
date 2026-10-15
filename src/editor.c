@@ -41,7 +41,7 @@ typedef struct render_state
 } render_state_t;
 
 static bool adjust_margins_at_left_margin(void);
-static bool advance_to_next_doc_line(void);
+static format_result_t advance_to_next_doc_line(void);
 static bool find_next_word_boundary(uint8_t src_idx);
 static bool insert_byte_at_xpos(uint8_t insert_pos);
 static bool insert_character_into_edit_buffer(uint8_t ch);
@@ -2079,122 +2079,104 @@ static bool adjust_margins_at_left_margin(void)
 
 /**
  * Scans for the next line matching the search.
- * Searches the document between search_cursor_ptr and search_limit_ptr for the
- * next match.
- * @return true if a match was found
+ * Retries successive document positions, skipping command headers and
+ * collecting wildcard captures in output_buffer.
+ * @return true if a match was found before search_limit_ptr
  */
 bool scan_document_for_next_line(void)
 {
-    uint8_t temp_save;
     if (search_target_len == 0)
         return false;
-    editor_output_pos = 0x14;
-    uint8_t idx = 0;
 
-    editor_header_pos = 0;
-    scratch_index = 0;
-    uint8_t* scan_ptr = search_cursor_ptr;
-
-c8b91:
-    if (scan_ptr >= search_limit_ptr)
-        return false;
-    uint8_t pos = 0;
-    uint8_t acc2 = *scan_ptr;
-
-    command_prefix_t cp = check_for_command_prefix(acc2);
-
-    if (cp != NO_COMMAND_PREFIX)
+    for (;;)
     {
-        search_cursor_ptr = scan_ptr + 3;
-
-        return scan_document_for_next_line();
-    }
-    screen_column = upper_case_unless_folding(acc2);
-
-    do
-    {
-        pos++;
-        uint8_t acc4 = scan_ptr[pos];
-
-        if (acc4 == 0)
-            goto c8bdb;
-        command_prefix_t cp2 = check_for_command_prefix(acc4);
-
-        if (cp2 != NO_COMMAND_PREFIX)
-            goto c8bdb;
-        uint8_t acc5 = header_text_maybe[idx];
-
-        if (acc5 == 0x20)
-            goto c8bf7;
-
-        if (acc5 == 1)
-            goto c8be3;
-
-        if (acc5 == 2)
-            acc5 = 0x20;
-
-        if (acc5 == screen_column)
-            goto c8c33;
-
-    c8bdb:
-        do
-        {
-            search_cursor_ptr++;
-
-            return scan_document_for_next_line();
-
-        c8be3:
-            temp_save = idx;
-
-            if (editor_header_pos < 0x14)
-            {
-                output_buffer[editor_header_pos] = screen_column;
-                editor_header_pos++;
-            }
-            idx = temp_save;
-
-            goto c8c33;
-
-        c8bf7:
-            temp_save = idx;
-
-            if (screen_column == 0x20 || screen_column == 9 ||
-                screen_column == 0x0b || screen_column == 0x1a ||
-                screen_column == 0x0d)
-            {
-                goto c8c23;
-            }
-        } while (scratch_index == 0);
-        append_to_output_buffer(0);
+        editor_output_pos = 0x14;
+        editor_header_pos = 0;
         scratch_index = 0;
-        idx = temp_save;
-        idx++;
-    } while (idx < search_target_len);
+        uint8_t idx = 0;
+        uint8_t* scan_ptr = search_cursor_ptr;
 
-    goto c8c3e;
+        for (;;)
+        {
+            if (scan_ptr >= search_limit_ptr)
+                return false;
+            if (check_for_command_prefix(*scan_ptr) != NO_COMMAND_PREFIX)
+            {
+                search_cursor_ptr = scan_ptr + 3;
+                break;
+            }
+            screen_column = upper_case_unless_folding(*scan_ptr);
+            uint8_t pos = 0;
+            bool retry_search = false;
+            bool consume_character = true;
 
-c8c23:
-    append_to_output_buffer(screen_column);
-    idx = temp_save;
-    scratch_index = screen_column;
+            do
+            {
+                pos++;
+                uint8_t next_char = scan_ptr[pos];
+                if (next_char == 0 ||
+                    check_for_command_prefix(next_char) != NO_COMMAND_PREFIX)
+                {
+                    retry_search = true;
+                    break;
+                }
+                uint8_t target_char = header_text_maybe[idx];
+                if (target_char == 0x20)
+                {
+                    if (screen_column == 0x20 || screen_column == 9 ||
+                        screen_column == 0x0b || screen_column == 0x1a ||
+                        screen_column == 0x0d)
+                    {
+                        append_to_output_buffer(screen_column);
+                        scratch_index = screen_column;
+                        break;
+                    }
+                    if (scratch_index == 0)
+                    {
+                        retry_search = true;
+                        break;
+                    }
+                    append_to_output_buffer(0);
+                    scratch_index = 0;
+                    consume_character = false;
+                }
+                else if (target_char == 1)
+                {
+                    if (editor_header_pos < 0x14)
+                        output_buffer[editor_header_pos++] = screen_column;
+                    consume_character = true;
+                }
+                else
+                {
+                    if (target_char == 2)
+                        target_char = 0x20;
+                    if (target_char != screen_column)
+                    {
+                        retry_search = true;
+                        break;
+                    }
+                    consume_character = true;
+                }
+                idx++;
+                if (consume_character)
+                    break;
+            } while (idx < search_target_len);
 
-    do
-    {
-        scan_ptr++;
-
-        goto c8b91;
-
-    c8c33:
-        idx++;
-    } while (idx < search_target_len);
-    scan_ptr++;
-
-c8c3e:
-    doc_working_ptr = search_cursor_ptr;
-
-    search_cursor_ptr = scan_ptr;
-
-    return true;
+            if (retry_search)
+            {
+                search_cursor_ptr++;
+                break;
+            }
+            if (consume_character)
+                scan_ptr++;
+            if (idx == search_target_len)
+            {
+                doc_working_ptr = search_cursor_ptr;
+                search_cursor_ptr = scan_ptr;
+                return true;
+            }
+        }
+    }
 }
 
 /**
@@ -2376,222 +2358,208 @@ static void append_to_output_buffer(uint8_t byte_to_append)
 }
 
 /**
+ * Reads the next source byte, normalizing soft spaces and margin stops.
+ * @param space_flag carried space state, updated while reading controls
+ * @param margin_seen whether a left-margin stop has already been processed
+ * @param direct_space output true for a space emitted directly by a control
+ * @return normalized source byte
+ */
+static uint8_t read_format_character(
+    uint8_t* space_flag, bool* margin_seen, bool* direct_space)
+{
+    uint8_t src_pos = format_src_index;
+    uint8_t cur_byte;
+    *direct_space = false;
+    for (;;)
+    {
+        cur_byte = current_line_ptr[src_pos++];
+        format_src_index = src_pos;
+        if (cur_byte == 9)
+        {
+            bool is_tab = false;
+            (void)process_document_character(cur_byte, space_flag, &is_tab);
+            (*space_flag)--;
+            column_position += *space_flag;
+            break;
+        }
+        if (cur_byte != 0x1a && cur_byte != 0x0b)
+            break;
+
+        if (cur_byte == 0x0b)
+        {
+            *space_flag = input_buffer_offset;
+            if (*space_flag == 0 && !(*margin_seen))
+            {
+                *margin_seen = true;
+                uint8_t left_stop = ruler_left_stop;
+                if (left_stop == 0)
+                    continue;
+                if (column_position < ruler_left_stop)
+                    column_position = left_stop - 1;
+                scratch_offset += left_stop;
+                break;
+            }
+        }
+        if (justify_gap_count != 0)
+            continue;
+        cur_byte = 0x20;
+        *direct_space = true;
+        break;
+    }
+
+    return cur_byte;
+}
+
+/**
+ * Appends a formatted byte and updates column and gap state.
+ * @param cur_byte normalized source byte
+ * @param direct_space whether to bypass ordinary space suppression
+ * @param space_flag carried space state, updated for ordinary bytes
+ * @param output_pos output buffer position, advanced when a byte is appended
+ * @return true if the line has reached its wrapping limit
+ */
+static bool append_format_character(uint8_t cur_byte,
+    bool direct_space,
+    uint8_t* space_flag,
+    uint8_t* output_pos)
+{
+    *output_pos = editor_output_pos;
+    if (!direct_space)
+        *space_flag = (cur_byte == 0x20);
+    bool previous_gap = (justify_gap_count & 0x80) != 0;
+    if (direct_space || cur_byte != 0x20 || !previous_gap)
+    {
+        current_line_buffer.text[(*output_pos)++] = cur_byte;
+        if (cur_byte == 0x20)
+            bottom_margin = (uint8_t)(bottom_margin >> 1) | 0x80;
+        if (check_for_control_code(cur_byte) == NO_CONTROL_CODE)
+            column_position++;
+    }
+    justify_gap_count = *space_flag;
+
+    if (!previous_gap && cur_byte != 0x20 &&
+        (*output_pos >= MAX_LINE_LENGTH + 1 ||
+            (bottom_margin != 0 && column_position >= scratch_offset)))
+        return true;
+    if (*output_pos >= 0x86)
+        (*output_pos)--;
+    return false;
+}
+
+/**
+ * Removes the overflowing word and backs up the source to its preceding space.
+ * @param output_pos end of the accumulated output
+ * @return true if a nonempty line remains to be written
+ */
+static bool trim_formatted_word(uint8_t output_pos)
+{
+    format_src_index++;
+    uint8_t removed_byte;
+    do
+    {
+        format_src_index--;
+        output_pos--;
+        if (output_pos == 0)
+            return false;
+        removed_byte = current_line_buffer.text[output_pos];
+        current_line_buffer.text[output_pos] = 0x10;
+    } while (removed_byte != 0x20);
+    return true;
+}
+
+/**
+ * Builds one output line, handling source markers and backing up on overflow.
+ * @param space_flag space state carried across output lines
+ * @param paragraph_ended output true if the paragraph ended before overflow
+ * @return true if a formatted line is ready to be written
+ */
+static bool build_formatted_line(uint8_t* space_flag, bool* paragraph_ended)
+{
+    scratch_offset = ruler_right_stop - ruler_left_stop + 2;
+    wipe_buffer(0x10, edit_buffer_base);
+    uint8_t* marker_base = current_line_ptr;
+    uint8_t output_pos = 0;
+    bool margin_seen = false;
+    *paragraph_ended = false;
+    format_src_index = 0;
+    column_position = 0;
+    justify_gap_count = 0;
+    bottom_margin = 0;
+
+    for (;;)
+    {
+        editor_output_pos = output_pos;
+        uint8_t src_pos = format_src_index;
+        do
+        {
+            uint8_t idx = find_marker_at_position(src_pos, marker_base);
+            if (idx == NUM_MARKERS)
+                break;
+            markers_array[idx] = 0;
+            line_format_status++;
+        } while (line_format_status != 0);
+
+        bool direct_space;
+        uint8_t cur_byte =
+            read_format_character(space_flag, &margin_seen, &direct_space);
+
+        if (cur_byte == 0x0d)
+        {
+            src_pos = format_src_index - 1;
+            if (src_pos == 0)
+                return false;
+            if (find_next_word_boundary(src_pos))
+            {
+                *paragraph_ended = true;
+                break;
+            }
+            cur_byte = 0x20;
+            input_buffer_offset = cur_byte;
+        }
+
+        if (append_format_character(
+                cur_byte, direct_space, space_flag, &output_pos))
+            break;
+    }
+
+    return *paragraph_ended || trim_formatted_word(output_pos);
+}
+
+/**
  * Formats the current paragraph.
- * Processes the line at current_line_ptr, handling margins, tabs, and word
- * wrap.
+ * Builds output lines with margin and tab handling, backs up to a word boundary
+ * on overflow, and flushes each completed line before continuing.
  * @return FORMAT_OK, FORMAT_AT_END, or FORMAT_MEMORY_FULL
  */
 format_result_t format_paragraph(void)
 {
-    uint8_t cur_byte;
-    uint8_t left_stop_tmp;
-    uint8_t a_15;
-    uint8_t is_space;
-
+    uint8_t space_flag = 0;
     cursor_moved_flag++;
     print_xpos = 4;
-    uint8_t out_pos = 0;
+    input_buffer_offset = 0;
+    line_format_status = 0;
 
-    input_buffer_offset = out_pos;
-    line_format_status = out_pos;
-    uint8_t first_char = current_line_ptr[out_pos];
+    if (check_for_command_prefix(*current_line_ptr) != NO_COMMAND_PREFIX)
+        return advance_to_next_doc_line();
 
-    command_prefix_t cp = check_for_command_prefix(first_char);
-
-    if (cp != NO_COMMAND_PREFIX)
-        return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
-
-c998a:
-    uint8_t fmt_flags = format_mode_flag;
-
-    fmt_flags &= 0x81;
-
-    if (fmt_flags != 0)
-        return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
-
-    if (ruler_right_stop == 0)
-        return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
-
-    if (ruler_right_stop < ruler_left_stop)
-        return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
-    uint8_t available_width = ruler_right_stop - ruler_left_stop + 2;
-
-    scratch_offset = available_width;
-    wipe_buffer(0x10, edit_buffer_base);
-    uint8_t* size_delta = current_line_ptr;
-    uint8_t tmp_pos = 0;
-    uint8_t soft_hyphen_flag = 0;
-
-    format_src_index = tmp_pos;
-    column_position = tmp_pos;
-    soft_hyphen_flag = tmp_pos;
-    justify_gap_count = tmp_pos;
-    bottom_margin = tmp_pos;
-
-c99b6:
-    editor_output_pos = tmp_pos;
-    uint8_t src_pos = format_src_index;
-
-    do
+    for (;;)
     {
-        uint8_t idx = find_marker_at_position(src_pos, size_delta);
+        if ((format_mode_flag & 0x81) != 0 || ruler_right_stop == 0 ||
+            ruler_right_stop < ruler_left_stop)
+            return advance_to_next_doc_line();
 
-        if (idx == NUM_MARKERS)
-            break;
-        markers_array[idx] = 0;
-        line_format_status++;
-    } while (line_format_status != 0);
-
-c99c9:
-    do
-    {
-        cur_byte = current_line_ptr[src_pos];
-        src_pos++;
-        format_src_index = src_pos;
-
-        if (cur_byte == 9)
-        {
-            {
-                bool is_tab = false;
-
-                (void)process_document_character(cur_byte, &is_space, &is_tab);
-            }
-            is_space--;
-            uint8_t col_tmp = is_space;
-
-            col_tmp += column_position;
-            column_position = col_tmp;
-            cur_byte = 9;
-
-            goto c9a21;
-        }
-        if (cur_byte != 0x1a)
-            goto c99ee;
-
-        do
-        {
-            if (justify_gap_count != 0)
-                goto c99c9;
-            cur_byte = 0x20;
-
-            goto c9a2e;
-
-        c99ee:
-            if (cur_byte != 0x0b)
-                goto c9a11;
-            is_space = input_buffer_offset;
-        } while (is_space != 0 || soft_hyphen_flag != 0);
-        soft_hyphen_flag++;
-        left_stop_tmp = ruler_left_stop;
-    } while (left_stop_tmp == 0);
-
-    if (column_position < ruler_left_stop)
-    {
-        column_position = left_stop_tmp;
-        column_position--;
-    }
-    left_stop_tmp += scratch_offset;
-    scratch_offset = left_stop_tmp;
-    cur_byte = 0x0b;
-
-c9a11:
-    if (cur_byte == 0x0d)
-    {
-        src_pos--;
-
-        if (src_pos == 0)
-            return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
-
-        if (find_next_word_boundary(src_pos))
-            goto c9a87;
-        cur_byte = 0x20;
-        input_buffer_offset = cur_byte;
-    }
-c9a21:
-    tmp_pos = editor_output_pos;
-    is_space = 0;
-
-    if (cur_byte == 0x20)
-    {
-        is_space++;
-
-        if ((justify_gap_count & 0x80))
-            goto c9a40;
-    }
-c9a2e:
-    tmp_pos = editor_output_pos;
-    current_line_buffer.text[tmp_pos] = cur_byte;
-
-    if (cur_byte == 0x20)
-        bottom_margin = (uint8_t)(bottom_margin >> 1) | 0x80;
-    tmp_pos++;
-    control_code_t cc = check_for_control_code(cur_byte);
-
-    if (cc == NO_CONTROL_CODE)
-        column_position++;
-
-c9a40:
-    bool old_l0046_high = (justify_gap_count & 0x80) != 0;
-
-    justify_gap_count = is_space;
-
-    if (!(old_l0046_high) && cur_byte != 0x20)
-    {
-        if (tmp_pos >= MAX_LINE_LENGTH + 1)
-            goto c9a60;
-
-        if (bottom_margin == 0)
-            goto c9a58;
-
-        if (column_position >= scratch_offset)
-            goto c9a60;
-    }
-c9a58:
-    if (tmp_pos >= 0x86)
-        tmp_pos--;
-
-    goto c99b6;
-
-c9a60:
-    format_src_index++;
-
-    do
-    {
-        format_src_index--;
-        tmp_pos--;
-
-        if (tmp_pos == 0)
-            return advance_to_next_doc_line() ? FORMAT_AT_END : FORMAT_OK;
-        uint8_t saved_byte = current_line_buffer.text[tmp_pos];
-        {
-            current_line_buffer.text[tmp_pos] = 0x10;
-            a_15 = saved_byte;
-        }
-    } while (a_15 != 0x20);
-    insert_at_left_margin();
-    justify_edit_buffer(edit_buffer_base);
-
-    if (flush_formatted_line())
-        return FORMAT_MEMORY_FULL;
-    bool at_end_1;
-
-    at_end_1 = advance_to_next_doc_line();
-
-    if (line_format_status != 0)
-    {
-        goto c998a;
-
-    c9a87:
+        bool paragraph_ended;
+        if (!build_formatted_line(&space_flag, &paragraph_ended))
+            return advance_to_next_doc_line();
         insert_at_left_margin();
-
+        if (!paragraph_ended)
+            justify_edit_buffer(edit_buffer_base);
         if (flush_formatted_line())
             return FORMAT_MEMORY_FULL;
-        at_end_1 = advance_to_next_doc_line();
-
-        goto c9aa5;
+        format_result_t result = advance_to_next_doc_line();
+        if (paragraph_ended || line_format_status == 0)
+            return result;
     }
-c9aa5:
-    return at_end_1 ? FORMAT_AT_END : FORMAT_OK;
 }
 
 /**
@@ -2613,9 +2581,9 @@ static bool flush_formatted_line(void)
 /**
  * Advances to the next document line.
  * Zeroes xpos and moves current_line_ptr past the current CR.
- * @return true if at end of document
+ * @return FORMAT_AT_END at the end of the document, otherwise FORMAT_OK
  */
-static bool advance_to_next_doc_line(void)
+static format_result_t advance_to_next_doc_line(void)
 {
     xpos = 0;
     uint8_t* line_ptr;
@@ -2626,7 +2594,7 @@ static bool advance_to_next_doc_line(void)
     if (!end_of_document)
         current_line_ptr = line_ptr + line_len;
 
-    return end_of_document;
+    return end_of_document ? FORMAT_AT_END : FORMAT_OK;
 }
 
 /**
