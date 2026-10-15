@@ -50,7 +50,8 @@ extern uint8_t* doc_working_ptr;
 // ──────────────────────────────────────────────────────────
 
 extern uint8_t top_margin, bottom_margin;
-extern uint8_t format_mode_flag, justifying_flag;
+extern uint8_t format_mode_flags;
+extern bool justifying_flag;
 extern uint8_t highlight_code[2];
 extern uint8_t header_text_maybe[0x42];
 extern uint8_t ruler_right_stop, ruler_left_stop;
@@ -79,26 +80,28 @@ extern uint8_t column_position;
 extern uint8_t line_counter;
 extern uint8_t scratch_offset, scratch_index, screen_row, screen_column,
     temp_save;
-extern uint8_t print_flags, folding_flag, macro_executing_flag;
+extern uint8_t print_flags, folding_flag;
+extern bool macro_executing_flag;
 extern uint8_t print_xpos;
 extern uint8_t justify_gap_count;
 extern uint8_t current_tab_key;
-extern uint8_t microspacing_flag;
-extern uint8_t insert_mode_flag;
-extern uint8_t edit_buffer_unpacked_flag;
+extern uint8_t microspacing_count;
+extern bool insert_mode_flag;
+extern bool edit_buffer_unpacked_flag;
+extern bool edit_buffer_contains_ruler_flag;
 extern uint8_t visual_column;
 extern uint8_t line_change_pending_flag;
-extern uint8_t cursor_moved_flag;
+extern bool cursor_moved_flag;
 extern uint8_t xpos;
-extern uint8_t flags_need_redrawing_flag;
+extern bool flags_need_redrawing_flag;
 extern uint8_t delimiter_char;
-extern uint8_t line_format_status;
+extern bool line_format_status_flag;
 extern uint8_t scroll_repeat_count;
 extern uint8_t hscroll_pos;
 extern uint8_t ypos;
 extern uint8_t screen_maxrow;
-extern uint8_t status_line_needs_redrawing_flag;
-extern uint8_t edit_buffer_dirty_flag;
+extern bool status_line_needs_redrawing_flag;
+extern bool edit_buffer_dirty_flag;
 extern uint8_t display_start_row;
 extern int ruler_index_ptr;
 extern uint8_t screen_maxcolumn;
@@ -108,7 +111,7 @@ extern uint8_t screen_maxcolumn;
 extern uint8_t input_filename[];
 extern uint8_t output_filename[];
 extern uint8_t file_edit_flags;
-extern uint8_t input_file_empty_flag;
+extern bool input_file_empty_flag;
 extern uint8_t filename_buffer[];
 extern uint8_t input_buffer[];
 extern uint8_t input_buffer_offset;
@@ -119,7 +122,7 @@ extern FILE* output_fp;
 // ── Printing & formatting
 // ──────────────────────────────────────────────────────────
 
-extern uint8_t printing_from_file_flag;
+extern bool printing_from_file_flag;
 extern uint8_t cli_header_limit;
 extern uint8_t cli_header_pos;
 extern uint8_t cli_output_pos;

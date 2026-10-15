@@ -503,7 +503,7 @@ static void edit_cmd(scan_state_t* scan)
     open_output_file();
     uint8_t idx = 0;
 
-    input_file_empty_flag = idx;
+    input_file_empty_flag = false;
 
     do
     {
@@ -572,7 +572,7 @@ static void finish_cmd(void)
         move_cursor_to_top_of_document();
         ensure_cr_at_document_top();
 
-        if (input_file_empty_flag != 0)
+        if (input_file_empty_flag)
         {
             close_input_output_files();
 
@@ -746,7 +746,7 @@ static void microspace_cmd(scan_state_t* scan)
 
     if (cur_ch != 0)
     {
-        microspacing_flag = idx;
+        microspacing_count = idx;
 
         return;
     }
@@ -791,7 +791,7 @@ static void more_cmd(scan_state_t* scan)
     move_cursor_to_top_of_document();
     check_for_at_least_150_bytes_free();
 
-    if (input_file_empty_flag == 0)
+    if (!input_file_empty_flag)
     {
         if (read_next_chunk_from_input_file(top))
         {
@@ -863,7 +863,7 @@ static void quit_cmd(void)
  */
 static void close_input_output_files(void)
 {
-    input_file_empty_flag = 0;
+    input_file_empty_flag = false;
     file_edit_flags = 0;
     file_ptr = output_fp;
     close_file();
@@ -1124,11 +1124,11 @@ static void setup_cmd(scan_state_t* scan)
             next_ch = insert_flag_tmp;
 
         if (idx3 == 0)
-            format_mode_flag = next_ch;
+            format_mode_flags = next_ch;
         else if (idx3 == 1)
-            justifying_flag = next_ch;
+            justifying_flag = next_ch != 0;
         else
-            insert_mode_flag = next_ch;
+            insert_mode_flag = next_ch != 0;
         idx3--;
     } while ((int8_t)idx3 >= 0);
 
@@ -1179,7 +1179,7 @@ void run_cli(void)
         {
             cli_putstring("Input file is ");
 
-            if (input_file_empty_flag == 0)
+            if (!input_file_empty_flag)
                 cli_putstring("not ");
             cli_putstring("empty\n");
         }
@@ -1188,7 +1188,7 @@ void run_cli(void)
     {
         cli_putstring("Printer ");
         cli_putstring((char*)printer_driver_name);
-        if (microspacing_flag != 0)
+        if (microspacing_count != 0)
             cli_putstring(" (m)");
         cli_putchar('\n');
     }

@@ -144,7 +144,7 @@ label(0x6E, "line_buffer_needs_unpacking_flag")
 labelword(0x4B, "doc_working_ptr")  # was ptr2 - document working pointer
 label(0x4D, "rw_file_handle")
 label(0x4E, "error_handling_mode")
-label(0x4F, "format_mode_flag")
+label(0x4F, "format_mode_flags")
 label(0x50, "justifying_flag")
 label(0x51, "insert_mode_flag")
 label(0x52, "is_tube_flag")
@@ -153,7 +153,7 @@ label(0x47, "format_src_index")
 label(0x69, "print_flags")
 label(0x6A, "edit_input_file_handle")
 label(0x6B, "edit_output_file_handle")
-label(0x6C, "microspacing_flag")
+label(0x6C, "microspacing_count")
 label(0x6D, "edit_buffer_dirty_flag")
 label(0x6E, "edit_buffer_unpacked_flag")
 label(0x6F, "scroll_repeat_count")
@@ -172,7 +172,7 @@ label(0x7C, "folding_flag")
 label(0x7D, "cursor_moved_flag")
 # 0x7E is the delimiter / separator character during CLI command parsing and
 #printing scans(C : delimiter_char); the same byte is reused as a format
-#status counter during format_paragraph(C : line_format_status).
+#status counter during format_paragraph(C : line_format_status_flag).
 label(0x7E, "delimiter_char")
 label(0x80, "scratch_offset")
 label(0x81, "scratch_index")

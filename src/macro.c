@@ -59,7 +59,7 @@ void macro_init(uint8_t* print_doc_ptr)
  */
 void dm_fmt_cmd(void)
 {
-    if (macro_executing_flag != 0)
+    if (macro_executing_flag)
         return;
     macro_t* new_macro_ptr = last_macro_ptr;
 
@@ -143,7 +143,7 @@ bool macro_try_invoke(uint8_t** macro_cursor_ptr)
     {
         if (macro->name[0] == ch1 && macro->name[1] == ch2)
         {
-            if (macro_executing_flag != 0)
+            if (macro_executing_flag)
             {
                 nested_macro_error();
 
@@ -184,7 +184,7 @@ uint8_t* prepare_output_line(uint8_t* read_limit, uint8_t** macro_cursor)
     uint8_t temp_save;
     uint8_t tmp_ch5;
 
-    if (macro_executing_flag == 0)
+    if (!macro_executing_flag)
     {
     c9188_normal_entry:
         uint8_t* cursor = read_limit;
@@ -210,7 +210,7 @@ c91a7:
 
         if (next_ch == 4)
         {
-            macro_executing_flag = 0;
+            macro_executing_flag = false;
 
             goto c9188_normal_entry;
         }
@@ -339,7 +339,7 @@ static parse_register_result_t parse_register_reference(int cur_ch)
 static read_block_status_t read_next_output_line(
     uint8_t** cursor, uint8_t* limit)
 {
-    if (printing_from_file_flag == 0)
+    if (!printing_from_file_flag)
         return read_block_from_file(cursor, limit);
 
     uint8_t a2;

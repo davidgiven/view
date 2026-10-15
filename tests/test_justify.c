@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 typedef uint16_t addr_t;
 /* Test for justify_edit_buffer (justification) */
@@ -18,7 +19,7 @@ typedef struct __attribute__((packed, aligned(1))) line
 
 extern uint8_t* ram;
 extern uint8_t* himem;
-extern uint8_t justifying_flag;
+extern bool justifying_flag;
 extern uint8_t ruler_left_stop;
 extern uint8_t ruler_right_stop;
 extern uint8_t column_position, justify_gap_count;
@@ -79,7 +80,7 @@ static void init_globals(const char* text, uint8_t jf, uint8_t rstop)
     current_line_ptr = current_line_buffer.text;
     edit_buffer_base = (uint8_t*)&current_line_buffer; // was ptr1
 
-    justifying_flag = jf;
+    justifying_flag = jf != 0;
     ruler_left_stop = 0;
     ruler_right_stop = rstop;
 

@@ -159,20 +159,19 @@ void editor_loop_impl(void)
 
     for (;;)
     {
-        uint8_t saved_fmt = format_mode_flag;
-        uint8_t unpacked_flag = edit_buffer_unpacked_flag;
-
-        if (unpacked_flag == 0)
+        uint8_t saved_fmt = format_mode_flags;
+        if (!edit_buffer_unpacked_flag)
         {
             unpack_line(edit_buffer_base);
-            edit_buffer_unpacked_flag = unpacked_flag;
+            edit_buffer_unpacked_flag = false;
+            edit_buffer_contains_ruler_flag = false;
         }
         recalculate_cursor_xpos();
 
-        if (ruler_left_stop != 0 && (format_mode_flag & 0x80) == 0 &&
+        if (ruler_left_stop != 0 && (format_mode_flags & 0x80) == 0 &&
             ruler_left_stop > visual_column)
         {
-            bool move_to_margin = cursor_moved_flag != 0;
+            bool move_to_margin = cursor_moved_flag;
 
             if (!move_to_margin)
             {
@@ -180,7 +179,7 @@ void editor_loop_impl(void)
 
                 if (line_len < xpos)
                 {
-                    if (format_mode_flag & 0x40)
+                    if (format_mode_flags & 0x40)
                         move_to_margin = true;
                     else
                         xpos = line_len;
@@ -192,17 +191,17 @@ void editor_loop_impl(void)
                 visual_column = ruler_left_stop;
                 line_change_pending_flag++;
                 recalculate_cursor_xpos();
-                uint8_t masked_flags = format_mode_flag & 0xbf;
+                uint8_t masked_flags = format_mode_flags & 0xbf;
                 int margin_pos = find_left_margin_stop();
 
                 // Preserve the format flags unless a margin stop lies ahead.
                 if (margin_pos >= 0 && margin_pos > xpos)
-                    format_mode_flag = masked_flags | 0x40;
+                    format_mode_flags = masked_flags | 0x40;
             }
         }
-        if (saved_fmt != format_mode_flag)
-            flags_need_redrawing_flag++;
-        cursor_moved_flag = 0;
+        if (saved_fmt != format_mode_flags)
+            flags_need_redrawing_flag = true;
+        cursor_moved_flag = false;
         redraw_editor();
 
         uint8_t key_code = screen_getchar();
@@ -348,8 +347,8 @@ static void cf1_next_match_key(void)
  */
 static void cf4_insert_mode_key(void)
 {
-    insert_mode_flag ^= 0xff;
-    flags_need_redrawing_flag++;
+    insert_mode_flag = !insert_mode_flag;
+    flags_need_redrawing_flag = true;
 }
 
 /**
@@ -405,7 +404,7 @@ static void delete_key(void)
     if (marker_check < 0x0c)
         return;
 
-    if (insert_mode_flag != 0)
+    if (insert_mode_flag)
         return;
     uint8_t line_len = get_line_length();
 
@@ -442,7 +441,7 @@ static void f0_format_block_key(void)
         show_memory_full_error();
         longjmp(env, JMP_EDITOR);
     }
-    if (line_format_status == 0)
+    if (!line_format_status_flag)
     {
         ptr6_screen_row = ptr6_screen_row;
         display_start_row = display_start_row;
@@ -491,7 +490,7 @@ static void f15_up_key(void)
         return;
     current_line_ptr = line_ptr;
     line_change_pending_flag++;
-    cursor_moved_flag++;
+    cursor_moved_flag = true;
 }
 
 /**
@@ -501,7 +500,7 @@ static void f15_up_key(void)
 static void f7_delete_line_key(void)
 {
     write_line_back_to_document_safely();
-    cursor_moved_flag++;
+    cursor_moved_flag = true;
     uint8_t* insert_ptr = current_line_ptr;
     uint8_t bytes_to_remove = edit_line_len;
 
@@ -549,7 +548,7 @@ static void f9_delete_char_key(void)
 static void k_command_key(void)
 {
     draw_prompt_characters('^', 'K');
-    flags_need_redrawing_flag++;
+    flags_need_redrawing_flag = true;
     uint8_t key_code = screen_getchar();
     uint8_t ascii_code = control_key_to_ascii(key_code);
 
@@ -614,7 +613,7 @@ static void k_command_key(void)
 static void cf0_delete_block_key(void)
 {
     write_line_back_to_document_safely();
-    cursor_moved_flag++;
+    cursor_moved_flag = true;
 
     if (reset_area_to_marks_1_2())
     {
@@ -656,7 +655,7 @@ static void f11_copy_key(void)
 static void o_command_key(void)
 {
     draw_prompt_characters('^', 'O');
-    flags_need_redrawing_flag++;
+    flags_need_redrawing_flag = true;
     uint8_t key_code = screen_getchar();
     uint8_t ascii_code = control_key_to_ascii(key_code);
 
@@ -721,15 +720,15 @@ static void o_command_key(void)
  */
 static void cf2_format_mode_key(void)
 {
-    uint8_t new_flags = format_mode_flag;
+    uint8_t new_flags = format_mode_flags;
 
     new_flags &= 0xbf;
 
-    if (format_mode_flag & 0x40)
+    if (format_mode_flags & 0x40)
         new_flags |= 1;
     new_flags ^= 1;
-    format_mode_flag = new_flags;
-    flags_need_redrawing_flag++;
+    format_mode_flags = new_flags;
+    flags_need_redrawing_flag = true;
 }
 
 /**
@@ -738,8 +737,8 @@ static void cf2_format_mode_key(void)
  */
 static void cf3_justify_mode_key(void)
 {
-    justifying_flag ^= 0xff;
-    flags_need_redrawing_flag++;
+    justifying_flag = !justifying_flag;
+    flags_need_redrawing_flag = true;
 }
 
 /**
@@ -762,7 +761,7 @@ static void cf5_default_ruler_key(void)
 static void q_command_key(void)
 {
     draw_prompt_characters('^', 'Q');
-    flags_need_redrawing_flag++;
+    flags_need_redrawing_flag = true;
     uint8_t key_code = screen_getchar();
     uint8_t ascii_code = control_key_to_ascii(key_code);
 
@@ -913,7 +912,7 @@ static void f3_delete_to_eol_key(void)
  */
 static void f5_end_of_line_key(void)
 {
-    cursor_moved_flag++;
+    cursor_moved_flag = true;
     set_xpos_to_line_length();
 }
 
@@ -983,10 +982,11 @@ static void cf8_mark_as_ruler_key(void)
     current_format_line[buf_idx] = 0x2e;
     line_counter++;
 
-    if ((edit_buffer_unpacked_flag & 0x80) == 0)
+    if (!edit_buffer_contains_ruler_flag)
     {
-        edit_buffer_unpacked_flag = 0x80;
-        edit_buffer_dirty_flag++;
+        edit_buffer_unpacked_flag = true;
+        edit_buffer_contains_ruler_flag = true;
+        edit_buffer_dirty_flag = true;
     }
     set_format_mode_bit7();
 }
@@ -1144,7 +1144,7 @@ static void sf1_swap_case_key(void)
  */
 static void sf2_release_margins_key(void)
 {
-    if ((format_mode_flag & 0x40) == 0)
+    if ((format_mode_flags & 0x40) == 0)
     {
         xpos = 0;
 
@@ -1167,7 +1167,7 @@ static void sf2_release_margins_key(void)
  */
 static void f4_beginning_of_line_key(void)
 {
-    cursor_moved_flag++;
+    cursor_moved_flag = true;
     xpos = 0;
 }
 
@@ -1178,7 +1178,7 @@ static void f4_beginning_of_line_key(void)
 static void sf3_delete_to_char_key(void)
 {
     draw_prompt_characters('C', 'H');
-    flags_need_redrawing_flag++;
+    flags_need_redrawing_flag = true;
     uint8_t target_char = screen_getchar();
 
     if (target_char == 9 || target_char == 0xa0 || target_char == 0xa1)
@@ -1292,7 +1292,7 @@ static void sf8_edit_command_key(void)
 {
     xpos = 0;
     redraw_editor();
-    edit_buffer_dirty_flag++;
+    edit_buffer_dirty_flag = true;
     scratch_offset = 0;
     scratch_index = 0;
 
@@ -1341,8 +1341,8 @@ static void sf9_delete_command_key(void)
     heap_format_line_ptr = &current_line_buffer;
     clear_format_mode_bit7();
     line_counter++;
-    edit_buffer_dirty_flag++;
-    cursor_moved_flag++;
+    edit_buffer_dirty_flag = true;
+    cursor_moved_flag = true;
 }
 
 /**
@@ -1388,7 +1388,7 @@ static void delete_edit_buffer_bytes_at_xpos(uint8_t delete_count)
 {
     uint8_t temp_save = 0;
     scratch_offset = delete_count;
-    edit_buffer_dirty_flag++;
+    edit_buffer_dirty_flag = true;
     uint8_t* size_delta = current_line_buffer.text;
     uint8_t scan_pos = xpos;
     uint8_t end_pos = scan_pos;
@@ -1450,10 +1450,10 @@ static bool insert_printable_byte(void)
         if (idx < 2)
             line_counter++;
     }
-    uint8_t mode_flag = insert_mode_flag;
+    bool mode_flag = insert_mode_flag;
 
     uint8_t char_at_pos = current_line_buffer.text[check_pos];
-    if (mode_flag != 0 || char_at_pos == 9 || char_at_pos == 0x0b)
+    if (mode_flag || char_at_pos == 9 || char_at_pos == 0x0b)
     {
         line_counter++;
         if (!insert_edit_buffer_bytes_at_xpos(1))
@@ -1654,7 +1654,7 @@ static void enter_printable_character(void)
 {
     if (xpos >= MAX_LINE_LENGTH)
         return;
-    edit_buffer_dirty_flag++;
+    edit_buffer_dirty_flag = true;
     if (adjust_margins_at_left_margin())
         return;
     if (!insert_printable_byte())
@@ -1681,7 +1681,7 @@ static void enter_printable_character(void)
 
         return_to_editor_loop();
     }
-    if (format_mode_flag != 0)
+    if (format_mode_flags != 0)
         return;
 
     if (col_pos == 0)
@@ -1731,7 +1731,7 @@ static void return_key(void)
  */
 static void advance_current_line_pointer(void)
 {
-    cursor_moved_flag++;
+    cursor_moved_flag = true;
     uint8_t* line_ptr;
     uint8_t line_len;
 
@@ -1748,7 +1748,7 @@ static void advance_current_line_pointer(void)
 static int prompt_for_marker(void)
 {
     draw_prompt_characters('M', 'K');
-    flags_need_redrawing_flag++;
+    flags_need_redrawing_flag = true;
     uint8_t key_code = screen_getchar();
 
     return lookup_marker(key_code);
@@ -1805,7 +1805,7 @@ static bool reset_area_to_marks_1_2(void)
  */
 static void insert_line_at_cursor(uint8_t* target_ptr)
 {
-    cursor_moved_flag++;
+    cursor_moved_flag = true;
     insert_line_into_document(target_ptr);
 }
 
@@ -1834,7 +1834,7 @@ static void move_to_previous_line(void)
  */
 static void move_cursor_up(uint8_t lines_to_move)
 {
-    cursor_moved_flag++;
+    cursor_moved_flag = true;
     scratch_offset = lines_to_move;
     write_line_back_to_document_safely();
     uint8_t* line = current_line_ptr;
@@ -1866,7 +1866,7 @@ static void move_cursor_up(uint8_t lines_to_move)
  */
 static void move_cursor_down(uint8_t lines_to_move)
 {
-    cursor_moved_flag++;
+    cursor_moved_flag = true;
     scratch_offset = lines_to_move;
     write_line_back_to_document_safely();
     uint8_t* line = current_line_ptr;
@@ -1934,7 +1934,7 @@ static void check_pointer_in_area(void)
     split_line_at_wrap(adjusted);
     split_line_at_wrap(area_insert_ptr);
     display_start_row = 1;
-    cursor_moved_flag = 1;
+    cursor_moved_flag = true;
 }
 
 /**
@@ -1973,9 +1973,10 @@ void enter_editor_mode(void)
 {
     screen_enter();
     clear_screen();
-    edit_buffer_dirty_flag = 0;
+    edit_buffer_dirty_flag = false;
     scroll_repeat_count = 0;
-    edit_buffer_unpacked_flag = 0;
+    edit_buffer_unpacked_flag = false;
+    edit_buffer_contains_ruler_flag = false;
     uint8_t remaining_rows = screen_maxrow;
 
     do
@@ -1983,8 +1984,8 @@ void enter_editor_mode(void)
         line_lengths[remaining_rows] = 0;
         remaining_rows--;
     } while ((remaining_rows & 0x80) == 0);
-    status_line_needs_redrawing_flag = 2;
-    flags_need_redrawing_flag = 1;
+    status_line_needs_redrawing_flag = true;
+    flags_need_redrawing_flag = true;
     display_start_row = 1;
 }
 
@@ -2037,7 +2038,7 @@ static void draw_previous_word(
 static bool adjust_margins_at_left_margin(void)
 {
     uint8_t insert_pos;
-    uint8_t flags_tmp = format_mode_flag;
+    uint8_t flags_tmp = format_mode_flags;
 
     flags_tmp &= 0x81;
 
@@ -2331,7 +2332,8 @@ void show_memory_full_error(void)
             remaining_cols--;
         } while (remaining_cols != 0);
     }
-    edit_buffer_unpacked_flag = 0;
+    edit_buffer_unpacked_flag = false;
+    edit_buffer_contains_ruler_flag = false;
     clear_cmd();
 
     do
@@ -2340,7 +2342,7 @@ void show_memory_full_error(void)
         key_code = screen_getchar();
     } while (key_code != 0x1b);
     cursor_on();
-    status_line_needs_redrawing_flag = 1;
+    status_line_needs_redrawing_flag = true;
     display_start_row = 1;
 }
 
@@ -2490,14 +2492,14 @@ static bool build_formatted_line(uint8_t* space_flag, bool* paragraph_ended)
     {
         editor_output_pos = output_pos;
         uint8_t src_pos = format_src_index;
-        do
+        for (;;)
         {
             uint8_t idx = find_marker_at_position(src_pos, marker_base);
             if (idx == NUM_MARKERS)
                 break;
             markers_array[idx] = 0;
-            line_format_status++;
-        } while (line_format_status != 0);
+            line_format_status_flag = true;
+        }
 
         bool direct_space;
         uint8_t cur_byte =
@@ -2534,17 +2536,17 @@ static bool build_formatted_line(uint8_t* space_flag, bool* paragraph_ended)
 format_result_t format_paragraph(void)
 {
     uint8_t space_flag = 0;
-    cursor_moved_flag++;
+    cursor_moved_flag = true;
     print_xpos = 4;
     input_buffer_offset = 0;
-    line_format_status = 0;
+    line_format_status_flag = false;
 
     if (check_for_command_prefix(*current_line_ptr) != NO_COMMAND_PREFIX)
         return advance_to_next_doc_line();
 
     for (;;)
     {
-        if ((format_mode_flag & 0x81) != 0 || ruler_right_stop == 0 ||
+        if ((format_mode_flags & 0x81) != 0 || ruler_right_stop == 0 ||
             ruler_right_stop < ruler_left_stop)
             return advance_to_next_doc_line();
 
@@ -2557,7 +2559,7 @@ format_result_t format_paragraph(void)
         if (flush_formatted_line())
             return FORMAT_MEMORY_FULL;
         format_result_t result = advance_to_next_doc_line();
-        if (paragraph_ended || line_format_status == 0)
+        if (paragraph_ended || !line_format_status_flag)
             return result;
     }
 }
@@ -2569,9 +2571,9 @@ format_result_t format_paragraph(void)
  */
 static bool flush_formatted_line(void)
 {
-    line_format_status = (uint8_t)(line_format_status << 1) | 1;
+    line_format_status_flag = true;
     edit_line_len = format_src_index - 1;
-    edit_buffer_unpacked_flag++;
+    edit_buffer_unpacked_flag = true;
 
     if (!write_line_back_to_document())
         return false;
@@ -2750,7 +2752,7 @@ uint8_t justify_edit_buffer(uint8_t* target_ptr)
 {
     uint8_t char_width = 0;
     uint8_t last_column = 0;
-    if (justifying_flag != 0)
+    if (justifying_flag)
         return char_width;
     justify_gap_count = 0;
     column_position = 0;
@@ -3035,7 +3037,7 @@ static bool insert_edit_buffer_bytes_at_xpos(uint8_t count)
 
         return false;
     }
-    edit_buffer_dirty_flag++;
+    edit_buffer_dirty_flag = true;
     uint8_t* size_delta = current_line_buffer.text;
     uint8_t scan_pos = MAX_LINE_LENGTH;
 
@@ -3079,11 +3081,12 @@ cae52:
 }
 
 /**
- * Clear the unpacked flag, redraw the editor, and write the edit buffer back.
+ * Invalidates both edit-buffer flags, redraws, and writes the buffer back.
  */
 void redraw_and_write_back(void)
 {
-    edit_buffer_unpacked_flag = 0;
+    edit_buffer_unpacked_flag = false;
+    edit_buffer_contains_ruler_flag = false;
     redraw_editor();
     write_line_back_to_document_safely();
 }
@@ -3327,16 +3330,16 @@ static void redraw_editor(void)
 {
     cursor_off();
     saved_ruler_index_redraw = ruler_index_ptr;
-    uint8_t status_needs_redraw = status_line_needs_redrawing_flag;
+    bool status_needs_redraw = status_line_needs_redrawing_flag;
 
-    if (edit_buffer_unpacked_flag == 0 || display_start_row != 0 ||
+    if (!edit_buffer_unpacked_flag || display_start_row != 0 ||
         scroll_repeat_count != 0)
     {
         if (position_editor_viewport())
-            status_needs_redraw++;
+            status_needs_redraw = true;
     }
     if (adjust_editor_horizontal_scroll())
-        status_needs_redraw = 1;
+        status_needs_redraw = true;
     status_line_needs_redrawing_flag = status_needs_redraw;
 
     if (display_start_row != 0)
@@ -3355,7 +3358,7 @@ static void redraw_editor(void)
                                 : current_format_line + offsetof(line_t, text);
         draw_line(&rs, draw_ptr);
     }
-    if (flags_need_redrawing_flag != 0)
+    if (flags_need_redrawing_flag)
         draw_status_word();
     finish_editor_redraw();
 }
@@ -3384,13 +3387,13 @@ static void cursor_on(void)
  */
 static void draw_ruler(void)
 {
-    if (status_line_needs_redrawing_flag == 0)
+    if (!status_line_needs_redrawing_flag)
         return;
-    status_line_needs_redrawing_flag = 0;
+    status_line_needs_redrawing_flag = false;
     render_state_t rs = {.line = 0};
 
     draw_line(&rs, current_ruler_ptr);
-    flags_need_redrawing_flag = 1;
+    flags_need_redrawing_flag = true;
 }
 
 /**
@@ -3467,10 +3470,10 @@ static void clear_to_eol(uint8_t fill_char, uint8_t line)
  */
 static void draw_status_word(void)
 {
-    flags_need_redrawing_flag = 0;
+    flags_need_redrawing_flag = false;
     home_cursor();
     uint8_t status_char = 0x46;
-    uint8_t fmt_flags = format_mode_flag;
+    uint8_t fmt_flags = format_mode_flags;
 
     if (fmt_flags != 0)
     {
@@ -3483,11 +3486,11 @@ static void draw_status_word(void)
     screen_putchar(status_char);
     uint8_t acc2 = 0x4a;
 
-    if (justifying_flag != 0)
+    if (justifying_flag)
         acc2 = 0x20;
     screen_putchar(acc2);
 
-    if (insert_mode_flag != 0)
+    if (insert_mode_flag)
     {
         home_cursor();
 
@@ -3739,15 +3742,16 @@ uint8_t process_current_document_character(uint8_t* target_ptr,
  */
 static void unpack_line_into_buffer(uint8_t* target_ptr)
 {
-    if (edit_buffer_unpacked_flag != 0)
+    if (edit_buffer_unpacked_flag)
         return;
-    edit_buffer_unpacked_flag = 1;
+    edit_buffer_unpacked_flag = true;
     unpack_line(target_ptr);
 }
 
 /**
  * Unpacks a document line into the edit buffer.
- * Fills the buffer, handles command prefixes, and copies line content.
+ * Fills the buffer, updates the ruler flag, handles command prefixes, and
+ * copies line content.
  * @param target_ptr destination buffer
  */
 static void unpack_line(uint8_t* target_ptr)
@@ -3758,10 +3762,11 @@ static void unpack_line(uint8_t* target_ptr)
 
     command_prefix_t cp = check_for_command_prefix(first_byte);
 
+    edit_buffer_contains_ruler_flag = cp == RULER_PREFIX;
     if (cp != NO_COMMAND_PREFIX)
     {
-        if (cp == RULER_PREFIX)
-            edit_buffer_unpacked_flag = first_byte;
+        if (edit_buffer_contains_ruler_flag)
+            edit_buffer_unpacked_flag = true;
         set_format_mode_bit7();
     }
     current_format_line = target_ptr;
@@ -3790,12 +3795,12 @@ static void unpack_line(uint8_t* target_ptr)
  */
 void clear_format_mode_bit7(void)
 {
-    uint8_t old = format_mode_flag;
+    uint8_t old = format_mode_flags;
 
-    format_mode_flag &= ~0x80;
+    format_mode_flags &= ~0x80;
 
-    if (old != format_mode_flag)
-        flags_need_redrawing_flag++;
+    if (old != format_mode_flags)
+        flags_need_redrawing_flag = true;
 }
 
 /**
@@ -3804,10 +3809,10 @@ void clear_format_mode_bit7(void)
  */
 static void set_format_mode_bit7(void)
 {
-    uint8_t old = format_mode_flag;
+    uint8_t old = format_mode_flags;
 
-    format_mode_flag |= 0x80;
+    format_mode_flags |= 0x80;
 
-    if (old != format_mode_flag)
-        flags_need_redrawing_flag++;
+    if (old != format_mode_flags)
+        flags_need_redrawing_flag = true;
 }

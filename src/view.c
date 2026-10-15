@@ -58,37 +58,38 @@ uint8_t* macro_cursor_ptr; /** Cursor into current macro body. */
 uint8_t** ruler_index;     /** Ruler index stack. */
 size_t ruler_index_size =
     DEFAULT_RULER_INDEX_SIZE; /** Size of ruler index stack. */
-uint8_t printing_from_file_flag;
+bool printing_from_file_flag;
 int saved_ruler_index_scroll; /** Index into ruler_index[] */
 uint8_t column_position;
 uint8_t ruler_buffer_len;
 uint8_t file_edit_flags;
 uint8_t xpos;
-uint8_t input_file_empty_flag;
+bool input_file_empty_flag;
 uint8_t justify_gap_count;
 uint8_t cli_output_pos;   /** Output buffer write index for CLI. */
 uint8_t cli_header_pos;   /** Header field position for CLI. */
 uint8_t cli_header_limit; /** Header loop limit for CLI. */
 uint8_t* doc_working_ptr; /** Document working pointer. */
 uint8_t print_flags;
-uint8_t edit_buffer_dirty_flag;
-uint8_t edit_buffer_unpacked_flag;
+bool edit_buffer_dirty_flag;
+bool edit_buffer_unpacked_flag;
+bool edit_buffer_contains_ruler_flag;
 uint8_t scroll_repeat_count;
 int ruler_index_ptr; /** Index into ruler_index[] */
 uint8_t hscroll_pos;
 uint8_t visual_column;
 uint8_t display_start_row;
 uint8_t line_counter;
-uint8_t flags_need_redrawing_flag;
-uint8_t status_line_needs_redrawing_flag;
+bool flags_need_redrawing_flag;
+bool status_line_needs_redrawing_flag;
 uint8_t ypos;
 uint8_t print_xpos;
 uint8_t line_change_pending_flag;
 uint8_t search_target_len;
-uint8_t cursor_moved_flag;
+bool cursor_moved_flag;
 uint8_t delimiter_char; /** Delimiter character used during parsing. */
-uint8_t
-    line_format_status; /** Format status byte (marker count and flush tag). */
+/** Set when formatting removes a marker or flushes a line. */
+bool line_format_status_flag;
 uint8_t input_buffer_offset;
 uint8_t scratch_offset;    /** Generic scratch offset. */
 uint8_t scratch_index;     /** Generic scratch index. */
@@ -102,14 +103,14 @@ FILE* file_ptr;
 
 uint8_t top_margin;
 uint8_t bottom_margin;
-uint8_t macro_executing_flag;
+bool macro_executing_flag;
 uint8_t highlight_code[2];
-uint8_t format_mode_flag;
-uint8_t justifying_flag;
-uint8_t insert_mode_flag;
+uint8_t format_mode_flags;
+bool justifying_flag;
+bool insert_mode_flag;
 uint8_t screen_maxrow;
 uint8_t screen_maxcolumn;
-uint8_t microspacing_flag;
+uint8_t microspacing_count;
 uint8_t current_tab_key;
 uint8_t folding_flag;
 uint8_t ruler_right_stop;

@@ -12,14 +12,14 @@
 
 static uint8_t footer_margin;
 static uint8_t footer_text_maybe[0x42];
-static uint8_t footers_enabled_flag;
-static uint8_t formatted_line_written_flag;
+static bool footers_enabled_flag;
+static bool formatted_line_written_flag;
 static uint8_t header_margin;
-static uint8_t headers_enabled_flag;
+static bool headers_enabled_flag;
 static uint8_t left_margin;
 static uint8_t line_spacing;
-static uint8_t page_break_flag;
-static uint8_t page_break_pending_flag;
+static bool page_break_flag;
+static bool page_break_pending_flag;
 static uint8_t page_length;
 static uint8_t page_lines_remaining;
 static uint8_t print_extra_space_accum;
@@ -27,7 +27,7 @@ static uint8_t print_last_microspacing;
 static uint8_t print_running_total_accum;
 static uint8_t rhs_extra_margin;
 static uint8_t rw_file_handle;
-static uint8_t two_sided_flag;
+static bool two_sided_flag;
 
 static bool evaluate_expression_from_fmt_cmd(
     int* result, uint8_t* pos, uint8_t idx);
@@ -184,15 +184,15 @@ void print_document(scan_state_t* scan)
     macro_init(print_doc_ptr);
     uint8_t cur_ch = 0;
 
-    page_break_pending_flag = cur_ch;
+    page_break_pending_flag = false;
     print_xpos = cur_ch;
-    printing_from_file_flag = cur_ch;
+    printing_from_file_flag = false;
     current_ruler_ptr = current_ruler_buffer;
     find_margins_of_current_ruler_buffer();
 
     if (!(!scan_input_buffer(input_buffer, scan)))
     {
-        printing_from_file_flag++;
+        printing_from_file_flag = true;
         print_source_ptr = ram;
         print_loop(print_doc_ptr);
 
@@ -206,7 +206,7 @@ c8f0d:
 
         goto c8f0d;
     }
-    if ((int8_t)page_break_pending_flag >= 0)
+    if (!page_break_pending_flag)
         return;
     process_page_footer();
 }
@@ -293,7 +293,7 @@ c8f30:
     c8f7a_l:
         if (macro_try_invoke(&macro_cursor_ptr))
         {
-            if (macro_executing_flag != 0)
+            if (macro_executing_flag)
                 continue;
         }
         else
@@ -301,7 +301,7 @@ c8f30:
             goto c8f6b_l;
         }
     c8fce_l:
-        if (page_break_pending_flag == 0)
+        if (!page_break_pending_flag)
             render_new_page();
         output_left_margin();
         column_position = 0;
@@ -309,7 +309,7 @@ c8f30:
 
         if (((int8_t)print_flags < 0))
         {
-            if (microspacing_flag != 0)
+            if (microspacing_count != 0)
             {
                 microspace_word_processor(&pos5);
                 continue;
@@ -375,7 +375,7 @@ formatting_command_t lookup_formatting_command(void)
  */
 static bool execute_formatting_command(formatting_command_t idx)
 {
-    formatted_line_written_flag = 0;
+    formatted_line_written_flag = false;
 
     switch (idx)
     {
@@ -472,7 +472,7 @@ static bool execute_formatting_command(formatting_command_t idx)
 
         case NO_FORMATTING_COMMAND:
     }
-    return formatted_line_written_flag == 0;
+    return !formatted_line_written_flag;
 }
 
 /**
@@ -565,7 +565,7 @@ static void write_output_buffer_to_format_line(uint8_t pad_len)
         pos++;
         idx++;
     } while (cur_ch != 0x0d);
-    formatted_line_written_flag++;
+    formatted_line_written_flag = true;
 }
 
 /**
@@ -761,7 +761,7 @@ static void ts_fmt_cmd(void)
 
     if (parse_boolean_from_fmt_cmd(&pos, &flag_value))
         return;
-    two_sided_flag = flag_value;
+    two_sided_flag = flag_value != 0;
     int value;
     evaluate_expression_from_fmt_cmd(&value, &pos, 0);
     rhs_extra_margin = value;
@@ -858,7 +858,7 @@ static void pe_fmt_cmd(void)
     if (value < page_lines_remaining)
         return;
 
-    if (page_break_pending_flag != 0)
+    if (page_break_pending_flag)
     {
         page_eject_fmt();
 
@@ -915,7 +915,7 @@ static void eject_two_pages(void)
  */
 static void page_eject_fmt(void)
 {
-    if (page_break_pending_flag == 0)
+    if (!page_break_pending_flag)
         render_new_page();
     process_page_footer();
 }
@@ -930,7 +930,7 @@ static void fo_fmt_cmd(void)
 
     if (parse_boolean_from_fmt_cmd(&pos, &flag_value))
         return;
-    footers_enabled_flag = flag_value;
+    footers_enabled_flag = flag_value != 0;
 }
 
 /**
@@ -943,7 +943,7 @@ static void he_fmt_cmd(void)
 
     if (parse_boolean_from_fmt_cmd(&pos, &flag_value))
         return;
-    headers_enabled_flag = flag_value;
+    headers_enabled_flag = flag_value != 0;
 }
 
 /**
@@ -956,7 +956,7 @@ static void pb_fmt_cmd(void)
 
     if (parse_boolean_from_fmt_cmd(&pos, &flag_value))
         return;
-    page_break_flag = flag_value;
+    page_break_flag = flag_value != 0;
 }
 
 /**
@@ -1208,19 +1208,19 @@ static uint8_t get_current_fmt_cmd_byte(uint8_t* pos)
  */
 static void process_page_footer(void)
 {
-    if (page_break_flag != 0)
+    if (page_break_flag)
     {
         print_vertical_space(page_lines_remaining);
         print_vertical_space(footer_margin);
 
-        if (footers_enabled_flag != 0)
+        if (footers_enabled_flag)
             render_header_or_footer(footer_text_maybe);
         print_newline();
         print_vertical_space(bottom_margin);
     }
     register_value_array['P' - 'A']++;
     register_value_array['L' - 'A'] = 1;
-    page_break_pending_flag = 0;
+    page_break_pending_flag = false;
 }
 
 /**
@@ -1363,7 +1363,8 @@ c90f8:
     goto c8fe6_inline;
 
 c9101:
-    uint16_t scan_ptr = (uint16_t)print_running_total_accum * microspacing_flag;
+    uint16_t scan_ptr =
+        (uint16_t)print_running_total_accum * microspacing_count;
     justify_gap_count = print_extra_space_accum;
     print_running_total_accum = scan_ptr % justify_gap_count;
     print_extra_space_accum = (uint8_t)(scan_ptr / justify_gap_count);
@@ -1393,7 +1394,7 @@ c912b:
 
         if (emit_byte == 0x20)
         {
-            uint8_t microspace_val = microspacing_flag;
+            uint8_t microspace_val = microspacing_count;
 
             microspace_val += print_extra_space_accum;
             idx = microspace_val;
@@ -1409,7 +1410,7 @@ c912b:
         }
         else
         {
-            idx = microspacing_flag;
+            idx = microspacing_count;
             emit_microspacing_spaces(emit_byte, idx);
         }
         print_char(emit_byte);
@@ -1449,7 +1450,7 @@ c8ffb_inline:
  */
 static void render_new_page(void)
 {
-    page_break_pending_flag = 0x81;
+    page_break_pending_flag = true;
 
     if (print_flags & 0x40)
     {
@@ -1475,7 +1476,7 @@ static void render_new_page(void)
         start_printing();
     }
 c92d4:
-    if (page_break_flag == 0)
+    if (!page_break_flag)
     {
         compute_lines_remaining_on_page();
 
@@ -1483,7 +1484,7 @@ c92d4:
     }
     print_vertical_space(top_margin);
 
-    if (headers_enabled_flag != 0)
+    if (headers_enabled_flag)
         render_header_or_footer(header_text_maybe);
     print_newline();
     print_vertical_space(header_margin);
@@ -1600,10 +1601,10 @@ static void start_microspacing_if_active(uint8_t cur_ch)
     if ((print_flags & 0x80) == 0)
         return;
 
-    if (microspacing_flag == 0)
+    if (microspacing_count == 0)
         return;
     print_alignment_spaces(cur_ch);
-    print_last_microspacing = microspacing_flag;
+    print_last_microspacing = microspacing_count;
     printer_driver_ptr->printer_microspace();
 }
 
@@ -1779,7 +1780,7 @@ static void output_left_margin(void)
 
     if (parity)
     {
-        if (two_sided_flag != 0)
+        if (two_sided_flag)
             cur_ch += rhs_extra_margin;
     }
     print_char_x_times(0x20, cur_ch);
@@ -1792,7 +1793,7 @@ static void output_left_margin(void)
  */
 static bool get_page_parity(void)
 {
-    if (two_sided_flag == 0)
+    if (!two_sided_flag)
         return true;
     return (register_value_array['P' - 'A'] & 1) != 0;
 }
@@ -1875,17 +1876,17 @@ static void reset_print_registers(void)
     memset(register_value_array, 0, sizeof(register_value_array));
     header_text_maybe[0] = cur_ch;
     footer_text_maybe[0] = cur_ch;
-    two_sided_flag = cur_ch;
+    two_sided_flag = false;
     left_margin = cur_ch;
     line_spacing = cur_ch;
     rhs_extra_margin = cur_ch;
-    macro_executing_flag = cur_ch;
+    macro_executing_flag = false;
     page_length = 0x42;
     uint8_t tmp_ch2 = 1;
 
-    footers_enabled_flag = tmp_ch2;
-    headers_enabled_flag = tmp_ch2;
-    page_break_flag = tmp_ch2;
+    footers_enabled_flag = true;
+    headers_enabled_flag = true;
+    page_break_flag = true;
     register_value_array['P' - 'A'] = tmp_ch2;
     register_value_array['L' - 'A'] = tmp_ch2;
     uint8_t pos = 0x80;
@@ -1909,7 +1910,7 @@ static void compute_lines_remaining_on_page(void)
 {
     uint8_t idx = page_length;
 
-    if (page_break_flag != 0)
+    if (page_break_flag)
     {
         idx = 1;
         uint8_t next_ch = page_length;
@@ -1978,7 +1979,7 @@ void stop_printing(void)
  */
 void prepare_printer_driver(void)
 {
-    microspacing_flag = 0;
+    microspacing_count = 0;
     printer_driver_ptr = &default_printer_driver;
 }
 

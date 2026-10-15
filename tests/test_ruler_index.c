@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 typedef uint16_t addr_t;
 /* Test for ruler index push/pop */
@@ -16,7 +17,7 @@ extern size_t ruler_index_size;
 extern uint8_t* current_ruler_ptr;
 extern uint8_t ruler_left_stop;
 extern uint8_t ruler_right_stop;
-extern uint8_t status_line_needs_redrawing_flag;
+extern bool status_line_needs_redrawing_flag;
 extern uint8_t ruler_buffer_len;
 extern uint8_t screen_maxcolumn;
 
@@ -77,7 +78,7 @@ int main(void)
 
     {
         ruler_index_ptr = 10;
-        status_line_needs_redrawing_flag = 0;
+        status_line_needs_redrawing_flag = false;
         ruler_left_stop = ruler_right_stop = 0;
 
         push_onto_ruler_index(&ram[ruler1_addr - 3]);

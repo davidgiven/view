@@ -90,26 +90,27 @@ unsigned int* get_register_address(uint8_t cur_ch)
 void initialise_document(void)
 {
     printer_driver_name[0] = 0;
-    format_mode_flag = 0;
-    justifying_flag = 0;
-    insert_mode_flag = 0;
+    format_mode_flags = 0;
+    justifying_flag = false;
+    insert_mode_flag = false;
     print_flags = 0;
-    edit_buffer_dirty_flag = 0;
-    edit_buffer_unpacked_flag = 0;
+    edit_buffer_dirty_flag = false;
+    edit_buffer_unpacked_flag = false;
+    edit_buffer_contains_ruler_flag = false;
     scroll_repeat_count = 0;
     ruler_index_ptr = 0;
     hscroll_pos = 0;
     visual_column = 0;
     display_start_row = 0;
     line_counter = 0;
-    flags_need_redrawing_flag = 0;
+    flags_need_redrawing_flag = false;
     ypos = 0;
     print_xpos = 0;
     line_change_pending_flag = 0;
     search_target_len = 0;
-    cursor_moved_flag = 0;
+    cursor_moved_flag = false;
     delimiter_char = 0;
-    line_format_status = 0;
+    line_format_status_flag = false;
     input_buffer_offset = 0;
     uint8_t pos = 0;
 
@@ -673,7 +674,7 @@ void open_input_file(void)
  */
 void pop_from_ruler_index(void)
 {
-    status_line_needs_redrawing_flag++;
+    status_line_needs_redrawing_flag = true;
     int pos = ruler_index_ptr + 1;
     assert(pos >= 0 && (size_t)pos < ruler_index_size);
     load_current_ruler(pos);
@@ -696,7 +697,7 @@ static void check_for_embedded_ruler(uint8_t* target_ptr)
  */
 void push_onto_ruler_index(uint8_t* target_ptr)
 {
-    status_line_needs_redrawing_flag++;
+    status_line_needs_redrawing_flag = true;
     int stack_index = ruler_index_ptr - 1;
     if (stack_index < 0 || (size_t)stack_index >= ruler_index_size)
         display_not_enough_memory();
@@ -777,7 +778,7 @@ bool read_next_chunk_from_input_file(uint8_t* target_ptr)
     read_block_status_t status = read_block_from_file(&cursor, space_limit);
 
     if (status == READ_BLOCK_DONE)
-        input_file_empty_flag++;
+        input_file_empty_flag = true;
     *cursor = 0;
     top = cursor;
 
@@ -1126,7 +1127,7 @@ bool write_line_back_to_document(void)
     uint8_t out_byte;
     uint8_t stored_byte;
 
-    if (edit_buffer_unpacked_flag != 0)
+    if (edit_buffer_unpacked_flag)
     {
         uint8_t* insert_ptr = current_line_ptr;
 
@@ -1160,15 +1161,16 @@ bool write_line_back_to_document(void)
             return true;
 
     ca8ed:
-        if (((int8_t)edit_buffer_unpacked_flag < 0))
+        if (edit_buffer_contains_ruler_flag)
         {
-            if (edit_buffer_dirty_flag != 0)
+            if (edit_buffer_dirty_flag)
                 clamp_ptr6_to_document();
         }
         uint8_t copy_idx = 0;
 
-        edit_buffer_dirty_flag = copy_idx;
-        edit_buffer_unpacked_flag = copy_idx;
+        edit_buffer_dirty_flag = false;
+        edit_buffer_unpacked_flag = false;
+        edit_buffer_contains_ruler_flag = false;
         uint8_t* src_ptr = (current_format_line[0] == COMMAND_PREFIX ||
                                current_format_line[0] == RULER_PREFIX)
                                ? current_format_line
