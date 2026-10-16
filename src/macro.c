@@ -38,7 +38,8 @@ typedef enum parse_register_result_t
 
 static inline uint8_t* align_up_ptr(uint8_t* ptr);
 static void nested_macro_error(void);
-static parse_register_result_t parse_register_reference(int cur_ch);
+static parse_register_result_t parse_register_reference(
+    int cur_ch, uint8_t* register_mask);
 static read_block_status_t read_next_output_line(
     uint8_t** cursor, uint8_t* limit);
 
@@ -172,161 +173,136 @@ static void nested_macro_error(void)
 }
 
 /**
- * Prepares the next line for printing, handling macro expansion.
- *
- * @param read_limit upper bound for reading document data
- * @param macro_cursor pointer to the current macro cursor, updated as macros
- * execute
- * @return pointer to the prepared line, or NULL when no more output remains
+ * Copies a numbered invocation argument into the macro output buffer.
+ * Honors register-reference markers while locating commas and copying bytes.
+ * @param invocation invocation line, including its three-byte command header
+ * @param argument zero-based argument number
+ * @param output_pos next position in the output buffer
+ * @return updated output position
  */
-uint8_t* prepare_output_line(uint8_t* read_limit, uint8_t** macro_cursor)
+static uint8_t expand_macro_argument(
+    uint8_t* invocation, uint8_t argument, uint8_t output_pos)
 {
-    uint8_t temp_save;
-    uint8_t tmp_ch5;
-
-    if (!macro_executing_flag)
+    uint8_t register_mask = 0;
+    uint8_t source_pos = 2;
+    for (uint8_t arguments_to_skip = argument; arguments_to_skip != 0;
+        arguments_to_skip--)
     {
-    c9188_normal_entry:
-        uint8_t* cursor = read_limit;
-
-        if (read_next_output_line(&cursor, read_limit) == READ_BLOCK_DONE)
-            return NULL;
-
-        if (read_limit != NULL)
-        {
-            heap_format_line_ptr = (line_t*)read_limit;
-            current_format_line = read_limit;
-
-            return read_limit;
-        }
-    }
-    uint8_t pos = 0;
-    uint8_t idx = 0;
-
-c91a7:
-    for (;;)
-    {
-        uint8_t next_ch = (*macro_cursor)[pos];
-
-        if (next_ch == 4)
-        {
-            macro_executing_flag = false;
-
-            goto c9188_normal_entry;
-        }
-        if (next_ch == 0x40)
-            break;
-        pos++;
-
         for (;;)
         {
-            ((uint8_t*)&current_line_buffer)[idx] = next_ch;
-            idx++;
-
-            if (next_ch == 0x0d)
-            {
-                (*macro_cursor) += pos;
-                current_format_line = edit_buffer_base;
-                heap_format_line_ptr = (line_t*)edit_buffer_base;
-
-                return edit_buffer_base;
-            }
-            if (idx < 0x83)
+            uint8_t ch = invocation[++source_pos];
+            if (ch == 0x0d)
+                return output_pos;
+            parse_register_result_t result =
+                parse_register_reference(ch, &register_mask);
+            if (result == PARSE_REGISTER_OTHER && ch == ',')
                 break;
-            next_ch = 0x0d;
         }
     }
 
-    pos++;
-    uint8_t tmp_ch3 = (*macro_cursor)[pos];
-
-    if (tmp_ch3 >= 0x30)
+    do
     {
-        tmp_ch3 -= 0x30;
-
-        if (tmp_ch3 >= 0x0a)
-            goto c9225;
-        pos++;
-        temp_save = pos;
-        screen_column = tmp_ch3;
-        screen_row = 0;
-        uint8_t pos2 = 2;
-
-        do
-        {
-            screen_column--;
-
-            if ((int8_t)screen_column < 0)
-                goto c9209;
-
-        c91f5:
-            pos2++;
-            tmp_ch5 = read_limit[pos2];
-
-            if (tmp_ch5 == 0x0d)
-                goto c9223;
-            {
-                parse_register_result_t r = parse_register_reference(tmp_ch5);
-
-                if (r == PARSE_REGISTER_MARKER || r == PARSE_REGISTER_VALUE)
-                    goto c91f5;
-            }
-        } while (tmp_ch5 == 0x2c);
-
-        goto c91f5;
-
-    c9209:
-        do
-        {
-            pos2++;
-            uint8_t tmp_ch6 = read_limit[pos2];
-
-            if (tmp_ch6 == 0x0d)
-                break;
-
-            parse_register_result_t r_1 = parse_register_reference(tmp_ch6);
-            if (r_1 == PARSE_REGISTER_MARKER)
-                continue;
-
-            if ((r_1 != PARSE_REGISTER_VALUE) && (tmp_ch6 == 0x2c))
-                break;
-
-            ((uint8_t*)&current_line_buffer)[idx] = tmp_ch6;
-            idx++;
-        } while (idx < 0x82);
-
-    c9223:
-        pos = temp_save;
-    }
-c9225:
-    goto c91a7;
+        uint8_t ch = invocation[++source_pos];
+        if (ch == 0x0d)
+            break;
+        parse_register_result_t result =
+            parse_register_reference(ch, &register_mask);
+        if (result == PARSE_REGISTER_MARKER)
+            continue;
+        if (result != PARSE_REGISTER_VALUE && ch == ',')
+            break;
+        ((uint8_t*)&current_line_buffer)[output_pos++] = ch;
+    } while (output_pos < 0x82);
+    return output_pos;
 }
 
 /**
- * Parses a register reference character.
- * Distinguishes markers, values and other characters.
- * @param cur_ch character to parse
- * @return parse result
+ * Prepares the next line for printing, expanding numbered macro arguments.
+ * Resumes ordinary input when a macro ends and terminates overlong macro lines.
+ * @param read_limit destination for ordinary input and current invocation line
+ * @param macro_cursor current macro position, advanced past the prepared line
+ * @return pointer to the prepared line, or NULL when ordinary input is
+ * exhausted
  */
-static parse_register_result_t parse_register_reference(int cur_ch)
+uint8_t* prepare_output_line(uint8_t* read_limit, uint8_t** macro_cursor)
 {
-    if (cur_ch == 0x3e)
+    for (;;)
     {
-        cur_ch = 0;
-        screen_row = cur_ch;
+        if (!macro_executing_flag)
+        {
+            uint8_t* cursor = read_limit;
+            if (read_next_output_line(&cursor, read_limit) == READ_BLOCK_DONE)
+                return NULL;
+            if (read_limit != NULL)
+            {
+                heap_format_line_ptr = (line_t*)read_limit;
+                current_format_line = read_limit;
+                return read_limit;
+            }
+        }
 
+        uint8_t pos = 0;
+        uint8_t output_pos = 0;
+        for (;;)
+        {
+            uint8_t ch = (*macro_cursor)[pos];
+            if (ch == 4)
+            {
+                macro_executing_flag = false;
+                break;
+            }
+            pos++;
+            if (ch == '@')
+            {
+                uint8_t argument = (*macro_cursor)[pos];
+                if (argument >= '0' && argument <= '9')
+                {
+                    pos++;
+                    output_pos = expand_macro_argument(
+                        read_limit, argument - '0', output_pos);
+                }
+                continue;
+            }
+
+            for (;;)
+            {
+                ((uint8_t*)&current_line_buffer)[output_pos++] = ch;
+                if (ch == 0x0d)
+                {
+                    *macro_cursor += pos;
+                    current_format_line = edit_buffer_base;
+                    heap_format_line_ptr = (line_t*)edit_buffer_base;
+                    return edit_buffer_base;
+                }
+                if (output_pos < 0x83)
+                    break;
+                ch = 0x0d;
+            }
+        }
+    }
+}
+
+/**
+ * Parses a register reference character using the current marker state.
+ * @param cur_ch character to parse
+ * @param register_mask current mask, set by '<' and cleared by '>'
+ * @return whether the character is a marker, register value, or other byte
+ */
+static parse_register_result_t parse_register_reference(
+    int cur_ch, uint8_t* register_mask)
+{
+    if (cur_ch == '>')
+    {
+        *register_mask = 0;
         return PARSE_REGISTER_MARKER;
     }
-    if (cur_ch == 0x3c)
+    if (cur_ch == '<')
     {
-        cur_ch = 0x40;
-        screen_row = cur_ch;
-
+        *register_mask = 0x40;
         return PARSE_REGISTER_MARKER;
     }
-    if (cur_ch & screen_row)
-        return PARSE_REGISTER_VALUE;
-    return PARSE_REGISTER_OTHER;
+    return (cur_ch & *register_mask) ? PARSE_REGISTER_VALUE
+                                     : PARSE_REGISTER_OTHER;
 }
 
 /**

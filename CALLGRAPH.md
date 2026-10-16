@@ -101,7 +101,10 @@ Functions defined in the source files and their callees (only calls to other fun
 - **dm_fmt_cmd** → align_up_ptr, display_not_enough_memory [a, himem, last_macro_ptr, macro_executing_flag]
 - **nested_macro_error** → return_to_cli_prompt, stop_printing [a]
 - **macro_try_invoke** → nested_macro_error [first_macro_ptr, macro_executing_flag]
-- **prepare_output_line** [current_line_buffer, macro_executing_flag, printing_from_file_flag, screen_column, screen_row, temp_save]
+- **expand_macro_argument** → parse_register_reference [a, current_line_buffer]
+- **prepare_output_line** → expand_macro_argument, read_next_output_line [a, current_line_buffer, macro_executing_flag]
+- **read_next_output_line** → read_block_from_file [printing_from_file_flag]
+- **parse_register_reference**
 
 ## document
 
