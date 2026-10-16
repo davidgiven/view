@@ -71,6 +71,7 @@ extern void close_file(void);
 extern void display_document_file_state(void);
 extern void ensure_cr_at_document_top(void);
 extern void find_margins_of_current_ruler_buffer(void);
+extern uint8_t* get_format_line_contents(void);
 extern void initialise_document(void);
 extern void load_current_ruler(int pos);
 extern void move_cursor_to_address(uint8_t* addr);

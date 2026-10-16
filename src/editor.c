@@ -3277,10 +3277,7 @@ static void redraw_editor(void)
     {
         screen_row = ypos;
         render_state_t rs = {.line = screen_row};
-        uint8_t* draw_ptr = (current_format_line[0] == COMMAND_PREFIX ||
-                                current_format_line[0] == RULER_PREFIX)
-                                ? current_format_line
-                                : current_format_line + offsetof(line_t, text);
+        uint8_t* draw_ptr = get_format_line_contents();
         draw_line(&rs, draw_ptr);
     }
     if (flags_need_redrawing_flag)

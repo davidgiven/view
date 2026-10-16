@@ -128,7 +128,10 @@ Functions defined in the source files and their callees (only calls to other fun
 - **advance_to_next_line** → find_next_line, push_onto_ruler_index
 - **adjust_area_pointers** → adjust_pointers, split_line_at_wrap [a, area_start_ptr]
 - **adjust_pointers** [markers_array, pointer_array, top]
-- **check_area_memory** → adjust_pointers, make_space_for_insertion, split_line_at_wrap [a, cli_header_limit, cli_header_pos, cli_output_pos, folding_flag, header_text_maybe, output_buffer, print_xpos, scratch_index, scratch_offset, search_target_len]
+- **measure_replacement** [cli_header_limit, cli_header_pos, cli_output_pos, header_text_maybe, output_buffer, print_xpos, scratch_index, search_target_len]
+- **set_replacement_case** [print_xpos, scratch_index, scratch_offset]
+- **write_replacement** [cli_header_limit, cli_header_pos, cli_output_pos, folding_flag, header_text_maybe, output_buffer, print_xpos, scratch_index, scratch_offset, search_target_len]
+- **check_area_memory** → adjust_pointers, make_space_for_insertion, measure_replacement, set_replacement_case, split_line_at_wrap, write_replacement
 - **check_for_embedded_ruler** → push_onto_ruler_index [a]
 - **compute_required_space_for_insertion** → compute_space_common
 - **compute_space_available** → compute_bytes_free, compute_space_common
@@ -142,10 +145,11 @@ Functions defined in the source files and their callees (only calls to other fun
 - **read_next_chunk_from_input_file** → compute_space_available [a, area_end_ptr, area_start_ptr, input_file_empty_flag, input_fp, top]
 - **set_marker_to_here** → get_line_length [a, current_line_ptr, markers_array, ram, xpos]
 - **setup_area_pointers** → clamp_ptr6_to_document [a, line_counter]
-- **split_line_at_wrap** → find_line_start, make_space_for_insertion [screen_column, temp_save]
-- **update_markers_to_format_buffer** → find_marker_at_position [current_line_ptr, markers_array]
+- **split_line_at_wrap** → find_line_start, make_space_for_insertion [screen_column]
+- **get_format_line_contents**
+- **update_markers_to_format_buffer** → find_marker_at_position, get_format_line_contents [current_line_ptr, markers_array]
 - **write_area_to_file** [area_end_ptr, area_start_ptr]
-- **write_line_back_to_document** → adjust_pointers, clamp_ptr6_to_document, find_marker_at_position, get_line_length, make_space_for_insertion [a, current_line_ptr, edit_buffer_contains_ruler_flag, edit_buffer_dirty_flag, edit_buffer_unpacked_flag, edit_line_len, markers_array, ram, screen_column, temp_save]
+- **write_line_back_to_document** → adjust_pointers, clamp_ptr6_to_document, find_marker_at_position, get_format_line_contents, get_line_length, make_space_for_insertion [a, current_line_ptr, edit_buffer_contains_ruler_flag, edit_buffer_dirty_flag, edit_buffer_unpacked_flag, edit_line_len, markers_array, ram, screen_column]
 - **write_line_back_to_document_safely** → memory_full, write_line_back_to_document
 
 ## editor
@@ -248,7 +252,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **adjust_editor_horizontal_scroll** → load_current_ruler, recalculate_cursor_xpos, unpack_line_into_buffer, write_line_back_to_document_safely [display_start_row, hscroll_pos, saved_ruler_index_redraw, screen_column, screen_maxcolumn, visual_column]
 - **redraw_editor_rows** → advance_to_next_line, clear_to_eol, draw_line, load_current_ruler [display_start_row, line_counter, line_lengths, ptr6_screen_row, saved_ruler_index_redraw, saved_ruler_index_scroll, scratch_index, screen_column, screen_maxcolumn, screen_maxrow, screen_row, top_of_screen_line_ptr]
 - **finish_editor_redraw** → cursor_on [display_start_row, hscroll_pos, line_counter, ram, scroll_repeat_count, visual_column, ypos]
-- **redraw_editor** → adjust_editor_horizontal_scroll, cursor_off, draw_line, draw_ruler, draw_status_word, finish_editor_redraw, position_editor_viewport, redraw_editor_rows, unpack_line_into_buffer, update_markers_to_format_buffer [display_start_row, edit_buffer_unpacked_flag, flags_need_redrawing_flag, line_counter, ruler_index_ptr, saved_ruler_index_redraw, screen_row, scroll_repeat_count, status_line_needs_redrawing_flag, ypos]
+- **redraw_editor** → adjust_editor_horizontal_scroll, cursor_off, draw_line, draw_ruler, draw_status_word, finish_editor_redraw, get_format_line_contents, position_editor_viewport, redraw_editor_rows, unpack_line_into_buffer, update_markers_to_format_buffer [display_start_row, edit_buffer_unpacked_flag, flags_need_redrawing_flag, line_counter, ruler_index_ptr, saved_ruler_index_redraw, screen_row, scroll_repeat_count, status_line_needs_redrawing_flag, ypos]
 - **render_char** → find_marker_at_position [a, line_lengths, screen_maxcolumn]
 - **render_xchar** → render_char [a, hscroll_pos]
 - **set_marker** → go_to_marker, set_marker_to_here, update_line_length [display_start_row]
