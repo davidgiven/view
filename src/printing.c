@@ -1223,226 +1223,195 @@ static void process_page_footer(void)
     page_break_pending_flag = false;
 }
 
+typedef struct microspace_line
+{
+    uint32_t accumulated_width;
+    uint8_t word_start;
+    uint8_t pending_spaces;
+    uint8_t overflow;
+    uint8_t pending_words;
+} microspace_line_t;
+
 /**
- * Processes words for microspaced justification during printing.
- *
- * @param pos cursor into the line buffer, updated as words are processed
+ * Scans a source line into output_buffer and gathers microspacing statistics.
+ * @param pos source cursor, advanced past the terminating carriage return
+ * @param is_tab tab state carried between conversion calls
+ * @return accumulated word, space, and margin information
+ */
+static microspace_line_t collect_microspace_line(uint8_t* pos, bool* is_tab)
+{
+    microspace_line_t line = {0};
+    uint8_t output_pos = 0;
+    column_position = 0;
+    screen_column = 0;
+    for (;;)
+    {
+        uint8_t char_width;
+        (void)convert_char_for_printing(
+            scratch_line_ptr[*pos], &char_width, is_tab);
+        uint8_t ch = scratch_line_ptr[(*pos)++];
+        bool count_space = false;
+
+        if (ch == 0x1a)
+        {
+            if ((screen_column & 0x80) != 0 && line.pending_spaces != 0)
+            {
+                line.pending_words++;
+                if (line.pending_words != 0)
+                    continue;
+            }
+            if ((screen_column & 0x80) == 0 || line.pending_spaces != 0)
+            {
+                line.word_start = column_position;
+                ch = 0x20;
+            }
+            else
+            {
+                ch = 0x20;
+                line.overflow--;
+                count_space = true;
+            }
+        }
+        else if (ch == 0x20)
+        {
+            if ((screen_column & 0x80) == 0)
+                line.word_start = column_position;
+            else
+                count_space = true;
+        }
+        else if (ch >= 0x20)
+            line.accumulated_width += 0x100;
+        else if (ch == 9 || ch == 0x0b)
+        {
+            line.word_start = column_position;
+            screen_column = 0;
+            line.accumulated_width = 0;
+            line.pending_spaces = 0;
+            line.overflow = 0;
+            line.pending_words = 0;
+        }
+
+        if (count_space)
+        {
+            if (line.overflow != 0 && (line.overflow & 0x80) == 0)
+            {
+                line.pending_words++;
+                line.overflow = 0;
+                continue;
+            }
+            line.pending_spaces++;
+        }
+        output_buffer[output_pos++] = ch;
+        if (ch == 0x0d)
+            return line;
+        if (ch != 0x20 && line.pending_spaces != 0)
+        {
+            line.accumulated_width += ((uint32_t)line.pending_words << 16) |
+                                      ((uint32_t)line.pending_spaces << 8) |
+                                      line.pending_spaces;
+            line.pending_spaces = 0;
+            line.overflow = 0;
+            line.pending_words = 0;
+        }
+    }
+}
+
+/**
+ * Checks the accumulated width against the ruler's right margin.
+ * @param line statistics gathered while scanning the line
+ * @return true if the existing microspacing calculation permits justification
+ */
+static bool can_microspace_line(const microspace_line_t* line)
+{
+    uint32_t word_count = line->accumulated_width >> 16;
+    int margin_width = ruler_right_stop - line->word_start;
+    if (word_count == 0 || ruler_right_stop == 0 || margin_width < 0)
+        return false;
+    return (uint8_t)(margin_width - word_count +
+                     (margin_width >= (int)word_count)) ==
+           (uint8_t)((line->accumulated_width >> 8) & 0xff);
+}
+
+/**
+ * Prints the prepared buffer using the distributed microspacing amounts.
+ * @param pos output cursor, reset before printing and advanced through the line
+ * @param word_start column at which microspacing begins
+ * @param is_tab tab state carried from the scan
+ */
+static void print_microspaced_line(
+    uint8_t* pos, uint8_t word_start, bool* is_tab)
+{
+    uint16_t scaled_remainder =
+        (uint16_t)print_running_total_accum * microspacing_count;
+    justify_gap_count = print_extra_space_accum;
+    print_running_total_accum = scaled_remainder % justify_gap_count;
+    print_extra_space_accum = (uint8_t)(scaled_remainder / justify_gap_count);
+    *pos = 0;
+    column_position = 0;
+    uint8_t emitted_byte;
+    do
+    {
+        (*pos)++;
+        uint8_t char_width;
+        emitted_byte =
+            convert_char_for_printing(output_buffer[*pos], &char_width, is_tab);
+        if (column_position <= word_start)
+            print_char_x_times(emitted_byte, char_width);
+        else
+        {
+            if (emitted_byte == 0x20)
+            {
+                uint8_t spacing = microspacing_count + print_extra_space_accum;
+                uint8_t remainder = print_running_total_accum;
+                if (remainder != 0)
+                {
+                    spacing++;
+                    print_running_total_accum--;
+                }
+                emit_microspacing_spaces(remainder, spacing);
+            }
+            else
+                emit_microspacing_spaces(emitted_byte, microspacing_count);
+            print_char(emitted_byte);
+        }
+    } while (emitted_byte != 0x0d);
+}
+
+/**
+ * Processes a line for microspaced justification during printing.
+ * Scans spacing statistics, selects the output path, and advances page spacing.
+ * @param pos line cursor, updated by the scan and selected output path
  */
 static void microspace_word_processor(uint8_t* pos)
 {
-    uint8_t current_byte;
-    uint8_t next_byte;
-    uint8_t idx = 0;
-
-    uint32_t accum_1 = 0;
-    uint8_t micro_word_start = 0;
-
-    column_position = 0;
-    uint8_t micro_space_count = 0;
-    uint8_t micro_overflow = 0;
-    uint8_t micro_word_counter = 0;
-
-    screen_column = 0;
     bool is_tab = false;
-
-c9048:
-    do
-    {
-        {
-            uint8_t cur_ch = idx;
-            convert_char_for_printing(scratch_line_ptr[*pos], &idx, &is_tab);
-            idx = cur_ch;
-        }
-        current_byte = scratch_line_ptr[*pos];
-        (*pos)++;
-
-        if (current_byte != 0x1a)
-            goto c906f;
-
-        if ((screen_column & 0x80) == 0)
-            break;
-
-        if (micro_space_count == 0)
-            goto c906b;
-        micro_word_counter++;
-    } while (micro_word_counter != 0);
-
-    do
-    {
-        micro_word_start = column_position;
-
-        goto c908c;
-
-    c906b:
-        current_byte = 0x20;
-        micro_overflow--;
-
-    c906f:
-        if (current_byte < 0x20)
-            goto c9092;
-
-        if (current_byte != 0x20)
-            goto c9090;
-    } while ((screen_column & 0x80) == 0);
-    uint8_t overflow_copy = micro_overflow;
-
-    if (overflow_copy == 0)
-        goto c908a;
-
-    if ((overflow_copy & 0x80) == 0)
-    {
-        micro_word_counter++;
-        micro_overflow = 0;
-
-        goto c9048;
-    }
-c908a:
-    micro_space_count++;
-
-c908c:
-    current_byte = 0x20;
-
-    goto c90b6;
-
-c9090:
-    accum_1 += 0x100;
-
-c9092:
-    if (current_byte != 9 && current_byte != 0x0b) {}
+    microspace_line_t line = collect_microspace_line(pos, &is_tab);
+    if (can_microspace_line(&line))
+        print_microspaced_line(pos, line.word_start, &is_tab);
     else
     {
+        column_position = 0;
+        uint8_t ch;
+        do
         {
-            micro_word_start = column_position;
-            screen_column = 0;
-            accum_1 = 0;
-            micro_space_count = 0;
-            micro_overflow = 0;
-            micro_word_counter = 0;
-            current_byte = current_byte;
-        }
+            (*pos)++;
+            uint8_t char_width;
+            ch = convert_char_for_printing(
+                scratch_line_ptr[*pos], &char_width, &is_tab);
+            print_char_x_times(ch, char_width);
+        } while (ch != 0x0d);
+        register_value_array['L' - 'A']++;
     }
-c90b6:
-    output_buffer[idx] = current_byte;
-    idx++;
 
-    if (current_byte != 0x0d)
-    {
-        if (current_byte == 0x20)
-            goto c9048;
-
-        if (micro_space_count == 0)
-            goto c9048;
-        accum_1 += ((uint32_t)micro_word_counter << 16) |
-                   ((uint32_t)micro_space_count << 8) | micro_space_count;
-        uint8_t zero_val = 0;
-
-        micro_space_count = zero_val;
-        micro_overflow = zero_val;
-        micro_word_counter = zero_val;
-
-        goto c9048;
-    }
-    if (accum_1 >> 16 != 0)
-    {
-        if (ruler_right_stop == 0)
-            goto c90f8;
-        int d = ruler_right_stop - micro_word_start;
-
-        if (d < 0)
-            goto c90f8;
-
-        if ((uint8_t)(d - (accum_1 >> 16) + (d >= (int)(accum_1 >> 16))) ==
-            (uint8_t)((accum_1 >> 8) & 0xFF))
-        {
-            goto c9101;
-        }
-    }
-c90f8:
-    column_position = 0;
-
-    goto c8fe6_inline;
-
-c9101:
-    uint16_t scan_ptr =
-        (uint16_t)print_running_total_accum * microspacing_count;
-    justify_gap_count = print_extra_space_accum;
-    print_running_total_accum = scan_ptr % justify_gap_count;
-    print_extra_space_accum = (uint8_t)(scan_ptr / justify_gap_count);
-    (*pos) = 0;
-    column_position = (*pos);
-
-c912b:
-    (*pos)++;
-    uint8_t converted_byte =
-        convert_char_for_printing(output_buffer[(*pos)], &idx, &is_tab);
-    {
-        uint8_t column_copy = column_position;
-
-        if (column_copy != micro_word_start)
-        {
-            if (column_copy >= micro_word_start)
-                goto c9142;
-        }
-        uint8_t emit_byte = converted_byte;
-
-        print_char_x_times(emit_byte, idx);
-
-        goto c9163;
-
-    c9142:
-        emit_byte = converted_byte;
-
-        if (emit_byte == 0x20)
-        {
-            uint8_t microspace_val = microspacing_count;
-
-            microspace_val += print_extra_space_accum;
-            idx = microspace_val;
-            uint8_t running_total_copy = print_running_total_accum;
-
-            if (running_total_copy != 0)
-            {
-                idx++;
-                print_running_total_accum--;
-            }
-            emit_microspacing_spaces(running_total_copy, idx);
-            emit_byte = 0x20;
-        }
-        else
-        {
-            idx = microspacing_count;
-            emit_microspacing_spaces(emit_byte, idx);
-        }
-        print_char(emit_byte);
-
-    c9163:
-        if (emit_byte != 0x0d)
-            goto c912b;
-
-        goto c8ffb_inline;
-    }
-c8fe6_inline:
-    do
-    {
-        (*pos)++;
-        next_byte =
-            convert_char_for_printing(scratch_line_ptr[*pos], &idx, &is_tab);
-        print_char_x_times(next_byte, idx);
-    } while (next_byte != 0x0d);
-    register_value_array['L' - 'A']++;
-
-c8ffb_inline:
-    uint8_t idx2 = line_spacing;
+    uint8_t spacing = line_spacing;
     uint8_t remaining_lines = page_lines_remaining - line_spacing - 1;
-
     if (page_lines_remaining <= line_spacing)
     {
         remaining_lines = 0;
-        idx2 = page_lines_remaining;
-        idx2--;
+        spacing = page_lines_remaining - 1;
     }
     page_lines_remaining = remaining_lines;
-    print_vertical_space(idx2);
+    print_vertical_space(spacing);
 }
 
 /**

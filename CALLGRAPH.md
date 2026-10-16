@@ -63,7 +63,10 @@ Functions defined in the source files and their callees (only calls to other fun
 - **process_page_footer** → print_newline, print_vertical_space, render_header_or_footer [bottom_margin, footer_margin, footer_text_maybe, footers_enabled_flag, page_break_pending_flag, page_lines_remaining, register_value_array]
 - **print_output_buffer** → print_char [a, output_buffer, temp_save]
 - **scan_string_length**
-- **microspace_word_processor** → emit_microspacing_spaces, print_char, print_char_x_times, print_vertical_space [a, column_position, justify_gap_count, line_spacing, microspacing_count, output_buffer, page_lines_remaining, register_value_array, ruler_right_stop, screen_column]
+- **collect_microspace_line** → convert_char_for_printing [column_position, output_buffer, screen_column]
+- **can_microspace_line** [ruler_right_stop]
+- **print_microspaced_line** → convert_char_for_printing, emit_microspacing_spaces, print_char, print_char_x_times [a, column_position, justify_gap_count, microspacing_count, output_buffer]
+- **microspace_word_processor** → can_microspace_line, collect_microspace_line, convert_char_for_printing, print_char_x_times, print_microspaced_line, print_vertical_space [a, column_position, line_spacing, page_lines_remaining, register_value_array]
 - **print_char_x_times** → print_char
 - **print_document** → check_for_at_least_150_bytes_free, find_margins_of_current_ruler_buffer, macro_init, print_loop, process_page_footer, reset_print_registers, scan_input_buffer, set_rw_file_handle [current_ruler_buffer, current_ruler_ptr, input_buffer, page_break_pending_flag, print_xpos, printing_from_file_flag, ram, top]
 - **print_loop** → execute_formatting_command, find_margins_of_current_ruler_buffer, macro_try_invoke, microspace_word_processor, output_left_margin, prepare_output_line, print_char_x_times, print_vertical_space, process_page_footer, render_new_page, start_microspacing_if_active [a, column_position, current_ruler_buffer, line_spacing, macro_executing_flag, microspacing_count, page_break_pending_flag, page_lines_remaining, print_flags, register_value_array, scratch_offset]
