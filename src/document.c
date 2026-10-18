@@ -87,7 +87,9 @@ unsigned int* get_register_address(uint8_t register_name)
 void initialise_document(void)
 {
     printer_driver_name[0] = 0;
-    format_mode_flags = 0;
+    formatting_disabled_flag = false;
+    temporary_margin_mode_flag = false;
+    command_or_ruler_line_flag = false;
     justifying_flag = false;
     insert_mode_flag = false;
     print_flags = 0;

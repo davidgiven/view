@@ -158,6 +158,16 @@ static void setup_cmd(scan_state_t* scan);
 static void sheets_cmd(scan_state_t* scan);
 
 /**
+ * Displays a CLI error and returns to the command prompt.
+ * @param message error text, including any required newline
+ */
+static void command_error(const char* message)
+{
+    cli_putstring(message);
+    return_to_cli_prompt();
+}
+
+/**
  * Main CLI handler loop, prompting for and dispatching commands.
  */
 void cli_handler_impl(void)
@@ -195,10 +205,7 @@ static void input_line_not_escaped(void)
     cli_command_t cmd = parse_command(&input_buffer_offset);
 
     if (cmd == COMMAND_INVALID)
-    {
-        cli_putstring("Mistake\n");
-        return_to_cli_prompt();
-    }
+        command_error("Mistake\n");
 
     scan_state_t scan = {0};
     execute_cli_command(cmd, &scan);
@@ -525,9 +532,7 @@ static void field_cmd(scan_state_t* scan)
 
     if (cur_ch == 0x1b)
     {
-        cli_putstring("Frump!\n");
-
-        return_to_cli_prompt();
+        command_error("Frump!\n");
         return;
     }
     current_tab_key = cur_ch;
@@ -602,7 +607,7 @@ static void format_cmd(scan_state_t* scan)
     if (sanitise_area() != AREA_EMPTY)
     {
         move_cursor_to_address(area_start_ptr);
-        clear_format_mode_bit7();
+        set_command_or_ruler_line_flag(false);
         wipe_buffer(0x10, edit_buffer_base);
         current_format_line = (uint8_t*)&current_line_buffer;
         heap_format_line_ptr = &current_line_buffer;
@@ -704,19 +709,14 @@ static void microspace_cmd(scan_state_t* scan)
         microspacing_count = spacing;
         return;
     }
-    cli_putstring("Driver does not support microspacing\n");
-    return_to_cli_prompt();
+    command_error("Driver does not support microspacing\n");
 }
 
 /**
  * Reports a "Bad mode" error and returns to the CLI prompt.
  */
 static void mode_cmd(void)
-{
-    cli_putstring("Bad mode\n");
-
-    return_to_cli_prompt();
-}
+{ command_error("Bad mode\n"); }
 
 /**
  * Appends more text from the input file at the current cursor position.
@@ -983,21 +983,13 @@ static void search_cmd(scan_state_t* scan)
  * Reports a "No string found" error and returns to the CLI prompt.
  */
 static void cmd_err_no_string(void)
-{
-    cli_putstring("No string found\n");
-
-    return_to_cli_prompt();
-}
+{ command_error("No string found\n"); }
 
 /**
  * Reports a "No target given" error and returns to the CLI prompt.
  */
 static void cmd_err_no_target(void)
-{
-    cli_putstring("No target given\n");
-
-    return_to_cli_prompt();
-}
+{ command_error("No target given\n"); }
 
 /**
  * Resets formatting, justification, and insert modes using the setup flags.
@@ -1008,7 +1000,7 @@ static void cmd_err_no_target(void)
  */
 static void setup_cmd(scan_state_t* scan)
 {
-    uint8_t new_format_flags = 1;
+    bool new_formatting_disabled = true;
     bool new_justifying_flag = true;
 
     do
@@ -1019,14 +1011,13 @@ static void setup_cmd(scan_state_t* scan)
         switch (scan->ch)
         {
             case 'N':
-                new_format_flags = 0;
+                new_formatting_disabled = false;
                 break;
             case 'J':
                 new_justifying_flag = false;
                 break;
             default:
-                cli_putstring("Bad flag\n");
-                return_to_cli_prompt();
+                command_error("Bad flag\n");
                 return;
         }
         input_buffer_offset++;
@@ -1034,7 +1025,9 @@ static void setup_cmd(scan_state_t* scan)
 
     insert_mode_flag = false;
     justifying_flag = new_justifying_flag;
-    format_mode_flags = new_format_flags;
+    formatting_disabled_flag = new_formatting_disabled;
+    temporary_margin_mode_flag = false;
+    command_or_ruler_line_flag = false;
     return_to_cli_prompt();
 }
 
@@ -1057,11 +1050,7 @@ static void sheets_cmd(scan_state_t* scan)
  * Initializes the printing subsystem.
  */
 void start_printing(void)
-{
-    cli_putstring("Sorry, can't print yet\n");
-
-    return_to_cli_prompt();
-}
+{ command_error("Sorry, can't print yet\n"); }
 
 /**
  * Displays the CLI status screen and returns to the prompt.
@@ -1206,11 +1195,7 @@ static cli_command_t parse_command(uint8_t* input_buffer_offset)
  * Displays a file error message and returns to the CLI prompt.
  */
 void file_error(void)
-{
-    cli_putstring("File error");
-
-    return_to_cli_prompt();
-}
+{ command_error("File error"); }
 
 /**
  * Displays a file not found error and returns to the CLI prompt.
@@ -1218,9 +1203,7 @@ void file_error(void)
 void file_not_found_error(void)
 {
     stop_printing();
-    cli_putstring("File not found\n");
-
-    return_to_cli_prompt();
+    command_error("File not found\n");
 }
 
 /**
@@ -1359,11 +1342,7 @@ bool parse_optional_filename_from_command(scan_state_t* scan)
  * Reports a bad filename error and returns to the command prompt.
  */
 static void bad_filename_error(void)
-{
-    cli_putstring("Bad filename\n");
-
-    return_to_cli_prompt();
-}
+{ command_error("Bad filename\n"); }
 
 /**
  * Process a CLI command from the input buffer.
@@ -1431,16 +1410,12 @@ static uint8_t* parse_mark_from_command(scan_state_t* scan)
 
     if (marker_index == MARKER_INVALID)
     {
-        cli_putstring("Bad marker\n");
-
-        return_to_cli_prompt();
+        command_error("Bad marker\n");
         return NULL;
     }
     if (markers_array[marker_index] == 0)
     {
-        cli_putstring("Marker not set\n");
-
-        return_to_cli_prompt();
+        command_error("Marker not set\n");
         return NULL;
     }
     return markers_array[marker_index];

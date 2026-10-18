@@ -25,7 +25,7 @@ extern bool scan_document_for_next_line(void);
 extern format_result_t format_paragraph(void);
 extern uint8_t justify_edit_buffer(uint8_t* target_ptr);
 extern void clamp_ptr6_to_document(void);
-extern void clear_format_mode_bit7(void);
+extern void set_command_or_ruler_line_flag(bool enabled);
 extern void clear_screen(void);
 extern void cursor_off(void);
 extern void editor_loop_impl(void);

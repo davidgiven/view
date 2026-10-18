@@ -111,7 +111,6 @@ static void render_char(render_state_t* rs);
 static void render_xchar(render_state_t* rs);
 static void return_key(void);
 static void return_to_editor_loop(void);
-static void set_format_mode_bit7(void);
 static void set_marker(uint8_t marker_idx);
 static void set_marker_common(uint8_t marker_char);
 static void set_xpos_to_line_length(void);
@@ -159,7 +158,9 @@ void editor_loop_impl(void)
 
     for (;;)
     {
-        uint8_t saved_fmt = format_mode_flags;
+        bool saved_formatting_disabled = formatting_disabled_flag;
+        bool saved_margin_mode = temporary_margin_mode_flag;
+        bool saved_command_line = command_or_ruler_line_flag;
         if (!edit_buffer_unpacked_flag)
         {
             unpack_line(edit_buffer_base);
@@ -168,7 +169,7 @@ void editor_loop_impl(void)
         }
         recalculate_cursor_xpos();
 
-        if (ruler_left_stop != 0 && (format_mode_flags & 0x80) == 0 &&
+        if (ruler_left_stop != 0 && !command_or_ruler_line_flag &&
             ruler_left_stop > visual_column)
         {
             bool move_to_margin = cursor_moved_flag;
@@ -179,7 +180,7 @@ void editor_loop_impl(void)
 
                 if (line_len < xpos)
                 {
-                    if (format_mode_flags & 0x40)
+                    if (temporary_margin_mode_flag)
                         move_to_margin = true;
                     else
                         xpos = line_len;
@@ -191,15 +192,16 @@ void editor_loop_impl(void)
                 visual_column = ruler_left_stop;
                 line_change_pending_flag++;
                 recalculate_cursor_xpos();
-                uint8_t masked_flags = format_mode_flags & 0xbf;
                 int margin_pos = find_left_margin_stop();
 
-                // Preserve the format flags unless a margin stop lies ahead.
+                // Retain margin mode unless a margin stop lies ahead.
                 if (margin_pos >= 0 && margin_pos > xpos)
-                    format_mode_flags = masked_flags | 0x40;
+                    temporary_margin_mode_flag = true;
             }
         }
-        if (saved_fmt != format_mode_flags)
+        if (saved_formatting_disabled != formatting_disabled_flag ||
+            saved_margin_mode != temporary_margin_mode_flag ||
+            saved_command_line != command_or_ruler_line_flag)
             flags_need_redrawing_flag = true;
         cursor_moved_flag = false;
         redraw_editor();
@@ -673,17 +675,14 @@ static void o_command_key(void)
 
 /**
  * Toggles format mode.
- * Flips the format-mode flag between states and marks the status bar for
- * redraw.
+ * Restores formatting from temporary margin mode, otherwise toggles it.
+ * Marks the status bar for redraw.
  */
 static void cf2_format_mode_key(void)
 {
-    uint8_t new_flags = format_mode_flags & 0xbf;
-
-    if (format_mode_flags & 0x40)
-        new_flags |= 1;
-    new_flags ^= 1;
-    format_mode_flags = new_flags;
+    formatting_disabled_flag =
+        !temporary_margin_mode_flag && !formatting_disabled_flag;
+    temporary_margin_mode_flag = false;
     flags_need_redrawing_flag = true;
 }
 
@@ -873,7 +872,7 @@ static void sf11_copy_key(void)
 
 /**
  * Marks the current line as a ruler.
- * Writes a ruler marker into the edit buffer and enables format mode.
+ * Writes a ruler marker into the edit buffer and suppresses text formatting.
  */
 static void cf8_mark_as_ruler_key(void)
 {
@@ -889,7 +888,7 @@ static void cf8_mark_as_ruler_key(void)
         edit_buffer_contains_ruler_flag = true;
         edit_buffer_dirty_flag = true;
     }
-    set_format_mode_bit7();
+    set_command_or_ruler_line_flag(true);
 }
 
 /**
@@ -1045,7 +1044,7 @@ static void sf1_swap_case_key(void)
  */
 static void sf2_release_margins_key(void)
 {
-    if ((format_mode_flags & 0x40) == 0)
+    if (!temporary_margin_mode_flag)
     {
         xpos = 0;
 
@@ -1217,7 +1216,7 @@ static void sf8_edit_command_key(void)
     current_format_line = edit_buffer_base;
     heap_format_line_ptr = (line_t*)edit_buffer_base;
     current_format_line[0] = 0x80;
-    set_format_mode_bit7();
+    set_command_or_ruler_line_flag(true);
 }
 
 /**
@@ -1231,7 +1230,7 @@ static void sf9_delete_command_key(void)
     current_format_line[0] = 0;
     current_format_line = (uint8_t*)&current_line_buffer;
     heap_format_line_ptr = &current_line_buffer;
-    clear_format_mode_bit7();
+    set_command_or_ruler_line_flag(false);
     line_counter++;
     edit_buffer_dirty_flag = true;
     cursor_moved_flag = true;
@@ -1514,7 +1513,8 @@ static void enter_printable_character(void)
 
         return_to_editor_loop();
     }
-    if (format_mode_flags != 0)
+    if (formatting_disabled_flag || temporary_margin_mode_flag ||
+        command_or_ruler_line_flag)
         return;
 
     if (col_pos == 0)
@@ -1815,7 +1815,8 @@ static void draw_previous_word(
  */
 static bool adjust_margins_at_left_margin(void)
 {
-    if ((format_mode_flags & 0x81) != 0 || find_left_margin_stop() >= 0)
+    if (formatting_disabled_flag || command_or_ruler_line_flag ||
+        find_left_margin_stop() >= 0)
         return false;
 
     uint8_t line_len = get_line_length();
@@ -2306,8 +2307,8 @@ format_result_t format_paragraph(void)
 
     for (;;)
     {
-        if ((format_mode_flags & 0x81) != 0 || ruler_right_stop == 0 ||
-            ruler_right_stop < ruler_left_stop)
+        if (formatting_disabled_flag || command_or_ruler_line_flag ||
+            ruler_right_stop == 0 || ruler_right_stop < ruler_left_stop)
             return advance_to_next_doc_line();
 
         bool paragraph_ended;
@@ -3119,8 +3120,10 @@ static void draw_status_word(void)
     flags_need_redrawing_flag = false;
     home_cursor();
     char format_indicator = 'F';
-    if (format_mode_flags != 0)
-        format_indicator = (format_mode_flags & 0xc0) != 0 ? 'M' : ' ';
+    if (command_or_ruler_line_flag || temporary_margin_mode_flag)
+        format_indicator = 'M';
+    else if (formatting_disabled_flag)
+        format_indicator = ' ';
     screen_putchar(format_indicator);
     screen_putchar(justifying_flag ? ' ' : 'J');
     home_cursor();
@@ -3325,7 +3328,7 @@ static void unpack_line_into_buffer(uint8_t* target_ptr)
 static void unpack_line(uint8_t* target_ptr)
 {
     wipe_buffer(0x10, target_ptr);
-    clear_format_mode_bit7();
+    set_command_or_ruler_line_flag(false);
     uint8_t first_byte = *current_line_ptr;
 
     command_prefix_t prefix = check_for_command_prefix(first_byte);
@@ -3335,7 +3338,7 @@ static void unpack_line(uint8_t* target_ptr)
     {
         if (edit_buffer_contains_ruler_flag)
             edit_buffer_unpacked_flag = true;
-        set_format_mode_bit7();
+        set_command_or_ruler_line_flag(true);
     }
     current_format_line = target_ptr;
     heap_format_line_ptr = (line_t*)target_ptr;
@@ -3358,29 +3361,14 @@ static void unpack_line(uint8_t* target_ptr)
 }
 
 /**
- * Clears format-mode bit 7.
- * Clears the high bit of the format mode flag and marks redraw if changed.
+ * Updates command/ruler-line state and requests a status redraw if it changes.
+ * @param enabled true when the current line is a command or ruler
  */
-void clear_format_mode_bit7(void)
+void set_command_or_ruler_line_flag(bool enabled)
 {
-    uint8_t old = format_mode_flags;
-
-    format_mode_flags &= ~0x80;
-
-    if (old != format_mode_flags)
+    if (command_or_ruler_line_flag != enabled)
+    {
+        command_or_ruler_line_flag = enabled;
         flags_need_redrawing_flag = true;
-}
-
-/**
- * Sets format-mode bit 7.
- * Sets the high bit of the format mode flag and marks redraw if changed.
- */
-static void set_format_mode_bit7(void)
-{
-    uint8_t old = format_mode_flags;
-
-    format_mode_flags |= 0x80;
-
-    if (old != format_mode_flags)
-        flags_need_redrawing_flag = true;
+    }
 }

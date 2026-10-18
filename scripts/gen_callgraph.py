@@ -63,7 +63,7 @@ KNOWN_GLOBALS = {
     'footers_enabled_flag', 'headers_enabled_flag',
     'rhs_extra_margin', 'macro_executing_flag', 'two_sided_flag',
     'left_margin', 'highlight1_code', 'highlight2_code', 'highlight_code',
-    'format_mode_flags', 'justifying_flag', 'insert_mode_flag',
+    'formatting_disabled_flag', 'temporary_margin_mode_flag', 'command_or_ruler_line_flag', 'justifying_flag', 'insert_mode_flag',
     'screen_maxrow', 'screen_maxcolumn',
     'microspacing_count', 'current_tab_key', 'folding_flag',
     'ruler_right_stop', 'ruler_left_stop',

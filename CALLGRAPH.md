@@ -124,7 +124,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **display_document_file_state** → stop_printing [file_edit_flags, input_filename, output_filename]
 - **close_file** [file_ptr]
 - **get_register_address** [register_value_array]
-- **initialise_document** → clear_cmd, create_default_ruler, ensure_cr_at_document_top, move_cursor_to_top_of_document [current_format_line, current_line_buffer, current_ruler_buffer, cursor_moved_flag, delimiter_char, display_start_row, edit_buffer_base, edit_buffer_contains_ruler_flag, edit_buffer_dirty_flag, edit_buffer_unpacked_flag, file_edit_flags, flags_need_redrawing_flag, format_mode_flags, heap_format_line_ptr, hscroll_pos, input_buffer_offset, insert_mode_flag, justifying_flag, line_change_pending_flag, line_counter, line_format_status_flag, print_flags, print_xpos, printer_driver_name, ram, ruler_index, ruler_index_ptr, ruler_index_size, scroll_repeat_count, search_target_len, top, visual_column, xpos, ypos]
+- **initialise_document** → clear_cmd, create_default_ruler, ensure_cr_at_document_top, move_cursor_to_top_of_document [command_or_ruler_line_flag, current_format_line, current_line_buffer, current_ruler_buffer, cursor_moved_flag, delimiter_char, display_start_row, edit_buffer_base, edit_buffer_contains_ruler_flag, edit_buffer_dirty_flag, edit_buffer_unpacked_flag, file_edit_flags, flags_need_redrawing_flag, formatting_disabled_flag, heap_format_line_ptr, hscroll_pos, input_buffer_offset, insert_mode_flag, justifying_flag, line_change_pending_flag, line_counter, line_format_status_flag, print_flags, print_xpos, printer_driver_name, ram, ruler_index, ruler_index_ptr, ruler_index_size, scroll_repeat_count, search_target_len, temporary_margin_mode_flag, top, visual_column, xpos, ypos]
 - **ensure_cr_at_document_top** [current_line_ptr, ram, top]
 - **create_default_ruler** [screen_maxcolumn]
 - **lookup_marker** → beep
@@ -175,7 +175,7 @@ Functions defined in the source files and their callees (only calls to other fun
 ## editor
 
 - **run_editor** → enter_editor_mode
-- **editor_loop_impl** → cf1_next_match_key, cf4_insert_mode_key, cf7_join_lines_key, delete_key, enter_printable_character, esc_key, f0_format_block_key, f12_left_key, f13_right_key, f14_down_key, f15_up_key, f6_insert_line_key, f7_delete_line_key, f8_insert_char_key, f9_delete_char_key, find_left_margin_stop, get_line_length, k_command_key, o_command_key, q_command_key, recalculate_cursor_xpos, redraw_editor, return_key, sf12_left_key, sf13_right_key, sf14_down_key, sf15_up_key, sf1_swap_case_key, sf3_delete_to_char_key, tab_key, unpack_line [current_tab_key, cursor_moved_flag, edit_buffer_base, edit_buffer_contains_ruler_flag, edit_buffer_unpacked_flag, flags_need_redrawing_flag, format_mode_flags, line_change_pending_flag, ruler_left_stop, visual_column, xpos]
+- **editor_loop_impl** → cf1_next_match_key, cf4_insert_mode_key, cf7_join_lines_key, delete_key, enter_printable_character, esc_key, f0_format_block_key, f12_left_key, f13_right_key, f14_down_key, f15_up_key, f6_insert_line_key, f7_delete_line_key, f8_insert_char_key, f9_delete_char_key, find_left_margin_stop, get_line_length, k_command_key, o_command_key, q_command_key, recalculate_cursor_xpos, redraw_editor, return_key, sf12_left_key, sf13_right_key, sf14_down_key, sf15_up_key, sf1_swap_case_key, sf3_delete_to_char_key, tab_key, unpack_line [command_or_ruler_line_flag, current_tab_key, cursor_moved_flag, edit_buffer_base, edit_buffer_contains_ruler_flag, edit_buffer_unpacked_flag, flags_need_redrawing_flag, formatting_disabled_flag, line_change_pending_flag, ruler_left_stop, temporary_margin_mode_flag, visual_column, xpos]
 - **cf1_next_match_key** → esc_key, move_cursor_to_address, scan_document_for_next_line, write_line_back_to_document_safely
 - **cf4_insert_mode_key** [flags_need_redrawing_flag, insert_mode_flag]
 - **cf7_join_lines_key** → adjust_pointers, beep, check_for_command_prefix, clamp_ptr6_to_document, find_next_line, split_line_at_wrap, write_line_back_to_document_safely [current_line_ptr, line_change_pending_flag, scratch_scan_ptr]
@@ -193,7 +193,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **cf0_delete_block_key** → adjust_area_pointers, beep, clamp_ptr6_to_document, clear_marks_1_2, ensure_cr_at_document_top, move_cursor_to_address, reset_area_to_marks_1_2, write_line_back_to_document_safely [area_end_ptr, area_size, area_start_ptr, cursor_moved_flag]
 - **f11_copy_key** → beep, check_pointer_in_area, move_cursor_to_address, reset_area_to_marks_1_2, write_line_back_to_document_safely [area_insert_ptr]
 - **o_command_key** → cf2_format_mode_key, cf3_justify_mode_key, cf5_default_ruler_key, cf8_mark_as_ruler_key, read_prefix_command_key, sf11_copy_key, sf2_release_margins_key, sf4_highlight1_key, sf5_highlight2_key, sf8_edit_command_key, sf9_delete_command_key
-- **cf2_format_mode_key** [flags_need_redrawing_flag, format_mode_flags]
+- **cf2_format_mode_key** [flags_need_redrawing_flag, formatting_disabled_flag, temporary_margin_mode_flag]
 - **cf3_justify_mode_key** [flags_need_redrawing_flag, justifying_flag]
 - **cf5_default_ruler_key** → cf8_mark_as_ruler_key, create_default_ruler, f6_insert_line_key, redraw_editor [current_line_buffer]
 - **q_command_key** → cf6_split_line_key, f1_top_of_text_key, f2_bottom_of_text_key, f3_delete_to_eol_key, f4_beginning_of_line_key, f5_end_of_line_key, go_to_marker_n, read_prefix_command_key, sf6_go_to_marker_key
@@ -204,22 +204,22 @@ Functions defined in the source files and their callees (only calls to other fun
 - **f5_end_of_line_key** → set_xpos_to_line_length [cursor_moved_flag]
 - **sf0_move_block_key** → adjust_area_pointers, beep, check_pointer_in_area, clear_marks_1_2, ensure_cr_at_document_top, move_cursor_to_address, reset_area_to_marks_1_2, write_line_back_to_document_safely [area_insert_ptr, area_size, ram, scroll_repeat_count, top_of_screen_line_ptr]
 - **sf11_copy_key** → cf8_mark_as_ruler_key, f6_insert_line_key, redraw_editor [current_line_buffer, current_ruler_ptr, ruler_buffer_len]
-- **cf8_mark_as_ruler_key** → set_format_mode_bit7 [current_format_line, edit_buffer_base, edit_buffer_contains_ruler_flag, edit_buffer_dirty_flag, edit_buffer_unpacked_flag, heap_format_line_ptr, line_counter]
+- **cf8_mark_as_ruler_key** → set_command_or_ruler_line_flag [current_format_line, edit_buffer_base, edit_buffer_contains_ruler_flag, edit_buffer_dirty_flag, edit_buffer_unpacked_flag, heap_format_line_ptr, line_counter]
 - **f6_insert_line_key** → insert_line_at_cursor, write_line_back_to_document_safely [current_line_ptr, line_change_pending_flag]
 - **sf12_left_key** → draw_previous_word, move_to_previous_line [xpos]
 - **sf13_right_key** → advance_to_next_line, get_line_length, process_current_document_character, unpack_line, write_line_back_to_document_safely [current_line_buffer, current_line_ptr, edit_buffer_base, scroll_repeat_count, xpos]
 - **sf14_down_key** → move_cursor_down [line_change_pending_flag, screen_maxrow, scroll_repeat_count]
 - **sf15_up_key** → move_cursor_up [line_change_pending_flag, screen_maxrow, scroll_repeat_count]
 - **sf1_swap_case_key** → f13_right_key [current_line_buffer, line_counter, xpos]
-- **sf2_release_margins_key** → f4_beginning_of_line_key, find_left_margin_stop [format_mode_flags, xpos]
+- **sf2_release_margins_key** → f4_beginning_of_line_key, find_left_margin_stop [temporary_margin_mode_flag, xpos]
 - **f4_beginning_of_line_key** [cursor_moved_flag, xpos]
 - **sf3_delete_to_char_key** → beep, delete_edit_buffer_bytes_at_xpos, draw_prompt_characters [current_line_buffer, flags_need_redrawing_flag, line_counter, xpos]
 - **sf4_highlight1_key** → tab_highlight_common
 - **sf5_highlight2_key** → tab_highlight_common
 - **sf6_go_to_marker_key** → go_to_marker, prompt_for_marker, write_line_back_to_document_safely [markers_array]
 - **sf7_set_marker_key** → prompt_for_marker, set_marker, write_line_back_to_document_safely
-- **sf8_edit_command_key** → redraw_editor, set_format_mode_bit7 [current_format_line, edit_buffer_base, edit_buffer_dirty_flag, heap_format_line_ptr, scratch_index, scratch_offset, xpos, ypos]
-- **sf9_delete_command_key** → check_for_command_prefix, clear_format_mode_bit7 [current_format_line, current_line_buffer, cursor_moved_flag, edit_buffer_dirty_flag, heap_format_line_ptr, line_counter]
+- **sf8_edit_command_key** → redraw_editor, set_command_or_ruler_line_flag [current_format_line, edit_buffer_base, edit_buffer_dirty_flag, heap_format_line_ptr, scratch_index, scratch_offset, xpos, ypos]
+- **sf9_delete_command_key** → check_for_command_prefix, set_command_or_ruler_line_flag [current_format_line, current_line_buffer, cursor_moved_flag, edit_buffer_dirty_flag, heap_format_line_ptr, line_counter]
 - **tab_key** → tab_highlight_common
 - **clear_marks_1_2** [markers_array]
 - **control_key_to_ascii**
@@ -228,7 +228,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **calculate_typed_character_column** → process_document_character [column_position, current_line_buffer, ruler_left_stop, xpos]
 - **copy_wrapped_text** → find_marker_at_position [current_line_buffer, markers_array, ruler_left_stop, scratch_index, screen_column, screen_row, xpos]
 - **wrap_typed_word** → clamp_ptr6_to_document, copy_wrapped_text, draw_previous_word, get_line_length, justify_edit_buffer, make_space_for_insertion, memory_full, recalculate_cursor_xpos, return_key, write_line_back_to_document_safely [current_line_ptr, edit_buffer_base, edit_line_len, input_buffer_offset, ruler_left_stop, screen_column, top_margin, visual_column, xpos]
-- **enter_printable_character** → adjust_margins_at_left_margin, beep, calculate_typed_character_column, insert_printable_byte, return_to_editor_loop, wrap_typed_word [column_position, current_ruler_ptr, edit_buffer_dirty_flag, format_mode_flags, line_counter, ruler_buffer_len, ruler_right_stop, xpos]
+- **enter_printable_character** → adjust_margins_at_left_margin, beep, calculate_typed_character_column, insert_printable_byte, return_to_editor_loop, wrap_typed_word [column_position, command_or_ruler_line_flag, current_ruler_ptr, edit_buffer_dirty_flag, formatting_disabled_flag, line_counter, ruler_buffer_len, ruler_right_stop, temporary_margin_mode_flag, xpos]
 - **return_to_editor_loop**
 - **return_key** → advance_current_line_pointer, find_next_line, insert_line_at_cursor, write_line_back_to_document_safely [current_line_ptr, xpos]
 - **advance_current_line_pointer** → advance_to_next_line [current_line_ptr, cursor_moved_flag]
@@ -243,7 +243,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **f13_right_key** [xpos]
 - **enter_editor_mode** → clear_screen [display_start_row, edit_buffer_contains_ruler_flag, edit_buffer_dirty_flag, edit_buffer_unpacked_flag, flags_need_redrawing_flag, line_lengths, screen_maxrow, scroll_repeat_count, status_line_needs_redrawing_flag]
 - **draw_previous_word** → process_current_document_character [current_line_buffer, xpos]
-- **adjust_margins_at_left_margin** → find_left_margin_stop, get_line_length, insert_byte_at_xpos, recalculate_cursor_xpos [format_mode_flags, line_counter, ruler_left_stop, screen_column, visual_column, xpos]
+- **adjust_margins_at_left_margin** → find_left_margin_stop, get_line_length, insert_byte_at_xpos, recalculate_cursor_xpos [command_or_ruler_line_flag, formatting_disabled_flag, line_counter, ruler_left_stop, screen_column, visual_column, xpos]
 - **scan_document_for_next_line** → append_to_output_buffer, check_for_command_prefix, upper_case_unless_folding [editor_header_pos, editor_output_pos, header_text_maybe, output_buffer, scratch_index, screen_column, search_cursor_ptr, search_limit_ptr, search_target_len]
 - **insert_line_into_document** → clamp_ptr6_to_document, make_space_for_insertion, memory_full
 - **clamp_ptr6_to_document** [current_line_ptr, display_start_row, editor_ptr6, ptr6_screen_row]
@@ -260,7 +260,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **append_format_character** → check_for_control_code [bottom_margin, column_position, current_line_buffer, editor_output_pos, justify_gap_count, scratch_offset]
 - **trim_formatted_word** [current_line_buffer, format_src_index]
 - **build_formatted_line** → append_format_character, find_marker_at_position, find_next_word_boundary, read_format_character, trim_formatted_word, wipe_buffer [bottom_margin, column_position, current_line_ptr, edit_buffer_base, editor_output_pos, format_src_index, input_buffer_offset, justify_gap_count, line_format_status_flag, markers_array, ruler_left_stop, ruler_right_stop, scratch_offset]
-- **format_paragraph** → advance_to_next_doc_line, build_formatted_line, check_for_command_prefix, flush_formatted_line, insert_at_left_margin, justify_edit_buffer [current_line_ptr, cursor_moved_flag, edit_buffer_base, format_mode_flags, input_buffer_offset, line_format_status_flag, print_xpos, ruler_left_stop, ruler_right_stop]
+- **format_paragraph** → advance_to_next_doc_line, build_formatted_line, check_for_command_prefix, flush_formatted_line, insert_at_left_margin, justify_edit_buffer [command_or_ruler_line_flag, current_line_ptr, cursor_moved_flag, edit_buffer_base, formatting_disabled_flag, input_buffer_offset, line_format_status_flag, print_xpos, ruler_left_stop, ruler_right_stop]
 - **flush_formatted_line** → write_line_back_to_document [edit_buffer_unpacked_flag, edit_line_len, format_src_index, line_format_status_flag]
 - **advance_to_next_doc_line** → find_next_line [current_line_ptr, xpos]
 - **scan_justification_gaps** → process_char_for_output [column_position, justify_gap_count, justify_line_length]
@@ -289,7 +289,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **draw_ruler** → draw_line [current_ruler_ptr, flags_need_redrawing_flag, status_line_needs_redrawing_flag]
 - **draw_line** → advance_to_next_char, advance_to_next_char_and_render, clear_to_eol, deref_and_check_for_command_prefix, render_char, render_xchar [hscroll_pos, line_lengths, scratch_line_ptr]
 - **clear_to_eol** [line_lengths]
-- **draw_status_word** → home_cursor [flags_need_redrawing_flag, format_mode_flags, justifying_flag]
+- **draw_status_word** → home_cursor [command_or_ruler_line_flag, flags_need_redrawing_flag, formatting_disabled_flag, justifying_flag, temporary_margin_mode_flag]
 - **home_cursor**
 - **recalculate_cursor_xpos** → process_current_document_character [column_position, current_line_buffer, line_change_pending_flag, visual_column, xpos]
 - **render_xchar** → render_char [hscroll_pos]
@@ -299,28 +299,28 @@ Functions defined in the source files and their callees (only calls to other fun
 - **advance_to_next_char** → process_current_document_character [column_position]
 - **process_current_document_character** → process_document_character
 - **unpack_line_into_buffer** → unpack_line [edit_buffer_unpacked_flag]
-- **unpack_line** → check_for_command_prefix, clear_format_mode_bit7, set_format_mode_bit7, wipe_buffer [current_format_line, current_line_ptr, edit_buffer_contains_ruler_flag, edit_buffer_unpacked_flag, edit_line_len, heap_format_line_ptr]
-- **clear_format_mode_bit7** [flags_need_redrawing_flag, format_mode_flags]
-- **set_format_mode_bit7** [flags_need_redrawing_flag, format_mode_flags]
+- **unpack_line** → check_for_command_prefix, set_command_or_ruler_line_flag, set_command_or_ruler_line_flag, wipe_buffer [current_format_line, current_line_ptr, edit_buffer_contains_ruler_flag, edit_buffer_unpacked_flag, edit_line_len, heap_format_line_ptr]
+- **set_command_or_ruler_line_flag** [command_or_ruler_line_flag, flags_need_redrawing_flag]
 
 ## cli
 
+- **command_error** → return_to_cli_prompt
 - **cli_handler_impl** → input_line_not_escaped, read_command_line, run_editor, stop_printing [print_flags]
 - **read_command_line** [input_buffer, input_buffer_offset]
-- **input_line_not_escaped** → execute_cli_command, parse_command, return_to_cli_prompt, run_cli [input_buffer_offset]
+- **input_line_not_escaped** → command_error, execute_cli_command, parse_command, run_cli [input_buffer_offset]
 - **execute_cli_command** → bye_cmd, change_cmd, clear_cmd, count_cmd, edit_cmd, field_cmd, finish_cmd, fold_cmd, format_cmd, load_cmd, microspace_cmd, mode_cmd, more_cmd, name_cmd, new_cmd, print_cmd, printer_cmd, quit_cmd, read_cmd, replace_cmd, save_cmd_write_cmd, screen_cmd, search_cmd, setup_cmd, sheets_cmd
 - **bye_cmd**
 - **change_cmd** → check_area_memory, cmd_err_no_string, cmd_err_no_target, display_not_enough_memory, move_cursor_to_address, process_cli_command, render_number_to_screen, return_to_cli_prompt, scan_document_for_next_line [print_xpos]
 - **count_cmd** → deref_and_check_for_command_prefix, parse_marks_from_command, process_current_document_character, render_number_to_screen, return_to_cli_prompt, sanitise_area [area_end_ptr, area_start_ptr, screen_column, screen_row]
 - **edit_cmd** → check_not_continuous_editing, close_input_output_files, initialise_document, open_input_file, open_output_file, parse_filename_from_command, read_first_chunk_from_input_file, return_to_cli_prompt, set_document_name_to_filename_buffer [file_edit_flags, filename_buffer, input_file_empty_flag, output_filename]
-- **field_cmd** → parse_integer_from_command, return_to_cli_prompt [current_tab_key]
+- **field_cmd** → command_error, parse_integer_from_command, return_to_cli_prompt [current_tab_key]
 - **finish_cmd** → adjust_area_pointers, check_continuous_editing, close_input_output_files, ensure_cr_at_document_top, move_cursor_to_top_of_document, read_first_chunk_from_input_file, reset_area_to_entire_document, return_to_cli_prompt, sanitise_area, write_area_to_file [area_size, file_ptr, input_file_empty_flag, output_fp]
 - **fold_cmd** → return_to_cli_prompt, scan_input_buffer [folding_flag, input_buffer]
-- **format_cmd** → clear_format_mode_bit7, display_not_enough_memory, format_paragraph, move_cursor_to_address, parse_marks_from_command, return_to_cli_prompt, sanitise_area, wipe_buffer [area_end_ptr, area_start_ptr, current_format_line, current_line_buffer, current_line_ptr, edit_buffer_base, heap_format_line_ptr, ram, top_of_screen_line_ptr]
+- **format_cmd** → set_command_or_ruler_line_flag, display_not_enough_memory, format_paragraph, move_cursor_to_address, parse_marks_from_command, return_to_cli_prompt, sanitise_area, wipe_buffer [area_end_ptr, area_start_ptr, current_format_line, current_line_buffer, current_line_ptr, edit_buffer_base, heap_format_line_ptr, ram, top_of_screen_line_ptr]
 - **load_cmd** → check_not_continuous_editing, clear_cmd, close_file, display_not_enough_memory, initialise_document, move_cursor_to_top_of_document, open_input_file, parse_filename_from_command, reset_document_name_after_load, return_to_cli_prompt [himem, input_fp, ram, top]
 - **clear_cmd** [markers_array]
-- **microspace_cmd** → parse_integer_from_command, prepare_printer_driver, return_to_cli_prompt [microspacing_count, printer_driver_ptr]
-- **mode_cmd** → return_to_cli_prompt
+- **microspace_cmd** → command_error, parse_integer_from_command, prepare_printer_driver [microspacing_count, printer_driver_ptr]
+- **mode_cmd** → command_error
 - **more_cmd** → adjust_area_pointers, check_continuous_editing, check_for_at_least_150_bytes_free, ensure_cr_at_document_top, move_cursor_to_address, move_cursor_to_top_of_document, parse_marks_from_command, read_next_chunk_from_input_file, return_to_cli_prompt, write_area_to_file [area_size, area_start_ptr, current_ruler_buffer, current_ruler_ptr, file_ptr, input_file_empty_flag, output_fp, ruler_buffer_len, top]
 - **name_cmd** → check_not_continuous_editing, parse_optional_filename_from_command, reset_document_name_after_load [file_edit_flags]
 - **new_cmd** → check_not_continuous_editing, initialise_document
@@ -334,16 +334,16 @@ Functions defined in the source files and their callees (only calls to other fun
 - **screen_cmd** → print_to_screen
 - **print_to_screen** → print_document, return_to_cli_prompt
 - **search_cmd** → cmd_err_no_string, cmd_err_no_target, enter_editor_mode, move_cursor_to_address, parse_marks_from_command, reset_command_parse_state, sanitise_area, scan_document_for_next_line [area_end_ptr, area_start_ptr, search_cursor_ptr, search_limit_ptr]
-- **cmd_err_no_string** → return_to_cli_prompt
-- **cmd_err_no_target** → return_to_cli_prompt
-- **setup_cmd** → return_to_cli_prompt, scan_input_buffer [format_mode_flags, input_buffer, input_buffer_offset, insert_mode_flag, justifying_flag]
+- **cmd_err_no_string** → command_error
+- **cmd_err_no_target** → command_error
+- **setup_cmd** → command_error, return_to_cli_prompt, scan_input_buffer [command_or_ruler_line_flag, formatting_disabled_flag, input_buffer, input_buffer_offset, insert_mode_flag, justifying_flag, temporary_margin_mode_flag]
 - **sheets_cmd** → print_document, return_to_cli_prompt, start_printing, stop_printing
-- **start_printing** → return_to_cli_prompt
+- **start_printing** → command_error
 - **run_cli** → clear_screen, compute_bytes_free, display_document_file_state, print_x_words_of_help, render_number_to_screen, return_to_cli_prompt [file_edit_flags, input_file_empty_flag, markers_array, microspacing_count, printer_driver_name]
 - **print_x_words_of_help** [version_string]
 - **parse_command** [parser_table, delimiter_char, input_buffer, input_buffer_offset, screen_column]
-- **file_error** → return_to_cli_prompt
-- **file_not_found_error** → return_to_cli_prompt, stop_printing
+- **file_error** → command_error
+- **file_not_found_error** → command_error, stop_printing
 - **parse_integer_from_command** → scan_input_buffer [input_buffer]
 - **reset_document_name_after_load** → set_document_name_to_filename_buffer [file_edit_flags]
 - **set_document_name_to_filename_buffer** [filename_buffer, input_filename]
@@ -352,10 +352,10 @@ Functions defined in the source files and their callees (only calls to other fun
 - **check_not_continuous_editing** → display_document_file_state [file_edit_flags]
 - **parse_filename_from_command** → bad_filename_error, parse_optional_filename_from_command
 - **parse_optional_filename_from_command** → bad_filename_error, scan_input_buffer [delimiter_char, filename_buffer, input_buffer, input_buffer_offset]
-- **bad_filename_error** → return_to_cli_prompt
+- **bad_filename_error** → command_error
 - **process_cli_command** → expand_escaped_string, parse_marks_from_command, reset_command_parse_state, sanitise_area, scan_input_buffer [area_end_ptr, area_start_ptr, cli_header_limit, input_buffer, input_buffer_offset, search_cursor_ptr, search_limit_ptr, search_target_len]
 - **parse_marks_from_command** → parse_mark_from_command, reset_area_to_entire_document [area_end_ptr, area_start_ptr]
-- **parse_mark_from_command** → lookup_marker, return_to_cli_prompt, scan_input_buffer [input_buffer, input_buffer_offset, markers_array]
+- **parse_mark_from_command** → command_error, lookup_marker, scan_input_buffer [input_buffer, input_buffer_offset, markers_array]
 - **reset_command_parse_state** → expand_escaped_string, scan_input_buffer [cli_header_limit, input_buffer, search_target_len]
 - **expand_escaped_string** → read_next_command_byte, upper_case_unless_folding [header_text_maybe, input_buffer_offset, screen_column, screen_row, search_target_len]
 - **read_next_command_byte** [delimiter_char, input_buffer]

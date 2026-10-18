@@ -50,7 +50,9 @@ extern uint8_t* doc_working_ptr;
 // ──────────────────────────────────────────────────────────
 
 extern uint8_t top_margin, bottom_margin;
-extern uint8_t format_mode_flags;
+extern bool formatting_disabled_flag;
+extern bool temporary_margin_mode_flag;
+extern bool command_or_ruler_line_flag;
 extern bool justifying_flag;
 extern uint8_t highlight_code[2];
 extern uint8_t header_text_maybe[0x42];

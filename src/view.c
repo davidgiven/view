@@ -105,7 +105,12 @@ uint8_t top_margin;
 uint8_t bottom_margin;
 bool macro_executing_flag;
 uint8_t highlight_code[2];
-uint8_t format_mode_flags;
+/** Disables ordinary text formatting when set. */
+bool formatting_disabled_flag;
+/** Temporarily suppresses wrapping while positioning at the left margin. */
+bool temporary_margin_mode_flag;
+/** Suppresses text formatting for the current command or ruler line. */
+bool command_or_ruler_line_flag;
 bool justifying_flag;
 bool insert_mode_flag;
 uint8_t screen_maxrow;
