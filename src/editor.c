@@ -420,10 +420,7 @@ static void f0_format_block_key(void)
     write_line_back_to_document_safely();
     clamp_ptr6_to_document();
     if (format_paragraph() == FORMAT_MEMORY_FULL)
-    {
-        show_memory_full_error();
-        longjmp(env, JMP_EDITOR);
-    }
+        memory_full();
 }
 
 /**
@@ -1488,10 +1485,7 @@ static void wrap_typed_word(void)
     }
     uint8_t* insert_ptr = current_line_ptr + edit_line_len + 1;
     if (!make_space_for_insertion(insert_ptr, required_space))
-    {
-        show_memory_full_error();
-        longjmp(env, JMP_EDITOR);
-    }
+        memory_full();
     copy_wrapped_text(insert_ptr);
     justify_edit_buffer(edit_buffer_base);
     write_line_back_to_document_safely();
@@ -1730,10 +1724,7 @@ static void check_pointer_in_area(void)
     uint8_t* insert_ptr = area_insert_ptr;
 
     if (!make_space_for_insertion(insert_ptr, area_size))
-    {
-        show_memory_full_error();
-        longjmp(env, JMP_EDITOR);
-    }
+        memory_full();
     uint8_t* scan_ptr = area_start_ptr;
     uint8_t* copy_ptr = insert_ptr;
 

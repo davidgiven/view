@@ -180,7 +180,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **cf7_join_lines_key** → adjust_pointers, beep, check_for_command_prefix, clamp_ptr6_to_document, find_next_line, split_line_at_wrap, write_line_back_to_document_safely [current_line_ptr, line_change_pending_flag, scratch_scan_ptr]
 - **delete_key** → f8_insert_char_key, f9_delete_char_key, get_line_length [current_line_buffer, insert_mode_flag, visual_column, xpos]
 - **esc_key** → run_cli, write_line_back_to_document_safely
-- **f0_format_block_key** → clamp_ptr6_to_document, format_paragraph, show_memory_full_error, write_line_back_to_document_safely
+- **f0_format_block_key** → clamp_ptr6_to_document, format_paragraph, memory_full, write_line_back_to_document_safely
 - **f12_left_key** [visual_column, xpos]
 - **f14_down_key** → advance_current_line_pointer, return_key, write_line_back_to_document_safely [line_change_pending_flag]
 - **f15_up_key** → find_previous_line, write_line_back_to_document_safely [current_line_ptr, cursor_moved_flag, line_change_pending_flag]
@@ -226,7 +226,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **insert_printable_byte** → find_marker_at_position, insert_edit_buffer_bytes_at_xpos, update_line_length [current_line_buffer, insert_mode_flag, line_counter, xpos]
 - **calculate_typed_character_column** → process_document_character [column_position, current_line_buffer, ruler_left_stop, xpos]
 - **copy_wrapped_text** → find_marker_at_position [current_line_buffer, markers_array, ram, ruler_left_stop, scratch_index, screen_column, screen_row, xpos]
-- **wrap_typed_word** → clamp_ptr6_to_document, copy_wrapped_text, draw_previous_word, get_line_length, justify_edit_buffer, make_space_for_insertion, recalculate_cursor_xpos, return_key, show_memory_full_error, write_line_back_to_document_safely [current_line_ptr, edit_buffer_base, edit_line_len, input_buffer_offset, ruler_left_stop, screen_column, top_margin, visual_column, xpos]
+- **wrap_typed_word** → clamp_ptr6_to_document, copy_wrapped_text, draw_previous_word, get_line_length, justify_edit_buffer, make_space_for_insertion, memory_full, recalculate_cursor_xpos, return_key, write_line_back_to_document_safely [current_line_ptr, edit_buffer_base, edit_line_len, input_buffer_offset, ruler_left_stop, screen_column, top_margin, visual_column, xpos]
 - **enter_printable_character** → adjust_margins_at_left_margin, beep, calculate_typed_character_column, insert_printable_byte, return_to_editor_loop, wrap_typed_word [column_position, current_ruler_ptr, edit_buffer_dirty_flag, format_mode_flags, line_counter, ruler_buffer_len, ruler_right_stop, xpos]
 - **return_to_editor_loop**
 - **return_key** → advance_current_line_pointer, find_next_line, insert_line_at_cursor, write_line_back_to_document_safely [current_line_ptr, ram, xpos]
@@ -237,7 +237,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **move_to_previous_line** → find_previous_line, set_xpos_to_line_length, unpack_line, write_line_back_to_document_safely [current_line_ptr, edit_buffer_base, scroll_repeat_count]
 - **move_cursor_up** → find_previous_line, write_line_back_to_document_safely [current_line_ptr, cursor_moved_flag, scratch_offset]
 - **move_cursor_down** → advance_to_next_line, write_line_back_to_document_safely [current_line_ptr, cursor_moved_flag, scratch_offset]
-- **check_pointer_in_area** → beep, make_space_for_insertion, move_cursor_to_address, show_memory_full_error, split_line_at_wrap [area_end_ptr, area_insert_ptr, area_size, area_start_ptr, cursor_moved_flag, display_start_row]
+- **check_pointer_in_area** → beep, make_space_for_insertion, memory_full, move_cursor_to_address, split_line_at_wrap [area_end_ptr, area_insert_ptr, area_size, area_start_ptr, cursor_moved_flag, display_start_row]
 - **tab_highlight_common** → adjust_margins_at_left_margin, f13_right_key, insert_character_into_edit_buffer
 - **f13_right_key** [xpos]
 - **enter_editor_mode** → clear_screen [display_start_row, edit_buffer_contains_ruler_flag, edit_buffer_dirty_flag, edit_buffer_unpacked_flag, flags_need_redrawing_flag, line_lengths, screen_maxrow, scroll_repeat_count, status_line_needs_redrawing_flag]
