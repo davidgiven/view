@@ -16,14 +16,15 @@ uint8_t edit_line_len;
 static uint8_t editor_current_key;
 static uint8_t editor_header_pos;
 static uint8_t editor_output_pos;
-static uint8_t* editor_ptr6;
+/** Earliest line needing redraw, or NULL when no line is pending. */
+static uint8_t* first_dirty_line_ptr;
 static uint8_t format_src_index;
 static uint8_t justify_extra_space_accum;
 static uint8_t justify_line_length;
 static uint8_t justify_overflow_counter;
 static uint8_t justify_running_total_accum;
 static uint8_t line_lengths[100];
-static uint8_t ptr6_screen_row;
+static uint8_t first_dirty_line_screen_row;
 static int saved_ruler_index_redraw;
 
 // Render pipeline state for line drawing.
@@ -383,7 +384,7 @@ static void cf7_join_lines_key(void)
     scratch_scan_ptr = adjust_pointers(insert_ptr, 1);
     split_line_at_wrap(current_line_ptr);
     line_change_pending_flag++;
-    clamp_ptr6_to_document();
+    invalidate_from_current_line();
 }
 
 /**
@@ -420,7 +421,7 @@ void esc_key(void)
 static void f0_format_block_key(void)
 {
     write_line_back_to_document_safely();
-    clamp_ptr6_to_document();
+    invalidate_from_current_line();
     if (format_paragraph() == FORMAT_MEMORY_FULL)
         memory_full();
 }
@@ -496,7 +497,7 @@ static void f7_delete_line_key(void)
         current_line_ptr = line_ptr;
     }
     line_change_pending_flag++;
-    clamp_ptr6_to_document();
+    invalidate_from_current_line();
 }
 
 /**
@@ -585,7 +586,7 @@ static void cf0_delete_block_key(void)
         return;
     }
     move_cursor_to_address(area_start_ptr);
-    clamp_ptr6_to_document();
+    invalidate_from_current_line();
     area_size = area_end_ptr - area_start_ptr;
     adjust_area_pointers(area_size);
     ensure_cr_at_document_top();
@@ -1473,7 +1474,7 @@ static void wrap_typed_word(void)
     copy_wrapped_text(insert_ptr);
     justify_edit_buffer(edit_buffer_base);
     write_line_back_to_document_safely();
-    clamp_ptr6_to_document();
+    invalidate_from_current_line();
     return_key();
     xpos = top_margin;
 }
@@ -1960,7 +1961,7 @@ static void insert_line_into_document(uint8_t* target_ptr)
     if (make_space_for_insertion(insert_ptr, 1))
     {
         *insert_ptr = 0x0d;
-        clamp_ptr6_to_document();
+        invalidate_from_current_line();
 
         return;
     }
@@ -1968,16 +1969,15 @@ static void insert_line_into_document(uint8_t* target_ptr)
 }
 
 /**
- * Clamps the editor pointer to the current line.
- * Ensures editor_ptr6 does not advance beyond current_line_ptr and resets
- * display flags.
+ * Invalidates the current line and all following visible lines.
+ * Retains the earliest dirty line and invalidates its cached screen row.
  */
-void clamp_ptr6_to_document(void)
+void invalidate_from_current_line(void)
 {
-    if (current_line_ptr < editor_ptr6)
-        editor_ptr6 = current_line_ptr;
+    if (first_dirty_line_ptr == NULL || current_line_ptr < first_dirty_line_ptr)
+        first_dirty_line_ptr = current_line_ptr;
     display_start_row = 0xff;
-    ptr6_screen_row = 0xff;
+    first_dirty_line_screen_row = 0xff;
 }
 
 /**
@@ -2791,7 +2791,7 @@ static void scroll_editor_up_one_line(void)
         line_lengths[row] = line_lengths[row + 1];
         row++;
     } while (row != screen_maxrow);
-    ptr6_screen_row--;
+    first_dirty_line_screen_row--;
     line_lengths[0] = screen_maxcolumn;
     ruler_index_ptr = saved_ruler_index_scroll;
     uint8_t* next_line;
@@ -2815,8 +2815,8 @@ static uint8_t find_current_line_screen_row(void)
     do
     {
         cursor_row++;
-        if (walk == editor_ptr6)
-            ptr6_screen_row = cursor_row;
+        if (walk == first_dirty_line_ptr)
+            first_dirty_line_screen_row = cursor_row;
         if (walk == current_line_ptr)
             break;
 
@@ -2912,12 +2912,13 @@ static void redraw_editor_rows(void)
 {
     uint8_t rows_remaining;
     uint8_t* draw;
-    if ((int8_t)display_start_row < 0 && (int8_t)ptr6_screen_row >= 0 &&
-        editor_ptr6 != NULL)
+    if ((int8_t)display_start_row < 0 &&
+        (int8_t)first_dirty_line_screen_row >= 0 &&
+        first_dirty_line_ptr != NULL)
     {
-        screen_row = ptr6_screen_row;
-        rows_remaining = screen_maxrow - ptr6_screen_row + 1;
-        draw = editor_ptr6;
+        screen_row = first_dirty_line_screen_row;
+        rows_remaining = screen_maxrow - first_dirty_line_screen_row + 1;
+        draw = first_dirty_line_ptr;
     }
     else
     {
@@ -2975,7 +2976,7 @@ static void finish_editor_redraw(void)
     display_start_row = 0;
     line_counter = 0;
     scroll_repeat_count = 0;
-    editor_ptr6 = &ram[RAM_MAX];
+    first_dirty_line_ptr = NULL;
     screen_setcursor(cursor_column, ypos);
     cursor_on();
 }

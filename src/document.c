@@ -806,7 +806,7 @@ void setup_area_pointers(uint8_t* doc_working_ptr)
         doc_working_ptr != search_cursor_ptr && *doc_working_ptr == '\r';
     line_counter++;
     if (starts_with_break)
-        clamp_ptr6_to_document();
+        invalidate_from_current_line();
 }
 
 /**
@@ -971,7 +971,7 @@ bool write_line_back_to_document(void)
     }
 
     if (edit_buffer_contains_ruler_flag && edit_buffer_dirty_flag)
-        clamp_ptr6_to_document();
+        invalidate_from_current_line();
     edit_buffer_dirty_flag = false;
     edit_buffer_unpacked_flag = false;
     edit_buffer_contains_ruler_flag = false;

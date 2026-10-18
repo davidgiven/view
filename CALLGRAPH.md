@@ -157,7 +157,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **read_block_from_file** → check_for_command_prefix, check_for_control_code, get_byte_from_file, write_byte_to_memory, write_cr_to_memory [scratch_line_ptr, screen_column]
 - **get_cursor_document_address** → check_for_command_prefix, get_line_length [current_format_line, current_line_ptr, xpos]
 - **set_marker_to_here** → get_cursor_document_address [markers_array]
-- **setup_area_pointers** → clamp_ptr6_to_document [line_counter, search_cursor_ptr]
+- **setup_area_pointers** → invalidate_from_current_line [line_counter, search_cursor_ptr]
 - **split_line_at_wrap** → check_for_command_prefix, find_line_start, make_space_for_insertion [screen_column]
 - **find_line_start** [ram]
 - **get_format_line_contents** [current_format_line]
@@ -165,7 +165,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **write_area_to_file** → sanitise_area [area_end_ptr, area_start_ptr, file_ptr]
 - **sanitise_area** [area_end_ptr, area_start_ptr]
 - **write_line_back_to_document_safely** → memory_full, write_line_back_to_document
-- **write_line_back_to_document** → adjust_pointers, clamp_ptr6_to_document, find_marker_at_position, get_format_line_contents, get_line_length, make_space_for_insertion [area_size, current_line_ptr, edit_buffer_contains_ruler_flag, edit_buffer_dirty_flag, edit_buffer_unpacked_flag, edit_line_len, markers_array, scratch_scan_ptr, screen_column]
+- **write_line_back_to_document** → adjust_pointers, invalidate_from_current_line, find_marker_at_position, get_format_line_contents, get_line_length, make_space_for_insertion [area_size, current_line_ptr, edit_buffer_contains_ruler_flag, edit_buffer_dirty_flag, edit_buffer_unpacked_flag, edit_line_len, markers_array, scratch_scan_ptr, screen_column]
 - **adjust_pointers** [markers_array, pointer_array, top]
 - **find_marker_at_position** [markers_array]
 - **get_line_length** → check_for_command_prefix [current_format_line, current_line_buffer]
@@ -178,19 +178,19 @@ Functions defined in the source files and their callees (only calls to other fun
 - **editor_loop_impl** → cf1_next_match_key, cf4_insert_mode_key, cf7_join_lines_key, delete_key, enter_printable_character, esc_key, f0_format_block_key, f12_left_key, f13_right_key, f14_down_key, f15_up_key, f6_insert_line_key, f7_delete_line_key, f8_insert_char_key, f9_delete_char_key, find_left_margin_stop, get_line_length, k_command_key, o_command_key, q_command_key, recalculate_cursor_xpos, redraw_editor, return_key, sf12_left_key, sf13_right_key, sf14_down_key, sf15_up_key, sf1_swap_case_key, sf3_delete_to_char_key, tab_key, unpack_line [command_or_ruler_line_flag, current_tab_key, cursor_moved_flag, edit_buffer_base, edit_buffer_contains_ruler_flag, edit_buffer_unpacked_flag, flags_need_redrawing_flag, formatting_disabled_flag, line_change_pending_flag, ruler_left_stop, temporary_margin_mode_flag, visual_column, xpos]
 - **cf1_next_match_key** → esc_key, move_cursor_to_address, scan_document_for_next_line, write_line_back_to_document_safely
 - **cf4_insert_mode_key** [flags_need_redrawing_flag, insert_mode_flag]
-- **cf7_join_lines_key** → adjust_pointers, beep, check_for_command_prefix, clamp_ptr6_to_document, find_next_line, split_line_at_wrap, write_line_back_to_document_safely [current_line_ptr, line_change_pending_flag, scratch_scan_ptr]
+- **cf7_join_lines_key** → adjust_pointers, beep, check_for_command_prefix, invalidate_from_current_line, find_next_line, split_line_at_wrap, write_line_back_to_document_safely [current_line_ptr, line_change_pending_flag, scratch_scan_ptr]
 - **delete_key** → f8_insert_char_key, f9_delete_char_key, get_line_length [current_line_buffer, insert_mode_flag, visual_column, xpos]
 - **esc_key** → run_cli, write_line_back_to_document_safely
-- **f0_format_block_key** → clamp_ptr6_to_document, format_paragraph, memory_full, write_line_back_to_document_safely
+- **f0_format_block_key** → invalidate_from_current_line, format_paragraph, memory_full, write_line_back_to_document_safely
 - **f12_left_key** [visual_column, xpos]
 - **f14_down_key** → advance_current_line_pointer, return_key, write_line_back_to_document_safely [line_change_pending_flag]
 - **f15_up_key** → find_previous_line, write_line_back_to_document_safely [current_line_ptr, cursor_moved_flag, line_change_pending_flag]
-- **f7_delete_line_key** → adjust_pointers, clamp_ptr6_to_document, ensure_cr_at_document_top, find_previous_line, write_line_back_to_document_safely [current_line_ptr, cursor_moved_flag, edit_line_len, line_change_pending_flag, scratch_scan_ptr]
+- **f7_delete_line_key** → adjust_pointers, invalidate_from_current_line, ensure_cr_at_document_top, find_previous_line, write_line_back_to_document_safely [current_line_ptr, cursor_moved_flag, edit_line_len, line_change_pending_flag, scratch_scan_ptr]
 - **f8_insert_char_key** → insert_character_into_edit_buffer
 - **f9_delete_char_key** → delete_edit_buffer_bytes_at_xpos [line_counter]
 - **read_prefix_command_key** → control_key_to_ascii, draw_prompt_characters [flags_need_redrawing_flag]
 - **k_command_key** → cf0_delete_block_key, f11_copy_key, read_prefix_command_key, set_marker_common, sf0_move_block_key, sf7_set_marker_key
-- **cf0_delete_block_key** → adjust_area_pointers, beep, clamp_ptr6_to_document, clear_marks_1_2, ensure_cr_at_document_top, move_cursor_to_address, reset_area_to_marks_1_2, write_line_back_to_document_safely [area_end_ptr, area_size, area_start_ptr, cursor_moved_flag]
+- **cf0_delete_block_key** → adjust_area_pointers, beep, invalidate_from_current_line, clear_marks_1_2, ensure_cr_at_document_top, move_cursor_to_address, reset_area_to_marks_1_2, write_line_back_to_document_safely [area_end_ptr, area_size, area_start_ptr, cursor_moved_flag]
 - **f11_copy_key** → beep, check_pointer_in_area, move_cursor_to_address, reset_area_to_marks_1_2, write_line_back_to_document_safely [area_insert_ptr]
 - **o_command_key** → cf2_format_mode_key, cf3_justify_mode_key, cf5_default_ruler_key, cf8_mark_as_ruler_key, read_prefix_command_key, sf11_copy_key, sf2_release_margins_key, sf4_highlight1_key, sf5_highlight2_key, sf8_edit_command_key, sf9_delete_command_key
 - **cf2_format_mode_key** [flags_need_redrawing_flag, formatting_disabled_flag, temporary_margin_mode_flag]
@@ -227,7 +227,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **insert_printable_byte** → find_marker_at_position, insert_edit_buffer_bytes_at_xpos, update_line_length [current_line_buffer, insert_mode_flag, line_counter, xpos]
 - **calculate_typed_character_column** → process_document_character [column_position, current_line_buffer, ruler_left_stop, xpos]
 - **copy_wrapped_text** → find_marker_at_position [current_line_buffer, markers_array, ruler_left_stop, scratch_index, screen_column, screen_row, xpos]
-- **wrap_typed_word** → clamp_ptr6_to_document, copy_wrapped_text, draw_previous_word, get_line_length, justify_edit_buffer, make_space_for_insertion, memory_full, recalculate_cursor_xpos, return_key, write_line_back_to_document_safely [current_line_ptr, edit_buffer_base, edit_line_len, input_buffer_offset, ruler_left_stop, screen_column, top_margin, visual_column, xpos]
+- **wrap_typed_word** → invalidate_from_current_line, copy_wrapped_text, draw_previous_word, get_line_length, justify_edit_buffer, make_space_for_insertion, memory_full, recalculate_cursor_xpos, return_key, write_line_back_to_document_safely [current_line_ptr, edit_buffer_base, edit_line_len, input_buffer_offset, ruler_left_stop, screen_column, top_margin, visual_column, xpos]
 - **enter_printable_character** → adjust_margins_at_left_margin, beep, calculate_typed_character_column, insert_printable_byte, return_to_editor_loop, wrap_typed_word [column_position, command_or_ruler_line_flag, current_ruler_ptr, edit_buffer_dirty_flag, formatting_disabled_flag, line_counter, ruler_buffer_len, ruler_right_stop, temporary_margin_mode_flag, xpos]
 - **return_to_editor_loop**
 - **return_key** → advance_current_line_pointer, find_next_line, insert_line_at_cursor, write_line_back_to_document_safely [current_line_ptr, xpos]
@@ -245,8 +245,8 @@ Functions defined in the source files and their callees (only calls to other fun
 - **draw_previous_word** → process_current_document_character [current_line_buffer, xpos]
 - **adjust_margins_at_left_margin** → find_left_margin_stop, get_line_length, insert_byte_at_xpos, recalculate_cursor_xpos [command_or_ruler_line_flag, formatting_disabled_flag, line_counter, ruler_left_stop, screen_column, visual_column, xpos]
 - **scan_document_for_next_line** → append_to_output_buffer, check_for_command_prefix, upper_case_unless_folding [editor_header_pos, editor_output_pos, header_text_maybe, output_buffer, scratch_index, screen_column, search_cursor_ptr, search_limit_ptr, search_target_len]
-- **insert_line_into_document** → clamp_ptr6_to_document, make_space_for_insertion, memory_full
-- **clamp_ptr6_to_document** [current_line_ptr, display_start_row, editor_ptr6, ptr6_screen_row]
+- **insert_line_into_document** → invalidate_from_current_line, make_space_for_insertion, memory_full
+- **invalidate_from_current_line** [current_line_ptr, display_start_row, first_dirty_line_ptr, first_dirty_line_screen_row]
 - **clear_screen**
 - **go_to_marker_n** → go_to_marker, lookup_marker, write_line_back_to_document_safely [markers_array]
 - **memory_full** → show_memory_full_error
@@ -277,12 +277,12 @@ Functions defined in the source files and their callees (only calls to other fun
 - **insert_edit_buffer_bytes_at_xpos** → beep, find_marker_at_position, get_line_length [current_line_buffer, edit_buffer_dirty_flag, markers_array, scratch_index, scratch_offset, xpos]
 - **redraw_and_write_back** → redraw_editor, write_line_back_to_document_safely [edit_buffer_contains_ruler_flag, edit_buffer_unpacked_flag]
 - **scroll_editor_down_one_line** → find_previous_line [current_line_ptr, line_lengths, ruler_index_ptr, saved_ruler_index_scroll, scratch_line_ptr, screen_maxrow, top, top_of_screen_line_ptr]
-- **scroll_editor_up_one_line** → advance_to_next_line [line_lengths, ptr6_screen_row, ruler_index_ptr, saved_ruler_index_scroll, scratch_line_ptr, screen_maxcolumn, screen_maxrow, top_of_screen_line_ptr]
-- **find_current_line_screen_row** → advance_to_next_line [current_line_ptr, editor_ptr6, ptr6_screen_row, scratch_line_ptr, screen_maxrow, top_of_screen_line_ptr]
+- **scroll_editor_up_one_line** → advance_to_next_line [line_lengths, first_dirty_line_screen_row, ruler_index_ptr, saved_ruler_index_scroll, scratch_line_ptr, screen_maxcolumn, screen_maxrow, top_of_screen_line_ptr]
+- **find_current_line_screen_row** → advance_to_next_line [current_line_ptr, first_dirty_line_ptr, first_dirty_line_screen_row, scratch_line_ptr, screen_maxrow, top_of_screen_line_ptr]
 - **position_editor_viewport** → compute_display_start_line, find_current_line_screen_row, scroll_editor_down_one_line, scroll_editor_up_one_line [current_line_ptr, line_counter, ruler_index_ptr, saved_ruler_index_scroll, screen_maxrow, scroll_repeat_count, top_of_screen_line_ptr, ypos]
 - **adjust_editor_horizontal_scroll** → load_current_ruler, recalculate_cursor_xpos, unpack_line_into_buffer, write_line_back_to_document_safely [display_start_row, edit_buffer_base, hscroll_pos, saved_ruler_index_redraw, screen_column, screen_maxcolumn, visual_column]
-- **redraw_editor_rows** → advance_to_next_line, clear_to_eol, draw_line, load_current_ruler [display_start_row, editor_ptr6, line_counter, line_lengths, ptr6_screen_row, saved_ruler_index_redraw, saved_ruler_index_scroll, scratch_index, scratch_line_ptr, screen_column, screen_maxcolumn, screen_maxrow, screen_row, top_of_screen_line_ptr]
-- **finish_editor_redraw** → cursor_on [display_start_row, editor_ptr6, hscroll_pos, line_counter, ram, scroll_repeat_count, visual_column, ypos]
+- **redraw_editor_rows** → advance_to_next_line, clear_to_eol, draw_line, load_current_ruler [display_start_row, first_dirty_line_ptr, line_counter, line_lengths, first_dirty_line_screen_row, saved_ruler_index_redraw, saved_ruler_index_scroll, scratch_index, scratch_line_ptr, screen_column, screen_maxcolumn, screen_maxrow, screen_row, top_of_screen_line_ptr]
+- **finish_editor_redraw** → cursor_on [display_start_row, first_dirty_line_ptr, hscroll_pos, line_counter, scroll_repeat_count, visual_column, ypos]
 - **redraw_editor** → adjust_editor_horizontal_scroll, cursor_off, draw_line, draw_ruler, draw_status_word, finish_editor_redraw, get_format_line_contents, position_editor_viewport, redraw_editor_rows, unpack_line_into_buffer, update_markers_to_format_buffer [display_start_row, edit_buffer_base, edit_buffer_unpacked_flag, flags_need_redrawing_flag, line_counter, ruler_index_ptr, saved_ruler_index_redraw, screen_row, scroll_repeat_count, status_line_needs_redrawing_flag, ypos]
 - **cursor_off**
 - **cursor_on**

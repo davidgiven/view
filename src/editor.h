@@ -24,7 +24,7 @@ extern uint8_t edit_line_len;
 extern bool scan_document_for_next_line(void);
 extern format_result_t format_paragraph(void);
 extern uint8_t justify_edit_buffer(uint8_t* target_ptr);
-extern void clamp_ptr6_to_document(void);
+extern void invalidate_from_current_line(void);
 extern void set_command_or_ruler_line_flag(bool enabled);
 extern void clear_screen(void);
 extern void cursor_off(void);
