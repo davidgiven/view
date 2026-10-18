@@ -279,90 +279,47 @@ bool parse_decimal_number(int* value, uint8_t* pos)
 }
 
 /**
- * Process one document character, performing tab, ruler and highlight-code
- * expansion.
- * @param cur_ch character from the current edit line to process
- * @param idx on return, holds 1 on ordinary paths or the tab offset (index of
- * the first '*' ruler stop beyond column_position) on the tab path
- * @param is_tab on entry, the previous tab-expansion state for this walk; on
- * return, true if tab expansion was performed for cur_ch, false otherwise
- * @return processed character, normally 0x20 (space); tabs and characters below
- * 0x1a map to space, and characters in [0x1a, 0x20) map to highlight codes when
- * printer output is enabled
+ * Expands tabs, left-margin controls and highlight codes for one character.
+ * @param cur_ch character from the current edit line
+ * @param idx output width: distance to the tab stop or left margin, at least 1
+ * @param is_tab output flag indicating tab or left-margin expansion
+ * @return a space for tabs, left-margin controls, 0x10 and 0x1a; a mapped
+ * highlight code for bytes 0x1b through 0x1f when printer output is enabled;
+ * otherwise the original character
  */
 uint8_t process_document_character(uint8_t cur_ch, uint8_t* idx, bool* is_tab)
 {
-    if (cur_ch != 9)
+    if (cur_ch == '\t' || (cur_ch == 0x0b && ruler_left_stop != 0))
     {
-        if ((cur_ch == 0x10) || cur_ch == 0x1a)
-            goto ca5d5;
-
-        if (cur_ch == 0x0b)
-            goto ca5d9;
-
-        if (cur_ch > 0x1a)
+        uint8_t target_column = ruler_left_stop - 1;
+        if (cur_ch == '\t')
         {
-            if (cur_ch < 0x20)
+            target_column = column_position;
+            do
             {
-                if ((print_flags & 0x80))
+                target_column++;
+                if (target_column >= ruler_buffer_len)
                 {
-                    cur_ch = (uint8_t)(cur_ch - 0x1b - 1);
-                    *idx = cur_ch;
-                    cur_ch = highlight_code[*idx];
+                    target_column = column_position;
+                    break;
                 }
-            }
+            } while (current_ruler_ptr[target_column] != '*');
         }
-    ca5d1:
-        *idx = 1;
-        *is_tab = false;
-
-        return cur_ch;
-
-    ca5d5:
-        do
-        {
-            cur_ch = 0x20;
-
-            goto ca5d1;
-
-        ca5d9:
-            cur_ch = ruler_left_stop;
-        } while (cur_ch == 0);
-        cur_ch--;
+        *idx = target_column > column_position ? target_column - column_position
+                                               : 1;
+        *is_tab = true;
+        return ' ';
     }
-    else
+
+    if (cur_ch == 0x10 || cur_ch == 0x1a || cur_ch == 0x0b)
+        cur_ch = ' ';
+    else if (cur_ch > 0x1a && cur_ch < 0x20 && (print_flags & 0x80))
     {
-        uint8_t tab_pos = column_position;
-
-        do
-        {
-            tab_pos++;
-
-            if (tab_pos >= ruler_buffer_len)
-                goto ca5f8;
-            cur_ch = current_ruler_ptr[tab_pos];
-        } while (cur_ch != 0x2a);
-        cur_ch = tab_pos;
+        uint8_t highlight_index = cur_ch - 0x1c;
+        cur_ch = highlight_code[highlight_index];
     }
-    {
-        bool no_borrow = (cur_ch >= column_position);
-
-        cur_ch -= column_position;
-        *idx = cur_ch;
-
-        if (*idx == 0)
-            goto ca5f8;
-
-        if (no_borrow)
-            goto ca5fa;
-    }
-ca5f8:
     *idx = 1;
-
-ca5fa:
-    cur_ch = 0x20;
-    *is_tab = true;
-
+    *is_tab = false;
     return cur_ch;
 }
 

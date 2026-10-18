@@ -13,7 +13,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **print_alignment_spaces** → print_char_just_to_screen [a, print_xpos]
 - **print_char** → print_alignment_spaces, print_char_just_to_screen [a, print_xpos]
 - **print_char_just_to_screen** → print_char [column_position, print_flags, printer_driver_ptr]
-- **process_document_character** [a, column_position, current_ruler_ptr, highlight_code, print_flags, ruler_buffer_len, ruler_left_stop]
+- **process_document_character** [column_position, current_ruler_ptr, highlight_code, print_flags, ruler_buffer_len, ruler_left_stop]
 - **render_number_to_callback** [a]
 - **emit_to_output_buffer_callback** [output_buffer, screen_row]
 - **render_number_to_output_buffer** → render_number_to_callback [a, screen_row]
