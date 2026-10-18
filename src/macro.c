@@ -94,8 +94,10 @@ void dm_fmt_cmd(void)
 
         command_prefix_t cp = check_for_command_prefix(body[0]);
 
-        if (cp != NO_COMMAND_PREFIX &&
-            lookup_formatting_command() == FORMATTING_COMMAND_EM)
+        const formatting_command_t* command =
+            cp != NO_COMMAND_PREFIX ? lookup_formatting_command() : NULL;
+        if (command != NULL && command->name[0] == 'E' &&
+            command->name[1] == 'M')
             break;
 
         write_ptr = line_ptr;

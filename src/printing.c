@@ -73,8 +73,54 @@ static void start_microspacing_if_active(uint8_t cur_ch);
 static void store_to_output_buffer(uint8_t cur_ch, uint8_t* copy_ptr);
 static void write_output_buffer_to_format_line(uint8_t cur_ch);
 
-static const uint8_t commands_table[] =
-    "CERJDFDHDMEMSRPETMBMPLTSFOHEHTHMFMLMLSOPEPLJPB";
+static void ce_fmt_cmd(void);
+static void rj_fmt_cmd(void);
+static void df_fmt_cmd(void);
+static void dh_fmt_cmd(void);
+static void em_fmt_cmd(void);
+static void sr_fmt_cmd(void);
+static void pe_fmt_cmd(void);
+static void tm_fmt_cmd(void);
+static void bm_fmt_cmd(void);
+static void pl_fmt_cmd(void);
+static void ts_fmt_cmd(void);
+static void fo_fmt_cmd(void);
+static void he_fmt_cmd(void);
+static void ht_fmt_cmd(void);
+static void hm_fmt_cmd(void);
+static void fm_fmt_cmd(void);
+static void lm_fmt_cmd(void);
+static void ls_fmt_cmd(void);
+static void op_fmt_cmd(void);
+static void ep_fmt_cmd(void);
+static void lj_fmt_cmd(void);
+static void pb_fmt_cmd(void);
+
+static const formatting_command_t commands_table[] = {
+    {.name = {'C', 'E'}, .callback = ce_fmt_cmd},
+    {.name = {'R', 'J'}, .callback = rj_fmt_cmd},
+    {.name = {'D', 'F'}, .callback = df_fmt_cmd},
+    {.name = {'D', 'H'}, .callback = dh_fmt_cmd},
+    {.name = {'D', 'M'}, .callback = dm_fmt_cmd},
+    {.name = {'E', 'M'}, .callback = em_fmt_cmd},
+    {.name = {'S', 'R'}, .callback = sr_fmt_cmd},
+    {.name = {'P', 'E'}, .callback = pe_fmt_cmd},
+    {.name = {'T', 'M'}, .callback = tm_fmt_cmd},
+    {.name = {'B', 'M'}, .callback = bm_fmt_cmd},
+    {.name = {'P', 'L'}, .callback = pl_fmt_cmd},
+    {.name = {'T', 'S'}, .callback = ts_fmt_cmd},
+    {.name = {'F', 'O'}, .callback = fo_fmt_cmd},
+    {.name = {'H', 'E'}, .callback = he_fmt_cmd},
+    {.name = {'H', 'T'}, .callback = ht_fmt_cmd},
+    {.name = {'H', 'M'}, .callback = hm_fmt_cmd},
+    {.name = {'F', 'M'}, .callback = fm_fmt_cmd},
+    {.name = {'L', 'M'}, .callback = lm_fmt_cmd},
+    {.name = {'L', 'S'}, .callback = ls_fmt_cmd},
+    {.name = {'O', 'P'}, .callback = op_fmt_cmd},
+    {.name = {'E', 'P'}, .callback = ep_fmt_cmd},
+    {.name = {'L', 'J'}, .callback = lj_fmt_cmd},
+    {.name = {'P', 'B'}, .callback = pb_fmt_cmd},
+};
 
 static const uint8_t on_off_table[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
 
@@ -105,34 +151,12 @@ static const printer_driver_t default_printer_driver = {
 /* Forward declarations for sorted functions (root first) */
 static void set_rw_file_handle(uint8_t cur_ch);
 static void print_loop(uint8_t* print_doc_ptr);
-static bool execute_formatting_command(formatting_command_t idx);
-static void lj_fmt_cmd(void);
-static void ce_fmt_cmd(void);
-static void rj_fmt_cmd(void);
 static void write_output_buffer_to_format_line(uint8_t pad_len);
 static uint8_t expand_line(void);
-static void df_fmt_cmd(void);
-static void dh_fmt_cmd(void);
 static uint8_t process_header_footer_line(uint8_t* copy_ptr);
 static void store_to_output_buffer(uint8_t cur_ch, uint8_t* copy_ptr);
-static void em_fmt_cmd(void);
-static void pl_fmt_cmd(void);
-static void ts_fmt_cmd(void);
-static void tm_fmt_cmd(void);
-static void bm_fmt_cmd(void);
-static void hm_fmt_cmd(void);
-static void fm_fmt_cmd(void);
-static void lm_fmt_cmd(void);
-static void ls_fmt_cmd(void);
-static void pe_fmt_cmd(void);
-static void op_fmt_cmd(void);
-static void ep_fmt_cmd(void);
 static void eject_two_pages(void);
 static void page_eject_fmt(void);
-static void fo_fmt_cmd(void);
-static void he_fmt_cmd(void);
-static void pb_fmt_cmd(void);
-static void ht_fmt_cmd(void);
 static bool parse_boolean_from_fmt_cmd(uint8_t* pos, uint8_t* value);
 static bool parse_word_flag(uint8_t* target_ptr, uint8_t* pos, uint8_t* value);
 static bool evaluate_expression_from_fmt_cmd(
@@ -300,10 +324,12 @@ static void print_loop(uint8_t* print_doc_ptr)
                 load_print_ruler(line);
                 continue;
             }
-            formatting_command_t command = lookup_formatting_command();
-            if (command != NO_FORMATTING_COMMAND)
+            const formatting_command_t* command = lookup_formatting_command();
+            if (command != NULL)
             {
-                if (execute_formatting_command(command))
+                formatted_line_written_flag = false;
+                command->callback();
+                if (!formatted_line_written_flag)
                     continue;
             }
             else if (!macro_try_invoke(&macro_cursor) || macro_executing_flag)
@@ -324,123 +350,15 @@ static void print_loop(uint8_t* print_doc_ptr)
 
 /**
  * Looks up the current line's two-letter formatting command, case-sensitively.
- * @return the matching command index or NO_FORMATTING_COMMAND if not found
+ * @return pointer to the matching table entry, or NULL if not found
  */
-formatting_command_t lookup_formatting_command(void)
+const formatting_command_t* lookup_formatting_command(void)
 {
-    for (size_t pos = 0; commands_table[pos] != 0; pos += 2)
-        if (heap_format_line_ptr->command[0] == commands_table[pos] &&
-            heap_format_line_ptr->command[1] == commands_table[pos + 1])
-            return (formatting_command_t)(pos / 2);
-    return NO_FORMATTING_COMMAND;
-}
-
-/**
- * Executes a formatting command by index.
- *
- * @param idx command index as returned by lookup_formatting_command
- * @return true if no formatted line was emitted, false otherwise
- */
-static bool execute_formatting_command(formatting_command_t idx)
-{
-    formatted_line_written_flag = false;
-
-    switch (idx)
-    {
-        case FORMATTING_COMMAND_CE:
-            ce_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_RJ:
-            rj_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_DF:
-            df_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_DH:
-            dh_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_DM:
-            dm_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_EM:
-            break;
-
-        case FORMATTING_COMMAND_SR:
-            em_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_PE:
-            pe_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_TM:
-            tm_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_BM:
-            bm_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_PL:
-            pl_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_TS:
-            ts_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_FO:
-            fo_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_HE:
-            he_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_HT:
-            ht_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_HM:
-            hm_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_FM:
-            fm_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_LM:
-            lm_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_LS:
-            ls_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_OP:
-            op_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_EP:
-            ep_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_LJ:
-            lj_fmt_cmd();
-            break;
-
-        case FORMATTING_COMMAND_PB:
-            pb_fmt_cmd();
-            break;
-
-        case NO_FORMATTING_COMMAND:
-    }
-    return !formatted_line_written_flag;
+    for (size_t pos = 0; pos < ARRAY_SIZE(commands_table); pos++)
+        if (heap_format_line_ptr->command[0] == commands_table[pos].name[0] &&
+            heap_format_line_ptr->command[1] == commands_table[pos].name[1])
+            return &commands_table[pos];
+    return NULL;
 }
 
 /**
@@ -687,10 +605,16 @@ static void store_to_output_buffer(uint8_t cur_ch, uint8_t* copy_ptr)
 }
 
 /**
- * Handles the SR/EM formatting command to evaluate an expression and store
+ * Handles the EM formatting command, which has no effect outside a macro
+ * definition.
+ */
+static void em_fmt_cmd(void) {}
+
+/**
+ * Handles the SR formatting command to evaluate an expression and store
  * the result in a register.
  */
-static void em_fmt_cmd(void)
+static void sr_fmt_cmd(void)
 {
     uint8_t pos = 0;
     uint8_t cur_ch = get_current_fmt_cmd_byte(&pos);

@@ -35,7 +35,8 @@ Functions defined in the source files and their callees (only calls to other fun
 - **process_header_footer_line** → store_to_output_buffer [scratch_index, search_target_len]
 - **df_fmt_cmd** → process_header_footer_line [footer_text_maybe]
 - **dh_fmt_cmd** → process_header_footer_line [a, header_text_maybe]
-- **em_fmt_cmd** → get_current_fmt_cmd_byte
+- **em_fmt_cmd**
+- **sr_fmt_cmd** → get_current_fmt_cmd_byte
 - **pl_fmt_cmd** [page_length]
 - **ts_fmt_cmd** → parse_boolean_from_fmt_cmd [rhs_extra_margin, top, two_sided_flag]
 - **tm_fmt_cmd** [top_margin]
@@ -53,7 +54,6 @@ Functions defined in the source files and their callees (only calls to other fun
 - **he_fmt_cmd** → parse_boolean_from_fmt_cmd [headers_enabled_flag]
 - **pb_fmt_cmd** → parse_boolean_from_fmt_cmd
 - **ht_fmt_cmd** → get_current_fmt_cmd_byte [a, highlight_code]
-- **execute_formatting_command** → bm_fmt_cmd, ce_fmt_cmd, df_fmt_cmd, dh_fmt_cmd, dm_fmt_cmd, em_fmt_cmd, ep_fmt_cmd, fm_fmt_cmd, fo_fmt_cmd, he_fmt_cmd, hm_fmt_cmd, ht_fmt_cmd, lj_fmt_cmd, lm_fmt_cmd, ls_fmt_cmd, op_fmt_cmd, pb_fmt_cmd, pe_fmt_cmd, pl_fmt_cmd, rj_fmt_cmd, tm_fmt_cmd, ts_fmt_cmd [a, formatted_line_written_flag]
 - **parse_boolean_from_fmt_cmd** → get_current_fmt_cmd_byte, parse_word_flag [a]
 - **parse_word_flag** → get_current_fmt_cmd_byte, get_next_fmt_cmd_byte, parse_decimal_number, render_register [a, scratch_offset, temp_save]
 - **get_current_fmt_cmd_byte**
@@ -72,7 +72,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **advance_print_line_spacing** → print_vertical_space [a, line_spacing, page_lines_remaining]
 - **load_print_ruler** → find_margins_of_current_ruler_buffer [current_ruler_buffer]
 - **print_line_contents** → advance_print_line_spacing, convert_char_for_printing, print_char_x_times [register_value_array]
-- **print_loop** → execute_formatting_command, load_print_ruler, lookup_formatting_command, macro_try_invoke, microspace_word_processor, output_left_margin, prepare_output_line, print_line_contents, process_page_footer, render_new_page, start_microspacing_if_active [column_position, macro_executing_flag, microspacing_count, page_break_pending_flag, page_lines_remaining, print_flags, scratch_offset]
+- **print_loop** → bm_fmt_cmd, ce_fmt_cmd, df_fmt_cmd, dh_fmt_cmd, dm_fmt_cmd, em_fmt_cmd, ep_fmt_cmd, fm_fmt_cmd, fo_fmt_cmd, he_fmt_cmd, hm_fmt_cmd, ht_fmt_cmd, lj_fmt_cmd, lm_fmt_cmd, load_print_ruler, lookup_formatting_command, ls_fmt_cmd, macro_try_invoke, microspace_word_processor, op_fmt_cmd, output_left_margin, pb_fmt_cmd, pe_fmt_cmd, pl_fmt_cmd, prepare_output_line, print_line_contents, process_page_footer, render_new_page, rj_fmt_cmd, sr_fmt_cmd, start_microspacing_if_active, tm_fmt_cmd, ts_fmt_cmd [column_position, formatted_line_written_flag, macro_executing_flag, microspacing_count, page_break_pending_flag, page_lines_remaining, print_flags, scratch_offset] (formatting handlers via commands_table callbacks)
 - **print_newline** → print_char
 - **print_vertical_space** → print_char_x_times
 - **render_header_or_footer** → add_justification_spaces, compute_header_left_section, compute_header_middle_section, compute_header_odd_page_section, copy_header_footer_text, get_page_parity, get_right_margin, output_left_margin, print_output_buffer [a, column_position, scratch_index]
