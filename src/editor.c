@@ -787,15 +787,7 @@ static void cf6_split_line_key(void)
 
     if (cp != NO_COMMAND_PREFIX)
         insert_offset += offsetof(line_t, text);
-    uint32_t sum = (uint32_t)(current_line_ptr - &ram[0]) + insert_offset;
-
-    if (sum > 0xffff)
-    {
-        f6_insert_line_key();
-
-        return;
-    }
-    insert_line_into_document(&ram[(uint16_t)sum]);
+    insert_line_into_document(current_line_ptr + insert_offset);
 }
 
 /**
@@ -1432,14 +1424,7 @@ static void copy_wrapped_text(uint8_t* insert_ptr)
 
             if (marker_index == NUM_MARKERS)
                 break;
-            {
-                uint8_t* val_ptr = insert_ptr + scratch_index;
-
-                markers_array[marker_index] = val_ptr;
-
-                if (insert_ptr - &ram[0] + scratch_index >= 0x10000)
-                    break;
-            }
+            markers_array[marker_index] = insert_ptr + scratch_index;
         }
         if (screen_column == 0)
         {
@@ -1565,8 +1550,7 @@ static void return_key(void)
 
         return;
     }
-    uint16_t sum = (current_line_ptr - &ram[0]) + next_line_len;
-    insert_line_at_cursor(&ram[sum]);
+    insert_line_at_cursor(current_line_ptr + next_line_len);
     advance_current_line_pointer();
 }
 
@@ -1615,16 +1599,7 @@ static bool reset_area_to_marks_1_2(void)
         return true;
     area_end_ptr = markers_array[1];
 
-    int offset = get_line_length();
-    if (offset >= xpos)
-    {
-        offset = xpos;
-        if (check_for_command_prefix(current_format_line[0]) !=
-            NO_COMMAND_PREFIX)
-            offset += offsetof(line_t, text);
-    }
-    size_t insert_offset = (current_line_ptr - ram) + offset;
-    area_insert_ptr = ram + insert_offset;
+    area_insert_ptr = get_cursor_document_address();
     return sanitise_area() == AREA_EMPTY;
 }
 

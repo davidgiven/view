@@ -62,6 +62,7 @@ extern read_block_status_t read_block_from_file(
 extern uint8_t create_default_ruler(uint8_t* ruler_addr);
 extern uint8_t find_marker_at_position(uint8_t buf_offset, uint8_t* target_ptr);
 extern uint8_t get_line_length(void);
+extern uint8_t* get_cursor_document_address(void);
 extern uint8_t* adjust_pointers(uint8_t* insert_ptr, ptrdiff_t size_delta);
 extern uint8_t* read_into_document(void);
 extern unsigned int* get_register_address(uint8_t cur_ch);

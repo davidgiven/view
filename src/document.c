@@ -765,12 +765,12 @@ read_block_status_t read_block_from_file(uint8_t** cursor, uint8_t* limit)
 }
 
 /**
- * Sets a marker to the current position.
- * Computes the document address for the cursor and stores it in the marker
- * array.
- * @param marker_idx marker index
+ * Returns the document address at the current cursor position.
+ * Uses the line length when xpos is beyond it; otherwise includes the command
+ * or ruler header in the cursor offset when present.
+ * @return pointer into the current document line, including any header
  */
-void set_marker_to_here(uint8_t marker_idx)
+uint8_t* get_cursor_document_address(void)
 {
     uint8_t offset = get_line_length();
     if (offset >= xpos)
@@ -780,9 +780,17 @@ void set_marker_to_here(uint8_t marker_idx)
             NO_COMMAND_PREFIX)
             offset += offsetof(line_t, text);
     }
-    uint16_t document_offset = (current_line_ptr - ram) + offset;
-    markers_array[marker_idx] = ram + document_offset;
+    return current_line_ptr + offset;
 }
+
+/**
+ * Sets a marker to the current position.
+ * Computes the document address for the cursor and stores it in the marker
+ * array.
+ * @param marker_idx marker index
+ */
+void set_marker_to_here(uint8_t marker_idx)
+{ markers_array[marker_idx] = get_cursor_document_address(); }
 
 /**
  * Set up area pointers for the line at the working pointer.
@@ -828,8 +836,7 @@ void split_line_at_wrap(uint8_t* target_ptr)
         scan_ptr += split_pos;
         make_space_for_insertion(scan_ptr, 1);
         *scan_ptr = 0x0d;
-        // Retain the translated loop's additional address-byte stop condition.
-    } while (((uint8_t*)&scan_ptr)[1] != 0);
+    } while (scan_ptr != NULL);
 }
 
 /**
@@ -984,10 +991,7 @@ bool write_line_back_to_document(void)
             uint8_t marker = find_marker_at_position(copy_pos, source);
             if (marker == NUM_MARKERS)
                 break;
-            uint16_t marker_offset = (current_line_ptr - ram) + copy_pos;
-            markers_array[marker] = ram + marker_offset;
-            if (marker_offset == 0)
-                break;
+            markers_array[marker] = current_line_ptr + copy_pos;
         }
         current_line_ptr[copy_pos++] = ch;
         remaining--;

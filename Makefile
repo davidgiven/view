@@ -71,6 +71,10 @@ bin/test_ruler_index: tests/test_ruler_index.c $(OBJ_DIR)/view_nomain.o $(OBJ_DI
 	mkdir -p bin
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
+bin/test_cursor_address: tests/test_cursor_address.c $(OBJ_DIR)/view_nomain.o $(OBJ_DIR)/cli.o $(OBJ_DIR)/printing.o $(OBJ_DIR)/macro.o $(OBJ_DIR)/document.o $(OBJ_DIR)/editor.o $(OBJ_DIR)/cli_stdio.o $(OBJ_DIR)/screen_ncurses.o
+	mkdir -p bin
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
 compile_commands.json: Makefile
 	@python3 -c 'import json, pathlib, shlex; \
 	cc = "$(CC)"; cflags = shlex.split("$(CFLAGS)"); srcs = "$(sort $(SRC_COMMON) $(SRC_INTERACTIVE) $(SRC_TEST))".split(); \
@@ -80,14 +84,15 @@ compile_commands.json: Makefile
 
 .PHONY: test test-render clean
 
-test: bin/render_number bin/test_ruler bin/test_justify bin/test_ruler_index bin/view_for_testing
+test: bin/render_number bin/test_ruler bin/test_justify bin/test_ruler_index bin/test_cursor_address bin/view_for_testing
 	./bin/render_number
 	./bin/test_ruler
 	./bin/test_justify
 	./bin/test_ruler_index
+	./bin/test_cursor_address
 	TERM=vt100 python3 tests/test_cli.py
 	TERM=vt100 python3 tests/test_editor.py
 	TERM=vt100 python3 tests/test_print.py
 
 clean:
-	rm -rf $(OBJ_DIR) bin/view bin/view_for_testing bin/render_number bin/test_ruler bin/test_justify
+	rm -rf $(OBJ_DIR) bin/view bin/view_for_testing bin/render_number bin/test_ruler bin/test_justify bin/test_cursor_address
