@@ -170,7 +170,8 @@ static void default_printer_microspace(void);
 static void default_printer_getflags(uint8_t* idx, uint8_t* pos);
 
 /**
- * Main entry point for printing the current document.
+ * Prints the current document or the files named in the command.
+ * Initializes print state, processes each input, and finishes any open page.
  *
  * @param scan scan state for parsing the print command arguments
  */
@@ -182,33 +183,25 @@ void print_document(scan_state_t* scan)
     uint8_t* print_doc_ptr = top + 3;
 
     macro_init(print_doc_ptr);
-    uint8_t cur_ch = 0;
-
     page_break_pending_flag = false;
-    print_xpos = cur_ch;
+    print_xpos = 0;
     printing_from_file_flag = false;
     current_ruler_ptr = current_ruler_buffer;
     find_margins_of_current_ruler_buffer();
 
-    if (!(!scan_input_buffer(input_buffer, scan)))
+    if (scan_input_buffer(input_buffer, scan))
     {
         printing_from_file_flag = true;
         print_source_ptr = ram;
         print_loop(print_doc_ptr);
-
-        goto c8f0d;
     }
-c8f0d:
-    if (parse_optional_filename_from_command(scan))
+    while (parse_optional_filename_from_command(scan))
     {
         set_rw_file_handle(0x0d);
         print_loop(print_doc_ptr);
-
-        goto c8f0d;
     }
-    if (!page_break_pending_flag)
-        return;
-    process_page_footer();
+    if (page_break_pending_flag)
+        process_page_footer();
 }
 
 /**
@@ -222,148 +215,123 @@ static void set_rw_file_handle(uint8_t cur_ch)
 }
 
 /**
- * Core print loop that processes lines and formatting commands.
- *
- * @param print_doc_ptr pointer to the read limit for the document data
+ * Advances page accounting and prints the spacing after an output line.
+ * Preserves the byte-sized spacing calculation at the bottom of a page.
+ */
+static void advance_print_line_spacing(void)
+{
+    uint8_t spacing = line_spacing;
+    uint8_t remaining_lines = page_lines_remaining - line_spacing - 1;
+    if (page_lines_remaining <= line_spacing)
+    {
+        remaining_lines = 0;
+        spacing = page_lines_remaining - 1;
+    }
+    page_lines_remaining = remaining_lines;
+    print_vertical_space(spacing);
+}
+
+/**
+ * Loads a ruler from a prepared print line and recalculates the margins.
+ * @param line prepared line, including its three-byte ruler header
+ */
+static void load_print_ruler(uint8_t* line)
+{
+    uint8_t source_pos = 3;
+    uint8_t dest_pos = 0;
+    uint8_t ch;
+    do
+    {
+        ch = line[source_pos++];
+        current_ruler_buffer[dest_pos++] = ch;
+    } while (ch != 0x0d);
+    find_margins_of_current_ruler_buffer();
+}
+
+/**
+ * Prints an ordinary line, then updates its line register and page spacing.
+ * @param line prepared source line
+ * @param pos first content byte, skipping any command header
+ * @param is_tab tab state carried between printed lines
+ */
+static void print_line_contents(uint8_t* line, uint8_t pos, bool* is_tab)
+{
+    uint8_t ch;
+    do
+    {
+        uint8_t char_width;
+        ch = convert_char_for_printing(line[pos++], &char_width, is_tab);
+        print_char_x_times(ch, char_width);
+    } while (ch != 0x0d);
+    register_value_array['L' - 'A']++;
+    advance_print_line_spacing();
+}
+
+/**
+ * Processes print lines, applying rulers, formatting commands, and macros.
+ * Opens and finishes pages as needed and selects ordinary or microspaced
+ * output.
+ * @param print_doc_ptr read buffer for source lines and macro invocations
  */
 static void print_loop(uint8_t* print_doc_ptr)
 {
-    uint8_t idx;
-    formatting_command_t fmt_cmd_index;
-    uint8_t* macro_cursor_ptr = NULL;
+    uint8_t* macro_cursor = NULL;
     bool is_tab = false;
-
-c8f30:
-    while (1)
+    for (;;)
     {
-        uint8_t tmp_ch10;
-        uint8_t next_ch;
-        uint8_t cur_ch = page_break_pending_flag;
-
-        if (cur_ch != 0)
+        uint8_t page_context = page_break_pending_flag;
+        if (page_break_pending_flag)
         {
-            cur_ch = page_lines_remaining;
-
-            if (cur_ch == 0)
+            page_context = page_lines_remaining;
+            if (page_context == 0)
                 process_page_footer();
         }
-        uint8_t* cursor = prepare_output_line(print_doc_ptr, &macro_cursor_ptr);
-
-        if (cursor == NULL)
+        uint8_t* line = prepare_output_line(print_doc_ptr, &macro_cursor);
+        if (line == NULL)
             return;
-        start_microspacing_if_active(cur_ch);
-        uint8_t pos = 0;
+        start_microspacing_if_active(page_context);
+        scratch_offset = 0;
 
-        scratch_offset = pos;
-        command_prefix_t cp = deref_and_check_for_command_prefix(pos, cursor);
-
-        if (cp != NO_COMMAND_PREFIX)
+        if (deref_and_check_for_command_prefix(0, line) != NO_COMMAND_PREFIX)
         {
             scratch_offset = 3;
-
-            if (*cursor != RULER_PREFIX)
-                goto c8f6e_l;
-            uint8_t pos3 = 3;
-
-            idx = 0;
-
-            do
+            if (*line == RULER_PREFIX)
             {
-                next_ch = cursor[pos3];
-                current_ruler_buffer[idx] = next_ch;
-                pos3++;
-                idx++;
-            } while (next_ch != 0x0d);
-            find_margins_of_current_ruler_buffer();
-
-        c8f6b_l:
-            goto c8f30;
-
-        c8f6e_l:
-            fmt_cmd_index = lookup_formatting_command();
-
-            if (fmt_cmd_index == NO_FORMATTING_COMMAND)
-                goto c8f7a_l;
-
-            if (execute_formatting_command(fmt_cmd_index))
-                goto c8f6b_l;
-        }
-        goto c8fce_l;
-
-    c8f7a_l:
-        if (macro_try_invoke(&macro_cursor_ptr))
-        {
-            if (macro_executing_flag)
+                load_print_ruler(line);
+                continue;
+            }
+            formatting_command_t command = lookup_formatting_command();
+            if (command != NO_FORMATTING_COMMAND)
+            {
+                if (execute_formatting_command(command))
+                    continue;
+            }
+            else if (!macro_try_invoke(&macro_cursor) || macro_executing_flag)
                 continue;
         }
-        else
-        {
-            goto c8f6b_l;
-        }
-    c8fce_l:
+
         if (!page_break_pending_flag)
             render_new_page();
         output_left_margin();
         column_position = 0;
-        uint8_t pos5 = scratch_offset;
-
-        if (((int8_t)print_flags < 0))
-        {
-            if (microspacing_count != 0)
-            {
-                microspace_word_processor(&pos5);
-                continue;
-            }
-        }
-        do
-        {
-            uint8_t tmp_ch9 = cursor[pos5];
-
-            pos5++;
-            tmp_ch10 = convert_char_for_printing(tmp_ch9, &idx, &is_tab);
-            print_char_x_times(tmp_ch10, idx);
-        } while (tmp_ch10 != 0x0d);
-        register_value_array['L' - 'A']++;
-        idx = line_spacing;
-        uint8_t tmp_ch11 = page_lines_remaining - line_spacing - 1;
-
-        if (page_lines_remaining <= line_spacing)
-        {
-            tmp_ch11 = 0;
-            idx = page_lines_remaining;
-            idx--;
-        }
-        page_lines_remaining = tmp_ch11;
-        print_vertical_space(idx);
+        uint8_t pos = scratch_offset;
+        if ((print_flags & 0x80) != 0 && microspacing_count != 0)
+            microspace_word_processor(&pos);
+        else
+            print_line_contents(line, pos, &is_tab);
     }
 }
 
 /**
- * Looks up the two-letter formatting command at the current line.
- *
+ * Looks up the current line's two-letter formatting command, case-sensitively.
  * @return the matching command index or NO_FORMATTING_COMMAND if not found
  */
 formatting_command_t lookup_formatting_command(void)
 {
-    uint8_t tmp_ch4;
-    uint8_t pos = 2;
-    uint8_t cur_ch = heap_format_line_ptr->command[1];
-    uint8_t next_ch = heap_format_line_ptr->command[0];
-    pos -= 2;
-    int index = 0;
-    do
-    {
-        if (next_ch == commands_table[pos])
-        {
-            if (cur_ch == commands_table[pos + 1])
-                return index;
-        }
-        index++;
-        pos++;
-        pos++;
-        tmp_ch4 = commands_table[pos];
-    } while (tmp_ch4 != 0);
-
+    for (size_t pos = 0; commands_table[pos] != 0; pos += 2)
+        if (heap_format_line_ptr->command[0] == commands_table[pos] &&
+            heap_format_line_ptr->command[1] == commands_table[pos + 1])
+            return (formatting_command_t)(pos / 2);
     return NO_FORMATTING_COMMAND;
 }
 
@@ -1403,15 +1371,7 @@ static void microspace_word_processor(uint8_t* pos)
         register_value_array['L' - 'A']++;
     }
 
-    uint8_t spacing = line_spacing;
-    uint8_t remaining_lines = page_lines_remaining - line_spacing - 1;
-    if (page_lines_remaining <= line_spacing)
-    {
-        remaining_lines = 0;
-        spacing = page_lines_remaining - 1;
-    }
-    page_lines_remaining = remaining_lines;
-    print_vertical_space(spacing);
+    advance_print_line_spacing();
 }
 
 /**

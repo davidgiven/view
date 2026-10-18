@@ -66,10 +66,13 @@ Functions defined in the source files and their callees (only calls to other fun
 - **collect_microspace_line** → convert_char_for_printing [column_position, output_buffer, screen_column]
 - **can_microspace_line** [ruler_right_stop]
 - **print_microspaced_line** → convert_char_for_printing, emit_microspacing_spaces, print_char, print_char_x_times [a, column_position, justify_gap_count, microspacing_count, output_buffer]
-- **microspace_word_processor** → can_microspace_line, collect_microspace_line, convert_char_for_printing, print_char_x_times, print_microspaced_line, print_vertical_space [a, column_position, line_spacing, page_lines_remaining, register_value_array]
+- **microspace_word_processor** → advance_print_line_spacing, can_microspace_line, collect_microspace_line, convert_char_for_printing, print_char_x_times, print_microspaced_line [a, column_position, register_value_array]
 - **print_char_x_times** → print_char
 - **print_document** → check_for_at_least_150_bytes_free, find_margins_of_current_ruler_buffer, macro_init, print_loop, process_page_footer, reset_print_registers, scan_input_buffer, set_rw_file_handle [current_ruler_buffer, current_ruler_ptr, input_buffer, page_break_pending_flag, print_xpos, printing_from_file_flag, ram, top]
-- **print_loop** → execute_formatting_command, find_margins_of_current_ruler_buffer, macro_try_invoke, microspace_word_processor, output_left_margin, prepare_output_line, print_char_x_times, print_vertical_space, process_page_footer, render_new_page, start_microspacing_if_active [a, column_position, current_ruler_buffer, line_spacing, macro_executing_flag, microspacing_count, page_break_pending_flag, page_lines_remaining, print_flags, register_value_array, scratch_offset]
+- **advance_print_line_spacing** → print_vertical_space [a, line_spacing, page_lines_remaining]
+- **load_print_ruler** → find_margins_of_current_ruler_buffer [current_ruler_buffer]
+- **print_line_contents** → advance_print_line_spacing, convert_char_for_printing, print_char_x_times [register_value_array]
+- **print_loop** → execute_formatting_command, load_print_ruler, lookup_formatting_command, macro_try_invoke, microspace_word_processor, output_left_margin, prepare_output_line, print_line_contents, process_page_footer, render_new_page, start_microspacing_if_active [column_position, macro_executing_flag, microspacing_count, page_break_pending_flag, page_lines_remaining, print_flags, scratch_offset]
 - **print_newline** → print_char
 - **print_vertical_space** → print_char_x_times
 - **render_header_or_footer** → add_justification_spaces, compute_header_left_section, compute_header_middle_section, compute_header_odd_page_section, copy_header_footer_text, get_page_parity, get_right_margin, output_left_margin, print_output_buffer [a, column_position, scratch_index]
