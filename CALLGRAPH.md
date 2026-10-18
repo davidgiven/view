@@ -46,14 +46,15 @@ Functions defined in the source files and their callees (only calls to other fun
 - **store_to_output_buffer** [scratch_index]
 - **em_fmt_cmd**
 - **sr_fmt_cmd** → evaluate_expression_from_fmt_cmd, get_current_fmt_cmd_byte, get_register_address
-- **pl_fmt_cmd** → evaluate_expression_from_fmt_cmd [page_length]
+- **set_formatting_value** → evaluate_expression_from_fmt_cmd
+- **pl_fmt_cmd** → set_formatting_value [page_length]
 - **ts_fmt_cmd** → evaluate_expression_from_fmt_cmd, parse_boolean_from_fmt_cmd [rhs_extra_margin, two_sided_flag]
-- **tm_fmt_cmd** → evaluate_expression_from_fmt_cmd [top_margin]
-- **bm_fmt_cmd** → evaluate_expression_from_fmt_cmd [bottom_margin]
-- **hm_fmt_cmd** → evaluate_expression_from_fmt_cmd [header_margin]
-- **fm_fmt_cmd** → evaluate_expression_from_fmt_cmd [footer_margin]
-- **lm_fmt_cmd** → evaluate_expression_from_fmt_cmd [left_margin]
-- **ls_fmt_cmd** → evaluate_expression_from_fmt_cmd [line_spacing]
+- **tm_fmt_cmd** → set_formatting_value [top_margin]
+- **bm_fmt_cmd** → set_formatting_value [bottom_margin]
+- **hm_fmt_cmd** → set_formatting_value [header_margin]
+- **fm_fmt_cmd** → set_formatting_value [footer_margin]
+- **lm_fmt_cmd** → set_formatting_value [left_margin]
+- **ls_fmt_cmd** → set_formatting_value [line_spacing]
 - **pe_fmt_cmd** → evaluate_expression_from_fmt_cmd, page_eject_fmt [page_break_pending_flag, page_lines_remaining]
 - **op_fmt_cmd** → eject_two_pages, page_eject_fmt [register_value_array]
 - **ep_fmt_cmd** → eject_two_pages, page_eject_fmt [register_value_array]

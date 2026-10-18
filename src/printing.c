@@ -510,16 +510,22 @@ static void sr_fmt_cmd(void)
 }
 
 /**
+ * Evaluates the current formatting argument and stores its byte value.
+ * @param destination setting to update
+ */
+static void set_formatting_value(uint8_t* destination)
+{
+    uint8_t pos = 0;
+    int value;
+    evaluate_expression_from_fmt_cmd(&value, &pos, 0);
+    *destination = value;
+}
+
+/**
  * Handles the PL formatting command to set the page length.
  */
 static void pl_fmt_cmd(void)
-{
-    uint8_t pos = 0;
-
-    int value;
-    evaluate_expression_from_fmt_cmd(&value, &pos, 0);
-    page_length = value;
-}
+{ set_formatting_value(&page_length); }
 
 /**
  * Handles the TS formatting command to set two-sided mode and margin.
@@ -541,73 +547,37 @@ static void ts_fmt_cmd(void)
  * Handles the TM formatting command to set the top margin.
  */
 static void tm_fmt_cmd(void)
-{
-    uint8_t pos = 0;
-
-    int value;
-    evaluate_expression_from_fmt_cmd(&value, &pos, 0);
-    top_margin = value;
-}
+{ set_formatting_value(&top_margin); }
 
 /**
  * Handles the BM formatting command to set the bottom margin.
  */
 static void bm_fmt_cmd(void)
-{
-    uint8_t pos = 0;
-
-    int value;
-    evaluate_expression_from_fmt_cmd(&value, &pos, 0);
-    bottom_margin = value;
-}
+{ set_formatting_value(&bottom_margin); }
 
 /**
  * Handles the HM formatting command to set the header margin.
  */
 static void hm_fmt_cmd(void)
-{
-    uint8_t pos = 0;
-
-    int value;
-    evaluate_expression_from_fmt_cmd(&value, &pos, 0);
-    header_margin = value;
-}
+{ set_formatting_value(&header_margin); }
 
 /**
  * Handles the FM formatting command to set the footer margin.
  */
 static void fm_fmt_cmd(void)
-{
-    uint8_t pos = 0;
-
-    int value;
-    evaluate_expression_from_fmt_cmd(&value, &pos, 0);
-    footer_margin = value;
-}
+{ set_formatting_value(&footer_margin); }
 
 /**
  * Handles the LM formatting command to set the left margin.
  */
 static void lm_fmt_cmd(void)
-{
-    uint8_t pos = 0;
-
-    int value;
-    evaluate_expression_from_fmt_cmd(&value, &pos, 0);
-    left_margin = value;
-}
+{ set_formatting_value(&left_margin); }
 
 /**
  * Handles the LS formatting command to set line spacing.
  */
 static void ls_fmt_cmd(void)
-{
-    uint8_t pos = 0;
-
-    int value;
-    evaluate_expression_from_fmt_cmd(&value, &pos, 0);
-    line_spacing = value;
-}
+{ set_formatting_value(&line_spacing); }
 
 /**
  * Handles the PE formatting command to conditionally eject the page.
