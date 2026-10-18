@@ -60,12 +60,13 @@ Functions defined in the source files and their callees (only calls to other fun
 - **ep_fmt_cmd** → eject_two_pages, page_eject_fmt [register_value_array]
 - **eject_two_pages** → page_eject_fmt
 - **page_eject_fmt** → process_page_footer, render_new_page [page_break_pending_flag]
-- **fo_fmt_cmd** → parse_boolean_from_fmt_cmd [footers_enabled_flag]
-- **he_fmt_cmd** → parse_boolean_from_fmt_cmd [headers_enabled_flag]
-- **pb_fmt_cmd** → parse_boolean_from_fmt_cmd [page_break_flag]
+- **set_formatting_flag** → parse_boolean_from_fmt_cmd
+- **fo_fmt_cmd** → set_formatting_flag [footers_enabled_flag]
+- **he_fmt_cmd** → set_formatting_flag [headers_enabled_flag]
+- **pb_fmt_cmd** → set_formatting_flag [page_break_flag]
 - **ht_fmt_cmd** → evaluate_expression_from_fmt_cmd, get_current_fmt_cmd_byte [highlight_code]
 - **parse_boolean_from_fmt_cmd** → get_current_fmt_cmd_byte, parse_word_flag [heap_format_line_ptr]
-- **parse_word_flag** [on_off_table]
+- **parse_word_flag**
 - **evaluate_expression_from_fmt_cmd** → get_current_fmt_cmd_byte, get_next_fmt_cmd_byte, parse_decimal_number, render_register
 - **get_next_fmt_cmd_byte** → get_current_fmt_cmd_byte
 - **get_current_fmt_cmd_byte** [heap_format_line_ptr]

@@ -123,8 +123,6 @@ static const formatting_command_t commands_table[] = {
     {.name = {'P', 'B'}, .callback = pb_fmt_cmd},
 };
 
-static const uint8_t on_off_table[] = {0x4f, 0x4e, 1, 'O', 'F', 'F', 0, 0xff};
-
 static const printer_driver_t default_printer_driver = {
     .print_char = default_print_char,
     .printer_on = default_printer_on,
@@ -635,43 +633,35 @@ static void page_eject_fmt(void)
 }
 
 /**
+ * Parses the current boolean formatting argument and updates a setting.
+ * Leaves the setting unchanged if the argument is missing or invalid.
+ * @param destination flag to update
+ */
+static void set_formatting_flag(bool* destination)
+{
+    uint8_t pos = 0;
+    uint8_t value;
+    if (!parse_boolean_from_fmt_cmd(&pos, &value))
+        *destination = value != 0;
+}
+
+/**
  * Handles the FO formatting command to enable or disable footers.
  */
 static void fo_fmt_cmd(void)
-{
-    uint8_t pos = 0;
-    uint8_t flag_value;
-
-    if (parse_boolean_from_fmt_cmd(&pos, &flag_value))
-        return;
-    footers_enabled_flag = flag_value != 0;
-}
+{ set_formatting_flag(&footers_enabled_flag); }
 
 /**
  * Handles the HE formatting command to enable or disable headers.
  */
 static void he_fmt_cmd(void)
-{
-    uint8_t pos = 0;
-    uint8_t flag_value;
-
-    if (parse_boolean_from_fmt_cmd(&pos, &flag_value))
-        return;
-    headers_enabled_flag = flag_value != 0;
-}
+{ set_formatting_flag(&headers_enabled_flag); }
 
 /**
  * Handles the PB formatting command to set the page break flag.
  */
 static void pb_fmt_cmd(void)
-{
-    uint8_t pos = 0;
-    uint8_t flag_value;
-
-    if (parse_boolean_from_fmt_cmd(&pos, &flag_value))
-        return;
-    page_break_flag = flag_value != 0;
-}
+{ set_formatting_flag(&page_break_flag); }
 
 /**
  * Handles the HT formatting command to set highlight codes.
@@ -726,20 +716,14 @@ static bool parse_boolean_from_fmt_cmd(uint8_t* pos, uint8_t* value)
  *
  * @param target_ptr line buffer to parse from
  * @param pos cursor into the buffer, left at the first byte after a matched
- * word or advanced past a numeric flag; may also change on failure
+ * token; may also change on failure
  * @param value output for the parsed byte
  * @return true on parse error, false on success
  */
 static bool parse_word_flag(uint8_t* target_ptr, uint8_t* pos, uint8_t* value)
 {
-    uint8_t first_ch = target_ptr[*pos];
-    if (first_ch == '0' || first_ch == '1')
-    {
-        *value = first_ch - '0';
-        (*pos)++;
-        if (*pos != 0)
-            return false;
-    }
+    static const uint8_t on_off_table[] = {
+        '0', 0, '1', 1, 'O', 'N', 1, 'O', 'F', 'F', 0, 0xff};
 
     uint8_t before_token = --(*pos);
     uint8_t table_pos = 0xff;
