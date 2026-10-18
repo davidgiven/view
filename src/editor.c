@@ -518,15 +518,24 @@ static void f9_delete_char_key(void)
 }
 
 /**
+ * Displays a command prefix prompt and reads its follow-up key.
+ * @param prefix prefix letter displayed after the caret
+ * @return follow-up key converted to uppercase ASCII
+ */
+static uint8_t read_prefix_command_key(uint8_t prefix)
+{
+    draw_prompt_characters('^', prefix);
+    flags_need_redrawing_flag = true;
+    return control_key_to_ascii(screen_getchar());
+}
+
+/**
  * Handles the K-command prefix.
  * Prompts for a follow-up key and dispatches to marker or block operations.
  */
 static void k_command_key(void)
 {
-    draw_prompt_characters('^', 'K');
-    flags_need_redrawing_flag = true;
-    uint8_t key_code = screen_getchar();
-    uint8_t ascii_code = control_key_to_ascii(key_code);
+    uint8_t ascii_code = read_prefix_command_key('K');
 
     switch (ascii_code)
     {
@@ -609,10 +618,7 @@ static void f11_copy_key(void)
  */
 static void o_command_key(void)
 {
-    draw_prompt_characters('^', 'O');
-    flags_need_redrawing_flag = true;
-    uint8_t key_code = screen_getchar();
-    uint8_t ascii_code = control_key_to_ascii(key_code);
+    uint8_t ascii_code = read_prefix_command_key('O');
 
     switch (ascii_code)
     {
@@ -713,10 +719,7 @@ static void cf5_default_ruler_key(void)
  */
 static void q_command_key(void)
 {
-    draw_prompt_characters('^', 'Q');
-    flags_need_redrawing_flag = true;
-    uint8_t key_code = screen_getchar();
-    uint8_t ascii_code = control_key_to_ascii(key_code);
+    uint8_t ascii_code = read_prefix_command_key('Q');
 
     switch (ascii_code)
     {

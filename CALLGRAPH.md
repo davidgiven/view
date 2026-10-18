@@ -187,14 +187,15 @@ Functions defined in the source files and their callees (only calls to other fun
 - **f7_delete_line_key** → adjust_pointers, clamp_ptr6_to_document, ensure_cr_at_document_top, find_previous_line, write_line_back_to_document_safely [current_line_ptr, cursor_moved_flag, edit_line_len, line_change_pending_flag, scratch_scan_ptr]
 - **f8_insert_char_key** → insert_character_into_edit_buffer
 - **f9_delete_char_key** → delete_edit_buffer_bytes_at_xpos [line_counter]
-- **k_command_key** → cf0_delete_block_key, control_key_to_ascii, draw_prompt_characters, f11_copy_key, set_marker_common, sf0_move_block_key, sf7_set_marker_key [flags_need_redrawing_flag]
+- **read_prefix_command_key** → control_key_to_ascii, draw_prompt_characters [flags_need_redrawing_flag]
+- **k_command_key** → cf0_delete_block_key, f11_copy_key, read_prefix_command_key, set_marker_common, sf0_move_block_key, sf7_set_marker_key
 - **cf0_delete_block_key** → adjust_area_pointers, beep, clamp_ptr6_to_document, clear_marks_1_2, ensure_cr_at_document_top, move_cursor_to_address, reset_area_to_marks_1_2, write_line_back_to_document_safely [area_end_ptr, area_size, area_start_ptr, cursor_moved_flag]
 - **f11_copy_key** → beep, check_pointer_in_area, move_cursor_to_address, reset_area_to_marks_1_2, write_line_back_to_document_safely [area_insert_ptr]
-- **o_command_key** → cf2_format_mode_key, cf3_justify_mode_key, cf5_default_ruler_key, cf8_mark_as_ruler_key, control_key_to_ascii, draw_prompt_characters, sf11_copy_key, sf2_release_margins_key, sf4_highlight1_key, sf5_highlight2_key, sf8_edit_command_key, sf9_delete_command_key [flags_need_redrawing_flag]
+- **o_command_key** → cf2_format_mode_key, cf3_justify_mode_key, cf5_default_ruler_key, cf8_mark_as_ruler_key, read_prefix_command_key, sf11_copy_key, sf2_release_margins_key, sf4_highlight1_key, sf5_highlight2_key, sf8_edit_command_key, sf9_delete_command_key
 - **cf2_format_mode_key** [flags_need_redrawing_flag, format_mode_flags]
 - **cf3_justify_mode_key** [flags_need_redrawing_flag, justifying_flag]
 - **cf5_default_ruler_key** → cf8_mark_as_ruler_key, create_default_ruler, f6_insert_line_key, redraw_editor [current_line_buffer]
-- **q_command_key** → cf6_split_line_key, control_key_to_ascii, draw_prompt_characters, f1_top_of_text_key, f2_bottom_of_text_key, f3_delete_to_eol_key, f4_beginning_of_line_key, f5_end_of_line_key, go_to_marker_n, sf6_go_to_marker_key [flags_need_redrawing_flag]
+- **q_command_key** → cf6_split_line_key, f1_top_of_text_key, f2_bottom_of_text_key, f3_delete_to_eol_key, f4_beginning_of_line_key, f5_end_of_line_key, go_to_marker_n, read_prefix_command_key, sf6_go_to_marker_key
 - **cf6_split_line_key** → check_for_command_prefix, f6_insert_line_key, get_line_length, insert_line_into_document, write_line_back_to_document_safely [current_format_line, current_line_ptr, line_change_pending_flag, ram, xpos]
 - **f1_top_of_text_key** → move_cursor_up, unpack_line [edit_buffer_base, scroll_repeat_count]
 - **f2_bottom_of_text_key** → move_cursor_down, set_xpos_to_line_length, unpack_line [edit_buffer_base, scroll_repeat_count]
