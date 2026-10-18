@@ -200,7 +200,7 @@ static void input_line_not_escaped(void)
         return_to_cli_prompt();
     }
 
-    scan_state_t scan = {};
+    scan_state_t scan = {0};
     execute_cli_command(cmd, &scan);
     run_cli();
 }
@@ -328,9 +328,7 @@ static void execute_cli_command(cli_command_t cur_ch, scan_state_t* scan)
  * Exits the program.
  */
 static void bye_cmd(void)
-{
-    exit(0);
-}
+{ exit(0); }
 
 /**
  * Replaces all occurrences of the search string in the document area.
@@ -680,9 +678,7 @@ void load_cmd(scan_state_t* scan)
  * Clears all document markers.
  */
 void clear_cmd(void)
-{
-    memset(markers_array, 0, sizeof(markers_array));
-}
+{ memset(markers_array, 0, sizeof(markers_array)); }
 
 /**
  * Configures microspacing via the printer driver.
@@ -693,31 +689,22 @@ static void microspace_cmd(scan_state_t* scan)
 {
     prepare_printer_driver();
     int value;
-    bool parsed = parse_integer_from_command(scan, &value);
-    uint8_t idx = 0x0a;
-
-    if (parsed)
+    uint8_t spacing = 10;
+    if (parse_integer_from_command(scan, &value))
     {
-        idx = value & 0xFF;
-
-        if (idx == 0)
+        spacing = value & 0xff;
+        if (spacing == 0)
             return;
     }
-    uint8_t pos;
 
-    printer_driver_ptr->printer_getflags(&idx, &pos);
-    uint8_t cur_ch = pos;
-
-    cur_ch &= 1;
-
-    if (cur_ch != 0)
+    uint8_t driver_flags;
+    printer_driver_ptr->printer_getflags(&spacing, &driver_flags);
+    if (driver_flags & 1)
     {
-        microspacing_count = idx;
-
+        microspacing_count = spacing;
         return;
     }
     cli_putstring("Driver does not support microspacing\n");
-
     return_to_cli_prompt();
 }
 
@@ -800,9 +787,7 @@ static void new_cmd(void)
  * @param scan scan state containing optional arguments
  */
 static void printer_cmd(scan_state_t* scan)
-{
-    print_cmd(scan);
-}
+{ print_cmd(scan); }
 
 /**
  * Initiates printing and previews the document on screen.
@@ -944,9 +929,7 @@ static void save_cmd_write_cmd(scan_state_t* scan)
  * @param scan scan state containing optional marker range
  */
 static void screen_cmd(scan_state_t* scan)
-{
-    print_to_screen(scan);
-}
+{ print_to_screen(scan); }
 
 /**
  * Prints the document for screen preview and returns to the CLI prompt.
@@ -1093,16 +1076,12 @@ void run_cli(void)
     cli_putchar('\n');
     display_document_file_state();
 
-    if ((file_edit_flags & 0x40) == 0)
+    if ((file_edit_flags & 0x40) == 0 && (file_edit_flags & 1) != 0)
     {
-        if ((file_edit_flags & 1))
-        {
-            cli_putstring("Input file is ");
-
-            if (!input_file_empty_flag)
-                cli_putstring("not ");
-            cli_putstring("empty\n");
-        }
+        cli_putstring("Input file is ");
+        if (!input_file_empty_flag)
+            cli_putstring("not ");
+        cli_putstring("empty\n");
     }
     if (printer_driver_name[0] != 0)
     {
@@ -1113,9 +1092,8 @@ void run_cli(void)
         cli_putchar('\n');
     }
 
-    uint8_t i = 0;
     bool markers = false;
-    do
+    for (uint8_t i = 0; i < NUM_MARKERS; i++)
     {
         if (markers_array[i])
         {
@@ -1128,8 +1106,7 @@ void run_cli(void)
                 screen_putchar(',');
             screen_putchar(i + '1');
         }
-        i++;
-    } while (i != NUM_MARKERS);
+    }
     if (markers)
         cli_putchar('\n');
     cli_putchar('\n');
@@ -1257,17 +1234,12 @@ static bool parse_integer_from_command(scan_state_t* scan, int* out)
 {
     if (scan_input_buffer(input_buffer, scan))
         return false;
-    uint8_t pos = scan->pos;
-    const char* start = (const char*)&input_buffer[pos];
+    const char* start = (const char*)&input_buffer[scan->pos];
     char* end;
-    int parsed = (int)strtoul(start, &end, 10);
-
-    (void)pos;
-
-    if (out)
-        *out = parsed;
-
-    return (end != start);
+    int value = (int)strtoul(start, &end, 10);
+    if (out != NULL)
+        *out = value;
+    return end != start;
 }
 
 /**
@@ -1315,11 +1287,8 @@ void zero_terminate_filename_buffer(void)
  */
 static void check_continuous_editing(void)
 {
-    if ((file_edit_flags & 0x40) == 0)
-    {
-        if (file_edit_flags & 1)
-            return;
-    }
+    if ((file_edit_flags & 0x40) == 0 && (file_edit_flags & 1) != 0)
+        return;
     display_document_file_state();
 }
 
@@ -1330,12 +1299,8 @@ static void check_continuous_editing(void)
  */
 void check_not_continuous_editing(void)
 {
-    if ((file_edit_flags & 0x40))
-        return;
-
-    if ((file_edit_flags & 1) == 0)
-        return;
-    display_document_file_state();
+    if ((file_edit_flags & 0x40) == 0 && (file_edit_flags & 1) != 0)
+        display_document_file_state();
 }
 
 /**
@@ -1469,14 +1434,14 @@ static uint8_t* parse_mark_from_command(scan_state_t* scan)
         cli_putstring("Bad marker\n");
 
         return_to_cli_prompt();
-        return 0;
+        return NULL;
     }
     if (markers_array[marker_index] == 0)
     {
         cli_putstring("Marker not set\n");
 
         return_to_cli_prompt();
-        return 0;
+        return NULL;
     }
     return markers_array[marker_index];
 }
@@ -1489,18 +1454,12 @@ static uint8_t* parse_mark_from_command(scan_state_t* scan)
  */
 static bool reset_command_parse_state(scan_state_t* scan)
 {
-    uint8_t idx = 0;
-
-    search_target_len = idx;
-    cli_header_limit = idx;
-
+    search_target_len = 0;
+    cli_header_limit = 0;
     if (scan_input_buffer(input_buffer, scan))
         return true;
-    uint8_t idx2 = expand_escaped_string(0, scan->pos);
-
-    search_target_len = idx2;
-
-    return idx2 == 0;
+    search_target_len = expand_escaped_string(0, scan->pos);
+    return search_target_len == 0;
 }
 
 /**

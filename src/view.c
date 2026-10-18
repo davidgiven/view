@@ -42,7 +42,7 @@ uint8_t current_ruler_buffer[133];
 
 line_t current_line_buffer;
 
-uint8_t* edit_buffer_base; /** Base of edit buffer. */
+uint8_t* edit_buffer_base;       /** Base of edit buffer. */
 uint8_t* current_format_line;    /** Raw formatting buffer bytes. */
 line_t* heap_format_line_ptr;    /** Heap formatting line pointer. */
 uint8_t* current_ruler_ptr;      /** Pointer into current ruler buffer. */
@@ -204,9 +204,7 @@ static void system_init(void)
  * Sends a bell character to the output.
  */
 void beep(void)
-{
-    cli_putchar(7);
-}
+{ cli_putchar(7); }
 
 /**
  * Check whether a byte is a command or ruler prefix.
@@ -239,8 +237,8 @@ void display_not_enough_memory(void)
  * Draws prompt characters.
  * Displays two inverted prompt characters at the top-left and restores the
  * cursor.
- * @param idx first prompt character
- * @param pos second prompt character
+ * @param first_char first prompt character
+ * @param second_char second prompt character
  */
 void draw_prompt_characters(uint8_t first_char, uint8_t second_char)
 {
@@ -291,7 +289,7 @@ uint8_t process_document_character(uint8_t cur_ch, uint8_t* idx, bool* is_tab)
 {
     if (cur_ch == '\t' || (cur_ch == 0x0b && ruler_left_stop != 0))
     {
-        uint8_t target_column = ruler_left_stop - 1;
+        int target_column = ruler_left_stop - 1;
         if (cur_ch == '\t')
         {
             target_column = column_position;
@@ -330,12 +328,9 @@ uint8_t process_document_character(uint8_t cur_ch, uint8_t* idx, bool* is_tab)
  */
 static void emit_to_output_buffer_callback(uint8_t digit)
 {
-    {
-        output_buffer[screen_row] = digit;
-
-        if (screen_row < MAX_LINE_LENGTH - 2)
-            screen_row++;
-    }
+    output_buffer[screen_row] = digit;
+    if (screen_row < MAX_LINE_LENGTH - 2)
+        screen_row++;
 }
 
 /**
@@ -344,33 +339,31 @@ static void emit_to_output_buffer_callback(uint8_t digit)
  * @param val value to display
  */
 void render_number_to_screen(int val)
-{
-    render_number_to_callback(val, cli_putchar);
-}
+{ render_number_to_callback(val, cli_putchar); }
 
 /**
  * Expands a register reference into the output buffer.
  *
- * @param cur_ch register name character
- * @param idx position in the output buffer where expansion starts
+ * @param register_name register name character
+ * @param output_pos position in the output buffer where expansion starts
  */
-void render_register(uint8_t cur_ch, uint8_t idx)
+void render_register(uint8_t register_name, uint8_t output_pos)
 {
-    unsigned int* register_value = get_register_address(cur_ch);
+    unsigned int* register_value = get_register_address(register_name);
 
     if (register_value != NULL)
-        render_number_to_output_buffer(*register_value, idx);
+        render_number_to_output_buffer(*register_value, output_pos);
 }
 
 /**
  * Renders a 16-bit number into the output buffer.
  *
  * @param value number to render
- * @param start_x starting offset in the output buffer
+ * @param output_pos starting offset in the output buffer
  */
-static void render_number_to_output_buffer(uint16_t value, uint8_t start_x)
+static void render_number_to_output_buffer(uint16_t value, uint8_t output_pos)
 {
-    screen_row = start_x;
+    screen_row = output_pos;
     render_number_to_callback(value, emit_to_output_buffer_callback);
 }
 
@@ -382,30 +375,17 @@ static void render_number_to_output_buffer(uint16_t value, uint8_t start_x)
  */
 static void render_number_to_callback(int value, void (*cb)(uint8_t))
 {
-    char buf[12];
-
-    snprintf(buf, sizeof(buf), "%d", value);
-
-    for (char* p = buf; *p; p++)
-    {
-        uint8_t cur_ch = (uint8_t)*p;
-
-        if (cur_ch >= '0' && cur_ch <= '9')
-        {
-            cur_ch -= '0';
-            cur_ch |= 0x30;
-        }
-        cb(cur_ch);
-    }
+    char digits[12];
+    snprintf(digits, sizeof(digits), "%d", value);
+    for (const char* digit = digits; *digit != '\0'; digit++)
+        cb((uint8_t)*digit);
 }
 
 /**
  * Return control to the CLI prompt via longjmp.
  */
 void return_to_cli_prompt(void)
-{
-    longjmp(env, JMP_CLI);
-}
+{ longjmp(env, JMP_CLI); }
 
 /**
  * Scans the input buffer for the next non-delimiter character.
@@ -442,7 +422,7 @@ bool scan_input_buffer(uint8_t* buffer, scan_state_t* state)
 /**
  * Converts a character to uppercase when folding is enabled.
  * Leaves the character unchanged when folding is disabled.
- * @param acc input character
+ * @param ch input character
  * @return possibly uppercased character
  */
 uint8_t upper_case_unless_folding(uint8_t ch)
@@ -454,22 +434,12 @@ uint8_t upper_case_unless_folding(uint8_t ch)
 
 /**
  * Fills a buffer with a constant.
- * Writes the given value across the buffer length.
- * @param acc fill value
+ * Writes the given value across the 137-byte edit-buffer workspace.
+ * @param fill_value fill value
  * @param target_ptr destination
  */
 void wipe_buffer(uint8_t fill_value, uint8_t* target_ptr)
-{
-    uint8_t idx = 0;
-    uint8_t remaining = 0x89;
-
-    do
-    {
-        target_ptr[idx] = fill_value;
-        idx++;
-        remaining--;
-    } while (remaining != 0);
-}
+{ memset(target_ptr, fill_value, 0x89); }
 
 /**
  * Check whether a character is a highlight control code.
@@ -514,16 +484,12 @@ void print_char(uint8_t cur_ch)
  */
 void print_alignment_spaces(uint8_t cur_ch)
 {
-    cur_ch = print_xpos;
-
-    if (cur_ch == 0)
-        return;
-
-    do
+    (void)cur_ch;
+    while (print_xpos != 0)
     {
         print_char_just_to_screen(' ');
         print_xpos--;
-    } while (print_xpos != 0);
+    }
 }
 
 /**
@@ -535,33 +501,19 @@ void print_alignment_spaces(uint8_t cur_ch)
  */
 static void print_char_just_to_screen(uint8_t cur_ch)
 {
-    if ((print_flags & 0x80))
+    if (print_flags & 0x80)
     {
         printer_driver_ptr->print_char(cur_ch);
-
         return;
     }
-    control_code_t cc = check_for_control_code(cur_ch);
 
-    if (cc != NO_CONTROL_CODE)
+    control_code_t highlight = check_for_control_code(cur_ch);
+    if (highlight != NO_CONTROL_CODE)
     {
-        {
-            uint8_t saved_a = cur_ch;
-
-            cur_ch = (cc == HIGHLIGHT1_CODE) ? 0x2d : 0x2a;
-            screen_setstyle(STYLE_REVERSE);
-            cli_putchar(cur_ch);
-            cur_ch = saved_a;
-        }
+        screen_setstyle(STYLE_REVERSE);
+        cli_putchar(highlight == HIGHLIGHT1_CODE ? '-' : '*');
         screen_setstyle(0);
-
         return;
     }
-    if (cur_ch == 0x0d)
-    {
-        cli_putchar('\n');
-
-        return;
-    }
-    cli_putchar(cur_ch);
+    cli_putchar(cur_ch == '\r' ? '\n' : cur_ch);
 }

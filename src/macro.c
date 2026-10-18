@@ -52,7 +52,7 @@ void macro_init(uint8_t* print_doc_ptr)
 {
     first_macro_ptr = (macro_t*)(void*)align_up_ptr(print_doc_ptr + 0x8d);
     last_macro_ptr = first_macro_ptr;
-    last_macro_ptr->next = 0;
+    last_macro_ptr->next = NULL;
 }
 
 /**
@@ -65,13 +65,13 @@ void dm_fmt_cmd(void)
     macro_t* new_macro_ptr = last_macro_ptr;
 
     new_macro_ptr->name[0] = heap_format_line_ptr->text[0] & 0xdf;
-    uint8_t secondchar = heap_format_line_ptr->text[1];
+    uint8_t second_letter = heap_format_line_ptr->text[1];
 
-    if (isalpha(secondchar))
-        secondchar &= 0xdf;
+    if (isalpha(second_letter))
+        second_letter &= 0xdf;
     else
-        secondchar = 0x20;
-    new_macro_ptr->name[1] = secondchar;
+        second_letter = 0x20;
+    new_macro_ptr->name[1] = second_letter;
 
     uint8_t* write_ptr = (uint8_t*)new_macro_ptr;
     uint8_t* body = write_ptr + offsetof(macro_t, body);
@@ -92,10 +92,10 @@ void dm_fmt_cmd(void)
         if (read_next_output_line(&line_ptr, body) == READ_BLOCK_DONE)
             return;
 
-        command_prefix_t cp = check_for_command_prefix(body[0]);
+        command_prefix_t prefix = check_for_command_prefix(body[0]);
 
         const formatting_command_t* command =
-            cp != NO_COMMAND_PREFIX ? lookup_formatting_command() : NULL;
+            prefix != NO_COMMAND_PREFIX ? lookup_formatting_command() : NULL;
         if (command != NULL && command->name[0] == 'E' &&
             command->name[1] == 'M')
             break;
@@ -119,12 +119,12 @@ void dm_fmt_cmd(void)
  */
 static inline uint8_t* align_up_ptr(uint8_t* ptr)
 {
-    uintptr_t addr = (uintptr_t)ptr;
-    size_t align = alignof(macro_t);
+    uintptr_t address = (uintptr_t)ptr;
+    size_t alignment = alignof(macro_t);
 
-    addr = (addr + align - 1) & ~(align - 1);
+    address = (address + alignment - 1) & ~(alignment - 1);
 
-    return (uint8_t*)addr;
+    return (uint8_t*)address;
 }
 
 /**
@@ -135,29 +135,24 @@ static inline uint8_t* align_up_ptr(uint8_t* ptr)
  */
 bool macro_try_invoke(uint8_t** macro_cursor_ptr)
 {
-    uint8_t ch1 = heap_format_line_ptr->command[0];
-    uint8_t ch2 = heap_format_line_ptr->command[1];
+    uint8_t first_letter = heap_format_line_ptr->command[0];
+    uint8_t second_letter = heap_format_line_ptr->command[1];
+    if (!isalpha(second_letter))
+        second_letter = ' ';
 
-    if (!isalpha(ch2))
-        ch2 = 0x20;
-    macro_t* macro = first_macro_ptr;
-
-    while (macro->next != NULL)
+    for (macro_t* macro = first_macro_ptr; macro->next != NULL;
+        macro = macro->next)
     {
-        if (macro->name[0] == ch1 && macro->name[1] == ch2)
+        if (macro->name[0] != first_letter || macro->name[1] != second_letter)
+            continue;
+        if (macro_executing_flag)
         {
-            if (macro_executing_flag)
-            {
-                nested_macro_error();
-
-                return true;
-            }
-            *macro_cursor_ptr = macro->body;
-            macro_executing_flag = true;
-
+            nested_macro_error();
             return true;
         }
-        macro = macro->next;
+        *macro_cursor_ptr = macro->body;
+        macro_executing_flag = true;
+        return true;
     }
     return false;
 }
@@ -243,23 +238,23 @@ uint8_t* prepare_output_line(uint8_t* read_limit, uint8_t** macro_cursor)
             }
         }
 
-        uint8_t pos = 0;
+        uint8_t source_pos = 0;
         uint8_t output_pos = 0;
         for (;;)
         {
-            uint8_t ch = (*macro_cursor)[pos];
+            uint8_t ch = (*macro_cursor)[source_pos];
             if (ch == 4)
             {
                 macro_executing_flag = false;
                 break;
             }
-            pos++;
+            source_pos++;
             if (ch == '@')
             {
-                uint8_t argument = (*macro_cursor)[pos];
+                uint8_t argument = (*macro_cursor)[source_pos];
                 if (argument >= '0' && argument <= '9')
                 {
-                    pos++;
+                    source_pos++;
                     output_pos = expand_macro_argument(
                         read_limit, argument - '0', output_pos);
                 }
@@ -271,7 +266,7 @@ uint8_t* prepare_output_line(uint8_t* read_limit, uint8_t** macro_cursor)
                 ((uint8_t*)&current_line_buffer)[output_pos++] = ch;
                 if (ch == 0x0d)
                 {
-                    *macro_cursor += pos;
+                    *macro_cursor += source_pos;
                     current_format_line = edit_buffer_base;
                     heap_format_line_ptr = (line_t*)edit_buffer_base;
                     return edit_buffer_base;
@@ -320,15 +315,14 @@ static read_block_status_t read_next_output_line(
     if (!printing_from_file_flag)
         return read_block_from_file(cursor, limit);
 
-    uint8_t a2;
+    uint8_t ch;
     do
     {
-        a2 = *print_source_ptr;
-        if (a2 == 0)
+        ch = *print_source_ptr;
+        if (ch == 0)
             return READ_BLOCK_DONE;
-        **cursor = a2;
+        *(*cursor)++ = ch;
         print_source_ptr++;
-        (*cursor)++;
-    } while (a2 != 0x0d);
+    } while (ch != '\r');
     return READ_BLOCK_MORE;
 }

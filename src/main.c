@@ -29,16 +29,31 @@ static bool parse_ulong_option(
         return false;
     }
     char* endptr;
-    unsigned long v = strtoul(arg, &endptr, 0);
-    if (endptr == arg || *endptr != '\0' || v == 0)
+    unsigned long value = strtoul(arg, &endptr, 0);
+    if (endptr == arg || *endptr != '\0' || value == 0)
     {
         fprintf(stderr, "invalid --%s value '%s'\n", name, arg);
         return false;
     }
-    *out = v;
+    *out = value;
     return true;
 }
 #endif
+
+/**
+ * Prints the supported command-line syntax.
+ * @param program executable name from argv[0]
+ */
+static void print_usage(const char* program)
+{
+#if defined(TEST_HARNESS)
+    fprintf(stderr,
+        "Usage: %s [--ram=size] [--rulers=count] [filename]\n",
+        program);
+#else
+    fprintf(stderr, "Usage: %s [filename]\n", program);
+#endif
+}
 
 static const char* initial_filename = NULL;
 
@@ -48,13 +63,13 @@ static const char* initial_filename = NULL;
  */
 static void initial_load_callback(void)
 {
-    size_t len = strlen(initial_filename);
+    size_t filename_length = strlen(initial_filename);
 
-    if (len >= MAX_COMMAND_LENGTH)
-        len = MAX_COMMAND_LENGTH - 1;
-    memcpy(input_buffer, initial_filename, len);
-    input_buffer[len] = 0x0d;
-    scan_state_t scan = {};
+    if (filename_length >= MAX_COMMAND_LENGTH)
+        filename_length = MAX_COMMAND_LENGTH - 1;
+    memcpy(input_buffer, initial_filename, filename_length);
+    input_buffer[filename_length] = 0x0d;
+    scan_state_t scan = {0};
 
     load_cmd(&scan);
     run_cli();
@@ -79,41 +94,31 @@ int main(int argc, char* argv[])
         {0,        0,                 0, 0}
     };
 
-    int opt;
+    int option;
     int option_index = 0;
-    while (
-        (opt = getopt_long(argc, argv, "", long_options, &option_index)) != -1)
+    while ((option = getopt_long(
+                argc, argv, "", long_options, &option_index)) != -1)
     {
-        switch (opt)
+        switch (option)
         {
 #if defined(TEST_HARNESS)
             case 0:
-                if (strcmp(long_options[option_index].name, "ram") == 0)
-                {
-                    unsigned long v;
-                    if (!parse_ulong_option(optarg, "ram", &v))
-                        return 1;
-                    ram_size = (size_t)v;
-                }
-                else if (strcmp(long_options[option_index].name, "rulers") == 0)
-                {
-                    unsigned long v;
-                    if (!parse_ulong_option(optarg, "rulers", &v))
-                        return 1;
-                    ruler_index_size = (size_t)v;
-                }
+            {
+                const char* option_name = long_options[option_index].name;
+                unsigned long value;
+                if (!parse_ulong_option(optarg, option_name, &value))
+                    return 1;
+                if (strcmp(option_name, "ram") == 0)
+                    ram_size = (size_t)value;
+                else
+                    ruler_index_size = (size_t)value;
                 break;
+            }
 #endif
 
             case '?':
             default:
-#if defined(TEST_HARNESS)
-                fprintf(stderr,
-                    "Usage: %s [--ram=size] [--rulers=count] [filename]\n",
-                    argv[0]);
-#else
-                fprintf(stderr, "Usage: %s [filename]\n", argv[0]);
-#endif
+                print_usage(argv[0]);
                 return 1;
         }
     }
@@ -122,13 +127,7 @@ int main(int argc, char* argv[])
     {
         if (argc - optind > 1)
         {
-#if defined(TEST_HARNESS)
-            fprintf(stderr,
-                "Usage: %s [--ram=size] [--rulers=count] [filename]\n",
-                argv[0]);
-#else
-            fprintf(stderr, "Usage: %s [filename]\n", argv[0]);
-#endif
+            print_usage(argv[0]);
             return 1;
         }
         initial_filename = argv[optind];
@@ -149,9 +148,6 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    if (initial_filename != NULL)
-        run_view(initial_load_callback);
-    else
-        run_view(NULL);
+    run_view(initial_filename != NULL ? initial_load_callback : NULL);
     return 0;
 }
