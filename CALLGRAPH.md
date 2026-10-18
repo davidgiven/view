@@ -30,7 +30,7 @@ Functions defined in the source files and their callees (only calls to other fun
 - **lj_fmt_cmd** → expand_line, write_output_buffer_to_format_line
 - **ce_fmt_cmd** → expand_line, write_output_buffer_to_format_line [ruler_left_stop, ruler_right_stop]
 - **rj_fmt_cmd** → expand_line, write_output_buffer_to_format_line [ruler_right_stop, screen_column]
-- **expand_line** → get_current_fmt_cmd_byte, render_register [a, output_buffer, print_flags, screen_column, screen_row]
+- **expand_line** → check_for_control_code, get_current_fmt_cmd_byte, render_register [output_buffer, print_flags, screen_column, screen_row]
 - **store_to_output_buffer** [a, scratch_index]
 - **process_header_footer_line** → store_to_output_buffer [scratch_index, search_target_len]
 - **df_fmt_cmd** → process_header_footer_line [footer_text_maybe]
@@ -53,20 +53,22 @@ Functions defined in the source files and their callees (only calls to other fun
 - **fo_fmt_cmd** → parse_boolean_from_fmt_cmd [footers_enabled_flag]
 - **he_fmt_cmd** → parse_boolean_from_fmt_cmd [headers_enabled_flag]
 - **pb_fmt_cmd** → parse_boolean_from_fmt_cmd
-- **ht_fmt_cmd** → get_current_fmt_cmd_byte [a, highlight_code]
+- **ht_fmt_cmd** → evaluate_expression_from_fmt_cmd, get_current_fmt_cmd_byte [highlight_code]
 - **parse_boolean_from_fmt_cmd** → get_current_fmt_cmd_byte, parse_word_flag [a]
-- **parse_word_flag** → get_current_fmt_cmd_byte, get_next_fmt_cmd_byte, parse_decimal_number, render_register [a, scratch_offset, temp_save]
+- **parse_word_flag**
 - **get_current_fmt_cmd_byte**
+- **evaluate_expression_from_fmt_cmd** → get_current_fmt_cmd_byte, get_next_fmt_cmd_byte, parse_decimal_number, render_register
 - **get_next_fmt_cmd_byte** → get_current_fmt_cmd_byte [a]
 - **emit_to_output_buffer_callback** [output_buffer, screen_row]
 - **set_rw_file_handle** [rw_file_handle]
 - **process_page_footer** → print_newline, print_vertical_space, render_header_or_footer [bottom_margin, footer_margin, footer_text_maybe, footers_enabled_flag, page_break_pending_flag, page_lines_remaining, register_value_array]
-- **print_output_buffer** → print_char [a, output_buffer, temp_save]
+- **print_output_buffer** → convert_char_for_printing, print_char [output_buffer, temp_save]
 - **scan_string_length**
 - **collect_microspace_line** → convert_char_for_printing [column_position, output_buffer, screen_column]
 - **can_microspace_line** [ruler_right_stop]
-- **print_microspaced_line** → convert_char_for_printing, emit_microspacing_spaces, print_char, print_char_x_times [a, column_position, justify_gap_count, microspacing_count, output_buffer]
+- **print_microspaced_line** → convert_char_for_printing, emit_microspacing_spaces, print_char, print_char_x_times [column_position, justify_gap_count, microspacing_count, output_buffer, print_extra_space_accum, print_running_total_accum]
 - **microspace_word_processor** → advance_print_line_spacing, can_microspace_line, collect_microspace_line, convert_char_for_printing, print_char_x_times, print_microspaced_line [a, column_position, register_value_array]
+- **convert_char_for_printing** → process_document_character [column_position, print_flags]
 - **print_char_x_times** → print_char
 - **print_document** → check_for_at_least_150_bytes_free, find_margins_of_current_ruler_buffer, macro_init, print_loop, process_page_footer, reset_print_registers, scan_input_buffer, set_rw_file_handle [current_ruler_buffer, current_ruler_ptr, input_buffer, page_break_pending_flag, print_xpos, printing_from_file_flag, ram, top]
 - **advance_print_line_spacing** → print_vertical_space [a, line_spacing, page_lines_remaining]
@@ -75,21 +77,21 @@ Functions defined in the source files and their callees (only calls to other fun
 - **print_loop** → bm_fmt_cmd, ce_fmt_cmd, df_fmt_cmd, dh_fmt_cmd, dm_fmt_cmd, em_fmt_cmd, ep_fmt_cmd, fm_fmt_cmd, fo_fmt_cmd, he_fmt_cmd, hm_fmt_cmd, ht_fmt_cmd, lj_fmt_cmd, lm_fmt_cmd, load_print_ruler, lookup_formatting_command, ls_fmt_cmd, macro_try_invoke, microspace_word_processor, op_fmt_cmd, output_left_margin, pb_fmt_cmd, pe_fmt_cmd, pl_fmt_cmd, prepare_output_line, print_line_contents, process_page_footer, render_new_page, rj_fmt_cmd, sr_fmt_cmd, start_microspacing_if_active, tm_fmt_cmd, ts_fmt_cmd [column_position, formatted_line_written_flag, macro_executing_flag, microspacing_count, page_break_pending_flag, page_lines_remaining, print_flags, scratch_offset] (formatting handlers via commands_table callbacks)
 - **print_newline** → print_char
 - **print_vertical_space** → print_char_x_times
-- **render_header_or_footer** → add_justification_spaces, compute_header_left_section, compute_header_middle_section, compute_header_odd_page_section, copy_header_footer_text, get_page_parity, get_right_margin, output_left_margin, print_output_buffer [a, column_position, scratch_index]
-- **render_new_page** → compute_lines_remaining_on_page, print_newline, print_vertical_space, render_header_or_footer, render_number_to_screen, return_to_cli_prompt, stop_printing [header_margin, header_text_maybe, headers_enabled_flag, page_break_pending_flag, print_flags, register_value_array, top_margin]
+- **render_header_or_footer** → add_justification_spaces, compute_header_left_section, compute_header_middle_section, compute_header_odd_page_section, copy_header_footer_text, get_page_parity, get_right_margin, output_left_margin, print_output_buffer [column_position, scratch_index]
+- **render_new_page** → cli_putchar, cli_putstring, compute_lines_remaining_on_page, print_newline, print_vertical_space, render_header_or_footer, render_number_to_screen, return_to_cli_prompt, screen_getchar, start_printing, stop_printing [header_margin, header_text_maybe, headers_enabled_flag, page_break_flag, page_break_pending_flag, print_flags, register_value_array, top_margin]
 - **start_microspacing_if_active** → print_alignment_spaces [microspacing_count, print_flags, printer_driver_ptr]
 - **emit_microspacing_spaces** → print_alignment_spaces [printer_driver_ptr]
-- **compute_lines_remaining_on_page** [a, bottom_margin, footer_margin, header_margin, page_length, page_lines_remaining, top_margin]
+- **compute_lines_remaining_on_page** [bottom_margin, footer_margin, header_margin, page_break_flag, page_length, page_lines_remaining, top_margin]
 - **compute_header_left_section** → get_line_width [a]
 - **compute_header_middle_section** → get_line_width [a]
 - **compute_header_odd_page_section** → get_line_width, scan_string_length [a]
 - **get_line_width** → scan_string_length
 - **get_right_margin** [ruler_buffer_len, ruler_right_stop]
-- **copy_header_footer_text** → render_register [output_buffer, print_flags, temp_save]
+- **copy_header_footer_text** → check_for_control_code, render_register [output_buffer, print_flags, temp_save]
 - **get_page_parity** [register_value_array, two_sided_flag]
 - **output_left_margin** → get_page_parity, print_char_x_times [left_margin, rhs_extra_margin, two_sided_flag]
 - **add_justification_spaces** → print_char_x_times, process_document_character [a, column_position, print_flags]
-- **reset_print_registers** → compute_lines_remaining_on_page [a, bottom_margin, footer_margin, footer_text_maybe, footers_enabled_flag, header_margin, header_text_maybe, headers_enabled_flag, highlight_code, left_margin, line_spacing, macro_executing_flag, page_length, register_value_array, rhs_extra_margin, top_margin, two_sided_flag]
+- **reset_print_registers** → compute_lines_remaining_on_page [bottom_margin, footer_margin, footer_text_maybe, footers_enabled_flag, header_margin, header_text_maybe, headers_enabled_flag, highlight_code, left_margin, line_spacing, macro_executing_flag, page_break_flag, page_length, register_value_array, rhs_extra_margin, top_margin, two_sided_flag]
 - **write_byte_to_memory** [a, screen_column]
 - **write_cr_to_memory** → write_byte_to_memory
 - **stop_printing** [print_flags, printer_driver_ptr]
